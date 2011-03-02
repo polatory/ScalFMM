@@ -1,0 +1,61 @@
+#ifndef FABSTRACTLOADER_HPP
+#define FABSTRACTLOADER_HPP
+// /!\ Please, you must read the license at the bottom of this page
+
+class F3DPosition;
+
+/**
+* @author Berenger Bramas (berenger.bramas@inria.fr)
+* @class FAbstractLoader
+* Please read the license
+*
+* This class defined the FMB usual loader. A loader is the component
+* that fills an octree.
+*
+* If you want to use a specific file format you then need to inherite from this loader
+* and implemente several methods.
+*
+* @warning Inherite from this class when defining a loader class
+*/
+template <class ParticuleClass>
+class FAbstractLoader {
+public:	
+	/** Default destructor */
+	virtual ~FAbstractLoader(){
+	}
+
+        /**
+        * Get the number of particules for this simulation
+        * @return number of particules that the loader can fill
+        */
+        virtual long getNumberOfParticules() const = 0;
+
+        /**
+        * Get the center of the simulation box
+        * @return box center needed by the octree
+        */
+        virtual F3DPosition getCenterOfBox() const = 0;
+
+        /**
+        * Get the simulation box width
+        * @return box width needed by the octree
+        */
+        virtual double getBoxWidth() const = 0;
+
+        /**
+        * To know if the loader is valide (file opened, etc.)
+        * @return true if file is open
+        */
+        virtual bool isValide() const = 0;
+
+        /**
+        * Fill the next particule
+        * @param inParticule the particule to fill
+        */
+        virtual void fillParticule(ParticuleClass* const inParticule) = 0;
+};
+
+
+#endif //FABSTRACTLOADER_HPP
+
+// [--LICENSE--]

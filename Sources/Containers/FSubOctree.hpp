@@ -1,0 +1,390 @@
+#ifndef FSUBOCTREE_HPP
+#define FSUBOCTREE_HPP
+// /!\ Please, you must read the license at the bottom of this page
+
+#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FAssertable.hpp"
+#include "../Utils/FMath.hpp"
+
+#include "FTreeCoordinate.hpp"
+#include "FList.hpp"
+
+
+/**
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FAbstractSubOctree
+ * Please read the license
+ *
+ * This class is a sub-octree container.
+ * This class is the main component of the octree.
+ * 
+ * This class does not have a main root. In fact, the root
+ * is contained in the parent sub-octree.
+ *
+ * If the sub-octree is a middle suboctree, the leaf level is pointers
+ * on other suboctrees.
+ *
+ * If the sub-octree is a bottom subtree then the leaf level is pointers on
+ * lists<particule>
+ *
+ * This two situations are implemented in tow different classes that inherite of FAbstractSubOctree.
+ *
+ * Please refere to testOctree.cpp to see an example
+ * @warning Give the particuleClass & cellClass
+ */
+template< class ParticuleClass, class CellClass >
+class FAbstractSubOctree : public FAssertable{
+protected:
+    const int subOctreeHeight;	            //< Height of this suboctree
+    const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)
+
+    long leftLeafIndex;                     //< The leaf at the left position (this is the array index to start when iterate)
+    long rightLeafIndex;                    //< The leaf at the right position (this is the last array index when iterate)
+
+    CellClass*** cells;		            //< Potential cells, cells are allocated only if needed
+
+    FAbstractSubOctree* const parent;       //< Parent suboctree (null for root)
+
+    const long indexInParent;               //< This is the index of the current octree in the parent's array
+
+    /**
+     * This function compute the morton index for the last level of this suboctree.
+     * suppose we have an index like : 000.010.111.001.101.110
+     * and now considere that suboctree height is 2, the morton index have to be cut as :
+     * [000.010].[111.001].[101.110] each part correspond to a morton index a leaf level for the
+     * different suboctree.
+     * This is why depending on the level of the octree we need to remove extra part on the left and
+     * on the right.
+     */
+    MortonIndex getLeafIndex(const MortonIndex index, const int inTreeHeight) const {
+        // Remove right useless part - used by child
+        const MortonIndex fullIndex = index >> (3 * (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ) );
+        // Remove left extra data part - used by parent
+        const MortonIndex treeLeafMask = ( (~0x00LL ^ (~0x00LL << (3 *  this->subOctreeHeight ))));
+        return treeLeafMask & fullIndex;
+    }
+
+    /**
+     * This function creats all the intermediates cells between
+     * a leaf and the root.
+     * It is used after inserting a new leaf to have cells from leaf to root
+     * when computing
+     * @param arrayIndex the index at the leaf index of the new element
+     */
+    void createPreviousCells(MortonIndex arrayIndex){
+        int indexLevel = this->subOctreeHeight - 1;
+        while(indexLevel >= 0 && !this->cells[indexLevel][arrayIndex]){
+            this->cells[indexLevel][arrayIndex] = new CellClass();
+            --indexLevel;
+            arrayIndex >>= 3;
+        }
+    }
+
+    /**
+      * This function is initializing variables when a new leaf is inserted in the tree
+      * for example it updates the leaf array marges and calls createPreviousCells()
+      * @param arrayIndex the position of the new leaf in the leafs array
+      */
+    void newLeafInserted(const long arrayIndex){
+        createPreviousCells(arrayIndex);
+        // Update if this is the bottom left
+        if(arrayIndex < this->leftLeafIndex) this->leftLeafIndex = arrayIndex;
+        if(arrayIndex > this->rightLeafIndex) this->rightLeafIndex = arrayIndex;
+    }
+
+public:
+    /**
+    * Constructor
+    * Allocate the cells arrays to be able to create every potential cells
+    * @param inParent the SubOctree parent (0 if node)
+    * @param inSubOctreeHeight Height of this suboctree
+    * @param inSubOctreePosition Level of the current suboctree in the global tree (1 if upper tree)
+    */
+    FAbstractSubOctree(FAbstractSubOctree* const inParent, const long inIndexInParent,
+                       const int inSubOctreeHeight, const int inSubOctreePosition) :
+                        parent( inParent ), indexInParent(inIndexInParent), subOctreePosition( inSubOctreePosition ),
+                        subOctreeHeight( inSubOctreeHeight ), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(0) {
+
+        this->cells = new CellClass**[this->subOctreeHeight];
+        assert(this->cells, "Allocation failled", __LINE__, __FILE__);
+
+        // We start at a sub-level - 8^1
+        long cellsAtlevel = 8;
+        for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
+            this->cells[indexLevel] = new CellClass*[cellsAtlevel];
+            assert(this->cells[indexLevel], "Allocation failled", __LINE__, __FILE__);
+
+            for( int indexCells = 0 ; indexCells < cellsAtlevel ; ++indexCells ){
+                this->cells[indexLevel][indexCells] = 0;
+            }
+
+            cellsAtlevel <<= 3; // => * 8 >> 8^indexLevel
+        }
+    }
+
+    /**
+    * Destructor
+    * Delete cells arrays and allocated cells
+    */
+    virtual ~FAbstractSubOctree(){
+        long cellsAtlevel = 8;
+        for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
+            for( int indexCells = 0 ; indexCells < cellsAtlevel ; ++indexCells ){
+                if(this->cells[indexLevel][indexCells]){
+                    delete this->cells[indexLevel][indexCells];
+                }
+            }
+
+            delete [] this->cells[indexLevel];
+            cellsAtlevel <<= 3; // => * 8 >> 8^indexLevel
+        }
+
+        delete [] this->cells;
+    }
+
+
+    /**
+    * Insert a particule on the subtree
+    * @param index the morton index of the particule to insert
+    * @param inParticule the particule to insert (must inherite from FAbstractParticule)
+    * @param inParticule the inTreeHeight the height of the tree
+    */
+    virtual void insert(const MortonIndex index, ParticuleClass* const inParticule, const int inTreeHeight) = 0;
+
+    ///////////////////////////////////////
+    // This is the FOctree::Iterator Part
+    ///////////////////////////////////////
+
+    /** Suboctree height accessor (leaf level + 1)
+      * @return subOctreeHeight */
+    int getSubOctreeHeight() const{
+        return subOctreeHeight;
+    }
+
+    /** Suboctree position in the real tree
+      * @return subOctreePosition */
+    int getSubOctreePosition() const {
+        return subOctreePosition;
+    }
+
+    /** Return the more left leaf index
+      * the smallest index on the leafs array
+      * @return leftLeafIndex */
+    long getLeftLeafIndex() const {
+        return leftLeafIndex;
+    }
+
+    /** Return the more right leaf index
+      * the biggest index on the leafs array
+      * @return rightLeafIndex */
+    long getRightLeafIndex() const {
+        return rightLeafIndex;
+    }
+
+    /** Return the array of cells at a specious index
+      * @param level the level to access cells array (must be < subOctreeHeight)
+      * @return cells[level] */
+    CellClass** cellsAt(const int level){
+        assert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
+        return cells[level];
+    }
+
+    /** To know if it is the root suboctree
+      * @return true if has parent otherwise return false */
+    bool hasParent() const {
+        return parent;
+    }
+
+    /** To get access to the parent suboctree
+      * @return parent */
+    FAbstractSubOctree* getParent(){
+        return parent;
+    }
+
+    /** To get the index of the current suboctree in the parent leafs array
+      * This index can is part of the morton index of the cells contains
+      * in this suboctree
+      * @return indexInParent */
+    long getIndexInParent() const{
+        return indexInParent;
+    }
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+// Last level sub octree
+/////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FSubOctreeWithLeafs
+ * Please read the license
+ *
+ * This class is an sub-octree container.
+ * But this is the specialized bottom part, in fact the last level is composed by
+ * a cells array (managing by abstract class) and lists of particules.
+ *
+ * Please refere to testOctree.cpp to see an example.
+ * @warning Give the particuleClass & cellClass
+ */
+template< class ParticuleClass, class CellClass >
+class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticuleClass,CellClass> {
+private:
+
+    FList<ParticuleClass*>** leafs;            //< Leafs array
+public:     
+    /**
+    * Constructor
+    * Allocate the leafs array
+    * @param inParent the SubOctree parent (0 if node)
+    * @param inSubOctreeHeight Height of this suboctree
+    * @param inSubOctreePosition Level of the current suboctree in the global tree (1 if upper tree)
+    */
+    FSubOctreeWithLeafs(FAbstractSubOctree<ParticuleClass,CellClass>* const inParent, const long inIndexInParent,
+                        const int inSubOctreeHeight, const int inSubOctreePosition) :
+                        FAbstractSubOctree<ParticuleClass,CellClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+
+        const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
+
+        this->leafs = new FList<ParticuleClass*>*[cellsAtLeafLevel];
+        assert(this->leafs, "Allocation failled", __LINE__, __FILE__);
+
+        for( long indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+            this->leafs[indexLeaf] = 0;
+        }
+    }
+
+    /**
+    * Destructor dealloc all leafs & the leaf array
+    */
+    virtual ~FSubOctreeWithLeafs(){
+        const int cellsAtLeafLevel = 1 << (3 * this->subOctreeHeight );
+        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+            if(this->leafs[indexLeaf]){
+                delete this->leafs[indexLeaf];
+            }
+        }
+        delete [] this->leafs;
+    }
+
+    /**
+    * Refer to FAbstractSubOctree::insert
+    */
+    void insert(const MortonIndex index, ParticuleClass* const inParticule, const int inTreeHeight){
+        // Get the morton index for the leaf level
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass>::getLeafIndex(index,inTreeHeight);
+        // is there already a leaf?
+        if( !this->leafs[arrayIndex] ){
+            this->leafs[arrayIndex] = new FList<ParticuleClass*>();
+            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex );
+        }
+        // add particule to leaf list
+        this->leafs[arrayIndex]->pushFront(inParticule);
+    }
+
+    /** To get access leafs elements
+      * @param index the position of the leaf
+      * @return the list of particules at this index */
+    FList<ParticuleClass*>* getLeaf(const int index){
+        return this->leafs[index];
+    }
+
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+// Middle level sub octree
+/////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FSubOctree
+ * Please read the license
+ *
+ * This class is an sub-octree container.
+ * This is the middle level specialized suboctree, it means that it does not contain
+ * leaf but pointers to other suboctree.
+ * These suboctrees at the last level can be FSubOctree of FSubOctreeWithLeafs depending
+ * if they are at the bottom of the tree or not
+ *
+ * @warning Give the particuleClass & cellClass
+ */
+template< class ParticuleClass, class CellClass >
+class FSubOctree : public FAbstractSubOctree<ParticuleClass,CellClass> {
+private:
+    FAbstractSubOctree<ParticuleClass,CellClass>** subleafs;    //< Last levels is composed of suboctree
+
+public:	
+    /**
+    * Constructor
+    * Allocate the subleafs array
+    * @param inParent the SubOctree parent (0 if node)
+    * @param inSubOctreeHeight Height of this suboctree
+    * @param inSubOctreePosition Level of the current suboctree in the global tree (0 if upper tree)
+    */
+    FSubOctree(FAbstractSubOctree<ParticuleClass,CellClass>* const inParent,  const long inIndexInParent,
+               const int inSubOctreeHeight, const int inSubOctreePosition) :
+            FAbstractSubOctree<ParticuleClass,CellClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+
+        const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
+        this->subleafs = new FAbstractSubOctree<ParticuleClass,CellClass>*[cellsAtLeafLevel];
+        assert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
+
+        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+            this->subleafs[indexLeaf] = 0;
+        }
+    }
+
+    /**
+    * Destructor dealloc all suboctrees leafs & leafs array
+    */
+    virtual ~FSubOctree(){
+        const long cellsAtLeafLevel = 1 << (3 * this->subOctreeHeight);
+        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+            if(this->subleafs[indexLeaf]) delete this->subleafs[indexLeaf];
+        }
+        delete [] this->subleafs;
+    }
+
+    /**
+    * Refer to FAbstractSubOctree::insert
+    */
+    void insert(const MortonIndex index, ParticuleClass* const inParticule, const int inTreeHeight){
+        // We need the morton index at the bottom level of this sub octree
+        // so we remove the right side
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass>::getLeafIndex(index,inTreeHeight);
+        // Is there already a leaf?
+        if( !this->subleafs[arrayIndex] ){
+            // We need to create leaf sub octree
+            const int nextSubOctreePosition = this->subOctreePosition + this->subOctreeHeight;
+            const int nextSubOctreeHeight = FMath::Min(inTreeHeight - nextSubOctreePosition, this->subOctreeHeight);
+
+            // Next suboctree is a middle suboctree
+            if(inTreeHeight > nextSubOctreeHeight + nextSubOctreePosition){
+                this->subleafs[arrayIndex] = new FSubOctree(this,arrayIndex,nextSubOctreeHeight,nextSubOctreePosition);
+            }
+            // Or next suboctree contains the reail leaf!
+            else{
+                this->subleafs[arrayIndex] = new FSubOctreeWithLeafs<ParticuleClass,CellClass>(this,arrayIndex,nextSubOctreeHeight,nextSubOctreePosition);
+            }
+
+            // We need to inform parent class
+            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex );
+        }
+        // Ask next suboctree to insert the particule
+        this->subleafs[arrayIndex]->insert( index, inParticule, inTreeHeight);
+    }
+
+    /** To get access to leafs elements (child suboctree)
+      * @param index the position of the leaf/child suboctree
+      * @return child at this index */
+    FAbstractSubOctree<ParticuleClass,CellClass>* leafs(const int index){
+        return this->subleafs[index];
+    }
+};
+
+
+#endif //FSUBOCTREE_HPP
+// [--LICENSE--]

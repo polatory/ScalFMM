@@ -1,0 +1,19 @@
+#ignore building directory
+build/
+
+#ignore generated doc
+Doc/html/
+
+#ignore qt project file
+*.pro
+*.pro.*
+
+#ignore executables
+*.exe
+
+#ignore temporary files
+tmp/
+*.tmp
+*~
+*TAGS
+*#*#
