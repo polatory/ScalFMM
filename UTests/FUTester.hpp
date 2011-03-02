@@ -23,7 +23,7 @@ int main(void){\
 * This class is used to make simple unit test cases
 *
 * Please refer to testUTest.cpp to see an example
-* @warning Create a derived that implement SetTests() and use TestClass() macro
+* @warning Create a derived class that implement SetTests() and use TestClass() macro
 */
 template <class TestClass>
 class FUTester{

@@ -9,7 +9,7 @@
 * @class 
 * Please read the license
 *
-* Propose basic math function or indirection
+* Propose basic math functions or indirections
 */
 struct FMath{
     /** To get absolute value */

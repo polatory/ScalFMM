@@ -36,6 +36,7 @@ class TestCell{
 int main(int , char ** ){
     // we store all particules to be able to dealloc
     FList<FBasicParticule*> particules;
+    // Use testLoaderCreate.exe to create this file
     const char* const filename = "testLoader.basic.temp";
 
     // open basic particules loader
