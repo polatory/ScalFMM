@@ -16,10 +16,12 @@
 
 #include "../Sources/Core/FAbstractParticule.hpp"
 
-// Compile by : g++ testOctreeIter.cpp ../Sources/Utils/FAssertable.cpp -o testOctreeIter.exe
+// We use openmp to count time (portable and easy to manage)
+// Compile by : g++ testOctreeIter.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testOctreeIter.exe
 
 /**
 * In this file we show how to use octree with iteration
+
 NbLevels = 5 & NbSubLevels = 2 & NbPart = 2000000
 Creating particules ...
 Done  (0.263944s).
@@ -53,6 +55,8 @@ Done  (0.716064s).
 Deleting particules ...
 Done  (0.0830964s).
 */
+
+// Fake particule class
 class TestParticule : public FAbstractParticule {
     F3DPosition pos;
 public:
@@ -64,6 +68,7 @@ public:
     }
 };
 
+// Fake cell class
 class TestCell{
 };
 
@@ -71,13 +76,13 @@ class TestCell{
 int main(int , char ** ){
         const int NbLevels = 10;
         const int NbSubLevels = 3;
-        const long NbPart = 2E5;
+        const long NbPart = 2E6;
         FList<TestParticule*> particules;
 
         srand ( 1 ); // volontary set seed to constant
 
         // -----------------------------------------------------
-        std::cout << "Creating particules ..." << std::endl;
+        std::cout << "Creating " << NbPart << " particules ..." << std::endl;
         const double CreatingStartTime = omp_get_wtime();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules.pushFront(new TestParticule(F3DPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX)));

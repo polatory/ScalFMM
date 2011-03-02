@@ -18,16 +18,16 @@
 
 #include "../Sources/Files/FBasicLoader.hpp"
 
-// Compile by : g++ testLoader.cpp ../Sources/Utils/FAssertable.cpp -o testLoader.exe
+// Compile by : g++ testLoader.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testLoader.exe
 
-
+// Fake cell class
 class TestCell{
 };
 
 /**
   * In this file we show an example of BasicParticule and BasicLoader use
 * Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
-* Inserting particules ...
+* Inserting 2000000 particules ...
 * Done  (5.77996).
 * Deleting particules ...
 * Done  (0.171918).
@@ -36,11 +36,12 @@ class TestCell{
 int main(int , char ** ){
     // we store all particules to be able to dealloc
     FList<FBasicParticule*> particules;
+    const char* const filename = "testLoader.basic.temp";
 
     // open basic particules loader
-    FBasicLoader<FBasicParticule> loader("../FMB++/Tests/particules.basic.txt");
+    FBasicLoader<FBasicParticule> loader(filename);
     if(!loader.isValide()){
-        std::cout << "Loader Error\n";
+        std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
@@ -48,7 +49,7 @@ int main(int , char ** ){
     FOctree<FBasicParticule, TestCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
-    std::cout << "Inserting particules ..." << std::endl;
+    std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
     const double InsertingStartTime = omp_get_wtime();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
         FBasicParticule* const part = new FBasicParticule();

@@ -29,7 +29,7 @@ protected:
 
 	// optional : doing something before assert calls FApp->exit
 	void calledBeforeExit() const {
-		std::cout << "assert is false we will quit what can I do...?\n";
+		std::cout << "assert is false we will quit! what can I do...?\n";
 	}
 };
 

@@ -1,6 +1,6 @@
 #include "FUTester.hpp"
 
-// compile by g++ testUTest.cpp -o test.exe
+// compile by g++ utestTest.cpp -o utestTest.exe
 
 /** this class show a simple example of unit test */
 class MyTest : public FUTester<MyTest> {

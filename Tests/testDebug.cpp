@@ -2,11 +2,10 @@
 
 #include "../Sources/Utils/FDebug.hpp"
 
-// Compile by : g++ testDebug.cpp ../Sources/Utils/FDebug.cpp -o testFDebug.exe
+// Compile by : g++ testDebug.cpp ../Sources/Utils/FDebug.cpp -o testDebug.exe
 
 /**
 * In this file we show how to use the debug module
-* please refere to the source of testDebug.cpp directly to knwo more
 */
 
 int main(void){
@@ -18,10 +17,10 @@ int main(void){
 	FDEBUG( FDebug::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
 
 	// Write a developer information
-	FDEBUG( FDebug::Controller.writeFromLine("Strange things happend here!", __LINE__, __FILE__); )
+	FDEBUG( FDebug::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
 
 	// Change stream type
-	FDEBUG( FDebug::Controller.writeToFile("FDebug.out"); )
+	FDEBUG( FDebug::Controller.writeToFile("testDebug.out.temp"); )
 	FDEBUG( FDebug::Controller << "Hello Wordl 2 the return\n");
 
 	return 0;

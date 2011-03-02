@@ -1,14 +1,14 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-//#define FUSE_MPI
+#define FUSE_MPI
 
 #ifdef FUSE_MPI
-// Compile by mpic++ testApplication.cpp -o testApplication.exe
-// run by mpirun -np 4 ./testApplication
+// Compile by mpic++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
+// run by mpirun -np 4 ./testApplication.exe
 #include "../Sources/Utils/FMpiApplication.hpp"
 #define ApplicationImplementation FMpiApplication
 #else
-// Compile by g++ testApplication.cpp -o testApplication.exe
+// Compile by g++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
 #include "../Sources/Utils/FSingleApplication.hpp"
 #define ApplicationImplementation FSingleApplication
 #endif

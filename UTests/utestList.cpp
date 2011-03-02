@@ -2,7 +2,7 @@
 
 #include "../Sources/Containers/FList.hpp"
 
-// compile by g++ flistUTest.cpp -o testFile.exe
+// compile by g++ utestList.cpp -o utestList.exe
 
 /**
 * This file is a unit test for the FList class

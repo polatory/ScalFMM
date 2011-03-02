@@ -16,7 +16,8 @@
 
 #include "../Sources/Core/FAbstractParticule.hpp"
 
-// Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -o testOctree.exe
+// We use openmp to count time (portable and easy to manage)
+// Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testOctree.exe
 
 /**
 * In this file we show how to use octree
@@ -28,6 +29,8 @@
 * Deleting particules ...
 * Done  (0.0791715).
 */
+
+// Fake particule class
 class TestParticule : public FAbstractParticule {
     F3DPosition pos;
 public:
@@ -38,7 +41,7 @@ public:
             return pos;
     }
 };
-
+// Fake cell class
 class TestCell{
 };
 

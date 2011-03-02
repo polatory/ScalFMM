@@ -11,7 +11,6 @@
 
 /**
 * In this file we show how to use the thread module
-* please refere to the source of testDebug.cpp directly to knwo more
 */
 
 
