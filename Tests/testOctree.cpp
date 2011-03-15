@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <omp.h>
+#include "../Sources/Utils/FTic.hpp"
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
@@ -18,7 +18,7 @@
 #include "../Sources/Core/FAbstractCell.hpp"
 
 // We use openmp to count time (portable and easy to manage)
-// Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testOctree.exe
+// Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testOctree.exe
 
 /**
 * In this file we show how to use octree
@@ -59,18 +59,19 @@ public:
 int main(int , char ** ){
         const long NbPart = 2000000;
         FList<TestParticule*> particules;
+        FTic counter;
 
         srand ( time(NULL) );
 
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
-        const double CreatingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules.pushFront(new TestParticule(F3DPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX)));
         }
-        const double CreatingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (CreatingEndTime-CreatingStartTime) << ")." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
         FOctree<TestParticule, TestCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
@@ -78,23 +79,23 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
-        const double InsertingStartTime = omp_get_wtime();
+        counter.tic();
         while( iter.isValide() ){
             tree.insert(iter.value());
             iter.progress();
         }
-        const double InsertingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << ")." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
-        const double DeletingStartTime = omp_get_wtime();
+        counter.tic();
         while(particules.getSize()){
             delete particules.popFront();
         }
-        const double DeletingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << ")." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
 

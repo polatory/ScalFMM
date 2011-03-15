@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <omp.h>
-
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
@@ -19,8 +17,10 @@
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FSimpleKernels.hpp"
 
+#include "../Sources/Utils/FTic.hpp"
+
 // We use openmp to count time (portable and easy to manage)
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testFMMAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -145,43 +145,44 @@ public:
 int main(int , char ** ){
         const int NbLevels = 10;//10;
         const int NbSubLevels = 3;//3
-        const long NbPart = 2000000;//2E6;
+        const long NbPart = 200000;//2E6;
         MyTestParticule* particules = new MyTestParticule[NbPart];
+        FTic counter;
 
         srand ( 1 ); // volontary set seed to constant
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
-        const double CreatingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             new (&particules[idxPart]) MyTestParticule(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX);
         }
 
-        const double CreatingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (CreatingEndTime-CreatingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
-        const double InsertingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             tree.insert(&particules[idxPart]);
         }
-        const double InsertingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         std::cout << "Working on particules ..." << std::endl;
-        const double WorkingStartTime = omp_get_wtime();
+        counter.tic();
 
         MyTestKernels<MyTestParticule, MyTestCell> kernels;
         FFMMAlgorithm<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
         algo.execute();
 
-        const double WorkingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (WorkingEndTime-WorkingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
         // -----------------------------------------------------
 
@@ -216,13 +217,13 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
-        const double DeletingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules[idxPart].~MyTestParticule();
         }
         delete [] particules;
-        const double DeletingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
 	return 0;
