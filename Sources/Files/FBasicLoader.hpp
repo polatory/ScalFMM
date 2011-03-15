@@ -64,7 +64,7 @@ public:
     * Default destructor, simply close the file
     */
     virtual ~FBasicLoader(){
-        file.close();
+        this->file.close();
     }
 
     /**

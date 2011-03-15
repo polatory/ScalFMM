@@ -425,7 +425,7 @@ public:
               * @return true if we can move down
               */
             bool canProgressToDown() const {
-                return !isAtLeafLevel();
+                return !this->isAtLeafLevel();
             }
 
             /**
@@ -433,7 +433,7 @@ public:
               * @return true if we are at the bottom of the tree
               */
             bool isAtLeafLevel() const {
-                return level() + 1 == OctreeHeight;
+                return this->level() + 1 == OctreeHeight;
             }
 
             /**
@@ -491,15 +491,17 @@ public:
         // To be able to access octree root
         friend class Iterator;
 
+
         ///////////////////////////////////////////////////////////////////////////
         // This part is related to the FMM algorithm (needed by M2M,M2L,etc.)
         ///////////////////////////////////////////////////////////////////////////
+
 
         /** This function return a cell (if it exists) from a morton index and a level
           * @param inIndex the index of the desired cell
           * @param inLevel the level of the desired cell (cannot be infered from the index)
           * @return the cell if it exist or null (0)
-          * This function starts from the root until it find a missing cell or the right cell
+          * This function starts from the root until it finds a missing cell or the right cell
           */
         CellClass* getCell(const MortonIndex inIndex, const int inLevel){
            SubOctreeTypes workingTree;
@@ -568,7 +570,8 @@ public:
         }
 
         /** This function return an adresse of cell array from a morton index and a level
-          *
+          * So after calling this function you can test 8 cells (for each case if not null
+          * there is a cell allocated)
           * @param inIndex the index of the desired cell array has to contains
           * @param inLevel the level of the desired cell (cannot be infered from the index)
           * @return the cell if it exist or null (0)
@@ -600,7 +603,19 @@ public:
             return &workingTree.tree->cellsAt(levelInTree)[treeLeafMask & inIndex];
         }
 
-
+        /** This function fill a array with the distant neighbors of a cell
+          * Distant neighbors are child of the father neighbor (if not a direct
+          * neighbors)
+          * There is a maximum of 8 * 26 (3*3*3-1) distant neighbors
+          * @param inNeighbors the array to store the elements
+          * @param inIndex the index of the element we want the neighbors
+          * @param inLevel the level of the element
+          * @return the number of neighbors
+          *
+          * First find the direct neighbors of the cell (without brother)
+          * Second then for each neighbors of the parent of the cell
+          * Add child of this neighbors if they are not in the direct neighbors
+          */
         int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel){
             // Take the neighbors != brothers
             CellClass* directNeighbors[26];
@@ -660,10 +675,10 @@ public:
         }
 
 
-        /** This function return a cell (if it exists) from a morton index and a level
+        /** This function return the particules list (leaf) from a morton index
           * @param inIndex the index of the desired cell
           * @param inLevel the level of the desired cell (cannot be infered from the index)
-          * @return the cell if it exist or null (0)
+          * @return the list if it exists or null (0)
           *
           */
         FList<ParticuleClass*>* getLeaf(const MortonIndex inIndex){
@@ -685,17 +700,16 @@ public:
             return workingTree.leafTree->getLeaf(treeLeafMask & inIndex);
         }
 
-        /** This function fill an array with the neighbors of a cell
+        /** This function fill an array with the neighbors of a leaf
           * @param inNeighbors the array to store the elements
           * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getLeafsNeighbors(FList<ParticuleClass*>* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
+        int getLeafsNeighbors(FList<ParticuleClass*>* inNeighbors[26], const MortonIndex inIndex){
             FTreeCoordinate center;
-            center.setPositionFromMorton(inIndex, inLevel);
+            center.setPositionFromMorton(inIndex, leafIndex);
 
-            const long limite = FMath::pow(2,inLevel);
+            const long limite = FMath::pow(2,leafIndex);
 
             int idxNeighbors = 0;
 
@@ -712,7 +726,7 @@ public:
                         // if we are not on the current cell
                         if( !(!idxX && !idxY && !idxZ) ){
                             const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                            const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                            const MortonIndex mortonOther = other.getMortonIndex(leafIndex);
                             // get cell
                             FList<ParticuleClass*>* const leaf = getLeaf(mortonOther);
                             // add to list if not null

@@ -20,7 +20,7 @@
 #include "../Sources/Core/FSimpleKernels.hpp"
 
 // We use openmp to count time (portable and easy to manage)
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo

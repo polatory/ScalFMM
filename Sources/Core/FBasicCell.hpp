@@ -38,7 +38,7 @@ public:
     * @return the position of the current cell
     */
     MortonIndex getMortonIndex() const {
-        return index;
+        return this->index;
     }
 
     /**
@@ -46,7 +46,7 @@ public:
       * @param inPos the position given by the basic loader
       */
     void setMortonIndex(const MortonIndex inIndex) {
-        index = inIndex;
+        this->index = inIndex;
     }
 };
 

@@ -26,8 +26,8 @@ private:
 	* Called by Fapplication instance to set the current app
 	* @param inCurrentApp current app
 	*/
-	static void SetCurrentApp(FAbstractApplication* const inCurrentApp){
-		CurrentApp = inCurrentApp;
+        static void SetCurrentApp(FAbstractApplication* const inCurrentApp){
+            CurrentApp = inCurrentApp;
 	}
 
 	/** To set CurrentApp */

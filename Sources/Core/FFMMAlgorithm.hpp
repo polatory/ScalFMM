@@ -84,7 +84,7 @@ public:
                 // We need the current cell and the child
                 // child is an array (of 8 child) that may be null
                 kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild());
-            } while(octreeIterator.moveRight());
+            } while( octreeIterator.moveRight() );
             octreeIterator.moveUp();
             octreeIterator.gotoLeft();
         }
@@ -103,10 +103,10 @@ public:
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells
-                do{
-                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
-                    kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter);
-                } while(octreeIterator.moveRight());
+                do {
+                    const int numberOfNeighbors = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                    kernels->M2L( octreeIterator.getCurrentCell() , neighbors, numberOfNeighbors);
+                } while( octreeIterator.moveRight() );
                 octreeIterator.gotoLeft();
                 octreeIterator.moveDown();
             }
@@ -141,8 +141,8 @@ public:
         do{
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentList());
             // need the current particules and neighbors particules
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),OctreeHeight-1);
-            kernels->P2P( octreeIterator.getCurrentList() , neighbors, counter);
+            const int numberOfNeighbors = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex());
+            kernels->P2P( octreeIterator.getCurrentList() , neighbors, numberOfNeighbors);
         } while(octreeIterator.moveRight());
 
         FDEBUG( FDebug::Controller.write("Finished\n"); )
