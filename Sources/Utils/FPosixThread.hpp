@@ -1,15 +1,15 @@
-#ifndef FPOSIXTHREADED_HPP
-#define FPOSIXTHREADED_HPP
+#ifndef FPOSIXTHREAD_HPP
+#define FPOSIXTHREAD_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <pthread.h>
 
-#include "FAbstractThreaded.hpp"
+#include "FAbstractThread.hpp"
 #include "FDebug.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FPosixThreaded
+* @class FPosixThread
 * Please read the license
 *
 * This class enable posix threading.
@@ -17,8 +17,8 @@
 * @warning You have to put your class name as the template when inheriting.
 *
 * <code>
-* // Example with FPosixThreaded <br>
-* class TPosix : public FPosixThreaded<TOpen>{ <br>
+* // Example with FPosixThread <br>
+* class TPosix : public FPosixThread<TOpen>{ <br>
 * public: <br>
 *	void threadCallback(const int inThreadId, const int){ <br>
 *		printf("I am %d\n",inThreadId); <br>
@@ -30,7 +30,7 @@
 * </code>
 */
 template <class Derived, int DefaultThreadsNumber = 5>
-class FPosixThreaded : public FAbstractThreaded<Derived> {
+class FPosixThread : public FAbstractThread<Derived> {
 private:
 	mutable pthread_mutex_t mutex;		//< Posix mutex
 	mutable pthread_barrier_t pbarrier;	//< To use a barrier
@@ -40,7 +40,7 @@ public:
 	* Constructor
 	* just init mutex
 	*/
-	FPosixThreaded(){
+        FPosixThread(){
 		initMutex();
 	}
 
@@ -48,7 +48,7 @@ public:
 	* Copy constructor
 	* just init mutex
 	*/
-	FPosixThreaded(const FPosixThreaded&){
+        FPosixThread(const FPosixThread&){
 		initMutex();
 	}
 
@@ -56,7 +56,7 @@ public:
 	* Destructor
 	* just destroy mutex
 	*/
-	virtual ~FPosixThreaded(){
+        virtual ~FPosixThread(){
 		pthread_mutex_unlock(&this->mutex);
         	pthread_mutex_destroy(&this->mutex);
 	}
@@ -105,7 +105,7 @@ public:
         * @warning You have to implement threadCallback
 	*/
 	void executeThreads(const int inThreadsNumber = DefaultThreadsNumber){
-		executeThreads( &FPosixThreaded::threadCallback , inThreadsNumber);
+                executeThreads( &FPosixThread::threadCallback , inThreadsNumber);
 	}
 
 	/**
@@ -180,6 +180,6 @@ private:
 	}
 };
 
-#endif //FPOSIXTHREADED_HPP
+#endif //FPOSIXTHREAD_HPP
 
 // [--LICENSE--]

@@ -29,7 +29,7 @@ struct FMath{
     }
     /** To know if 2 values seems to be equal */
     template <class NumType>
-            static bool LookEqual(const NumType inV1, const NumType inV2){
+    static bool LookEqual(const NumType inV1, const NumType inV2){
         /*const double relTol = 0.00001;
 		const double absTol = 0.00001;
                 return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));*/
@@ -38,6 +38,18 @@ struct FMath{
     /** To get floor of a double */
     static double dfloor(const double inValue){
         return floor(inValue);
+    }
+    /** To get pow */
+    template <class NumType>
+    static NumType pow(const NumType inValue, long power){
+        NumType result = 1;
+        while(power-- > 0) result *= inValue;
+        return result;
+    }
+    /** To get max between 2 values */
+    template <class NumType>
+    static bool Between(const NumType inValue, const NumType inMin, const NumType inMax){
+        return ( inMin <= inValue && inValue < inMax ? true : false);
     }
 };
 

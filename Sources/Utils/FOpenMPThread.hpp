@@ -1,15 +1,15 @@
-#ifndef FOPENMPTHREADED_HPP
-#define FOPENMPTHREADED_HPP
+#ifndef FOPENMPTHREAD_HPP
+#define FOPENMPTHREAD_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <omp.h>
 
-#include "FAbstractThreaded.hpp"
+#include "FAbstractThread.hpp"
 #include "FDebug.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FOpenMPThreaded
+* @class FOpenMPThread
 * Please read the license
 *
 * This class enable openmp threading.
@@ -17,8 +17,8 @@
 * @warning You have to put your class name as the template when inheriting.
 *
 * <code>
-* // Example with FOpenMPThreaded <br>
-* class TOpen : public FOpenMPThreaded<TOpen>{ <br>
+* // Example with FOpenMPThread <br>
+* class TOpen : public FOpenMPThread<TOpen>{ <br>
 * public: <br>
 *	void threadCallback(const int inThreadId, const int){ <br>
 *		printf("I am %d\n",inThreadId); <br>
@@ -30,7 +30,7 @@
 * </code>
 */
 template <class Derived, int DefaultThreadsNumber = 5>
-class FOpenMPThreaded : public FAbstractThreaded<Derived> {
+class FOpenMPThread : public FAbstractThread<Derived> {
 private:
 	mutable omp_lock_t mutex;	//< openmp mutex
 
@@ -39,7 +39,7 @@ public:
 	* Constructor
 	* just init mutex
 	*/
-	FOpenMPThreaded(){
+        FOpenMPThread(){
 		omp_init_lock(&this->mutex);
 	}
 
@@ -47,7 +47,7 @@ public:
 	* Copy constructor
 	* just init mutex
 	*/
-	FOpenMPThreaded(const FOpenMPThreaded&){
+        FOpenMPThread(const FOpenMPThread&){
 		omp_init_lock(&this->mutex);
 	}
 
@@ -55,7 +55,7 @@ public:
 	* Destructor
 	* just destroy mutex
 	*/
-	virtual ~FOpenMPThreaded(){
+        virtual ~FOpenMPThread(){
 		omp_destroy_lock(&this->mutex);
 	}
 
@@ -118,6 +118,6 @@ protected:
 	}
 };
 
-#endif //FOPENMPTHREADED_HPP
+#endif //FOPENMPTHREAD_HPP
 
 // [--LICENSE--]

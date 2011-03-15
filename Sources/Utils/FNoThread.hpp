@@ -1,15 +1,15 @@
-#ifndef FNOTHREADED_HPP
-#define FNOTHREADED_HPP
+#ifndef FNOTHREAD_HPP
+#define FNOTHREAD_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <omp.h>
 
-#include "FAbstractThreaded.hpp"
+#include "FAbstractThread.hpp"
 #include "FDebug.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FNoThreaded
+* @class FNoThread
 * Please read the license
 *
 * This class do not use thread. It is used on system that do not allow openmp or posix threads,
@@ -18,8 +18,8 @@
 * @warning You have to put your class name as the template when inheriting.
 *
 * <code>
-* // Example with FNoThreaded <br>
-* class TNo : public FNoThreaded<TNo>{ <br>
+* // Example with FNoThread <br>
+* class TNo : public FNoThread<TNo>{ <br>
 * public: <br>
 *	void threadCallback(const int inThreadId, const int){ <br>
 *		printf("I am %d\n",inThreadId); <br>
@@ -31,7 +31,7 @@
 * </code>
 */
 template <class Derived, int DefaultThreadsNumber = 1>
-class FNoThreaded : public FAbstractThreaded<Derived> {
+class FNoThread : public FAbstractThread<Derived> {
 public:
 	/**
 	* This function is used to create inThreadsNumber threads with inCallback as the callback.
@@ -64,7 +64,7 @@ public:
 	};
 
 	/** Useless Virtual Destructor */
-	virtual ~FNoThreaded(){}
+        virtual ~FNoThread(){}
 
 protected:
 	/**
@@ -83,6 +83,6 @@ protected:
 	void barrier() const {}
 };
 
-#endif //FNOTHREADED_HPP
+#endif //FNoThread_HPP
 
 // [--LICENSE--]

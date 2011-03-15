@@ -60,7 +60,7 @@ protected:
         // Remove right useless part - used by child
         const MortonIndex fullIndex = index >> (3 * (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ) );
         // Remove left extra data part - used by parent
-        const MortonIndex treeLeafMask = ( (~0x00LL ^ (~0x00LL << (3 *  this->subOctreeHeight ))));
+        const MortonIndex treeLeafMask = ~(~0x00LL << (3 *  this->subOctreeHeight ));
         return treeLeafMask & fullIndex;
     }
 
@@ -71,12 +71,14 @@ protected:
      * when computing
      * @param arrayIndex the index at the leaf index of the new element
      */
-    void createPreviousCells(MortonIndex arrayIndex){
+    void createPreviousCells(MortonIndex arrayIndex, MortonIndex inLeafCellIndex){
         int indexLevel = this->subOctreeHeight - 1;
         while(indexLevel >= 0 && !this->cells[indexLevel][arrayIndex]){
             this->cells[indexLevel][arrayIndex] = new CellClass();
+            this->cells[indexLevel][arrayIndex]->setMortonIndex(inLeafCellIndex);
             --indexLevel;
             arrayIndex >>= 3;
+            inLeafCellIndex >>= 3;
         }
     }
 
@@ -85,8 +87,8 @@ protected:
       * for example it updates the leaf array marges and calls createPreviousCells()
       * @param arrayIndex the position of the new leaf in the leafs array
       */
-    void newLeafInserted(const long arrayIndex){
-        createPreviousCells(arrayIndex);
+    void newLeafInserted(const long arrayIndex, const MortonIndex inLeafCellIndex){
+        createPreviousCells(arrayIndex,inLeafCellIndex);
         // Update if this is the bottom left
         if(arrayIndex < this->leftLeafIndex) this->leftLeafIndex = arrayIndex;
         if(arrayIndex > this->rightLeafIndex) this->rightLeafIndex = arrayIndex;
@@ -103,7 +105,7 @@ public:
     FAbstractSubOctree(FAbstractSubOctree* const inParent, const long inIndexInParent,
                        const int inSubOctreeHeight, const int inSubOctreePosition) :
                         parent( inParent ), indexInParent(inIndexInParent), subOctreePosition( inSubOctreePosition ),
-                        subOctreeHeight( inSubOctreeHeight ), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(0) {
+                        subOctreeHeight( inSubOctreeHeight ), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
         assert(this->cells, "Allocation failled", __LINE__, __FILE__);
@@ -277,7 +279,7 @@ public:
         // is there already a leaf?
         if( !this->leafs[arrayIndex] ){
             this->leafs[arrayIndex] = new FList<ParticuleClass*>();
-            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex );
+            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex , index);
         }
         // add particule to leaf list
         this->leafs[arrayIndex]->pushFront(inParticule);
@@ -371,7 +373,7 @@ public:
             }
 
             // We need to inform parent class
-            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex );
+            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ) );
         }
         // Ask next suboctree to insert the particule
         this->subleafs[arrayIndex]->insert( index, inParticule, inTreeHeight);

@@ -1,5 +1,5 @@
-#ifndef FABSTRACTTHREADED_HPP
-#define FABSTRACTTHREADED_HPP
+#ifndef FABSTRACTTHREAD_HPP
+#define FABSTRACTTHREAD_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 /**
@@ -12,8 +12,8 @@
 *
 * Please refere to testThread.cpp to see an example.
 * <code>
-* // Example with FOpenMPThreaded <br>
-* class TOpen : public FOpenMPThreaded<TOpen>{ <br>
+* // Example with FOpenMPThread <br>
+* class TOpen : public FOpenMPThread<TOpen>{ <br>
 * public: <br>
 *	void threadCallback(const int inThreadId, const int){ <br>
 *		printf("I am %d\n",inThreadId); <br>
@@ -25,7 +25,7 @@
 * </code>
 */
 template <class Derived>
-class FAbstractThreaded{
+class FAbstractThread{
 public:
 	/**
 	* This function is used to create inThreadsNumber threads with inCallback as the callback.
@@ -50,7 +50,7 @@ public:
 	virtual void threadCallback(const int inThreadId,const int inThreadNumbers) = 0;
 
 	/** Useless Virtual Destructor */
-	virtual ~FAbstractThreaded(){}
+        virtual ~FAbstractThread(){}
 
 protected:
 	/**
@@ -69,6 +69,6 @@ protected:
 	virtual void barrier() const = 0;
 };
 
-#endif //FABSTRACTTHREADED_HPP
+#endif //FABSTRACTTHREAD_HPP
 
 // [--LICENSE--]

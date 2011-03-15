@@ -147,7 +147,38 @@ public:
 		return index;
 	}
 
+        /** This function set the position of the current object using a morton index
+          * @param inIndex the morton index to compute position
+          * @param the level of the morton index
+          */
+        void setPositionFromMorton(MortonIndex inIndex, const int inLevel){
+            MortonIndex mask = 0x1LL;
+
+            this->x = 0;
+            this->y = 0;
+            this->z = 0;
+
+            for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
+                    z |= (inIndex & mask);
+                    inIndex >>= 1;
+                    y |= (inIndex & mask);
+                    inIndex >>= 1;
+                    x |= (inIndex & mask);
+
+                    mask <<= 1;
+            }
+
+        }
+
+        /** Test equal operator
+          * @param other the coordinate to compare
+          * @return true if other & current object have same position
+          */
+        bool operator==(const FTreeCoordinate& other){
+            return x == other.x && y == other.y && z == other.z;
+        }
 };
+
 
 
 #endif //FTREECOORDINATE_HPP

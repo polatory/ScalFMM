@@ -15,14 +15,12 @@
 #include "../Sources/Utils/F3DPosition.hpp"
 
 #include "../Sources/Core/FBasicParticule.hpp"
+#include "../Sources/Core/FBasicCell.hpp"
 
 #include "../Sources/Files/FFMALoader.hpp"
 
 // Compile by : g++ testLoaderFMA.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testLoaderFMA.exe
 
-// Fake cell class
-class TestCell{
-};
 
 /**
   * In this file we show an example of BasicParticule and BasicLoader use
@@ -47,7 +45,7 @@ int main(int , char ** ){
     }
 
     // otree
-    FOctree<FBasicParticule, TestCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FBasicParticule, FBasicCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;

@@ -55,7 +55,7 @@ private:
 	FAbstractApplication(const FAbstractApplication&):argc(0), argv(0){}
 	
 	/** Forbiden (private) copy */
-	FAbstractApplication& operator=(const FAbstractApplication&){}
+        FAbstractApplication& operator=(const FAbstractApplication&){return *this;}
 
 public:
 	/**

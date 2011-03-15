@@ -1,9 +1,9 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-#include "../Sources/Utils/FAbstractThreaded.hpp"
-#include "../Sources/Utils/FOpenMPThreaded.hpp"
-#include "../Sources/Utils/FPosixThreaded.hpp"
-#include "../Sources/Utils/FNoThreaded.hpp"
+#include "../Sources/Utils/FAbstractThread.hpp"
+#include "../Sources/Utils/FOpenMPThread.hpp"
+#include "../Sources/Utils/FPosixThread.hpp"
+#include "../Sources/Utils/FNoThread.hpp"
 
 #include <stdio.h>
 
@@ -17,7 +17,7 @@
 /**
 * TOpen is an example of the FOpenMPThreaded implementation class
 */
-class TOpen : public FOpenMPThreaded<TOpen>{
+class TOpen : public FOpenMPThread<TOpen>{
 public:
 	void threadCallback(const int inThreadId, const int inThreadsNum){
 		printf("I am %d on %d, \n",inThreadId, inThreadsNum);
@@ -37,7 +37,7 @@ public:
 /**
 * TPosix is an example of the FPosixThreaded implementation class
 */
-class TPosix : public FPosixThreaded<TPosix>{
+class TPosix : public FPosixThread<TPosix>{
 public:
 	void threadCallback(const int inThreadId, const int inThreadsNum){
 		printf("I am %d on %d, \n",inThreadId, inThreadsNum);

@@ -15,6 +15,7 @@
 #include "../Sources/Utils/F3DPosition.hpp"
 
 #include "../Sources/Core/FAbstractParticule.hpp"
+#include "../Sources/Core/FAbstractCell.hpp"
 
 // We use openmp to count time (portable and easy to manage)
 // Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testOctree.exe
@@ -42,7 +43,16 @@ public:
     }
 };
 // Fake cell class
-class TestCell{
+class TestCell : public FAbstractCell {
+    MortonIndex index;
+public:
+    MortonIndex getMortonIndex() const {
+        return index;
+    }
+
+    void setMortonIndex(const MortonIndex inIndex) {
+        index = inIndex;
+    }
 };
 
 
@@ -54,7 +64,7 @@ int main(int , char ** ){
 
 
         // -----------------------------------------------------
-        std::cout << "Creating particules ..." << std::endl;
+        std::cout << "Creating " << NbPart << " particules ..." << std::endl;
         const double CreatingStartTime = omp_get_wtime();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules.pushFront(new TestParticule(F3DPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX)));

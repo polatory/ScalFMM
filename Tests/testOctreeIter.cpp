@@ -15,6 +15,7 @@
 #include "../Sources/Utils/F3DPosition.hpp"
 
 #include "../Sources/Core/FAbstractParticule.hpp"
+#include "../Sources/Core/FAbstractCell.hpp"
 
 // We use openmp to count time (portable and easy to manage)
 // Compile by : g++ testOctreeIter.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testOctreeIter.exe
@@ -69,9 +70,17 @@ public:
 };
 
 // Fake cell class
-class TestCell{
-};
+class TestCell : public FAbstractCell {
+    MortonIndex index;
+public:
+    MortonIndex getMortonIndex() const {
+        return index;
+    }
 
+    void setMortonIndex(const MortonIndex inIndex) {
+        index = inIndex;
+    }
+};
 
 int main(int , char ** ){
         const int NbLevels = 10;
