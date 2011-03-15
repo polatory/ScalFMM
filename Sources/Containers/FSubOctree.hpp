@@ -160,27 +160,27 @@ public:
     /** Suboctree height accessor (leaf level + 1)
       * @return subOctreeHeight */
     int getSubOctreeHeight() const{
-        return this->subOctreeHeight;
+        return subOctreeHeight;
     }
 
     /** Suboctree position in the real tree
       * @return subOctreePosition */
     int getSubOctreePosition() const {
-        return this->subOctreePosition;
+        return subOctreePosition;
     }
 
     /** Return the more left leaf index
       * the smallest index on the leafs array
       * @return leftLeafIndex */
     long getLeftLeafIndex() const {
-        return this->leftLeafIndex;
+        return leftLeafIndex;
     }
 
     /** Return the more right leaf index
       * the biggest index on the leafs array
       * @return rightLeafIndex */
     long getRightLeafIndex() const {
-        return this->rightLeafIndex;
+        return rightLeafIndex;
     }
 
     /** Return the array of cells at a specious index
@@ -188,19 +188,19 @@ public:
       * @return cells[level] */
     CellClass** cellsAt(const int level){
         assert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
-        return this->cells[level];
+        return cells[level];
     }
 
     /** To know if it is the root suboctree
       * @return true if has parent otherwise return false */
     bool hasParent() const {
-        return this->parent;
+        return parent;
     }
 
     /** To get access to the parent suboctree
       * @return parent */
     FAbstractSubOctree* getParent(){
-        return this->parent;
+        return parent;
     }
 
     /** To get the index of the current suboctree in the parent leafs array
@@ -208,7 +208,7 @@ public:
       * in this suboctree
       * @return indexInParent */
     long getIndexInParent() const{
-        return this->indexInParent;
+        return indexInParent;
     }
 };
 

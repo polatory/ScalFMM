@@ -46,7 +46,7 @@ public:
     * @return the position of the current cell
     */
     F3DPosition getPosition() const {
-        return this->pos;
+        return pos;
     }
 
     /**
@@ -54,7 +54,7 @@ public:
       * @param inPos the position given by the basic loader
       */
     void setPosition(const F3DPosition& inPos) {
-        this->pos = inPos;
+        pos = inPos;
     }
 };
 

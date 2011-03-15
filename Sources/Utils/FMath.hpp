@@ -12,6 +12,9 @@
 * Propose basic math functions or indirections
 */
 struct FMath{
+    static const double FPi;
+    static const double FPiDiv2;
+
     /** To get absolute value */
     template <class NumType>
             static NumType Abs(const NumType inV){
@@ -51,8 +54,22 @@ struct FMath{
     static bool Between(const NumType inValue, const NumType inMin, const NumType inMax){
         return ( inMin <= inValue && inValue < inMax ? true : false);
     }
+    /** To get sqrt of a double */
+    static double Sqrt(const double inValue){
+        return sqrt(inValue);
+    }
+    /** To get sqrt of a double */
+    static double Atan2(const double inValue1,const double inValue2){
+        return atan2(inValue1,inValue2);
+    }
+    /** To get sqrt of a double */
+    static double Sin(const double inValue){
+        return sin(inValue);
+    }
 };
 
+const double FMath::FPi = 3.14159265358979323846;
+const double FMath::FPiDiv2 = 1.57079632679489661923;
 
 #endif //FMATH_HPP
 

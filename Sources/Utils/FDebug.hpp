@@ -32,7 +32,8 @@ private:
 	std::ostream* stream;	//< Standart c++ ostream
 
 	/** Default constructor forbiden */
-        FDebug() : stream(&std::cout) {
+	FDebug(){
+		stream = &std::cout;
 	}
 
 	/** Default destructor forbiden */
@@ -46,8 +47,8 @@ private:
 	* after this call stream is useless
 	*/
 	void close(){
-                this->stream->flush();
-                if(this->stream != &std::cout) delete(this->stream);
+		stream->flush();
+		if(stream != &std::cout) delete(stream);
 	}
 
 	/**
@@ -77,7 +78,7 @@ public:
 		std::ofstream* const file = new std::ofstream();
 		file->open(filename);
 
-                this->stream = file;
+		stream = file;
 	}
 
 	/**
@@ -85,7 +86,7 @@ public:
 	*/
 	void writeToCout(){
 		close();
-                this->stream = &std::cout;
+		stream = &std::cout;
 	}
 
 	/**
@@ -95,7 +96,7 @@ public:
 	*/
 	template <class T>
 	FDebug& operator<<(const T& inMessage){
-                (*this->stream) << inMessage;
+		(*stream) << inMessage;
 		return *this;
 	}
 
@@ -106,7 +107,7 @@ public:
 	*/
 	template <class T>
 	FDebug& write(const T& inMessage){
-                (*this->stream) << inMessage;
+		(*stream) << inMessage;
 		return *this;
 	}
 
@@ -127,7 +128,7 @@ public:
 		oss << "Message from " << inFilePosition << " (at line " << inLinePosition <<")\n";
 		oss << ">> " << inMessage << "\n";
 
-                (*this->stream) << oss.str();
+		(*stream) << oss.str();
 		return *this;
 	}
 
@@ -148,7 +149,7 @@ public:
 		std::ostringstream oss;
 		oss << "[Value] " << inVariable << " = " << inValue << " at line " << inLinePosition <<" (file " << inFilePosition << ")\n";
 
-                (*this->stream) << oss.str();
+		(*stream) << oss.str();
 		return *this;
 	}
 

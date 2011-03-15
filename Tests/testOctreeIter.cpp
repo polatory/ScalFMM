@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include <omp.h>
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
@@ -18,7 +18,7 @@
 #include "../Sources/Core/FAbstractCell.hpp"
 
 // We use openmp to count time (portable and easy to manage)
-// Compile by : g++ testOctreeIter.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testOctreeIter.exe
+// Compile by : g++ testOctreeIter.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testOctreeIter.exe
 
 /**
 * In this file we show how to use octree with iteration
@@ -87,18 +87,17 @@ int main(int , char ** ){
         const int NbSubLevels = 3;
         const long NbPart = 2E6;
         FList<TestParticule*> particules;
-        FTic counter;
 
         srand ( 1 ); // volontary set seed to constant
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
-        counter.tic();
+        const double CreatingStartTime = omp_get_wtime();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules.pushFront(new TestParticule(F3DPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX)));
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        const double CreatingEndTime = omp_get_wtime();
+        std::cout << "Done  " << "(" << (CreatingEndTime-CreatingStartTime) << "s)." << std::endl;
         // -----------------------------------------------------
 
         FOctree<TestParticule, TestCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
@@ -106,17 +105,17 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
-        counter.tic();
+        const double InsertingStartTime = omp_get_wtime();
         while( iter.isValide() ){
             tree.insert(iter.value());
             iter.progress();
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        const double InsertingEndTime = omp_get_wtime();
+        std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << "s)." << std::endl;
         // -----------------------------------------------------
 
         std::cout << "Itering on particules ..." << std::endl;
-        counter.tic();
+        const double InteringStartTime = omp_get_wtime();
 
         FOctree<TestParticule, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
@@ -130,17 +129,17 @@ int main(int , char ** ){
             octreeIterator.gotoLeft();
             std::cout << "Next level (" << counter << ")...\n";
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        const double IteringEndTime = omp_get_wtime();
+        std::cout << "Done  " << "(" << (IteringEndTime-InteringStartTime) << "s)." << std::endl;
 
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
-        counter.tic();
+        const double DeletingStartTime = omp_get_wtime();
         while(particules.getSize()){
             delete particules.popFront();
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        const double DeletingEndTime = omp_get_wtime();
+        std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << "s)." << std::endl;
         // -----------------------------------------------------
 
 	return 0;

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include <omp.h>
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
@@ -19,7 +19,7 @@
 
 #include "../Sources/Files/FFMALoader.hpp"
 
-// Compile by : g++ testLoaderFMA.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMA.exe
+// Compile by : g++ testLoaderFMA.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testLoaderFMA.exe
 
 
 /**
@@ -36,7 +36,6 @@ int main(int , char ** ){
     FList<FBasicParticule*> particules;
     // Use testLoaderCreate.exe to create this file
     const char* const filename = "testLoaderFMA.fma";
-    FTic counter;
 
     // open basic particules loader
     FFMALoader<FBasicParticule> loader(filename);
@@ -50,24 +49,24 @@ int main(int , char ** ){
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
-    counter.tic();
+    const double InsertingStartTime = omp_get_wtime();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
         FBasicParticule* const part = new FBasicParticule();
         particules.pushFront(part);
         loader.fillParticule(part);
         tree.insert(part);
     }
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
+    const double InsertingEndTime = omp_get_wtime();
+    std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << ")." << std::endl;
 
     // -----------------------------------------------------
     std::cout << "Deleting particules ..." << std::endl;
-    counter.tic();
+    const double DeletingStartTime = omp_get_wtime();
     while(particules.getSize()){
         delete particules.popFront();
     }
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
+    const double DeletingEndTime = omp_get_wtime();
+    std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << ")." << std::endl;
     // -----------------------------------------------------
 
     return 0;

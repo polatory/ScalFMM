@@ -17,7 +17,7 @@
 #include "../Sources/Core/FBasicCell.hpp"
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
-#include "../Sources/Core/FSimpleKernels.hpp"
+#include "../Sources/Core/FFmbKernels.hpp"
 
 // We use openmp to count time (portable and easy to manage)
 // Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
@@ -146,6 +146,7 @@ int main(int , char ** ){
         const int NbLevels = 10;//10;
         const int NbSubLevels = 3;//3
         const long NbPart = 20000;//2E6;
+        const int BoxWidth = 2;//1
         MyTestParticule* particules = new MyTestParticule[NbPart];
 
         srand ( 1 ); // volontary set seed to constant
@@ -161,7 +162,7 @@ int main(int , char ** ){
         std::cout << "Done  " << "(" << (CreatingEndTime-CreatingStartTime) << "s)." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> tree(BoxWidth,F3DPosition(0.0,0.0,0.0));
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
@@ -176,43 +177,12 @@ int main(int , char ** ){
         std::cout << "Working on particules ..." << std::endl;
         const double WorkingStartTime = omp_get_wtime();
 
-        MyTestKernels<MyTestParticule, MyTestCell> kernels;
-        FFMMAlgorithm<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
-        algo.execute();
+        FFmbKernels<MyTestParticule, MyTestCell> kernels(NbLevels,BoxWidth);
+        //FFMMAlgorithm<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
+        //algo.execute();
 
         const double WorkingEndTime = omp_get_wtime();
         std::cout << "Done  " << "(" << (WorkingEndTime-WorkingStartTime) << "s)." << std::endl;
-
-        // -----------------------------------------------------
-
-        std::cout << "Check Result\n";
-        { // Check that each particule has been summed with all other
-            FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-            do{
-                FList<MyTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
-                while( iter.isValide() ){
-                    // If a particules has been impacted by less than NbPart - 1 (the current particule)
-                    // there is a problem
-                    if(iter.value()->getDataDown() != NbPart - 1){
-                        std::cout << "Problem : " << iter.value()->getDataDown() << "\n";
-                    }
-                    iter.progress();
-                }
-            } while(octreeIterator.moveRight());
-        }
-        { // Ceck if there is number of NbPart summed at level 1
-            FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.moveDown();
-            long res = 0;
-            do{
-                res += octreeIterator.getCurrentCell()->getDataUp();
-            } while(octreeIterator.moveRight());
-            if(res != NbPart){
-                std::cout << "Problem at level 1 : " << res << "\n";
-            }
-        }
-        std::cout << "Done\n";
 
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
