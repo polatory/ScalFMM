@@ -19,6 +19,9 @@ int main(void){
 	// Write a developer information
 	FDEBUG( FDebug::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
 
+	// Flush
+	FDEBUG( FDebug::Controller << FDebug::Flush );
+
 	// Change stream type
 	FDEBUG( FDebug::Controller.writeToFile("testDebug.out.temp"); )
 	FDEBUG( FDebug::Controller << "Hello Wordl 2 the return\n");

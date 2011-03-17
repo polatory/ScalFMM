@@ -52,6 +52,30 @@ public:
     void setReal(const double inReal) {
         this->real = inReal;
     }
+
+    FComplexe& operator+=(const FComplexe& other){
+        this->real += other.real;
+        this->imag += other.imag;
+        return *this;
+    }
+
+    void mulRealAndImag(const double inValue){
+        this->imag *= inValue;
+        this->real *= inValue;
+    }
+
+    void inc(const double inIncReal, const double inIncImag){
+        this->real += inIncReal;
+        this->imag += inIncImag;
+    }
+
+    void incReal(const double inIncReal){
+        this->real += inIncReal;
+    }
+
+    void incImag(const double inIncImag){
+        this->imag += inIncImag;
+    }
 };
 
 

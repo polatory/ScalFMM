@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <omp.h>
+#include "../Sources/Utils/FTic.hpp"
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
@@ -19,7 +19,7 @@
 
 #include "../Sources/Files/FBasicLoader.hpp"
 
-// Compile by : g++ testLoader.cpp ../Sources/Utils/FAssertable.cpp -O2 -lgomp -fopenmp -o testLoader.exe
+// Compile by : g++ testLoader.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoader.exe
 
 
 /**
@@ -36,6 +36,7 @@ int main(int , char ** ){
     FList<FBasicParticule*> particules;
     // Use testLoaderCreate.exe to create this file
     const char* const filename = "testLoader.basic.temp";
+    FTic counter;
 
     // open basic particules loader
     FBasicLoader<FBasicParticule> loader(filename);
@@ -49,24 +50,24 @@ int main(int , char ** ){
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
-    const double InsertingStartTime = omp_get_wtime();
+    counter.tic();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
         FBasicParticule* const part = new FBasicParticule();
         particules.pushFront(part);
         loader.fillParticule(part);
         tree.insert(part);
     }
-    const double InsertingEndTime = omp_get_wtime();
-    std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << ")." << std::endl;
+    counter.tac();
+    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
     // -----------------------------------------------------
     std::cout << "Deleting particules ..." << std::endl;
-    const double DeletingStartTime = omp_get_wtime();
+    counter.tic();
     while(particules.getSize()){
         delete particules.popFront();
     }
-    const double DeletingEndTime = omp_get_wtime();
-    std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << ")." << std::endl;
+    counter.tac();
+    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
     // -----------------------------------------------------
 
     return 0;

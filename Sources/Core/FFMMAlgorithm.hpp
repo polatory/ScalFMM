@@ -4,10 +4,12 @@
 
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FDebug.hpp"
+#include "../Utils/FTic.hpp"
 
 #include "../Containers/FOctree.hpp"
 
 #include "FAbstractKernels.hpp"
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -22,6 +24,8 @@ template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHe
 class FFMMAlgorithm : public FAssertable{
     FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const tree;    //< The octree to work on
     FAbstractKernels<ParticuleClass, CellClass>* const kernels;                     //< The kernels
+
+    FDEBUG(FTic counter);
 
 public:	
     /** The constructor need the octree and the kernels used for computation
@@ -56,7 +60,8 @@ public:
 
     /** P2M */
     void bottomPass(){
-        FDEBUG( FDebug::Controller.write("Start Bottom Pass\n") );
+        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
+        FDEBUG(counter.tic(););
 
         typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
         // Iterate on leafs
@@ -67,12 +72,14 @@ public:
             kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentList());
         } while(octreeIterator.moveRight());
 
-        FDEBUG( FDebug::Controller.write("Finished\n"); )
+        FDEBUG(counter.tac(););
+        FDEBUG( FDebug::Controller << "\tFinished (" << counter.elapsed() << "s)\n"; )
     }
 
     /** M2M */
     void upwardPass(){
-        FDEBUG( FDebug::Controller.write("Start Upward Pass\n"); );
+        FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
+        FDEBUG(counter.tic(););
 
         typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
@@ -83,18 +90,20 @@ public:
             do{
                 // We need the current cell and the child
                 // child is an array (of 8 child) that may be null
-                kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild());
+                kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
             } while(octreeIterator.moveRight());
             octreeIterator.moveUp();
             octreeIterator.gotoLeft();
         }
 
-        FDEBUG( FDebug::Controller.write("Finished\n"); )
+        FDEBUG(counter.tac(););
+        FDEBUG( FDebug::Controller << "\tFinished (" << counter.elapsed() << "s)\n"; )
     }
 
     /** M2L L2L */
     void downardPass(){
-        FDEBUG( FDebug::Controller.write("Start Downward Pass\n"); );
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FDEBUG(counter.tic(););
 
         { // first M2L
             typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
@@ -105,12 +114,17 @@ public:
                 // for each cells
                 do{
                     const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
-                    kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter);
+                    kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                 } while(octreeIterator.moveRight());
                 octreeIterator.gotoLeft();
                 octreeIterator.moveDown();
             }
         }
+        FDEBUG(counter.tac(););
+        FDEBUG( FDebug::Controller << "\tFinished (" << counter.elapsed() << "s)\n"; )
+
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FDEBUG(counter.tic(););
         { // second L2L
             typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
@@ -119,19 +133,22 @@ public:
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
                 // for each cells
                 do{
-                    kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild());
+                    kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 } while(octreeIterator.moveRight());
                 octreeIterator.gotoLeft();
                 octreeIterator.moveDown();
             }
         }
-        FDEBUG( FDebug::Controller.write("Finished\n"); )
+
+        FDEBUG(counter.tac(););
+        FDEBUG( FDebug::Controller << "\tFinished (" << counter.elapsed() << "s)\n"; )
 
     }
 
     /** P2P */
     void directPass(){
-        FDEBUG( FDebug::Controller.write("Start Direct Pass\n"); );
+        FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
+        FDEBUG(counter.tic(););
 
         typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
@@ -145,7 +162,8 @@ public:
             kernels->P2P( octreeIterator.getCurrentList() , neighbors, counter);
         } while(octreeIterator.moveRight());
 
-        FDEBUG( FDebug::Controller.write("Finished\n"); )
+        FDEBUG(counter.tac(););
+        FDEBUG( FDebug::Controller << "\tFinished (" << counter.elapsed() << "s)\n"; )
 
     }
 

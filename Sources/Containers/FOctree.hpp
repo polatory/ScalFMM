@@ -106,7 +106,7 @@ public:
 	*/
 	void insert(ParticuleClass* const inParticule){
 		const MortonIndex particuleIndex = getLeafMortonFromPosition(inParticule->getPosition());
-		root.insert( particuleIndex, inParticule, height);
+                root.insert( particuleIndex, inParticule, height, this->boxWidthAtLevel);
 	}
 
 

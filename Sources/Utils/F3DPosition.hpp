@@ -5,6 +5,7 @@
 // To get memcpy
 #include <cstring>
 
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class F3DPosition
@@ -131,6 +132,30 @@ public:
                 return *this;
 	}
 
+        /**
+        * Subtract to all dim the other position
+        * @param other the value to substract
+        * @return the current object after being subtracted
+        */
+        F3DPosition& operator-=(const F3DPosition& other){
+                this->x -= other.x;
+                this->y -= other.y;
+                this->z -= other.z;
+                return *this;
+        }
+
+        /**
+        * Affect to all dim the other position
+        * @param other the value to afect
+        * @return the current object after being affected
+        */
+        F3DPosition& operator+=(const F3DPosition& other){
+                this->x += other.x;
+                this->y += other.y;
+                this->z += other.z;
+                return *this;
+        }
+
 };
 
 /**
@@ -157,6 +182,32 @@ F3DPosition operator+(const F3DPosition& inPosition, const double inValue){
 	F3DPosition position(inPosition);
 	position += inValue;
 	return position;
+}
+
+/**
+* Operator F3Position minus F3Position
+* This substract one from anther
+* @param inPosition the position to reduce
+* @param inOther the position to decrease/substract inPosition
+* @return the resulting position
+*/
+F3DPosition operator-(const F3DPosition& inPosition, const F3DPosition& inOther){
+        F3DPosition position(inPosition);
+        position -= inOther;
+        return position;
+}
+
+/**
+* Operator F3Position plus F3Position
+* This substract one from anther
+* @param inPosition the position to reduce
+* @param inOther the position to increase inPosition
+* @return the resulting position
+*/
+F3DPosition operator+(const F3DPosition& inPosition, const F3DPosition& inOther){
+        F3DPosition position(inPosition);
+        position += inOther;
+        return position;
 }
 
 #endif //F3DPOSITION_HPP

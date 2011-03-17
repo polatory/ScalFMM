@@ -15,18 +15,11 @@
 class FBasicCell : public FAbstractCell {
 protected:
     MortonIndex index;    //< Cell's position in the tree
+    F3DPosition position; //< Cell's spacial position
 
 public:
-    /**
-    * Constructor with a position
-    * @param inIndex the morton index
-    */
-    FBasicCell(const MortonIndex inIndex) : index(inIndex) {
-    }
-
-
     /** Default constructor */
-    FBasicCell(){
+    FBasicCell() : index(0), position(0,0,0){
     }
 
     /** Default destructor */
@@ -38,7 +31,7 @@ public:
     * @return the position of the current cell
     */
     MortonIndex getMortonIndex() const {
-        return index;
+        return this->index;
     }
 
     /**
@@ -46,7 +39,21 @@ public:
       * @param inPos the position given by the basic loader
       */
     void setMortonIndex(const MortonIndex inIndex) {
-        index = inIndex;
+        this->index = inIndex;
+    }
+
+    /**
+    * @return the position of the current cell
+    */
+    F3DPosition getPosition() const{
+        return this->position;
+    }
+
+    /**
+    * @param inPosition the position of the current cell
+    */
+    void setPosition(const F3DPosition& inPosition){
+        this->position = inPosition;
     }
 };
 

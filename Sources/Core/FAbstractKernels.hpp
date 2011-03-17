@@ -23,13 +23,13 @@ public:
     virtual void P2M(CellClass* const pole, FList<ParticuleClass*>* const particules) = 0;
 
     /** M2M */
-    virtual void M2M(CellClass* const pole, CellClass** const child) = 0;
+    virtual void M2M(CellClass* const pole, CellClass** const child, const int inLevel) = 0;
 
     /** M2L */
-    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size) = 0;
+    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size, const int inLevel) = 0;
 
     /** L2L */
-    virtual void L2L(CellClass* const pole, CellClass** const child) = 0;
+    virtual void L2L(CellClass* const pole, CellClass** const child, const int inLevel) = 0;
 
     /** L2P */
     virtual void L2P(CellClass* const pole, FList<ParticuleClass*>* const particules) = 0;

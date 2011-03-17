@@ -33,7 +33,7 @@ private:
 
 	/** Default constructor forbiden */
 	FDebug(){
-		stream = &std::cout;
+                this->stream = &std::cout;
 	}
 
 	/** Default destructor forbiden */
@@ -47,8 +47,8 @@ private:
 	* after this call stream is useless
 	*/
 	void close(){
-		stream->flush();
-		if(stream != &std::cout) delete(stream);
+                flush();
+                if(this->stream != &std::cout) delete(this->stream);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public:
 		std::ofstream* const file = new std::ofstream();
 		file->open(filename);
 
-		stream = file;
+                this->stream = file;
 	}
 
 	/**
@@ -86,7 +86,7 @@ public:
 	*/
 	void writeToCout(){
 		close();
-		stream = &std::cout;
+                this->stream = &std::cout;
 	}
 
 	/**
@@ -96,8 +96,7 @@ public:
 	*/
 	template <class T>
 	FDebug& operator<<(const T& inMessage){
-		(*stream) << inMessage;
-		return *this;
+                return write(inMessage);
 	}
 
 	/**
@@ -107,9 +106,30 @@ public:
 	*/
 	template <class T>
 	FDebug& write(const T& inMessage){
-		(*stream) << inMessage;
+                (*this->stream) << inMessage;
 		return *this;
 	}
+
+        /** Flush data into stream */
+        void flush(){
+            this->stream->flush();
+        }
+
+        enum FlushType{
+            Flush,
+            FlushWithLine,
+        };
+
+        /**
+        * stream operator to flush debug data
+        * @param inType flush type
+        * @return current FDebug
+        */
+        FDebug& write(const FlushType inType){
+            if(inType == FlushWithLine) (*this->stream) << '\n';
+            flush();
+            return *this;
+        }
 
 	/**
 	* to write debug data with line & file
@@ -128,7 +148,7 @@ public:
 		oss << "Message from " << inFilePosition << " (at line " << inLinePosition <<")\n";
 		oss << ">> " << inMessage << "\n";
 
-		(*stream) << oss.str();
+                (*this->stream) << oss.str();
 		return *this;
 	}
 
@@ -149,7 +169,7 @@ public:
 		std::ostringstream oss;
 		oss << "[Value] " << inVariable << " = " << inValue << " at line " << inLinePosition <<" (file " << inFilePosition << ")\n";
 
-		(*stream) << oss.str();
+                (*this->stream) << oss.str();
 		return *this;
 	}
 

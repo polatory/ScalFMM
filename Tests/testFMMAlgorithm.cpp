@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <omp.h>
+#include "../Sources/Utils/FTic.hpp"
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
@@ -19,8 +19,7 @@
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FSimpleKernels.hpp"
 
-// We use openmp to count time (portable and easy to manage)
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFMMAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -57,10 +56,6 @@ class MyTestCell : public FBasicCell {
     // To store data during upward and downward pass
     long dataUp, dataDown;
 public:
-    MyTestCell(const MortonIndex inIndex) : FBasicCell(inIndex) {
-        this->dataUp = 0;
-        this->dataDown = 0;
-    }
     MyTestCell(){
         this->dataUp = 0;
         this->dataDown = 0;
@@ -92,7 +87,7 @@ public:
         pole->setDataUp(particules->getSize());
     }
     // During upward
-    virtual void M2M(CellClass* const pole, CellClass** const child) {
+    virtual void M2M(CellClass* const pole, CellClass** const child, const int inLevel) {
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -101,14 +96,14 @@ public:
         }
     }
     // Before Downward
-    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size) {
+    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size, const int inLevel) {
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){
             pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
         }
     }
     // During Downward
-    virtual void L2L(CellClass* const local, CellClass** const child) {
+    virtual void L2L(CellClass* const local, CellClass** const child, const int inLevel) {
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -147,41 +142,42 @@ int main(int , char ** ){
         const int NbSubLevels = 3;//3
         const long NbPart = 20000;//2E6;
         MyTestParticule* particules = new MyTestParticule[NbPart];
+        FTic counter;
 
         srand ( 1 ); // volontary set seed to constant
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
-        const double CreatingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             new (&particules[idxPart]) MyTestParticule(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX);
         }
 
-        const double CreatingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (CreatingEndTime-CreatingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
-        const double InsertingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             tree.insert(&particules[idxPart]);
         }
-        const double InsertingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (InsertingEndTime-InsertingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         std::cout << "Working on particules ..." << std::endl;
-        const double WorkingStartTime = omp_get_wtime();
+        counter.tic();
 
         MyTestKernels<MyTestParticule, MyTestCell> kernels;
         FFMMAlgorithm<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
         algo.execute();
 
-        const double WorkingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (WorkingEndTime-WorkingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
         // -----------------------------------------------------
 
@@ -216,13 +212,13 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
-        const double DeletingStartTime = omp_get_wtime();
+        counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particules[idxPart].~MyTestParticule();
         }
         delete [] particules;
-        const double DeletingEndTime = omp_get_wtime();
-        std::cout << "Done  " << "(" << (DeletingEndTime-DeletingStartTime) << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
 	return 0;

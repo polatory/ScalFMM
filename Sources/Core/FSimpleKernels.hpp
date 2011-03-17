@@ -31,17 +31,17 @@ public:
     }
 
     /** Print the morton index */
-    virtual void M2M(CellClass* const pole, CellClass** const child) {
+    virtual void M2M(CellClass* const pole, CellClass** const child, const int inLevel) {
         FDEBUG( FDebug::Controller << "M2M : " << pole->getMortonIndex() << "\n" );
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size) {
+    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size, const int inLevel) {
         FDEBUG( FDebug::Controller << "M2L : " << pole->getMortonIndex() << " (" << size << ")\n" );
     }
 
     /** Print the morton index */
-    virtual void L2L(CellClass* const pole, CellClass** const child) {
+    virtual void L2L(CellClass* const pole, CellClass** const child, const int inLevel) {
         FDEBUG( FDebug::Controller << "L2L : " << pole->getMortonIndex() << "\n" );
     }
 
