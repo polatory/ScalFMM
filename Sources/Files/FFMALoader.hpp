@@ -109,6 +109,7 @@ public:
         double x,y,z,data;
         this->file >> x >> y >> z >> data;
         inParticule->setPosition(F3DPosition(x,y,z));
+        inParticule->setValue(data);
     }
 
 };

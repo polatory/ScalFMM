@@ -15,6 +15,7 @@ Doc/html/
 tmp/
 *.tmp
 *.temp
+*.temp.*
 *.fma
 *.FMA
 *~

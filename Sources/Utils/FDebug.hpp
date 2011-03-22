@@ -9,6 +9,7 @@
 #define FDEBUG( X )
 #else
 #define FDEBUG( X ) X
+#define FDEBUG_TRACE( X ) X
 
 #include <iostream>
 #include <fstream>

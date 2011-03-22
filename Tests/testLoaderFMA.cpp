@@ -14,7 +14,7 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FBasicParticule.hpp"
+#include "../Sources/Core/FFmaParticule.hpp"
 #include "../Sources/Core/FBasicCell.hpp"
 
 #include "../Sources/Files/FFMALoader.hpp"
@@ -33,26 +33,26 @@
 
 int main(int , char ** ){
     // we store all particules to be able to dealloc
-    FList<FBasicParticule*> particules;
+    FList<FFmaParticule*> particules;
     // Use testLoaderCreate.exe to create this file
     const char* const filename = "testLoaderFMA.fma";
     FTic counter;
 
     // open basic particules loader
-    FFMALoader<FBasicParticule> loader(filename);
+    FFMALoader<FFmaParticule> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<FBasicParticule, FBasicCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FFmaParticule, FBasicCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
     counter.tic();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        FBasicParticule* const part = new FBasicParticule();
+        FFmaParticule* const part = new FFmaParticule();
         particules.pushFront(part);
         loader.fillParticule(part);
         tree.insert(part);

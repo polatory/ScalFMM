@@ -76,6 +76,14 @@ public:
     void incImag(const double inIncImag){
         this->imag += inIncImag;
     }
+
+    void decReal(const double inIncReal){
+        this->real -= inIncReal;
+    }
+
+    void decImag(const double inIncImag){
+        this->imag -= inIncImag;
+    }
 };
 
 

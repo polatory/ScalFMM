@@ -88,9 +88,10 @@ public:
 		double tempWidth = this->boxWidth;
                 // pre compute box width for each level
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
-			this->boxWidthAtLevel[indexLevel] = tempWidth;
+                        this->boxWidthAtLevel[indexLevel] = tempWidth;
 			tempWidth /= 2.0;
 		}
+
 	}
 
 	/** Desctructor */
@@ -105,7 +106,7 @@ public:
 	* @param inParticule the particule to insert (must inherite from FAbstractParticule)
 	*/
 	void insert(ParticuleClass* const inParticule){
-		const MortonIndex particuleIndex = getLeafMortonFromPosition(inParticule->getPosition());
+                const MortonIndex particuleIndex = getLeafMortonFromPosition(inParticule->getPosition());
                 root.insert( particuleIndex, inParticule, height, this->boxWidthAtLevel);
 	}
 
