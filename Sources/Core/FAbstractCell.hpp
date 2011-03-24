@@ -11,6 +11,12 @@
 *
 * This class define the method that every cell class
 * has to implement.
+*
+* In fact FOctree & FFMMAlgorithm need this function to be implemented.
+* But you cannot use this interface with the extension (as an example :
+* because the compiler will faill to know if getMortonIndex is coming
+* from this interface or from the extension)
+*
 * @warning Inherite from this class when implement a specific cell type
 */
 class FAbstractCell{

@@ -13,6 +13,13 @@ class F3DPosition;
 *
 * This class define the method that every particule class
 * has to implement.
+*
+* In fact FOctree & FFMMAlgorithm need this function to be implemented.
+* But you cannot use this interface with the extension (as an example :
+* because the compiler will faill to know if getPosition is coming
+* from this interface or from the extension)
+*
+*
 * @warning Inherite from this class when implement a specific particule type
 */
 class FAbstractParticule{
