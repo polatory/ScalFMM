@@ -32,6 +32,8 @@
 *        tree.insert(part); <br>
 *    } <br>
 * </code>
+*
+* Particule has to extend {FExtendValue,FExtendPosition}
 */
 template <class ParticuleClass>
 class FFMALoader : public FAbstractLoader<ParticuleClass> {
@@ -108,7 +110,7 @@ public:
     void fillParticule(ParticuleClass* const inParticule){
         double x,y,z,data;
         this->file >> x >> y >> z >> data;
-        inParticule->setPosition(F3DPosition(x,y,z));
+        inParticule->setPosition(x,y,z);
         inParticule->setValue(data);
     }
 

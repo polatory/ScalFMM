@@ -28,7 +28,7 @@
  * If the sub-octree is a bottom subtree then the leaf level is pointers on
  * lists<particule>
  *
- * This two situations are implemented in tow different classes that inherite of FAbstractSubOctree.
+ * This two situations are implemented in two different classes that inherite of FAbstractSubOctree.
  *
  * Please refere to testOctree.cpp to see an example
  * @warning Give the particuleClass & cellClass

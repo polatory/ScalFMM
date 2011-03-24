@@ -22,6 +22,10 @@
  * // can be used as : <br>
  * FOctree<TestParticule, TestCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
  * </code>
+ *
+ * Particules and cells has to respect the Abstract class definition.
+ * Particule can extend {FExtendPosition}
+ * Cell can extend {FExtendPosition,FExtendMortonIndex}
  */
 template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight = 3>
 class FOctree {
@@ -50,7 +54,7 @@ class FOctree {
         * @param inPosition position to compute
         * @return the morton index
         */
-        MortonIndex getLeafMortonFromPosition(const F3DPosition& inPosition){
+        MortonIndex getLeafMortonFromPosition(const F3DPosition& inPosition) const {
                 // box coordinate to host the particule
                 FTreeCoordinate host;
                 // position has to be relative to corner not center
@@ -66,11 +70,11 @@ class FOctree {
         * @param inRelativePosition a position from the corner of the box
         * @return the box num at the leaf level that contains inRelativePosition
         */
-        long getTreeCoordinate(const double inRelativePosition){
+        long getTreeCoordinate(const double inRelativePosition) const {
                 const double indexDouble = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-                long index = FMath::dfloor(indexDouble);
+                const long index = FMath::dfloor(indexDouble);
                 if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * index ) ){
-                        --index;
+                        return index - 1;
                 }
                 return index;
         }
@@ -106,8 +110,8 @@ public:
 	* @param inParticule the particule to insert (must inherite from FAbstractParticule)
 	*/
 	void insert(ParticuleClass* const inParticule){
-                const MortonIndex particuleIndex = getLeafMortonFromPosition(inParticule->getPosition());
-                root.insert( particuleIndex, inParticule, height, this->boxWidthAtLevel);
+                const MortonIndex particuleIndex = getLeafMortonFromPosition( inParticule->getPosition() );
+                root.insert( particuleIndex, inParticule, this->height, this->boxWidthAtLevel);
 	}
 
 
@@ -212,10 +216,10 @@ public:
                 while(1) {
                     this->currentLocalLevel = this->current.tree->getSubOctreeHeight() - 1;
                     this->currentLocalIndex = this->current.tree->getLeftLeafIndex();
-                    if(isAtLeafLevel()){
+                    if( isAtLeafLevel() ){
                         return;
                     }
-                    this->current.tree = this->current.middleTree->leafs(this->currentLocalIndex);
+                    this->current.tree = this->current.middleTree->leafs( this->currentLocalIndex );
                 }
             }
 
@@ -227,12 +231,12 @@ public:
                 const int currentLevel = level();
 
                 // Goto root sutoctree
-                while(this->current.tree->hasParent()){
+                while( this->current.tree->hasParent() ){
                     this->current.tree = this->current.tree->getParent();
                 }
 
                 // Go down on the left until arriving on the same global level
-                while(this->current.tree->getSubOctreeHeight() + this->current.tree->getSubOctreePosition() - 1 < currentLevel) {
+                while( this->current.tree->getSubOctreeHeight() + this->current.tree->getSubOctreePosition() - 1 < currentLevel ) {
                     this->current.tree = this->current.middleTree->leafs(this->current.tree->getLeftLeafIndex());
                 }
 
@@ -248,11 +252,11 @@ public:
                 //  Function variables
                 const int currentLevel = level();
                 // Goto root sutoctree
-                while(this->current.tree->hasParent()){
+                while( this->current.tree->hasParent() ){
                     this->current.tree = this->current.tree->getParent();
                 }
                 // Go down on the left until arriving on the same global level
-                while(this->current.tree->getSubOctreeHeight() + this->current.tree->getSubOctreePosition() - 1 < currentLevel) {
+                while( this->current.tree->getSubOctreeHeight() + this->current.tree->getSubOctreePosition() - 1 < currentLevel ) {
                     this->current.tree = this->current.middleTree->leafs(this->current.tree->getRightLeafIndex());
                 }
                 // Level still unchanged we only go to the left
@@ -367,13 +371,13 @@ public:
               */
             bool moveUp() {
                 // It is on the top level?
-                if(this->currentLocalLevel){
+                if( this->currentLocalLevel ){
                     // No so simply go up
                     --this->currentLocalLevel;
                     this->currentLocalIndex >>= 3;
                 }
                 // Yes need to change suboctree
-                else if(this->current.tree->hasParent()){
+                else if( this->current.tree->hasParent() ){
                     this->currentLocalIndex = this->current.tree->getIndexInParent();
                     this->current.tree = this->current.tree->getParent();
                     this->currentLocalLevel =  this->current.tree->getSubOctreeHeight() - 1;
@@ -483,7 +487,7 @@ public:
               * // is equivalent to :<br>
               * iter.getCurrentCell()->getMortonIndex();</code>
               */
-            MortonIndex getCurrentGlobalIndex(){
+            MortonIndex getCurrentGlobalIndex() const{
                 return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex]->getMortonIndex();
             }
 
@@ -520,6 +524,7 @@ public:
             const MortonIndex treeLeafMask = ~(~0x00LL << (3 *  (inLevel + 1 - workingTree.tree->getSubOctreePosition()) ));
             return workingTree.tree->cellsAt(inLevel - workingTree.tree->getSubOctreePosition())[treeLeafMask & inIndex];
         }
+
 
         /** This function fill a array with the neighbors of a cell
           * it does not put the brothers in the array (brothers are cells
@@ -568,6 +573,7 @@ public:
             return idxNeighbors;
         }
 
+
         /** This function return an adresse of cell array from a morton index and a level
           *
           * @param inIndex the index of the desired cell array has to contains
@@ -601,7 +607,12 @@ public:
             return &workingTree.tree->cellsAt(levelInTree)[treeLeafMask & inIndex];
         }
 
-
+        /** This function fill an array with the distant neighbors of a cell
+          * @param inNeighbors the array to store the elements
+          * @param inIndex the index of the element we want the neighbors
+          * @param inLevel the level of the element
+          * @return the number of neighbors
+          */
         int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel){
             // Take the neighbors != brothers
             CellClass* directNeighbors[26];

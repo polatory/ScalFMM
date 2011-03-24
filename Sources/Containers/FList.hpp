@@ -2,14 +2,13 @@
 #define FLIST_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-
-
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FList
  * Please read the license
  *
  * This class is a linked list container.
+ * It is a very basic list to enable strong performance.
  *
  * Please refere to unit test flistUTest.cpp
  */
@@ -67,7 +66,7 @@ public:
 
 	/**
 	* Copy constructor
-	* @param other the source list
+        * @param other the source/original list
 	*/
 	FList(const FList& other): root(0) , size(0)  {
 		copy(other);
@@ -95,7 +94,7 @@ public:
 		newNode->next 	= this->root;
 
 		this->root 	= newNode;
-		++size;
+                ++this->size;
 	}
 
         /**
@@ -108,7 +107,7 @@ public:
                     newNode->next           = this->root;
 
                     this->root  = newNode;
-                    ++size;
+                    ++this->size;
         }
 
         /**
@@ -118,7 +117,7 @@ public:
         * @return first value if exists or defaultValue otherwise
         */
         Object& front(Object& defaultValue = Object()){
-            if(size) return this->root->target;
+            if(this->size) return this->root->target;
             else return defaultValue;
         }
 
@@ -129,7 +128,7 @@ public:
         * @return first value if exists or defaultValue otherwise
         */
         const Object& front(const Object& defaultValue = Object()) const {
-            if(size) return this->root->target;
+            if(this->size) return this->root->target;
             else return defaultValue;
         }
 
@@ -139,7 +138,7 @@ public:
         * @warning you must check the list's size before calling this function!
         */
         Object popFront(){
-            --size;
+            --this->size;
             Node* newNode   = this->root;
             this->root      = this->root->next;
 
@@ -154,7 +153,7 @@ public:
 	* @return size
 	*/
 	int getSize() const{
-		return size;
+                return this->size;
 	}
 
         /**
@@ -185,7 +184,7 @@ public:
 
             /** to progress on the list */
             void progress(){
-                if(iter) iter = iter->next;
+                if(this->iter) this->iter = this->iter->next;
             }
 
             /**
@@ -193,7 +192,7 @@ public:
             * current iterator must be valide (isValide()) to use this function
             */
             Object& value(){
-                return iter->target;
+                return this->iter->target;
             }
 
             /**
@@ -201,7 +200,7 @@ public:
             * current iterator must be valide (isValide()) to use this function
             */
             const Object& value() const{
-                return iter->target;
+                return this->iter->target;
             }
 
             /**

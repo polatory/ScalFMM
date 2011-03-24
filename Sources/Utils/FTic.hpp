@@ -26,7 +26,7 @@
 class FTic {
 private:
     double start;   //< start time (tic)
-    double end;     //<stop time (tac)
+    double end;     //< stop time (tac)
 
 public:
     /** Constructor */

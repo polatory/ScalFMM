@@ -6,10 +6,16 @@
 #define FUSE_DEBUG
 
 #ifndef FUSE_DEBUG
+
 #define FDEBUG( X )
+#define FDEBUG_TRACE( X )
+#define FDEBUG_TIME( X )
+
 #else
+
 #define FDEBUG( X ) X
 #define FDEBUG_TRACE( X ) X
+#define FDEBUG_TIME( X ) X
 
 #include <iostream>
 #include <fstream>
@@ -33,8 +39,7 @@ private:
 	std::ostream* stream;	//< Standart c++ ostream
 
 	/** Default constructor forbiden */
-	FDebug(){
-                this->stream = &std::cout;
+        FDebug() : stream(&std::cout) {
 	}
 
 	/** Default destructor forbiden */
@@ -63,7 +68,9 @@ private:
 	* @param other the source class to copy
 	* @return this a reference to the current class
 	*/
-        FDebug& operator=(const FDebug& ){return *this;}
+        FDebug& operator=(const FDebug& ){
+            return *this;
+        }
 
 
 public:

@@ -2,7 +2,6 @@
 #define FTREECOORDINATE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-#include <cstring>
 
 /** Morton index */
 typedef long long MortonIndex;
@@ -13,7 +12,7 @@ typedef long long MortonIndex;
 * Please read the license
 *
 * This class represents tree coordinate. It is used to save
-* the position in "box unit" (not system unit!).
+* the position in "box unit" (not system/space unit!).
 */
 class FTreeCoordinate{
 private:
@@ -52,8 +51,10 @@ public:
 	* @param other the source class to copy
 	* @return this a reference to the current object
 	*/
-	FTreeCoordinate& operator=(const FTreeCoordinate& other){
-		memcpy(this, &other, sizeof(other));
+	FTreeCoordinate& operator=(const FTreeCoordinate& other){            
+            this->x = other.x;
+            this->y = other.y;
+            this->z = other.z;
 		return *this;
 	}
 

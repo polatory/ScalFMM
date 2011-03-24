@@ -36,7 +36,7 @@ public:
 	* Copy constructor
 	* @param other the source class to copy
 	*/
-	F3DPosition(const F3DPosition& other):x(other.x), y(other.y), z(other.z){
+        F3DPosition(const F3DPosition& other): x(other.x), y(other.y), z(other.z){
 	}
 
 	/**
@@ -153,6 +153,18 @@ public:
                 this->x += other.x;
                 this->y += other.y;
                 this->z += other.z;
+                return *this;
+        }
+
+        /**
+        * Affect to all dim the other position
+        * @param other the value to afect
+        * @return the current object after being affected
+        */
+        F3DPosition& operator*=(const double value){
+                this->x *= value;
+                this->y *= value;
+                this->z *= value;
                 return *this;
         }
 

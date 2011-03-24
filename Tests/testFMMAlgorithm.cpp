@@ -17,7 +17,7 @@
 #include "../Sources/Core/FBasicCell.hpp"
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
-#include "../Sources/Core/FSimpleKernels.hpp"
+#include "../Sources/Core/FAbstractKernels.hpp"
 
 // Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFMMAlgorithm.exe
 
@@ -34,14 +34,7 @@ protected:
     // To store data during downard pass
     long dataDown;
 public:
-    MyTestParticule(const double inX, const double inY, const double inZ) : FBasicParticule(inX,inY,inZ) {
-        this->dataDown = 0;
-    }
-    MyTestParticule(const F3DPosition& inPos) : FBasicParticule(inPos) {
-        this->dataDown = 0;
-    }
-    MyTestParticule(){
-        this->dataDown = 0;
+    MyTestParticule(): dataDown(0){
     }
     long getDataDown() const {
         return this->dataDown;
@@ -56,9 +49,7 @@ class MyTestCell : public FBasicCell {
     // To store data during upward and downward pass
     long dataUp, dataDown;
 public:
-    MyTestCell(){
-        this->dataUp = 0;
-        this->dataDown = 0;
+    MyTestCell(): dataUp(0) , dataDown(0){
     }
     long getDataUp() const {
         return this->dataUp;
@@ -150,7 +141,7 @@ int main(int , char ** ){
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
         counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            new (&particules[idxPart]) MyTestParticule(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX);
+            particules[idxPart].setPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX);
         }
 
         counter.tac();
