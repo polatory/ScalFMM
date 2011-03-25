@@ -80,15 +80,7 @@ public:
         this->real += other.real;
         this->imag += other.imag;
         return *this;
-    }
-
-    /** Mul real and imaginary by a double
-      * @param inValue the coef to mul data
-      */
-    void mulRealAndImag(const double inValue){
-        this->imag *= inValue;
-        this->real *= inValue;
-    }
+    }   
 
     /** Inc real and imaginary by doubles
       * @param inIncReal to inc the real
@@ -126,8 +118,32 @@ public:
     void decImag(const double inIncImag){
         this->imag -= inIncImag;
     }
+
+    /** Mul real and imaginary by a double
+      * @param inValue the coef to mul data
+      */
+    void mulRealAndImag(const double inValue){
+        this->imag *= inValue;
+        this->real *= inValue;
+    }
+
+    /** Mul a complexe by another "c*=c2" */
+    FComplexe& operator*=(const FComplexe& other){
+        const double tempReal = this->real;
+        this->real = (tempReal * other.real) - (this->imag * other.imag);
+        this->imag = (tempReal * other.imag) + (this->imag * other.real);
+        return *this;
+    }
 };
 
+/** Global operator Mul a complexe by another "c=c1*c2" */
+FComplexe operator*=(const FComplexe& first, const FComplexe& second){
+    const FComplexe result(
+            (first.getReal() * second.getImag()) + (first.getImag() * second.getReal()),
+            (first.getReal() * second.getReal()) - (first.getImag() * second.getImag())
+            );
+    return result;
+}
 
 #endif //FCOMPLEXE_HPP
 

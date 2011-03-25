@@ -41,8 +41,8 @@ public:
     }
 
     /** Print the morton index */
-    virtual void L2L(CellClass* const pole, CellClass** const child, const int inLevel) {
-        FDEBUG( FDebug::Controller << "L2L : " << pole->getMortonIndex() << "\n" );
+    virtual void L2L(CellClass* const local, CellClass** const child, const int inLevel) {
+        FDEBUG( FDebug::Controller << "L2L : " << local->getMortonIndex() << "\n" );
     }
 
     /** Print the number of particules */

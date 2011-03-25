@@ -8,8 +8,6 @@
 
 #include "../Containers/FOctree.hpp"
 
-#include "FAbstractKernels.hpp"
-
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -20,10 +18,10 @@
 * This class is a basic FMM algorithm
 * It just iterates on a tree and call the kernls with good arguments
 */
-template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
+template<template< class ParticuleClass, class CellClass> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
 class FFMMAlgorithm : public FAssertable{
     FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const tree;    //< The octree to work on
-    FAbstractKernels<ParticuleClass, CellClass>* const kernels;                     //< The kernels
+    KernelClass<ParticuleClass, CellClass>* const kernels;                     //< The kernels
 
     FDEBUG_TIME(FTic counter);       //< In case of debug count the time
 
@@ -34,7 +32,7 @@ public:
       * an assert is launched if one of the arguments is null
       */
     FFMMAlgorithm(FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const inTree,
-                  FAbstractKernels<ParticuleClass, CellClass>* const inKernels)
+                  KernelClass<ParticuleClass, CellClass>* const inKernels)
         : tree(inTree) , kernels(inKernels) {
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
