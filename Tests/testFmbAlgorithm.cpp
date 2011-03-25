@@ -19,7 +19,9 @@
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 
-#include "../Sources/Fmb/FFmbKernels.hpp"
+#include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
+#include "../Sources/Fmb/FFmbKernelsForces.hpp"
+#include "../Sources/Fmb/FFmbKernelsPotential.hpp"
 
 #include "../Sources/Files/FFMALoader.hpp"
 
@@ -50,9 +52,9 @@ public:
 // Simply create particules and try the kernels
 int main(int , char ** ){
         const int NbLevels = 9;//10;
-        const int NbSubLevels = 3;//3
+        const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.fma";//testFMAlgorithm.fma";
+        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
 
         FFMALoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
@@ -62,7 +64,7 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
 
-        FOctree<FmbParticule, FmbCell, NbLevels, NbSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+        FOctree<FmbParticule, FmbCell, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
 
@@ -93,8 +95,8 @@ int main(int , char ** ){
         std::cout << "Working on particules ..." << std::endl;
         counter.tic();
 
-        FFmbKernels<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());
-        FFMMAlgorithm<FmbParticule, FmbCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
+        FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());//FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
+        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();

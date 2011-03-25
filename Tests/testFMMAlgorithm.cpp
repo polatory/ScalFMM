@@ -130,8 +130,8 @@ public:
 // Simply create particules and try the kernels
 int main(int , char ** ){
         const int NbLevels = 10;//10;
-        const int NbSubLevels = 3;//3
-        const long NbPart = 20000;//2E6;
+        const int SizeSubLevels = 3;//3
+        const long NbPart = 2000000;//2E6;
         MyTestParticule* particules = new MyTestParticule[NbPart];
         FTic counter;
 
@@ -148,7 +148,7 @@ int main(int , char ** ){
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
@@ -164,7 +164,7 @@ int main(int , char ** ){
         counter.tic();
 
         MyTestKernels<MyTestParticule, MyTestCell> kernels;
-        FFMMAlgorithm<MyTestParticule, MyTestCell, NbLevels, NbSubLevels> algo(&tree,&kernels);
+        FFMMAlgorithm<MyTestKernels, MyTestParticule, MyTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();
@@ -174,7 +174,7 @@ int main(int , char ** ){
 
         std::cout << "Check Result\n";
         { // Check that each particule has been summed with all other
-            FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             do{
                 FList<MyTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
@@ -189,7 +189,7 @@ int main(int , char ** ){
             } while(octreeIterator.moveRight());
         }
         { // Ceck if there is number of NbPart summed at level 1
-            FOctree<MyTestParticule, MyTestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.moveDown();
             long res = 0;
             do{
