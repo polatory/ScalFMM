@@ -33,7 +33,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
     /** bodies_L2P
       * expansion_L2P_add_to_force_vector
       */
-    void L2P(CellClass* const local, FList<ParticuleClass*>* const particules){
+    void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
@@ -182,7 +182,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const currentBox, FList<ParticuleClass*>** directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){

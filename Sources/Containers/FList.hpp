@@ -213,6 +213,48 @@ public:
 
         };
 
+        class ConstBasicIterator {
+        private:
+            const Node* iter; //< current node on the list
+
+        public:
+            /**
+              * Constructor needs the target list
+              * @param the list to iterate on
+              */
+            ConstBasicIterator(const FList& list) : iter(list.root){
+            }
+
+            /** to progress on the list */
+            void progress(){
+                if(this->iter) this->iter = this->iter->next;
+            }
+
+            /**
+            * Current pointed value
+            * current iterator must be valide (isValide()) to use this function
+            */
+            Object value(){
+                return this->iter->target;
+            }
+
+            /**
+            * Current pointed value
+            * current iterator must be valide (isValide()) to use this function
+            */
+            const Object& value() const{
+                return this->iter->target;
+            }
+
+            /**
+            * To know if an iterator is at the end of the list
+            * @return true if the current iterator can progress and access to value, else false
+            */
+            bool isValide() const{
+                return iter;
+            }
+        };
+
 };
 
 #endif //FLIST_HPP

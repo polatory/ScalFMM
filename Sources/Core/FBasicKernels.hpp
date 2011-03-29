@@ -26,33 +26,33 @@ public:
     virtual void init(){}
 
     /** Print the number of particules */
-    virtual void P2M(CellClass* const pole, FList<ParticuleClass*>* const particules) {
-        FDEBUG( FDebug::Controller << "P2M : " << particules->getSize() << "\n" );
+    virtual void P2M(CellClass* const pole, const FList<ParticuleClass*>* const particules) {
+        //FDEBUG( FDebug::Controller << "P2M : " << particules->getSize() << "\n" );
     }
 
     /** Print the morton index */
-    virtual void M2M(CellClass* const pole, CellClass** const child, const int inLevel) {
-        FDEBUG( FDebug::Controller << "M2M : " << pole->getMortonIndex() << "\n" );
+    virtual void M2M(CellClass* const pole, const CellClass*const* const child, const int inLevel) {
+        //FDEBUG( FDebug::Controller << "M2M : " << pole->getMortonIndex() << "\n" );
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size, const int inLevel) {
-        FDEBUG( FDebug::Controller << "M2L : " << pole->getMortonIndex() << " (" << size << ")\n" );
+    virtual void M2L(CellClass* const pole, const CellClass*const* const distantNeighbors, const int size, const int inLevel) {
+        //FDEBUG( FDebug::Controller << "M2L : " << pole->getMortonIndex() << " (" << size << ")\n" );
     }
 
     /** Print the morton index */
-    virtual void L2L(CellClass* const local, CellClass** const child, const int inLevel) {
-        FDEBUG( FDebug::Controller << "L2L : " << local->getMortonIndex() << "\n" );
+    virtual void L2L(const CellClass* const local, CellClass** const child, const int inLevel) {
+        //FDEBUG( FDebug::Controller << "L2L : " << local->getMortonIndex() << "\n" );
     }
 
     /** Print the number of particules */
-    virtual void L2P(CellClass* const pole, FList<ParticuleClass*>* const particules){
-        FDEBUG( FDebug::Controller << "L2P : " << particules->getSize() << "\n" );
+    virtual void L2P(const CellClass* const pole, FList<ParticuleClass*>* const particules){
+        //FDEBUG( FDebug::Controller << "L2P : " << particules->getSize() << "\n" );
     }
 
     /** Print the number of particules */
-    virtual void P2P(FList<ParticuleClass*>* const currentBox, FList<ParticuleClass*>** directNeighbors, const int size) {
-        FDEBUG( FDebug::Controller << "P2P : " << currentBox->getSize() << " (" << size << ")\n" );
+    virtual void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
+        //FDEBUG( FDebug::Controller << "P2P : " << currentBox->getSize() << " (" << size << ")\n" );
     }
 };
 

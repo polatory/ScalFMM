@@ -18,6 +18,8 @@
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
+#include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFMMAlgorithmThreadedInterval.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
@@ -96,7 +98,7 @@ int main(int , char ** ){
         counter.tic();
 
         FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());//FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        FFMMAlgorithmThreaded<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();

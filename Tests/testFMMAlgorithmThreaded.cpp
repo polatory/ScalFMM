@@ -15,11 +15,14 @@
 
 #include "../Sources/Core/FBasicParticule.hpp"
 #include "../Sources/Core/FBasicCell.hpp"
+#include "../Sources/Core/FBasicKernels.hpp"
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
+#include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFMMAlgorithmThreadedInterval.hpp"
 #include "../Sources/Core/FAbstractKernels.hpp"
 
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithmThreaded.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithmThreaded.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -131,7 +134,7 @@ public:
 int main(int , char ** ){
         const int NbLevels = 10;//10;
         const int SizeSubLevels = 3;//3
-        const long NbPart = 2000000;//2E6;
+        const long NbPart = 2000000;//2000000
         MyTestParticule* particules = new MyTestParticule[NbPart];
         FTic counter;
 
@@ -163,8 +166,10 @@ int main(int , char ** ){
         std::cout << "Working on particules ..." << std::endl;
         counter.tic();
 
+        // MyTestKernels FBasicKernels
         MyTestKernels<MyTestParticule, MyTestCell> kernels;
-        FFMMAlgorithm<MyTestKernels, MyTestParticule, MyTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmThreadedInterval
+        FFMMAlgorithmThreaded<MyTestKernels, MyTestParticule, MyTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();
@@ -177,14 +182,8 @@ int main(int , char ** ){
             FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             do{
-                FList<MyTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
-                while( iter.isValide() ){
-                    // If a particules has been impacted by less than NbPart - 1 (the current particule)
-                    // there is a problem
-                    if(iter.value()->getDataDown() != NbPart - 1){
-                        std::cout << "Problem : " << iter.value()->getDataDown() << "\n";
-                    }
-                    iter.progress();
+                if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentList()->getSize() ){
+                        std::cout << "Problem P2M : " << (octreeIterator.getCurrentCell()->getDataUp() - octreeIterator.getCurrentList()->getSize()) << "\n";
                 }
             } while(octreeIterator.moveRight());
         }
@@ -196,8 +195,38 @@ int main(int , char ** ){
                 res += octreeIterator.getCurrentCell()->getDataUp();
             } while(octreeIterator.moveRight());
             if(res != NbPart){
-                std::cout << "Problem at level 1 : " << res << "\n";
+                std::cout << "Problem M2M at level 1 : " << res << "\n";
             }
+        }
+        { // Ceck if there is number of NbPart summed at level 1
+            FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+            for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
+                long res = 0;
+                do{
+                    res += octreeIterator.getCurrentCell()->getDataUp();
+                } while(octreeIterator.moveRight());
+                if(res != NbPart){
+                    std::cout << "Problem M2M at level " << idxLevel << " : " << res << "\n";
+                }
+                octreeIterator.moveUp();
+                octreeIterator.gotoLeft();
+            }
+        }
+        { // Check that each particule has been summed with all other
+            FOctree<MyTestParticule, MyTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                FList<MyTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
+                while( iter.isValide() ){
+                    // If a particules has been impacted by less than NbPart - 1 (the current particule)
+                    // there is a problem
+                    if(iter.value()->getDataDown() != NbPart - 1){
+                        std::cout << "Problem L2P + P2P : " << iter.value()->getDataDown() << "\n";
+                    }
+                    iter.progress();
+                }
+            } while(octreeIterator.moveRight());
         }
         std::cout << "Done\n";
 
@@ -216,47 +245,34 @@ int main(int , char ** ){
 }
 
 /*
-Creating 2000000 particules ...
-Done  (0.12328s).
-Inserting particules ...
-Done  (3.06648s).
-Working on particules ...
-        Start Bottom Pass
-        Finished (0.835397s)
-        Start Upward Pass
-        Finished (1.12351s)
-        Start Downward Pass (M2L)
-        Finished (32.5013s)
-        Start Downward Pass (L2L)
-        Finished (1.13309s)
-        Start Direct Pass
-        Finished (6.53526s)
-Done  (42.1288s).
-Check Result
-Done
-Deleting particules ...
-Done  (0.0397179s).
+ 2000000 particules
 
-Creating 2000000 particules ...
-Done  (0.114306s).
-Inserting particules ...
-Done  (3.0618s).
-Working on particules ...
+FFMMAlgorithm
         Start Bottom Pass
-        Finished (0.832s)
+        Finished (0.840611s)
         Start Upward Pass
-        Finished (1.11856s)
+        Finished (1.12125s)
         Start Downward Pass (M2L)
-        Finished (31.396s)
+        Finished (31.815s)
         Start Downward Pass (L2L)
-        Finished (1.13624s)
+        Finished (1.13794s)
         Start Direct Pass
-        Finished (6.5025s)
-Done  (40.9855s).
-Check Result
-Done
-Deleting particules ...
-Done  (0.0378419s).
+        Finished (6.51685s)
+Done  (41.4319s).
+
+FFMMAlgorithmThreaded
+        Start Bottom Pass
+        Finished (1.05805s)
+        Start Upward Pass
+        Finished (1.15517s)
+        Start Downward Pass (M2L)
+        Finished (16.2212s)
+        Start Downward Pass (L2L)
+        Finished (1.00922s)
+        Start Direct Pass
+        Finished (3.10627s)
+Done  (22.5614s).
+
  */
 
 // [--LICENSE--]

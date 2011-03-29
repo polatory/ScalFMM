@@ -19,7 +19,7 @@
 * It just iterates on a tree and call the kernls with good arguments
 */
 template<template< class ParticuleClass, class CellClass> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
-class FFMMAlgorithm : public FAssertable{
+class FFMMAlgorithm : protected FAssertable{
     FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const tree;    //< The octree to work on
     KernelClass<ParticuleClass, CellClass>* const kernels;                     //< The kernels
 
@@ -36,6 +36,7 @@ public:
         : tree(inTree) , kernels(inKernels) {
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
+        FDEBUG_TRACE(FDebug::Controller.write("FFMMAlgorithm\n"));
     }
 
     /** Default destructor */
@@ -82,6 +83,9 @@ public:
         typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
+
+        typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator avoidGotoLeftIterator(octreeIterator);
+
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             // for each cells
@@ -90,8 +94,10 @@ public:
                 // child is an array (of 8 child) that may be null
                 kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
             } while(octreeIterator.moveRight());
-            octreeIterator.moveUp();
-            octreeIterator.gotoLeft();
+            //octreeIterator.moveUp();
+            //octreeIterator.gotoLeft();
+            avoidGotoLeftIterator.moveUp();
+            octreeIterator = avoidGotoLeftIterator;
         }
 
         FDEBUG_TIME(counter.tac(););
@@ -106,16 +112,21 @@ public:
         { // first M2L
             typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
+
+            typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator avoidGotoLeftIterator(octreeIterator);
+
             CellClass* neighbors[208];
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells
                 do{
                     const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
-                    kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                    if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                 } while(octreeIterator.moveRight());
-                octreeIterator.gotoLeft();
-                octreeIterator.moveDown();
+                //octreeIterator.gotoLeft();
+                //octreeIterator.moveDown();
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
             }
         }
         FDEBUG_TIME(counter.tac(););
@@ -126,6 +137,9 @@ public:
         { // second L2L
             typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
+
+            typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator avoidGotoLeftIterator(octreeIterator);
+
             const int heightMinusOne = OctreeHeight - 1;
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
@@ -133,8 +147,10 @@ public:
                 do{
                     kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 } while(octreeIterator.moveRight());
-                octreeIterator.gotoLeft();
-                octreeIterator.moveDown();
+                //octreeIterator.gotoLeft();
+                //octreeIterator.moveDown();
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
             }
         }
 
@@ -148,6 +164,8 @@ public:
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG_TIME(counter.tic(););
 
+        const int heightMinusOne = OctreeHeight - 1;
+
         typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
@@ -156,7 +174,7 @@ public:
         do{
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentList());
             // need the current particules and neighbors particules
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),OctreeHeight-1);
+            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
             kernels->P2P( octreeIterator.getCurrentList() , neighbors, counter);
         } while(octreeIterator.moveRight());
 

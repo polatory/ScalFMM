@@ -192,6 +192,10 @@ public:
                 this->currentLocalIndex = TransposeIndex(this->current.tree->getLeftLeafIndex(), (this->current.tree->getSubOctreeHeight() - this->currentLocalLevel - 1) );
             }
 
+            Iterator() : currentLocalLevel(0), currentLocalIndex(0) {
+                current.tree = 0;
+            }
+
             /** Copy constructor
               * @param other source iterator to copy
               */
@@ -206,7 +210,10 @@ public:
               * @return this after copy
               */
             Iterator& operator=(const Iterator& other){
-                memcpy(this, &other, sizeof(Iterator));
+                this->current = other.current ;
+                this->currentLocalLevel = other.currentLocalLevel ;
+                this->currentLocalIndex = other.currentLocalIndex ;
+                return *this;
             }
 
             /**

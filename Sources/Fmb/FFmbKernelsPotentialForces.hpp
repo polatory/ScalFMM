@@ -27,7 +27,7 @@ public:
     /** bodies_L2P
       * expansion_L2P_add_to_force_vector
       */
-    void L2P(CellClass* const local, FList<ParticuleClass*>* const particules){
+    void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
@@ -36,6 +36,21 @@ public:
             typename FAbstractFmbKernels<ParticuleClass,CellClass>::Spherical spherical;
 
             positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
+
+            /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
+                   (iterTarget.value()->getPosition()).getX(),
+                   (iterTarget.value()->getPosition()).getY(),
+                   (iterTarget.value()->getPosition()).getZ());
+            printf("\t\t p_leaf_center x = %lf \t y = %lf \t z = %lf \n",
+                   (local->getPosition()).getX(),
+                   (local->getPosition()).getY(),
+                   (local->getPosition()).getZ());*/
+            /*printf("\t\t p_position_to_leaf_center x = %lf \t y = %lf \t z = %lf \n",
+                    (iterTarget.value()->getPosition() - local->getPosition()).getX(),
+                    (iterTarget.value()->getPosition() - local->getPosition()).getY(),
+                    (iterTarget.value()->getPosition() - local->getPosition()).getZ());*/
+            //printf("\t\t phi = %lf \t cos = %lf \t sin = %lf \t r= %lf \n",
+            //        spherical.phi,spherical.cosTheta,spherical.sinTheta,spherical.r);
 
             harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated);
 
@@ -60,6 +75,15 @@ public:
 
                 force_vector_in_local_base.setY( force_vector_in_local_base.getY() + exp_term_aux.getReal());
 
+
+                //printf("\t j = %d \t exp_term_aux real = %lf imag = %lf \n",
+                //                                        j,
+               //                                         exp_term_aux.getReal(),
+                //                                        exp_term_aux.getImag());
+                //printf("\t force_vector_in_local_base x = %lf \t y = %lf \t z = %lf \n",
+                //       force_vector_in_local_base.getX(),force_vector_in_local_base.getY(),force_vector_in_local_base.getZ());
+
+
                 ++p_local_exp_term;
                 ++p_Y_term;
                 ++p_Y_theta_derivated_term;
@@ -77,10 +101,23 @@ public:
                     force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() - 2 * k * exp_term_aux.getImag());
                     // F_theta:
 
+                    //printf("\t\t k = %d \t j = %d \t exp_term_aux real = %lf imag = %lf \n",
+                    //                                        k,j,
+                    //                                        exp_term_aux.getReal(),
+                    //                                        exp_term_aux.getImag());
+                    //printf("\t\t\t p_Y_term->getReal = %lf \t p_Y_term->getImag = %lf \n",p_Y_term->getReal(),p_Y_term->getImag());
+
                     exp_term_aux.setReal( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getReal()) - (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getImag()) );
                     exp_term_aux.setImag( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getImag()) + (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getReal()) );
 
                     force_vector_in_local_base.setY(force_vector_in_local_base.getY() + 2 * exp_term_aux.getReal());
+
+                    //printf("\t\t k = %d \t j = %d \t exp_term_aux real = %lf imag = %lf \n",
+                     //                                       k,j,
+                     //                                       exp_term_aux.getReal(),
+                     //                                       exp_term_aux.getImag());
+                    //printf("\t\t force_vector_in_local_base x = %lf \t y = %lf \t z = %lf \n",
+                    //       force_vector_in_local_base.getX(),force_vector_in_local_base.getY(),force_vector_in_local_base.getZ());
                 }
             }
 
@@ -181,11 +218,12 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const currentBox, FList<ParticuleClass*>** directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
+
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticuleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
                   DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
                                                    iterSource.value());
@@ -209,7 +247,7 @@ public:
             FAbstractFmbKernels<ParticuleClass,CellClass>::force_sum += iterTarget.value()->getForces();
 
             //printf("They contains energy (res = %f, potential = %f, value = %f)\n",
-                            //potential_sum, iterTarget.value()->getPotential(), iterTarget.value()->getValue());
+            //                potential_sum, iterTarget.value()->getPotential(), iterTarget.value()->getValue());
             FAbstractFmbKernels<ParticuleClass,CellClass>::potential_sum += iterTarget.value()->getPotential() * iterTarget.value()->getValue();
 
             iterTarget.progress();

@@ -42,6 +42,15 @@ public:
     }
 
     /** Get Multipole */
+    const FComplexe* getMultipole() const {
+        return this->multipole_exp;
+    }
+    /** Get Local */
+    const FComplexe* getLocal() const {
+        return this->local_exp;
+    }
+
+    /** Get Multipole */
     FComplexe* getMultipole() {
         return this->multipole_exp;
     }

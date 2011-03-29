@@ -34,7 +34,7 @@
  * @warning Give the particuleClass & cellClass
  */
 template< class ParticuleClass, class CellClass >
-class FAbstractSubOctree : public FAssertable{
+class FAbstractSubOctree : protected FAssertable{
 protected:
     const int subOctreeHeight;	            //< Height of this suboctree
     const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)

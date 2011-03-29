@@ -52,9 +52,9 @@ protected:
     static const int FMB_Info_nexp_size = (FMB_Info_P + 1) * (FMB_Info_P + 1);
 
     // Level of the tree
-    const int treeHeight;
+    int treeHeight;
     // Width of the box at the root level
-    const double treeWidthAtRoot;
+    double treeWidthAtRoot;
 
     // transfer_M2M_container
     FComplexe*** transitionM2M;
@@ -94,7 +94,7 @@ protected:
     F3DPosition force_sum;
     double potential_sum;
 
-    const bool FMB_Info_up_to_P_in_M2L;
+    bool FMB_Info_up_to_P_in_M2L;
 
     //////////////////////////////////////////////////////////////////
     // Allocation
@@ -381,8 +381,11 @@ protected:
         for(int idxm = 0 , idxmMod4 = 0; idxm <= FMB_Info_P ; ++idxm, ++idxmMod4){
             if(idxmMod4 == 4) idxmMod4 = 0;
             const double angle = idxm*inSphere.phi + PiArrayInner[idxmMod4];
-            (cosSin + idxm)->setReal(FMath::Sin(angle + M_PI_2));
+            (cosSin + idxm)->setReal(FMath::Sin(angle + FMath::FPiDiv2));
             (cosSin + idxm)->setImag(FMath::Sin(angle));
+
+            //printf("l=%d \t inSphere.phi=%f \t this->PiArrayOuter[idxlMod4]=%f \t angle=%f \t FMath::Sin(angle + FMath::FPiDiv2)=%f \t FMath::Sin(angle)=%f\n",
+            //        idxm, inSphere.phi, this->PiArrayInner[idxmMod4], angle, FMath::Sin(angle + FMath::FPiDiv2) , FMath::Sin(angle));
         }
 
         // Initialization of associated_Legendre_function_Array:
@@ -403,6 +406,9 @@ protected:
                                         - (l+m)*(*(start_ptr_associated_Legendre_function_Array + expansion_Redirection_array_for_j[l-1] + m))) / inSphere.sinTheta);
                 p_theta_derivated_term->setReal(magnitude * (cosSin + m)->getReal());
                 p_theta_derivated_term->setImag(magnitude * (cosSin + m)->getImag());
+
+                //printf("magnitude=%f r_l=%f p_spherical_harmonic_Inner_coefficients_array=%f real=%f imag=%f\n",
+                //       magnitude,r_l,*p_spherical_harmonic_Inner_coefficients_array,p_theta_derivated_term->getReal(),p_theta_derivated_term->getImag());
             }
 
             // m=l:
@@ -414,6 +420,9 @@ protected:
             magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (m * inSphere.cosTheta * (*ptr_associated_Legendre_function_Array) / inSphere.sinTheta);
             p_theta_derivated_term->setReal(magnitude * (cosSin + m)->getReal());
             p_theta_derivated_term->setImag(magnitude * (cosSin + m)->getImag());
+
+            //printf("magnitude=%f r_l=%f p_spherical_harmonic_Inner_coefficients_array=%f real=%f imag=%f\n",
+            //       magnitude,r_l,*p_spherical_harmonic_Inner_coefficients_array,p_theta_derivated_term->getReal(),p_theta_derivated_term->getImag());
 
             ++p_term;
             ++p_theta_derivated_term;
@@ -555,6 +564,12 @@ public:
         buildPrecompute();
     }
 
+    FAbstractFmbKernels(const FAbstractFmbKernels& other)
+        : treeHeight(other.treeHeight), treeWidthAtRoot(other.treeWidthAtRoot),
+          transitionM2M(0), transitionL2L(0), potential_sum(0), FMB_Info_up_to_P_in_M2L(true) {
+        buildPrecompute();
+    }
+
     virtual void init(){
         force_sum = F3DPosition();
         potential_sum = 0;
@@ -595,9 +610,9 @@ public:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void P2M(CellClass* const inPole, FList<ParticuleClass*>* const inParticules) {
+    void P2M(CellClass* const inPole, const FList<ParticuleClass*>* const inParticules) {
 
-        for(typename FList<ParticuleClass*>::BasicIterator iterParticule(*inParticules);
+        for(typename FList<ParticuleClass*>::ConstBasicIterator iterParticule(*inParticules);
                                 iterParticule.isValide() ; iterParticule.progress()){
 
             Spherical spherical;
@@ -649,7 +664,7 @@ public:
     *
     * Warning: if j-n < |k-l| we do nothing.
      */
-    void M2M(CellClass* const inPole, CellClass** const inChild, const int inLevel) {
+    void M2M(CellClass* const inPole, const CellClass*const* const inChild, const int inLevel) {
 
         // We do NOT have: for(l=n-j+k; l<=j-n+k ;++l){} <=> for(l=-n; l<=n ;++l){if (j-n >= abs(k-l)){}}
         //     But we have:  for(k=MAX(0,n-j+l); k<=j-n+l; ++k){} <=> for(k=0; k<=j; ++k){if (j-n >= abs(k-l)){}}
@@ -769,7 +784,7 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void M2L(CellClass* const pole, CellClass** const distantNeighbors, const int size, const int inLevel) {
+    void M2L(CellClass* const pole, const CellClass*const* const distantNeighbors, const int size, const int inLevel) {
         FTreeCoordinate coordCenter;
         coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
 
@@ -901,7 +916,7 @@ public:
       *
       *Warning: if |l-k| > n-j, we do nothing.
       */
-    void L2L(CellClass* const pole, CellClass** const child, const int inLevel) {
+    void L2L(const CellClass* const pole, CellClass** const child, const int inLevel) {
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if no child at this position
@@ -990,9 +1005,9 @@ public:
         }
     }
 
-    virtual void L2P(CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
+    virtual void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
 
-    virtual void P2P(FList<ParticuleClass*>* const currentBox, FList<ParticuleClass*>** directNeighbors, const int size) = 0;
+    virtual void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) = 0;
 };
 
 
