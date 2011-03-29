@@ -128,6 +128,18 @@ public:
         };
 
         /**
+          * The class works on suboctree. Most of the resources needed
+          * are avaiblable by using FAbstractSubOctree. But when accessing
+          * to the leaf we have to use FSubOctree or FSubOctreeWithLeafs
+          * depending if we are working on the bottom of the tree.
+          */
+        union SubOctreeTypesConst {
+            const FAbstractSubOctree<ParticuleClass,CellClass>* tree;     //< Usual pointer to work
+            const FSubOctree<ParticuleClass,CellClass>* middleTree;       //< To access to sub-octree under
+            const FSubOctreeWithLeafs<ParticuleClass,CellClass>* leafTree;//< To access to particules lists
+        };
+
+        /**
           * This has to be used to iterate on an octree
           * It simply stores an pointer on a suboctree and moves to right/left/up/down.
           * Please refere to testOctreeIter file to see how it works.
@@ -147,7 +159,7 @@ public:
           * It uses the left right limit on each suboctree and their morton index.
           * Please have a look to the move functions to understand how the system is working.
           */
-        class Iterator : public FAssertable {
+        class Iterator : protected FAssertable {
             SubOctreeTypes current; //< Current suboctree
 
             int currentLocalLevel;  //< Current level in the current suboctree
@@ -184,7 +196,9 @@ public:
               * @param other source iterator to copy
               */
             Iterator(const Iterator& other){
-                memcpy(this, &other, sizeof(Iterator));
+                this->current = other.current ;
+                this->currentLocalLevel = other.currentLocalLevel ;
+                this->currentLocalIndex = other.currentLocalIndex ;
             }
 
             /** Copy operator
@@ -506,8 +520,8 @@ public:
           * @return the cell if it exist or null (0)
           * This function starts from the root until it find a missing cell or the right cell
           */
-        CellClass* getCell(const MortonIndex inIndex, const int inLevel){
-           SubOctreeTypes workingTree;
+        CellClass* getCell(const MortonIndex inIndex, const int inLevel) const{
+           SubOctreeTypesConst workingTree;
            workingTree.tree = &this->root;
            const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
 
@@ -536,7 +550,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getNeighborsNoBrothers(CellClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
+        int getNeighborsNoBrothers(CellClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel) const {
             FTreeCoordinate center;
             center.setPositionFromMorton(inIndex, inLevel);
 
@@ -581,8 +595,8 @@ public:
           * @return the cell if it exist or null (0)
           *
           */
-        CellClass** getCellPt(const MortonIndex inIndex, const int inLevel){
-           SubOctreeTypes workingTree;
+        CellClass** getCellPt(const MortonIndex inIndex, const int inLevel) const{
+           SubOctreeTypesConst workingTree;
            workingTree.tree = &this->root;
 
            const MortonIndex treeMiddleMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
@@ -613,7 +627,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel){
+        int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel) const{
             // Take the neighbors != brothers
             CellClass* directNeighbors[26];
             const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);

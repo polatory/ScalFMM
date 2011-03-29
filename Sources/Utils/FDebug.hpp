@@ -125,7 +125,7 @@ public:
 
         enum FlushType{
             Flush,
-            FlushWithLine,
+            FlushWithLine
         };
 
         /**

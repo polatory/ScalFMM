@@ -192,7 +192,7 @@ public:
     /** Return the array of cells at a specious index
       * @param level the level to access cells array (must be < subOctreeHeight)
       * @return cells[level] */
-    CellClass** cellsAt(const int level){
+    CellClass** cellsAt(const int level) const{
         assert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
         return cells[level];
     }
@@ -388,7 +388,7 @@ public:
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    FAbstractSubOctree<ParticuleClass,CellClass>* leafs(const int index){
+    FAbstractSubOctree<ParticuleClass,CellClass>* leafs(const int index) const {
         return this->subleafs[index];
     }
 };

@@ -87,8 +87,8 @@ struct FMath{
     }
 };
 
-const double FMath::FPi = 3.14159265358979323846;
-const double FMath::FPiDiv2 = 1.57079632679489661923;
+const double FMath::FPi = M_PI;
+const double FMath::FPiDiv2 = M_PI_2;
 
 #endif //FMATH_HPP
 

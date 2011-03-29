@@ -73,6 +73,7 @@ public:
 		}
 	}
 
+
 	/**
 	* This function is used to create inThreadsNumber threads with Object::threadCallback as the callback.
 	* @param inThreadsNumber the number of threads to create (default is DefaultThreadsNumber)
@@ -93,7 +94,7 @@ public:
 	*/
 	virtual void threadCallback(const int inThreadId, const int inThreadNumbers){
 		FDEBUG( FDebug::Controller.writeFromLine("[W] You called executeThreads() but did not implement threadCallback", __LINE__, __FILE__); )
-	};
+        }
 
 protected:
 	/**

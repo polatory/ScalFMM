@@ -22,7 +22,7 @@ public:
     }   
 
 
-    void changeProgression(int*const start_for_j , FComplexe** const p_target_exp_term){}
+    void changeProgression(int*const , FComplexe** const ){}
 
     /** bodies_L2P
       * expansion_L2P_add_to_force_vector
@@ -40,9 +40,10 @@ public:
             harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.
-            FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y+1;
-            FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated+1;
-            FComplexe* p_local_exp_term = local->getLocal()+1;
+            const FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y+1;
+            const FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated+1;
+            const FComplexe* p_local_exp_term = local->getLocal()+1;
+
             for (int j = 1 ; j <= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j ){
                 FComplexe exp_term_aux;
 
