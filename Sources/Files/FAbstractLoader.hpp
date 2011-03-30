@@ -2,6 +2,7 @@
 #define FABSTRACTLOADER_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 class F3DPosition;
 
 /**
@@ -14,6 +15,8 @@ class F3DPosition;
 *
 * If you want to use a specific file format you then need to inherite from this loader
 * and implemente several methods.
+*
+* Please look at FBasicLoader or FFMALoader to see an example.
 *
 * @warning Inherite from this class when defining a loader class
 */
@@ -40,7 +43,7 @@ public:
         * Get the simulation box width
         * @return box width needed by the octree
         */
-        virtual double getBoxWidth() const = 0;
+        virtual FReal getBoxWidth() const = 0;
 
         /**
         * To know if the loader is valide (file opened, etc.)

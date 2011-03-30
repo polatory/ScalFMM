@@ -2,16 +2,18 @@
 #define FEXTENDVALUE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendValue
 * Please read the license
 * This class is an extenssion.
-* It proposes a value (double).
+* It proposes a value (FReal).
 */
 class FExtendValue {
 protected:
-    double value;   //< A simple value
+    FReal value;   //< A simple value
 
 public:
     /** Default constructor */
@@ -33,12 +35,12 @@ public:
     }
 
     /** To get the value */
-    double getValue() const {
+    FReal getValue() const {
         return this->value;
     }
 
     /** To set the value */
-    void setValue(const double invalue) {
+    void setValue(const FReal invalue) {
         this->value = invalue;
     }
 

@@ -17,16 +17,21 @@
 * @class FFMMAlgorithmThreaded
 * @brief
 * Please read the license
+* This is a parallel FMM Algorithm
+* Most of your code is unchanged excepted that your kerneks must have a copy operator.
 *
+* The parallel algorithm is simple, each thread is taking a value from the iterator (protected by a mutex)
 */
 template<template< class ParticuleClass, class CellClass> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
 class FFMMAlgorithmThreaded : protected FAssertable{
+    // To reduce the size of variable type based on foctree in this file
+    typedef FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
-    static const int NbThreads = 4;
+    static const int NbThreads = 4;                                 //< Number of threads (currently a static number)
 
-    FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const tree;    //< The octree to work on
-    KernelClass<ParticuleClass, CellClass>* kernels[NbThreads];                     //< The kernels
+    Octree* const tree;                                             //< The octree to work on
+    KernelClass<ParticuleClass, CellClass>* kernels[NbThreads];     //< The kernels (one by thread)
 
 
     FDEBUG_TIME(FTic counter);       //< In case of debug count the time
@@ -37,9 +42,10 @@ public:
       * @param inKernels the kernels
       * an assert is launched if one of the arguments is null
       */
-    FFMMAlgorithmThreaded(FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>* const inTree,
+    FFMMAlgorithmThreaded(Octree* const inTree,
                   KernelClass<ParticuleClass, CellClass>* const inKernels)
-        : tree(inTree) {
+                    : tree(inTree) {
+
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
@@ -47,7 +53,7 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass>(*inKernels);
         }
 
-        FDEBUG_TRACE(FDebug::Controller.write("FFMMAlgorithmThreaded\n"));
+        FDEBUG_TRACE(FDebug::Controller << "FFMMAlgorithmThreaded\n" );
     }
 
     /** Default destructor */
@@ -76,7 +82,7 @@ public:
     /** P2M */
     void bottomPass(){
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG_TIME(counter.tic(););
+        FDEBUG_TIME( counter.tic() );
 
         FOctreeIterator octreeIterator(tree);
         // Iterate on leafs
@@ -105,14 +111,14 @@ public:
         }
         omp_destroy_lock(&mutex);
 
-        FDEBUG_TIME(counter.tac(););
-        FDEBUG_TRACE( FDebug::Controller << "\tFinished (") FDEBUG_TIME(<< counter.elapsed() <<) FDEBUG_TRACE("s)\n"; )
+        FDEBUG_TIME( counter.tac() );
+        FDEBUG_TRACE( FDebug::Controller << "\tFinished (" FDEBUG_TIME(<< counter.elapsed() <<) "s)\n" );
     }
 
     /** M2M */
     void upwardPass(){
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG_TIME(counter.tic(););
+        FDEBUG_TIME( counter.tic() );
 
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
@@ -147,14 +153,14 @@ public:
         }
         omp_destroy_lock(&mutex);
 
-        FDEBUG_TIME(counter.tac(););
-        FDEBUG_TRACE( FDebug::Controller << "\tFinished (") FDEBUG_TIME(<< counter.elapsed() <<) FDEBUG_TRACE("s)\n"; )
+        FDEBUG_TIME( counter.tac() );
+        FDEBUG_TRACE( FDebug::Controller << "\tFinished (" FDEBUG_TIME(<< counter.elapsed() <<) "s)\n" );
     }
 
     /** M2L L2L */
     void downardPass(){
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-        FDEBUG_TIME(counter.tic(););
+        FDEBUG_TIME( counter.tic() );
 
         { // first M2L
             FOctreeIterator octreeIterator(tree);
@@ -190,11 +196,11 @@ public:
             }
             omp_destroy_lock(&mutex);
         }
-        FDEBUG_TIME(counter.tac(););
-        FDEBUG_TRACE( FDebug::Controller << "\tFinished (") FDEBUG_TIME(<< counter.elapsed() <<) FDEBUG_TRACE("s)\n"; )
+        FDEBUG_TIME( counter.tac() );
+        FDEBUG_TRACE( FDebug::Controller << "\tFinished (" FDEBUG_TIME(<< counter.elapsed() <<) "s)\n" );
 
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-        FDEBUG_TIME(counter.tic(););
+        FDEBUG_TIME( counter.tic() );
         { // second L2L
             FOctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
@@ -229,15 +235,15 @@ public:
             omp_destroy_lock(&mutex);
         }
 
-        FDEBUG_TIME(counter.tac(););
-        FDEBUG_TRACE( FDebug::Controller << "\tFinished (") FDEBUG_TIME(<< counter.elapsed() <<) FDEBUG_TRACE("s)\n"; )
+        FDEBUG_TIME( counter.tac() );
+        FDEBUG_TRACE( FDebug::Controller << "\tFinished (" FDEBUG_TIME(<< counter.elapsed() <<) "s)\n" );
 
     }
 
     /** P2P */
     void directPass(){
         FDEBUG_TRACE( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG_TIME(counter.tic(););
+        FDEBUG_TIME( counter.tic() );
 
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
@@ -272,8 +278,8 @@ public:
         }
         omp_destroy_lock(&mutex);
 
-        FDEBUG_TIME(counter.tac(););
-        FDEBUG_TRACE( FDebug::Controller << "\tFinished (") FDEBUG_TIME(<< counter.elapsed() <<) FDEBUG_TRACE("s)\n"; )
+        FDEBUG_TIME( counter.tac() );
+        FDEBUG_TRACE( FDebug::Controller << "\tFinished (" FDEBUG_TIME(<< counter.elapsed() <<) "s)\n" );
 
     }
 

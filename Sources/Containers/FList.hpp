@@ -10,7 +10,7 @@
  * This class is a linked list container.
  * It is a very basic list to enable strong performance.
  *
- * Please refere to unit test flistUTest.cpp
+ * Please refere to unit test flistUTest.cpp to know more.
  */
 template< class Object >
 class FList {
@@ -87,6 +87,7 @@ public:
 
 	/**
 	* Push an element in the front of the list
+        * @param inObject the object to insert
 	*/
 	void pushFront(Object& inObject){
 		Node* newNode 	= new Node;
@@ -100,6 +101,7 @@ public:
         /**
         * Push an element in the front of the list
         * used when type is pointer and like [TYPE* const] object
+        * @param inObject the object to insert
         */
         void pushFront(Object const inObject){
                     Node* newNode           = new Node;
@@ -113,6 +115,7 @@ public:
         /**
         * To get front value (last pushed value)
         * if size == 0 then defaultValue is returned
+        * the list is unchanged after this function
         * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
         * @return first value if exists or defaultValue otherwise
         */
@@ -124,6 +127,7 @@ public:
         /**
         * To get front value as const
         * if size == 0 then defaultValue is return
+        * the list is unchanged after this function
         * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
         * @return first value if exists or defaultValue otherwise
         */
@@ -182,7 +186,7 @@ public:
             BasicIterator(FList& list) : iter(list.root){
             }
 
-            /** to progress on the list */
+            /** To progress on the list */
             void progress(){
                 if(this->iter) this->iter = this->iter->next;
             }
@@ -213,6 +217,20 @@ public:
 
         };
 
+        /**
+          * This iterator allow accessing list's elements
+          * If you change the target list pointed by an iterator
+          * you cannot used the iterator any more.
+          * <code>
+          * FList<int> values; <br>
+          * // inserting ... <br>
+          * FList<int>::ConstBasicIterator iter(values); <br>
+          * while( iter.isValide() ){ <br>
+          *     iter.value() += 1; <br>
+          *     iter.progress(); <br>
+          * } <br>
+          * </code>
+          */
         class ConstBasicIterator {
         private:
             const Node* iter; //< current node on the list

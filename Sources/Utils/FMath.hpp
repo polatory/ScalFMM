@@ -9,11 +9,12 @@
 * @class 
 * Please read the license
 *
-* Propose basic math functions or indirections
+* Propose basic math functions or indirections to std math.
 */
 struct FMath{
-    static const double FPi;        //< Pi constant
-    static const double FPiDiv2;    //< Pi/2 constant
+    static const FReal FPi;        //< Pi constant
+    static const FReal FPiDiv2;    //< Pi/2 constant
+    static const FReal Epsilon;     //< Epsilon
 
     /** To get absolute value */
     template <class NumType>
@@ -36,14 +37,14 @@ struct FMath{
     /** To know if 2 values seems to be equal */
     template <class NumType>
     static bool LookEqual(const NumType inV1, const NumType inV2){
-        /*const double relTol = 0.00001;
-		const double absTol = 0.00001;
+        /*const FReal relTol = 0.00001;
+		const FReal absTol = 0.00001;
                 return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));*/
         return Abs(inV1 - inV2) <= (Abs(inV1 < Abs(inV2) ? Abs(inV2) : Abs(inV1)) * 0.00001);
     }
 
-    /** To get floor of a double */
-    static double dfloor(const double inValue){
+    /** To get floor of a FReal */
+    static FReal dfloor(const FReal inValue){
         return floor(inValue);
     }
 
@@ -61,34 +62,40 @@ struct FMath{
         return ( inMin <= inValue && inValue < inMax );
     }
 
-    /** To get sqrt of a double */
-    static double Sqrt(const double inValue){
+    /** To get sqrt of a FReal */
+    static FReal Sqrt(const FReal inValue){
         return sqrt(inValue);
     }
 
-    /** To get atan2 of a double */
-    static double Atan2(const double inValue1,const double inValue2){
+    /** To get atan2 of a 2 FReal */
+    static FReal Atan2(const FReal inValue1,const FReal inValue2){
         return atan2(inValue1,inValue2);
     }
 
-    /** To get sqrt of a double */
-    static double Sin(const double inValue){
+    /** To get sqrt of a FReal */
+    static FReal Sin(const FReal inValue){
         return sin(inValue);
     }
 
-    /** To get cos of a double */
-    static double Cos(const double inValue){
+    /** To get cos of a FReal */
+    static FReal Cos(const FReal inValue){
         return cos(inValue);
     }
 
-    /** To get acos of a double */
-    static double ACos(const double inValue){
+    /** To get acos of a FReal */
+    static FReal ACos(const FReal inValue){
         return acos(inValue);
+    }
+
+    /** To get atan2 of a 2 FReal */
+    static FReal Fmod(const FReal inValue1,const FReal inValue2){
+        return fmod(inValue1,inValue2);
     }
 };
 
-const double FMath::FPi = M_PI;
-const double FMath::FPiDiv2 = M_PI_2;
+const FReal FMath::FPi = M_PI;
+const FReal FMath::FPiDiv2 = M_PI_2;
+const FReal FMath::Epsilon = 0.00000000000000000001;
 
 #endif //FMATH_HPP
 

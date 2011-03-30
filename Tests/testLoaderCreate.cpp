@@ -15,11 +15,11 @@ int main(int , char ** ){
     const long NbParticules = 200000;
 
     // Center of the box
-    const double XCenter = 0.5;
-    const double YCenter = 0.5;
-    const double ZCenter = 0.5;
+    const FReal XCenter = 0.5;
+    const FReal YCenter = 0.5;
+    const FReal ZCenter = 0.5;
     // Box width
-    const double BoxWidth = 1.0;
+    const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
     const char * const Output = "testLoader.basic.temp";
 
@@ -31,6 +31,8 @@ int main(int , char ** ){
         std::cout << "Cannot create " << Output << "\n";
         return 1;
     }
+
+    std::cout << "Creating " << NbParticules << " particules at " << Output << "\n";
     std::cout << "Working...\n";
 
     // System properties
@@ -38,9 +40,9 @@ int main(int , char ** ){
 
     // Generate particules
     for( long idx = 0 ; idx < NbParticules ; ++idx ){
-        const double px = ((double(rand())/RAND_MAX) * BoxWidth) + XCenter - (BoxWidth/2);
-        const double py = ((double(rand())/RAND_MAX) * BoxWidth) + YCenter - (BoxWidth/2);
-        const double pz = ((double(rand())/RAND_MAX) * BoxWidth) + ZCenter - (BoxWidth/2);
+        const FReal px = ((FReal(rand())/RAND_MAX) * BoxWidth) + XCenter - (BoxWidth/2);
+        const FReal py = ((FReal(rand())/RAND_MAX) * BoxWidth) + YCenter - (BoxWidth/2);
+        const FReal pz = ((FReal(rand())/RAND_MAX) * BoxWidth) + ZCenter - (BoxWidth/2);
 
         myfile << " \n" << px << " " << py << " " <<  pz;
     }

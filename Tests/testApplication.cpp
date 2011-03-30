@@ -1,7 +1,16 @@
 // /!\ Please, you must read the license at the bottom of this page
 
+
+/**
+ * This file illustrate how to include MPI in your application.
+ * 1 - Create an application that inherite from an virtual name (here ApplicationImplementation)
+ * 2 - Use the block between == to say what you class will inherit from
+ * 3 - Compile as needed
+ */
+
 #define FUSE_MPI
 
+//================================================================================================
 #ifdef FUSE_MPI
 // Compile by mpic++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
 // run by mpirun -np 4 ./testApplication.exe
@@ -12,17 +21,16 @@
 #include "../Sources/Utils/FSingleApplication.hpp"
 #define ApplicationImplementation FSingleApplication
 #endif
+//================================================================================================
+
+
 
 #include <stdio.h>
 
 
 /**
-* In this file we show how to use the application module
-* please refere to the source of testApplication.cpp directly to know more
-*/
-
-/**
 * FApp is an example of the FApplication
+* It inherite from ApplicationImplementation
 */
 class FApp : public ApplicationImplementation{
 public:
@@ -50,6 +58,7 @@ protected:
 		printf("I am %d, I just finished\n",processId());
 	}
 };
+
 
 // Usual Main
 int main(int argc, char ** argv){

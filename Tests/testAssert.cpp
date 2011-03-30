@@ -1,9 +1,5 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-#include <iostream>
-
-#include "../Sources/Utils/FSingleApplication.hpp"
-#include "../Sources/Utils/FAssertable.hpp"
 
 // Compile by : g++ testAssert.cpp ../Sources/Utils/FAssertable.cpp -o testAssert.exe
 
@@ -11,8 +7,16 @@
 * In this file we show how to use assert and error managing module
 */
 
+
+
+#include <iostream>
+
+#include "../Sources/Utils/FSingleApplication.hpp"
+#include "../Sources/Utils/FAssertable.hpp"
+
+
 // This class is a basic application that need to be assertable
-class FApp : public FSingleApplication, public FAssertable {
+class FApp : public FSingleApplication, protected FAssertable {
 public:
 	FApp(const int inArgc, char ** const inArgv )
 		: FSingleApplication(inArgc,inArgv) {

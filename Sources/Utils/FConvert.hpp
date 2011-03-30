@@ -4,9 +4,13 @@
 #include "../Containers/FTreeCoordinate.hpp"
 #include "../Utils/F3DPosition.hpp"
 
-/** This class proposes some convert functions
-  *
-  */
+/**
+* @author Berenger Bramas (berenger.bramas@inria.fr)
+* @class
+* Please read the license
+* This class proposes some convertion functions
+* FConvert is used here as a namespace.
+*/
 class FConvert {
 public :
     /** To get spatial position (F3DPosition) from morton data
@@ -15,7 +19,7 @@ public :
       * @param inWidthAtLevel the width of the box at this level
       * return outPosition the result
       */
-    static F3DPosition MortonToPosition(const MortonIndex inIndex, const int inLevel, const double inWidthAtLevel){
+    static F3DPosition MortonToPosition(const MortonIndex inIndex, const int inLevel, const FReal inWidthAtLevel){
         FTreeCoordinate treePosition;
         treePosition.setPositionFromMorton(inIndex, inLevel);
 

@@ -19,7 +19,6 @@
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFMMAlgorithmThreadedInterval.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
@@ -28,6 +27,7 @@
 #include "../Sources/Files/FFMALoader.hpp"
 
 // Compile by : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -97,16 +97,37 @@ int main(int , char ** ){
         std::cout << "Working on particules ..." << std::endl;
         counter.tic();
 
-        FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());//FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-        FFMMAlgorithmThreaded<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
+        FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());
+        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmThreadedInterval
+        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
+        //std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
+        //std::cout << "Potential = " << kernels.getPotential() << std::endl;
 
-        std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
-        std::cout << "Potential = " << kernels.getPotential() << std::endl;
+        { // get sum forces&potential
+            FReal potential = 0;
+            F3DPosition forces;
+            FOctree<FmbParticule, FmbCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                FList<FmbParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
+                while( iter.isValide() ){
+                    potential += iter.value()->getPotential() * iter.value()->getValue();
+                    forces += iter.value()->getForces();
+
+                    iter.progress();
+                }
+            } while(octreeIterator.moveRight());
+
+            std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+            std::cout << "Potential = " << potential << std::endl;
+        }
+
 
         // -----------------------------------------------------
 

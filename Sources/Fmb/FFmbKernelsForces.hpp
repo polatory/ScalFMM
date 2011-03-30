@@ -2,6 +2,7 @@
 #define FFMBKERNELSFORCES_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "FAbstractFmbKernels.hpp"
 
 
@@ -11,11 +12,12 @@
 * @brief
 * Please read the license
 *
+* This class is a Fmb Kernels.
 */
 template< class ParticuleClass, class CellClass>
 class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
  public:
-    FFmbKernelsForces(const int inTreeHeight, const double inTreeWidth)
+    FFmbKernelsForces(const int inTreeHeight, const FReal inTreeWidth)
         : FAbstractFmbKernels<ParticuleClass,CellClass>(inTreeHeight,inTreeWidth) {
     }
 
@@ -46,9 +48,10 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
             harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.
-            FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y+1;
-            FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated+1;
-            FComplexe* p_local_exp_term = local->getLocal()+1;
+            const FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y+1;
+            const FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated+1;
+            const FComplexe* p_local_exp_term = local->getLocal()+1;
+
             for (int j = 1 ; j <= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j ){
                 FComplexe exp_term_aux;
 
@@ -100,17 +103,58 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
             force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() * (-1.0) / (spherical.r * spherical.sinTheta));
             //#undef FMB_TMP_SIGN
 
-            //printf("\t\t force_vector_in_local_base x = %lf \t y = %lf \t z = %lf \n",
-            //       force_vector_in_local_base.getX(),force_vector_in_local_base.getY(),force_vector_in_local_base.getZ());
+            /////////////////////////////////////////////////////////////////////
 
-            const double th = FMath::ACos(spherical.cosTheta);
-            const double cos_theta = FMath::Cos(th);
-            const double cos_phi = FMath::Cos(spherical.phi);
-            const double sin_theta = FMath::Sin(th);
-            const double sin_phi = FMath::Sin(spherical.phi);
+            //spherical_position_Set_ph
+            //FMB_INLINE COORDINATES_T angle_Convert_in_MinusPi_Pi(COORDINATES_T a){
+            FReal ph = FMath::Fmod(spherical.phi, 2*FMath::FPi);
+            if (ph > M_PI) ph -= 2*FMath::FPi;
+            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
 
-            //printf("\t cos_theta = %f \t cos_phi = %f \t sin_theta = %f \t sin_phi = %f \n",
-            //       cos_theta, cos_phi, sin_theta, sin_phi);
+            //spherical_position_Set_th
+            FReal th = FMath::Fmod(FMath::ACos(spherical.cosTheta), 2*FMath::FPi);
+            if (th < 0.0) th += 2*FMath::FPi;
+            if (th > FMath::FPi){
+                th = 2*FMath::FPi - th;
+                //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
+                    ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+                    if (ph > M_PI) ph -= 2*FMath::FPi;
+                    if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
+                th = FMath::Fmod(th, 2*FMath::FPi);
+                if (th > M_PI) th -= 2*FMath::FPi;
+                if (th < -M_PI + FMath::Epsilon)  th += 2 * FMath::Epsilon;
+            }
+            //spherical_position_Set_r
+            FReal rh = spherical.r;
+            if (spherical.r < 0){
+                rh = -spherical.r;
+                //spherical_position_Set_ph(p, M_PI - spherical_position_Get_th(p));
+                ph = FMath::Fmod(FMath::FPi - th, 2*FMath::FPi);
+                if (ph > M_PI) ph -= 2*FMath::FPi;
+                if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
+                //spherical_position_Set_th(p, spherical_position_Get_th(p) + M_PI);
+                th = FMath::Fmod(th + FMath::FPi, 2*FMath::FPi);
+                if (th < 0.0) th += 2*FMath::FPi;
+                if (th > FMath::FPi){
+                    th = 2*FMath::FPi - th;
+                    //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
+                        ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+                        if (ph > M_PI) ph -= 2*FMath::FPi;
+                        if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
+                    th = FMath::Fmod(th, 2*FMath::FPi);
+                    if (th > M_PI) th -= 2*FMath::FPi;
+                    if (th < -M_PI + FMath::Epsilon)  th += 2 * FMath::Epsilon;
+                }
+            }
+
+            /*printf("[details] ph = %f , rh = %f , th = %f \n",
+                   ph,rh,th);*/
+
+
+            const FReal cos_theta = FMath::Cos(th);
+            const FReal cos_phi = FMath::Cos(ph);
+            const FReal sin_theta = FMath::Sin(th);
+            const FReal sin_phi = FMath::Sin(ph);
 
             F3DPosition force_vector_tmp;
 
@@ -145,9 +189,9 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
 
 
     void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
-                                                          double* const p_result){
+                                                          FReal* const p_result){
 
-        double result = 0.0;
+        FReal result = 0.0;
 
         FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y;
         for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j){
@@ -186,7 +230,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticuleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
                   DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
                                                    iterSource.value());
@@ -213,12 +257,12 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
         }
     }
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
-      const double dx = (*target)->getPosition().getX() - source->getPosition().getX();
-      const double dy = (*target)->getPosition().getY() - source->getPosition().getY();
-      const double dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
+      const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
+      const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
+      const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      double inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
-      double inv_distance = FMath::Sqrt(inv_square_distance);
+      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
+      FReal inv_distance = FMath::Sqrt(inv_square_distance);
       inv_distance *= (*target)->getValue() * source->getValue();
       inv_square_distance *= inv_distance;
 

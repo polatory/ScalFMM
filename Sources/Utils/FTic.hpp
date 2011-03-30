@@ -1,15 +1,19 @@
 #ifndef FTIC_HPP
 #define FTIC_HPP
 
-#if defined(_WIN32) || defined(ming)
-    #define WINDOWS
+#include <time.h>
+
+#include "FGlobal.hpp"
+
+#if defined(WINDOWS)
     #include <windows.h>
 #else
-    #define POSIX
+    #ifndef POSIX
+        #warning Posix used withoug being explicitly defined
+    #endif
     #include <sys/time.h>
 #endif
 
-#include <time.h>
 
 /** @author Berenger Bramas (berenger.bramas@inria.fr)
   * This class is a easy to use time counter
@@ -25,8 +29,8 @@
   */
 class FTic {
 private:
-    double start;   //< start time (tic)
-    double end;     //< stop time (tac)
+    FReal start;   //< start time (tic)
+    FReal end;     //< stop time (tac)
 
 public:
     /** Constructor */
@@ -45,7 +49,7 @@ public:
 
     /** Return end - start
       * @return the time elapsed between tic & tac in second */
-    double elapsed() const{
+    FReal elapsed() const{
         return this->end - this->start;
     }
 
@@ -54,9 +58,9 @@ public:
       * GetTickCount on windows
       * gettimeofday on linux
       */
-    static double GetTime(){
+    static FReal GetTime(){
 #ifdef WINDOWS
-        return static_cast<double>(GetTickCount())/1000.0;
+        return static_cast<FReal>(GetTickCount())/1000.0;
 #else
         timeval t;
         gettimeofday(&t, NULL);

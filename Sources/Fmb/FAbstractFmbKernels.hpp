@@ -2,6 +2,7 @@
 #define FABSTRACTFMBKERNELS_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "../Core/FAbstractKernels.hpp"
 
 #include "../Containers/FTreeCoordinate.hpp"
@@ -20,6 +21,16 @@
 * @brief
 * Please read the license
 *
+* This code is coming from the fmb library (see documentation to know more about it).
+* It is a copy'n paste file with a few modifications.
+* To be able to make link between this file and the originals ones you can
+* look to the commentary before function or attributes declarations.
+*
+* This class is abstract because the fmb's algorithm is able to compute
+* forces / potential / both
+* So this class is the trunk and defines code used for each 3 computations.
+*
+* Needs cell to extend {FExtendFmbCell}
 */
 template< class ParticuleClass, class CellClass>
 class FAbstractFmbKernels : public FAbstractKernels<ParticuleClass,CellClass> {
@@ -54,7 +65,7 @@ protected:
     // Level of the tree
     int treeHeight;
     // Width of the box at the root level
-    double treeWidthAtRoot;
+    FReal treeWidthAtRoot;
 
     // transfer_M2M_container
     FComplexe*** transitionM2M;
@@ -65,9 +76,9 @@ protected:
     FComplexe***** transferM2L;
 
     //[OK] spherical_harmonic_Outer_coefficients_array
-    double sphereHarmoOuterCoef[FMB_Info_exp_size];
+    FReal sphereHarmoOuterCoef[FMB_Info_exp_size];
     //[OK] spherical_harmonic_Inner_coefficients_array
-    double sphereHarmoInnerCoef[FMB_Info_exp_size];
+    FReal sphereHarmoInnerCoef[FMB_Info_exp_size];
 
     FComplexe current_thread_Y[FMB_Info_exp_size];
 
@@ -77,22 +88,22 @@ protected:
     // [OK?] p_precomputed_cos_and_sin_array
     FComplexe cosSin[FMB_Info_M2L_P + 1];
     // [OK?] p_associated_Legendre_function_Array
-    double legendre[FMB_Info_M2L_exp_size];
+    FReal legendre[FMB_Info_M2L_exp_size];
 
     // pow_of_I_array
-    static const double PiArrayInner[4];
+    static const FReal PiArrayInner[4];
     // pow_of_O_array
-    static const double PiArrayOuter[4];
+    static const FReal PiArrayOuter[4];
 
     // To store spherical position
     struct Spherical {
-        double r, cosTheta, sinTheta, phi;
+        FReal r, cosTheta, sinTheta, phi;
     };
 
     int expansion_Redirection_array_for_j[FMB_Info_M2L_P + 1 ];
 
     F3DPosition force_sum;
-    double potential_sum;
+    FReal potential_sum;
 
     bool FMB_Info_up_to_P_in_M2L;
 
@@ -110,7 +121,7 @@ protected:
     void sphericalHarmonicInitialize(){
         // Outer coefficients:
         //std::cout << "sphereHarmoOuterCoef\n";
-        double factOuter = 1.0;
+        FReal factOuter = 1.0;
         // in FMB code stoped at <= FMB_Info_M2L_P but this is not sufficient
         for(int idxP = 0 ; idxP < FMB_Info_exp_size; factOuter *= (++idxP) ){
             this->sphereHarmoOuterCoef[idxP] = factOuter;
@@ -118,9 +129,9 @@ protected:
         }
 
         // Inner coefficients:
-        double* currentInner = this->sphereHarmoInnerCoef;
-        double factInner = 1.0;
-        double powN1idxP = 1.0;
+        FReal* currentInner = this->sphereHarmoInnerCoef;
+        FReal factInner = 1.0;
+        FReal powN1idxP = 1.0;
         //std::cout << "sphereHarmoInnerCoef\n";
         for(int idxP = 0 ; idxP <= this->FMB_Info_M2L_P ; factInner *= (++idxP), powN1idxP = -powN1idxP){
             for(int idxMP = 0, fact_l_m = factInner; idxMP <= idxP ; fact_l_m *= idxP+(++idxMP), ++currentInner){
@@ -219,7 +230,7 @@ protected:
 
     // position_2_r_cos_th_sin_th_ph
     void positionToSphere(const F3DPosition& inVector, Spherical* const outSphere ){
-        const double x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
+        const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
 
         outSphere->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
         outSphere->phi = FMath::Atan2(inVector.getY(),inVector.getX());
@@ -228,7 +239,7 @@ protected:
     }
 
     // associated_Legendre_function_Fill_complete_array_of_values_for_cos
-    void legendreFunction( const double inCosTheta, const double inSinTheta, double* const outResults ){
+    void legendreFunction( const FReal inCosTheta, const FReal inSinTheta, FReal* const outResults ){
         // l=0:         results[current++] = 1.0; // P_0^0(cosTheta) = 1
         int idxCurrent = 0;
         outResults[idxCurrent++] = 1.0;
@@ -238,13 +249,13 @@ protected:
         outResults[idxCurrent++] = inCosTheta;
 
         // Compute P_1^1 using (2 bis) and store it into results_array
-        const double invSinTheta = -inSinTheta; // somx2 => -sinTheta
+        const FReal invSinTheta = -inSinTheta; // somx2 => -sinTheta
         outResults[idxCurrent++] = invSinTheta;
 
         // l>1:
         int idxCurrent1m = 1; //pointer on P_{l-1}^m P_1^0
         int idxCurrent2m = 0; //pointer on P_{l-2}^m P_0^0
-        double fact = 3.0;
+        FReal fact = 3.0;
 
         // Remark: p_results_array_l_minus_1_m and p_results_array_l_minus_2_m
         // just need to be incremented at each iteration.
@@ -273,7 +284,7 @@ protected:
         FComplexe* ptrCosSin = this->cosSin;
         for(int idxl = 0 , idxlMod4 = 0; idxl <= LMax ; ++idxl, ++idxlMod4, ++ptrCosSin){
             if(idxlMod4 == 4) idxlMod4 = 0;
-            const double angle = idxl * inSphere.phi + this->PiArrayInner[idxlMod4];
+            const FReal angle = idxl * inSphere.phi + this->PiArrayInner[idxlMod4];
 
             ptrCosSin->setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             ptrCosSin->setImag( FMath::Sin(angle) );
@@ -289,11 +300,11 @@ protected:
         FComplexe* currentResult = outResults;
         int idxLegendre = 0;//ptr_associated_Legendre_function_Array
         int idxSphereHarmoCoef = 0;
-        double idxRl = 1.0 ;
+        FReal idxRl = 1.0 ;
 
         for(int idxl = 0; idxl <= this->LMax ; ++idxl, idxRl *= inSphere.r){
             for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxSphereHarmoCoef, ++idxLegendre){
-                const double magnitude = this->sphereHarmoInnerCoef[idxSphereHarmoCoef] * idxRl * legendre[idxLegendre];
+                const FReal magnitude = this->sphereHarmoInnerCoef[idxSphereHarmoCoef] * idxRl * legendre[idxLegendre];
                 currentResult->setReal( magnitude * this->cosSin[idxm].getReal() );
                 currentResult->setImag( magnitude * this->cosSin[idxm].getImag() );
                 //printf("magnitude=%f idxRl=%f sphereHarmoInnerCoef=%f real=%f imag=%f\n",magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],currentResult->getReal(),currentResult->getImag());
@@ -307,7 +318,7 @@ protected:
         FComplexe* ptrCosSin = this->cosSin;
         for(int idxl = 0, idxlMod4 = 0; idxl <= LMax ; ++idxl, ++idxlMod4, ++ptrCosSin){
             if(idxlMod4 == 4) idxlMod4 = 0;
-            const double angle = idxl * inSphere.phi + this->PiArrayOuter[idxlMod4];
+            const FReal angle = idxl * inSphere.phi + this->PiArrayOuter[idxlMod4];
 
             ptrCosSin->setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             ptrCosSin->setImag( FMath::Sin(angle) );
@@ -321,11 +332,11 @@ protected:
         int idxLegendre = 0;
         FComplexe* currentResult = outResults;
 
-        const double invR = 1/inSphere.r;
-        double idxRl1 = invR;
+        const FReal invR = 1/inSphere.r;
+        FReal idxRl1 = invR;
         for(int idxl = 0 ; idxl <= this->LMax ; ++idxl, idxRl1 *= invR){
             for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxLegendre){
-                const double magnitude = this->sphereHarmoOuterCoef[idxl-idxm] * idxRl1 * this->legendre[idxLegendre];
+                const FReal magnitude = this->sphereHarmoOuterCoef[idxl-idxm] * idxRl1 * this->legendre[idxLegendre];
                 currentResult->setReal( magnitude * this->cosSin[idxm].getReal() );
                 currentResult->setImag( magnitude * this->cosSin[idxm].getImag() );
                 //printf("l=%d\t m=%d\t idxRl1=%f\t magnitude=%f\n",idxl,idxm,idxRl1,magnitude);
@@ -372,15 +383,18 @@ protected:
                          ){
         FComplexe *p_term = results_array;
         FComplexe *p_theta_derivated_term = theta_derivated_results_array;
-        double *p_spherical_harmonic_Inner_coefficients_array = sphereHarmoInnerCoef;
-        double *ptr_associated_Legendre_function_Array = legendre;
-        double *start_ptr_associated_Legendre_function_Array = ptr_associated_Legendre_function_Array;
+        FReal *p_spherical_harmonic_Inner_coefficients_array = sphereHarmoInnerCoef;
+        FReal *ptr_associated_Legendre_function_Array = legendre;
+        FReal *start_ptr_associated_Legendre_function_Array = ptr_associated_Legendre_function_Array;
 
+
+        //printf("HarmoInnerTheta \t lmax = %d \t r = %f \t cos_theta = %f \t sin_theta = %f \t phi = %f\n",
+        //       FMB_Info_P,inSphere.r,inSphere.cosTheta,inSphere.sinTheta,inSphere.phi);
 
         // Initialization of precomputed_cos_and_sin_array:
         for(int idxm = 0 , idxmMod4 = 0; idxm <= FMB_Info_P ; ++idxm, ++idxmMod4){
             if(idxmMod4 == 4) idxmMod4 = 0;
-            const double angle = idxm*inSphere.phi + PiArrayInner[idxmMod4];
+            const FReal angle = idxm*inSphere.phi + PiArrayInner[idxmMod4];
             (cosSin + idxm)->setReal(FMath::Sin(angle + FMath::FPiDiv2));
             (cosSin + idxm)->setImag(FMath::Sin(angle));
 
@@ -392,15 +406,31 @@ protected:
         legendreFunction( inSphere.cosTheta, inSphere.sinTheta, this->legendre);
 
         // r^l
-        double r_l = 1.0;
+        FReal r_l = 1.0;
         for (int l = 0 ; l <= FMB_Info_P ; ++l, r_l *= inSphere.r){
-            double magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (*ptr_associated_Legendre_function_Array);
+            FReal magnitude;
             // m<l:
             int m = 0;
             for(; m < l ; ++m, ++p_term, ++p_theta_derivated_term, ++p_spherical_harmonic_Inner_coefficients_array, ++ptr_associated_Legendre_function_Array){
+                magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (*ptr_associated_Legendre_function_Array);
+
                 // Computation of Inner_l^m(r, theta, phi):
                 p_term->setReal( magnitude * (cosSin + m)->getReal());
                 p_term->setImag( magnitude * (cosSin + m)->getImag());
+
+                /*printf("%d/%d - magnitude=%e ptr_precomputed_cos_and_sin_array real=%e imag=%e p_term real=%e imag=%e\n",
+                       l,m,
+                       magnitude,
+                       (cosSin + m)->getReal(),
+                       (cosSin + m)->getImag(),
+                       p_term->getReal(),
+                       p_term->getImag());*/
+                /*printf("\t p_spherical_harmonic_Inner_coefficients_array = %e \t ptr_associated_Legendre_function_Array = %e \t r_l = %e\n",
+                       *p_spherical_harmonic_Inner_coefficients_array,
+                       *ptr_associated_Legendre_function_Array,
+                       r_l
+                       );*/
+
                 // Computation of {\partial Inner_l^m(r, theta, phi)}/{\partial theta}:
                 magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * ((l*inSphere.cosTheta*(*ptr_associated_Legendre_function_Array)
                                         - (l+m)*(*(start_ptr_associated_Legendre_function_Array + expansion_Redirection_array_for_j[l-1] + m))) / inSphere.sinTheta);
@@ -416,6 +446,20 @@ protected:
             magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (*ptr_associated_Legendre_function_Array);
             p_term->setReal(magnitude * (cosSin + m)->getReal());
             p_term->setImag(magnitude * (cosSin + m)->getImag());
+
+            /*printf("%d - magnitude=%e ptr_precomputed_cos_and_sin_array real=%e imag=%e p_term real=%e imag=%e\n",
+                   l,
+                   magnitude,
+                   (cosSin + m)->getReal(),
+                   (cosSin + m)->getImag(),
+                   p_term->getReal(),
+                   p_term->getImag());*/
+            /*printf("\t p_spherical_harmonic_Inner_coefficients_array = %e \t ptr_associated_Legendre_function_Array = %e \t r_l = %e\n",
+                   *p_spherical_harmonic_Inner_coefficients_array,
+                   *ptr_associated_Legendre_function_Array,
+                   r_l
+                   );*/
+
             // Computation of {\partial Inner_m^m(r, theta, phi)}/{\partial theta}:
             magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (m * inSphere.cosTheta * (*ptr_associated_Legendre_function_Array) / inSphere.sinTheta);
             p_theta_derivated_term->setReal(magnitude * (cosSin + m)->getReal());
@@ -462,7 +506,7 @@ protected:
     // transfer_M2M_Precompute_all_levels
     // transfer_L2L_Precompute_all_levels
     void precomputeM2M(){
-        double treeWidthAtLevel = this->treeWidthAtRoot/2;
+        FReal treeWidthAtLevel = this->treeWidthAtRoot/2;
 
         for(int idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel ){
             const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
@@ -510,7 +554,7 @@ protected:
         //[Blas] FComplexe tempComplexe[FMB_Info_M2L_exp_size];
         //printf("FMB_Info.M2L_exp_size = %d\n",FMB_Info_M2L_exp_size);
 
-        double treeWidthAtLevel = this->treeWidthAtRoot;
+        FReal treeWidthAtLevel = this->treeWidthAtRoot;
         for(int idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel ){
             //printf("level = %d \t width = %lf\n",idxLevel,treeWidthAtLevel);
             for( int idxd1 = 0; idxd1 < this->size1Dim ; ++idxd1 ){
@@ -558,7 +602,7 @@ protected:
     }
 
 public:
-    FAbstractFmbKernels(const int inTreeHeight, const double inTreeWidth)
+    FAbstractFmbKernels(const int inTreeHeight, const FReal inTreeWidth)
         : treeHeight(inTreeHeight), treeWidthAtRoot(inTreeWidth),
           transitionM2M(0), transitionL2L(0), potential_sum(0), FMB_Info_up_to_P_in_M2L(true) {
         buildPrecompute();
@@ -584,7 +628,7 @@ public:
         return force_sum;
     }
 
-    double getPotential() const{
+    FReal getPotential() const{
         return potential_sum;
     }
 
@@ -630,14 +674,15 @@ public:
 
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
-            double pow_of_minus_1_j = 1.0;//(-1)^j
-            const double valueParticule = iterParticule.value()->getValue();
+            FReal pow_of_minus_1_j = 1.0;//(-1)^j
+            const FReal valueParticule = iterParticule.value()->getValue();
 
             for(int j = 0 ; j <= FMB_Info_P ; ++j, pow_of_minus_1_j = -pow_of_minus_1_j ){
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
                     p_Y_term->mulRealAndImag( valueParticule * pow_of_minus_1_j );
                     (*p_exp_term) += (*p_Y_term);
-                    //printf("\tj=%d\tk=%d\tp_exp_term.real=%f\tp_exp_term.imag=%f\tp_Y_term.real=%f\tp_Y_term.imag=%f\tpow_of_minus_1_j=%f\n", j,k,(*p_exp_term).getReal(),(*p_exp_term).getImag(),(*p_Y_term).getReal(),(*p_Y_term).getImag(),pow_of_minus_1_j);
+                    //printf("\tj=%d\tk=%d\tp_exp_term.real=%f\tp_exp_term.imag=%f\tp_Y_term.real=%f\tp_Y_term.imag=%f\tpow_of_minus_1_j=%f\n",
+                    //       j,k,(*p_exp_term).getReal(),(*p_exp_term).getImag(),(*p_Y_term).getReal(),(*p_Y_term).getImag(),pow_of_minus_1_j);
                 }
             }
         }
@@ -684,7 +729,7 @@ public:
 
             for(int n = 0 ; n <= FMB_Info_P ; ++n ){
                 // l<0 // (-1)^l
-                double pow_of_minus_1_for_l = ( n % 2 ? -1 : 1);
+                FReal pow_of_minus_1_for_l = ( n % 2 ? -1 : 1);
 
                 // O_n^l : here points on the source multipole expansion term of degree n and order |l|
                 const FComplexe* p_src_exp_term = multipole_exp_src + expansion_Redirection_array_for_j[n]+n;
@@ -723,7 +768,7 @@ public:
 
                     for( int j=n ; j <= FMB_Info_P ; ++j ){
                         // (-1)^k
-                        double pow_of_minus_1_for_k = ( FMath::Max(0,n-j+l) %2 ? -1 : 1 );
+                        FReal pow_of_minus_1_for_k = ( FMath::Max(0,n-j+l) %2 ? -1 : 1 );
                         // M_j^k
                         FComplexe *p_target_exp_term = multipole_exp_target + expansion_Redirection_array_for_j[j] + FMath::Max(0,n-j+l);
                         // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
@@ -823,11 +868,11 @@ public:
                 }
 
                 // (-1)^k
-                double pow_of_minus_1_for_k = 1.0;
+                FReal pow_of_minus_1_for_k = 1.0;
                 for (int k = 0 ; k <= j ; ++k, pow_of_minus_1_for_k = -pow_of_minus_1_for_k, ++p_target_exp_term){
 
                     // (-1)^n
-                    double pow_of_minus_1_for_n = 1.0;
+                    FReal pow_of_minus_1_for_n = 1.0;
                     for (int n = 0 ; n <= stop_for_n ; ++n, pow_of_minus_1_for_n = -pow_of_minus_1_for_n){
 
                         // O_n^l : here points on the source multipole expansion term of degree n and order |l|
@@ -837,7 +882,7 @@ public:
                         //printf("expansion_Get_p_term(M2L_transfer, n+j, k+n)-M2L_transfer = %d \t(n=%d)\n",
                         //       p_Outer_term-M2L_transfer , n );
                         //printf("TRUC = %d\n",expansion_Redirection_array_for_j[n+j] + k+n);
-                        double pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
+                        FReal pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
                         // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
                         int l=n;
                         for ( ; l>0 ; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, --p_src_exp_term, --p_Outer_term){ // we have -k-l<0 and l>0
@@ -899,7 +944,7 @@ public:
     //    Downard
     /////////////////////////////////////////////////////////////////////////////////
 
-    /**
+    /** expansion_L2L_add
       *We compute the shift of local_exp_src from *p_center_of_exp_src to
       *p_center_of_exp_target, and set the result to local_exp_target.
       *
@@ -930,11 +975,13 @@ public:
             //printf("Father morton %lld\n", pole->getMortonIndex());
             //printf("Child morton %lld\n", child[idxChild]->getMortonIndex());
 
+            //printf("local exp target %h\n", local_exp_target);
+
             // L_j^k
             FComplexe* p_target_exp_term = local_exp_target;
             for (int j=0 ; j<= FMB_Info_P ; ++j){
                 // (-1)^k
-                double pow_of_minus_1_for_k = 1.0;
+                FReal pow_of_minus_1_for_k = 1.0;
                 for (int k=0 ; k <= j ; ++k, pow_of_minus_1_for_k = -pow_of_minus_1_for_k, ++p_target_exp_term){
                     for (int n=j; n<=FMB_Info_P;++n){
                         // O_n^l : here points on the source multipole expansion term of degree n and order |l|
@@ -961,7 +1008,7 @@ public:
 
                         //printf("2\n");
                         // (-1)^l
-                        double pow_of_minus_1_for_l = ((l%2) ? -1 : 1);
+                        FReal pow_of_minus_1_for_l = ((l%2) ? -1 : 1);
                         for (; l>0 && l>=j-n+k; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, --p_src_exp_term, ++p_Inner_term){ /* l>0 && l-k<=0 */
                                 p_target_exp_term->incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
                                                 ((p_src_exp_term->getReal() * p_Inner_term->getReal()) +
@@ -1012,11 +1059,11 @@ public:
 
 
 template< class ParticuleClass, class CellClass>
-const double FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+const FReal FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
 template< class ParticuleClass, class CellClass>
-const double FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+const FReal FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

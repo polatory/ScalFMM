@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "../Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
 #include "../Utils/F3DPosition.hpp"
 
@@ -40,7 +41,7 @@ class FFMALoader : public FAbstractLoader<ParticuleClass> {
 protected:
     std::ifstream file;         //< The file to read
     F3DPosition centerOfBox;    //< The center of box read from file
-    double boxWidth;            //< the box width read from file
+    FReal boxWidth;            //< the box width read from file
     int nbParticules;           //< the number of particules read from file
 
 public:
@@ -52,7 +53,7 @@ public:
     FFMALoader(const char* const filename): file(filename,std::ifstream::in){
         // test if open
         if(this->file.is_open()){
-            double x,y,z;
+            FReal x,y,z;
             this->file >> this->nbParticules >> this->boxWidth >> x >> y >> z;
             this->centerOfBox.setPosition(x,y,z);
             this->boxWidth *= 2;
@@ -98,7 +99,7 @@ public:
       * The box width from the simulation file opened by the loader
       * @return box width
       */
-    double getBoxWidth() const{
+    FReal getBoxWidth() const{
         return this->boxWidth;
     }
 
@@ -108,7 +109,7 @@ public:
       * @param the particule to fill
       */
     void fillParticule(ParticuleClass* const inParticule){
-        double x,y,z,data;
+        FReal x,y,z,data;
         this->file >> x >> y >> z >> data;
         inParticule->setPosition(x,y,z);
         inParticule->setValue(data);

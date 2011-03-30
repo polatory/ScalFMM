@@ -14,69 +14,36 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FAbstractParticule.hpp"
-#include "../Sources/Core/FAbstractCell.hpp"
+#include "../Sources/Core/FBasicParticule.hpp"
+#include "../Sources/Core/FBasicCell.hpp"
 
 // Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testOctree.exe
 
 /**
 * In this file we show how to use octree
-* Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
-* Creating particules ...
-* Done  (0.268113).
-* Inserting particules ...
-* Done  (2.70836).
-* Deleting particules ...
-* Done  (0.0791715).
 */
-
-// Fake particule class
-class TestParticule : public FAbstractParticule {
-    F3DPosition pos;
-public:
-    TestParticule(const F3DPosition& inPos) : pos(inPos) {
-    }
-
-    F3DPosition getPosition() const {
-            return pos;
-    }
-};
-// Fake cell class
-class TestCell : public FAbstractCell {
-    MortonIndex index;
-public:
-    MortonIndex getMortonIndex() const {
-        return index;
-    }
-
-    void setMortonIndex(const MortonIndex inIndex) {
-        index = inIndex;
-    }
-	
-    void setPosition(const F3DPosition&){}
-};
-
 
 int main(int , char ** ){
         const long NbPart = 2000000;
-        FList<TestParticule*> particules;
+        FList<FBasicParticule*> particules;
         FTic counter;
 
         srand ( time(NULL) );
-
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
         counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particules.pushFront(new TestParticule(F3DPosition(double(rand())/RAND_MAX,double(rand())/RAND_MAX,double(rand())/RAND_MAX)));
+            FBasicParticule* const particule = new FBasicParticule();
+            particule->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            particules.pushFront(particule);
         }
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<TestParticule, TestCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
-        FList<TestParticule*>::BasicIterator iter(particules);
+        FOctree<FBasicParticule, FBasicCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FList<FBasicParticule*>::BasicIterator iter(particules);
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
@@ -98,8 +65,6 @@ int main(int , char ** ){
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
-
-
 
 	return 0;
 }

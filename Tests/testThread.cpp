@@ -1,18 +1,21 @@
 // /!\ Please, you must read the license at the bottom of this page
 
+
+// Compile by g++ testThread.cpp ../Sources/Utils/FDebug.cpp -lgomp -lpthread -fopenmp -o testThread.exe
+
+/**
+* In this file we show how to use the thread module.
+* Thread can be Posix or OpenMP.
+* Here we define two classes, each one use a type.
+* As you can see there is no difference in the inheriting.
+*/
+
 #include "../Sources/Utils/FAbstractThread.hpp"
 #include "../Sources/Utils/FOpenMPThread.hpp"
 #include "../Sources/Utils/FPosixThread.hpp"
 #include "../Sources/Utils/FNoThread.hpp"
 
 #include <stdio.h>
-
-// Compile by g++ testThread.cpp ../Sources/Utils/FDebug.cpp -lgomp -lpthread -fopenmp -o testThread.exe
-
-/**
-* In this file we show how to use the thread module
-*/
-
 
 /**
 * TOpen is an example of the FOpenMPThreaded implementation class
@@ -33,6 +36,7 @@ public:
 		printf("I am %d ok\n",inThreadId);
 	}
 };
+
 
 /**
 * TPosix is an example of the FPosixThreaded implementation class

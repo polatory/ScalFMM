@@ -4,6 +4,7 @@
 
 #include "FSubOctree.hpp"
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
 #include "../Utils/FMath.hpp"
 #include "FTreeCoordinate.hpp"
@@ -24,21 +25,21 @@
  * </code>
  *
  * Particules and cells has to respect the Abstract class definition.
- * Particule can extend {FExtendPosition}
- * Cell can extend {FExtendPosition,FExtendMortonIndex}
+ * Particule must extend {FExtendPosition}
+ * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
  */
 template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight = 3>
 class FOctree {
         const int height;		//< tree height
 	const int leafIndex;		//< index of leaf int array
 
-        const double boxWidth;          //< the space system width
+        const FReal boxWidth;          //< the space system width
 	const F3DPosition boxCenter;	//< the space system center
 	const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
 
-	double boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
+        FReal boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
 
-        FSubOctree< ParticuleClass, CellClass > root;//< root suboctree
+        FSubOctree< ParticuleClass, CellClass > root;   //< root suboctree
 
 	/** Forbiden copy operator */
 	FOctree& operator=(const FOctree&) {
@@ -70,9 +71,9 @@ class FOctree {
         * @param inRelativePosition a position from the corner of the box
         * @return the box num at the leaf level that contains inRelativePosition
         */
-        long getTreeCoordinate(const double inRelativePosition) const {
-                const double indexDouble = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-                const long index = FMath::dfloor(indexDouble);
+        long getTreeCoordinate(const FReal inRelativePosition) const {
+                const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
+                const long index = FMath::dfloor(indexFReal);
                 if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * index ) ){
                         return index - 1;
                 }
@@ -85,17 +86,16 @@ public:
 	* @param inBoxWidth box width for this simulation
 	* @param inBoxCenter box center for this simulation
 	*/
-	FOctree(const double inBoxWidth, const F3DPosition& inBoxCenter)
+        FOctree(const FReal inBoxWidth, const F3DPosition& inBoxCenter)
                         : boxWidth(inBoxWidth) , boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)),
                         height(OctreeHeight) , leafIndex(OctreeHeight-1),
                         root(0, 0, SubtreeHeight, 1){
-		double tempWidth = this->boxWidth;
+                FReal tempWidth = this->boxWidth;
                 // pre compute box width for each level
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
                         this->boxWidthAtLevel[indexLevel] = tempWidth;
 			tempWidth /= 2.0;
 		}
-
 	}
 
 	/** Desctructor */
@@ -114,7 +114,6 @@ public:
                 root.insert( particuleIndex, inParticule, this->height, this->boxWidthAtLevel);
 	}
 
-
         /**
           * The class works on suboctree. Most of the resources needed
           * are avaiblable by using FAbstractSubOctree. But when accessing
@@ -128,10 +127,7 @@ public:
         };
 
         /**
-          * The class works on suboctree. Most of the resources needed
-          * are avaiblable by using FAbstractSubOctree. But when accessing
-          * to the leaf we have to use FSubOctree or FSubOctreeWithLeafs
-          * depending if we are working on the bottom of the tree.
+          * This class is a const SubOctreeTypes
           */
         union SubOctreeTypesConst {
             const FAbstractSubOctree<ParticuleClass,CellClass>* tree;     //< Usual pointer to work
@@ -217,8 +213,11 @@ public:
             }
 
             /**
-              * Move iterator to the top! (level 0 of root, level 1 of octree)
-              * index = left limit at root level
+              * Move iterator to the top! (level 0 of root suboctree, level 1 of octree)
+              * after this function : index = left limit at root level
+              * the Algorithm is :
+              *     going to root suboctree
+              *     going to the first level and most left node
               */
             void gotoTop(){
                 while(this->current.tree->hasParent()){
@@ -230,7 +229,10 @@ public:
 
             /**
               * Move iterator to the bottom left place
-              * We are on a leaf
+              * We are on a leaf a the most left node
+              * the Algorithm is :
+              *     first go to top
+              *     then stay on the left and go downward
               */
             void gotoBottomLeft(){
                 gotoTop();
@@ -246,6 +248,10 @@ public:
 
             /**
               * Move iterator to the left place at the same level
+              * if needed we go on another suboctree but we stay on at the same level
+              * the Algorithm is :
+              *     go to top
+              *     go downard until we are a the same level
               */
             void gotoLeft(){
                 //  Function variables
@@ -267,7 +273,11 @@ public:
             }
 
             /**
-              * Move iterator to the left place at the same level
+              * Move iterator to the right place at the same level
+              * if needed we go on another suboctree but we stay on at the same level
+              * the Algorithm is :
+              *     go to top
+              *     go downard until we are a the same level
               */
             void gotoRight(){
                 //  Function variables
@@ -307,6 +317,8 @@ public:
               *
               * In the second case, it meanse we need to change octree downward
               * but it is easy because we can use the left limit!
+              *
+              * @return true if we succeed to go to the right, else false
               */
             bool moveRight(){
                 //  Function variables
@@ -386,9 +398,12 @@ public:
                 }
                 return false;
             }
+
             /**
               * Move to the upper level
               * It may cause to change the suboctree we are working on
+              * but we are using the same morton index >> 3
+              * @return true if succeed
               */
             bool moveUp() {
                 // It is on the top level?
@@ -408,11 +423,13 @@ public:
                 }
                 return true;
             }
+
             /**
               * Move down
               * It may cause to change the suboctree we are working on
               * We point on the first child found from left to right in the above
               * level
+              * @return true if succeed
               */
             bool moveDown(){
                 if( !isAtLeafLevel() ){
@@ -436,7 +453,6 @@ public:
                 }
                 return false;
             }
-
 
             /**
               * To know if we are not on the root level
@@ -514,7 +530,7 @@ public:
 
         };
 
-        // To be able to access octree root
+        // To be able to access octree root & data
         friend class Iterator;
 
         ///////////////////////////////////////////////////////////////////////////

@@ -2,6 +2,7 @@
 #define FEXTENDPOSITION_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
 
 /**
@@ -44,8 +45,8 @@ public:
         this->position = inPosition;
     }
 
-    /** To set the position from 3 doubles */
-    void setPosition(const double inX, const double inY, const double inZ) {
+    /** To set the position from 3 FReals */
+    void setPosition(const FReal inX, const FReal inY, const FReal inZ) {
         this->position.setX(inX);
         this->position.setY(inY);
         this->position.setZ(inZ);

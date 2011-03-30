@@ -12,19 +12,19 @@
 * Propose basic complexe class.
 */
 class FComplexe {
-    double imag;    //< Imaginary
-    double real;    //< Real
+    FReal imag;    //< Imaginary
+    FReal real;    //< Real
 
 public:
-    /** Default Constructor */
+    /** Default Constructor (set real&imaginary to 0) */
     FComplexe() : imag(0), real(0){
     }
 
-    /** Constructor with default value
+    /** Constructor with values
       * @param inImag the imaginary
       * @param inReal the real
       */
-    FComplexe(const double inImag, const double inReal)
+    FComplexe(const FReal inImag, const FReal inReal)
         : imag(inImag), real(inReal){
     }
 
@@ -52,22 +52,22 @@ public:
     }
 
     /** Get imaginary */
-    double getImag() const{
+    FReal getImag() const{
         return this->imag;
     }
 
     /** Get real */
-    double getReal() const{
+    FReal getReal() const{
         return this->real;
     }
 
     /** Set Imaginary */
-    void setImag(const double inImag) {
+    void setImag(const FReal inImag) {
         this->imag = inImag;
     }
 
     /** Set Real */
-    void setReal(const double inReal) {
+    void setReal(const FReal inReal) {
         this->real = inReal;
     }
 
@@ -86,50 +86,50 @@ public:
       * @param inIncReal to inc the real
       * @param inIncImag to inc the imag
       */
-    void inc(const double inIncReal, const double inIncImag){
+    void inc(const FReal inIncReal, const FReal inIncImag){
         this->real += inIncReal;
         this->imag += inIncImag;
     }
 
-    /** Inc real by double
+    /** Inc real by FReal
       * @param inIncReal to inc the real
       */
-    void incReal(const double inIncReal){
+    void incReal(const FReal inIncReal){
         this->real += inIncReal;
     }
 
-    /** Inc imaginary by double
+    /** Inc imaginary by FReal
       * @param inIncImag to inc the imag
       */
-    void incImag(const double inIncImag){
+    void incImag(const FReal inIncImag){
         this->imag += inIncImag;
     }
 
-    /** Dec real by double
+    /** Dec real by FReal
       * @param inDecReal to dec the real
       */
-    void decReal(const double inIncReal){
+    void decReal(const FReal inIncReal){
         this->real -= inIncReal;
     }
 
-    /** Dec imaginary by double
+    /** Dec imaginary by FReal
       * @param inDecImag to dec the imag
       */
-    void decImag(const double inIncImag){
+    void decImag(const FReal inIncImag){
         this->imag -= inIncImag;
     }
 
-    /** Mul real and imaginary by a double
+    /** Mul real and imaginary by a FReal
       * @param inValue the coef to mul data
       */
-    void mulRealAndImag(const double inValue){
+    void mulRealAndImag(const FReal inValue){
         this->imag *= inValue;
         this->real *= inValue;
     }
 
     /** Mul a complexe by another "c*=c2" */
     FComplexe& operator*=(const FComplexe& other){
-        const double tempReal = this->real;
+        const FReal tempReal = this->real;
         this->real = (tempReal * other.real) - (this->imag * other.imag);
         this->imag = (tempReal * other.imag) + (this->imag * other.real);
         return *this;

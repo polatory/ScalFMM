@@ -2,6 +2,7 @@
 #define FEXTENDFORCES_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
 
 /**
@@ -45,8 +46,8 @@ public:
         this->forces = inForces;
     }
 
-    /** Set Forces with 3 doubles */
-    void setForces(const double inFx, const double inFy, const double inFz) {
+    /** Set Forces with 3 FReals */
+    void setForces(const FReal inFx, const FReal inFy, const FReal inFz) {
         this->forces.setX(inFx);
         this->forces.setY(inFy);
         this->forces.setZ(inFz);

@@ -11,20 +11,22 @@
 * @class F3DPosition
 * Please read the license
 *
+* This class is a 3D vector. It can be used as a position
+* or as a 3d forces vector etc.
 */
 class F3DPosition{
 private:
-	double x; //< x position
-	double y; //< y position
-	double z; //< z position
+	FReal x; //< x position
+	FReal y; //< y position
+	FReal z; //< z position
 
 public:	
-	/** Default constructor */
+        /** Default constructor (sets position to 0/0/0) */
 	F3DPosition() : x(0.0), y(0.0), z(0.0){
 	}
 
-	/** Default constructor */
-	F3DPosition(const double inX,const double inY,const double inZ)
+        /** Constructor from values */
+	F3DPosition(const FReal inX,const FReal inY,const FReal inZ)
 		: x(inX), y(inY), z(inZ){
 	}
 
@@ -45,7 +47,9 @@ public:
 	* @return this a reference to the current class
 	*/
 	F3DPosition& operator=(const F3DPosition& other){
-                memcpy(this, &other, sizeof(F3DPosition));
+            this->x = other.x;
+            this->y = other.y;
+            this->z = other.z;
 		return *this;
 	}
 
@@ -54,7 +58,7 @@ public:
 	* @param other the source class to copy
 	* @return this a reference to the current class
 	*/
-	void setPosition(const double inX,const double inY,const double inZ){
+	void setPosition(const FReal inX,const FReal inY,const FReal inZ){
 		this->x = inX;
 		this->y = inY;
 		this->z = inZ;
@@ -64,7 +68,7 @@ public:
 	* Get x
 	* @return this->x
 	*/
-	double getX() const{
+	FReal getX() const{
 		return this->x;
 	}
 
@@ -72,7 +76,7 @@ public:
 	* Get y
 	* @return this->y
 	*/
-	double getY() const{
+	FReal getY() const{
 		return this->y;
 	}
 
@@ -80,7 +84,7 @@ public:
 	* Get z
 	* @return this->z
 	*/
-	double getZ() const{
+	FReal getZ() const{
 		return this->z;
 	}
 
@@ -88,7 +92,7 @@ public:
 	* Set x
 	* @param the new x
 	*/
-	void setX(const double inX){
+	void setX(const FReal inX){
 		this->x = inX;
 	}
 
@@ -96,7 +100,7 @@ public:
 	* Set y
 	* @param the new y
 	*/
-	void setY(const double inY){
+	void setY(const FReal inY){
 		this->y = inY;
 	}
 
@@ -104,7 +108,7 @@ public:
 	* Set z
 	* @param the new z
 	*/
-	void setZ(const double inZ){
+	void setZ(const FReal inZ){
 		this->z = inZ;
 	}
 
@@ -113,7 +117,7 @@ public:
 	* @param inValue the value to substract
 	* @return the current object after being subtracted
 	*/
-	F3DPosition& operator-=(const double inValue){
+	F3DPosition& operator-=(const FReal inValue){
 		this->x -= inValue;
 		this->y -= inValue;
 		this->z -= inValue;
@@ -125,7 +129,7 @@ public:
 	* @param inValue the value to afect
 	* @return the current object after being affected
 	*/
-	F3DPosition& operator+=(const double inValue){
+	F3DPosition& operator+=(const FReal inValue){
 		this->x += inValue;
 		this->y += inValue;
 		this->z += inValue;
@@ -161,7 +165,7 @@ public:
         * @param other the value to afect
         * @return the current object after being affected
         */
-        F3DPosition& operator*=(const double value){
+        F3DPosition& operator*=(const FReal value){
                 this->x *= value;
                 this->y *= value;
                 this->z *= value;
@@ -171,26 +175,26 @@ public:
 };
 
 /**
-* Operator F3Position minus double
+* Operator F3Position minus FReal
 * This substract inValue to all dimensions of the inPosition
 * @param inPosition the position to compute
 * @param inValue the value to decrease/substract position
 * @return the resulting position
 */
-F3DPosition operator-(const F3DPosition& inPosition, const double inValue){
+F3DPosition operator-(const F3DPosition& inPosition, const FReal inValue){
 	F3DPosition position(inPosition);
 	position -= inValue;
 	return position;
 }
 
 /**
-* Operator F3Position plus double
+* Operator F3Position plus FReal
 * This affect from inValue all dimensions of the inPosition
 * @param inPosition the position to compute
 * @param inValue the value to increase/affect position
 * @return the resulting position
 */
-F3DPosition operator+(const F3DPosition& inPosition, const double inValue){
+F3DPosition operator+(const F3DPosition& inPosition, const FReal inValue){
 	F3DPosition position(inPosition);
 	position += inValue;
 	return position;

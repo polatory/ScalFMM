@@ -2,16 +2,18 @@
 #define FEXTENDPOTENTIAL_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendPotential
 * Please read the license
 * This class is an extenssion.
-* It proposes a Potential (double).
+* It proposes a Potential (FReal).
 */
 class FExtendPotential {
 protected:
-    double potential;   //< The potential extended
+    FReal potential;   //< The potential extended
 
 public:
     /** Default constructor */
@@ -33,12 +35,12 @@ public:
     }
 
     /** To get the potential */
-    double getPotential() const {
+    FReal getPotential() const {
         return this->potential;
     }
 
     /** To set the potential */
-    void setPotential(const double inPotential) {
+    void setPotential(const FReal inPotential) {
         this->potential = inPotential;
     }
 

@@ -2,8 +2,7 @@
 #define FDEBUG_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-// Uncomment next line to use debug mode
-#define FUSE_DEBUG
+#include "FGlobal.hpp"
 
 #ifndef FUSE_DEBUG
 

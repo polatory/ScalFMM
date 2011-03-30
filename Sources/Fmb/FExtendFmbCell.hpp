@@ -9,7 +9,10 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendFmbCell
-* Please read the license
+* Please read the license.
+*
+* This class is an extenssion.
+* It is needed by the Fmb Kernels.
 */
 template <int P>
 class FExtendFmbCell {

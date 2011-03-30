@@ -2,6 +2,7 @@
 #define FFMBKERNELSPOTENTIAL_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "FAbstractFmbKernels.hpp"
 
 
@@ -12,13 +13,13 @@
 * @brief
 * Please read the license
 *
-* This kernels simply shows the details of the information
-* it receives
+*
+* This class is a Fmb Kernels.
 */
 template< class ParticuleClass, class CellClass>
 class FFmbKernelsPotential : public FAbstractFmbKernels<ParticuleClass,CellClass> {
 public:
-    FFmbKernelsPotential(const int inTreeHeight, const double inTreeWidth)
+    FFmbKernelsPotential(const int inTreeHeight, const FReal inTreeWidth)
         : FAbstractFmbKernels<ParticuleClass,CellClass>(inTreeHeight,inTreeWidth) {
     }
 
@@ -38,7 +39,7 @@ public:
             positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
             harmonicInner( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y);
 
-            double potential;
+            FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
             iterTarget.value()->setPotential(potential);
 
@@ -51,9 +52,9 @@ public:
 
 
     void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
-                                                          double* const p_result){
+                                                          FReal* const p_result){
 
-        double result = 0.0;
+        FReal result = 0.0;
 
         FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y;
         for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j){
@@ -117,11 +118,11 @@ public:
         }
     }
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
-      const double dx = (*target)->getPosition().getX() - source->getPosition().getX();
-      const double dy = (*target)->getPosition().getY() - source->getPosition().getY();
-      const double dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
+      const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
+      const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
+      const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      double inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
+      FReal inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
       inv_distance *= (*target)->getValue() * source->getValue();
 
       (*target)->setPotential( inv_distance + (*target)->getPotential());

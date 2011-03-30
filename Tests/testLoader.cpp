@@ -23,7 +23,7 @@
 
 
 /**
-  * In this file we show an example of BasicParticule and BasicLoader use
+  * In this file we show an example of FBasicLoader use
 * Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
 * Inserting 2000000 particules ...
 * Done  (5.77996).
