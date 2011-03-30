@@ -37,17 +37,18 @@
 template< class ParticuleClass, class CellClass >
 class FAbstractSubOctree : protected FAssertable{
 protected:
-    const int subOctreeHeight;	            //< Height of this suboctree
-    const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)
+
+    CellClass*** cells;		            //< Potential cells, cells are allocated only if needed
+    FAbstractSubOctree* const parent;       //< Parent suboctree (null for root)
+
+    const long indexInParent;               //< This is the index of the current octree in the parent's array
 
     long leftLeafIndex;                     //< The leaf at the left position (this is the array index to start when iterate)
     long rightLeafIndex;                    //< The leaf at the right position (this is the last array index when iterate)
 
-    CellClass*** cells;		            //< Potential cells, cells are allocated only if needed
+    const int subOctreeHeight;	            //< Height of this suboctree
+    const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)
 
-    FAbstractSubOctree* const parent;       //< Parent suboctree (null for root)
-
-    const long indexInParent;               //< This is the index of the current octree in the parent's array
 
     /**
      * This function compute the morton index for the last level of this suboctree.
@@ -248,6 +249,7 @@ class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticuleClass,CellClass> 
 private:
 
     FList<ParticuleClass*>** leafs;            //< Leafs array
+
 public:     
     /**
     * Constructor

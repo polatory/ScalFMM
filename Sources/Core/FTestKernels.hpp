@@ -30,7 +30,7 @@ public:
         pole->setDataUp(particules->getSize());
     }
     // During upward
-    void M2M(CellClass* const pole, const CellClass*const* const child, const int inLevel) {
+    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int inLevel) {
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -39,14 +39,14 @@ public:
         }
     }
     // Before Downward
-    void M2L(CellClass* const pole, const CellClass*const* const distantNeighbors, const int size, const int inLevel) {
+    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const distantNeighbors, const int size, const int inLevel) {
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){
             pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
         }
     }
     // During Downward
-    void L2L(const CellClass* const local, CellClass** const child, const int inLevel) {
+    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int inLevel) {
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -55,7 +55,7 @@ public:
         }
     }
     // After Downward
-    void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
+    void L2P(const CellClass* const  local, FList<ParticuleClass*>*const particules){
         // The particules is impacted by the parent cell
         typename FList<ParticuleClass*>::BasicIterator iter(*particules);
         while( iter.isValide() ){
@@ -64,7 +64,7 @@ public:
         }
     }
     // After Downward
-    void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>*const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         // Each particules targeted is impacted by the particules sources
         long inc = currentBox->getSize() - 1;
         for(int idx = 0 ; idx < size ; ++idx){

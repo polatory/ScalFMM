@@ -30,9 +30,8 @@ class FFMMAlgorithmThreaded : protected FAssertable{
 
     static const int NbThreads = 4;                                 //< Number of threads (currently a static number)
 
-    Octree* const tree;                                             //< The octree to work on
     KernelClass<ParticuleClass, CellClass>* kernels[NbThreads];     //< The kernels (one by thread)
-
+    Octree* const tree;                                             //< The octree to work on
 
     FDEBUG_TIME(FTic counter);       //< In case of debug count the time
 

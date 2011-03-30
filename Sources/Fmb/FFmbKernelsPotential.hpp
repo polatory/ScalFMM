@@ -89,7 +89,7 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){

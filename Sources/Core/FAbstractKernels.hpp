@@ -2,6 +2,7 @@
 #define FABSTRACTKERNELS_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -41,7 +42,7 @@ public:
         * the child array has a size of 8 elements (address if exists or 0 otherwise).
         * You must test if a pointer is 0 to know if an element exists inside this array
         */
-    virtual void M2M(CellClass* const pole, const CellClass*const* const child, const int inLevel) = 0;
+    virtual void M2M(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict child, const int inLevel) = 0;
 
     /**
         * M2L
@@ -51,7 +52,7 @@ public:
         * @param size the number of neighbors
         * @param inLevel the current level of the computation
         */
-    virtual void M2L(CellClass* const local, const CellClass*const* const distantNeighbors, const int size, const int inLevel) = 0;
+    virtual void M2L(CellClass* const FRestrict local, const CellClass*const FRestrict  *const FRestrict distantNeighbors, const int size, const int inLevel) = 0;
 
     /**
         * L2L
@@ -62,7 +63,7 @@ public:
         * the child array has a size of 8 elements (address if exists or 0 otherwise).
         * You must test if a pointer is 0 to know if an element exists inside this array
         */
-    virtual void L2L(const CellClass* const local, CellClass** const child, const int inLevel) = 0;
+    virtual void L2L(const CellClass* const FRestrict local, CellClass* FRestrict * const FRestrict child, const int inLevel) = 0;
 
     /**
         * L2P
@@ -79,7 +80,7 @@ public:
         * @param directNeighborsParticules the particules from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors (the size of the array directNeighborsParticules)
         */
-    virtual void P2P(FList<ParticuleClass*>* const particules, const FList<ParticuleClass*>*const* const directNeighborsParticules, const int size) = 0;
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict particules, const FList<ParticuleClass*>*const FRestrict  *const FRestrict directNeighborsParticules, const int size) = 0;
 };
 
 

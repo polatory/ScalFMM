@@ -27,7 +27,7 @@
 #include "../Sources/Files/FFMALoader.hpp"
 
 // Compile by : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
-// g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -99,8 +99,8 @@ int main(int , char ** ){
 
         //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
         FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());
-        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmThreadedInterval
-        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        //FFMMAlgorithm FFMMAlgorithmThreaded
+        FFMMAlgorithmThreaded<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();

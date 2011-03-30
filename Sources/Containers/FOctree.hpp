@@ -30,16 +30,16 @@
  */
 template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight = 3>
 class FOctree {
-        const int height;		//< tree height
-	const int leafIndex;		//< index of leaf int array
+        FReal boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
+        FSubOctree< ParticuleClass, CellClass > root;   //< root suboctree
+
+        const F3DPosition boxCenter;	//< the space system center
+        const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
 
         const FReal boxWidth;          //< the space system width
-	const F3DPosition boxCenter;	//< the space system center
-	const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
 
-        FReal boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
-
-        FSubOctree< ParticuleClass, CellClass > root;   //< root suboctree
+        const int height;		//< tree height
+        const int leafIndex;		//< index of leaf int array
 
 	/** Forbiden copy operator */
 	FOctree& operator=(const FOctree&) {
@@ -109,7 +109,7 @@ public:
 	* ask node to insert this particule
 	* @param inParticule the particule to insert (must inherite from FAbstractParticule)
 	*/
-	void insert(ParticuleClass* const inParticule){
+        void insert(ParticuleClass* const inParticule){
                 const MortonIndex particuleIndex = getLeafMortonFromPosition( inParticule->getPosition() );
                 root.insert( particuleIndex, inParticule, this->height, this->boxWidthAtLevel);
 	}
@@ -158,8 +158,8 @@ public:
         class Iterator : protected FAssertable {
             SubOctreeTypes current; //< Current suboctree
 
-            int currentLocalLevel;  //< Current level in the current suboctree
             long currentLocalIndex; //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
+            int currentLocalLevel;  //< Current level in the current suboctree
 
             /**
               * To know what is the left limit on the current level on the current subtree

@@ -20,17 +20,16 @@ class FList {
 		Node* next;	//< Next node
 	};
 
-	Node* root;		//< Root node, NULL if size is 0
-
-        int size;		//< Elements in the list
+        Node* root; //< Root node, NULL if size is 0
+        int size;		 //< Elements in the list
 
         /**
         * Copy a list into current object
         * The current list has to be empty when this function is called
         */
 	void copy(const FList& other){
-		const Node* otherRoot = other.root;
-		Node ** myRoot = &this->root;
+                const Node* FRestrict  otherRoot = other.root;
+                Node * FRestrict * myRoot = &this->root;
 		while(otherRoot){
 			(*myRoot) = new Node;
 			(*myRoot)->target = otherRoot->target;
@@ -59,9 +58,11 @@ public:
         * @return the current list as a reference
 	*/
 	FList& operator=(const FList& other){
+            if(this != &other){
 		clear();
 		copy(other);
-		return *this;
+            }
+            return *this;
 	}
 
 	/**
@@ -78,7 +79,7 @@ public:
 	*/
 	void clear(){
 		while(this->root){
-			Node* next(this->root->next);
+                        Node*const FRestrict next = this->root->next;
 			delete this->root;
 			this->root = next;
 		}
@@ -90,7 +91,7 @@ public:
         * @param inObject the object to insert
 	*/
 	void pushFront(Object& inObject){
-		Node* newNode 	= new Node;
+                Node* newNode   = new Node;
 		newNode->target = inObject;
 		newNode->next 	= this->root;
 

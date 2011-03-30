@@ -82,7 +82,7 @@ public:
         return *this;
     }   
 
-    /** Inc real and imaginary by doubles
+    /** Inc real and imaginary by values
       * @param inIncReal to inc the real
       * @param inIncImag to inc the imag
       */

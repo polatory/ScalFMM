@@ -31,17 +31,17 @@ public:
     }
 
     /** Print the morton index */
-    virtual void M2M(CellClass* const pole, const CellClass*const* const child, const int inLevel) {
+    virtual void M2M(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict child, const int inLevel) {
         //FDEBUG( FDebug::Controller << "M2M : " << pole->getMortonIndex() << "\n" );
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const pole, const CellClass*const* const distantNeighbors, const int size, const int inLevel) {
+    virtual void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict distantNeighbors, const int size, const int inLevel) {
         //FDEBUG( FDebug::Controller << "M2L : " << pole->getMortonIndex() << " (" << size << ")\n" );
     }
 
     /** Print the morton index */
-    virtual void L2L(const CellClass* const local, CellClass** const child, const int inLevel) {
+    virtual void L2L(const CellClass* const FRestrict local, CellClass* FRestrict *const FRestrict  child, const int inLevel) {
         //FDEBUG( FDebug::Controller << "L2L : " << local->getMortonIndex() << "\n" );
     }
 
@@ -51,7 +51,7 @@ public:
     }
 
     /** Print the number of particules */
-    virtual void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) {
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         //FDEBUG( FDebug::Controller << "P2P : " << currentBox->getSize() << " (" << size << ")\n" );
     }
 };

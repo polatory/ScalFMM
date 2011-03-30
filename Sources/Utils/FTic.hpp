@@ -29,8 +29,8 @@
   */
 class FTic {
 private:
-    FReal start;   //< start time (tic)
-    FReal end;     //< stop time (tac)
+    double start;   //< start time (tic)
+    double end;     //< stop time (tac)
 
 public:
     /** Constructor */
@@ -49,7 +49,7 @@ public:
 
     /** Return end - start
       * @return the time elapsed between tic & tac in second */
-    FReal elapsed() const{
+    double elapsed() const{
         return this->end - this->start;
     }
 
@@ -58,9 +58,9 @@ public:
       * GetTickCount on windows
       * gettimeofday on linux
       */
-    static FReal GetTime(){
+    static double GetTime(){
 #ifdef WINDOWS
-        return static_cast<FReal>(GetTickCount())/1000.0;
+        return static_cast<double>(GetTickCount())/1000.0;
 #else
         timeval t;
         gettimeofday(&t, NULL);

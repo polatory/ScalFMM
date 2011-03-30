@@ -229,7 +229,7 @@ protected:
     //////////////////////////////////////////////////////////////////
 
     // position_2_r_cos_th_sin_th_ph
-    void positionToSphere(const F3DPosition& inVector, Spherical* const outSphere ){
+    void positionToSphere(const F3DPosition& inVector, Spherical* const FRestrict outSphere ){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
 
         outSphere->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
@@ -709,7 +709,7 @@ public:
     *
     * Warning: if j-n < |k-l| we do nothing.
      */
-    void M2M(CellClass* const inPole, const CellClass*const* const inChild, const int inLevel) {
+    void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
 
         // We do NOT have: for(l=n-j+k; l<=j-n+k ;++l){} <=> for(l=-n; l<=n ;++l){if (j-n >= abs(k-l)){}}
         //     But we have:  for(k=MAX(0,n-j+l); k<=j-n+l; ++k){} <=> for(k=0; k<=j; ++k){if (j-n >= abs(k-l)){}}
@@ -829,7 +829,7 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void M2L(CellClass* const pole, const CellClass*const* const distantNeighbors, const int size, const int inLevel) {
+    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict distantNeighbors, const int size, const int inLevel) {
         FTreeCoordinate coordCenter;
         coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
 
@@ -961,7 +961,7 @@ public:
       *
       *Warning: if |l-k| > n-j, we do nothing.
       */
-    void L2L(const CellClass* const pole, CellClass** const child, const int inLevel) {
+    void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if no child at this position
@@ -1054,7 +1054,7 @@ public:
 
     virtual void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
 
-    virtual void P2P(FList<ParticuleClass*>* const currentBox, const FList<ParticuleClass*>*const* directNeighbors, const int size) = 0;
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) = 0;
 };
 
 
