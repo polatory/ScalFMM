@@ -14,18 +14,18 @@
 *
 * This class is a Fmb Kernels.
 */
-template< class ParticuleClass, class CellClass>
-class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass, int TreeHeight>
+class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, TreeHeight> {
  public:
     FFmbKernelsForces(const int inTreeHeight, const FReal inTreeWidth)
-        : FAbstractFmbKernels<ParticuleClass,CellClass>(inTreeHeight,inTreeWidth) {
+        : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeHeight,inTreeWidth) {
     }
 
 
     void changeProgression(int*const start_for_j , FComplexe** const p_target_exp_term){
         //#if defined (_FORCES_) && !defined(_ENERGY_)
         // See FMB.c:
-        if (FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_up_to_P_in_M2L){
+        if (FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_up_to_P_in_M2L){
             *start_for_j = 1;
             ++(*p_target_exp_term);
         }
@@ -36,23 +36,24 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
       * expansion_L2P_add_to_force_vector
       */
     void L2P(const CellClass* const local, FList<ParticuleClass*> *const particules){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
             F3DPosition force_vector_in_local_base;
-            typename FAbstractFmbKernels<ParticuleClass,CellClass>::Spherical spherical;
+            typename FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
 
             positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
 
-            harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated);
+            harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.
-            const FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y+1;
-            const FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y_theta_derivated+1;
+            const FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y+1;
+            const FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated+1;
             const FComplexe* p_local_exp_term = local->getLocal()+1;
 
-            for (int j = 1 ; j <= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j ){
+            for (int j = 1 ; j <= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j ){
                 FComplexe exp_term_aux;
 
                 // k=0:
@@ -175,7 +176,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
 
             //#ifndef _DIRECT_MATRIX_
             // When _DIRECT_MATRIX_ is defined, this multiplication is done in 'leaf_Sum_near_and_far_fields()'
-            force_vector_tmp *= iterTarget.value()->getValue();
+            force_vector_tmp *= iterTarget.value()->getPhysicalValue();
             //#endif
 
             iterTarget.value()->setForces( iterTarget.value()->getForces() + force_vector_tmp );
@@ -185,16 +186,18 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
 
             iterTarget.progress();
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
 
     void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
                                                           FReal* const p_result){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         FReal result = 0.0;
 
-        FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y;
-        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j){
+        FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
+        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
             result += p_Y_term->getReal();
@@ -214,6 +217,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
 
         *p_result = result;
 
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
 
@@ -227,6 +231,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
       *
       */
     void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
@@ -251,19 +256,20 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
             //printf("\t P2P fx = %f \t fy = %f \t fz = %f \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
             //printf("\t potential = %f \n",iterTarget.value()->getPotential());
 
-            FAbstractFmbKernels<ParticuleClass,CellClass>::force_sum += iterTarget.value()->getForces();
 
             iterTarget.progress();
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
       const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
       const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
       const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
+      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
       FReal inv_distance = FMath::Sqrt(inv_square_distance);
-      inv_distance *= (*target)->getValue() * source->getValue();
+      inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
       inv_square_distance *= inv_distance;
 
       (*target)->setForces(
@@ -271,6 +277,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass> {
               (*target)->getForces().getY() + dy * inv_square_distance,
               (*target)->getForces().getZ() + dz * inv_square_distance
       );
+      FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 };
 

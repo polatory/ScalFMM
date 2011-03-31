@@ -19,7 +19,7 @@
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
 
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -72,7 +72,7 @@ int main(int , char ** ){
         counter.tic();
 
         // FTestKernels FBasicKernels
-        FTestKernels<FTestParticule, FTestCell> kernels;
+        FTestKernels<FTestParticule, FTestCell, NbLevels> kernels;
         //FFMMAlgorithm FFMMAlgorithmThreaded
         FFMMAlgorithmThreaded<FTestKernels, FTestParticule, FTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
@@ -83,58 +83,7 @@ int main(int , char ** ){
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
 
-        std::cout << "Check Result\n";
-        { // Check that each particule has been summed with all other
-            FOctree<FTestParticule, FTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-            do{
-                if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentList()->getSize() ){
-                        std::cout << "Problem P2M : " << (octreeIterator.getCurrentCell()->getDataUp() - octreeIterator.getCurrentList()->getSize()) << "\n";
-                }
-            } while(octreeIterator.moveRight());
-        }
-        { // Ceck if there is number of NbPart summed at level 1
-            FOctree<FTestParticule, FTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.moveDown();
-            long res = 0;
-            do{
-                res += octreeIterator.getCurrentCell()->getDataUp();
-            } while(octreeIterator.moveRight());
-            if(res != NbPart){
-                std::cout << "Problem M2M at level 1 : " << res << "\n";
-            }
-        }
-        { // Ceck if there is number of NbPart summed at level 1
-            FOctree<FTestParticule, FTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-            for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
-                long res = 0;
-                do{
-                    res += octreeIterator.getCurrentCell()->getDataUp();
-                } while(octreeIterator.moveRight());
-                if(res != NbPart){
-                    std::cout << "Problem M2M at level " << idxLevel << " : " << res << "\n";
-                }
-                octreeIterator.moveUp();
-                octreeIterator.gotoLeft();
-            }
-        }
-        { // Check that each particule has been summed with all other
-            FOctree<FTestParticule, FTestCell, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-            do{
-                FList<FTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
-                while( iter.isValide() ){
-                    // If a particules has been impacted by less than NbPart - 1 (the current particule)
-                    // there is a problem
-                    if(iter.value()->getDataDown() != NbPart - 1){
-                        std::cout << "Problem L2P + P2P : " << iter.value()->getDataDown() << "\n";
-                    }
-                    iter.progress();
-                }
-            } while(octreeIterator.moveRight());
-        }
-        std::cout << "Done\n";
+        ValidateFMMAlgo(&tree, NbPart);
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////

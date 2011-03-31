@@ -7,14 +7,12 @@
 #ifndef FUSE_DEBUG
 
 #define FDEBUG( X )
-#define FDEBUG_TRACE( X )
-#define FDEBUG_TIME( X )
+#define FDEBUG( X )
 
 #else
 
 #define FDEBUG( X ) X
-#define FDEBUG_TRACE( X ) X
-#define FDEBUG_TIME( X ) X
+#define FDEBUG( X ) X
 
 #include <iostream>
 #include <fstream>

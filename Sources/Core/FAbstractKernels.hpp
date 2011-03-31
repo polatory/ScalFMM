@@ -12,7 +12,7 @@
 *
 * If you want to create you own kernels you have to inherit from this class.
 */
-template< class ParticuleClass, class CellClass>
+template< class ParticuleClass, class CellClass, int TreeHeight>
 class FAbstractKernels{
 public:
     /** Default destructor */

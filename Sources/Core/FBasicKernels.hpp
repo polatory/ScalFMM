@@ -4,7 +4,7 @@
 
 #include "FAbstractKernels.hpp"
 
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FTrace.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -15,8 +15,8 @@
 * This kernels simply shows the details of the information
 * it receives (in debug)
 */
-template< class ParticuleClass, class CellClass>
-class FBasicKernels : public FAbstractKernels<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass, int TreeHeight>
+class FBasicKernels : public FAbstractKernels<ParticuleClass,CellClass,TreeHeight> {
 public:
     /** Default destructor */
     virtual ~FBasicKernels(){
@@ -26,33 +26,39 @@ public:
     virtual void init(){}
 
     /** Print the number of particules */
-    virtual void P2M(CellClass* const pole, const FList<ParticuleClass*>* const particules) {
-        //FDEBUG( FDebug::Controller << "P2M : " << particules->getSize() << "\n" );
+    virtual void P2M(CellClass* const , const FList<ParticuleClass*>* const ) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the morton index */
-    virtual void M2M(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict child, const int inLevel) {
-        //FDEBUG( FDebug::Controller << "M2M : " << pole->getMortonIndex() << "\n" );
+    virtual void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int ) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict distantNeighbors, const int size, const int inLevel) {
-        //FDEBUG( FDebug::Controller << "M2L : " << pole->getMortonIndex() << " (" << size << ")\n" );
+    virtual void M2L(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int , const int ) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the morton index */
-    virtual void L2L(const CellClass* const FRestrict local, CellClass* FRestrict *const FRestrict  child, const int inLevel) {
-        //FDEBUG( FDebug::Controller << "L2L : " << local->getMortonIndex() << "\n" );
+    virtual void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the number of particules */
-    virtual void L2P(const CellClass* const pole, FList<ParticuleClass*>* const particules){
-        //FDEBUG( FDebug::Controller << "L2P : " << particules->getSize() << "\n" );
+    virtual void L2P(const CellClass* const , FList<ParticuleClass*>* const ){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the number of particules */
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
-        //FDEBUG( FDebug::Controller << "P2P : " << currentBox->getSize() << " (" << size << ")\n" );
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict , const FList<ParticuleClass*>* FRestrict const* FRestrict , const int ) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 };
 

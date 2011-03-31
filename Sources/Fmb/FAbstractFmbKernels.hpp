@@ -11,6 +11,7 @@
 #include "../Utils/F3DPosition.hpp"
 #include "../Utils/FComplexe.hpp"
 #include "../Utils/FMath.hpp"
+#include "../Utils/FTrace.hpp"
 
 #include <iostream>
 
@@ -32,8 +33,8 @@
 *
 * Needs cell to extend {FExtendFmbCell}
 */
-template< class ParticuleClass, class CellClass>
-class FAbstractFmbKernels : public FAbstractKernels<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass, int TreeHeight>
+class FAbstractFmbKernels : public FAbstractKernels<ParticuleClass,CellClass, TreeHeight> {
 protected:
     // P is a input parameter
     static const int FMB_Info_P = 2;
@@ -62,18 +63,16 @@ protected:
     // NEXP_SIZE(FMB_Info.P)
     static const int FMB_Info_nexp_size = (FMB_Info_P + 1) * (FMB_Info_P + 1);
 
-    // Level of the tree
-    int treeHeight;
     // Width of the box at the root level
     FReal treeWidthAtRoot;
 
     // transfer_M2M_container
-    FComplexe*** transitionM2M;
+    FComplexe transitionM2M[TreeHeight][8][FMB_Info_exp_size];
     // transfer_L2L_container
-    FComplexe*** transitionL2L;
+    FComplexe transitionL2L[TreeHeight][8][FMB_Info_exp_size];
 
     // transfer_container
-    FComplexe***** transferM2L;
+    FComplexe* transferM2L[TreeHeight][size1Dim][size1Dim][size1Dim];
 
     //[OK] spherical_harmonic_Outer_coefficients_array
     FReal sphereHarmoOuterCoef[FMB_Info_exp_size];
@@ -101,9 +100,6 @@ protected:
     };
 
     int expansion_Redirection_array_for_j[FMB_Info_M2L_P + 1 ];
-
-    F3DPosition force_sum;
-    FReal potential_sum;
 
     bool FMB_Info_up_to_P_in_M2L;
 
@@ -151,10 +147,10 @@ protected:
     // transfer_M2L_Allocate
     void transferAllocate(){
         // M2M L2L
-        this->transitionM2M = new FComplexe**[this->treeHeight];
-        this->transitionL2L = new FComplexe**[this->treeHeight];
+        /*this->transitionM2M = new FComplexe**[TreeHeight];
+        this->transitionL2L = new FComplexe**[TreeHeight];
 
-        for(int idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel){
+        for(int idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel){
 
             this->transitionM2M[idxLevel] = new FComplexe*[8];
             this->transitionL2L[idxLevel] = new FComplexe*[8];
@@ -163,18 +159,18 @@ protected:
                 this->transitionM2M[idxLevel][idxChild] = new FComplexe[FMB_Info_exp_size];
                 this->transitionL2L[idxLevel][idxChild] = new FComplexe[FMB_Info_exp_size];
             }
-        }
+        }*/
         // M2L
-        this->transferM2L = new FComplexe****[this->treeHeight+1];
+        //this->transferM2L = new FComplexe****[TreeHeight+1];
 
-        for(int idxLevel = 0; idxLevel < this->treeHeight; ++idxLevel){
-            this->transferM2L[idxLevel] = new FComplexe***[this->size1Dim];
+        for(int idxLevel = 0; idxLevel < TreeHeight; ++idxLevel){
+            //this->transferM2L[idxLevel] = new FComplexe***[this->size1Dim];
 
             for(long idxD1 = 0 ; idxD1 < this->size1Dim; ++idxD1){
-                this->transferM2L[idxLevel][idxD1] = new FComplexe**[this->size1Dim];
+                //this->transferM2L[idxLevel][idxD1] = new FComplexe**[this->size1Dim];
 
                 for(long idxD2 = 0; idxD2 < this->size1Dim; ++idxD2){
-                    this->transferM2L[idxLevel][idxD1][idxD2] = new FComplexe*[this->size1Dim];
+                    //this->transferM2L[idxLevel][idxD1][idxD2] = new FComplexe*[this->size1Dim];
 
                     for(long idxD3 = 0; idxD3 < this->size1Dim; ++idxD3){
                         const int x = idxD1 - this->halphSize1Dim;
@@ -198,7 +194,7 @@ protected:
     // transfer_M2L_free
     void transferDeallocate(){
         // M2M L2L
-        for(long idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel){
+        /*for(long idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel){
             for(long idxChild = 0; idxChild < 8; ++idxChild){
                 delete [] this->transitionM2M[idxLevel][idxChild];
                 delete [] this->transitionL2L[idxLevel][idxChild];
@@ -207,21 +203,21 @@ protected:
             delete [] transitionL2L[idxLevel];
         }
         delete [] this->transitionM2M;
-        delete [] this->transitionL2L;
+        delete [] this->transitionL2L;*/
         // M2L
-        for(int idxLevel = 0 ; idxLevel < this->treeHeight; ++idxLevel){
+        for(int idxLevel = 0 ; idxLevel < TreeHeight; ++idxLevel){
             for(long idxD1 = 0 ; idxD1 < this->size1Dim ; ++idxD1){
                 for(long idxD2 = 0 ; idxD2 < this->size1Dim ; ++idxD2){
                     for(long idxD3 = 0 ; idxD3 < this->size1Dim; ++idxD3){
                         delete [] this->transferM2L[idxLevel][idxD1][idxD2][idxD3];
                     }
-                    delete [] this->transferM2L[idxLevel][idxD1][idxD2];
+                    //delete [] this->transferM2L[idxLevel][idxD1][idxD2];
                 }
-                delete [] this->transferM2L[idxLevel][idxD1];
+                //delete [] this->transferM2L[idxLevel][idxD1];
             }
-            delete [] this->transferM2L[idxLevel];
+            //delete [] this->transferM2L[idxLevel];
         }
-        delete [] this->transferM2L;
+        //delete [] this->transferM2L;
     }
 
     //////////////////////////////////////////////////////////////////
@@ -508,7 +504,7 @@ protected:
     void precomputeM2M(){
         FReal treeWidthAtLevel = this->treeWidthAtRoot/2;
 
-        for(int idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel ){
+        for(int idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel ){
             const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
@@ -555,7 +551,7 @@ protected:
         //printf("FMB_Info.M2L_exp_size = %d\n",FMB_Info_M2L_exp_size);
 
         FReal treeWidthAtLevel = this->treeWidthAtRoot;
-        for(int idxLevel = 0 ; idxLevel < this->treeHeight ; ++idxLevel ){
+        for(int idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel ){
             //printf("level = %d \t width = %lf\n",idxLevel,treeWidthAtLevel);
             for( int idxd1 = 0; idxd1 < this->size1Dim ; ++idxd1 ){
 
@@ -602,21 +598,19 @@ protected:
     }
 
 public:
-    FAbstractFmbKernels(const int inTreeHeight, const FReal inTreeWidth)
-        : treeHeight(inTreeHeight), treeWidthAtRoot(inTreeWidth),
-          transitionM2M(0), transitionL2L(0), potential_sum(0), FMB_Info_up_to_P_in_M2L(true) {
+    FAbstractFmbKernels(const int inTreeHeight, const FReal inTreeWidth) :
+                treeWidthAtRoot(inTreeWidth), FMB_Info_up_to_P_in_M2L(true) {
         buildPrecompute();
     }
 
     FAbstractFmbKernels(const FAbstractFmbKernels& other)
-        : treeHeight(other.treeHeight), treeWidthAtRoot(other.treeWidthAtRoot),
-          transitionM2M(0), transitionL2L(0), potential_sum(0), FMB_Info_up_to_P_in_M2L(true) {
+        : treeWidthAtRoot(other.treeWidthAtRoot), FMB_Info_up_to_P_in_M2L(other.FMB_Info_up_to_P_in_M2L) {
         buildPrecompute();
     }
 
     virtual void init(){
-        force_sum = F3DPosition();
-        potential_sum = 0;
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Default destructor */
@@ -624,13 +618,6 @@ public:
         transferDeallocate();
     }
 
-    F3DPosition getForcesSum() const {
-        return force_sum;
-    }
-
-    FReal getPotential() const{
-        return potential_sum;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////
     //    Upward
@@ -655,6 +642,7 @@ public:
     *
     */
     void P2M(CellClass* const inPole, const FList<ParticuleClass*>* const inParticules) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         for(typename FList<ParticuleClass*>::ConstBasicIterator iterParticule(*inParticules);
                                 iterParticule.isValide() ; iterParticule.progress()){
@@ -662,7 +650,7 @@ public:
             Spherical spherical;
             positionToSphere(iterParticule.value()->getPosition() - inPole->getPosition(), &spherical);
 
-            //std::cout << "Working on part " << iterParticule.value()->getValue() << "\n";
+            //std::cout << "Working on part " << iterParticule.value()->getPhysicalValue() << "\n";
             F3DPosition tempPos = iterParticule.value()->getPosition() - inPole->getPosition();
             //ok printf("\tpos_rel.x=%f\tpos_rel.y=%f\tpos_rel.z=%f\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
             //ok printf("\tp_center.x=%f\tp_center.y=%f\tp_center.z=%f\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
@@ -675,7 +663,7 @@ public:
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
             FReal pow_of_minus_1_j = 1.0;//(-1)^j
-            const FReal valueParticule = iterParticule.value()->getValue();
+            const FReal valueParticule = iterParticule.value()->getPhysicalValue();
 
             for(int j = 0 ; j <= FMB_Info_P ; ++j, pow_of_minus_1_j = -pow_of_minus_1_j ){
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
@@ -686,6 +674,7 @@ public:
                 }
             }
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /**
@@ -710,6 +699,7 @@ public:
     * Warning: if j-n < |k-l| we do nothing.
      */
     void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         // We do NOT have: for(l=n-j+k; l<=j-n+k ;++l){} <=> for(l=-n; l<=n ;++l){if (j-n >= abs(k-l)){}}
         //     But we have:  for(k=MAX(0,n-j+l); k<=j-n+l; ++k){} <=> for(k=0; k<=j; ++k){if (j-n >= abs(k-l)){}}
@@ -800,6 +790,7 @@ public:
                 } // for l
             } // for n
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -830,6 +821,7 @@ public:
       *
       */
     void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict distantNeighbors, const int size, const int inLevel) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTreeCoordinate coordCenter;
         coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
 
@@ -938,6 +930,7 @@ public:
                 }
             }
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -962,6 +955,7 @@ public:
       *Warning: if |l-k| > n-j, we do nothing.
       */
     void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if no child at this position
@@ -1050,6 +1044,7 @@ public:
                 }
             }
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     virtual void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
@@ -1058,12 +1053,12 @@ public:
 };
 
 
-template< class ParticuleClass, class CellClass>
-const FReal FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+template< class ParticuleClass, class CellClass, int TreeHeight>
+const FReal FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
-template< class ParticuleClass, class CellClass>
-const FReal FAbstractFmbKernels<ParticuleClass,CellClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+template< class ParticuleClass, class CellClass, int TreeHeight>
+const FReal FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

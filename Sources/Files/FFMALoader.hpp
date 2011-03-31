@@ -34,7 +34,7 @@
 *    } <br>
 * </code>
 *
-* Particule has to extend {FExtendValue,FExtendPosition}
+* Particule has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticuleClass>
 class FFMALoader : public FAbstractLoader<ParticuleClass> {
@@ -112,7 +112,7 @@ public:
         FReal x,y,z,data;
         this->file >> x >> y >> z >> data;
         inParticule->setPosition(x,y,z);
-        inParticule->setValue(data);
+        inParticule->setPhysicalValue(data);
     }
 
 };

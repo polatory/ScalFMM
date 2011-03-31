@@ -26,8 +26,7 @@
 
 #include "../Sources/Files/FFMALoader.hpp"
 
-// Compile by : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
-// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -36,7 +35,7 @@
   */
 
 
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendValue}
+/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FFmaParticule}
   */
 class FmbParticule : public FFmaParticule, public FExtendForces, public FExtendPotential {
@@ -56,11 +55,11 @@ int main(int , char ** ){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
+        const char* const filename = "testFMAlgorithm.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
 
         FFMALoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
-            std::cout << "Loader Error, " << filename << "is missing\n";
+            std::cout << "Loader Error, " << filename << " is missing\n";
             return 1;
         }
 
@@ -98,9 +97,9 @@ int main(int , char ** ){
         counter.tic();
 
         //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-        FFmbKernelsPotentialForces<FmbParticule, FmbCell> kernels(NbLevels,loader.getBoxWidth());
+        FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(NbLevels,loader.getBoxWidth());
         //FFMMAlgorithm FFMMAlgorithmThreaded
-        FFMMAlgorithmThreaded<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();
@@ -117,8 +116,14 @@ int main(int , char ** ){
             do{
                 FList<FmbParticule*>::BasicIterator iter(*octreeIterator.getCurrentList());
                 while( iter.isValide() ){
-                    potential += iter.value()->getPotential() * iter.value()->getValue();
+                    potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
                     forces += iter.value()->getForces();
+
+                    //printf("x = %e y = %e z = %e \n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ());
+                    //printf("\t fx = %e fy = %e fz = %e \n",iter.value()->getForces().getX(),iter.value()->getForces().getY(),iter.value()->getForces().getZ());
+
+                    //printf("\t\t Sum Forces ( %e , %e , %e)\n",
+                           //forces.getX(),forces.getY(),forces.getZ());
 
                     iter.progress();
                 }

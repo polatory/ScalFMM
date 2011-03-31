@@ -16,11 +16,11 @@
 *
 * This class is a Fmb Kernels.
 */
-template< class ParticuleClass, class CellClass>
-class FFmbKernelsPotential : public FAbstractFmbKernels<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass, int TreeHeight>
+class FFmbKernelsPotential : public FAbstractFmbKernels<ParticuleClass,CellClass, TreeHeight> {
 public:
     FFmbKernelsPotential(const int inTreeHeight, const FReal inTreeWidth)
-        : FAbstractFmbKernels<ParticuleClass,CellClass>(inTreeHeight,inTreeWidth) {
+        : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeHeight,inTreeWidth) {
     }
 
 
@@ -30,14 +30,15 @@ public:
       * expansion_L2P_add_to_force_vector
       */
     void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
             // expansion_Evaluate_local
-            typename FAbstractFmbKernels<ParticuleClass,CellClass>::Spherical spherical;
+            typename FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
             positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
-            harmonicInner( spherical, FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y);
+            harmonicInner( spherical, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y);
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
@@ -48,16 +49,18 @@ public:
 
             iterTarget.progress();
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
 
     void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
                                                           FReal* const p_result){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         FReal result = 0.0;
 
-        FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass>::current_thread_Y;
-        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_P ; ++j){
+        FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
+        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
             result += p_Y_term->getReal();
@@ -77,6 +80,7 @@ public:
 
         *p_result = result;
 
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
 
@@ -90,13 +94,13 @@ public:
       *
       */
     void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticuleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
-                  DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
-                                                   iterSource.value());
+                  DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSource.value());
                   iterSource.progress();
                 }
              }
@@ -104,29 +108,28 @@ public:
             typename FList<ParticuleClass*>::BasicIterator iterSameBox(*currentBox);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
-                                                     iterSameBox.value());
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSameBox.value());
                 }
                 iterSameBox.progress();
             }
 
-            //printf("They contains energy (res = %f, potential = %f, value = %f)\n",
-                            //potential_sum, iterTarget.value()->getPotential(), iterTarget.value()->getValue());
-            FAbstractFmbKernels<ParticuleClass,CellClass>::potential_sum += iterTarget.value()->getPotential() * iterTarget.value()->getValue();
 
             iterTarget.progress();
         }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
       const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
       const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
       const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      FReal inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass>::FMB_Info_eps_soft_square);
-      inv_distance *= (*target)->getValue() * source->getValue();
+      FReal inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
+      inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
 
       (*target)->setPotential( inv_distance + (*target)->getPotential());
       //source->setPotential( inv_distance + source->getPotential());
+      FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 };
 
