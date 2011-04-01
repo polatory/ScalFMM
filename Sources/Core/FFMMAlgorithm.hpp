@@ -150,8 +150,8 @@ public:
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells
                 do{
-                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
                     FDEBUG(computationCounter.tic());
+                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
                     if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                     FDEBUG(computationCounter.tac());
                     FDEBUG(totalComputation += computationCounter.elapsed());
@@ -213,11 +213,8 @@ public:
         do{
             FDEBUG(computationCounter.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentList());
-            FDEBUG(computationCounter.tac());
-            FDEBUG(totalComputation += computationCounter.elapsed());
             // need the current particules and neighbors particules
             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
-            FDEBUG(computationCounter.tic());
             kernels->P2P( octreeIterator.getCurrentList() , neighbors, counter);
             FDEBUG(computationCounter.tac());
             FDEBUG(totalComputation += computationCounter.elapsed());

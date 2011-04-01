@@ -18,6 +18,7 @@
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
 #include "../Sources/Core/FFMMAlgorithm.hpp"
+#include "../Sources/Core/FFMMAlgorithmArray.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
@@ -55,7 +56,7 @@ int main(int , char ** ){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
+        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
 
         FFMALoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
@@ -98,7 +99,7 @@ int main(int , char ** ){
 
         //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
         FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(NbLevels,loader.getBoxWidth());
-        //FFMMAlgorithm FFMMAlgorithmThreaded
+        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray
         FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
