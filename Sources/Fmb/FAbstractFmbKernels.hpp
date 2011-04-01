@@ -16,6 +16,9 @@
 #include <iostream>
 
 
+// P is a input parameter
+static const int FMB_Info_P = 3;
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractFmbKernels
@@ -36,8 +39,6 @@
 template< class ParticuleClass, class CellClass, int TreeHeight>
 class FAbstractFmbKernels : public FAbstractKernels<ParticuleClass,CellClass, TreeHeight> {
 protected:
-    // P is a input parameter
-    static const int FMB_Info_P = 2;
 
     // _GRAVITATIONAL_
     static const int FMB_Info_eps_soft_square = 1;
@@ -284,25 +285,29 @@ protected:
 
             ptrCosSin->setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             ptrCosSin->setImag( FMath::Sin(angle) );
-            //std::cout<< idxl << "=" << ptrCosSin->getReal() << "/" << ptrCosSin->getImag() << " (" << idxl << "/" << inSphere.phi << "/" << PiArray[lMod4] << ")\n";
+
+            //printf("%d=%f/%f (%d/%f/%f)\n",idxl,ptrCosSin->getReal(),ptrCosSin->getImag(),idxl,inSphere.phi,this->PiArrayInner[idxlMod4]);
         }
 
         legendreFunction(inSphere.cosTheta, inSphere.sinTheta, this->legendre);
-        //printf("FMB_Info_M2L_exp_size=%d\n",FMB_Info_M2L_exp_size);
-        //for(int temp = 0 ; temp < FMB_Info_M2L_exp_size ; ++temp){
-        //    printf("%f\n",this->legendre[temp]);
-        //}
+        /*printf("FMB_Info_M2L_exp_size=%d\n",FMB_Info_M2L_exp_size);
+        for(int temp = 0 ; temp < FMB_Info_M2L_exp_size ; ++temp){
+            printf("%f\n",this->legendre[temp]);
+        }*/
 
         FComplexe* currentResult = outResults;
         int idxLegendre = 0;//ptr_associated_Legendre_function_Array
         int idxSphereHarmoCoef = 0;
         FReal idxRl = 1.0 ;
 
+        //printf("lmax = %d\n",LMax);
         for(int idxl = 0; idxl <= this->LMax ; ++idxl, idxRl *= inSphere.r){
             for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxSphereHarmoCoef, ++idxLegendre){
                 const FReal magnitude = this->sphereHarmoInnerCoef[idxSphereHarmoCoef] * idxRl * legendre[idxLegendre];
                 currentResult->setReal( magnitude * this->cosSin[idxm].getReal() );
                 currentResult->setImag( magnitude * this->cosSin[idxm].getImag() );
+
+                //printf("l = %d m = %d\n",idxl,idxm);
                 //printf("magnitude=%f idxRl=%f sphereHarmoInnerCoef=%f real=%f imag=%f\n",magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],currentResult->getReal(),currentResult->getImag());
             }
         }
@@ -504,7 +509,7 @@ protected:
     void precomputeM2M(){
         FReal treeWidthAtLevel = this->treeWidthAtRoot/2;
 
-        for(int idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel ){
+        for(int idxLevel = 0 ; idxLevel < TreeHeight - 1 ; ++idxLevel ){
             const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
@@ -533,11 +538,11 @@ protected:
                 positionToSphere(L2LVector,&sphericalL2L);
                 harmonicInner(sphericalL2L,this->transitionL2L[idxLevel][idxChild]);
 
-                //std::cout << "[M2M_vector]" << idxLevel << "/" << idxChild << " = " << M2MVector.getX() << "/" << M2MVector.getY() << "/" << M2MVector.getZ() << "\n";
-                //std::cout << "[M2M_vectorSpherical]" << idxLevel << "/" << idxChild << " = " << sphericalM2M.r << "/" << sphericalM2M.cosTheta << "/" << sphericalM2M.sinTheta << "/" << sphericalM2M.phi << "\n";
+                //printf("[M2M_vector]%d/%d = %f/%f/%f\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
+                //printf("[M2M_vectorSpherical]%d/%d = %f/%f/%f/%f\n", idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
                 //for(int idxExpSize = 0 ; idxExpSize < FMB_Info_exp_size ; ++idxExpSize){
                     //std::cout << "transitionL2L[" << idxLevel << "][" << idxChild << "][" << idxExpSize << "]=" << this->transitionL2L[idxLevel][idxChild][idxExpSize].getReal()<<"/"<<this->transitionL2L[idxLevel][idxChild][idxExpSize].getImag()<< "\n";
-                    //std::cout << "transitionM2M[" << idxLevel << "][" << idxChild << "][" << idxExpSize << "]=" << this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal()<<"/"<<this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag()<< "\n";
+                    //printf("transitionM2M[%d][%d][%d]=%f/%f\n", idxLevel , idxChild , idxExpSize , this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal(),this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag());
                 //}
             }
         }

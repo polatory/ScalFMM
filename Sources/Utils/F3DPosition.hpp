@@ -4,7 +4,7 @@
 
 // To get memcpy
 #include <cstring>
-
+#include "FGlobal.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

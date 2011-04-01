@@ -60,7 +60,7 @@ public:
         FReal result = 0.0;
 
         FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
-        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j){
+        for(int j = 0 ; j<= FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
             result += p_Y_term->getReal();

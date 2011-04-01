@@ -63,7 +63,7 @@ public:
             const FComplexe* p_Y_theta_derivated_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated+1;
             const FComplexe* p_local_exp_term = local->getLocal()+1;
 
-            for (int j = 1 ; j <= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j ){
+            for (int j = 1 ; j <= FMB_Info_P ; ++j ){
                 FComplexe exp_term_aux;
 
                 // k=0:
@@ -258,7 +258,7 @@ public:
         FReal result = 0.0;
 
         FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
-        for(int j = 0 ; j<= FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_P ; ++j){
+        for(int j = 0 ; j<= FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
             result += p_Y_term->getReal();

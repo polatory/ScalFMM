@@ -26,7 +26,7 @@
 */
 
 int main(int , char ** ){
-        const int NbLevels = 10;
+        const int NbLevels = 9;
         const int NbSubLevels = 3;
         const long NbPart = 2E6;
         FList<FBasicParticule*> particules;
@@ -59,25 +59,45 @@ int main(int , char ** ){
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
+        {
+            std::cout << "Itering on particules ..." << std::endl;
+            counter.tic();
 
-        std::cout << "Itering on particules ..." << std::endl;
-        counter.tic();
-
-        FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
-            int counter = 0;
-            do{
-                ++counter;
-                //counter += octreeIterator.getCurrentList()->getSize();
-            } while(octreeIterator.moveRight());
-            octreeIterator.moveUp();
-            octreeIterator.gotoLeft();
-            std::cout << "Next level (" << counter << ")...\n";
+            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+            for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
+                int counter = 0;
+                do{
+                    ++counter;
+                    //counter += octreeIterator.getCurrentList()->getSize();
+                } while(octreeIterator.moveRight());
+                octreeIterator.moveUp();
+                octreeIterator.gotoLeft();
+                std::cout << "Cells at this level " << counter << " ...\n";
+            }
+            counter.tac();
+            std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        // -----------------------------------------------------
+        {
+            std::cout << "Itering on particules fast ..." << std::endl;
+            counter.tic();
 
+            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+
+            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator avoidGoLeft(octreeIterator);
+
+            for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
+                int counter = 0;
+                do{
+                } while(octreeIterator.moveRight());
+                avoidGoLeft.moveUp();
+                octreeIterator = avoidGoLeft;
+            }
+            counter.tac();
+            std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        }
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
         counter.tic();

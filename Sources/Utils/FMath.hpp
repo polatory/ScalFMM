@@ -3,6 +3,7 @@
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <math.h>
+#include "FGlobal.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

@@ -45,7 +45,7 @@ public:
 /** Custom cell
   *
   */
-class FmbCell : public FBasicCell, public FExtendFmbCell<2> {
+class FmbCell : public FBasicCell, public FExtendFmbCell {
 public:
 };
 
@@ -55,7 +55,7 @@ int main(int , char ** ){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testFMAlgorithm.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
+        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma"
 
         FFMALoader<FmbParticule> loader(filename);
         if(!loader.isValide()){

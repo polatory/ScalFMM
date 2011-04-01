@@ -6,6 +6,8 @@
 
 #include "../Utils/FComplexe.hpp"
 
+#include "FAbstractFmbKernels.hpp"
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendFmbCell
@@ -14,10 +16,9 @@
 * This class is an extenssion.
 * It is needed by the Fmb Kernels.
 */
-template <int P>
 class FExtendFmbCell {
 protected:
-    static const int FMB_Info_P = P;        //< P >> FMB_Info.P
+    // FMB_Info_P is declared in FAbstractFmbKernels
     static const int MultipoleSize = int(((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5); //< The size of the multipole
 
     FComplexe multipole_exp[MultipoleSize]; //< For multipole extenssion
