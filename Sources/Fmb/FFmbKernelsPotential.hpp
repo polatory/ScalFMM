@@ -36,9 +36,8 @@ public:
             //printf("Morton %lld\n",local->getMortonIndex());
 
             // expansion_Evaluate_local
-            typename FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
-            positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
-            harmonicInner( spherical, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y);
+            harmonicInner( positionToSphere( iterTarget.value()->getPosition() - local->getPosition()),
+                           FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y);
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);

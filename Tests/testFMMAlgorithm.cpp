@@ -19,6 +19,9 @@
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FFMMAlgorithmArray.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFMMAlgorithmTask.hpp"
+
+#include "../Sources/Core/FBasicKernels.hpp"
 
 // Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
 
@@ -74,7 +77,7 @@ int main(int , char ** ){
 
         // FTestKernels FBasicKernels
         FTestKernels<FTestParticule, FTestCell, NbLevels> kernels;
-        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray
+        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
         FFMMAlgorithmArray<FTestKernels, FTestParticule, FTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 

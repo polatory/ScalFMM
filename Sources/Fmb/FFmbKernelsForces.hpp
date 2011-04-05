@@ -43,9 +43,7 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, T
 
             F3DPosition force_vector_in_local_base;
             typename FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
-
-            positionToSphere( iterTarget.value()->getPosition() - local->getPosition(), &spherical );
-
+            spherical = positionToSphere( iterTarget.value()->getPosition() - local->getPosition());
             harmonicInnerThetaDerivated( spherical, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y, FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.

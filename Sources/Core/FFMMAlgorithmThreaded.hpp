@@ -6,7 +6,6 @@
 #include "../Utils/FDebug.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
-#include "../Utils/FOpenMPThread.hpp"
 
 #include "../Containers/FOctree.hpp"
 
@@ -18,8 +17,9 @@
 * @class FFMMAlgorithmThreaded
 * @brief
 * Please read the license
-* This is a parallel FMM Algorithm
+* This is a threaded FMM Algorithm
 * Most of your code is unchanged excepted that your kerneks must have a copy operator.
+* This is a naive approach using a mutex to share the tree's iterator
 *
 * The parallel algorithm is simple, each thread is taking a value from the iterator (protected by a mutex)
 */

@@ -20,6 +20,7 @@
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FFMMAlgorithmArray.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFMMAlgorithmTask.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
@@ -28,6 +29,7 @@
 #include "../Sources/Files/FFMALoader.hpp"
 
 // With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -99,8 +101,8 @@ int main(int , char ** ){
 
         //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
         FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(NbLevels,loader.getBoxWidth());
-        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray
-        FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
+        FFMMAlgorithmTask<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();

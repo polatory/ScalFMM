@@ -226,13 +226,17 @@ protected:
     //////////////////////////////////////////////////////////////////
 
     // position_2_r_cos_th_sin_th_ph
-    void positionToSphere(const F3DPosition& inVector, Spherical* const FRestrict outSphere ){
+    Spherical positionToSphere(const F3DPosition& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
 
-        outSphere->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
-        outSphere->phi = FMath::Atan2(inVector.getY(),inVector.getX());
-        outSphere->cosTheta = inVector.getZ() / outSphere->r; // cos_th = z/r
-        outSphere->sinTheta = FMath::Sqrt(x2y2) / outSphere->r; // sin_th = sqrt(x^2 + y^2)/r
+        Spherical outSphere;
+
+        outSphere.r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
+        outSphere.phi = FMath::Atan2(inVector.getY(),inVector.getX());
+        outSphere.cosTheta = inVector.getZ() / outSphere.r; // cos_th = z/r
+        outSphere.sinTheta = FMath::Sqrt(x2y2) / outSphere.r; // sin_th = sqrt(x^2 + y^2)/r
+
+        return outSphere;
     }
 
     // associated_Legendre_function_Fill_complete_array_of_values_for_cos
@@ -276,6 +280,7 @@ protected:
     }
 
     // spherical_harmonic_Inner
+    //2.7 these
     void harmonicInner(const Spherical& inSphere, FComplexe* const outResults){
 
         FComplexe* ptrCosSin = this->cosSin;
@@ -525,18 +530,16 @@ protected:
                         father.getY() - (treeWidthAtLevel * (1 + (childBox.getY() * 2))),
                         father.getZ() - (treeWidthAtLevel * (1 + (childBox.getZ() * 2)))
                 );
-                Spherical sphericalM2M;
-                positionToSphere(M2MVector,&sphericalM2M);
-                harmonicInner(sphericalM2M,this->transitionM2M[idxLevel][idxChild]);
+
+                harmonicInner(positionToSphere(M2MVector),this->transitionM2M[idxLevel][idxChild]);
 
                 const F3DPosition L2LVector (
                         (treeWidthAtLevel * (1 + (childBox.getX() * 2))) - father.getX(),
                         (treeWidthAtLevel * (1 + (childBox.getY() * 2))) - father.getY(),
                         (treeWidthAtLevel * (1 + (childBox.getZ() * 2))) - father.getZ()
                 );
-                Spherical sphericalL2L;
-                positionToSphere(L2LVector,&sphericalL2L);
-                harmonicInner(sphericalL2L,this->transitionL2L[idxLevel][idxChild]);
+
+                harmonicInner(positionToSphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
 
                 //printf("[M2M_vector]%d/%d = %f/%f/%f\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
                 //printf("[M2M_vectorSpherical]%d/%d = %f/%f/%f/%f\n", idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
@@ -572,11 +575,9 @@ protected:
                         if( ( x*x + y*y + z*z ) >= ( 3*FMB_Info_ws*FMB_Info_ws + 0.1 ) ){
                             const F3DPosition relativePos( x*treeWidthAtLevel , y*treeWidthAtLevel , z*treeWidthAtLevel );                            
 
-                            Spherical spherical;
-                            positionToSphere(relativePos,&spherical);
                             // Not blas so
                             //printf("transferM2L[%d][%d][%d][%d]\n", idxLevel, idxd1, idxd2, idxd3);
-                            harmonicOuter(spherical,this->transferM2L[idxLevel][idxd1][idxd2][idxd3]);
+                            harmonicOuter(positionToSphere(relativePos),this->transferM2L[idxLevel][idxd1][idxd2][idxd3]);
                             //for(int idxTemp = 0 ; idxTemp < this->FMB_Info_M2L_exp_size ; ++idxTemp){
                             //    printf("transferM2L[%d][%d][%d][%d][%d]=%f/%f\n", idxLevel, idxd1, idxd2, idxd3, idxTemp, this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getReal(),this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getImag());
                             //}
@@ -652,16 +653,14 @@ public:
         for(typename FList<ParticuleClass*>::ConstBasicIterator iterParticule(*inParticules);
                                 iterParticule.isValide() ; iterParticule.progress()){
 
-            Spherical spherical;
-            positionToSphere(iterParticule.value()->getPosition() - inPole->getPosition(), &spherical);
 
             //std::cout << "Working on part " << iterParticule.value()->getPhysicalValue() << "\n";
-            F3DPosition tempPos = iterParticule.value()->getPosition() - inPole->getPosition();
+            //F3DPosition tempPos = iterParticule.value()->getPosition() - inPole->getPosition();
             //ok printf("\tpos_rel.x=%f\tpos_rel.y=%f\tpos_rel.z=%f\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
             //ok printf("\tp_center.x=%f\tp_center.y=%f\tp_center.z=%f\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
             //ok printf("\tbody.x=%f\tbody.y=%f\tbody.z=%f\n",iterParticule.value()->getPosition().getX(),iterParticule.value()->getPosition().getY(),iterParticule.value()->getPosition().getZ());
 
-            harmonicInner(spherical,current_thread_Y);
+            harmonicInner(positionToSphere(iterParticule.value()->getPosition() - inPole->getPosition()),current_thread_Y);
 
             //ok printf("\tr=%f\tcos_theta=%f\tsin_theta=%f\tphi=%f\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
@@ -679,6 +678,7 @@ public:
                 }
             }
         }
+
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 

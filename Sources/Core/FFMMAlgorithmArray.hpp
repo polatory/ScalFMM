@@ -18,11 +18,14 @@
 * @brief
 * Please read the license
 *
-* This class is a basic FMM algorithm
+* This class is a threaded FMM algorithm
 * It just iterates on a tree and call the kernels with good arguments.
+* It used the inspector-executor model :
+* iterates on the tree and builds an array to work in parallel on this array
 *
 * Of course this class does not deallocate pointer given in arguements.
 *
+* Threaded & based on the inspector-executor model
 * schedule(runtime)
 */
 template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
