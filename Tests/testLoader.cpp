@@ -35,7 +35,7 @@ int main(int , char ** ){
     // we store all particules to be able to dealloc
     FList<FBasicParticule*> particules;
     // Use testLoaderCreate.exe to create this file
-    const char* const filename = "testLoader.basic.temp";
+    const char* const filename = "../../Data/testLoader.basic.temp";
     FTic counter;
 
     // open basic particules loader

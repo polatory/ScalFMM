@@ -35,7 +35,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // During upward
-    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int inLevel) {
+    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
@@ -46,7 +46,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // Before Downward
-    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const distantNeighbors, const int size, const int inLevel) {
+    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const distantNeighbors, const int size, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){
@@ -55,7 +55,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // During Downward
-    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int inLevel) {
+    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){

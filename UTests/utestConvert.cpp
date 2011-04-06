@@ -1,5 +1,6 @@
 #include "FUTester.hpp"
 
+#include "../Sources/Utils/FGlobal.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 #include "../Sources/Containers/FTreeCoordinate.hpp"
 #include "../Sources/Utils/FConvert.hpp"
@@ -24,9 +25,9 @@ class TestConvert : public FUTester<TestConvert> {
         {
             const FTreeCoordinate pos(0,1,10);
             const F3DPosition posReal = FConvert::MortonToPosition(pos.getMortonIndex(5),5,10.0);
-            assert( FMath::LookEqual(posReal.getX(),5.0) );
-            assert( FMath::LookEqual(posReal.getY(),15.0) );
-            assert( FMath::LookEqual(posReal.getZ(),105.0) );
+            assert( FMath::LookEqual(posReal.getX(),FReal(5.0)) );
+            assert( FMath::LookEqual(posReal.getY(),FReal(15.0)) );
+            assert( FMath::LookEqual(posReal.getZ(),FReal(105.0)) );
         }
     }
 

@@ -46,7 +46,7 @@ protected:
     long leftLeafIndex;                     //< The leaf at the left position (this is the array index to start when iterate)
     long rightLeafIndex;                    //< The leaf at the right position (this is the last array index when iterate)
 
-    const int subOctreeHeight;	            //< Height of this suboctree
+    const int subOctreeHeight;              //< Height of this suboctree
     const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)
 
 
@@ -102,6 +102,11 @@ protected:
         if(arrayIndex > this->rightLeafIndex) this->rightLeafIndex = arrayIndex;
     }
 
+    /** Disable copy */
+private:
+    FAbstractSubOctree(const FAbstractSubOctree&){}
+    FAbstractSubOctree& operator=(const FAbstractSubOctree&){return *this;}
+
 public:
     /**
     * Constructor
@@ -112,8 +117,8 @@ public:
     */
     FAbstractSubOctree(FAbstractSubOctree* const inParent, const long inIndexInParent,
                        const int inSubOctreeHeight, const int inSubOctreePosition) :
-                        parent( inParent ), indexInParent(inIndexInParent), subOctreePosition( inSubOctreePosition ),
-                        subOctreeHeight( inSubOctreeHeight ), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1) {
+                        cells(0), parent( inParent ), indexInParent(inIndexInParent), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1),
+                        subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
         assert(this->cells, "Allocation failled", __LINE__, __FILE__);
@@ -250,6 +255,10 @@ private:
 
     FList<ParticuleClass*>** leafs;            //< Leafs array
 
+    /** Disable copy */
+    FSubOctreeWithLeafs(const FSubOctreeWithLeafs&){}
+    FSubOctreeWithLeafs& operator=(const FSubOctreeWithLeafs&){return *this;}
+
 public:     
     /**
     * Constructor
@@ -339,6 +348,10 @@ template< class ParticuleClass, class CellClass >
 class FSubOctree : public FAbstractSubOctree<ParticuleClass,CellClass> {
 private:
     FAbstractSubOctree<ParticuleClass,CellClass>** subleafs;    //< Last levels is composed of suboctree
+
+    /** Disable copy */
+    FSubOctree(const FSubOctree&){}
+    FSubOctree& operator=(const FSubOctree&){return *this;}
 
 public:	
     /**

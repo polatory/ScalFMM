@@ -6,6 +6,7 @@
 #include "../Utils/FDebug.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
+#include "../Utils/FGlobal.hpp"
 
 #include "../Containers/FOctree.hpp"
 
@@ -30,12 +31,10 @@ class FFMMAlgorithmTask : protected FAssertable{
     typedef FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
-    static const int NbThreads = 4;                                             //< Number of threads (currently a static number)
-
     Octree* const tree;                                                         //< The octree to work on
-    KernelClass<ParticuleClass, CellClass, OctreeHeight>* kernels[NbThreads];   //< The kernels
+    KernelClass<ParticuleClass, CellClass, OctreeHeight>* kernels[FThreadNumbers];   //< The kernels
 
-    FDEBUG(FTic counter);                                                       //< In case of debug: to count the elapsed time
+    FDEBUG(FTic counterTime);                                                       //< In case of debug: to count the elapsed time
 
 public:	
     /** The constructor need the octree and the kernels used for computation
@@ -49,7 +48,7 @@ public:
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
-        for(int idxThread = 0 ; idxThread < NbThreads ; ++idxThread){
+        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
@@ -58,7 +57,7 @@ public:
 
     /** Default destructor */
     virtual ~FFMMAlgorithmTask(){
-        for(int idxThread = 0 ; idxThread < NbThreads ; ++idxThread){
+        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             delete this->kernels[idxThread];
         }
     }
@@ -70,7 +69,7 @@ public:
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        for(int idxThread = 0 ; idxThread < NbThreads ; ++idxThread){
+        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             this->kernels[idxThread]->init();
         }
 
@@ -87,9 +86,9 @@ public:
     void bottomPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
 
-        #pragma omp parallel num_threads(NbThreads)
+        #pragma omp parallel num_threads(FThreadNumbers)
         {
             #pragma omp single
             {
@@ -107,8 +106,8 @@ public:
 
             }
         }
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
@@ -116,10 +115,10 @@ public:
     void upwardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
 
 
-        #pragma omp parallel num_threads(NbThreads)
+        #pragma omp parallel num_threads(FThreadNumbers)
         {
             #pragma omp single
             {
@@ -152,8 +151,8 @@ public:
             }
         }
 
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
@@ -162,9 +161,9 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         { // first M2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-            FDEBUG( counter.tic() );
+            FDEBUG( counterTime.tic() );
 
-            #pragma omp parallel num_threads(NbThreads)
+            #pragma omp parallel num_threads(FThreadNumbers)
             {
                 #pragma omp single
                 {
@@ -193,14 +192,14 @@ public:
                     }
                 }
             }
-            FDEBUG( counter.tac() );
-            FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+            FDEBUG( counterTime.tac() );
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         }
 
         { // second L2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-            FDEBUG( counter.tic() );
-            #pragma omp parallel num_threads(NbThreads)
+            FDEBUG( counterTime.tic() );
+            #pragma omp parallel num_threads(FThreadNumbers)
             {
                 #pragma omp single
                 {
@@ -228,8 +227,8 @@ public:
                     }
                 }
             }
-            FDEBUG( counter.tac() );
-            FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+            FDEBUG( counterTime.tac() );
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         }
 
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
@@ -239,9 +238,9 @@ public:
     void directPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
 
-        #pragma omp parallel num_threads(NbThreads)
+        #pragma omp parallel num_threads(FThreadNumbers)
         {
             #pragma omp single
             {
@@ -263,8 +262,8 @@ public:
                 } while(octreeIterator.moveRight());
             }
         }
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

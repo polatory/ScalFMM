@@ -87,9 +87,8 @@ public:
 	* @param inBoxCenter box center for this simulation
 	*/
         FOctree(const FReal inBoxWidth, const F3DPosition& inBoxCenter)
-                        : boxWidth(inBoxWidth) , boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)),
-                        height(OctreeHeight) , leafIndex(OctreeHeight-1),
-                        root(0, 0, SubtreeHeight, 1){
+                        : root(0, 0, SubtreeHeight, 1), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth),
+                        height(OctreeHeight) , leafIndex(OctreeHeight-1) {
                 FReal tempWidth = this->boxWidth;
                 // pre compute box width for each level
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
@@ -178,7 +177,7 @@ public:
             * of the root (level 1 of octree) at the left limit index
             */
             Iterator(FOctree* const inTarget)
-                    : currentLocalLevel(0), currentLocalIndex(0) {
+                    : currentLocalIndex(0) , currentLocalLevel(0) {
                 assert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
                 assert(inTarget->root.getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
 
@@ -188,7 +187,7 @@ public:
                 this->currentLocalIndex = TransposeIndex(this->current.tree->getLeftLeafIndex(), (this->current.tree->getSubOctreeHeight() - this->currentLocalLevel - 1) );
             }
 
-            Iterator() : currentLocalLevel(0), currentLocalIndex(0) {
+            Iterator() : currentLocalIndex(0),currentLocalLevel(0) {
                 current.tree = 0;
             }
 

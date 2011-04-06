@@ -17,8 +17,8 @@
 template< class ParticuleClass, class CellClass, int TreeHeight>
 class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, TreeHeight> {
  public:
-    FFmbKernelsForces(const int inTreeHeight, const FReal inTreeWidth)
-        : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeHeight,inTreeWidth) {
+    FFmbKernelsForces(const FReal inTreeWidth)
+        : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeWidth) {
     }
 
 

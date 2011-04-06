@@ -8,7 +8,7 @@
  * 3 - Compile as needed
  */
 
-#define FUSE_MPI
+#include "../Sources/Utils/FGlobal.hpp"
 
 //================================================================================================
 #ifdef FUSE_MPI

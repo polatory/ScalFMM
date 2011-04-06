@@ -30,7 +30,7 @@ class FFMMAlgorithm : protected FAssertable{
     Octree* const tree;                                                     //< The octree to work on
     KernelClass<ParticuleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
 
-    FDEBUG(FTic counter);                                              //< In case of debug: to count the elapsed time
+    FDEBUG(FTic counterTime);                                              //< In case of debug: to count the elapsed time
     FDEBUG(FTic computationCounter);                                   //< In case of debug: to  count computation time
 
 public:	
@@ -74,7 +74,7 @@ public:
     void bottomPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
         FDEBUG( double totalComputation = 0 );
 
         FOctreeIterator octreeIterator(tree);
@@ -90,8 +90,8 @@ public:
             FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());
 
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -100,7 +100,7 @@ public:
     void upwardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
         FDEBUG( double totalComputation = 0 );
 
         // Start from leal level - 1
@@ -126,8 +126,8 @@ public:
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
         }
 
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -136,7 +136,7 @@ public:
     void downardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
         FDEBUG( double totalComputation = 0 );
 
         { // first M2L
@@ -161,12 +161,12 @@ public:
                 octreeIterator = avoidGotoLeftIterator;
             }
         }
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
         FDEBUG( totalComputation = 0 );
         { // second L2L
             FOctreeIterator octreeIterator(tree);
@@ -190,8 +190,8 @@ public:
             }
         }
 
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -200,7 +200,7 @@ public:
     void directPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG( counter.tic() );
+        FDEBUG( counterTime.tic() );
         FDEBUG( double totalComputation = 0 );
 
         const int heightMinusOne = OctreeHeight - 1;
@@ -220,8 +220,8 @@ public:
             FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());
 
-        FDEBUG( counter.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counter.elapsed() << "s)\n" );
+        FDEBUG( counterTime.tac() );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }

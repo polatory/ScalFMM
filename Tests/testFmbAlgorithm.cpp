@@ -58,7 +58,7 @@ int main(int , char ** ){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+        const char* const filename = "../../Data/testLoaderFMA.fma"; //"testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
 
         FFMALoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
@@ -100,7 +100,7 @@ int main(int , char ** ){
         counter.tic();
 
         //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-        FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(NbLevels,loader.getBoxWidth());
+        FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(loader.getBoxWidth());
         //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
         FFMMAlgorithmTask<FFmbKernelsPotentialForces, FmbParticule, FmbCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();

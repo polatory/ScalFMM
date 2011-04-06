@@ -30,20 +30,20 @@ int main(int , char ** ){
         const int NbSubLevels = 3;
         const long NbPart = 2E6;
         FList<FBasicParticule*> particules;
-        FTic counter;
+        FTic counterTime;
 
         srand ( 1 ); // volontary set seed to constant
 
         // -----------------------------------------------------
         std::cout << "Creating " << NbPart << " particules ..." << std::endl;
-        counter.tic();
+        counterTime.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             FBasicParticule* const particule = new FBasicParticule();
             particule->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
             particules.pushFront(particule);
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        counterTime.tac();
+        std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
@@ -51,17 +51,17 @@ int main(int , char ** ){
 
         // -----------------------------------------------------
         std::cout << "Inserting particules ..." << std::endl;
-        counter.tic();
+        counterTime.tic();
         while( iter.isValide() ){
             tree.insert(iter.value());
             iter.progress();
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        counterTime.tac();
+        std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
         {
             std::cout << "Itering on particules ..." << std::endl;
-            counter.tic();
+            counterTime.tic();
 
             FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
@@ -75,13 +75,13 @@ int main(int , char ** ){
                 octreeIterator.gotoLeft();
                 std::cout << "Cells at this level " << counter << " ...\n";
             }
-            counter.tac();
-            std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+            counterTime.tac();
+            std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         }
         // -----------------------------------------------------
         {
             std::cout << "Itering on particules fast ..." << std::endl;
-            counter.tic();
+            counterTime.tic();
 
             FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
@@ -89,23 +89,22 @@ int main(int , char ** ){
             FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
-                int counter = 0;
                 do{
                 } while(octreeIterator.moveRight());
                 avoidGoLeft.moveUp();
                 octreeIterator = avoidGoLeft;
             }
-            counter.tac();
-            std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+            counterTime.tac();
+            std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         }
         // -----------------------------------------------------
         std::cout << "Deleting particules ..." << std::endl;
-        counter.tic();
+        counterTime.tic();
         while(particules.getSize()){
             delete particules.popFront();
         }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+        counterTime.tac();
+        std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
 	return 0;

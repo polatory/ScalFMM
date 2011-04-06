@@ -604,7 +604,7 @@ protected:
     }
 
 public:
-    FAbstractFmbKernels(const int inTreeHeight, const FReal inTreeWidth) :
+    FAbstractFmbKernels(const FReal inTreeWidth) :
                 treeWidthAtRoot(inTreeWidth), FMB_Info_up_to_P_in_M2L(true) {
         buildPrecompute();
     }

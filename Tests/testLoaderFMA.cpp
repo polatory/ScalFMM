@@ -35,7 +35,7 @@ int main(int , char ** ){
     // we store all particules to be able to dealloc
     FList<FFmaParticule*> particules;
     // Use testLoaderCreate.exe to create this file
-    const char* const filename = "testLoaderFMA.fma";
+    const char* const filename = "../../Data/testLoaderFMA.fma";
     FTic counter;
 
     // open basic particules loader
