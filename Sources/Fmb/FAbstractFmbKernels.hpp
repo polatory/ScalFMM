@@ -17,7 +17,7 @@
 
 
 // P is a input parameter
-static const int FMB_Info_P = 3;
+static const int FMB_Info_P = 2;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

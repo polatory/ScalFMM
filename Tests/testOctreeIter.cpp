@@ -9,6 +9,7 @@
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
+#include "../Sources/Core/FSimpleLeaf.hpp"
 
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
@@ -46,7 +47,7 @@ int main(int , char ** ){
         std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
         FList<FBasicParticule*>::BasicIterator iter(particules);
 
         // -----------------------------------------------------
@@ -63,7 +64,7 @@ int main(int , char ** ){
             std::cout << "Itering on particules ..." << std::endl;
             counterTime.tic();
 
-            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
                 int counter = 0;
@@ -83,10 +84,10 @@ int main(int , char ** ){
             std::cout << "Itering on particules fast ..." << std::endl;
             counterTime.tic();
 
-            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
-            FOctree<FBasicParticule, FBasicCell, NbLevels, NbSubLevels>::Iterator avoidGoLeft(octreeIterator);
+            FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels>::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
                 do{

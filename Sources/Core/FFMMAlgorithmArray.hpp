@@ -29,11 +29,14 @@
 * Threaded & based on the inspector-executor model
 * schedule(runtime)
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
+template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticuleClass, class CellClass,
+        template<class ParticuleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
 class FFMMAlgorithmArray : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
+    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
     typedef KernelClass<ParticuleClass, CellClass, OctreeHeight> Kernel;
 
     Octree* const tree;                  //< The octree to work on
@@ -127,7 +130,7 @@ public:
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particules
-                myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentList());
+                myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSources());
             }
         }
         FDEBUG(computationCounter.tac());
@@ -293,10 +296,10 @@ public:
 
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentList());
+                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particules and neighbors particules
                 const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentList() , neighbors, counter);
+                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets() , neighbors, counter);
             }
         }
         FDEBUG(computationCounter.tac());

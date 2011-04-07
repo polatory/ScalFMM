@@ -1,5 +1,5 @@
-#ifndef FBASICLOADER_HPP
-#define FBASICLOADER_HPP
+#ifndef FFMATORLOADER_HPP
+#define FFMATORLOADER_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <iostream>
@@ -11,7 +11,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FBasicLoader
+* @class FFMAToRLoader
 * Please read the license
 *
 * Load a file with a format like :
@@ -19,7 +19,7 @@
 * X Y Z // one particule by line
 * ....
 * <code>
-*    FBasicLoader<FBasicParticule> loader("../FMB++/Tests/particules.basic.txt"); <br>
+*    FFMAToRLoader<FBasicParticule> loader("../FMB++/Tests/particules.basic.txt"); <br>
 *    if(!loader.isValide()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
@@ -33,13 +33,15 @@
 *        tree.insert(part); <br>
 *    } <br>
 * </code>
+*
+* Particule has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticuleClass>
-class FBasicLoader : public FAbstractLoader<ParticuleClass> {
+class FFMAToRLoader : public FAbstractLoader<ParticuleClass> {
 protected:
     std::ifstream file;         //< The file to read
     F3DPosition centerOfBox;    //< The center of box read from file
-    FReal boxWidth;            //< the box width read from file
+    FReal boxWidth;             //< the box width read from file
     int nbParticules;           //< the number of particules read from file
 
 public:
@@ -48,12 +50,13 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling isValide()
     */
-    FBasicLoader(const char* const filename): file(filename,std::ifstream::in){
+    FFMAToRLoader(const char* const filename): file(filename,std::ifstream::in){
         // test if open
         if(this->file.is_open()){
             FReal x,y,z;
             this->file >> this->nbParticules >> this->boxWidth >> x >> y >> z;
             this->centerOfBox.setPosition(x,y,z);
+            this->boxWidth *= 2;
         }
         else {
              this->boxWidth = 0;
@@ -64,7 +67,7 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FBasicLoader(){
+    virtual ~FFMAToRLoader(){
         file.close();
     }
 
@@ -106,14 +109,17 @@ public:
       * @param the particule to fill
       */
     void fillParticule(ParticuleClass* const inParticule){
-        FReal x,y,z;
-        this->file >> x >> y >> z;
-        inParticule->setPosition(F3DPosition(x,y,z));
+        FReal x,y,z,data;
+        int isTarget;
+        this->file >> x >> y >> z >> data >> isTarget;
+        inParticule->setPosition(x,y,z);
+        inParticule->setPhysicalValue(data);
+        if(isTarget) inParticule->setAsTarget();
     }
 
 };
 
 
-#endif //FBASICLOADER_HPP
+#endif //FFMATORLOADER_HPP
 
 // [--LICENSE--]

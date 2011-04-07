@@ -16,6 +16,7 @@
 
 #include "../Sources/Core/FBasicParticule.hpp"
 #include "../Sources/Core/FBasicCell.hpp"
+#include "../Sources/Core/FSimpleLeaf.hpp"
 
 // Compile by : g++ testOctree.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testOctree.exe
 
@@ -42,7 +43,7 @@ int main(int , char ** ){
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<FBasicParticule, FBasicCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
         FList<FBasicParticule*>::BasicIterator iter(particules);
 
         // -----------------------------------------------------

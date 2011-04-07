@@ -14,6 +14,8 @@
 #include "../Sources/Extenssions/FExtendForces.hpp"
 #include "../Sources/Extenssions/FExtendPotential.hpp"
 
+#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+
 #include "../Sources/Core/FBasicCell.hpp"
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
@@ -28,10 +30,10 @@
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsPotential.hpp"
 
-#include "../Sources/Files/FFMALoader.hpp"
+#include "../Sources/Files/FFMAToRLoader.hpp"
 
-// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbToRAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbToRAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbToRAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbToRAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -43,7 +45,7 @@
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FFmaParticule}
   */
-class FmbParticule : public FFmaParticule, public FExtendForces, public FExtendPotential {
+class FmbParticule : public FFmaParticule, public FExtendParticuleType, public FExtendForces, public FExtendPotential {
 public:
 };
 
@@ -60,9 +62,9 @@ int main(int , char ** ){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+        const char* const filename = "testLoaderFMA.tor.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
 
-        FFMALoader<FmbParticule> loader(filename);
+        FFMAToRLoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
             std::cout << "Loader Error, " << filename << " is missing\n";
             return 1;

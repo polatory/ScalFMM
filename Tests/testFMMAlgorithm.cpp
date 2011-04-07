@@ -10,6 +10,8 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
+#include "../Sources/Core/FSimpleLeaf.hpp"
+
 #include "../Sources/Utils/F3DPosition.hpp"
 
 #include "../Sources/Core/FTestParticule.hpp"
@@ -56,7 +58,7 @@ int main(int , char ** ){
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
 
-        FOctree<FTestParticule, FTestCell, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +80,7 @@ int main(int , char ** ){
         // FTestKernels FBasicKernels
         FTestKernels<FTestParticule, FTestCell, NbLevels> kernels;
         //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-        FFMMAlgorithmArray<FTestKernels, FTestParticule, FTestCell, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+        FFMMAlgorithmArray<FTestKernels, FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
         algo.execute();
 
         counter.tac();
@@ -87,7 +89,7 @@ int main(int , char ** ){
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
 
-        ValidateFMMAlgo(&tree, NbPart);
+        ValidateFMMAlgo(&tree);
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////

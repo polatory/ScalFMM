@@ -34,7 +34,7 @@
  * Please refere to testOctree.cpp to see an example
  * @warning Give the particuleClass & cellClass
  */
-template< class ParticuleClass, class CellClass >
+template< class ParticuleClass, class CellClass , template <class ParticuleClass> class LeafClass>
 class FAbstractSubOctree : protected FAssertable{
 protected:
 
@@ -249,11 +249,11 @@ public:
  * Please refere to testOctree.cpp to see an example.
  * @warning Give the particuleClass & cellClass
  */
-template< class ParticuleClass, class CellClass >
-class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass , template <class ParticuleClass> class LeafClass>
+class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticuleClass,CellClass,LeafClass> {
 private:
 
-    FList<ParticuleClass*>** leafs;            //< Leafs array
+    LeafClass<ParticuleClass>** leafs;            //< Leafs array
 
     /** Disable copy */
     FSubOctreeWithLeafs(const FSubOctreeWithLeafs&){}
@@ -267,13 +267,13 @@ public:
     * @param inSubOctreeHeight Height of this suboctree
     * @param inSubOctreePosition Level of the current suboctree in the global tree (1 if upper tree)
     */
-    FSubOctreeWithLeafs(FAbstractSubOctree<ParticuleClass,CellClass>* const inParent, const long inIndexInParent,
+    FSubOctreeWithLeafs(FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* const inParent, const long inIndexInParent,
                         const int inSubOctreeHeight, const int inSubOctreePosition) :
-                        FAbstractSubOctree<ParticuleClass,CellClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+                        FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
-        this->leafs = new FList<ParticuleClass*>*[cellsAtLeafLevel];
+        this->leafs = new LeafClass<ParticuleClass>*[cellsAtLeafLevel];
         assert(this->leafs, "Allocation failled", __LINE__, __FILE__);
 
         for( long indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
@@ -299,28 +299,46 @@ public:
     */
     void insert(const MortonIndex index, ParticuleClass* const inParticule, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // Get the morton index for the leaf level
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);
         // is there already a leaf?
         if( !this->leafs[arrayIndex] ){
-            this->leafs[arrayIndex] = new FList<ParticuleClass*>();
-            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex , index, inBoxWidthAtLevel);
+            this->leafs[arrayIndex] = new LeafClass<ParticuleClass>();
+            FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex , index, inBoxWidthAtLevel);
         }
         // add particule to leaf list
-        this->leafs[arrayIndex]->pushFront(inParticule);
+        this->leafs[arrayIndex]->push(inParticule);
     }
 
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particules at this index */
-    FList<ParticuleClass*>* getLeaf(const int index){
-        return this->leafs[index];
+    FList<ParticuleClass*>* getLeafSources(const int index){
+        LeafClass<ParticuleClass>* const leaf = this->leafs[index];
+        return (leaf ? leaf->getSources(): 0);
     }
 
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particules at this index */
-    const FList<ParticuleClass*>* getLeaf(const int index) const {
-        return this->leafs[index];
+    FList<ParticuleClass*>* getLeafTargets(const int index){
+        LeafClass<ParticuleClass>* const leaf = this->leafs[index];
+        return (leaf ? leaf->getTargets(): 0);
+    }
+
+    /** To get access to leafs elements
+      * @param index the position of the leaf
+      * @return the list of particules at this index */
+    const FList<ParticuleClass*>* getLeafSources(const int index) const {
+        LeafClass<ParticuleClass>* const leaf = this->leafs[index];
+        return (leaf ? leaf->getSources(): 0);
+    }
+
+    /** To get access to leafs elements
+      * @param index the position of the leaf
+      * @return the list of particules at this index */
+    const FList<ParticuleClass*>* getLeafTargets(const int index) const {
+        LeafClass<ParticuleClass>* const leaf = this->leafs[index];
+        return (leaf ? leaf->getTargets() : 0);
     }
 
 };
@@ -344,10 +362,10 @@ public:
  *
  * @warning Give the particuleClass & cellClass
  */
-template< class ParticuleClass, class CellClass >
-class FSubOctree : public FAbstractSubOctree<ParticuleClass,CellClass> {
+template< class ParticuleClass, class CellClass , template <class ParticuleClass> class LeafClass>
+class FSubOctree : public FAbstractSubOctree<ParticuleClass,CellClass,LeafClass> {
 private:
-    FAbstractSubOctree<ParticuleClass,CellClass>** subleafs;    //< Last levels is composed of suboctree
+    FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>** subleafs;    //< Last levels is composed of suboctree
 
     /** Disable copy */
     FSubOctree(const FSubOctree&){}
@@ -361,12 +379,12 @@ public:
     * @param inSubOctreeHeight Height of this suboctree
     * @param inSubOctreePosition Level of the current suboctree in the global tree (0 if upper tree)
     */
-    FSubOctree(FAbstractSubOctree<ParticuleClass,CellClass>* const inParent,  const long inIndexInParent,
+    FSubOctree(FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* const inParent,  const long inIndexInParent,
                const int inSubOctreeHeight, const int inSubOctreePosition) :
-            FAbstractSubOctree<ParticuleClass,CellClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+            FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
-        this->subleafs = new FAbstractSubOctree<ParticuleClass,CellClass>*[cellsAtLeafLevel];
+        this->subleafs = new FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>*[cellsAtLeafLevel];
         assert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
 
         for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
@@ -391,7 +409,7 @@ public:
     void insert(const MortonIndex index, ParticuleClass* const inParticule, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // We need the morton index at the bottom level of this sub octree
         // so we remove the right side
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);
         // Is there already a leaf?
         if( !this->subleafs[arrayIndex] ){
             // We need to create leaf sub octree
@@ -404,11 +422,11 @@ public:
             }
             // Or next suboctree contains the reail leaf!
             else{
-                this->subleafs[arrayIndex] = new FSubOctreeWithLeafs<ParticuleClass,CellClass>(this,arrayIndex,nextSubOctreeHeight,nextSubOctreePosition);
+                this->subleafs[arrayIndex] = new FSubOctreeWithLeafs<ParticuleClass,CellClass,LeafClass>(this,arrayIndex,nextSubOctreeHeight,nextSubOctreePosition);
             }
 
             // We need to inform parent class
-            FAbstractSubOctree<ParticuleClass,CellClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), inBoxWidthAtLevel);
+            FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), inBoxWidthAtLevel);
         }
         // Ask next suboctree to insert the particule
         this->subleafs[arrayIndex]->insert( index, inParticule, inTreeHeight, inBoxWidthAtLevel);
@@ -417,14 +435,14 @@ public:
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    FAbstractSubOctree<ParticuleClass,CellClass>* leafs(const int index) {
+    FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* leafs(const int index) {
         return this->subleafs[index];
     }
 
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    const FAbstractSubOctree<ParticuleClass,CellClass>* leafs(const int index) const {
+    const FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* leafs(const int index) const {
         return this->subleafs[index];
     }
 };

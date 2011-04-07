@@ -25,7 +25,7 @@
 *        return 1; <br>
 *    } <br>
 * <br>
-*    FOctree<FBasicParticule, TestCell, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
+*    FOctree<FBasicParticule, TestCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
 * <br>
 *    for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){ <br>
 *        FBasicParticule* const part = new FBasicParticule(); <br>

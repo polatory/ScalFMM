@@ -24,11 +24,14 @@
 *
 * The parallel algorithm is simple, each thread is taking a value from the iterator (protected by a mutex)
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
+template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticuleClass, class CellClass,
+        template<class ParticuleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
 class FFMMAlgorithmThreaded : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
+    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
     KernelClass<ParticuleClass, CellClass, OctreeHeight>* kernels[FThreadNumbers];   //< The kernels (one by thread)
     Octree* const tree;                                                         //< The octree to work on
@@ -100,7 +103,7 @@ public:
             omp_set_lock(&mutex);
             while(!stop){
                 CellClass*const cell = octreeIterator.getCurrentCell();
-                const FList<ParticuleClass*>* const particules = octreeIterator.getCurrentList();
+                const FList<ParticuleClass*>* const particules = octreeIterator.getCurrentListSources();
                 if(!octreeIterator.moveRight()) stop = true;
                 omp_unset_lock(&mutex);
 
@@ -270,7 +273,7 @@ public:
             // for each leafs
             while(!stop){
                 const CellClass * const cell = octreeIterator.getCurrentCell();
-                FList<ParticuleClass*>* const particules = octreeIterator.getCurrentList();
+                FList<ParticuleClass*>* const particules = octreeIterator.getCurrentListTargets();
                 const MortonIndex cellIndex = octreeIterator.getCurrentGlobalIndex();
                 if(!octreeIterator.moveRight()) stop = true;
                 omp_unset_lock(&mutex);

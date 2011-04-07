@@ -14,47 +14,47 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FBasicParticule.hpp"
+#include "../Sources/Core/FFmaParticule.hpp"
 #include "../Sources/Core/FBasicCell.hpp"
+
+#include "../Sources/Extenssions/FExtendParticuleType.hpp"
 
 #include "../Sources/Core/FSimpleLeaf.hpp"
 
-#include "../Sources/Files/FBasicLoader.hpp"
+#include "../Sources/Files/FFMAToRLoader.hpp"
 
-// Compile by : g++ testLoader.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoader.exe
+// Compile by : g++ testLoaderFMAToR.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMAToR.exe
 
+
+class ParticuleToR : public FFmaParticule, public FExtendParticuleType {
+};
 
 /**
-  * In this file we show an example of FBasicLoader use
-* Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
-* Inserting 2000000 particules ...
-* Done  (5.77996).
-* Deleting particules ...
-* Done  (0.171918).
+  * In this file we show an example of FFmaLoader use
   */
 
 int main(int , char ** ){
     // we store all particules to be able to dealloc
-    FList<FBasicParticule*> particules;
+    FList<ParticuleToR*> particules;
     // Use testLoaderCreate.exe to create this file
-    const char* const filename = "../../Data/testLoader.basic.temp";
+    const char* const filename = "testLoaderFMA.tor.fma";
     FTic counter;
 
     // open basic particules loader
-    FBasicLoader<FBasicParticule> loader(filename);
+    FFMAToRLoader<ParticuleToR> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<ParticuleToR, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
     counter.tic();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        FBasicParticule* const part = new FBasicParticule();
+        ParticuleToR* const part = new ParticuleToR();
         particules.pushFront(part);
         loader.fillParticule(part);
         tree.insert(part);

@@ -2,8 +2,8 @@
 #define FBASICCELL_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-#include "FExtendPosition.hpp"
-#include "FExtendMortonIndex.hpp"
+#include "../Extenssions/FExtendPosition.hpp"
+#include "../Extenssions/FExtendMortonIndex.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

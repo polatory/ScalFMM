@@ -28,10 +28,10 @@
  * Particule must extend {FExtendPosition}
  * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
  */
-template< class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight = 3>
+template< class ParticuleClass, class CellClass, template <class ParticuleClass> class LeafClass, int OctreeHeight, int SubtreeHeight = 3>
 class FOctree {
         FReal boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
-        FSubOctree< ParticuleClass, CellClass > root;   //< root suboctree
+        FSubOctree< ParticuleClass, CellClass , LeafClass> root;   //< root suboctree
 
         const F3DPosition boxCenter;	//< the space system center
         const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
@@ -120,18 +120,18 @@ public:
           * depending if we are working on the bottom of the tree.
           */
         union SubOctreeTypes {
-            FAbstractSubOctree<ParticuleClass,CellClass>* tree;     //< Usual pointer to work
-            FSubOctree<ParticuleClass,CellClass>* middleTree;       //< To access to sub-octree under
-            FSubOctreeWithLeafs<ParticuleClass,CellClass>* leafTree;//< To access to particules lists
+            FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* tree;     //< Usual pointer to work
+            FSubOctree<ParticuleClass,CellClass,LeafClass>* middleTree;       //< To access to sub-octree under
+            FSubOctreeWithLeafs<ParticuleClass,CellClass,LeafClass>* leafTree;//< To access to particules lists
         };
 
         /**
           * This class is a const SubOctreeTypes
           */
         union SubOctreeTypesConst {
-            const FAbstractSubOctree<ParticuleClass,CellClass>* tree;     //< Usual pointer to work
-            const FSubOctree<ParticuleClass,CellClass>* middleTree;       //< To access to sub-octree under
-            const FSubOctreeWithLeafs<ParticuleClass,CellClass>* leafTree;//< To access to particules lists
+            const FAbstractSubOctree<ParticuleClass,CellClass,LeafClass>* tree;     //< Usual pointer to work
+            const FSubOctree<ParticuleClass,CellClass,LeafClass>* middleTree;       //< To access to sub-octree under
+            const FSubOctreeWithLeafs<ParticuleClass,CellClass,LeafClass>* leafTree;//< To access to particules lists
         };
 
         /**
@@ -489,8 +489,16 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            FList<ParticuleClass*>* getCurrentList() {
-                return this->current.leafTree->getLeaf(this->currentLocalIndex);
+            FList<ParticuleClass*>* getCurrentListSources() {
+                return this->current.leafTree->getLeafSources(this->currentLocalIndex);
+            }
+
+            /** To access the current particules list
+              * You have to be at the leaf level to call this function!
+              * @return current element list
+              */
+            FList<ParticuleClass*>* getCurrentListTargets() {
+                return this->current.leafTree->getLeafTargets(this->currentLocalIndex);
             }
 
             /** Get the current pointed cell
@@ -714,7 +722,7 @@ public:
           * @return the cell if it exist or null (0)
           *
           */
-        FList<ParticuleClass*>* getLeaf(const MortonIndex inIndex){
+        FList<ParticuleClass*>* getLeafSources(const MortonIndex inIndex){
            SubOctreeTypes workingTree;
            workingTree.tree = &this->root;
            const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
@@ -730,7 +738,7 @@ public:
 
             // compute correct index in the array
             const MortonIndex treeLeafMask = ~(~0x00LL << (3 *  (leafIndex + 1 - workingTree.tree->getSubOctreePosition()) ));
-            return workingTree.leafTree->getLeaf(treeLeafMask & inIndex);
+            return workingTree.leafTree->getLeafSources(treeLeafMask & inIndex);
         }
 
         /** This function fill an array with the neighbors of a cell
@@ -762,7 +770,7 @@ public:
                             const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
                             const MortonIndex mortonOther = other.getMortonIndex(inLevel);
                             // get cell
-                            FList<ParticuleClass*>* const leaf = getLeaf(mortonOther);
+                            FList<ParticuleClass*>* const leaf = getLeafSources(mortonOther);
                             // add to list if not null
                             if(leaf) inNeighbors[idxNeighbors++] = leaf;
                         }

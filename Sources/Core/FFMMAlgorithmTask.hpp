@@ -25,11 +25,14 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass, class ParticuleClass, class CellClass, int OctreeHeight, int SubtreeHeight>
+template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticuleClass, class CellClass,
+        template<class ParticuleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
 class FFMMAlgorithmTask : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
+    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
     Octree* const tree;                                                         //< The octree to work on
     KernelClass<ParticuleClass, CellClass, OctreeHeight>* kernels[FThreadNumbers];   //< The kernels
@@ -100,7 +103,7 @@ public:
                     {
                         // We need the current cell that represent the leaf
                         // and the list of particules
-                        kernels[omp_get_thread_num()]->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentList());
+                        kernels[omp_get_thread_num()]->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSources());
                     }
                 } while(octreeIterator.moveRight());
 
@@ -254,10 +257,10 @@ public:
                     {
                         // There is a maximum of 26 neighbors
                         FList<ParticuleClass*>* neighbors[26];
-                        kernels[omp_get_thread_num()]->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentList());
+                        kernels[omp_get_thread_num()]->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
                         // need the current particules and neighbors particules
                         const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
-                        kernels[omp_get_thread_num()]->P2P( octreeIterator.getCurrentList() , neighbors, counter);
+                        kernels[omp_get_thread_num()]->P2P( octreeIterator.getCurrentListTargets() , neighbors, counter);
                     }
                 } while(octreeIterator.moveRight());
             }
