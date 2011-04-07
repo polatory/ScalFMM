@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-project(TestsFMB CXX)
+project(Tests_scalfmm CXX)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
 
 # Test if openmp is here
@@ -11,7 +11,7 @@ if(OPENMP_FOUND)
 endif()
 
 # Link with fmb lib
-set(fmb_lib FMB)
+set(fmb_lib scalfmm)
 
 # Find all code files
 file(	
