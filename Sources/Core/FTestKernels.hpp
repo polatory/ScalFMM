@@ -77,15 +77,19 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // After Downward
-    void P2P(FList<ParticuleClass*>*const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
+             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particules targeted is impacted by the particules sources
-        long inc = currentBox->getSize() - 1;
+        long inc = sources->getSize();
+        if(targets == sources){
+            inc -= 1;
+        }
         for(int idx = 0 ; idx < size ; ++idx){
             inc += directNeighbors[idx]->getSize();
         }
 
-        typename FList<ParticuleClass*>::BasicIterator iter(*currentBox);
+        typename FList<ParticuleClass*>::BasicIterator iter(*targets);
         while( iter.isValide() ){
             iter.value()->setDataDown(iter.value()->getDataDown() + inc);
             iter.progress();

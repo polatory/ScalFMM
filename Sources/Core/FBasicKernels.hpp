@@ -56,7 +56,8 @@ public:
     }
 
     /** Print the number of particules */
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict , const FList<ParticuleClass*>* FRestrict const* FRestrict , const int ) {
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict , const FList<ParticuleClass*>* const FRestrict ,
+                     const FList<ParticuleClass*>* FRestrict const* FRestrict , const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }

@@ -299,7 +299,7 @@ public:
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particules and neighbors particules
                 const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets() , neighbors, counter);
+                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSources() , neighbors, counter);
             }
         }
         FDEBUG(computationCounter.tac());

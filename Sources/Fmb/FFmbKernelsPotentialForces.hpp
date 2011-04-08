@@ -290,9 +290,10 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
+             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
+        typename FList<ParticuleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
@@ -304,7 +305,7 @@ public:
                 }
              }
 
-            typename FList<ParticuleClass*>::BasicIterator iterSameBox(*currentBox);
+            typename FList<ParticuleClass*>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
                     DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),

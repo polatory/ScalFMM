@@ -76,11 +76,13 @@ public:
     /**
         * P2P
         * Particules to particules
-        * @param particules current boxe particules
+        * @param targets current boxe targets particules
+        * @param sources current boxe sources particules
         * @param directNeighborsParticules the particules from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors (the size of the array directNeighborsParticules)
         */
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict particules, const FList<ParticuleClass*>*const FRestrict  *const FRestrict directNeighborsParticules, const int size) = 0;
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
+                     const FList<ParticuleClass*>*const FRestrict  *const FRestrict directNeighborsParticules, const int size) = 0;
 };
 
 

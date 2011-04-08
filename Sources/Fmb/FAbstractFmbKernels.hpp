@@ -1054,7 +1054,8 @@ public:
 
     virtual void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
 
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) = 0;
+    virtual void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
+                     const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) = 0;
 };
 
 

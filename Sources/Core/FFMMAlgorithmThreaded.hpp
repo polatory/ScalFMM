@@ -273,15 +273,16 @@ public:
             // for each leafs
             while(!stop){
                 const CellClass * const cell = octreeIterator.getCurrentCell();
-                FList<ParticuleClass*>* const particules = octreeIterator.getCurrentListTargets();
+                FList<ParticuleClass*>* const targets = octreeIterator.getCurrentListTargets();
+                const FList<ParticuleClass*>* const sources = octreeIterator.getCurrentListSources();
                 const MortonIndex cellIndex = octreeIterator.getCurrentGlobalIndex();
                 if(!octreeIterator.moveRight()) stop = true;
                 omp_unset_lock(&mutex);
 
-                kernels[threadId]->L2P(cell, particules);
-                // need the current particules and neighbors particules
+                kernels[threadId]->L2P(cell, targets);
+                // need the current targets and neighbors particules
                 const int counter = tree->getLeafsNeighbors(neighbors, cellIndex,heightMinusOne);
-                kernels[threadId]->P2P( particules , neighbors, counter);
+                kernels[threadId]->P2P( targets , sources, neighbors, counter);
 
                 omp_set_lock(&mutex);
             }

@@ -16,7 +16,7 @@
 */
 template< class ParticuleClass, class CellClass, int TreeHeight>
 class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, TreeHeight> {
- public:
+public:
     FFmbKernelsForces(const FReal inTreeWidth)
         : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeWidth) {
     }
@@ -116,9 +116,9 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, T
             if (th > FMath::FPi){
                 th = 2*FMath::FPi - th;
                 //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-                    ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
-                    if (ph > M_PI) ph -= 2*FMath::FPi;
-                    if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
+                ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+                if (ph > M_PI) ph -= 2*FMath::FPi;
+                if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
                 th = FMath::Fmod(th, 2*FMath::FPi);
                 if (th > M_PI) th -= 2*FMath::FPi;
                 if (th < -M_PI + FMath::Epsilon)  th += 2 * FMath::Epsilon;
@@ -137,9 +137,9 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, T
                 if (th > FMath::FPi){
                     th = 2*FMath::FPi - th;
                     //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-                        ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
-                        if (ph > M_PI) ph -= 2*FMath::FPi;
-                        if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
+                    ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+                    if (ph > M_PI) ph -= 2*FMath::FPi;
+                    if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
                     th = FMath::Fmod(th, 2*FMath::FPi);
                     if (th > M_PI) th -= 2*FMath::FPi;
                     if (th < -M_PI + FMath::Epsilon)  th += 2 * FMath::Epsilon;
@@ -228,24 +228,23 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, T
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const FRestrict currentBox, const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
+             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*currentBox);
+        typename FList<ParticuleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
-                  DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
-                                                   iterSource.value());
-                  iterSource.progress();
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSource.value());
+                    iterSource.progress();
                 }
-             }
+            }
 
-            typename FList<ParticuleClass*>::BasicIterator iterSameBox(*currentBox);
+            typename FList<ParticuleClass*>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
-                                                     iterSameBox.value());
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSameBox.value());
                 }
                 iterSameBox.progress();
             }
@@ -261,21 +260,21 @@ class FFmbKernelsForces : public FAbstractFmbKernels<ParticuleClass,CellClass, T
     }
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-      const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
-      const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
-      const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
+        const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
+        const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
+        const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
-      FReal inv_distance = FMath::Sqrt(inv_square_distance);
-      inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
-      inv_square_distance *= inv_distance;
+        FReal inv_square_distance = 1.0 / (dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
+        FReal inv_distance = FMath::Sqrt(inv_square_distance);
+        inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
+        inv_square_distance *= inv_distance;
 
-      (*target)->setForces(
-              (*target)->getForces().getX() + dx * inv_square_distance,
-              (*target)->getForces().getY() + dy * inv_square_distance,
-              (*target)->getForces().getZ() + dz * inv_square_distance
-      );
-      FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+        (*target)->setForces(
+                (*target)->getForces().getX() + dx * inv_square_distance,
+                (*target)->getForces().getY() + dy * inv_square_distance,
+                (*target)->getForces().getZ() + dz * inv_square_distance
+                );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 };
 

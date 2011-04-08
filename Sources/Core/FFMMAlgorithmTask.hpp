@@ -260,7 +260,7 @@ public:
                         kernels[omp_get_thread_num()]->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
                         // need the current particules and neighbors particules
                         const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
-                        kernels[omp_get_thread_num()]->P2P( octreeIterator.getCurrentListTargets() , neighbors, counter);
+                        kernels[omp_get_thread_num()]->P2P( octreeIterator.getCurrentListTargets() , octreeIterator.getCurrentListSources(), neighbors, counter);
                     }
                 } while(octreeIterator.moveRight());
             }
