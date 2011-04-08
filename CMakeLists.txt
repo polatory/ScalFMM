@@ -13,7 +13,7 @@ ENDIF(insource)
 OPTION( BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( BUILD_UTESTS "Set to ON to build UTests" ON )
 
-ADD_DEFINITIONS(-O2 -Wall -W -Wshadow -Wpointer-arith -Wcast-qual)
+ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual)
 
 # Build - lib
 add_subdirectory(Sources)
