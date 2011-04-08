@@ -33,12 +33,23 @@
 * Done  (0.171918).
   */
 
-int main(int , char ** ){
+int main(int argc, char ** argv){
     // we store all particules to be able to dealloc
     FList<FBasicParticule*> particules;
     // Use testLoaderCreate.exe to create this file
-    const char* const filename = "../../Data/testLoader.basic.temp";
     FTic counter;
+    const char* const defaultFilename = "../../Data/testLoader.basic.temp";
+    const char* filename;
+
+    if(argc == 1){
+        std::cout << "You have to give a .fma file in argument.\n";
+        std::cout << "The program will try a default file : " << defaultFilename << "\n";
+        filename = defaultFilename;
+    }
+    else{
+        filename = argv[1];
+        std::cout << "Opening : " << filename << "\n";
+    }
 
     // open basic particules loader
     FBasicLoader<FBasicParticule> loader(filename);

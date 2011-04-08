@@ -34,7 +34,7 @@
 
 
 // Simply create particules and try the kernels
-int main(int , char ** ){
+int main(int argc, char ** argv){
         const int NbLevels = 10;//10;
         const int SizeSubLevels = 3;//3
         const long NbPart = 2000000;//2000000

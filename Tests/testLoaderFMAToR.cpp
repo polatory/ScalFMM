@@ -33,12 +33,23 @@ class ParticuleToR : public FFmaParticule, public FExtendParticuleType {
   * In this file we show an example of FFmaLoader use
   */
 
-int main(int , char ** ){
+int main(int argc, char ** argv ){
     // we store all particules to be able to dealloc
     FList<ParticuleToR*> particules;
     // Use testLoaderCreate.exe to create this file
-    const char* const filename = "testLoaderFMA.tor.fma";
     FTic counter;
+    const char* const defaultFilename = "testLoaderFMA.tor.fma";
+    const char* filename;
+
+    if(argc == 1){
+        std::cout << "You have to give a .tos.fma file in argument.\n";
+        std::cout << "The program will try a default file : " << defaultFilename << "\n";
+        filename = defaultFilename;
+    }
+    else{
+        filename = argv[1];
+        std::cout << "Opening : " << filename << "\n";
+    }
 
     // open basic particules loader
     FFMAToRLoader<ParticuleToR> loader(filename);

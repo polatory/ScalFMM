@@ -58,11 +58,22 @@ public:
 
 
 // Simply create particules and try the kernels
-int main(int , char ** ){
+int main(int argc, char ** argv){
         const int NbLevels = 9;//10;
         const int SizeSubLevels = 3;//3
         FTic counter;
-        const char* const filename = "testLoaderFMA.tor.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+        const char* const defaultFilename = "testLoaderFMA.tor.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+        const char* filename;
+
+        if(argc == 1){
+            std::cout << "You have to give a .fma file in argument.\n";
+            std::cout << "The program will try a default file : " << defaultFilename << "\n";
+            filename = defaultFilename;
+        }
+        else{
+            filename = argv[1];
+            std::cout << "Opening : " << filename << "\n";
+        }
 
         FFMAToRLoader<FmbParticule> loader(filename);
         if(!loader.isValide()){
