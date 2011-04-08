@@ -115,6 +115,7 @@ public:
         inParticule->setPosition(x,y,z);
         inParticule->setPhysicalValue(data);
         if(isTarget) inParticule->setAsTarget();
+        else inParticule->setAsSource();
     }
 
 };

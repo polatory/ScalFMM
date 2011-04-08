@@ -10,7 +10,7 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
-#include "../Sources/Core/FSimpleLeaf.hpp"
+#include "../Sources/Core/FTypedLeaf.hpp"
 
 #include "../Sources/Utils/F3DPosition.hpp"
 
@@ -18,6 +18,10 @@
 #include "../Sources/Core/FTestCell.hpp"
 #include "../Sources/Core/FTestKernels.hpp"
 
+#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+#include "../Sources/Extenssions/FExtendCellType.hpp"
+
+#include "../Sources/Core/FFMMAlgorithmToS.hpp"
 #include "../Sources/Core/FFMMAlgorithm.hpp"
 #include "../Sources/Core/FFMMAlgorithmArray.hpp"
 #include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
@@ -25,12 +29,16 @@
 
 #include "../Sources/Core/FBasicKernels.hpp"
 
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
-
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particules is impacted each other particules
   */
+
+class FTestParticuleToS : public FTestParticule, public FExtendParticuleType {
+};
+
+class FTestCellToS: public FTestCell , public FExtendCellType{
+};
 
 
 // Simply create particules and try the kernels
@@ -42,7 +50,7 @@ int main(int argc, char ** argv){
     const int NbLevels = 10;//10;
     const int SizeSubLevels = 3;//3
     const long NbPart = 2000000;//2000000
-    FTestParticule* particules = new FTestParticule[NbPart];
+    FTestParticuleToS* particules = new FTestParticuleToS[NbPart];
     FTic counter;
 
     srand ( 1 ); // volontary set seed to constant
@@ -54,6 +62,8 @@ int main(int argc, char ** argv){
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
         particules[idxPart].setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+        if(rand() > RAND_MAX/2) particules[idxPart].setAsTarget();
+        else particules[idxPart].setAsSource();
     }
 
     counter.tac();
@@ -62,7 +72,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FTestParticuleToS, FTestCellToS, FTypedLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -82,9 +92,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     // FTestKernels FBasicKernels
-    FTestKernels<FTestParticule, FTestCell, NbLevels> kernels;
+    FTestKernels<FTestParticuleToS, FTestCellToS, NbLevels> kernels;
     //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFMMAlgorithm<FTestKernels, FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFMMAlgorithm<FTestKernels, FTestParticuleToS, FTestCellToS, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -100,7 +110,7 @@ int main(int argc, char ** argv){
     std::cout << "Deleting particules ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particules[idxPart].~FTestParticule();
+        particules[idxPart].~FTestParticuleToS();
     }
     delete [] particules;
     counter.tac();

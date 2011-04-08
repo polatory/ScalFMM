@@ -108,7 +108,7 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
     std::cout << "Check Result\n";
     int NbPart = 0;
     { // Check that each particule has been summed with all other
-        typename FOctree<FTestParticule, FTestCell, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSources()->getSize() ){
@@ -118,7 +118,7 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         } while(octreeIterator.moveRight());
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<FTestParticule, FTestCell, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
         long res = 0;
         do{
@@ -129,7 +129,7 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         }
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<FTestParticule, FTestCell, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
             long res = 0;
@@ -144,14 +144,18 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         }
     }
     { // Check that each particule has been summed with all other
-        typename FOctree<FTestParticule, FTestCell, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename FList<FTestParticule*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename FList<ParticuleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+
+            const bool isUsingToS = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSources());
+
             while( iter.isValide() ){
                 // If a particules has been impacted by less than NbPart - 1 (the current particule)
                 // there is a problem
-                if(iter.value()->getDataDown() != NbPart - 1){
+                if( (!isUsingToS && iter.value()->getDataDown() != NbPart - 1) ||
+                    (isUsingToS && iter.value()->getDataDown() != NbPart) ){
                     std::cout << "Problem L2P + P2P : " << iter.value()->getDataDown() << "\n";
                 }
                 iter.progress();

@@ -43,6 +43,28 @@ public:
         * @param inPosition the position of the current cell
         */
         virtual void setPosition(const F3DPosition& inPosition) = 0;
+
+        /** Because the system can run in ToS mode
+          * a cell has to express if it has sources
+          * @return true if there are sources particules inside
+          */
+        virtual bool hasSourcesChild() const = 0;
+
+        /** Because the system can run in ToS mode
+          * a cell has to express if it has targets
+          * @return true if there are targets particules inside
+          */
+        virtual bool hasTargetsChild() const = 0;
+
+        /**
+          * This function make the cell containing sources
+          */
+        virtual void setSourcesChildTrue() = 0;
+
+        /**
+          * This function make the cell containing targets
+          */
+        virtual void setTargetsChildTrue() = 0;
 };
 
 
