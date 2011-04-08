@@ -21,12 +21,12 @@
 
 #include "../Sources/Core/FSimpleLeaf.hpp"
 
-#include "../Sources/Files/FFMAToRLoader.hpp"
+#include "../Sources/Files/FFMAToSLoader.hpp"
 
-// Compile by : g++ testLoaderFMAToR.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMAToR.exe
+// Compile by : g++ testLoaderFMAToS.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMAToS.exe
 
 
-class ParticuleToR : public FFmaParticule, public FExtendParticuleType {
+class ParticuleToS : public FFmaParticule, public FExtendParticuleType {
 };
 
 /**
@@ -34,8 +34,14 @@ class ParticuleToR : public FFmaParticule, public FExtendParticuleType {
   */
 
 int main(int argc, char ** argv ){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how to use the ToS loader\n";
+    //////////////////////////////////////////////////////////////
+
     // we store all particules to be able to dealloc
-    FList<ParticuleToR*> particules;
+    FList<ParticuleToS*> particules;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.tor.fma";
@@ -52,20 +58,20 @@ int main(int argc, char ** argv ){
     }
 
     // open basic particules loader
-    FFMAToRLoader<ParticuleToR> loader(filename);
+    FFMAToSLoader<ParticuleToS> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<ParticuleToR, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<ParticuleToS, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
     counter.tic();
     for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        ParticuleToR* const part = new ParticuleToR();
+        ParticuleToS* const part = new ParticuleToS();
         particules.pushFront(part);
         loader.fillParticule(part);
         tree.insert(part);

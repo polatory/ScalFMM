@@ -24,7 +24,13 @@
 * In this file we show how to use octree
 */
 
-int main(int , char ** ){
+int main(int , char ** ){    
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how to use the Octree\n";
+    //////////////////////////////////////////////////////////////
+
         const long NbPart = 2000000;
         FList<FBasicParticule*> particules;
         FTic counter;

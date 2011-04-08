@@ -10,9 +10,18 @@
 #include "../Sources/Utils/FGlobal.hpp"
 
 // This file can generate basic particules files in the FMA format
-// g++ testLoaderFMAToRCreate.cpp -o testLoaderFMAToRCreate.exe
+// g++ testLoaderFMAToSCreate.cpp -o testLoaderFMAToSCreate.exe
 
-int main(int , char ** ){
+int main(int argc, char ** argv){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable can create a FMA-like particules files (this is not a fma file!)";
+    std::cout << ">> You can pass a filename in parameter else the program will use\n";
+    std::cout << ">> a default filename.\n";
+    std::cout << ">> The format of the file is : \n";
+    std::cout << ">> [number of particules] \n";
+    std::cout << ">> [boxe width] [boxe x center] [boxe y center] [boxe z center]\n";
+    std::cout << ">> [x] [y] [z] [physical value] [1 if target 0 if source]...\n";
+    //////////////////////////////////////////////////////////////
     // Nb of particules
     const long NbParticules = 200000;
 
@@ -24,7 +33,19 @@ int main(int , char ** ){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char * const Output = "testLoaderFMA.tor.fma";
+    const char * const defaultFilename = "testLoaderFMA.tor.fma";
+
+    const char* Output;
+
+    if(argc == 1){
+        std::cout << "You have to give a filename in argument.\n";
+        std::cout << "The program will create one with a default name : " << defaultFilename << "\n";
+        Output = defaultFilename;
+    }
+    else{
+        Output = argv[1];
+        std::cout << "Creating : " << Output << "\n";
+    }
 
     // Create file
     std::ofstream myfile;

@@ -1,5 +1,5 @@
-#ifndef FFMATORLOADER_HPP
-#define FFMATORLOADER_HPP
+#ifndef FFMATOSLOADER_HPP
+#define FFMATOSLOADER_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <iostream>
@@ -11,7 +11,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMAToRLoader
+* @class FFMAToSLoader
 * Please read the license
 *
 * Load a file with a format like :
@@ -19,7 +19,7 @@
 * X Y Z // one particule by line
 * ....
 * <code>
-*    FFMAToRLoader<FBasicParticule> loader("../FMB++/Tests/particules.basic.txt"); <br>
+*    FFMAToSLoader<FBasicParticule> loader("../FMB++/Tests/particules.basic.txt"); <br>
 *    if(!loader.isValide()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
@@ -37,7 +37,7 @@
 * Particule has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticuleClass>
-class FFMAToRLoader : public FAbstractLoader<ParticuleClass> {
+class FFMAToSLoader : public FAbstractLoader<ParticuleClass> {
 protected:
     std::ifstream file;         //< The file to read
     F3DPosition centerOfBox;    //< The center of box read from file
@@ -50,7 +50,7 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling isValide()
     */
-    FFMAToRLoader(const char* const filename): file(filename,std::ifstream::in){
+    FFMAToSLoader(const char* const filename): file(filename,std::ifstream::in){
         // test if open
         if(this->file.is_open()){
             FReal x,y,z;
@@ -67,7 +67,7 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FFMAToRLoader(){
+    virtual ~FFMAToSLoader(){
         file.close();
     }
 
@@ -120,6 +120,6 @@ public:
 };
 
 
-#endif //FFMATORLOADER_HPP
+#endif //FFMATOSLOADER_HPP
 
 // [--LICENSE--]

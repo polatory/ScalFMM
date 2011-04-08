@@ -34,36 +34,41 @@
 */
 class FApp : public ApplicationImplementation{
 public:
-	FApp(const int inArgc, char ** const inArgv )
-		: ApplicationImplementation(inArgc,inArgv) {
-	}
+    FApp(const int inArgc, char ** const inArgv )
+        : ApplicationImplementation(inArgc,inArgv) {
+    }
 
 protected:
-	void initMaster(){
-		printf("I am %d on %d, I am master\n", processId(), processCount());
+    void initMaster(){
+        printf("I am %d on %d, I am master\n", processId(), processCount());
 
-		const std::string argStr = userParemeterAt<std::string>(0);
-		printf("[Master] arg str = %s\n", argStr.c_str());	// will print ./testApplication
-		const int argInt = userParemeterAt<int>(0,-1);
-		printf("[Master] arg int = %d\n", argInt);		// will print -1
-	}
-	void initSlave(){
-		printf("I am %d on %d, I am slave\n", processId(), processCount());
-	}
+        const std::string argStr = userParemeterAt<std::string>(0);
+        printf("[Master] arg str = %s\n", argStr.c_str());	// will print ./testApplication
+        const int argInt = userParemeterAt<int>(0,-1);
+        printf("[Master] arg int = %d\n", argInt);		// will print -1
+    }
+    void initSlave(){
+        printf("I am %d on %d, I am slave\n", processId(), processCount());
+    }
 
-	void run(){
-		printf("I am %d, I start to work\n",processId());		
-		for(long idx = 0 ; idx < 50000000 ; ++idx) {++idx;--idx;}
-		processBarrier();
-		printf("I am %d, I just finished\n",processId());
-	}
+    void run(){
+        printf("I am %d, I start to work\n",processId());
+        for(long idx = 0 ; idx < 50000000 ; ++idx) {++idx;--idx;}
+        processBarrier();
+        printf("I am %d, I just finished\n",processId());
+    }
 };
 
 
 // Usual Main
 int main(int argc, char ** argv){
-	FApp app(argc,argv);
-	return app.execute();
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how mpi MAY be included in the lib (no define!)\n";
+    //////////////////////////////////////////////////////////////
+    FApp app(argc,argv);
+    return app.execute();
 }
 
 

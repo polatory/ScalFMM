@@ -14,6 +14,8 @@
 #include "../Sources/Extenssions/FExtendForces.hpp"
 #include "../Sources/Extenssions/FExtendPotential.hpp"
 
+#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+
 #include "../Sources/Core/FBasicCell.hpp"
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
@@ -28,10 +30,10 @@
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsPotential.hpp"
 
-#include "../Sources/Files/FFMALoader.hpp"
+#include "../Sources/Files/FFMAToSLoader.hpp"
 
-// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbToSAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbToSAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbToSAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbToSAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -43,7 +45,7 @@
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FFmaParticule}
   */
-class FmbParticule : public FFmaParticule, public FExtendForces, public FExtendPotential {
+class FmbParticule : public FFmaParticule, public FExtendParticuleType, public FExtendForces, public FExtendPotential {
 public:
 };
 
@@ -58,13 +60,13 @@ public:
 // Simply create particules and try the kernels
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
+    std::cout << ">> This executable has to be used to test Fmb on a ToS system.\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels = 9;//10;
     const int SizeSubLevels = 3;//3
     FTic counter;
-    const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+    const char* const defaultFilename = "testLoaderFMA.tor.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
     const char* filename;
 
     if(argc == 1){
@@ -77,7 +79,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFMALoader<FmbParticule> loader(filename);
+    FFMAToSLoader<FmbParticule> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

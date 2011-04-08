@@ -14,7 +14,17 @@
 // This file can generate basic particules files to load with basic loader
 // g++ testLoaderCreateSphere.cpp -O2 -o testLoaderCreateSphere.exe
 
-int main(int , char ** ){
+int main(int argc, char ** argv){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable can create a FMA particules files in a spherical scattering";
+    std::cout << ">> You can pass a filename in parameter else the program will use\n";
+    std::cout << ">> a default filename.\n";
+    std::cout << ">> The format of the file is : \n";
+    std::cout << ">> [number of particules] \n";
+    std::cout << ">> [boxe width] [boxe x center] [boxe y center] [boxe z center]\n";
+    std::cout << ">> [x] [y] [z] [physical value]...\n";
+    //////////////////////////////////////////////////////////////
+
     // Nb of particules
     const long NbParticules = 2000000;
 
@@ -25,7 +35,19 @@ int main(int , char ** ){
     // Box width
     const float BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char * const Output = "Sphere.fma";
+    const char * const defaultFilename = "Sphere.fma";
+
+    const char* Output;
+
+    if(argc == 1){
+        std::cout << "You have to give a filename in argument.\n";
+        std::cout << "The program will create one with a default name : " << defaultFilename << "\n";
+        Output = defaultFilename;
+    }
+    else{
+        Output = argv[1];
+        std::cout << "Creating : " << Output << "\n";
+    }
 
     // Create file
     std::ofstream myfile;

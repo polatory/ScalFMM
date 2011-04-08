@@ -34,6 +34,12 @@
   */
 
 int main(int argc, char ** argv ){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how to use the FMA loader\n";
+    //////////////////////////////////////////////////////////////
+
     // we store all particules to be able to dealloc
     FList<FFmaParticule*> particules;
     // Use testLoaderCreate.exe to create this file

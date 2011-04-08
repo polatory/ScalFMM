@@ -39,6 +39,11 @@ protected:
 
 // Usual Main
 int main(int argc, char ** argv){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> the FAssert system.\n";
+    //////////////////////////////////////////////////////////////
 	FApp app(argc,argv);
 	return app.execute();
 }

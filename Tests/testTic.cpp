@@ -10,6 +10,12 @@
 */
 
 int main(){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how to use FTic time counter.\n";
+    //////////////////////////////////////////////////////////////
+
 	FTic counter;	
 
 	counter.tic();

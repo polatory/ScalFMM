@@ -12,7 +12,16 @@
 // This file can generate basic particules files to load with basic loader
 // g++ testLoaderCreate.cpp -o testLoaderCreate.exe
 
-int main(int , char ** ){
+int main(int argc, char ** argv){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable can create a basic particules files in custom format\n";
+    std::cout << ">> You can pass a filename in parameter else the program will use\n";
+    std::cout << ">> a default filename.\n";
+    std::cout << ">> The format of the file is : \n";
+    std::cout << ">> [number of particules] [boxe width] [boxe x center] [boxe y center] [boxe z center]\n";
+    std::cout << ">> [x] [y] [z]...\n";
+    //////////////////////////////////////////////////////////////
+
     // Nb of particules
     const long NbParticules = 200000;
 
@@ -23,7 +32,18 @@ int main(int , char ** ){
     // Box width
     const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char * const Output = "testLoader.basic.temp";
+    const char * const defaultFilename = "testLoader.basic.temp";
+    const char* Output;
+
+    if(argc == 1){
+        std::cout << "You have to give a filename in argument.\n";
+        std::cout << "The program will create one with a default name : " << defaultFilename << "\n";
+        Output = defaultFilename;
+    }
+    else{
+        Output = argv[1];
+        std::cout << "Creating : " << Output << "\n";
+    }
 
     // Create file
     std::ofstream myfile;

@@ -10,6 +10,11 @@
 */
 
 int main(void){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> to understand the FDebug system.\n";
+    //////////////////////////////////////////////////////////////
 	// Print data simply
 	FDEBUG( FDebug::Controller << "Hello Wordl\n");
 

@@ -26,7 +26,13 @@
 * This is a good example to understand FOctree::Iterator.
 */
 
-int main(int , char ** ){
+int main(int , char ** ){    
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable is useless to execute.\n";
+    std::cout << ">> It is only interesting to wath the code to understand\n";
+    std::cout << ">> how to use octree iterator.\n";
+    //////////////////////////////////////////////////////////////
+
         const int NbLevels = 9;
         const int NbSubLevels = 3;
         const long NbPart = 2E6;

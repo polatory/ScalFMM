@@ -40,6 +40,10 @@ std::string MortonToDecimal(MortonIndex index, int level){
 
 
 int main(int , char ** ){
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable has to be used to test morton index.\n";
+    //////////////////////////////////////////////////////////////
+
     bool stop = false;
     char buffer[256];
 
