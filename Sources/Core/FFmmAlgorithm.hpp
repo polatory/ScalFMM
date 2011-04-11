@@ -1,5 +1,5 @@
-#ifndef FFMMALGORITHMTOS_HPP
-#define FFMMALGORITHMTOS_HPP
+#ifndef FFMMALGORITHM_HPP
+#define FFMMALGORITHM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -12,7 +12,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMMAlgorithmToS
+* @class FFmmAlgorithm
 * @brief
 * Please read the license
 *
@@ -25,7 +25,7 @@ template<template< class ParticuleClass, class CellClass, int OctreeHeight> clas
         class ParticuleClass, class CellClass,
         template<class ParticuleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFMMAlgorithmToS : protected FAssertable{
+class FFmmAlgorithm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
@@ -42,17 +42,17 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFMMAlgorithmToS(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
+    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
                       : tree(inTree) , kernels(inKernels) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
-        FDEBUG(FDebug::Controller << "FFMMAlgorithmToS\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithm\n");
     }
 
     /** Default destructor */
-    virtual ~FFMMAlgorithmToS(){
+    virtual ~FFmmAlgorithm(){
     }
 
     /**
@@ -88,14 +88,7 @@ public:
             // We need the current cell that represent the leaf
             // and the list of particules
             FDEBUG(computationCounter.tic());
-            FList<ParticuleClass*>* const sources = octreeIterator.getCurrentListSources();
-            if(sources->getSize()){
-                octreeIterator.getCurrentCell()->setSourcesChildTrue();
-                kernels->P2M( octreeIterator.getCurrentCell() , sources);
-            }
-            if(octreeIterator.getCurrentListTargets()->getSize()){
-                octreeIterator.getCurrentCell()->setTargetsChildTrue();
-            }
+            kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSources());
             FDEBUG(computationCounter.tac());
             FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());
@@ -127,24 +120,7 @@ public:
                 // We need the current cell and the child
                 // child is an array (of 8 child) that may be null
                 FDEBUG(computationCounter.tic());
-
-                CellClass* potentialChild[8];
-                CellClass** const realChild = octreeIterator.getCurrentChild();
-                CellClass* const currentCell = octreeIterator.getCurrentCell();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    potentialChild[idxChild] = 0;
-                    if(realChild[idxChild]){
-                        if(realChild[idxChild]->hasSourcesChild()){
-                            currentCell->setSourcesChildTrue();
-                            potentialChild[idxChild] = realChild[idxChild];
-                        }
-                        if(realChild[idxChild]->hasTargetsChild()){
-                            currentCell->setTargetsChildTrue();
-                        }
-                    }
-                }
-                kernels->M2M( currentCell , potentialChild, idxLevel);
-
+                kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 FDEBUG(computationCounter.tac());
                 FDEBUG(totalComputation += computationCounter.elapsed());
             } while(octreeIterator.moveRight());
@@ -178,24 +154,8 @@ public:
                 // for each cells
                 do{
                     FDEBUG(computationCounter.tic());
-                    CellClass* const currentCell = octreeIterator.getCurrentCell();
-                    if(currentCell->hasTargetsChild()){
-                        const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
-                        int offsetTargetNeighbors = 0;
-                        for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
-                            if(neighbors[idxRealNeighbors]->hasSourcesChild()){
-                                if(idxRealNeighbors != offsetTargetNeighbors){
-                                    neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
-                                }
-                            }
-                            else{
-                                --offsetTargetNeighbors;
-                            }
-                        }
-                        if(offsetTargetNeighbors){
-                            kernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
-                        }
-                    }
+                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                    if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                     FDEBUG(computationCounter.tac());
                     FDEBUG(totalComputation += computationCounter.elapsed());
                 } while(octreeIterator.moveRight());
@@ -223,18 +183,7 @@ public:
                 // for each cells
                 do{
                     FDEBUG(computationCounter.tic());
-                    CellClass* potentialChild[8];
-                    CellClass** const realChild = octreeIterator.getCurrentChild();
-                    CellClass* const currentCell = octreeIterator.getCurrentCell();
-                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                            potentialChild[idxChild] = realChild[idxChild];
-                        }
-                        else{
-                            potentialChild[idxChild] = 0;
-                        }
-                    }
-                    kernels->L2L( currentCell , potentialChild, idxLevel);
+                    kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                     FDEBUG(computationCounter.tac());
                     FDEBUG(totalComputation += computationCounter.elapsed());
                 } while(octreeIterator.moveRight());
@@ -283,6 +232,6 @@ public:
 };
 
 
-#endif //FFMMALGORITHMTOS_HPP
+#endif //FFMMALGORITHM_HPP
 
 // [--LICENSE--]

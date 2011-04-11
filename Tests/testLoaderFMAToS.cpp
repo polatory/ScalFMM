@@ -14,12 +14,12 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FFmaParticule.hpp"
-#include "../Sources/Core/FBasicCell.hpp"
+#include "../Sources/Components/FFmaParticule.hpp"
+#include "../Sources/Components/FBasicCell.hpp"
 
 #include "../Sources/Extenssions/FExtendParticuleType.hpp"
 
-#include "../Sources/Core/FSimpleLeaf.hpp"
+#include "../Sources/Components/FSimpleLeaf.hpp"
 
 #include "../Sources/Files/FFMAToSLoader.hpp"
 

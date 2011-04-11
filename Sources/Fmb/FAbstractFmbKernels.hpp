@@ -3,7 +3,7 @@
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FGlobal.hpp"
-#include "../Core/FAbstractKernels.hpp"
+#include "../Components/FAbstractKernels.hpp"
 
 #include "../Containers/FTreeCoordinate.hpp"
 #include "../Containers/FList.hpp"

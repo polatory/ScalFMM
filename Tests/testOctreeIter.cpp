@@ -9,13 +9,13 @@
 
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
-#include "../Sources/Core/FSimpleLeaf.hpp"
+#include "../Sources/Components/FSimpleLeaf.hpp"
 
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FBasicParticule.hpp"
-#include "../Sources/Core/FBasicCell.hpp"
+#include "../Sources/Components/FBasicParticule.hpp"
+#include "../Sources/Components/FBasicCell.hpp"
 
 #include "../Sources/Utils/FTic.hpp"
 

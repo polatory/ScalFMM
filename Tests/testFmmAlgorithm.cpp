@@ -10,20 +10,20 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
-#include "../Sources/Core/FSimpleLeaf.hpp"
+#include "../Sources/Components/FSimpleLeaf.hpp"
 
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FTestParticule.hpp"
-#include "../Sources/Core/FTestCell.hpp"
-#include "../Sources/Core/FTestKernels.hpp"
+#include "../Sources/Components/FTestParticule.hpp"
+#include "../Sources/Components/FTestCell.hpp"
+#include "../Sources/Components/FTestKernels.hpp"
 
-#include "../Sources/Core/FFMMAlgorithm.hpp"
-#include "../Sources/Core/FFMMAlgorithmArray.hpp"
-#include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFMMAlgorithmTask.hpp"
+#include "../Sources/Core/FFmmAlgorithm.hpp"
+#include "../Sources/Core/FFmmAlgorithmArray.hpp"
+#include "../Sources/Core/FFmmAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFmmAlgorithmTask.hpp"
 
-#include "../Sources/Core/FBasicKernels.hpp"
+#include "../Sources/Components/FBasicKernels.hpp"
 
 // Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
 
@@ -84,7 +84,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticule, FTestCell, NbLevels> kernels;
     //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFMMAlgorithm<FTestKernels, FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FTestKernels, FTestParticule, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

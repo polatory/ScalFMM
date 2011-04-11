@@ -15,7 +15,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMMAlgorithmThreaded
+* @class FFmmAlgorithmThreaded
 * @brief
 * Please read the license
 * This is a threaded FMM Algorithm
@@ -28,7 +28,7 @@ template<template< class ParticuleClass, class CellClass, int OctreeHeight> clas
         class ParticuleClass, class CellClass,
         template<class ParticuleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFMMAlgorithmThreaded : protected FAssertable{
+class FFmmAlgorithmThreaded : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
@@ -44,7 +44,7 @@ public:
       * @param inKernels the kernels
       * an assert is launched if one of the arguments is null
       */
-    FFMMAlgorithmThreaded(Octree* const inTree,
+    FFmmAlgorithmThreaded(Octree* const inTree,
                   KernelClass<ParticuleClass, CellClass, OctreeHeight>* const inKernels)
                     : tree(inTree) {
 
@@ -55,11 +55,11 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFMMAlgorithmThreaded\n" );
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreaded\n" );
     }
 
     /** Default destructor */
-    virtual ~FFMMAlgorithmThreaded(){
+    virtual ~FFmmAlgorithmThreaded(){
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             delete this->kernels[idxThread];
         }

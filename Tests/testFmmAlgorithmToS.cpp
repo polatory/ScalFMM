@@ -10,24 +10,24 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
-#include "../Sources/Core/FTypedLeaf.hpp"
+#include "../Sources/Components/FTypedLeaf.hpp"
 
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Core/FTestParticule.hpp"
-#include "../Sources/Core/FTestCell.hpp"
-#include "../Sources/Core/FTestKernels.hpp"
+#include "../Sources/Components/FTestParticule.hpp"
+#include "../Sources/Components/FTestCell.hpp"
+#include "../Sources/Components/FTestKernels.hpp"
 
 #include "../Sources/Extenssions/FExtendParticuleType.hpp"
 #include "../Sources/Extenssions/FExtendCellType.hpp"
 
-#include "../Sources/Core/FFMMAlgorithmToS.hpp"
-#include "../Sources/Core/FFMMAlgorithm.hpp"
-#include "../Sources/Core/FFMMAlgorithmArray.hpp"
-#include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFMMAlgorithmTask.hpp"
+#include "../Sources/Core/FFmmAlgorithmToS.hpp"
+#include "../Sources/Core/FFmmAlgorithm.hpp"
+#include "../Sources/Core/FFmmAlgorithmArray.hpp"
+#include "../Sources/Core/FFmmAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFmmAlgorithmTask.hpp"
 
-#include "../Sources/Core/FBasicKernels.hpp"
+#include "../Sources/Components/FBasicKernels.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -94,7 +94,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticuleToS, FTestCellToS, NbLevels> kernels;
     //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFMMAlgorithm<FTestKernels, FTestParticuleToS, FTestCellToS, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FTestKernels, FTestParticuleToS, FTestCellToS, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

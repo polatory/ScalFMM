@@ -15,7 +15,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMMAlgorithmArray
+* @class FFmmAlgorithmArray
 * @brief
 * Please read the license
 *
@@ -33,7 +33,7 @@ template<template< class ParticuleClass, class CellClass, int OctreeHeight> clas
         class ParticuleClass, class CellClass,
         template<class ParticuleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFMMAlgorithmArray : protected FAssertable{
+class FFmmAlgorithmArray : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
@@ -53,7 +53,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFMMAlgorithmArray(Octree* const inTree, Kernel* const inKernels)
+    FFmmAlgorithmArray(Octree* const inTree, Kernel* const inKernels)
                       : tree(inTree) , iterArray(0) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -63,11 +63,11 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFMMAlgorithmArray\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmArray\n");
     }
 
     /** Default destructor */
-    virtual ~FFMMAlgorithmArray(){
+    virtual ~FFmmAlgorithmArray(){
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             delete this->kernels[idxThread];
         }

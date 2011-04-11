@@ -10,19 +10,19 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
-#include "../Sources/Core/FFmaParticule.hpp"
+#include "../Sources/Components/FFmaParticule.hpp"
 #include "../Sources/Extenssions/FExtendForces.hpp"
 #include "../Sources/Extenssions/FExtendPotential.hpp"
 
-#include "../Sources/Core/FBasicCell.hpp"
+#include "../Sources/Components/FBasicCell.hpp"
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
-#include "../Sources/Core/FFMMAlgorithm.hpp"
-#include "../Sources/Core/FFMMAlgorithmArray.hpp"
-#include "../Sources/Core/FFMMAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFMMAlgorithmTask.hpp"
+#include "../Sources/Core/FFmmAlgorithm.hpp"
+#include "../Sources/Core/FFmmAlgorithmArray.hpp"
+#include "../Sources/Core/FFmmAlgorithmThreaded.hpp"
+#include "../Sources/Core/FFmmAlgorithmTask.hpp"
 
-#include "../Sources/Core/FSimpleLeaf.hpp"
+#include "../Sources/Components/FSimpleLeaf.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
@@ -119,7 +119,7 @@ int main(int argc, char ** argv){
     //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
     FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFMMAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
