@@ -149,13 +149,13 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         do{
             typename FList<ParticuleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-            const bool isUsingToS = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSources());
+            const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSources());
 
             while( iter.isValide() ){
                 // If a particules has been impacted by less than NbPart - 1 (the current particule)
                 // there is a problem
-                if( (!isUsingToS && iter.value()->getDataDown() != NbPart - 1) ||
-                    (isUsingToS && iter.value()->getDataDown() != NbPart) ){
+                if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
+                    (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
                     std::cout << "Problem L2P + P2P : " << iter.value()->getDataDown() << "\n";
                 }
                 iter.progress();

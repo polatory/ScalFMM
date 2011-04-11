@@ -30,10 +30,10 @@
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsPotential.hpp"
 
-#include "../Sources/Files/FFMAToSLoader.hpp"
+#include "../Sources/Files/FFMATsmLoader.hpp"
 
-// With openmp : g++ testFmbToSAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbToSAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbToSAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbToSAlgorithm.exe
+// With openmp : g++ testFmbTsmAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbTsmAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbTsmAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -60,7 +60,7 @@ public:
 // Simply create particules and try the kernels
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test Fmb on a ToS system.\n";
+    std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels = 9;//10;
@@ -79,7 +79,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFMAToSLoader<FmbParticule> loader(filename);
+    FFMATsmLoader<FmbParticule> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

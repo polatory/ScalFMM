@@ -38,7 +38,7 @@ public:
 
             F3DPosition force_vector_in_local_base;
             typename FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
-            spherical = positionToSphere( iterTarget.value()->getPosition() - local->getPosition());
+            spherical = positionTsmphere( iterTarget.value()->getPosition() - local->getPosition());
 
             /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
                    (iterTarget.value()->getPosition()).getX(),

@@ -226,7 +226,7 @@ protected:
     //////////////////////////////////////////////////////////////////
 
     // position_2_r_cos_th_sin_th_ph
-    Spherical positionToSphere(const F3DPosition& inVector){
+    Spherical positionTsmphere(const F3DPosition& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
 
         Spherical outSphere;
@@ -531,7 +531,7 @@ protected:
                         father.getZ() - (treeWidthAtLevel * (1 + (childBox.getZ() * 2)))
                 );
 
-                harmonicInner(positionToSphere(M2MVector),this->transitionM2M[idxLevel][idxChild]);
+                harmonicInner(positionTsmphere(M2MVector),this->transitionM2M[idxLevel][idxChild]);
 
                 const F3DPosition L2LVector (
                         (treeWidthAtLevel * (1 + (childBox.getX() * 2))) - father.getX(),
@@ -539,7 +539,7 @@ protected:
                         (treeWidthAtLevel * (1 + (childBox.getZ() * 2))) - father.getZ()
                 );
 
-                harmonicInner(positionToSphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
+                harmonicInner(positionTsmphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
 
                 //printf("[M2M_vector]%d/%d = %f/%f/%f\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
                 //printf("[M2M_vectorSpherical]%d/%d = %f/%f/%f/%f\n", idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
@@ -577,7 +577,7 @@ protected:
 
                             // Not blas so
                             //printf("transferM2L[%d][%d][%d][%d]\n", idxLevel, idxd1, idxd2, idxd3);
-                            harmonicOuter(positionToSphere(relativePos),this->transferM2L[idxLevel][idxd1][idxd2][idxd3]);
+                            harmonicOuter(positionTsmphere(relativePos),this->transferM2L[idxLevel][idxd1][idxd2][idxd3]);
                             //for(int idxTemp = 0 ; idxTemp < this->FMB_Info_M2L_exp_size ; ++idxTemp){
                             //    printf("transferM2L[%d][%d][%d][%d][%d]=%f/%f\n", idxLevel, idxd1, idxd2, idxd3, idxTemp, this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getReal(),this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getImag());
                             //}
@@ -660,7 +660,7 @@ public:
             //ok printf("\tp_center.x=%f\tp_center.y=%f\tp_center.z=%f\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
             //ok printf("\tbody.x=%f\tbody.y=%f\tbody.z=%f\n",iterParticule.value()->getPosition().getX(),iterParticule.value()->getPosition().getY(),iterParticule.value()->getPosition().getZ());
 
-            harmonicInner(positionToSphere(iterParticule.value()->getPosition() - inPole->getPosition()),current_thread_Y);
+            harmonicInner(positionTsmphere(iterParticule.value()->getPosition() - inPole->getPosition()),current_thread_Y);
 
             //ok printf("\tr=%f\tcos_theta=%f\tsin_theta=%f\tphi=%f\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 

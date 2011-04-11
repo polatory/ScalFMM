@@ -1,5 +1,5 @@
-#ifndef FFMMALGORITHMTOS_HPP
-#define FFMMALGORITHMTOS_HPP
+#ifndef FFMMALGORITHMTSM_HPP
+#define FFMMALGORITHMTSM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -12,7 +12,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithmToS
+* @class FFmmAlgorithmTsm
 * @brief
 * Please read the license
 *
@@ -25,7 +25,7 @@ template<template< class ParticuleClass, class CellClass, int OctreeHeight> clas
         class ParticuleClass, class CellClass,
         template<class ParticuleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFmmAlgorithmToS : protected FAssertable{
+class FFmmAlgorithmTsm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
@@ -42,17 +42,17 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmToS(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
+    FFmmAlgorithmTsm(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
                       : tree(inTree) , kernels(inKernels) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmToS\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmTsm\n");
     }
 
     /** Default destructor */
-    virtual ~FFmmAlgorithmToS(){
+    virtual ~FFmmAlgorithmTsm(){
     }
 
     /**
@@ -283,6 +283,6 @@ public:
 };
 
 
-#endif //FFMMALGORITHMTOS_HPP
+#endif //FFMMALGORITHMTSM_HPP
 
 // [--LICENSE--]

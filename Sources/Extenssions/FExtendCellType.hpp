@@ -10,7 +10,7 @@
 * This class is an extenssion.
 * It proposes a target/source extenssion for cell.
 * Because cells may have child that contains only
-* sources or targets (in ToS system) then it is important
+* sources or targets (in Tsm system) then it is important
 * to not compute for nothing.
 */
 class FExtendCellType {

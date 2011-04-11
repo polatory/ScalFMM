@@ -44,13 +44,13 @@ public:
         */
         virtual void setPosition(const F3DPosition& inPosition) = 0;
 
-        /** Because the system can run in ToS mode
+        /** Because the system can run in Tsm mode
           * a cell has to express if it has sources
           * @return true if there are sources particules inside
           */
         virtual bool hasSourcesChild() const = 0;
 
-        /** Because the system can run in ToS mode
+        /** Because the system can run in Tsm mode
           * a cell has to express if it has targets
           * @return true if there are targets particules inside
           */

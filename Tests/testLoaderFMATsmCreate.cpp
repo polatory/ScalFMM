@@ -10,7 +10,7 @@
 #include "../Sources/Utils/FGlobal.hpp"
 
 // This file can generate basic particules files in the FMA format
-// g++ testLoaderFMAToSCreate.cpp -o testLoaderFMAToSCreate.exe
+// g++ testLoaderFMATsmCreate.cpp -o testLoaderFMATsmCreate.exe
 
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
@@ -33,7 +33,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char * const defaultFilename = "testLoaderFMA.tor.fma";
+    const char * const defaultFilename = "testLoaderFMA.tsm.fma";
 
     const char* Output;
 
