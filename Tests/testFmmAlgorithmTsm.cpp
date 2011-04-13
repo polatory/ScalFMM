@@ -22,10 +22,7 @@
 #include "../Sources/Extenssions/FExtendCellType.hpp"
 
 #include "../Sources/Core/FFmmAlgorithmTsm.hpp"
-#include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmArray.hpp"
-#include "../Sources/Core/FFmmAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFmmAlgorithmTask.hpp"
+#include "../Sources/Core/FFmmAlgorithmArrayTsm.hpp"
 
 #include "../Sources/Components/FBasicKernels.hpp"
 
@@ -93,8 +90,8 @@ int main(int argc, char ** argv){
 
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticuleTsm, FTestCellTsm, NbLevels> kernels;
-    //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFmmAlgorithm<FTestKernels, FTestParticuleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    //FFMMAlgorithmTsm FFMMAlgorithmArrayTsm
+    FFmmAlgorithmArrayTsm<FTestKernels, FTestParticuleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

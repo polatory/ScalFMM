@@ -15,11 +15,11 @@
 // Compile by mpic++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
 // run by mpirun -np 4 ./testApplication.exe
 #include "../Sources/Utils/FMpiApplication.hpp"
-#define ApplicationImplementation FMpiApplication
+typedef FMpiApplication ApplicationImplementation;
 #else
 // Compile by g++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
 #include "../Sources/Utils/FSingleApplication.hpp"
-#define ApplicationImplementation FSingleApplication
+typedef FSingleApplication ApplicationImplementation;
 #endif
 //================================================================================================
 

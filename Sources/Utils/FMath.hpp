@@ -13,9 +13,9 @@
 * Propose basic math functions or indirections to std math.
 */
 struct FMath{
-    static const FReal FPi;        //< Pi constant
-    static const FReal FPiDiv2;    //< Pi/2 constant
-    static const FReal Epsilon;     //< Epsilon
+    static const double FPi;        //< Pi constant
+    static const double FPiDiv2;    //< Pi/2 constant
+    static const double Epsilon;     //< Epsilon
 
     /** To get absolute value */
     template <class NumType>
@@ -94,9 +94,9 @@ struct FMath{
     }
 };
 
-const FReal FMath::FPi = M_PI;
-const FReal FMath::FPiDiv2 = M_PI_2;
-const FReal FMath::Epsilon = 0.00000000000000000001;
+const double FMath::FPi = M_PI;
+const double FMath::FPiDiv2 = M_PI_2;
+const double FMath::Epsilon = 0.00000000000000000001;
 
 #endif //FMATH_HPP
 

@@ -22,10 +22,10 @@
 * Of course this class does not deallocate pointer given in arguements.
 */
 template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
-        class ParticuleClass, class CellClass,
-        template<class ParticuleClass> class LeafClass,
-        int OctreeHeight, int SubtreeHeight>
-class FFmmAlgorithmTsm : protected FAssertable{
+class ParticuleClass, class CellClass,
+template<class ParticuleClass> class LeafClass,
+int OctreeHeight, int SubtreeHeight>
+        class FFmmAlgorithmTsm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
@@ -33,17 +33,17 @@ class FFmmAlgorithmTsm : protected FAssertable{
     Octree* const tree;                                                     //< The octree to work on
     KernelClass<ParticuleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
 
-    FDEBUG(FTic counterTime);                                              //< In case of debug: to count the elapsed time
-    FDEBUG(FTic computationCounter);                                   //< In case of debug: to  count computation time
+    FDEBUG(FTic counterTime);                                               //< In case of debug: to count the elapsed time
+    FDEBUG(FTic computationCounter);                                        //< In case of debug: to  count computation time
 
-public:	
+public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmTsm(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
-                      : tree(inTree) , kernels(inKernels) {
+        : tree(inTree) , kernels(inKernels) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);

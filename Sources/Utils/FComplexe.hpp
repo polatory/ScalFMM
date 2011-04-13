@@ -12,12 +12,12 @@
 * Propose basic complexe class.
 */
 class FComplexe {
-    FReal imag;    //< Imaginary
     FReal real;    //< Real
+    FReal imag;    //< Imaginary
 
 public:
     /** Default Constructor (set real&imaginary to 0) */
-    FComplexe() : imag(0), real(0){
+    FComplexe() : real(0),imag(0){
     }
 
     /** Constructor with values
@@ -25,12 +25,12 @@ public:
       * @param inReal the real
       */
     FComplexe(const FReal inImag, const FReal inReal)
-        : imag(inImag), real(inReal){
+        : real(inReal),imag(inImag){
     }
 
     /** Copy constructor */
     FComplexe(const FComplexe& other)
-        : imag(other.imag), real(other.real){
+        : real(other.real), imag(other.imag){
     }
 
     /** Copy operator */
