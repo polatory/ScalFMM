@@ -43,12 +43,11 @@ protected:
     // _GRAVITATIONAL_
     static const int FMB_Info_eps_soft_square = 1;
 
-    // LMax is used in several algorithm
-    // it is just a copy of FMB_Info.P
-    static const int LMax = FMB_Info_P;
+    // Can be false or not in not blas kernels
+    static const int FMB_Info_up_to_P_in_M2L = true;
 
-    // Can be 2 * FMB_Info_P if user ask to
-    static const int FMB_Info_M2L_P = FMB_Info_P;
+    // Can be FMB_Info_P if user ask to -- if FMB_Info.up_to_P_in_M2L it true
+    static const int FMB_Info_M2L_P = FMB_Info_up_to_P_in_M2L? FMB_Info_P : 2 * FMB_Info_P;
     static const int FMB_Info_M2L_exp_size = ((FMB_Info_M2L_P)+1) * ((FMB_Info_M2L_P)+2) * 0.5;
 
     // Default value set in main
@@ -68,17 +67,17 @@ protected:
     FReal treeWidthAtRoot;
 
     // transfer_M2M_container
-    FComplexe transitionM2M[TreeHeight][8][FMB_Info_exp_size];
+    FComplexe transitionM2M[TreeHeight][8][FMB_Info_nexp_size];
     // transfer_L2L_container
-    FComplexe transitionL2L[TreeHeight][8][FMB_Info_exp_size];
+    FComplexe transitionL2L[TreeHeight][8][FMB_Info_nexp_size];
 
     // transfer_container
     FComplexe* transferM2L[TreeHeight][size1Dim][size1Dim][size1Dim];
 
     //[OK] spherical_harmonic_Outer_coefficients_array
-    FReal sphereHarmoOuterCoef[FMB_Info_exp_size];
+    FReal sphereHarmoOuterCoef[FMB_Info_M2L_P+1];
     //[OK] spherical_harmonic_Inner_coefficients_array
-    FReal sphereHarmoInnerCoef[FMB_Info_exp_size];
+    FReal sphereHarmoInnerCoef[FMB_Info_M2L_exp_size];
 
     FComplexe current_thread_Y[FMB_Info_exp_size];
 
@@ -102,8 +101,6 @@ protected:
 
     int expansion_Redirection_array_for_j[FMB_Info_M2L_P + 1 ];
 
-    bool FMB_Info_up_to_P_in_M2L;
-
     //////////////////////////////////////////////////////////////////
     // Allocation
     //////////////////////////////////////////////////////////////////
@@ -120,9 +117,11 @@ protected:
         //std::cout << "sphereHarmoOuterCoef\n";
         FReal factOuter = 1.0;
         // in FMB code stoped at <= FMB_Info_M2L_P but this is not sufficient
-        for(int idxP = 0 ; idxP < FMB_Info_exp_size; factOuter *= (++idxP) ){
+        for(int idxP = 0 ; idxP <= FMB_Info_M2L_P; factOuter *= (++idxP) ){
             this->sphereHarmoOuterCoef[idxP] = factOuter;
-            //std::cout << this->sphereHarmoOuterCoef[idxl] << "\n";
+            //printf("spherical_harmonic_Outer_coefficients_array %e\n",this->sphereHarmoOuterCoef[idxP]);
+            //printf("fact_l %e\n",factOuter);
+            //printf("l %d\n",idxP);
         }
 
         // Inner coefficients:
@@ -240,7 +239,7 @@ protected:
     }
 
     // associated_Legendre_function_Fill_complete_array_of_values_for_cos
-    void legendreFunction( const FReal inCosTheta, const FReal inSinTheta, FReal* const outResults ){
+    void legendreFunction( const int lmax, const FReal inCosTheta, const FReal inSinTheta, FReal* const outResults ){
         // l=0:         results[current++] = 1.0; // P_0^0(cosTheta) = 1
         int idxCurrent = 0;
         outResults[idxCurrent++] = 1.0;
@@ -260,7 +259,7 @@ protected:
 
         // Remark: p_results_array_l_minus_1_m and p_results_array_l_minus_2_m
         // just need to be incremented at each iteration.
-        for(int idxl = 2; idxl <= this->LMax ; ++idxl ){
+        for(int idxl = 2; idxl <= lmax ; ++idxl ){
                 for( int idxm = 0; idxm <= idxl - 2 ; ++idxm , ++idxCurrent , ++idxCurrent1m , ++idxCurrent2m ){
                         // Compute P_l^m, l >= m+2, using (1) and store it into results_array:
                         outResults[idxCurrent] = (inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m] - ( idxl + idxm - 1 )
@@ -284,9 +283,10 @@ protected:
     void harmonicInner(const Spherical& inSphere, FComplexe* const outResults){
 
         FComplexe* ptrCosSin = this->cosSin;
-        for(int idxl = 0 , idxlMod4 = 0; idxl <= LMax ; ++idxl, ++idxlMod4, ++ptrCosSin){
+        for(int idxl = 0 , idxlMod4 = 0; idxl <= FMB_Info_P ; ++idxl, ++idxlMod4, ++ptrCosSin){
             if(idxlMod4 == 4) idxlMod4 = 0;
-            const FReal angle = idxl * inSphere.phi + this->PiArrayInner[idxlMod4];
+            const FReal angleinter = FReal(idxl) * inSphere.phi;
+            const FReal angle = angleinter + this->PiArrayInner[idxlMod4];
 
             ptrCosSin->setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             ptrCosSin->setImag( FMath::Sin(angle) );
@@ -294,7 +294,7 @@ protected:
             //printf("%d=%f/%f (%d/%f/%f)\n",idxl,ptrCosSin->getReal(),ptrCosSin->getImag(),idxl,inSphere.phi,this->PiArrayInner[idxlMod4]);
         }
 
-        legendreFunction(inSphere.cosTheta, inSphere.sinTheta, this->legendre);
+        legendreFunction(FMB_Info_P,inSphere.cosTheta, inSphere.sinTheta, this->legendre);
         /*printf("FMB_Info_M2L_exp_size=%d\n",FMB_Info_M2L_exp_size);
         for(int temp = 0 ; temp < FMB_Info_M2L_exp_size ; ++temp){
             printf("%f\n",this->legendre[temp]);
@@ -305,8 +305,8 @@ protected:
         int idxSphereHarmoCoef = 0;
         FReal idxRl = 1.0 ;
 
-        //printf("lmax = %d\n",LMax);
-        for(int idxl = 0; idxl <= this->LMax ; ++idxl, idxRl *= inSphere.r){
+        //printf("lmax = %d\n",FMB_Info_P);
+        for(int idxl = 0; idxl <= FMB_Info_P ; ++idxl, idxRl *= inSphere.r){
             for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxSphereHarmoCoef, ++idxLegendre){
                 const FReal magnitude = this->sphereHarmoInnerCoef[idxSphereHarmoCoef] * idxRl * legendre[idxLegendre];
                 currentResult->setReal( magnitude * this->cosSin[idxm].getReal() );
@@ -322,7 +322,7 @@ protected:
     void harmonicOuter(const Spherical& inSphere, FComplexe* const outResults){
 
         FComplexe* ptrCosSin = this->cosSin;
-        for(int idxl = 0, idxlMod4 = 0; idxl <= LMax ; ++idxl, ++idxlMod4, ++ptrCosSin){
+        for(int idxl = 0, idxlMod4 = 0; idxl <= FMB_Info_M2L_P ; ++idxl, ++idxlMod4, ++ptrCosSin){
             if(idxlMod4 == 4) idxlMod4 = 0;
             const FReal angle = idxl * inSphere.phi + this->PiArrayOuter[idxlMod4];
 
@@ -333,14 +333,14 @@ protected:
             //        idxl, inSphere.phi, this->PiArrayOuter[idxlMod4], angle, FMath::Sin(angle + FMath::FPiDiv2) , FMath::Sin(angle));
         }
 
-        legendreFunction(inSphere.cosTheta, inSphere.sinTheta, this->legendre);
+        legendreFunction(FMB_Info_M2L_P,inSphere.cosTheta, inSphere.sinTheta, this->legendre);
 
         int idxLegendre = 0;
         FComplexe* currentResult = outResults;
 
         const FReal invR = 1/inSphere.r;
         FReal idxRl1 = invR;
-        for(int idxl = 0 ; idxl <= this->LMax ; ++idxl, idxRl1 *= invR){
+        for(int idxl = 0 ; idxl <= FMB_Info_M2L_P ; ++idxl, idxRl1 *= invR){
             for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxLegendre){
                 const FReal magnitude = this->sphereHarmoOuterCoef[idxl-idxm] * idxRl1 * this->legendre[idxLegendre];
                 currentResult->setReal( magnitude * this->cosSin[idxm].getReal() );
@@ -409,7 +409,7 @@ protected:
         }
 
         // Initialization of associated_Legendre_function_Array:
-        legendreFunction( inSphere.cosTheta, inSphere.sinTheta, this->legendre);
+        legendreFunction(FMB_Info_P, inSphere.cosTheta, inSphere.sinTheta, this->legendre);
 
         // r^l
         FReal r_l = 1.0;
@@ -605,12 +605,12 @@ protected:
 
 public:
     FAbstractFmbKernels(const FReal inTreeWidth) :
-                treeWidthAtRoot(inTreeWidth), FMB_Info_up_to_P_in_M2L(true) {
+                treeWidthAtRoot(inTreeWidth){
         buildPrecompute();
     }
 
     FAbstractFmbKernels(const FAbstractFmbKernels& other)
-        : treeWidthAtRoot(other.treeWidthAtRoot), FMB_Info_up_to_P_in_M2L(other.FMB_Info_up_to_P_in_M2L) {
+        : treeWidthAtRoot(other.treeWidthAtRoot) {
         buildPrecompute();
     }
 
