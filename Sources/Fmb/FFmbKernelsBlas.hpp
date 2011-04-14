@@ -3,6 +3,7 @@
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FGlobal.hpp"
+#include "../Utils/FBlas.hpp"
 #include "../Components/FAbstractKernels.hpp"
 
 #include "../Containers/FTreeCoordinate.hpp"
@@ -14,36 +15,6 @@
 #include "../Utils/FTrace.hpp"
 
 #include <iostream>
-#include <cblas.h>
-
-
-template <typename T>
-void cblas_gemv(const enum CBLAS_ORDER order ,
-                   const enum CBLAS_TRANSPOSE TransA , const int M , const int N ,
-                   const void *alpha , const void *A , const int lda ,
-                   const void *X , const int incX , const void *beta ,
-                   void *Y , const int incY){
-    T t;
-    t.you_cannot_use_this_function_with_this_type();
-}
-
-template <>
-void cblas_gemv<double>(const enum CBLAS_ORDER order ,
-        const enum CBLAS_TRANSPOSE TransA , const int M , const int N ,
-        const void *alpha , const void *A , const int lda ,
-        const void *X , const int incX , const void *beta ,
-        void *Y , const int incY){
-    cblas_zgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
-}
-
-template <>
-void cblas_gemv<float>(const enum CBLAS_ORDER order ,
-        const enum CBLAS_TRANSPOSE TransA , const int M , const int N ,
-        const void *alpha , const void *A , const int lda ,
-        const void *X , const int incX , const void *beta ,
-        void *Y , const int incY){
-    cblas_cgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
-}
 
 
 /**
@@ -321,11 +292,12 @@ protected:
             cosSin[idxl].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             cosSin[idxl].setImag( FMath::Sin(angle) );
 
-            //printf("%d=%.15e/%.15e (angle %.15e=%d * %.15e + %.15e // (%.15e))\n",idxl,cosSin[idxl].getReal(),cosSin[idxl].getImag(),
-            //       angle,idxl,inSphere.phi,this->PiArrayInner[idxlMod4],angleinter);
+            /*printf("%d=%.15e/%.15e (angle %.15e=%d * %.15e + %.15e // (%.15e))\n",
+                   idxl,cosSin[idxl].getReal(),cosSin[idxl].getImag(),
+                   angle,idxl,inSphere.phi,this->PiArrayInner[idxlMod4],angleinter);*/
 
-            //printf("sin(%.15e)  = %.15e\n",
-            //       angle + FMath::FPiDiv2,FMath::Sin(angle + FMath::FPiDiv2));
+            /*printf("sin(%.15e)  = %.15e\n",
+                   angle + FMath::FPiDiv2,FMath::Sin(angle + FMath::FPiDiv2));*/
         }
 
         // p_associated_Legendre_function_Array

@@ -12,6 +12,7 @@ endif()
 
 #add blass
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lcblas")
+#ADD_DEFINITIONS(-Wl,--start-group $(MKLROOT)/lib/ia32/libmkl_intel.a $(MKLROOT)/lib/ia32/libmkl_sequential.a $(MKLROOT)/lib/ia32/libmkl_core.a -Wl,--end-group -lpthread)
 
 #test
 # ADD_DEFINITIONS(-fexpensive-optimizations -funroll-loops -frerun-cse-after-loop -frerun-loop-opt)

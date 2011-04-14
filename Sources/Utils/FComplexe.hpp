@@ -10,6 +10,9 @@
 * Please read the license
 *
 * Propose basic complexe class.
+* Do not modify the attributes of this class.
+* It can be passed to blas fonction and has to be
+* 2 x real size only.
 */
 class FComplexe {
     FReal real;    //< Real

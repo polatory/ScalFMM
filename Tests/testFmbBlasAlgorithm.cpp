@@ -29,9 +29,10 @@
 
 #include "../Sources/Files/FFMALoader.hpp"
 
-// With openmp : g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lblas -O2 -o testFmbBlasAlgorithm.exe
+// With openmp : g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lcblas -O2 -o testFmbBlasAlgorithm.exe
 // icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
+// g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lmkl_ia32 -O2 -o testFmbBlasAlgorithm.exe
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that eachh particules is little or longer
@@ -116,9 +117,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     //FFmbKernelsBlas FFmbKernelsPotentialForces
-    FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(loader.getBoxWidth());
+    FFmbKernelsBlas<FmbParticule, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FFMMAlgorithm FFMMAlgorithmThreaded FFMMAlgorithmArray FFMMAlgorithmTask
-    FFmmAlgorithm<FFmbKernelsPotentialForces, FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FFmbKernelsBlas, FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

@@ -17,10 +17,11 @@
 * It is needed by the Fmb Kernels.
 */
 class FExtendFmbCell {
-protected:
+public:
     // FMB_Info_P is declared in FAbstractFmbKernels
     static const int MultipoleSize = int(((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5); //< The size of the multipole
 
+protected:
     FComplexe multipole_exp[MultipoleSize]; //< For multipole extenssion
     FComplexe local_exp[MultipoleSize];     //< For local extenssion
 
