@@ -1,5 +1,5 @@
-#ifndef FFMMALGORITHMTHREADED_HPP
-#define FFMMALGORITHMTHREADED_HPP
+#ifndef FFmmALGORITHMTHREADED_HPP
+#define FFmmALGORITHMTHREADED_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -24,16 +24,16 @@
 *
 * The parallel algorithm is simple, each thread is taking a value from the iterator (protected by a mutex)
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
-        class ParticuleClass, class CellClass,
-        template<class ParticuleClass> class LeafClass,
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
 class FFmmAlgorithmThreaded : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
+    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
-    KernelClass<ParticuleClass, CellClass, OctreeHeight>* kernels[FThreadNumbers];   //< The kernels (one by thread)
+    KernelClass<ParticleClass, CellClass, OctreeHeight>* kernels[FThreadNumbers];   //< The kernels (one by thread)
     Octree* const tree;                                                         //< The octree to work on
 
     FDEBUG(FTic counterTime);                                                  //< In case of debug count the time
@@ -45,14 +45,14 @@ public:
       * an assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreaded(Octree* const inTree,
-                  KernelClass<ParticuleClass, CellClass, OctreeHeight>* const inKernels)
+                  KernelClass<ParticleClass, CellClass, OctreeHeight>* const inKernels)
                     : tree(inTree) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass, OctreeHeight>(*inKernels);
+            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreaded\n" );
@@ -103,13 +103,13 @@ public:
             omp_set_lock(&mutex);
             while(!stop){
                 CellClass*const cell = octreeIterator.getCurrentCell();
-                const FList<ParticuleClass*>* const particules = octreeIterator.getCurrentListSources();
+                const FList<ParticleClass*>* const particles = octreeIterator.getCurrentListSources();
                 if(!octreeIterator.moveRight()) stop = true;
                 omp_unset_lock(&mutex);
 
                 // We need the current cell that represent the leaf
-                // and the list of particules
-                kernels[threadId]->P2M( cell , particules);
+                // and the list of particles
+                kernels[threadId]->P2M( cell , particles);
 
                 omp_set_lock(&mutex);
             }
@@ -266,21 +266,21 @@ public:
         {
             const int threadId = omp_get_thread_num();
             // There is a maximum of 26 neighbors
-            FList<ParticuleClass*>* neighbors[26];
+            FList<ParticleClass*>* neighbors[26];
             const int heightMinusOne = OctreeHeight - 1;
 
             omp_set_lock(&mutex);
             // for each leafs
             while(!stop){
                 const CellClass * const cell = octreeIterator.getCurrentCell();
-                FList<ParticuleClass*>* const targets = octreeIterator.getCurrentListTargets();
-                const FList<ParticuleClass*>* const sources = octreeIterator.getCurrentListSources();
+                FList<ParticleClass*>* const targets = octreeIterator.getCurrentListTargets();
+                const FList<ParticleClass*>* const sources = octreeIterator.getCurrentListSources();
                 const MortonIndex cellIndex = octreeIterator.getCurrentGlobalIndex();
                 if(!octreeIterator.moveRight()) stop = true;
                 omp_unset_lock(&mutex);
 
                 kernels[threadId]->L2P(cell, targets);
-                // need the current targets and neighbors particules
+                // need the current targets and neighbors particles
                 const int counter = tree->getLeafsNeighbors(neighbors, cellIndex,heightMinusOne);
                 kernels[threadId]->P2P( targets , sources, neighbors, counter);
 
@@ -298,6 +298,6 @@ public:
 };
 
 
-#endif //FFMMALGORITHMTHREADED_HPP
+#endif //FFmmALGORITHMTHREADED_HPP
 
 // [--LICENSE--]

@@ -14,7 +14,7 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FBasicParticule.hpp"
+#include "../Sources/Components/FBasicParticle.hpp"
 #include "../Sources/Components/FBasicCell.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
@@ -27,9 +27,9 @@
 /**
   * In this file we show an example of FBasicLoader use
 * Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
-* Inserting 2000000 particules ...
+* Inserting 2000000 particles ...
 * Done  (5.77996).
-* Deleting particules ...
+* Deleting particles ...
 * Done  (0.171918).
   */
 
@@ -40,8 +40,8 @@ int main(int argc, char ** argv){
     std::cout << ">> how to use the basic loader.\n";
     //////////////////////////////////////////////////////////////
 
-    // we store all particules to be able to dealloc
-    FList<FBasicParticule*> particules;
+    // we store all particles to be able to dealloc
+    FList<FBasicParticle*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "../../Data/testLoader.basic.temp";
@@ -57,33 +57,33 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    // open basic particules loader
-    FBasicLoader<FBasicParticule> loader(filename);
+    // open basic particles loader
+    FBasicLoader<FBasicParticle> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
-    std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
+    std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
-    for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        FBasicParticule* const part = new FBasicParticule();
-        particules.pushFront(part);
-        loader.fillParticule(part);
+    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+        FBasicParticle* const part = new FBasicParticle();
+        particles.pushFront(part);
+        loader.fillParticle(part);
         tree.insert(part);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
     // -----------------------------------------------------
-    std::cout << "Deleting particules ..." << std::endl;
+    std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
-    while(particules.getSize()){
-        delete particules.popFront();
+    while(particles.getSize()){
+        delete particles.popFront();
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

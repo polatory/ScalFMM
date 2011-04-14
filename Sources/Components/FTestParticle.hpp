@@ -1,27 +1,27 @@
-#ifndef FTESTPARTICULE_HPP
-#define FTESTPARTICULE_HPP
+#ifndef FTESTPARTICLE_HPP
+#define FTESTPARTICLE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-#include "FBasicParticule.hpp"
+#include "FBasicParticle.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FTestParticule
+* @class FTestParticle
 * Please read the license
 *
 * This class is used in the FTestKernels, please
 * look at this class to know whit it is.
 */
-class FTestParticule : public FBasicParticule {
+class FTestParticle : public FBasicParticle {
 protected:
     // To store data during downard pass
     long dataDown;
 public:
-    FTestParticule(): dataDown(0){
+    FTestParticle(): dataDown(0){
     }
 
     /** Default destructor */
-    virtual ~FTestParticule(){
+    virtual ~FTestParticle(){
     }
 
     long getDataDown() const {
@@ -34,6 +34,6 @@ public:
 };
 
 
-#endif //FTESTPARTICULE_HPP
+#endif //FTESTPARTICLE_HPP
 
 // [--LICENSE--]

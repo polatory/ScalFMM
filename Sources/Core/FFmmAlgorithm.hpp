@@ -1,5 +1,5 @@
-#ifndef FFMMALGORITHM_HPP
-#define FFMMALGORITHM_HPP
+#ifndef FFmmALGORITHM_HPP
+#define FFmmALGORITHM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -21,17 +21,17 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
-        class ParticuleClass, class CellClass,
-        template<class ParticuleClass> class LeafClass,
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
 class FFmmAlgorithm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
+    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
 
     Octree* const tree;                                                     //< The octree to work on
-    KernelClass<ParticuleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
+    KernelClass<ParticleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
 
     FDEBUG(FTic counterTime);                                              //< In case of debug: to count the elapsed time
     FDEBUG(FTic computationCounter);                                   //< In case of debug: to  count computation time
@@ -42,7 +42,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticuleClass,CellClass,OctreeHeight>* const inKernels)
+    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass,OctreeHeight>* const inKernels)
                       : tree(inTree) , kernels(inKernels) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -86,7 +86,7 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             // We need the current cell that represent the leaf
-            // and the list of particules
+            // and the list of particles
             FDEBUG(computationCounter.tic());
             kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSources());
             FDEBUG(computationCounter.tac());
@@ -211,12 +211,12 @@ public:
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        FList<ParticuleClass*>* neighbors[26];
+        FList<ParticleClass*>* neighbors[26];
         // for each leafs
         do{
             FDEBUG(computationCounter.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            // need the current particules and neighbors particules
+            // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
             kernels->P2P( octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSources() , neighbors, counter);
             FDEBUG(computationCounter.tac());
@@ -232,6 +232,6 @@ public:
 };
 
 
-#endif //FFMMALGORITHM_HPP
+#endif //FFmmALGORITHM_HPP
 
 // [--LICENSE--]

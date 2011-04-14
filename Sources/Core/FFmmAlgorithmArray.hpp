@@ -1,5 +1,5 @@
-#ifndef FFMMALGORITHMARRAY_HPP
-#define FFMMALGORITHMARRAY_HPP
+#ifndef FFmmALGORITHMARRAY_HPP
+#define FFmmALGORITHMARRAY_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -29,15 +29,15 @@
 * Threaded & based on the inspector-executor model
 * schedule(runtime)
 */
-template<template< class ParticuleClass, class CellClass, int OctreeHeight> class KernelClass,
-        class ParticuleClass, class CellClass,
-        template<class ParticuleClass> class LeafClass,
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
 class FFmmAlgorithmArray : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticuleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticuleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
-    typedef KernelClass<ParticuleClass, CellClass, OctreeHeight> Kernel;
+    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass, OctreeHeight> Kernel;
 
     Octree* const tree;                  //< The octree to work on
     Kernel* kernels[FThreadNumbers];          //< The kernels
@@ -60,7 +60,7 @@ public:
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticuleClass, CellClass, OctreeHeight>(*inKernels);
+            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmArray\n");
@@ -129,7 +129,7 @@ public:
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
-                // and the list of particules
+                // and the list of particles
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSources());
             }
         }
@@ -292,12 +292,12 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            FList<ParticuleClass*>* neighbors[26];
+            FList<ParticleClass*>* neighbors[26];
 
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                // need the current particules and neighbors particules
+                // need the current particles and neighbors particles
                 const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
                 myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSources() , neighbors, counter);
             }
@@ -313,6 +313,6 @@ public:
 };
 
 
-#endif //FFMMALGORITHMARRAY_HPP
+#endif //FFmmALGORITHMARRAY_HPP
 
 // [--LICENSE--]

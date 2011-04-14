@@ -20,7 +20,7 @@ class F3DPosition;
 *
 * @warning Inherite from this class when defining a loader class
 */
-template <class ParticuleClass>
+template <class ParticleClass>
 class FAbstractLoader {
 public:	
 	/** Default destructor */
@@ -28,10 +28,10 @@ public:
 	}
 
         /**
-        * Get the number of particules for this simulation
-        * @return number of particules that the loader can fill
+        * Get the number of particles for this simulation
+        * @return number of particles that the loader can fill
         */
-        virtual long getNumberOfParticules() const = 0;
+        virtual long getNumberOfParticles() const = 0;
 
         /**
         * Get the center of the simulation box
@@ -52,10 +52,10 @@ public:
         virtual bool isValide() const = 0;
 
         /**
-        * Fill the next particule
-        * @param inParticule the particule to fill
+        * Fill the next particle
+        * @param inParticle the particle to fill
         */
-        virtual void fillParticule(ParticuleClass* const inParticule) = 0;
+        virtual void fillParticle(ParticleClass* const inParticle) = 0;
 };
 
 

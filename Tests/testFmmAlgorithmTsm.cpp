@@ -14,11 +14,11 @@
 
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FTestParticule.hpp"
+#include "../Sources/Components/FTestParticle.hpp"
 #include "../Sources/Components/FTestCell.hpp"
 #include "../Sources/Components/FTestKernels.hpp"
 
-#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+#include "../Sources/Extenssions/FExtendParticleType.hpp"
 #include "../Sources/Extenssions/FExtendCellType.hpp"
 
 #include "../Sources/Core/FFmmAlgorithmTsm.hpp"
@@ -28,17 +28,17 @@
 
 /** This program show an example of use of
   * the fmm basic algo
-  * it also check that each particules is impacted each other particules
+  * it also check that each particles is impacted each other particles
   */
 
-class FTestParticuleTsm : public FTestParticule, public FExtendParticuleType {
+class FTestParticleTsm : public FTestParticle, public FExtendParticleType {
 };
 
 class FTestCellTsm: public FTestCell , public FExtendCellType{
 };
 
 
-// Simply create particules and try the kernels
+// Simply create particles and try the kernels
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -47,7 +47,7 @@ int main(int argc, char ** argv){
     const int NbLevels = 10;//10;
     const int SizeSubLevels = 3;//3
     const long NbPart = 2000000;//2000000
-    FTestParticuleTsm* particules = new FTestParticuleTsm[NbPart];
+    FTestParticleTsm* particles = new FTestParticleTsm[NbPart];
     FTic counter;
 
     srand ( 1 ); // volontary set seed to constant
@@ -55,12 +55,12 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Creating " << NbPart << " particules ..." << std::endl;
+    std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particules[idxPart].setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-        if(rand() > RAND_MAX/2) particules[idxPart].setAsTarget();
-        else particules[idxPart].setAsSource();
+        particles[idxPart].setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+        if(rand() > RAND_MAX/2) particles[idxPart].setAsTarget();
+        else particles[idxPart].setAsSource();
     }
 
     counter.tac();
@@ -69,15 +69,15 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticuleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FTestParticleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Inserting particules ..." << std::endl;
+    std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        tree.insert(&particules[idxPart]);
+        tree.insert(&particles[idxPart]);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -85,13 +85,13 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Working on particules ..." << std::endl;
+    std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
     // FTestKernels FBasicKernels
-    FTestKernels<FTestParticuleTsm, FTestCellTsm, NbLevels> kernels;
-    //FFMMAlgorithmTsm FFMMAlgorithmArrayTsm
-    FFmmAlgorithmArrayTsm<FTestKernels, FTestParticuleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FTestKernels<FTestParticleTsm, FTestCellTsm, NbLevels> kernels;
+    //FFmmAlgorithmTsm FFmmAlgorithmArrayTsm
+    FFmmAlgorithmArrayTsm<FTestKernels, FTestParticleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -104,12 +104,12 @@ int main(int argc, char ** argv){
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Deleting particules ..." << std::endl;
+    std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particules[idxPart].~FTestParticuleTsm();
+        particles[idxPart].~FTestParticleTsm();
     }
-    delete [] particules;
+    delete [] particles;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
     //////////////////////////////////////////////////////////////////////////////////

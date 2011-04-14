@@ -11,13 +11,13 @@
 * @class FTypedLeaf
 * @brief
 * Please read the license
-* This class is used to enable the use of typed particules
+* This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticuleClass >
-class FTypedLeaf  : public FAbstractLeaf<ParticuleClass>, public FAssertable {
-    FList<ParticuleClass*> sources;
-    FList<ParticuleClass*> targets;
+template< class ParticleClass >
+class FTypedLeaf  : public FAbstractLeaf<ParticleClass>, public FAssertable {
+    FList<ParticleClass*> sources;
+    FList<ParticleClass*> targets;
 
 public:
     /** Default destructor */
@@ -25,28 +25,28 @@ public:
     }
 
     /**
-        * To add a new particule in the leaf
-        * @param particule the new particule
+        * To add a new particle in the leaf
+        * @param particle the new particle
         */
-    void push(ParticuleClass* const particule){
-        if(particule->isTarget()) this->targets.pushFront(particule);
-        else if(particule->isSource()) this->sources.pushFront(particule);
-        else assert(false, "Error particule has undefined type.", __LINE__, __FILE__);
+    void push(ParticleClass* const particle){
+        if(particle->isTarget()) this->targets.pushFront(particle);
+        else if(particle->isSource()) this->sources.pushFront(particle);
+        else assert(false, "Error particle has undefined type.", __LINE__, __FILE__);
     }
 
     /**
         * To get all the sources in a leaf
-        * @return a pointer to the list of particules that are sources
+        * @return a pointer to the list of particles that are sources
         */
-    FList<ParticuleClass*>* getSources() {
+    FList<ParticleClass*>* getSources() {
         return &this->sources;
     }
 
     /**
         * To get all the target in a leaf
-        * @return a pointer to the list of particules that are targets
+        * @return a pointer to the list of particles that are targets
         */
-    FList<ParticuleClass*>* getTargets() {
+    FList<ParticleClass*>* getTargets() {
         return &this->targets;
     }
 

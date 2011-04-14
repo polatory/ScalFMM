@@ -14,10 +14,10 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FFmaParticule.hpp"
+#include "../Sources/Components/FFmaParticle.hpp"
 #include "../Sources/Components/FBasicCell.hpp"
 
-#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+#include "../Sources/Extenssions/FExtendParticleType.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
@@ -26,7 +26,7 @@
 // Compile by : g++ testLoaderFMATsm.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMATsm.exe
 
 
-class ParticuleTsm : public FFmaParticule, public FExtendParticuleType {
+class ParticleTsm : public FFmaParticle, public FExtendParticleType {
 };
 
 /**
@@ -40,8 +40,8 @@ int main(int argc, char ** argv ){
     std::cout << ">> how to use the Tsm loader\n";
     //////////////////////////////////////////////////////////////
 
-    // we store all particules to be able to dealloc
-    FList<ParticuleTsm*> particules;
+    // we store all particles to be able to dealloc
+    FList<ParticleTsm*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.tsm.fma";
@@ -57,33 +57,33 @@ int main(int argc, char ** argv ){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    // open basic particules loader
-    FFMATsmLoader<ParticuleTsm> loader(filename);
+    // open basic particles loader
+    FFMATsmLoader<ParticleTsm> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<ParticuleTsm, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<ParticleTsm, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
-    std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
+    std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
-    for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        ParticuleTsm* const part = new ParticuleTsm();
-        particules.pushFront(part);
-        loader.fillParticule(part);
+    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+        ParticleTsm* const part = new ParticleTsm();
+        particles.pushFront(part);
+        loader.fillParticle(part);
         tree.insert(part);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
     // -----------------------------------------------------
-    std::cout << "Deleting particules ..." << std::endl;
+    std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
-    while(particules.getSize()){
-        delete particules.popFront();
+    while(particles.getSize()){
+        delete particles.popFront();
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

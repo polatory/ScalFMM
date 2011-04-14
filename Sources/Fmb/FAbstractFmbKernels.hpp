@@ -36,8 +36,8 @@ static const int FMB_Info_P = 2;
 *
 * Needs cell to extend {FExtendFmbCell}
 */
-template< class ParticuleClass, class CellClass, int TreeHeight>
-class FAbstractFmbKernels : public FAbstractKernels<ParticuleClass,CellClass, TreeHeight> {
+template< class ParticleClass, class CellClass, int TreeHeight>
+class FAbstractFmbKernels : public FAbstractKernels<ParticleClass,CellClass, TreeHeight> {
 protected:
 
     // _GRAVITATIONAL_
@@ -658,31 +658,31 @@ public:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void P2M(CellClass* const inPole, const FList<ParticuleClass*>* const inParticules) {
+    void P2M(CellClass* const inPole, const FList<ParticleClass*>* const inParticles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        for(typename FList<ParticuleClass*>::ConstBasicIterator iterParticule(*inParticules);
-                                iterParticule.isValide() ; iterParticule.progress()){
+        for(typename FList<ParticleClass*>::ConstBasicIterator iterParticle(*inParticles);
+                                iterParticle.isValide() ; iterParticle.progress()){
 
 
-            //std::cout << "Working on part " << iterParticule.value()->getPhysicalValue() << "\n";
-            //F3DPosition tempPos = iterParticule.value()->getPosition() - inPole->getPosition();
+            //std::cout << "Working on part " << iterParticle.value()->getPhysicalValue() << "\n";
+            //F3DPosition tempPos = iterParticle.value()->getPosition() - inPole->getPosition();
             //ok printf("\tpos_rel.x=%f\tpos_rel.y=%f\tpos_rel.z=%f\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
             //ok printf("\tp_center.x=%f\tp_center.y=%f\tp_center.z=%f\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
-            //ok printf("\tbody.x=%f\tbody.y=%f\tbody.z=%f\n",iterParticule.value()->getPosition().getX(),iterParticule.value()->getPosition().getY(),iterParticule.value()->getPosition().getZ());
+            //ok printf("\tbody.x=%f\tbody.y=%f\tbody.z=%f\n",iterParticle.value()->getPosition().getX(),iterParticle.value()->getPosition().getY(),iterParticle.value()->getPosition().getZ());
 
-            harmonicInner(positionTsmphere(iterParticule.value()->getPosition() - inPole->getPosition()),current_thread_Y);
+            harmonicInner(positionTsmphere(iterParticle.value()->getPosition() - inPole->getPosition()),current_thread_Y);
 
             //printf("\tr=%f\tcos_theta=%f\tsin_theta=%f\tphi=%f\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
             FReal pow_of_minus_1_j = 1.0;//(-1)^j
-            const FReal valueParticule = iterParticule.value()->getPhysicalValue();
+            const FReal valueParticle = iterParticle.value()->getPhysicalValue();
 
             for(int j = 0 ; j <= FMB_Info_P ; ++j, pow_of_minus_1_j = -pow_of_minus_1_j ){
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
-                    p_Y_term->mulRealAndImag( valueParticule * pow_of_minus_1_j );
+                    p_Y_term->mulRealAndImag( valueParticle * pow_of_minus_1_j );
                     (*p_exp_term) += (*p_Y_term);
                     //printf("\tj=%d\tk=%d\tp_exp_term.real=%f\tp_exp_term.imag=%f\tp_Y_term.real=%f\tp_Y_term.imag=%f\tpow_of_minus_1_j=%f\n",
                     //       j,k,(*p_exp_term).getReal(),(*p_exp_term).getImag(),(*p_Y_term).getReal(),(*p_Y_term).getImag(),pow_of_minus_1_j);
@@ -1063,19 +1063,19 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    virtual void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules) = 0;
+    virtual void L2P(const CellClass* const local, FList<ParticleClass*>* const particles) = 0;
 
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
-                     const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) = 0;
+    virtual void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+                     const FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) = 0;
 };
 
 
-template< class ParticuleClass, class CellClass, int TreeHeight>
-const FReal FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, int TreeHeight>
+const FReal FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
-template< class ParticuleClass, class CellClass, int TreeHeight>
-const FReal FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, int TreeHeight>
+const FReal FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

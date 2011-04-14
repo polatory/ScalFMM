@@ -15,8 +15,8 @@
 * This kernels simply shows the details of the information
 * it receives (in debug)
 */
-template< class ParticuleClass, class CellClass, int TreeHeight>
-class FBasicKernels : public FAbstractKernels<ParticuleClass,CellClass,TreeHeight> {
+template< class ParticleClass, class CellClass, int TreeHeight>
+class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,TreeHeight> {
 public:
     /** Default destructor */
     virtual ~FBasicKernels(){
@@ -25,8 +25,8 @@ public:
     /** When init the kernel */
     virtual void init(){}
 
-    /** Print the number of particules */
-    virtual void P2M(CellClass* const , const FList<ParticuleClass*>* const ) {
+    /** Print the number of particles */
+    virtual void P2M(CellClass* const , const FList<ParticleClass*>* const ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -49,15 +49,15 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    /** Print the number of particules */
-    virtual void L2P(const CellClass* const , FList<ParticuleClass*>* const ){
+    /** Print the number of particles */
+    virtual void L2P(const CellClass* const , FList<ParticleClass*>* const ){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    /** Print the number of particules */
-    virtual void P2P(FList<ParticuleClass*>* const FRestrict , const FList<ParticuleClass*>* const FRestrict ,
-                     const FList<ParticuleClass*>* FRestrict const* FRestrict , const int ) {
+    /** Print the number of particles */
+    virtual void P2P(FList<ParticleClass*>* const FRestrict , const FList<ParticleClass*>* const FRestrict ,
+                     const FList<ParticleClass*>* FRestrict const* FRestrict , const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }

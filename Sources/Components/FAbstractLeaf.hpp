@@ -8,10 +8,10 @@
 * @class FAbstractLeaf
 * @brief
 * Please read the license
-* This class is used to enable the use of typed particules
+* This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticuleClass >
+template< class ParticleClass >
 class FAbstractLeaf {
 public:
     /** Default destructor */
@@ -19,28 +19,28 @@ public:
     }
 
     /**
-        * To add a new particule in the leaf
-        * @param particule the new particule
+        * To add a new particle in the leaf
+        * @param particle the new particle
         * Depending on the system to use the class that inherit
-        * this interface can sort the particule as they like.
+        * this interface can sort the particle as they like.
         */
-    virtual void push(ParticuleClass* const particule) = 0;
+    virtual void push(ParticleClass* const particle) = 0;
 
     /**
         * To get all the sources in a leaf
-        * @return a pointer to the list of particules that are sources
+        * @return a pointer to the list of particles that are sources
         * Depending on the system to use the class that inherit
-        * this interface can sort the particule as they like.
+        * this interface can sort the particle as they like.
         */
-    virtual FList<ParticuleClass*>* getSources() = 0;
+    virtual FList<ParticleClass*>* getSources() = 0;
 
     /**
         * To get all the target in a leaf
-        * @return a pointer to the list of particules that are targets
+        * @return a pointer to the list of particles that are targets
         * Depending on the system to use the class that inherit
-        * this interface can sort the particule as they like.
+        * this interface can sort the particle as they like.
         */
-    virtual FList<ParticuleClass*>* getTargets() = 0;
+    virtual FList<ParticleClass*>* getTargets() = 0;
 
 };
 

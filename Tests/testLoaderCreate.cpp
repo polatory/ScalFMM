@@ -9,21 +9,21 @@
 
 #include "../Sources/Utils/FGlobal.hpp"
 
-// This file can generate basic particules files to load with basic loader
+// This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreate.cpp -o testLoaderCreate.exe
 
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable can create a basic particules files in custom format\n";
+    std::cout << ">> This executable can create a basic particles files in custom format\n";
     std::cout << ">> You can pass a filename in parameter else the program will use\n";
     std::cout << ">> a default filename.\n";
     std::cout << ">> The format of the file is : \n";
-    std::cout << ">> [number of particules] [boxe width] [boxe x center] [boxe y center] [boxe z center]\n";
+    std::cout << ">> [number of particles] [boxe width] [boxe x center] [boxe y center] [boxe z center]\n";
     std::cout << ">> [x] [y] [z]...\n";
     //////////////////////////////////////////////////////////////
 
-    // Nb of particules
-    const long NbParticules = 200000;
+    // Nb of particles
+    const long NbParticles = 200000;
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -54,14 +54,14 @@ int main(int argc, char ** argv){
         return 1;
     }
 
-    std::cout << "Creating " << NbParticules << " particules at " << Output << "\n";
+    std::cout << "Creating " << NbParticles << " particles at " << Output << "\n";
     std::cout << "Working...\n";
 
     // System properties
-    myfile << NbParticules << " " << BoxWidth << " " << XCenter << " " << YCenter << " " << ZCenter;
+    myfile << NbParticles << " " << BoxWidth << " " << XCenter << " " << YCenter << " " << ZCenter;
 
-    // Generate particules
-    for( long idx = 0 ; idx < NbParticules ; ++idx ){
+    // Generate particles
+    for( long idx = 0 ; idx < NbParticles ; ++idx ){
         const FReal px = ((FReal(rand())/RAND_MAX) * BoxWidth) + XCenter - (BoxWidth/2);
         const FReal py = ((FReal(rand())/RAND_MAX) * BoxWidth) + YCenter - (BoxWidth/2);
         const FReal pz = ((FReal(rand())/RAND_MAX) * BoxWidth) + ZCenter - (BoxWidth/2);

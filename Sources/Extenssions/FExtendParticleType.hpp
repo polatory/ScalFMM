@@ -1,18 +1,18 @@
-#ifndef FEXTENDPARTICULETYPE_HPP
-#define FEXTENDPARTICULETYPE_HPP
+#ifndef FEXTENDPARTICLETYPE_HPP
+#define FEXTENDPARTICLETYPE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FExtendParticuleType
+* @class FExtendParticleType
 * Please read the license
 * This class is an extenssion.
 * It proposes a target/source extenssion.
 */
-class FExtendParticuleType {
+class FExtendParticleType {
 protected:
-    /** Particule potential type */
+    /** Particle potential type */
     enum Type {
         Source,
         Target,
@@ -24,54 +24,54 @@ protected:
 
 public:
     /** Default constructor */
-    FExtendParticuleType() : type(Undef) {
+    FExtendParticleType() : type(Undef) {
     }
 
     /** Copy constructor */
-    FExtendParticuleType(const FExtendParticuleType& other) : type(other.type) {
+    FExtendParticleType(const FExtendParticleType& other) : type(other.type) {
     }
 
     /** Destructor */
-    virtual ~FExtendParticuleType(){
+    virtual ~FExtendParticleType(){
     }
 
     /** Copy operator */
-    FExtendParticuleType& operator=(const FExtendParticuleType& other) {
+    FExtendParticleType& operator=(const FExtendParticleType& other) {
         this->type = other.type;
         return *this;
     }
 
     /** To get the type */
-    Type getParticuleType() const {
+    Type getParticleType() const {
         return this->type;
     }
 
     /** To set the type */
-    void setParticuleType(const Type inType) {
+    void setParticleType(const Type inType) {
         this->type = inType;
     }
 
-    /** To know if a particule is a target */
+    /** To know if a particle is a target */
     bool isTarget() const{
         return this->type == Target;
     }
 
-    /** To know if a particule is a source */
+    /** To know if a particle is a source */
     bool isSource() const{
         return this->type == Source;
     }
 
-    /** To know if a particule has an undefined type */
+    /** To know if a particle has an undefined type */
     bool isUndefinedType() const{
         return this->type == Undef;
     }
 
-    /** To know if a particule is a target */
+    /** To know if a particle is a target */
     void setAsTarget() {
         this->type = Target;
     }
 
-    /** To know if a particule is a source */
+    /** To know if a particle is a source */
     void setAsSource() {
         this->type = Source;
     }
@@ -79,6 +79,6 @@ public:
 };
 
 
-#endif //FEXTENDPARTICULETYPE_HPP
+#endif //FEXTENDPARTICLETYPE_HPP
 
 // [--LICENSE--]

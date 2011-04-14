@@ -34,8 +34,8 @@
 *
 * Needs cell to extend {FExtendFmbCell}
 */
-template< class ParticuleClass, class CellClass, int TreeHeight>
-class FFmbKernelsBlas : public FAbstractKernels<ParticuleClass,CellClass, TreeHeight> {
+template< class ParticleClass, class CellClass, int TreeHeight>
+class FFmbKernelsBlas : public FAbstractKernels<ParticleClass,CellClass, TreeHeight> {
 protected:
     // _GRAVITATIONAL_
     static const int FMB_Info_eps_soft_square = 1;
@@ -673,31 +673,31 @@ public:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void P2M(CellClass* const inPole, const FList<ParticuleClass*>* const inParticules) {
+    void P2M(CellClass* const inPole, const FList<ParticleClass*>* const inParticles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        for(typename FList<ParticuleClass*>::ConstBasicIterator iterParticule(*inParticules);
-                                iterParticule.isValide() ; iterParticule.progress()){
+        for(typename FList<ParticleClass*>::ConstBasicIterator iterParticle(*inParticles);
+                                iterParticle.isValide() ; iterParticle.progress()){
 
 
-            //std::cout << "Working on part " << iterParticule.value()->getPhysicalValue() << "\n";
-            //F3DPosition tempPos = iterParticule.value()->getPosition() - inPole->getPosition();
+            //std::cout << "Working on part " << iterParticle.value()->getPhysicalValue() << "\n";
+            //F3DPosition tempPos = iterParticle.value()->getPosition() - inPole->getPosition();
             //ok printf("\tpos_rel.x=%e\tpos_rel.y=%e\tpos_rel.z=%e\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
             //ok printf("\tp_center.x=%e\tp_center.y=%e\tp_center.z=%e\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
-            //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticule.value()->getPosition().getX(),iterParticule.value()->getPosition().getY(),iterParticule.value()->getPosition().getZ());
+            //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticle.value()->getPosition().getX(),iterParticle.value()->getPosition().getY(),iterParticle.value()->getPosition().getZ());
 
-            harmonicInner(positionTsmphere(iterParticule.value()->getPosition() - inPole->getPosition()),current_thread_Y);
+            harmonicInner(positionTsmphere(iterParticle.value()->getPosition() - inPole->getPosition()),current_thread_Y);
 
             //ok printf("\tr=%e\tcos_theta=%e\tsin_theta=%e\tphi=%e\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
             FReal pow_of_minus_1_j = 1.0;//(-1)^j
-            const FReal valueParticule = iterParticule.value()->getPhysicalValue();
+            const FReal valueParticle = iterParticle.value()->getPhysicalValue();
 
             for(int j = 0 ; j <= FMB_Info_P ; ++j, pow_of_minus_1_j = -pow_of_minus_1_j ){
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
-                    p_Y_term->mulRealAndImag( valueParticule * pow_of_minus_1_j );
+                    p_Y_term->mulRealAndImag( valueParticle * pow_of_minus_1_j );
                     (*p_exp_term) += (*p_Y_term);
                     //printf("\tj=%d\tk=%d\tp_exp_term.real=%e\tp_exp_term.imag=%e\tp_Y_term.real=%e\tp_Y_term.imag=%e\tpow_of_minus_1_j=%e\n",
                     //       j,k,(*p_exp_term).getReal(),(*p_exp_term).getImag(),(*p_Y_term).getReal(),(*p_Y_term).getImag(),pow_of_minus_1_j);
@@ -1118,14 +1118,14 @@ public:
       *         expansion_L2P_add_to_force_vector
       *         expansion_Evaluate_local_with_Y_already_computed
       */
-    void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
+    void L2P(const CellClass* const local, FList<ParticleClass*>* const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
+        typename FList<ParticleClass*>::BasicIterator iterTarget(*particles);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
             F3DPosition force_vector_in_local_base;
-            typename FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::Spherical spherical;
+            typename FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::Spherical spherical;
             spherical = positionTsmphere( iterTarget.value()->getPosition() - local->getPosition());
 
             /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
@@ -1143,11 +1143,11 @@ public:
             /*printf("\t\t phi = %lf \t cos = %lf \t sin = %lf \t r= %lf \n",
                     spherical.phi,spherical.cosTheta,spherical.sinTheta,spherical.r);*/
 
-            harmonicInnerThetaDerivated( spherical, FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::current_thread_Y, FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated);
+            harmonicInnerThetaDerivated( spherical, FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y, FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.
-            const FComplexe* p_Y_term = FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::current_thread_Y+1;
-            const FComplexe* p_Y_theta_derivated_term = FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated+1;
+            const FComplexe* p_Y_term = FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y+1;
+            const FComplexe* p_Y_theta_derivated_term = FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated+1;
             const FComplexe* p_local_exp_term = local->getLocal()+1;
 
             for (int j = 1 ; j <= FMB_Info_P ; ++j ){
@@ -1344,7 +1344,7 @@ public:
 
         FReal result = 0.0;
 
-        FComplexe* p_Y_term = FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
+        FComplexe* p_Y_term = FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y;
         for(int j = 0 ; j<= FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
@@ -1378,14 +1378,14 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
-             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+             const FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*targets);
+        typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename FList<ParticleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
                   DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
                                                    iterSource.value());
@@ -1393,7 +1393,7 @@ public:
                 }
              }
 
-            typename FList<ParticuleClass*>::ConstBasicIterator iterSameBox(*sources);
+            typename FList<ParticleClass*>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
                     DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
@@ -1410,13 +1410,13 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
-    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
+    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass** const target, const ParticleClass* const source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
       const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
       const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
       const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
+      FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
       FReal inv_distance = FMath::Sqrt(inv_square_distance);
       inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
       inv_square_distance *= inv_distance;
@@ -1433,12 +1433,12 @@ public:
 };
 
 
-template< class ParticuleClass, class CellClass, int TreeHeight>
-const FReal FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, int TreeHeight>
+const FReal FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
-template< class ParticuleClass, class CellClass, int TreeHeight>
-const FReal FFmbKernelsBlas<ParticuleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, int TreeHeight>
+const FReal FFmbKernelsBlas<ParticleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

@@ -12,7 +12,7 @@
 * This class define the method that every cell class
 * has to implement.
 *
-* In fact FOctree & FFMMAlgorithm need this function to be implemented.
+* In fact FOctree & FFmmAlgorithm need this function to be implemented.
 * But you cannot use this interface with the extension (as an example :
 * because the compiler will faill to know if getMortonIndex is coming
 * from this interface or from the extension)
@@ -46,13 +46,13 @@ public:
 
         /** Because the system can run in Tsm mode
           * a cell has to express if it has sources
-          * @return true if there are sources particules inside
+          * @return true if there are sources particles inside
           */
         virtual bool hasSourcesChild() const = 0;
 
         /** Because the system can run in Tsm mode
           * a cell has to express if it has targets
-          * @return true if there are targets particules inside
+          * @return true if there are targets particles inside
           */
         virtual bool hasTargetsChild() const = 0;
 

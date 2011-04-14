@@ -17,21 +17,21 @@
 * Please read the license
 *
 * This kernels is a virtual kernels to validate that the fmm algorithm is
-* correctly done on particules.
-* It used FTestCell and FTestParticule
+* correctly done on particles.
+* It used FTestCell and FTestParticle
 */
-template< class ParticuleClass, class CellClass, int TreeHeight>
-class FTestKernels : public FAbstractKernels<ParticuleClass,CellClass,TreeHeight> {
+template< class ParticleClass, class CellClass, int TreeHeight>
+class FTestKernels : public FAbstractKernels<ParticleClass,CellClass,TreeHeight> {
 public:
     /** Default destructor */
     virtual ~FTestKernels(){
     }
 
     // Before upward
-    void P2M(CellClass* const pole, const FList<ParticuleClass*>* const particules) {
+    void P2M(CellClass* const pole, const FList<ParticleClass*>* const particles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        // the pole represents all particules under
-        pole->setDataUp(particules->getSize());
+        // the pole represents all particles under
+        pole->setDataUp(particles->getSize());
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // During upward
@@ -66,10 +66,10 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // After Downward
-    void L2P(const CellClass* const  local, FList<ParticuleClass*>*const particules){
+    void L2P(const CellClass* const  local, FList<ParticleClass*>*const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        // The particules is impacted by the parent cell
-        typename FList<ParticuleClass*>::BasicIterator iter(*particules);
+        // The particles is impacted by the parent cell
+        typename FList<ParticleClass*>::BasicIterator iter(*particles);
         while( iter.isValide() ){
             iter.value()->setDataDown(iter.value()->getDataDown() + local->getDataDown());
             iter.progress();
@@ -77,10 +77,10 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
     // After Downward
-    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
-             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+             const FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        // Each particules targeted is impacted by the particules sources
+        // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
         if(targets == sources){
             inc -= 1;
@@ -89,7 +89,7 @@ public:
             inc += directNeighbors[idx]->getSize();
         }
 
-        typename FList<ParticuleClass*>::BasicIterator iter(*targets);
+        typename FList<ParticleClass*>::BasicIterator iter(*targets);
         while( iter.isValide() ){
             iter.value()->setDataDown(iter.value()->getDataDown() + inc);
             iter.progress();
@@ -103,12 +103,12 @@ public:
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template< class ParticuleClass, class CellClass, template<class ParticuleClass> class LeafClass, int TreeHeight, int SizeSubLevels>
-void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , SizeSubLevels>* const tree){
+template< class ParticleClass, class CellClass, template<class ParticleClass> class LeafClass, int TreeHeight, int SizeSubLevels>
+void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , SizeSubLevels>* const tree){
     std::cout << "Check Result\n";
     int NbPart = 0;
-    { // Check that each particule has been summed with all other
-        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+    { // Check that each particle has been summed with all other
+        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSources()->getSize() ){
@@ -118,7 +118,7 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         } while(octreeIterator.moveRight());
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
         long res = 0;
         do{
@@ -129,7 +129,7 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
         }
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
             long res = 0;
@@ -143,16 +143,16 @@ void ValidateFMMAlgo(FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight , 
             octreeIterator.gotoLeft();
         }
     }
-    { // Check that each particule has been summed with all other
-        typename FOctree<ParticuleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+    { // Check that each particle has been summed with all other
+        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename FList<ParticuleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSources());
 
             while( iter.isValide() ){
-                // If a particules has been impacted by less than NbPart - 1 (the current particule)
+                // If a particles has been impacted by less than NbPart - 1 (the current particle)
                 // there is a problem
                 if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
                     (isUsingTsm && iter.value()->getDataDown() != NbPart) ){

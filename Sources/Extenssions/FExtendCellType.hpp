@@ -15,7 +15,7 @@
 */
 class FExtendCellType {
 protected:
-    /** Particule potential type */
+    /** Particle potential type */
     static const int Neither = 0;
     static const int ContainsSources = 1;
     static const int ContainsTargets = 2;

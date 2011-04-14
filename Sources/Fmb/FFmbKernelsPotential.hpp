@@ -16,11 +16,11 @@
 *
 * This class is a Fmb Kernels.
 */
-template< class ParticuleClass, class CellClass, int TreeHeight>
-class FFmbKernelsPotential : public FAbstractFmbKernels<ParticuleClass,CellClass, TreeHeight> {
+template< class ParticleClass, class CellClass, int TreeHeight>
+class FFmbKernelsPotential : public FAbstractFmbKernels<ParticleClass,CellClass, TreeHeight> {
 public:
     FFmbKernelsPotential(const FReal inTreeWidth)
-        : FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>(inTreeWidth) {
+        : FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>(inTreeWidth) {
     }
 
 
@@ -29,15 +29,15 @@ public:
     /** bodies_L2P
       * expansion_L2P_add_to_force_vector
       */
-    void L2P(const CellClass* const local, FList<ParticuleClass*>* const particules){
+    void L2P(const CellClass* const local, FList<ParticleClass*>* const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*particules);
+        typename FList<ParticleClass*>::BasicIterator iterTarget(*particles);
         while( iterTarget.isValide() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
             // expansion_Evaluate_local
             harmonicInner( positionTsmphere( iterTarget.value()->getPosition() - local->getPosition()),
-                           FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y);
+                           FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>::current_thread_Y);
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
@@ -58,7 +58,7 @@ public:
 
         FReal result = 0.0;
 
-        FComplexe* p_Y_term = FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::current_thread_Y;
+        FComplexe* p_Y_term = FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>::current_thread_Y;
         for(int j = 0 ; j<= FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
@@ -92,20 +92,20 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticuleClass*>* const FRestrict targets, const FList<ParticuleClass*>* const FRestrict sources,
-             const FList<ParticuleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+             const FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticuleClass*>::BasicIterator iterTarget(*targets);
+        typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticuleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename FList<ParticleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
                   DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSource.value());
                   iterSource.progress();
                 }
              }
 
-            typename FList<ParticuleClass*>::ConstBasicIterator iterSameBox(*sources);
+            typename FList<ParticleClass*>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
                     DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(), iterSameBox.value());
@@ -118,13 +118,13 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
-    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticuleClass** const target, const ParticuleClass* const source){
+    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass** const target, const ParticleClass* const source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
       const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
       const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
       const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
 
-      FReal inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticuleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
+      FReal inv_distance = 1.0/FMath::Sqrt(dx*dx + dy*dy + dz*dz + FAbstractFmbKernels<ParticleClass,CellClass,TreeHeight>::FMB_Info_eps_soft_square);
       inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
 
       (*target)->setPotential( inv_distance + (*target)->getPotential());

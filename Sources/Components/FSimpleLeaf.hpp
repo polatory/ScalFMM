@@ -11,11 +11,11 @@
 * @brief
 * Please read the license
 * This class is used as a leaf in simple system (source AND target)
-* here there is only one list that store all particules.
+* here there is only one list that store all particles.
 */
-template< class ParticuleClass >
-class FSimpleLeaf : public FAbstractLeaf<ParticuleClass> {
-    FList<ParticuleClass*> particules;
+template< class ParticleClass >
+class FSimpleLeaf : public FAbstractLeaf<ParticleClass> {
+    FList<ParticleClass*> particles;
 
 public:
     /** Default destructor */
@@ -23,27 +23,27 @@ public:
     }
 
     /**
-        * To add a new particule in the leaf
-        * @param particule the new particule
+        * To add a new particle in the leaf
+        * @param particle the new particle
         */
-    void push(ParticuleClass* const particule){
-        this->particules.pushFront(particule);
+    void push(ParticleClass* const particle){
+        this->particles.pushFront(particle);
     }
 
     /**
         * To get all the sources in a leaf
-        * @return a pointer to the list of particules that are sources
+        * @return a pointer to the list of particles that are sources
         */
-    FList<ParticuleClass*>* getSources() {
-        return &this->particules;
+    FList<ParticleClass*>* getSources() {
+        return &this->particles;
     }
 
     /**
         * To get all the target in a leaf
-        * @return a pointer to the list of particules that are targets
+        * @return a pointer to the list of particles that are targets
         */
-    FList<ParticuleClass*>* getTargets() {
-        return &this->particules;
+    FList<ParticleClass*>* getTargets() {
+        return &this->particles;
     }
 
 };

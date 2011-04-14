@@ -14,7 +14,7 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FBasicParticule.hpp"
+#include "../Sources/Components/FBasicParticle.hpp"
 #include "../Sources/Components/FBasicCell.hpp"
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
@@ -32,28 +32,28 @@ int main(int , char ** ){
     //////////////////////////////////////////////////////////////
 
         const long NbPart = 2000000;
-        FList<FBasicParticule*> particules;
+        FList<FBasicParticle*> particles;
         FTic counter;
 
         srand ( time(NULL) );
 
         // -----------------------------------------------------
-        std::cout << "Creating " << NbPart << " particules ..." << std::endl;
+        std::cout << "Creating " << NbPart << " particles ..." << std::endl;
         counter.tic();
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            FBasicParticule* const particule = new FBasicParticule();
-            particule->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-            particules.pushFront(particule);
+            FBasicParticle* const particle = new FBasicParticle();
+            particle->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            particles.pushFront(particle);
         }
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
         // -----------------------------------------------------
 
-        FOctree<FBasicParticule, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
-        FList<FBasicParticule*>::BasicIterator iter(particules);
+        FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
+        FList<FBasicParticle*>::BasicIterator iter(particles);
 
         // -----------------------------------------------------
-        std::cout << "Inserting particules ..." << std::endl;
+        std::cout << "Inserting particles ..." << std::endl;
         counter.tic();
         while( iter.isValide() ){
             tree.insert(iter.value());
@@ -64,10 +64,10 @@ int main(int , char ** ){
         // -----------------------------------------------------
 
         // -----------------------------------------------------
-        std::cout << "Deleting particules ..." << std::endl;
+        std::cout << "Deleting particles ..." << std::endl;
         counter.tic();
-        while(particules.getSize()){
-            delete particules.popFront();
+        while(particles.getSize()){
+            delete particles.popFront();
         }
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

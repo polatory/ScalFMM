@@ -10,11 +10,11 @@
 #include "../Sources/Containers/FOctree.hpp"
 #include "../Sources/Containers/FList.hpp"
 
-#include "../Sources/Components/FFmaParticule.hpp"
+#include "../Sources/Components/FFmaParticle.hpp"
 #include "../Sources/Extenssions/FExtendForces.hpp"
 #include "../Sources/Extenssions/FExtendPotential.hpp"
 
-#include "../Sources/Extenssions/FExtendParticuleType.hpp"
+#include "../Sources/Extenssions/FExtendParticleType.hpp"
 #include "../Sources/Extenssions/FExtendCellType.hpp"
 
 
@@ -39,19 +39,19 @@
 
 /** This program show an example of use of
   * the fmm basic algo
-  * it also check that eachh particules is little or longer
+  * it also check that eachh particles is little or longer
   * related that each other
   */
 
 
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticule}
+  * Because we use fma loader it needs {FFmaParticle}
   */
-class FmbParticule : public FFmaParticule, public FExtendForces, public FExtendPotential {
+class FmbParticle : public FFmaParticle, public FExtendForces, public FExtendPotential {
 public:
 };
 
-class FmbParticuleTyped : public FmbParticule, public FExtendParticuleType {
+class FmbParticleTyped : public FmbParticle, public FExtendParticleType {
 public:
 };
 
@@ -66,7 +66,7 @@ class FmbCellTyped : public FmbCell, public FExtendCellType {
 public:
 };
 
-// Simply create particules and try the kernels
+// Simply create particles and try the kernels
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
@@ -82,60 +82,60 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating " << NbPart << " particules ..." << std::endl;
+    std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
 
-    FmbParticule* particules = new FmbParticule[NbPart];
-    FmbParticuleTyped* particulesTyped = new FmbParticuleTyped[NbPart*2];
+    FmbParticle* particles = new FmbParticle[NbPart];
+    FmbParticleTyped* particlesTyped = new FmbParticleTyped[NbPart*2];
 
     for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
         const double x = FReal(rand())/RAND_MAX;
         const double y = FReal(rand())/RAND_MAX;
         const double z = FReal(rand())/RAND_MAX;
-        // Particule for standart model
-        particules[idxPart].setPosition(x,y,z);
-        particules[idxPart].setPhysicalValue(1);
+        // Particle for standart model
+        particles[idxPart].setPosition(x,y,z);
+        particles[idxPart].setPhysicalValue(1);
 
         // Create a clone for typed (Tsm) version
-        particulesTyped[idxPart*2].setPosition(x,y,z);
-        particulesTyped[idxPart*2+1].setPosition(x,y,z);
+        particlesTyped[idxPart*2].setPosition(x,y,z);
+        particlesTyped[idxPart*2+1].setPosition(x,y,z);
 
-        particulesTyped[idxPart*2].setPhysicalValue(1);
-        particulesTyped[idxPart*2+1].setPhysicalValue(1);
+        particlesTyped[idxPart*2].setPhysicalValue(1);
+        particlesTyped[idxPart*2+1].setPhysicalValue(1);
 
-        particulesTyped[idxPart*2].setAsSource();
-        particulesTyped[idxPart*2+1].setAsTarget();
+        particlesTyped[idxPart*2].setAsSource();
+        particlesTyped[idxPart*2+1].setAsTarget();
     }
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
-    FOctree<FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(BoxWidth,CenterOfBox);
-    FOctree<FmbParticuleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> treeTyped(BoxWidth,CenterOfBox);
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(BoxWidth,CenterOfBox);
+    FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> treeTyped(BoxWidth,CenterOfBox);
 
 
-    std::cout << "Inserting particules ..." << std::endl;
+    std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        tree.insert(&particules[idxPart]);
-        treeTyped.insert(&particulesTyped[idxPart*2]);
-        treeTyped.insert(&particulesTyped[idxPart*2+1]);
+        tree.insert(&particles[idxPart]);
+        treeTyped.insert(&particlesTyped[idxPart*2]);
+        treeTyped.insert(&particlesTyped[idxPart*2+1]);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
-    std::cout << "Working on particules ..." << std::endl;
+    std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
     //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-    FFmbKernelsPotentialForces<FmbParticule, FmbCell, NbLevels> kernels(BoxWidth);
-    FFmbKernelsPotentialForces<FmbParticuleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
+    FFmbKernelsPotentialForces<FmbParticle, FmbCell, NbLevels> kernels(BoxWidth);
+    FFmbKernelsPotentialForces<FmbParticleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
     //FFmmAlgorithm FFmmAlgorithmArray
-    FFmmAlgorithmArray<FFmbKernelsPotentialForces, FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
-    FFmmAlgorithmArrayTsm<FFmbKernelsPotentialForces, FmbParticuleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
+    FFmmAlgorithmArray<FFmbKernelsPotentialForces, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmArrayTsm<FFmbKernelsPotentialForces, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
     algo.execute();
     algoTyped.execute();
 
@@ -148,10 +148,10 @@ int main(int argc, char ** argv){
 
     std::cout << "Start checking ..." << std::endl;
     {
-        FOctree<FmbParticule, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
-        FOctree<FmbParticuleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorTyped(&treeTyped);
+        FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorTyped(&treeTyped);
         octreeIteratorTyped.gotoBottomLeft();
 
         for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
@@ -194,8 +194,8 @@ int main(int argc, char ** argv){
 
     std::cout << "Done ..." << std::endl;
 
-    delete [] particules;
-    delete [] particulesTyped;
+    delete [] particles;
+    delete [] particlesTyped;
 
     return 0;
 }

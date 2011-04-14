@@ -14,7 +14,7 @@
 #include "../Sources/Utils/FAssertable.hpp"
 #include "../Sources/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FFmaParticule.hpp"
+#include "../Sources/Components/FFmaParticle.hpp"
 #include "../Sources/Components/FBasicCell.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
@@ -27,9 +27,9 @@
 /**
   * In this file we show an example of FBasicLoader use
 * Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
-* Inserting 2000000 particules ...
+* Inserting 2000000 particles ...
 * Done  (5.77996).
-* Deleting particules ...
+* Deleting particles ...
 * Done  (0.171918).
   */
 
@@ -40,8 +40,8 @@ int main(int argc, char ** argv ){
     std::cout << ">> how to use the FMA loader\n";
     //////////////////////////////////////////////////////////////
 
-    // we store all particules to be able to dealloc
-    FList<FFmaParticule*> particules;
+    // we store all particles to be able to dealloc
+    FList<FFmaParticle*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "../../Data/testLoaderFMA.fma";
@@ -57,33 +57,33 @@ int main(int argc, char ** argv ){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    // open basic particules loader
-    FFMALoader<FFmaParticule> loader(filename);
+    // open basic particles loader
+    FFMALoader<FFmaParticle> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
 
     // otree
-    FOctree<FFmaParticule, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
-    std::cout << "Inserting " << loader.getNumberOfParticules() << " particules ..." << std::endl;
+    std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
-    for(int idx = 0 ; idx < loader.getNumberOfParticules() ; ++idx){
-        FFmaParticule* const part = new FFmaParticule();
-        particules.pushFront(part);
-        loader.fillParticule(part);
+    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+        FFmaParticle* const part = new FFmaParticle();
+        particles.pushFront(part);
+        loader.fillParticle(part);
         tree.insert(part);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
     // -----------------------------------------------------
-    std::cout << "Deleting particules ..." << std::endl;
+    std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
-    while(particules.getSize()){
-        delete particules.popFront();
+    while(particles.getSize()){
+        delete particles.popFront();
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
