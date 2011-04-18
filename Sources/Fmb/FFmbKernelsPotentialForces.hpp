@@ -297,20 +297,21 @@ public:
         while( iterTarget.isValide() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                if(directNeighbors[idxDirectNeighbors] < sources){
+                if(directNeighbors[idxDirectNeighbors] < targets){
                     typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.isValide() ){
-                      DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
+                      DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
                                                        &iterSource.value());
                       iterSource.progress();
                     }
                 }
              }
 
-            typename FList<ParticleClass*>::BasicIterator iterSameBox(*targets);
+            typename FList<ParticleClass*>::BasicIterator iterSameBox = iterTarget;//(*targets);
+            iterSameBox.progress();
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() < iterTarget.value()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
+                    DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
                                                      &iterSameBox.value());
                 }
                 iterSameBox.progress();
@@ -324,7 +325,7 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
-    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass** const target, ParticleClass** const source){
+    void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass** const target, ParticleClass** const source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
       const FReal dx = (*target)->getPosition().getX() - (*source)->getPosition().getX();
       const FReal dy = (*target)->getPosition().getY() - (*source)->getPosition().getY();

@@ -22,6 +22,7 @@
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
+#include "../Sources/Fmb/FFmbKernelsPotentialForcesTsm.hpp"
 #include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsForces.hpp"
 #include "../Sources/Fmb/FFmbKernelsPotential.hpp"
