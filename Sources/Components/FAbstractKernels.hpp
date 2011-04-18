@@ -82,7 +82,7 @@ public:
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
     virtual void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-                     const FList<ParticleClass*>*const FRestrict  *const FRestrict directNeighborsParticles, const int size) = 0;
+                     FList<ParticleClass*>*const FRestrict  *const FRestrict directNeighborsParticles, const int size) = 0;
 };
 
 

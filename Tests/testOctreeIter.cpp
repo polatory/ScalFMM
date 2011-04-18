@@ -72,7 +72,7 @@ int main(int , char ** ){
 
             FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
-            for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
+            for(int idxLevel = NbLevels - 1 ; idxLevel >= 1 ; --idxLevel ){
                 int counter = 0;
                 do{
                     ++counter;

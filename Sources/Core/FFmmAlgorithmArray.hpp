@@ -47,7 +47,10 @@ class FFmmAlgorithmArray : protected FAssertable{
 
     OctreeIterator* iterArray;
 
-public:	
+    static const int SizeShape = 3*3*3;
+    int shapeLeaf[SizeShape];
+
+public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
@@ -80,12 +83,22 @@ public:
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            this->shapeLeaf[idxShape] = 0;
+        }
+        const int LeafIndex = OctreeHeight - 1;
+
         // Count leaf
         int leafs = 0;
         OctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             ++leafs;
+            const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
+            FTreeCoordinate coord;
+            coord.setPositionFromMorton(index, LeafIndex);
+            ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
+
         } while(octreeIterator.moveRight());
         iterArray = new OctreeIterator[leafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
@@ -275,34 +288,55 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG( counterTime.tic() );
 
-        int leafs = 0;
+        OctreeIterator* shapeArray[SizeShape];
+        int countShape[SizeShape];
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            shapeArray[idxShape] = new OctreeIterator[this->shapeLeaf[idxShape]];
+            countShape[idxShape] = 0;
+        }
+
+        const int LeafIndex = OctreeHeight - 1;
+        //int leafs = 0;
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             // for each leafs
             do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
+                //iterArray[leafs] = octreeIterator;
+                //++leafs;
+                const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
+                FTreeCoordinate coord;
+                coord.setPositionFromMorton(index, LeafIndex);
+                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                shapeArray[shapePosition][countShape[shapePosition]] = octreeIterator;
+                ++countShape[shapePosition];
+
             } while(octreeIterator.moveRight());
         }
 
-        const int heightMinusOne = OctreeHeight - 1;
         FDEBUG(computationCounter.tic());
-        #pragma omp parallel num_threads(FThreadNumbers)
-        {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-            // There is a maximum of 26 neighbors
-            FList<ParticleClass*>* neighbors[26];
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            const int leafAtThisShape = this->shapeLeaf[idxShape];
+            #pragma omp parallel num_threads(FThreadNumbers)
+            {
+                Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                // There is a maximum of 26 neighbors
+                FList<ParticleClass*>* neighbors[26];
 
-            #pragma omp for
-            for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSources() , neighbors, counter);
+                #pragma omp for
+                for(int idxLeafs = 0 ; idxLeafs < leafAtThisShape ; ++idxLeafs){
+                    myThreadkernels->L2P(shapeArray[idxShape][idxLeafs].getCurrentCell(), shapeArray[idxShape][idxLeafs].getCurrentListTargets());
+                    // need the current particles and neighbors particles
+                    const int counter = tree->getLeafsNeighbors(neighbors, shapeArray[idxShape][idxLeafs].getCurrentGlobalIndex(),LeafIndex);
+                    myThreadkernels->P2P( shapeArray[idxShape][idxLeafs].getCurrentListTargets(), shapeArray[idxShape][idxLeafs].getCurrentListSources() , neighbors, counter);
+                }
             }
         }
         FDEBUG(computationCounter.tac());
+
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            delete [] shapeArray[idxShape];
+        }
 
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );

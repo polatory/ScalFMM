@@ -21,8 +21,7 @@
 
 #include "../Sources/Core/FFmmAlgorithm.hpp"
 #include "../Sources/Core/FFmmAlgorithmArray.hpp"
-#include "../Sources/Core/FFmmAlgorithmThreaded.hpp"
-#include "../Sources/Core/FFmmAlgorithmTask.hpp"
+
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 

@@ -78,7 +78,7 @@ public:
     }
     // After Downward
     void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             const FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
