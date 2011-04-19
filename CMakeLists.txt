@@ -29,3 +29,6 @@ MESSAGE( STATUS "BUILD_UTESTS = ${BUILD_UTESTS}" )
 if( ${BUILD_UTESTS} STREQUAL "ON" )
 	add_subdirectory(UTests)
 endif()
+
+# Build - doc
+add_subdirectory(Doc)

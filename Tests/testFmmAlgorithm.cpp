@@ -83,7 +83,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticle, FTestCell, NbLevels> kernels;
     //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask
-    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmArray<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

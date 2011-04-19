@@ -19,6 +19,7 @@
 
 #include "../Sources/Core/FFmmAlgorithm.hpp"
 #include "../Sources/Core/FFmmAlgorithmArray.hpp"
+#include "../Sources/Core/FFmmAlgorithmArrayUs.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
@@ -116,9 +117,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-    FFmbKernelsPotentialForces<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask
-    FFmmAlgorithm<FFmbKernelsPotentialForces, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmbKernelsPotentialForcesTsm<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
+    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask FFmmAlgorithmArrayUs
+    FFmmAlgorithmArrayUs<FFmbKernelsPotentialForcesTsm, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
