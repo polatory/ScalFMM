@@ -451,8 +451,8 @@ protected:
                 /*printf("%d/%d - magnitude=%e ptr_precomputed_cos_and_sin_array real=%e imag=%e p_term real=%e imag=%e\n",
                        l,m,
                        magnitude,
-                       (cosSin + m)->getReal(),
-                       (cosSin + m)->getImag(),
+                       cosSin[m].getReal(),
+                       cosSin[m].getImag(),
                        p_term->getReal(),
                        p_term->getImag());*/
                 /*printf("\t p_spherical_harmonic_Inner_coefficients_array = %e \t ptr_associated_Legendre_function_Array = %e \t r_l = %e\n",
@@ -480,8 +480,8 @@ protected:
             /*printf("%d - magnitude=%e ptr_precomputed_cos_and_sin_array real=%e imag=%e p_term real=%e imag=%e\n",
                    l,
                    magnitude,
-                   (cosSin + m)->getReal(),
-                   (cosSin + m)->getImag(),
+                   cosSin[m].getReal(),
+                   cosSin[m].getImag(),
                    p_term->getReal(),
                    p_term->getImag());*/
             /*printf("\t p_spherical_harmonic_Inner_coefficients_array = %e \t ptr_associated_Legendre_function_Array = %e \t r_l = %e\n",

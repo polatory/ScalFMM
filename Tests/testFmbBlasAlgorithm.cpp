@@ -23,7 +23,7 @@
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
 #include "../Sources/Fmb/FFmbKernelsBlas.hpp"
-#include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
+#include "../Sources/Fmb/FFmbKernels.hpp"
 
 #include "../Sources/Files/FFMALoader.hpp"
 
@@ -116,7 +116,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    //FFmbKernelsBlas FFmbKernelsPotentialForces
+    //FFmbKernelsBlas FFmbKernels
     FFmbKernelsBlas<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask
     FFmmAlgorithm<FFmbKernelsBlas, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);

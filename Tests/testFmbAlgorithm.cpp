@@ -23,10 +23,8 @@
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Fmb/FFmbKernelsPotentialForcesTsm.hpp"
-#include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
-#include "../Sources/Fmb/FFmbKernelsForces.hpp"
-#include "../Sources/Fmb/FFmbKernelsPotential.hpp"
+#include "../Sources/Fmb/FFmbKernels.hpp"
+
 
 #include "../Sources/Files/FFMALoader.hpp"
 
@@ -116,10 +114,9 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-    FFmbKernelsPotentialForcesTsm<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
+    FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask FFmmAlgorithmArrayUs
-    FFmmAlgorithmArrayUs<FFmbKernelsPotentialForcesTsm, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmArrayUs<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

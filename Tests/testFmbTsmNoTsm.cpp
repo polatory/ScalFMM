@@ -29,9 +29,7 @@
 #include "../Sources/Components/FSimpleLeaf.hpp"
 #include "../Sources/Components/FTypedLeaf.hpp"
 
-#include "../Sources/Fmb/FFmbKernelsPotentialForces.hpp"
-#include "../Sources/Fmb/FFmbKernelsForces.hpp"
-#include "../Sources/Fmb/FFmbKernelsPotential.hpp"
+#include "../Sources/Fmb/FFmbKernels.hpp"
 
 
 // With openmp : g++ testFmbTsmAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
@@ -130,12 +128,11 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    //FFmbKernelsPotentialForces FFmbKernelsForces FFmbKernelsPotential
-    FFmbKernelsPotentialForces<FmbParticle, FmbCell, NbLevels> kernels(BoxWidth);
-    FFmbKernelsPotentialForces<FmbParticleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
+    FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(BoxWidth);
+    FFmbKernels<FmbParticleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
     //FFmmAlgorithm FFmmAlgorithmArray
-    FFmmAlgorithmArray<FFmbKernelsPotentialForces, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
-    FFmmAlgorithmArrayTsm<FFmbKernelsPotentialForces, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
+    FFmmAlgorithmArray<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmArrayTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
     algo.execute();
     algoTyped.execute();
 

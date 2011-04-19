@@ -6,7 +6,7 @@
 
 #include "../Utils/FComplexe.hpp"
 
-#include "FAbstractFmbKernels.hpp"
+#include "FFmbKernels.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
