@@ -5,7 +5,7 @@
 // Manage Blas Version
 ///////////////////////////////////////////////////////
 
-#include "ScalFMM_config.h"
+#include "ScalFmmConfig.h"
 
 #ifdef  FUSE_MKL_AS_BLAS
 #include <mkl_cblas.h>

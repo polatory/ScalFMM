@@ -10,7 +10,7 @@ if(OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-#add CBLAS
+# Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
 #todo remove next line used to compile manually with intel compiler
 #ADD_DEFINITIONS(-Wl,--start-group $(MKLROOT)/lib/ia32/libmkl_intel.a $(MKLROOT)/lib/ia32/libmkl_sequential.a $(MKLROOT)/lib/ia32/libmkl_core.a -Wl,--end-group -lpthread)
@@ -24,6 +24,8 @@ file(
 	source_tests_files
 	./*.cpp
 )
+
+# Adding the project sources dir as an include dir
 INCLUDE_DIRECTORIES(
      ${CMAKE_BINARY_DIR}/Sources 
 )

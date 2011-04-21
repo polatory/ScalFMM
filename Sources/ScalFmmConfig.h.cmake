@@ -1,5 +1,5 @@
-#ifndef ScalFMM_CONFIG_H
-#define ScalFMM_CONFIG_H
+#ifndef SSCALFMMCONFIG_H
+#define SSCALFMMCONFIG_H
 
 #cmakedefine FUSE_MKL_AS_BLAS
 
