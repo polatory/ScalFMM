@@ -19,7 +19,7 @@
 #include "../Sources/Components/FTestKernels.hpp"
 
 #include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmArray.hpp"
+#include "../Sources/Core/FFmmAlgorithmThread.hpp"
 
 
 #include "../Sources/Components/FBasicKernels.hpp"
@@ -82,8 +82,8 @@ int main(int argc, char ** argv){
 
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticle, FTestCell, NbLevels> kernels;
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask
-    FFmmAlgorithmArray<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    //FFmmAlgorithm FFmmAlgorithmThread
+    FFmmAlgorithmThread<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -98,9 +98,6 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
-    for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particles[idxPart].~FTestParticle();
-    }
     delete [] particles;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;

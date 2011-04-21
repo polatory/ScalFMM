@@ -292,7 +292,7 @@ protected:
             cosSin[idxl].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             cosSin[idxl].setImag( FMath::Sin(angle) );
 
-            //printf("%d=%f/%f (%d/%f/%f)\n",idxl,cosSin[idxl].getReal(),cosSin[idxl].getImag(),idxl,inSphere.phi,this->PiArrayInner[idxlMod4]);
+            //printf("%d=%e/%e (%d/%e/%e)\n",idxl,cosSin[idxl].getReal(),cosSin[idxl].getImag(),idxl,inSphere.phi,this->PiArrayInner[idxlMod4]);
         }
 
         // p_associated_Legendre_function_Array
@@ -301,7 +301,7 @@ protected:
         legendreFunction(FMB_Info_P,inSphere.cosTheta, inSphere.sinTheta, legendre);
         /*printf("FMB_Info_M2L_exp_size=%d\n",FMB_Info_M2L_exp_size);
         for(int temp = 0 ; temp < FMB_Info_M2L_exp_size ; ++temp){
-            printf("%f\n",this->legendre[temp]);
+            printf("%e\n",this->legendre[temp]);
         }*/
 
         FComplexe* currentResult = outResults;
@@ -317,7 +317,7 @@ protected:
                 currentResult->setImag( magnitude * cosSin[idxm].getImag() );
 
                 //printf("l = %d m = %d\n",idxl,idxm);
-                //printf("magnitude=%f idxRl=%f sphereHarmoInnerCoef=%f real=%f imag=%f\n",magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],currentResult->getReal(),currentResult->getImag());
+                //printf("magnitude=%e idxRl=%e sphereHarmoInnerCoef=%e real=%e imag=%e\n",magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],currentResult->getReal(),currentResult->getImag());
             }
         }
 
@@ -333,7 +333,7 @@ protected:
             cosSin[idxl].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             cosSin[idxl].setImag( FMath::Sin(angle) );
 
-            //printf("l=%d \t inSphere.phi=%f \t this->PiArrayOuter[idxlMod4]=%f \t angle=%f \t FMath::Sin(angle + FMath::FPiDiv2)=%f \t FMath::Sin(angle)=%f\n",
+            //printf("l=%d \t inSphere.phi=%e \t this->PiArrayOuter[idxlMod4]=%e \t angle=%e \t FMath::Sin(angle + FMath::FPiDiv2)=%e \t FMath::Sin(angle)=%e\n",
             //        idxl, inSphere.phi, this->PiArrayOuter[idxlMod4], angle, FMath::Sin(angle + FMath::FPiDiv2) , FMath::Sin(angle));
         }
 
@@ -352,8 +352,8 @@ protected:
                 const FReal magnitude = this->sphereHarmoOuterCoef[idxl-idxm] * idxRl1 * legendre[idxLegendre];
                 currentResult->setReal( magnitude * cosSin[idxm].getReal() );
                 currentResult->setImag( magnitude * cosSin[idxm].getImag() );
-                //printf("l=%d\t m=%d\t idxRl1=%f\t magnitude=%f\n",idxl,idxm,idxRl1,magnitude);
-                //printf("l=%d\t m=%d\t cosSin[idxm].getReal()=%f\t cosSin[idxm].getImag()=%f\n",
+                //printf("l=%d\t m=%d\t idxRl1=%e\t magnitude=%e\n",idxl,idxm,idxRl1,magnitude);
+                //printf("l=%d\t m=%d\t cosSin[idxm].getReal()=%e\t cosSin[idxm].getImag()=%e\n",
                 //       idxl,idxm,cosSin[idxm].getReal(),cosSin[idxm].getImag());
             }
         }
@@ -397,7 +397,7 @@ protected:
         // p_precomputed_cos_and_sin_array
         FComplexe cosSin[FMB_Info_M2L_P + 1];
 
-        //printf("HarmoInnerTheta \t lmax = %d \t r = %f \t cos_theta = %f \t sin_theta = %f \t phi = %f\n",
+        //printf("HarmoInnerTheta \t lmax = %d \t r = %e \t cos_theta = %e \t sin_theta = %e \t phi = %e\n",
         //       FMB_Info_P,inSphere.r,inSphere.cosTheta,inSphere.sinTheta,inSphere.phi);
 
         // Initialization of precomputed_cos_and_sin_array:
@@ -407,7 +407,7 @@ protected:
             cosSin[idxm].setReal(FMath::Sin(angle + FMath::FPiDiv2));
             cosSin[idxm].setImag(FMath::Sin(angle));
 
-            //printf("l=%d \t inSphere.phi=%f \t this->PiArrayOuter[idxlMod4]=%f \t angle=%f \t FMath::Sin(angle + FMath::FPiDiv2)=%f \t FMath::Sin(angle)=%f\n",
+            //printf("l=%d \t inSphere.phi=%e \t this->PiArrayOuter[idxlMod4]=%e \t angle=%e \t FMath::Sin(angle + FMath::FPiDiv2)=%e \t FMath::Sin(angle)=%e\n",
             //        idxm, inSphere.phi, this->PiArrayInner[idxmMod4], angle, FMath::Sin(angle + FMath::FPiDiv2) , FMath::Sin(angle));
         }
 
@@ -457,7 +457,7 @@ protected:
                 p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
                 p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
 
-                //printf("magnitude=%f r_l=%f p_spherical_harmonic_Inner_coefficients_array=%f real=%f imag=%f\n",
+                //printf("magnitude=%e r_l=%e p_spherical_harmonic_Inner_coefficients_array=%e real=%e imag=%e\n",
                 //       magnitude,r_l,*p_spherical_harmonic_Inner_coefficients_array,p_theta_derivated_term->getReal(),p_theta_derivated_term->getImag());
             }
 
@@ -485,7 +485,7 @@ protected:
             p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
             p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
 
-            //printf("magnitude=%f r_l=%f p_spherical_harmonic_Inner_coefficients_array=%f real=%f imag=%f\n",
+            //printf("magnitude=%e r_l=%e p_spherical_harmonic_Inner_coefficients_array=%e real=%e imag=%e\n",
             //       magnitude,r_l,*p_spherical_harmonic_Inner_coefficients_array,p_theta_derivated_term->getReal(),p_theta_derivated_term->getImag());
 
             ++p_term;
@@ -533,7 +533,7 @@ protected:
             treeWidthAtLevel /= 2;
 
             //std::cout << "[precomputeM2M]treeWidthAtLevel=" << treeWidthAtLevel << "\n";
-            //printf("\tidxLevel=%d\tFather.x=%f\tFather.y=%f\tFather.z=%f\n",idxLevel,father.getX(),father.getY(),father.getZ());
+            //printf("\tidxLevel=%d\tFather.x=%e\tFather.y=%e\tFather.z=%e\n",idxLevel,father.getX(),father.getY(),father.getZ());
 
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild ){
                 FTreeCoordinate childBox;
@@ -555,11 +555,11 @@ protected:
 
                 harmonicInner(positionTsmphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
 
-                //printf("[M2M_vector]%d/%d = %f/%f/%f\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
-                //printf("[M2M_vectorSpherical]%d/%d = %f/%f/%f/%f\n", idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
+                //printf("[M2M_vector]%d/%d = %e/%e/%e\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
+                //printf("[M2M_vectorSpherical]%d/%d = %e/%e/%e/%e\n", idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
                 //for(int idxExpSize = 0 ; idxExpSize < FMB_Info_exp_size ; ++idxExpSize){
                 //std::cout << "transitionL2L[" << idxLevel << "][" << idxChild << "][" << idxExpSize << "]=" << this->transitionL2L[idxLevel][idxChild][idxExpSize].getReal()<<"/"<<this->transitionL2L[idxLevel][idxChild][idxExpSize].getImag()<< "\n";
-                //printf("transitionM2M[%d][%d][%d]=%f/%f\n", idxLevel , idxChild , idxExpSize , this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal(),this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag());
+                //printf("transitionM2M[%d][%d][%d]=%e/%e\n", idxLevel , idxChild , idxExpSize , this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal(),this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag());
                 //}
             }
         }
@@ -593,7 +593,7 @@ protected:
                             //printf("transferM2L[%d][%d][%d][%d]\n", idxLevel, idxd1, idxd2, idxd3);
                             harmonicOuter(positionTsmphere(relativePos),this->transferM2L[idxLevel][idxd1][idxd2][idxd3]);
                             //for(int idxTemp = 0 ; idxTemp < this->FMB_Info_M2L_exp_size ; ++idxTemp){
-                            //    printf("transferM2L[%d][%d][%d][%d][%d]=%f/%f\n", idxLevel, idxd1, idxd2, idxd3, idxTemp, this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getReal(),this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getImag());
+                            //    printf("transferM2L[%d][%d][%d][%d][%d]=%e/%e\n", idxLevel, idxd1, idxd2, idxd3, idxTemp, this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getReal(),this->transferM2L[idxLevel][idxd1][idxd2][idxd3][idxTemp].getImag());
                             //}
 
                             //[Blas] harmonicOuter(spherical,tempComplexe);
@@ -673,13 +673,13 @@ public:
 
             //std::cout << "Working on part " << iterParticle.value()->getPhysicalValue() << "\n";
             //F3DPosition tempPos = iterParticle.value()->getPosition() - inPole->getPosition();
-            //ok printf("\tpos_rel.x=%f\tpos_rel.y=%f\tpos_rel.z=%f\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
-            //ok printf("\tp_center.x=%f\tp_center.y=%f\tp_center.z=%f\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
-            //ok printf("\tbody.x=%f\tbody.y=%f\tbody.z=%f\n",iterParticle.value()->getPosition().getX(),iterParticle.value()->getPosition().getY(),iterParticle.value()->getPosition().getZ());
+            //ok printf("\tpos_rel.x=%e\tpos_rel.y=%e\tpos_rel.z=%e\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
+            //ok printf("\tp_center.x=%e\tp_center.y=%e\tp_center.z=%e\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
+            //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticle.value()->getPosition().getX(),iterParticle.value()->getPosition().getY(),iterParticle.value()->getPosition().getZ());
 
             harmonicInner(positionTsmphere(iterParticle.value()->getPosition() - inPole->getPosition()),current_thread_Y);
 
-            //printf("\tr=%f\tcos_theta=%f\tsin_theta=%f\tphi=%f\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
+            //printf("\tr=%e\tcos_theta=%e\tsin_theta=%e\tphi=%e\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
@@ -690,7 +690,7 @@ public:
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
                     p_Y_term->mulRealAndImag( valueParticle * pow_of_minus_1_j );
                     (*p_exp_term) += (*p_Y_term);
-                    //printf("\tj=%d\tk=%d\tp_exp_term.real=%f\tp_exp_term.imag=%f\tp_Y_term.real=%f\tp_Y_term.imag=%f\tpow_of_minus_1_j=%f\n",
+                    //printf("\tj=%d\tk=%d\tp_exp_term.real=%e\tp_exp_term.imag=%e\tp_Y_term.real=%e\tp_Y_term.imag=%e\tpow_of_minus_1_j=%e\n",
                     //       j,k,(*p_exp_term).getReal(),(*p_exp_term).getImag(),(*p_Y_term).getReal(),(*p_Y_term).getImag(),pow_of_minus_1_j);
                 }
             }
@@ -767,9 +767,9 @@ public:
                                                         ((p_src_exp_term->getReal() * p_Inner_term->getImag()) -
                                                          (p_src_exp_term->getImag() * p_Inner_term->getReal())));
 
-                            //printf("\tp_src_exp_term->getReal()=%f\tp_src_exp_term->getImag()=%f\n", p_src_exp_term->getReal(),p_src_exp_term->getImag());
-                            //printf("\tp_Inner_term->getReal()=%f\tp_Inner_term->getImag()=%f\n", p_Inner_term->getReal(),p_Inner_term->getImag());
-                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %f / %f\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
+                            //printf("\tp_src_exp_term->getReal()=%e\tp_src_exp_term->getImag()=%e\n", p_src_exp_term->getReal(),p_src_exp_term->getImag());
+                            //printf("\tp_Inner_term->getReal()=%e\tp_Inner_term->getImag()=%e\n", p_Inner_term->getReal(),p_Inner_term->getImag());
+                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %e / %e\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
 
                         } // for k
                     } // for j
@@ -794,7 +794,7 @@ public:
                             p_target_exp_term->incImag(pow_of_minus_1_for_k * pow_of_minus_1_for_l *
                                                        ((p_src_exp_term->getImag() * p_Inner_term->getReal()) -
                                                         (p_src_exp_term->getReal() * p_Inner_term->getImag())));
-                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %f / %f\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
+                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %e / %e\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
 
                         } // for k
 
@@ -805,7 +805,7 @@ public:
                             p_target_exp_term->incImag(
                                     (p_src_exp_term->getImag() * p_Inner_term->getReal()) +
                                     (p_src_exp_term->getReal() * p_Inner_term->getImag()));
-                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %f / %f\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
+                            //printf("\tn[%d]l[%d]j[%d]k[%d] = %e / %e\n",n,l,j,k,p_target_exp_term->getReal(),p_target_exp_term->getImag());
 
                         } // for k
                     } // for j
@@ -861,9 +861,9 @@ public:
                    (coordCenter.getX()-coordNeighbors.getX()),
                    (coordCenter.getY()-coordNeighbors.getY()),
                    (coordCenter.getZ()-coordNeighbors.getZ()));*/
-            /*printf("M2L_transfer[0]= %f/%f\n",M2L_transfer->getReal(),M2L_transfer->getImag());
-            printf("M2L_transfer[1]= %f/%f\n",M2L_transfer[1].getReal(),M2L_transfer[1].getImag());
-            printf("M2L_transfer[2]= %f/%f\n",M2L_transfer[2].getReal(),M2L_transfer[2].getImag());*/
+            /*printf("M2L_transfer[0]= %e/%e\n",M2L_transfer->getReal(),M2L_transfer->getImag());
+            printf("M2L_transfer[1]= %e/%e\n",M2L_transfer[1].getReal(),M2L_transfer[1].getImag());
+            printf("M2L_transfer[2]= %e/%e\n",M2L_transfer[2].getReal(),M2L_transfer[2].getImag());*/
             const FComplexe* const multipole_exp_src = distantNeighbors[idxSize]->getMultipole();
             // L_j^k
             FComplexe* p_target_exp_term = pole->getLocal();
@@ -906,7 +906,7 @@ public:
                             //                                                           p_target_exp_term->getReal(),p_target_exp_term->getImag());
                             //                            printf("\t p_src_exp_term->real = %lf \t p_src_exp_term->imag = %lf \n",
                             //                                                           p_src_exp_term->getReal(),p_src_exp_term->getImag());
-                            //                            printf("\t p_Outer_term->real = %f \t p_Outer_term->imag = %f \n",
+                            //                            printf("\t p_Outer_term->real = %e \t p_Outer_term->imag = %e \n",
                             //                                                           p_Outer_term->getReal(),p_Outer_term->getImag());
                             //printf("p_Outer_term-M2L_transfer = %d\n",
                             //                               p_Outer_term-M2L_transfer);
@@ -923,7 +923,7 @@ public:
                             //                                                           p_target_exp_term->getReal(),p_target_exp_term->getImag());
                             //                            printf("\t\t p_src_exp_term->real = %lf \t p_src_exp_term->imag = %lf \n",
                             //                                                           p_src_exp_term->getReal(),p_src_exp_term->getImag());
-                            //                            printf("\t\t p_Outer_term->real = %f \t p_Outer_term->imag = %f \n",
+                            //                            printf("\t\t p_Outer_term->real = %e \t p_Outer_term->imag = %e \n",
                             //                                                           p_Outer_term->getReal(),p_Outer_term->getImag());
                         }
 
@@ -938,7 +938,7 @@ public:
                             //                                                           p_target_exp_term->getReal(),p_target_exp_term->getImag());
                             //                            printf("\t\t p_src_exp_term->real = %lf \t p_src_exp_term->imag = %lf \n",
                             //                                                           p_src_exp_term->getReal(),p_src_exp_term->getImag());
-                            //                            printf("\t\t p_Outer_term->real = %f \t p_Outer_term->imag = %f \n",
+                            //                            printf("\t\t p_Outer_term->real = %e \t p_Outer_term->imag = %e \n",
                             //                                                           p_Outer_term->getReal(),p_Outer_term->getImag());
                         }
                         //printf("\tj=%d\tk=%d\tn=%d\tl=%d\n",j,k,n,l);
@@ -1052,7 +1052,7 @@ public:
                                        p_Inner_term->getReal(),p_Inner_term->getImag());
                                 printf("\t\t p_target_exp_term->real = %lf \t p_target_exp_term->imag = %lf \n",
                                        p_target_exp_term->getReal(),p_target_exp_term->getImag());
-                                printf("\tj=%d\tk=%d\tn=%d\tl=%d\tpow_of_minus_1_for_k=%f\n",j,k,n,l,pow_of_minus_1_for_k);
+                                printf("\tj=%d\tk=%d\tn=%d\tl=%d\tpow_of_minus_1_for_k=%e\n",j,k,n,l,pow_of_minus_1_for_k);
                                 printf("\tp_target_exp_term = %d\n",p_target_exp_term-local_exp_target);*/
                         }
                         //printf("\tj=%d\tk=%d\tn=%d\tl=%d\n",j,k,n,l);
@@ -1232,7 +1232,7 @@ public:
                 }
             }
 
-            /*printf("[details] ph = %f , rh = %f , th = %f \n",
+            /*printf("[details] ph = %e , rh = %e , th = %e \n",
                    ph,rh,th);*/
 
 
@@ -1241,7 +1241,7 @@ public:
             const FReal sin_theta = FMath::Sin(th);
             const FReal sin_phi = FMath::Sin(ph);
 
-            /*printf("[details] cos_theta = %f \t cos_phi = %f \t sin_theta = %f \t sin_phi = %f \n",
+            /*printf("[details] cos_theta = %e \t cos_phi = %e \t sin_theta = %e \t sin_phi = %e \n",
                    cos_theta, cos_phi, sin_theta, sin_phi);*/
             /*printf("[force_vector_in_local_base] x = %lf \t y = %lf \t z = %lf \n",
                    force_vector_in_local_base.getX(),force_vector_in_local_base.getY(),force_vector_in_local_base.getZ());*/
@@ -1272,7 +1272,7 @@ public:
             force_vector_tmp *= iterTarget.value()->getPhysicalValue();
             //#endif
 
-            /*printf("[force_vector_tmp] fx = %f \t fy = %f \t fz = %f \n",
+            /*printf("[force_vector_tmp] fx = %e \t fy = %e \t fz = %e \n",
                    force_vector_tmp.getX(),force_vector_tmp.getY(),force_vector_tmp.getZ());*/
 
             iterTarget.value()->setForces( iterTarget.value()->getForces() + force_vector_tmp );
@@ -1281,7 +1281,7 @@ public:
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
             iterTarget.value()->setPotential(potential);
 
-            /*printf("[END] fx = %f \t fy = %f \t fz = %f \n\n",
+            /*printf("[END] fx = %e \t fy = %e \t fz = %e \n\n",
                    iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());*/
             //printf("p_potential = %lf\n", potential);
 
@@ -1302,7 +1302,7 @@ public:
             // k=0
             (*p_Y_term) *= (*local_exp);
             result += p_Y_term->getReal();
-            //printf("\t\t p_Y_term->real = %f p_Y_term->imag = %f \t local_exp->real = %f local_exp->imag = %f \n",
+            //printf("\t\t p_Y_term->real = %e p_Y_term->imag = %e \t local_exp->real = %e local_exp->imag = %e \n",
             //       p_Y_term->getReal(), p_Y_term->getImag(), local_exp->getReal(), local_exp->getImag());
             ++p_Y_term;
             ++local_exp;
@@ -1311,7 +1311,7 @@ public:
             for (int k=1; k<=j ;++k, ++p_Y_term, ++local_exp){
                 (*p_Y_term) *= (*local_exp);
                 result += 2 * p_Y_term->getReal();
-                //printf("\t\t p_Y_term->real = %f p_Y_term->imag = %f \t local_exp->real = %f local_exp->imag = %f \n",
+                //printf("\t\t p_Y_term->real = %e p_Y_term->imag = %e \t local_exp->real = %e local_exp->imag = %e \n",
                 //       p_Y_term->getReal(), p_Y_term->getImag(), local_exp->getReal(), local_exp->getImag());
             }
         }
@@ -1367,9 +1367,9 @@ public:
                 iterSameBox.progress();
             }
 
-            //printf("x = %f \t y = %f \t z = %f \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
-            //printf("\t P2P fx = %f \t fy = %f \t fz = %f \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
-            //printf("\t potential = %f \n",iterTarget.value()->getPotential());
+            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
+            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
+            //printf("\t potential = %e \n",iterTarget.value()->getPotential());
 
             iterTarget.progress();
         }
@@ -1441,9 +1441,9 @@ public:
                 iterSameBox.progress();
             }
 
-            //printf("x = %f \t y = %f \t z = %f \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
-            //printf("\t P2P fx = %f \t fy = %f \t fz = %f \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
-            //printf("\t potential = %f \n",iterTarget.value()->getPotential());
+            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
+            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
+            //printf("\t potential = %e \n",iterTarget.value()->getPotential());
 
             iterTarget.progress();
         }

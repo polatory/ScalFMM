@@ -28,6 +28,19 @@ protected:
 	virtual void run() = 0;
 
 
+        void sendData(const int inReceiver, const int inSize, void* const inData, const int inTag){
+            MPI_Request request;
+            MPI_Isend(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD, &request);
+        }
+
+        void receiveData(const int inSize, void* const inData, int* const inSource, int* const inTag, int* const inFilledSize){
+            MPI_Status status;
+            MPI_Recv(inData, inSize, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG,MPI_COMM_WORLD, &status);
+            *inSource = status.MPI_SOURCE;
+            *inTag = status.MPI_TAG;
+            MPI_Get_count(&status,MPI_CHAR,inFilledSize);
+        }
+
 public:
 	/**
 	* Constructor

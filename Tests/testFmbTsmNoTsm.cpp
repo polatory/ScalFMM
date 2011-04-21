@@ -23,8 +23,8 @@
 
 #include "../Sources/Core/FFmmAlgorithm.hpp"
 #include "../Sources/Core/FFmmAlgorithmTsm.hpp"
-#include "../Sources/Core/FFmmAlgorithmArray.hpp"
-#include "../Sources/Core/FFmmAlgorithmArrayTsm.hpp"
+#include "../Sources/Core/FFmmAlgorithmThread.hpp"
+#include "../Sources/Core/FFmmAlgorithmThreadTsm.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 #include "../Sources/Components/FTypedLeaf.hpp"
@@ -130,9 +130,9 @@ int main(int argc, char ** argv){
 
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(BoxWidth);
     FFmbKernels<FmbParticleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
-    //FFmmAlgorithm FFmmAlgorithmArray
-    FFmmAlgorithmArray<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
-    FFmmAlgorithmArrayTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
+    //FFmmAlgorithm FFmmAlgorithmThread
+    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmThreadTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
     algo.execute();
     algoTyped.execute();
 

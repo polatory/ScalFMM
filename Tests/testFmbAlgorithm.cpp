@@ -18,8 +18,8 @@
 #include "../Sources/Fmb/FExtendFmbCell.hpp"
 
 #include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmArray.hpp"
-#include "../Sources/Core/FFmmAlgorithmArrayUs.hpp"
+#include "../Sources/Core/FFmmAlgorithmThread.hpp"
+#include "../Sources/Core/FFmmAlgorithmThreadUs.hpp"
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
@@ -115,8 +115,8 @@ int main(int argc, char ** argv){
     counter.tic();
 
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmArray FFmmAlgorithmTask FFmmAlgorithmArrayUs
-    FFmmAlgorithmArrayUs<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask FFmmAlgorithmThreadUs
+    FFmmAlgorithmThreadUs<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

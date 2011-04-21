@@ -1,5 +1,5 @@
-#ifndef FFmmALGORITHMTSM_HPP
-#define FFmmALGORITHMTSM_HPP
+#ifndef FFMMALGORITHMTSM_HPP
+#define FFMMALGORITHMTSM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -283,6 +283,6 @@ public:
 };
 
 
-#endif //FFmmALGORITHMTSM_HPP
+#endif //FFMMALGORITHMTSM_HPP
 
 // [--LICENSE--]

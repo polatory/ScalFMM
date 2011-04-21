@@ -46,6 +46,16 @@ protected:
 	*/
 	virtual void initSlave(){}
 
+        /**
+          * Send data to another process
+          */
+        virtual void sendData(const int inReceiver, const int inSize, void* const inData, const int inTag) = 0;
+
+        /**
+          * Receive from any process
+          */
+        virtual void receiveData(const int inSize, void* const inData, int* const inSource, int* const inTag, int* const inFilledSize) = 0;
+
 private:
 
 	/** Forbiden (private) default constructor */

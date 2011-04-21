@@ -1,5 +1,5 @@
-#ifndef FFmmALGORITHMARRAYTSM_HPP
-#define FFmmALGORITHMARRAYTSM_HPP
+#ifndef FFMMALGORITHMTHREADUS_HPP
+#define FFMMALGORITHMTHREADUS_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -15,7 +15,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithmArrayTsm
+* @class FFmmAlgorithmThreadUs
 * @brief
 * Please read the license
 *
@@ -33,7 +33,7 @@ template<template< class ParticleClass, class CellClass, int OctreeHeight> class
         class ParticleClass, class CellClass,
         template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFmmAlgorithmArrayTsm : protected FAssertable{
+class FFmmAlgorithmThreadUs : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
@@ -53,7 +53,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmArrayTsm(Octree* const inTree, Kernel* const inKernels)
+    FFmmAlgorithmThreadUs(Octree* const inTree, Kernel* const inKernels)
                       : tree(inTree) , iterArray(0) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -63,11 +63,11 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmArrayTsm\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadUs\n");
     }
 
     /** Default destructor */
-    virtual ~FFmmAlgorithmArrayTsm(){
+    virtual ~FFmmAlgorithmThreadUs(){
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             delete this->kernels[idxThread];
         }
@@ -130,14 +130,7 @@ public:
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
-                FList<ParticleClass*>* const sources = iterArray[idxLeafs].getCurrentListSources();
-                if(sources->getSize()){
-                    iterArray[idxLeafs].getCurrentCell()->setSourcesChildTrue();
-                    myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
-                }
-                if(iterArray[idxLeafs].getCurrentListTargets()->getSize()){
-                    iterArray[idxLeafs].getCurrentCell()->setTargetsChildTrue();
-                }
+                myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSources());
             }
         }
         FDEBUG(computationCounter.tac());
@@ -180,22 +173,7 @@ public:
                 for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
-                    CellClass* potentialChild[8];
-                    CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
-                    CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
-                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        potentialChild[idxChild] = 0;
-                        if(realChild[idxChild]){
-                            if(realChild[idxChild]->hasSourcesChild()){
-                                currentCell->setSourcesChildTrue();
-                                potentialChild[idxChild] = realChild[idxChild];
-                            }
-                            if(realChild[idxChild]->hasTargetsChild()){
-                                currentCell->setTargetsChildTrue();
-                            }
-                        }
-                    }
-                    myThreadkernels->M2M( currentCell , potentialChild, idxLevel);
+                    myThreadkernels->M2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
                 }
             }
             FDEBUG(computationCounter.tac());
@@ -238,24 +216,8 @@ public:
                     CellClass* neighbors[208];
                     #pragma omp for
                     for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
-                        if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
-                            int offsetTargetNeighbors = 0;
-                            for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
-                                if(neighbors[idxRealNeighbors]->hasSourcesChild()){
-                                    if(idxRealNeighbors != offsetTargetNeighbors){
-                                        neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
-                                    }
-                                }
-                                else{
-                                    --offsetTargetNeighbors;
-                                }
-                            }
-                            if(offsetTargetNeighbors){
-                                myThreadkernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
-                            }
-                        }
+                        const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
+                        if(counter) myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, counter, idxLevel);
                     }
                 }
                 FDEBUG(computationCounter.tac());
@@ -293,18 +255,7 @@ public:
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for
                     for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                        CellClass* potentialChild[8];
-                        CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
-                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
-                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                            if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                                potentialChild[idxChild] = realChild[idxChild];
-                            }
-                            else{
-                                potentialChild[idxChild] = 0;
-                            }
-                        }
-                        myThreadkernels->L2L( currentCell , potentialChild, idxLevel);
+                        myThreadkernels->L2L( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
                     }
                 }
                 FDEBUG(computationCounter.tac());
@@ -362,6 +313,6 @@ public:
 };
 
 
-#endif //FFmmALGORITHMARRAYTSM_HPP
+#endif //FFMMALGORITHMTHREADUS_HPP
 
 // [--LICENSE--]

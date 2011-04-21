@@ -1,5 +1,5 @@
-#ifndef FFmmALGORITHMARRAY_HPP
-#define FFmmALGORITHMARRAY_HPP
+#ifndef FFMMALGORITHMTHREADTSM_HPP
+#define FFMMALGORITHMTHREADTSM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "../Utils/FAssertable.hpp"
@@ -15,7 +15,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithmArray
+* @class FFmmAlgorithmThreadTsm
 * @brief
 * Please read the license
 *
@@ -33,7 +33,7 @@ template<template< class ParticleClass, class CellClass, int OctreeHeight> class
         class ParticleClass, class CellClass,
         template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-class FFmmAlgorithmArray : protected FAssertable{
+class FFmmAlgorithmThreadTsm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
@@ -47,16 +47,13 @@ class FFmmAlgorithmArray : protected FAssertable{
 
     OctreeIterator* iterArray;
 
-    static const int SizeShape = 3*3*3;
-    int shapeLeaf[SizeShape];
-
-public:
+public:	
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmArray(Octree* const inTree, Kernel* const inKernels)
+    FFmmAlgorithmThreadTsm(Octree* const inTree, Kernel* const inKernels)
                       : tree(inTree) , iterArray(0) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -66,11 +63,11 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmArray\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadTsm\n");
     }
 
     /** Default destructor */
-    virtual ~FFmmAlgorithmArray(){
+    virtual ~FFmmAlgorithmThreadTsm(){
         for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
             delete this->kernels[idxThread];
         }
@@ -83,22 +80,12 @@ public:
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            this->shapeLeaf[idxShape] = 0;
-        }
-        const int LeafIndex = OctreeHeight - 1;
-
         // Count leaf
         int leafs = 0;
         OctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             ++leafs;
-            const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-            FTreeCoordinate coord;
-            coord.setPositionFromMorton(index, LeafIndex);
-            ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
-
         } while(octreeIterator.moveRight());
         iterArray = new OctreeIterator[leafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
@@ -143,7 +130,14 @@ public:
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
-                myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSources());
+                FList<ParticleClass*>* const sources = iterArray[idxLeafs].getCurrentListSources();
+                if(sources->getSize()){
+                    iterArray[idxLeafs].getCurrentCell()->setSourcesChildTrue();
+                    myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
+                }
+                if(iterArray[idxLeafs].getCurrentListTargets()->getSize()){
+                    iterArray[idxLeafs].getCurrentCell()->setTargetsChildTrue();
+                }
             }
         }
         FDEBUG(computationCounter.tac());
@@ -186,7 +180,22 @@ public:
                 for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
-                    myThreadkernels->M2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
+                    CellClass* potentialChild[8];
+                    CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
+                    CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                        potentialChild[idxChild] = 0;
+                        if(realChild[idxChild]){
+                            if(realChild[idxChild]->hasSourcesChild()){
+                                currentCell->setSourcesChildTrue();
+                                potentialChild[idxChild] = realChild[idxChild];
+                            }
+                            if(realChild[idxChild]->hasTargetsChild()){
+                                currentCell->setTargetsChildTrue();
+                            }
+                        }
+                    }
+                    myThreadkernels->M2M( currentCell , potentialChild, idxLevel);
                 }
             }
             FDEBUG(computationCounter.tac());
@@ -229,8 +238,24 @@ public:
                     CellClass* neighbors[208];
                     #pragma omp for
                     for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                        const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
-                        if(counter) myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, counter, idxLevel);
+                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                        if(currentCell->hasTargetsChild()){
+                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
+                            int offsetTargetNeighbors = 0;
+                            for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
+                                if(neighbors[idxRealNeighbors]->hasSourcesChild()){
+                                    if(idxRealNeighbors != offsetTargetNeighbors){
+                                        neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
+                                    }
+                                }
+                                else{
+                                    --offsetTargetNeighbors;
+                                }
+                            }
+                            if(offsetTargetNeighbors){
+                                myThreadkernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
+                            }
+                        }
                     }
                 }
                 FDEBUG(computationCounter.tac());
@@ -268,7 +293,18 @@ public:
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for
                     for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                        myThreadkernels->L2L( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
+                        CellClass* potentialChild[8];
+                        CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
+                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                            if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                                potentialChild[idxChild] = realChild[idxChild];
+                            }
+                            else{
+                                potentialChild[idxChild] = 0;
+                            }
+                        }
+                        myThreadkernels->L2L( currentCell , potentialChild, idxLevel);
                     }
                 }
                 FDEBUG(computationCounter.tac());
@@ -288,55 +324,34 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG( counterTime.tic() );
 
-        OctreeIterator* shapeArray[SizeShape];
-        int countShape[SizeShape];
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            shapeArray[idxShape] = new OctreeIterator[this->shapeLeaf[idxShape]];
-            countShape[idxShape] = 0;
-        }
-
-        const int LeafIndex = OctreeHeight - 1;
-        //int leafs = 0;
+        int leafs = 0;
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             // for each leafs
             do{
-                //iterArray[leafs] = octreeIterator;
-                //++leafs;
-                const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-                FTreeCoordinate coord;
-                coord.setPositionFromMorton(index, LeafIndex);
-                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
-                shapeArray[shapePosition][countShape[shapePosition]] = octreeIterator;
-                ++countShape[shapePosition];
-
+                iterArray[leafs] = octreeIterator;
+                ++leafs;
             } while(octreeIterator.moveRight());
         }
 
+        const int heightMinusOne = OctreeHeight - 1;
         FDEBUG(computationCounter.tic());
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            const int leafAtThisShape = this->shapeLeaf[idxShape];
-            #pragma omp parallel num_threads(FThreadNumbers)
-            {
-                Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                // There is a maximum of 26 neighbors
-                FList<ParticleClass*>* neighbors[26];
+        #pragma omp parallel num_threads(FThreadNumbers)
+        {
+            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            // There is a maximum of 26 neighbors
+            FList<ParticleClass*>* neighbors[26];
 
-                #pragma omp for
-                for(int idxLeafs = 0 ; idxLeafs < leafAtThisShape ; ++idxLeafs){
-                    myThreadkernels->L2P(shapeArray[idxShape][idxLeafs].getCurrentCell(), shapeArray[idxShape][idxLeafs].getCurrentListTargets());
-                    // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighbors(neighbors, shapeArray[idxShape][idxLeafs].getCurrentGlobalIndex(),LeafIndex);
-                    myThreadkernels->P2P( shapeArray[idxShape][idxLeafs].getCurrentListTargets(), shapeArray[idxShape][idxLeafs].getCurrentListSources() , neighbors, counter);
-                }
+            #pragma omp for
+            for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
+                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
+                // need the current particles and neighbors particles
+                const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
+                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSources() , neighbors, counter);
             }
         }
         FDEBUG(computationCounter.tac());
-
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            delete [] shapeArray[idxShape];
-        }
 
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
@@ -347,6 +362,6 @@ public:
 };
 
 
-#endif //FFmmALGORITHMARRAY_HPP
+#endif //FFMMALGORITHMTHREADTSM_HPP
 
 // [--LICENSE--]

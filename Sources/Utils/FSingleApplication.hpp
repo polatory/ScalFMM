@@ -29,6 +29,15 @@ protected:
 	*/
 	virtual void run() = 0;
 
+        void sendData(const int, const int, void* const, const int ){
+        }
+
+
+        void receiveData(const int, void* const, int* const inSource, int* const inTag, int* const inFilledSize){
+            *inSource = 0;
+            *inTag = 0;
+            *inFilledSize = 0;
+        }
 
 public:
 	/**
