@@ -15,3 +15,7 @@ add_library(
 	STATIC
 	${source_lib_files}
 )
+INCLUDE_DIRECTORIES(
+     ${CMAKE_BINARY_DIR}/Sources 
+)
+

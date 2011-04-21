@@ -1,8 +1,11 @@
 #ifndef FBLAS_HPP
 #define FBLAS_HPP
-
+#include "ScalFMM_config.h"
+#ifdef  SCALFMM_USE_MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
-//#include <mkl.h>
+#endif
 
 ///////////////////////////////////////////////////////
 // GEMV

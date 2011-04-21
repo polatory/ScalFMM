@@ -10,8 +10,8 @@ if(OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-#add blass
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lcblas")
+#add CBLAS
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
 #ADD_DEFINITIONS(-Wl,--start-group $(MKLROOT)/lib/ia32/libmkl_intel.a $(MKLROOT)/lib/ia32/libmkl_sequential.a $(MKLROOT)/lib/ia32/libmkl_core.a -Wl,--end-group -lpthread)
 
 #test
@@ -28,6 +28,9 @@ file(
 	GLOB_RECURSE
 	source_tests_files
 	./*.cpp
+)
+INCLUDE_DIRECTORIES(
+     ${CMAKE_BINARY_DIR}/Sources 
 )
 
 # Add execs - 1 cpp = 1 exec
