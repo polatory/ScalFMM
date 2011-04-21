@@ -883,7 +883,8 @@ public:
     /////////////////////////////////////////////////////////////////////////////////
     /**
     *------------------
-    * expansion_M2L_add
+    * ff_full_matrix_Product
+    * ff_matrix_Product
     * octree_Compute_local_exp_M2L
     *-------------------
     *We compute the conversion of multipole_exp_src in *p_center_of_exp_src to

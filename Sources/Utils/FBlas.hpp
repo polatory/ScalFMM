@@ -1,7 +1,13 @@
 #ifndef FBLAS_HPP
 #define FBLAS_HPP
+
+///////////////////////////////////////////////////////
+// Manage Blas Version
+///////////////////////////////////////////////////////
+
 #include "ScalFMM_config.h"
-#ifdef  SCALFMM_USE_MKL
+
+#ifdef  FUSE_MKL_AS_BLAS
 #include <mkl_cblas.h>
 #else
 #include <cblas.h>

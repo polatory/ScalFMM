@@ -12,13 +12,8 @@ endif()
 
 #add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
+#todo remove next line used to compile manually with intel compiler
 #ADD_DEFINITIONS(-Wl,--start-group $(MKLROOT)/lib/ia32/libmkl_intel.a $(MKLROOT)/lib/ia32/libmkl_sequential.a $(MKLROOT)/lib/ia32/libmkl_core.a -Wl,--end-group -lpthread)
-
-#test
-# ADD_DEFINITIONS(-fexpensive-optimizations -funroll-loops -frerun-cse-after-loop -frerun-loop-opt)
-# ADD_DEFINITIONS(-fomit-frame-pointer -fschedule-insns2 -minline-all-stringops ) 
-# ADD_DEFINITIONS(-malign-double -falign-functions=4)
-# ADD_DEFINITIONS(-fforce-addr -pipe)
 
 # Link with fmb lib
 set(fmb_lib scalfmm)
