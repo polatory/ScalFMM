@@ -1,6 +1,3 @@
-#ignore building directory
-Build/
-
 #ignore generated doc
 Doc/html/
 
