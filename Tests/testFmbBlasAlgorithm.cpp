@@ -26,7 +26,7 @@
 #include "../Sources/Fmb/FFmbKernelsBlas.hpp"
 #include "../Sources/Fmb/FFmbKernels.hpp"
 
-#include "../Sources/Files/FFMALoader.hpp"
+#include "../Sources/Files/FFmaScanfLoader.hpp"
 
 // With openmp : g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lcblas -O2 -o testFmbBlasAlgorithm.exe
 // icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
@@ -78,7 +78,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFMALoader<FmbParticle> loader(filename);
+    FFmaScanfLoader<FmbParticle> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

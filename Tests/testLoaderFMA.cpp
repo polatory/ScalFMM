@@ -19,7 +19,7 @@
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Files/FFMALoader.hpp"
+#include "../Sources/Files/FFmaLoader.hpp"
 
 // Compile by : g++ testLoaderFMA.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMA.exe
 
@@ -58,7 +58,7 @@ int main(int argc, char ** argv ){
     }
 
     // open basic particles loader
-    FFMALoader<FFmaParticle> loader(filename);
+    FFmaLoader<FFmaParticle> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;

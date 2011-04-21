@@ -1,5 +1,5 @@
-#ifndef FFMAPARTICLE_HPP
-#define FFMAPARTICLE_HPP
+#ifndef FFmaPARTICLE_HPP
+#define FFmaPARTICLE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "FBasicParticle.hpp"
@@ -21,6 +21,6 @@ public:
 };
 
 
-#endif //FFMAPARTICLE_HPP
+#endif //FFmaPARTICLE_HPP
 
 // [--LICENSE--]

@@ -11,7 +11,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMALoader
+* @class FFmaLoader
 * Please read the license
 *
 * Load a file with a format like :
@@ -19,7 +19,7 @@
 * X Y Z // one particle by line
 * ....
 * <code>
-*    FFMALoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
+*    FFmaLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
 *    if(!loader.isValide()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
@@ -37,7 +37,7 @@
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticleClass>
-class FFMALoader : public FAbstractLoader<ParticleClass> {
+class FFmaLoader : public FAbstractLoader<ParticleClass> {
 protected:
     std::ifstream file;         //< The file to read
     F3DPosition centerOfBox;    //< The center of box read from file
@@ -50,7 +50,7 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling isValide()
     */
-    FFMALoader(const char* const filename): file(filename,std::ifstream::in){
+    FFmaLoader(const char* const filename): file(filename,std::ifstream::in){
         // test if open
         if(this->file.is_open()){
             FReal x,y,z;
@@ -67,7 +67,7 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FFMALoader(){
+    virtual ~FFmaLoader(){
         file.close();
     }
 
@@ -118,6 +118,6 @@ public:
 };
 
 
-#endif //FFMALoader_HPP
+#endif //FFmaLoader_HPP
 
 // [--LICENSE--]

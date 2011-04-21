@@ -347,6 +347,12 @@ protected:
                 // Compute P_l^m, l >= m+2, using (1) and store it into results_array:
                 outResults[idxCurrent] = (inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m] - ( idxl + idxm - 1 )
                                           * outResults[idxCurrent2m] ) / ( idxl - idxm );
+                printf("\tres (%.18e) = inCosTheta (%.18e) idxl (%d) outResults 1m (%.18e) idxm (%d) outResults 2m (%.18e)\n",
+                       outResults[idxCurrent],inCosTheta,idxl,outResults[idxCurrent1m],idxm,outResults[idxCurrent2m]);
+                printf("\t\t temp1 = %.18e temp2 = %.18e temp3 = %.18e\n",
+                       inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m],
+                       ( idxl + idxm - 1 ) * outResults[idxCurrent2m],
+                       (inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m] - ( idxl + idxm - 1 ) * outResults[idxCurrent2m] ));
             }
             // p_results_array_l_minus_1_m now points on P_{l-1}^{l-1}
 
@@ -392,7 +398,7 @@ protected:
         legendreFunction(FMB_Info_P,inSphere.cosTheta, inSphere.sinTheta, legendre);
         /*printf("FMB_Info_M2L_exp_size=%d\n",FMB_Info_M2L_exp_size);
         for(int temp = 0 ; temp < FMB_Info_M2L_exp_size ; ++temp){
-            printf("%e\n",this->legendre[temp]);
+            printf("%e\n",legendre[temp]);
         }*/
 
         FComplexe* currentResult = outResults;
@@ -407,8 +413,11 @@ protected:
                 currentResult->setReal( magnitude * cosSin[idxm].getReal() );
                 currentResult->setImag( magnitude * cosSin[idxm].getImag() );
 
-                //printf("\t\tl = %d m = %d\n",idxl,idxm);
-                //printf("\t\tmagnitude=%e idxRl=%e sphereHarmoInnerCoef=%e real=%e imag=%e\n",magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],currentResult->getReal(),currentResult->getImag());
+                /*printf("\t\tl = %d m = %d\n",idxl,idxm);
+                printf("\t\tmagnitude (%e)  = idxRl (%e) * sphereHarmoInnerCoef (%e) * legendre (%e)\n",
+                       magnitude,idxRl,this->sphereHarmoInnerCoef[idxSphereHarmoCoef],legendre[idxLegendre]);
+                printf("\t\tresult real=%e imag=%e\n",
+                       currentResult->getReal(),currentResult->getImag());*/
             }
         }
 
@@ -620,6 +629,15 @@ protected:
 
                 harmonicInner(positionTsmphere(M2MVector),this->transitionM2M[idxLevel][idxChild]);
 
+                printf("[M2M_vector]%d/%d = %e/%e/%e\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
+                Spherical sphericalM2M = positionTsmphere(M2MVector);
+                printf("[M2M_vectorSpherical]%d/%d = %e/%e/%e/%e\n",
+                       idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
+                for(int idxExpSize = 0 ; idxExpSize < FMB_Info_exp_size ; ++idxExpSize){
+                    printf("transitionM2M[%d][%d][%d]=%e/%e\n", idxLevel , idxChild , idxExpSize , this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal(),this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag());
+                }
+                exit(0);//todo remove
+
                 const F3DPosition L2LVector (
                         (treeWidthAtLevel * (1 + (childBox.getX() * 2))) - father.getX(),
                         (treeWidthAtLevel * (1 + (childBox.getY() * 2))) - father.getY(),
@@ -628,13 +646,6 @@ protected:
 
                 harmonicInner(positionTsmphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
 
-                //printf("[M2M_vector]%d/%d = %e/%e/%e\n", idxLevel , idxChild , M2MVector.getX() , M2MVector.getY() , M2MVector.getZ() );
-                //Spherical = positionTsmphere(M2MVector);
-                //printf("[M2M_vectorSpherical]%d/%d = %e/%e/%e/%e\n",
-                //       idxLevel , idxChild , sphericalM2M.r , sphericalM2M.cosTheta , sphericalM2M.sinTheta , sphericalM2M.phi );
-                //for(int idxExpSize = 0 ; idxExpSize < FMB_Info_exp_size ; ++idxExpSize){
-                //    printf("transitionM2M[%d][%d][%d]=%e/%e\n", idxLevel , idxChild , idxExpSize , this->transitionM2M[idxLevel][idxChild][idxExpSize].getReal(),this->transitionM2M[idxLevel][idxChild][idxExpSize].getImag());
-                //}
             }
         }
     }

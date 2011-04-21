@@ -21,7 +21,7 @@
 
 #include "../Sources/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Files/FFMATsmLoader.hpp"
+#include "../Sources/Files/FFmaTsmLoader.hpp"
 
 // Compile by : g++ testLoaderFMATsm.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMATsm.exe
 
@@ -58,7 +58,7 @@ int main(int argc, char ** argv ){
     }
 
     // open basic particles loader
-    FFMATsmLoader<ParticleTsm> loader(filename);
+    FFmaTsmLoader<ParticleTsm> loader(filename);
     if(!loader.isValide()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;

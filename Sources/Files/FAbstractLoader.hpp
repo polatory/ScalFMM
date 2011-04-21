@@ -16,7 +16,7 @@ class F3DPosition;
 * If you want to use a specific file format you then need to inherite from this loader
 * and implemente several methods.
 *
-* Please look at FBasicLoader or FFMALoader to see an example.
+* Please look at FBasicLoader or FFmaLoader to see an example.
 *
 * @warning Inherite from this class when defining a loader class
 */

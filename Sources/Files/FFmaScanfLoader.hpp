@@ -1,5 +1,5 @@
-#ifndef FFMATSMLOADER_HPP
-#define FFMATSMLOADER_HPP
+#ifndef FFMASCANFLOADER_HPP
+#define FFMASCANFLOADER_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <iostream>
@@ -11,7 +11,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFMATsmLoader
+* @class FFmaScanfLoader
 * Please read the license
 *
 * Load a file with a format like :
@@ -19,7 +19,7 @@
 * X Y Z // one particle by line
 * ....
 * <code>
-*    FFMATsmLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
+*    FFmaScanfLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
 *    if(!loader.isValide()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
@@ -37,11 +37,11 @@
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticleClass>
-class FFMATsmLoader : public FAbstractLoader<ParticleClass> {
+class FFmaScanfLoader : public FAbstractLoader<ParticleClass> {
 protected:
-    std::ifstream file;         //< The file to read
+    FILE* file;         //< The file to read
     F3DPosition centerOfBox;    //< The center of box read from file
-    FReal boxWidth;             //< the box width read from file
+    FReal boxWidth;            //< the box width read from file
     int nbParticles;           //< the number of particles read from file
 
 public:
@@ -50,13 +50,21 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling isValide()
     */
-    FFMATsmLoader(const char* const filename): file(filename,std::ifstream::in){
+    FFmaScanfLoader(const char* const filename): file(0){
+        file = fopen(filename,"r");
         // test if open
-        if(this->file.is_open()){
-            FReal x,y,z;
-            this->file >> this->nbParticles >> this->boxWidth >> x >> y >> z;
-            this->centerOfBox.setPosition(x,y,z);
-            this->boxWidth *= 2;
+        if(this->file){
+            float x,y,z, fBoxWidth;
+            const int nbReadElements = fscanf(file,"%d %f %f %f %f",&this->nbParticles,&fBoxWidth,&x,&y,&z);
+            if(nbReadElements == 5){
+                this->boxWidth = fBoxWidth;
+                this->centerOfBox.setPosition(x,y,z);
+                this->boxWidth *= 2;
+            }
+            else{
+                fclose(file);
+                file = NULL;
+            }
         }
         else {
              this->boxWidth = 0;
@@ -67,8 +75,8 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FFMATsmLoader(){
-        file.close();
+    virtual ~FFmaScanfLoader(){
+        fclose(file);
     }
 
     /**
@@ -76,7 +84,7 @@ public:
       * @return true if loader can work
       */
     bool isValide() const{
-        return this->file.is_open() && !this->file.eof();
+        return this->file != NULL;
     }
 
     /**
@@ -109,18 +117,21 @@ public:
       * @param the particle to fill
       */
     void fillParticle(ParticleClass* const inParticle){
-        FReal x,y,z,data;
-        int isTarget;
-        this->file >> x >> y >> z >> data >> isTarget;
-        inParticle->setPosition(x,y,z);
-        inParticle->setPhysicalValue(data);
-        if(isTarget) inParticle->setAsTarget();
-        else inParticle->setAsSource();
+        float x,y,z,data;
+        const int nbReadElements = fscanf(file,"%f %f %f %f",&x,&y,&z,&data);
+        if(nbReadElements == 4){
+            inParticle->setPosition(x,y,z);
+            inParticle->setPhysicalValue(data);
+        }
+        else{
+            fclose(file);
+            file = NULL;
+        }
     }
 
 };
 
 
-#endif //FFMATSMLOADER_HPP
+#endif //FFMASCANFLOADER_HPP
 
 // [--LICENSE--]
