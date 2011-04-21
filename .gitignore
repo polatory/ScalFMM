@@ -1,5 +1,5 @@
 #ignore building directory
-build/
+Build/
 
 #ignore generated doc
 Doc/html/
