@@ -1000,6 +1000,13 @@ public:
             } // for n
         }
 
+        /*for(int idxPole = 0 ; idxPole < FMB_Info_M2L_exp_size ; ++idxPole){
+            printf("[%d] real %e imag %e\n",
+                   idxPole,
+                   multipole_exp_target[idxPole].getReal(),
+                   multipole_exp_target[idxPole].getImag());
+        }*/
+
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
@@ -1200,8 +1207,8 @@ public:
             FTreeCoordinate coordNeighbors;
             coordNeighbors.setPositionFromMorton(distantNeighbors[idxSize]->getMortonIndex(),inLevel);
 
-            printf("Morton = %lld\n",pole->getMortonIndex());
-            printf("\tMorton Neighbors = %lld\n",distantNeighbors[idxSize]->getMortonIndex());
+            //printf("Morton = %lld\n",pole->getMortonIndex());
+            //printf("\tMorton Neighbors = %lld\n",distantNeighbors[idxSize]->getMortonIndex());
             //printf("\tidxSize = %d\tleve = %d\tMorton = %lld\n",idxSize,inLevel,distantNeighbors[idxSize]->getMortonIndex());
 
             block_matrix_t* const transfer_M2L_matrix = transferM2L[inLevel]
@@ -1218,14 +1225,19 @@ public:
             const FComplexe* const multipole_exp_src = distantNeighbors[idxSize]->getMultipole();
             FComplexe* p_target_exp_term = pole->getLocal();
 
-            ff_block_matrix_Product(p_target_exp_term,multipole_exp_src,transfer_M2L_matrix);
+            FComplexe multipole_exp_src_changed[FF_MATRIX_COLUMN_DIM];
+            memcpy(multipole_exp_src_changed,multipole_exp_src,sizeof(FComplexe)*FF_MATRIX_ROW_DIM);
 
-            for(int j = 0 ; j < FF_MATRIX_COLUMN_DIM  ; ++j){
+            convert_exp2nexp_inplace(multipole_exp_src_changed);
+
+            ff_block_matrix_Product(p_target_exp_term,multipole_exp_src_changed,transfer_M2L_matrix);
+
+            /*for(int j = 0 ; j < FF_MATRIX_COLUMN_DIM  ; ++j){
                 printf("\t\t multipole_nexp[%d] real = %e imag = %e\n",
                        j,
-                       ((double*)multipole_exp_src)[2*j],
-                       ((double*)multipole_exp_src)[2*j + 1]);
-            }
+                       ((double*)multipole_exp_src_changed)[2*j],
+                       ((double*)multipole_exp_src_changed)[2*j + 1]);
+            }*/
         }
 
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
