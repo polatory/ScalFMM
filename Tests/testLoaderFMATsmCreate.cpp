@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Sources/Utils/FGlobal.hpp"
+#include "../Src/Utils/FGlobal.hpp"
 
 // This file can generate basic particles files in the FMA format
 // g++ testLoaderFMATsmCreate.cpp -o testLoaderFMATsmCreate.exe

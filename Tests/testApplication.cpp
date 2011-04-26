@@ -8,17 +8,17 @@
  * 3 - Compile as needed
  */
 
-#include "../Sources/Utils/FGlobal.hpp"
+#include "../Src/Utils/FGlobal.hpp"
 
 //================================================================================================
-#ifdef FUSE_MPI
-// Compile by mpic++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
+#ifdef SCALFMM_USE_MPI
+// Compile by mpic++ testApplication.cpp ../Src/Utils/FAssertable.cpp -o testApplication.exe
 // run by mpirun -np 4 ./testApplication.exe
-#include "../Sources/Utils/FMpiApplication.hpp"
+#include "../Src/Utils/FMpiApplication.hpp"
 typedef FMpiApplication ApplicationImplementation;
 #else
-// Compile by g++ testApplication.cpp ../Sources/Utils/FAssertable.cpp -o testApplication.exe
-#include "../Sources/Utils/FSingleApplication.hpp"
+// Compile by g++ testApplication.cpp ../Src/Utils/FAssertable.cpp -o testApplication.exe
+#include "../Src/Utils/FSingleApplication.hpp"
 typedef FSingleApplication ApplicationImplementation;
 #endif
 //================================================================================================

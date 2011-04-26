@@ -1,10 +1,10 @@
 #include "FUTester.hpp"
 
-#include "../Sources/Utils/FGlobal.hpp"
-#include "../Sources/Utils/F3DPosition.hpp"
-#include "../Sources/Containers/FTreeCoordinate.hpp"
-#include "../Sources/Utils/FConvert.hpp"
-#include "../Sources/Utils/FMath.hpp"
+#include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/F3DPosition.hpp"
+#include "../Src/Containers/FTreeCoordinate.hpp"
+#include "../Src/Utils/FConvert.hpp"
+#include "../Src/Utils/FMath.hpp"
 
 // compile by g++ utestConvert.cpp -o utestConvert.exe
 

@@ -9,7 +9,7 @@
 
 #include <cmath>
 
-#include "../Sources/Utils/FGlobal.hpp"
+#include "../Src/Utils/FGlobal.hpp"
 
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreateSphere.cpp -O2 -o testLoaderCreateSphere.exe

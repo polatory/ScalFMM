@@ -6,22 +6,22 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include "../Src/Utils/FTic.hpp"
 
-#include "../Sources/Containers/FOctree.hpp"
-#include "../Sources/Containers/FList.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FList.hpp"
 
-#include "../Sources/Utils/FAssertable.hpp"
-#include "../Sources/Utils/F3DPosition.hpp"
+#include "../Src/Utils/FAssertable.hpp"
+#include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FFmaParticle.hpp"
-#include "../Sources/Components/FBasicCell.hpp"
+#include "../Src/Components/FFmaParticle.hpp"
+#include "../Src/Components/FBasicCell.hpp"
 
-#include "../Sources/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Files/FFmaLoader.hpp"
+#include "../Src/Files/FFmaLoader.hpp"
 
-// Compile by : g++ testLoaderFMA.cpp ../Sources/Utils/FAssertable.cpp -O2 -o testLoaderFMA.exe
+// Compile by : g++ testLoaderFMA.cpp ../Src/Utils/FAssertable.cpp -O2 -o testLoaderFMA.exe
 
 
 /**

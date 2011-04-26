@@ -5,26 +5,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include "../Src/Utils/FTic.hpp"
 
-#include "../Sources/Containers/FOctree.hpp"
-#include "../Sources/Containers/FList.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FList.hpp"
 
-#include "../Sources/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Utils/F3DPosition.hpp"
+#include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FTestParticle.hpp"
-#include "../Sources/Components/FTestCell.hpp"
-#include "../Sources/Components/FTestKernels.hpp"
+#include "../Src/Components/FTestParticle.hpp"
+#include "../Src/Components/FTestCell.hpp"
+#include "../Src/Components/FTestKernels.hpp"
 
-#include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 
-#include "../Sources/Components/FBasicKernels.hpp"
+#include "../Src/Components/FBasicKernels.hpp"
 
-// Compile by : g++ testFMMAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFMMAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -83,7 +83,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticle, FTestCell, NbLevels> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithmThread<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

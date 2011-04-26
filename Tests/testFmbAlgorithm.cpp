@@ -5,31 +5,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include "../Src/Utils/FTic.hpp"
 
-#include "../Sources/Containers/FOctree.hpp"
-#include "../Sources/Containers/FList.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FList.hpp"
 
-#include "../Sources/Components/FFmaParticle.hpp"
-#include "../Sources/Extenssions/FExtendForces.hpp"
-#include "../Sources/Extenssions/FExtendPotential.hpp"
+#include "../Src/Components/FFmaParticle.hpp"
+#include "../Src/Extenssions/FExtendForces.hpp"
+#include "../Src/Extenssions/FExtendPotential.hpp"
 
-#include "../Sources/Components/FBasicCell.hpp"
-#include "../Sources/Fmb/FExtendFmbCell.hpp"
+#include "../Src/Components/FBasicCell.hpp"
+#include "../Src/Fmb/FExtendFmbCell.hpp"
 
-#include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmThread.hpp"
-#include "../Sources/Core/FFmmAlgorithmThreadUs.hpp"
+#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithmThreadUs.hpp"
 
-#include "../Sources/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Fmb/FFmbKernels.hpp"
+#include "../Src/Fmb/FFmbKernels.hpp"
 
 
-#include "../Sources/Files/FFmaLoader.hpp"
+#include "../Src/Files/FFmaLoader.hpp"
 
-// With openmp : g++ testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo

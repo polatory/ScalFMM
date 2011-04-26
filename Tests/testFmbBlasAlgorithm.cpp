@@ -5,35 +5,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include "../Src/Utils/FTic.hpp"
 
-#include "../Sources/Containers/FOctree.hpp"
-#include "../Sources/Containers/FList.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FList.hpp"
 
-#include "../Sources/Components/FFmaParticle.hpp"
-#include "../Sources/Extenssions/FExtendForces.hpp"
-#include "../Sources/Extenssions/FExtendPotential.hpp"
+#include "../Src/Components/FFmaParticle.hpp"
+#include "../Src/Extenssions/FExtendForces.hpp"
+#include "../Src/Extenssions/FExtendPotential.hpp"
 
-#include "../Sources/Components/FBasicCell.hpp"
-#include "../Sources/Fmb/FExtendFmbCell.hpp"
+#include "../Src/Components/FBasicCell.hpp"
+#include "../Src/Fmb/FExtendFmbCell.hpp"
 
-#include "../Sources/Core/FFmmAlgorithm.hpp"
-#include "../Sources/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Sources/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Sources/Fmb/FFmbKernelsBlockBlas.hpp"
-#include "../Sources/Fmb/FFmbKernelsBlas.hpp"
-#include "../Sources/Fmb/FFmbKernels.hpp"
+#include "../Src/Fmb/FFmbKernelsBlockBlas.hpp"
+#include "../Src/Fmb/FFmbKernelsBlas.hpp"
+#include "../Src/Fmb/FFmbKernels.hpp"
 
-#include "../Sources/Files/FFmaScanfLoader.hpp"
+#include "../Src/Files/FFmaScanfLoader.hpp"
 
-// With openmp : g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lcblas -O2 -o testFmbBlasAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// With openmp : g++ testFmbBlasAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -lcblas -O2 -o testFmbBlasAlgorithm.exe
+// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
-// icpc -openmp -openmp-lib=compat  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp -O2 -o testFmbBlasAlgorithm.exe
+// icpc -openmp -openmp-lib=compat  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core testFmbBlasAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbBlasAlgorithm.exe
 
-// g++ testFmbBlasAlgorithm.cpp ../Sources/Utils/FAssertable.cpp ../Sources/Utils/FDebug.cpp ../Sources/Utils/FTrace.cpp -lgomp -fopenmp -lmkl_ia32 -O2 -o testFmbBlasAlgorithm.exe
+// g++ testFmbBlasAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -lmkl_ia32 -O2 -o testFmbBlasAlgorithm.exe
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that eachh particles is little or longer

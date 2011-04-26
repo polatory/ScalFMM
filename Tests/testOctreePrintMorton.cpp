@@ -7,9 +7,9 @@
 #include <time.h>
 #include <string>
 
-#include "../Sources/Containers/FTreeCoordinate.hpp"
-#include "../Sources/Utils/F3DPosition.hpp"
-#include "../Sources/Utils/FMath.hpp"
+#include "../Src/Containers/FTreeCoordinate.hpp"
+#include "../Src/Utils/F3DPosition.hpp"
+#include "../Src/Utils/FMath.hpp"
 
 // Compile by : g++ testOctreePrintMorton.cpp -O2 -o testOctreePrintMorton.exe
 

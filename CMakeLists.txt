@@ -1,8 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
 
-# Project Infos
-project(scalfmm CXX)
-
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
@@ -10,36 +7,38 @@ if(insource)
 endif(insource)
 
 # Options
-OPTION( FUSE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
-OPTION( FUSE_MPI "Set to ON to build ScaFMM with MPI" OFF )
+OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
+OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( BUILD_UTESTS "Set to ON to build UTests" ON )
 
+# MPI option
+if( SCALFMM_USE_MPI )
+  SET(CMAKE_CXX_COMPILER mpicxx)
+endif()
+
+# Project Infos
+project(scalfmm CXX)
+
 # Blas option
-if( FUSE_CBLAS )
-  OPTION( FUSE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
-  if( FUSE_MKL_AS_BLAS )
+if( SCALFMM_USE_CBLAS )
+  OPTION( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
+  if( SCALFMM_USE_MKL_AS_BLAS )
      SET(CBLAS_LIBRARIES "-L$ENV{MKLROOT}/lib  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
-  else( FUSE_MKL_AS_BLAS ) 
+  else() 
       FIND_PACKAGE(BLAS)
       SET(CBLAS_LIBRARIES "-lcblas")
-  endif( FUSE_MKL_AS_BLAS )
-endif( FUSE_CBLAS )
-
-# MPI option
-if( FUSE_MPI )
-  SET(CMAKE_CXX_COMPILER mpicxx)
-endif(FUSE_MPI)
-
+  endif()
+endif()
 
 # Compile option
 ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual)
 
-CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Sources/ScalFmmConfig.h.cmake 
-		${CMAKE_BINARY_DIR}/Sources/ScalFmmConfig.h  )
+CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
+		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
 # Build - lib
-add_subdirectory(Sources)
+add_subdirectory(Src)
 
 # Build - Tests
 MESSAGE( STATUS "BUILD_TESTS = ${BUILD_TESTS}" )

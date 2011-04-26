@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Sources/Utils/FGlobal.hpp"
+#include "../Src/Utils/FGlobal.hpp"
 
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreate.cpp -o testLoaderCreate.exe

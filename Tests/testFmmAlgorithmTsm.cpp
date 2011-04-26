@@ -5,26 +5,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../Sources/Utils/FTic.hpp"
+#include "../Src/Utils/FTic.hpp"
 
-#include "../Sources/Containers/FOctree.hpp"
-#include "../Sources/Containers/FList.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FList.hpp"
 
-#include "../Sources/Components/FTypedLeaf.hpp"
+#include "../Src/Components/FTypedLeaf.hpp"
 
-#include "../Sources/Utils/F3DPosition.hpp"
+#include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Sources/Components/FTestParticle.hpp"
-#include "../Sources/Components/FTestCell.hpp"
-#include "../Sources/Components/FTestKernels.hpp"
+#include "../Src/Components/FTestParticle.hpp"
+#include "../Src/Components/FTestCell.hpp"
+#include "../Src/Components/FTestKernels.hpp"
 
-#include "../Sources/Extenssions/FExtendParticleType.hpp"
-#include "../Sources/Extenssions/FExtendCellType.hpp"
+#include "../Src/Extenssions/FExtendParticleType.hpp"
+#include "../Src/Extenssions/FExtendCellType.hpp"
 
-#include "../Sources/Core/FFmmAlgorithmTsm.hpp"
-#include "../Sources/Core/FFmmAlgorithmThreadTsm.hpp"
+#include "../Src/Core/FFmmAlgorithmTsm.hpp"
+#include "../Src/Core/FFmmAlgorithmThreadTsm.hpp"
 
-#include "../Sources/Components/FBasicKernels.hpp"
+#include "../Src/Components/FBasicKernels.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
