@@ -20,6 +20,11 @@ file(
 	./*.cpp
 )
 
+# Adding the project sources dir as an include dir
+INCLUDE_DIRECTORIES(
+     ${CMAKE_BINARY_DIR}/Sources 
+)
+
 # Add execs - 1 cpp = 1 exec
 foreach(exec ${source_tests_files}) 
 	get_filename_component(

@@ -34,6 +34,7 @@ endif()
 # Compile option
 ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual)
 
+
 CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
