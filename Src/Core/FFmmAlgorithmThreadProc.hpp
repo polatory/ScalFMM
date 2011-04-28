@@ -222,6 +222,8 @@ public:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+            //print();
+
             int leafs = 0;
             // for each cells
             do{
@@ -341,6 +343,8 @@ public:
             this->previousSize = leafs;
         }
 
+        //print();
+
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
@@ -396,7 +400,7 @@ public:
 
                 //std::cout << "There are " << leafs << " leafs" << std::endl;
 
-                //print();
+                print();
 
                 #pragma omp parallel num_threads(FThreadNumbers)
                 {
@@ -438,12 +442,12 @@ public:
                                 }
 
                                 // Find receiver and send him the cell
-                                const int idxReceiver = FMath::Min( cellPositionInArray / int(leafs / nbProcess) , nbProcess - 1 );
+                                const int idxReceiver = FMath::Min( cellPositionInArray / int( (leafs+1) / nbProcess) , nbProcess - 1 );
                                 #pragma omp critical(CheckToSend)
                                 {
                                     if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        //std::cout << idPorcess << ">>--idxLeafs " << (idxLeafs) << " idxReceiver " << (idxReceiver)
-                                        //        << " cellPositionInArray " << (cellPositionInArray)  << " indexCell " << indexCell<< std::endl;
+                                        std::cout << idPorcess << ">>--idxLeafs " << (idxLeafs) << " idxReceiver " << (idxReceiver)
+                                                << " cellPositionInArray " << (cellPositionInArray)  << " indexCell " << indexCell<< std::endl;
                                         sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
                                         alreadySent[idxReceiver]->set(idxLeafs,true);
                                         needData = true;
@@ -460,7 +464,7 @@ public:
                             }
                         }
                         if(needData){
-                            //std::cout << idPorcess <<  ">>this cell need data " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << " neighborsCounter " << neighborsCounter << std::endl;
+                            std::cout << idPorcess <<  ">>this cell need data " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << " neighborsCounter " << neighborsCounter << std::endl;
                             const int currentCell = idxLeafs - startIdx;
                             unfinishedCells[currentCell] = new LimitCell();
                             unfinishedCells[currentCell]->counter = neighborsCounter;
@@ -468,7 +472,7 @@ public:
                             alreadySent[idPorcess]->set(idxLeafs,true);
                         }
                         else if(neighborsCounter){
-                            //std::cout << idPorcess <<  ">>compute directly " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
+                            std::cout << idPorcess <<  ">>compute directly " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, neighborsCounter, idxLevel);
                         }
                     }
@@ -476,7 +480,7 @@ public:
                     // received computed data
                     #pragma omp single
                     {
-                        //std::cout << idPorcess << ">>--needToReceive " << (needToReceive) << std::endl;
+                        std::cout << idPorcess << ">>--needToReceive " << (needToReceive) << std::endl;
 
                         CellClass tempCell;
                         int source = 0, tag = 0, filled = 0;
@@ -488,14 +492,14 @@ public:
                             }
                             --needToReceive;
 
-                            //std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp() << std::endl;
+                            std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp() << std::endl;
                         }
                     }
 
                     #pragma omp for
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         if(alreadySent[idPorcess]->get(idxLeafs)){
-                            //std::cout << idPorcess <<  ">>finish to compute " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
+                            std::cout << idPorcess <<  ">>finish to compute " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , unfinishedCells[idxLeafs-startIdx]->neighbors, unfinishedCells[idxLeafs-startIdx]->counter, idxLevel);
                             delete unfinishedCells[idxLeafs-startIdx];
                         }
@@ -510,6 +514,9 @@ public:
 
             }
         }
+
+        //print();
+
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
@@ -556,20 +563,21 @@ public:
                 #pragma omp parallel num_threads(FThreadNumbers)
                 {
                     // send computed data
-                    #pragma omp single nowait
+                    #pragma omp single //nowait
                     {
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
-                            const int idxReceiver = (currentLeft+idxLeafs)/int(leafs/nbProcess);
-                            sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft+idxLeafs].getCurrentCell(),currentLeft+idxLeafs);
-                            //std::cout << idPorcess << "\t>>-- sends (1) to " << (idxReceiver) << " index " << (currentLeft+idxLeafs) << std::endl;
+                            const int idxReceiver = (currentLeft-idxLeafs)/int(leafs/nbProcess);
+                            sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
+                            //std::cout << idPorcess << "\t>>-- sends (1) to " << (idxReceiver) << " index " << (currentLeft-idxLeafs) << std::endl;
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
-                            const int idxReceiver = (currentRight+idxLeafs)/int(leafs/nbProcess);
+                            const int idxReceiver = FMath::Min((currentRight+idxLeafs)/int(leafs/nbProcess),nbProcess-1);
                             sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
                             //std::cout << idPorcess << "\t>>-- sends (2) to " << (idxReceiver) << " index " << (currentRight+idxLeafs) << " currentRight " << currentRight << std::endl;
                         }
+                        //std::cout << idPorcess << ">>--Will send " << (leftOffset) << " and " << (rightOffset) << std::endl;
                     }
 
                     // received computed data
@@ -588,6 +596,7 @@ public:
                             }
                             --needToReceive;
                         }
+                        //std::cout << "all received" << std::endl;
                     }
                 }
 
@@ -602,6 +611,8 @@ public:
 
             }
         }
+
+        //print();
 
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );

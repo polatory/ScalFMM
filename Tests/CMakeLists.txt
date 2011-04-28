@@ -12,8 +12,6 @@ endif()
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
-#todo remove next line used to compile manually with intel compiler
-#ADD_DEFINITIONS(-Wl,--start-group $(MKLROOT)/lib/ia32/libmkl_intel.a $(MKLROOT)/lib/ia32/libmkl_sequential.a $(MKLROOT)/lib/ia32/libmkl_core.a -Wl,--end-group -lpthread)
 
 # Link with fmb lib
 set(fmb_lib scalfmm)
