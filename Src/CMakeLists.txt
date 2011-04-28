@@ -20,6 +20,6 @@ add_library(
 
 # Adding the entire project dir as an include dir
 INCLUDE_DIRECTORIES(
-     ${CMAKE_BINARY_DIR}/Sources 
+     ${CMAKE_BINARY_DIR}/Src 
 )
 

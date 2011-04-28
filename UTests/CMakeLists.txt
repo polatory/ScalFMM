@@ -22,7 +22,7 @@ file(
 
 # Adding the project sources dir as an include dir
 INCLUDE_DIRECTORIES(
-     ${CMAKE_BINARY_DIR}/Sources 
+     ${CMAKE_BINARY_DIR}/Src 
 )
 
 # Add execs - 1 cpp = 1 exec

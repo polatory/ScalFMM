@@ -29,12 +29,14 @@
   */
 class FTic {
 private:
-    double start;   //< start time (tic)
-    double end;     //< stop time (tac)
+    double start;       //< start time (tic)
+    double end;         //< stop time (tac)
+    double cumulate;    //< the cumulate time
 
 public:
     /** Constructor */
-    FTic() : start(0.0), end(0.0) {
+    FTic() : start(0.0), end(0.0), cumulate(0.0) {
+        tic();
     }
 
     /** Tic : start <= current time */
@@ -45,12 +47,26 @@ public:
     /** Tac : end <= current time */
     void tac(){
         this->end = FTic::GetTime();
+        cumulate += elapsed();
     }
 
     /** Return end - start
       * @return the time elapsed between tic & tac in second */
     double elapsed() const{
         return this->end - this->start;
+    }
+
+    /** Return cumulate
+      * @return the time elapsed between ALL tic & tac in second */
+    double cumulated() const{
+        return cumulate;
+    }
+
+    /** Return end - start
+      * @return the time elapsed between tic & tac in second */
+    double tacAndElapsed() {
+        tac();
+        return elapsed();
     }
 
     /** Global get time

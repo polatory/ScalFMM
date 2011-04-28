@@ -40,12 +40,11 @@ class FFmmAlgorithmThreadTsm : protected FAssertable{
     typedef KernelClass<ParticleClass, CellClass, OctreeHeight> Kernel;
 
     Octree* const tree;                  //< The octree to work on
-    Kernel* kernels[FThreadNumbers];          //< The kernels
-
-    FDEBUG(FTic counterTime);                //< In case of debug: to count the elapsed time
-    FDEBUG(FTic computationCounter);     //< In case of debug: to  count computation time
+    Kernel** kernels;                    //< The kernels
 
     OctreeIterator* iterArray;
+
+    const int MaxThreads;
 
 public:	
     /** The constructor need the octree and the kernels used for computation
@@ -54,12 +53,12 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadTsm(Octree* const inTree, Kernel* const inKernels)
-                      : tree(inTree) , iterArray(0) {
+                      : tree(inTree) , kernels(0), iterArray(0), MaxThreads(omp_get_max_threads()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
-        assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
-        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
+        this->kernels = new Kernel*[MaxThreads];
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
@@ -68,9 +67,10 @@ public:
 
     /** Default destructor */
     virtual ~FFmmAlgorithmThreadTsm(){
-        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             delete this->kernels[idxThread];
         }
+        delete [] this->kernels;
     }
 
     /**
@@ -90,7 +90,7 @@ public:
         iterArray = new OctreeIterator[leafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
-        for(int idxThread = 0 ; idxThread < FThreadNumbers ; ++idxThread){
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread]->init();
         }
 
@@ -111,7 +111,7 @@ public:
     void bottomPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG( counterTime.tic() );
+        FDEBUG( FTic counterTime );
 
         OctreeIterator octreeIterator(tree);
         int leafs = 0;
@@ -122,8 +122,8 @@ public:
             ++leafs;
         } while(octreeIterator.moveRight());
 
-        FDEBUG(computationCounter.tic());
-        #pragma omp parallel num_threads(FThreadNumbers)
+        FDEBUG(FTic computationCounter);
+        #pragma omp parallel
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for
@@ -152,8 +152,8 @@ public:
     void upwardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
 
         // Start from leal level - 1
         OctreeIterator octreeIterator(tree);
@@ -173,7 +173,7 @@ public:
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
             FDEBUG(computationCounter.tic());
-            #pragma omp parallel num_threads(FThreadNumbers)
+            #pragma omp parallel
             {
                 Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for
@@ -199,23 +199,23 @@ public:
                 }
             }
             FDEBUG(computationCounter.tac());
-            FDEBUG(totalComputation += computationCounter.elapsed());
         }
 
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
     /** M2L L2L */
     void downardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
 
         { // first M2L
+            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+            FDEBUG(FTic counterTime);
+            FDEBUG(FTic computationCounter);
+
             OctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
             OctreeIterator avoidGotoLeftIterator(octreeIterator);
@@ -232,7 +232,7 @@ public:
                 octreeIterator = avoidGotoLeftIterator;
 
                 FDEBUG(computationCounter.tic());
-                #pragma omp parallel num_threads(FThreadNumbers)
+                #pragma omp parallel
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     CellClass* neighbors[208];
@@ -259,17 +259,16 @@ public:
                     }
                 }
                 FDEBUG(computationCounter.tac());
-                FDEBUG(totalComputation += computationCounter.elapsed());
             }
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( totalComputation = 0 );
         { // second L2L
+            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+            FDEBUG(FTic counterTime);
+            FDEBUG(FTic computationCounter);
+
             OctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
 
@@ -288,7 +287,7 @@ public:
                 octreeIterator = avoidGotoLeftIterator;
 
                 FDEBUG(computationCounter.tic());
-                #pragma omp parallel num_threads(FThreadNumbers)
+                #pragma omp parallel
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for
@@ -308,13 +307,11 @@ public:
                     }
                 }
                 FDEBUG(computationCounter.tac());
-                FDEBUG(totalComputation += computationCounter.elapsed());
             }
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
@@ -322,7 +319,7 @@ public:
     void directPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
+        FDEBUG(FTic counterTime);
 
         int leafs = 0;
         {
@@ -336,8 +333,8 @@ public:
         }
 
         const int heightMinusOne = OctreeHeight - 1;
-        FDEBUG(computationCounter.tic());
-        #pragma omp parallel num_threads(FThreadNumbers)
+        FDEBUG(FTic computationCounter);
+        #pragma omp parallel
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
@@ -354,7 +351,7 @@ public:
         FDEBUG(computationCounter.tac());
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }

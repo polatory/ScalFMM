@@ -33,9 +33,6 @@ class FFmmAlgorithm : protected FAssertable{
     Octree* const tree;                                                     //< The octree to work on
     KernelClass<ParticleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
 
-    FDEBUG(FTic counterTime);                                              //< In case of debug: to count the elapsed time
-    FDEBUG(FTic computationCounter);                                   //< In case of debug: to  count computation time
-
 public:	
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
@@ -62,23 +59,26 @@ public:
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        kernels->init();
-
         bottomPass();
         upwardPass();
 
         downardPass();
 
         directPass();
+
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // P2M
+    /////////////////////////////////////////////////////////////////////////////
 
     /** P2M */
     void bottomPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
 
         FOctreeIterator octreeIterator(tree);
 
@@ -90,21 +90,23 @@ public:
             FDEBUG(computationCounter.tic());
             kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
             FDEBUG(computationCounter.tac());
-            FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());
 
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Upward
+    /////////////////////////////////////////////////////////////////////////////
 
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
 
         // Start from leal level - 1
         FOctreeIterator octreeIterator(tree);
@@ -122,27 +124,31 @@ public:
                 FDEBUG(computationCounter.tic());
                 kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 FDEBUG(computationCounter.tac());
-                FDEBUG(totalComputation += computationCounter.elapsed());
             } while(octreeIterator.moveRight());
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
         }
 
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Downward
+    /////////////////////////////////////////////////////////////////////////////
 
     /** M2L L2L */
     void downardPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
 
         { // first M2L
+            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+            FDEBUG(FTic counterTime);
+            FDEBUG(FTic computationCounter);
+
             FOctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
 
@@ -153,25 +159,24 @@ public:
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells
                 do{
-                    FDEBUG(computationCounter.tic());
                     const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                    FDEBUG(computationCounter.tic());
                     if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                     FDEBUG(computationCounter.tac());
-                    FDEBUG(totalComputation += computationCounter.elapsed());
                 } while(octreeIterator.moveRight());
 
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
             }
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( totalComputation = 0 );
-        { // second L2L
+        { // second L2L            
+            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+            FDEBUG(FTic counterTime);
+            FDEBUG(FTic computationCounter );
+
             FOctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
 
@@ -185,26 +190,29 @@ public:
                     FDEBUG(computationCounter.tic());
                     kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                     FDEBUG(computationCounter.tac());
-                    FDEBUG(totalComputation += computationCounter.elapsed());
                 } while(octreeIterator.moveRight());
 
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
             }
+
+            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Direct
+    /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
     void directPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG( counterTime.tic() );
-        FDEBUG( double totalComputation = 0 );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
 
         const int heightMinusOne = OctreeHeight - 1;
 
@@ -216,16 +224,17 @@ public:
         do{
             FDEBUG(computationCounter.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+            FDEBUG(computationCounter.tac());
             // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
+            FDEBUG(computationCounter.tic());
             kernels->P2P( octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
             FDEBUG(computationCounter.tac());
-            FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());
 
-        FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+
+        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

@@ -9,10 +9,10 @@ endif(insource)
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
 OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" ON )
-OPTION( BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
-OPTION( BUILD_UTESTS "Set to ON to build UTests" ON )
+OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
+OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 
-# MPI option
+# MPI option has to be set before project
 if( SCALFMM_USE_MPI )
   SET(CMAKE_CXX_COMPILER mpicxx)
 endif()
@@ -42,14 +42,14 @@ CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 add_subdirectory(Src)
 
 # Build - Tests
-MESSAGE( STATUS "BUILD_TESTS = ${BUILD_TESTS}" )
-if( BUILD_TESTS )
+MESSAGE( STATUS "SCALFMM_BUILD_TESTS = ${SCALFMM_BUILD_TESTS}" )
+if( SCALFMM_BUILD_TESTS )
 	add_subdirectory(Tests)
 endif()
 
 # Build - UTests
-MESSAGE( STATUS "BUILD_UTESTS = ${BUILD_UTESTS}" )
-if( BUILD_UTESTS )
+MESSAGE( STATUS "SCALFMM_BUILD_UTESTS = ${SCALFMM_BUILD_UTESTS}" )
+if( SCALFMM_BUILD_UTESTS )
 	add_subdirectory(UTests)
 endif()
 
