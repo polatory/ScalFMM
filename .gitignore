@@ -13,8 +13,6 @@ tmp/
 *.tmp
 *.temp
 *.temp.*
-*.fma
-*.FMA
 *~
 *TAGS
 *#*#
