@@ -87,9 +87,11 @@ int main(int argc, char ** argv){
     counter.tic();
 
     TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
+    TestParticle* particlesValide = new TestParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart]);
+        particlesValide[idxPart] = particles[idxPart];
     }
 
     counter.tac();
@@ -109,7 +111,7 @@ int main(int argc, char ** argv){
     counter.tic();
     for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         tree.insert(&particles[idxPart]);
-        treeValide.insert(&particles[idxPart]);
+        treeValide.insert(&particlesValide[idxPart]);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -141,6 +143,7 @@ int main(int argc, char ** argv){
     std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
     delete [] particles;
+    delete [] particlesValide;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
     //////////////////////////////////////////////////////////////////////////////////

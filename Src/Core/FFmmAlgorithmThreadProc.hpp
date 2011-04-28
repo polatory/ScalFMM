@@ -589,7 +589,7 @@ public:
             const int idPorcess = processId();
 
             // for each levels exepted leaf level
-            for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            for(int idxLevel = 2 ; idxLevel <= heightMinusOne ; ++idxLevel ){
                 //print();
 
                 // keep data
@@ -609,6 +609,8 @@ public:
 
                  const int startIdx = getLeft(idPorcess,leafs,nbProcess);
                  const int endIdx = getRight(idPorcess,leafs,nbProcess);
+
+                 std::cout << "At level " << idxLevel << " left " << startIdx << " right " << endIdx << std::endl;
 
                  const int currentLeft = startIdx;
                  const int currentRight = endIdx -1;
@@ -655,14 +657,16 @@ public:
                     }
                 }
 
-                #pragma omp parallel num_threads(FThreadNumbers)
-                {
-                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                    #pragma omp for
-                    for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
-                        myThreadkernels->L2L( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
+                 if(idxLevel != heightMinusOne){
+                    #pragma omp parallel num_threads(FThreadNumbers)
+                    {
+                        Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                        #pragma omp for
+                        for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
+                            myThreadkernels->L2L( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
+                        }
                     }
-                }
+                 }
 
                  processBarrier();
             }
@@ -791,6 +795,7 @@ public:
                     NbPart += octreeIterator.getCurrentListSrc()->getSize();
                     ++NbLeafs;
                 } while(octreeIterator.moveRight());
+                std::cout << "There is " << NbPart << " particles on " << NbLeafs << " Leafs" << std::endl;
             }
             {
                 const int startIdx = getLeft(processId(),NbLeafs,processCount());
