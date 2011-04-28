@@ -49,6 +49,11 @@ struct FMath{
         return floor(inValue);
     }
 
+    /** To get ceil of a FReal */
+    static FReal Ceil(const FReal inValue){
+        return ceil(inValue);
+    }
+
     /** To get pow */
     template <class NumType>
     static NumType pow(const NumType inValue, long power){

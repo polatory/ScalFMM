@@ -154,6 +154,23 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
+    int getLeft(const int idProc, const int inSize, const int nbOfProc) const {
+        const float step = (float(inSize) / nbOfProc);
+        return int(FMath::Ceil(step * idProc));
+    }
+
+    int getRight(const int idProc, const int inSize, const int nbOfProc) const {
+        const float step = (float(inSize) / nbOfProc);
+        const int res = int(FMath::Ceil(step * (idProc+1)));
+        if(res > inSize) return inSize;
+        else return res;
+    }
+
+    int getProc(const int position, const int inSize, const int nbOfProc) const {
+        const float step = (float(inSize) / nbOfProc);
+        return int(position/step);
+    }
+
     /** P2M */
     void bottomPass(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -172,9 +189,8 @@ public:
             ++leafs;
         } while(octreeIterator.moveRight());
 
-        const float stepIdx = float(leafs) / nbProcess;
-        const int startIdx = idPorcess*stepIdx;
-        const int endIdx = (idPorcess+1)*stepIdx;
+        const int startIdx = getLeft(idPorcess,leafs,nbProcess);
+        const int endIdx = getRight(idPorcess,leafs,nbProcess);
 
         this->previousLeft = startIdx;
         this->previousRight = endIdx - 1;
@@ -233,114 +249,151 @@ public:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-            const float stepIdx = float(leafs) / nbProcess;
-            const int startIdx = idPorcess*stepIdx;
-            const int endIdx = (idPorcess+1)*stepIdx;
+            const int startIdx = getLeft(idPorcess,leafs,nbProcess);
+            const int endIdx = getRight(idPorcess,leafs,nbProcess);
 
             //std::cout << idPorcess << ">>--startIdx " << (startIdx) << " endIdx " << (endIdx) << std::endl;
             //std::cout << idPorcess << ">>--previousLeft " << (previousLeft) << " previousRight " << (previousRight) << std::endl;
 
-            int leftOffset = 0;
-            {
-                const MortonIndex MostLeftChild = iterArray[startIdx].getCurrentGlobalIndex() << 3;
-                const MortonIndex leftChildIter = previousIterArray[previousLeft].getCurrentGlobalIndex();
-                //std::cout << idPorcess << ">>--MostLeftChild " << (MostLeftChild) << " leftChildIter " << (leftChildIter) << std::endl;
-                if(leftChildIter < MostLeftChild){
-                    while( previousIterArray[previousLeft+leftOffset].getCurrentGlobalIndex() < MostLeftChild){
-                        ++leftOffset;
-                    }
-                }
-                else if(this->previousLeft > 0 && leftChildIter > MostLeftChild){
-                    while( previousIterArray[previousLeft+leftOffset - 1].getCurrentGlobalIndex() >= MostLeftChild){
-                        --leftOffset;
-                    }
-                }
-            }
-            //std::cout << idPorcess << ">>--leftOffset " << (leftOffset) << std::endl;
+            //std::cout << "level " << idxLevel << " start " << startIdx << " end " << endIdx << std::endl;
 
-            int rightOffset = 0;
-            {
-                const MortonIndex MostRightChild = (iterArray[endIdx-1].getCurrentGlobalIndex() << 3) | 7;
-                const MortonIndex rightChildIter = previousIterArray[previousRight].getCurrentGlobalIndex();
-                //std::cout << idPorcess << ">>--MostRightChild " << (MostRightChild) << " rightChildIter " << (rightChildIter) << std::endl;
-                if(this->previousRight < this->previousSize - 1 && rightChildIter < MostRightChild){
-                    while( previousIterArray[previousRight-rightOffset+1].getCurrentGlobalIndex() <= MostRightChild){
-                        --rightOffset;
-                    }
-                }
-                else if(rightChildIter > MostRightChild){
-                    while( previousIterArray[previousRight-rightOffset].getCurrentGlobalIndex() > MostRightChild){
-                        ++rightOffset;
-                    }
-                }
-            }
-            //std::cout << idPorcess << ">>--rightOffset " << (rightOffset) << std::endl;
-
-            leftOffsets[idxLevel+1] = leftOffset;
-            rightOffsets[idxLevel+1] = rightOffset;
-
-            #pragma omp parallel num_threads(FThreadNumbers)
-            {
-                // send computed data nowait
-                #pragma omp single
+            if(startIdx < leafs){
+                int leftOffset = 0;
                 {
-                    //std::cout << idPorcess << ">>--Will send " << (leftOffset) << " and " << (rightOffset) << std::endl;
-                    for(int idxLeafs = 0 ; idxLeafs < leftOffset ; ++idxLeafs){
-                        const int idxReceiver = ((previousLeft+idxLeafs)/int(this->previousSize/nbProcess)) - 1;
-                        sendData(idxReceiver,sizeof(CellClass),previousIterArray[previousLeft+idxLeafs].getCurrentCell(),previousLeft+idxLeafs);
-                        //std::cout << idPorcess << "\t>>-- sends left to " << (idxReceiver) << " index " << (previousLeft+idxLeafs) << std::endl;
-                    }
-                    for(int idxLeafs = 0 ; idxLeafs < rightOffset ; ++idxLeafs){
-                        const int idxReceiver = FMath::Min(((previousRight+idxLeafs)/int(this->previousSize/nbProcess)) + 1, nbProcess - 1);
-                        sendData(idxReceiver,sizeof(CellClass),previousIterArray[previousRight+idxLeafs].getCurrentCell(),previousRight+idxLeafs);
-                        //std::cout << idPorcess << "\t>>-- sends right to " << (idxReceiver) << " index " << (previousRight+idxLeafs) << std::endl;
-                    }
-                    //std::cout << idPorcess <<  ">>--All sent--" << std::endl;
-                }
-
-                // received computed data
-                #pragma omp single
-                {
-                    int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
-                    CellClass tempCell;
-                    int source = 0, tag = 0, filled = 0;
-
-                    //std::cout << idPorcess <<  ">>--Will receive " << needToReceive << std::endl;
-
-                    while(needToReceive){
-                        receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
-                        if(filled){
-                            *previousIterArray[tag].getCurrentCell() = tempCell;
+                    const MortonIndex MostLeftChild = iterArray[startIdx].getCurrentGlobalIndex() << 3;
+                    const MortonIndex leftChildIter = previousIterArray[previousLeft].getCurrentGlobalIndex();
+                    //std::cout << idPorcess << ">>--MostLeftChild " << (MostLeftChild) << " leftChildIter " << (leftChildIter) << std::endl;
+                    if(leftChildIter < MostLeftChild){
+                        int parentOffset = startIdx - 1;
+                        MortonIndex parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+                        MortonIndex childIndex = 0;
+                        while( (childIndex = previousIterArray[previousLeft+leftOffset].getCurrentGlobalIndex()) < MostLeftChild){
+                            childIndex >>= 3;
+                            //std::cout << "before loop" << std::endl;
+                            while(childIndex != parentIndex){
+                                if(childIndex < parentIndex) --parentOffset;
+                                else ++parentOffset;
+                                //std::cout << "parentOffset " << parentOffset << " parentIndex " << parentIndex << " childIndex " << childIndex << std::endl;
+                                parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+                                //std::cout << "parentOffset " << parentOffset << " parentIndex " << parentIndex << " childIndex " << childIndex << std::endl;
+                            }
+                            //std::cout << "before send" << std::endl;
+                            const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
+                            sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
+                            //std::cout << idPorcess << "\t>>-- sends left to " << (idxReceiver) << " index " << (previousLeft+leftOffset) << std::endl;
+                            ++leftOffset;
+                            //std::cout << "before end big loop" << std::endl;
                         }
-                        --needToReceive;
-                        //std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp() << std::endl;
                     }
-                    //std::cout << idPorcess <<  ">>--All receive--" << std::endl;
+                    else if(this->previousLeft > 0 && leftChildIter > MostLeftChild){
+                        while( previousIterArray[previousLeft+leftOffset - 1].getCurrentGlobalIndex() >= MostLeftChild){
+                            --leftOffset;
+                        }
+                    }
                 }
+                //std::cout << idPorcess << ">>--leftOffset " << (leftOffset) << std::endl;
 
-                #pragma omp single nowait
+                int rightOffset = 0;
                 {
-                    FDEBUG(computationCounter.tic());
+                    const MortonIndex MostRightChild = (iterArray[endIdx-1].getCurrentGlobalIndex() << 3) | 7;
+                    const MortonIndex rightChildIter = previousIterArray[previousRight].getCurrentGlobalIndex();
+                    //std::cout << idPorcess << ">>--MostRightChild " << (MostRightChild) << " rightChildIter " << (rightChildIter) << std::endl;
+                    if(this->previousRight < this->previousSize - 1 && rightChildIter < MostRightChild){
+                        while( previousIterArray[previousRight-rightOffset+1].getCurrentGlobalIndex() <= MostRightChild){
+                            --rightOffset;
+                        }
+                    }
+                    else if(rightChildIter > MostRightChild){
+                        int parentOffset = endIdx;
+                        MortonIndex parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+                        MortonIndex childIndex = 0;
+                        while( (childIndex = previousIterArray[previousRight-rightOffset].getCurrentGlobalIndex()) > MostRightChild){
+                            childIndex >>= 3;
+                            while(childIndex != parentIndex){
+                                if(childIndex < parentIndex) --parentOffset;
+                                else ++parentOffset;
+                                parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+                            }
+                            const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
+                            sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
+                            //std::cout << idPorcess << "\t>>-- sends right to " << (idxReceiver) << " index " << (previousRight+rightOffset) << std::endl;
+                            ++rightOffset;
+                        }
+                    }
                 }
+                //std::cout << idPorcess << ">>--rightOffset " << (rightOffset) << std::endl;
 
-                Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                #pragma omp for
-                for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
-                    myThreadkernels->M2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
-                }
+                leftOffsets[idxLevel+1] = leftOffset;
+                rightOffsets[idxLevel+1] = rightOffset;
 
-                #pragma omp single nowait
+                #pragma omp parallel num_threads(FThreadNumbers)
                 {
-                    FDEBUG(computationCounter.tac());
-                    FDEBUG(totalComputation += computationCounter.elapsed());
+                    // received computed data
+                    #pragma omp single
+                    {
+                        int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
+                        CellClass tempCell;
+                        int source = 0, tag = 0, filled = 0;
+
+                        //std::cout << idPorcess <<  ">>--Will receive " << needToReceive << std::endl;
+
+                        while(needToReceive){
+                            receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            if(filled){
+                                *previousIterArray[tag].getCurrentCell() = tempCell;
+                            }
+                            --needToReceive;
+                            //std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp()  << " source " << source << std::endl;
+                        }
+                        //std::cout << idPorcess <<  ">>--All receive--" << std::endl;
+                    }
+
+                    #pragma omp single nowait
+                    {
+                        FDEBUG(computationCounter.tic());
+                    }
+
+                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                    #pragma omp for
+                    for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
+                        myThreadkernels->M2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
+                    }
+
+                    #pragma omp single nowait
+                    {
+                        FDEBUG(computationCounter.tac());
+                        FDEBUG(totalComputation += computationCounter.elapsed());
+                    }
+
+                }
+            }
+            else {
+                //std::cout << "I am out startIdx " << startIdx << " endIdx " << endIdx << std::endl;
+
+                int parentOffset = leafs - 1;
+                MortonIndex parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+
+                for(int idxLeafs = previousRight ; idxLeafs >= previousLeft ; --idxLeafs){
+                    const MortonIndex childIndex = previousIterArray[idxLeafs].getCurrentGlobalIndex() >> 3;
+                    while(childIndex != parentIndex){
+                        --parentOffset;
+                        parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
+                    }
+                    const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
+                    sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                    //std::cout << idPorcess << "\t>>-- sends all to " << (idxReceiver) << " index " << idxLeafs << std::endl;
                 }
 
+                leftOffsets[idxLevel+1] = (previousRight-previousLeft) + 1;
+                //std::cout << "left off set at " << idxLevel+1 << " = " << leftOffsets[idxLevel+1] << std::endl;
             }
 
             swapArray();
             this->previousLeft = startIdx;
             this->previousRight = endIdx - 1;
             this->previousSize = leafs;
+
+            processBarrier();
         }
 
         //print();
@@ -378,9 +431,8 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const float stepIdx = float(leafs) / nbProcess;
-                const int startIdx = idPorcess*stepIdx;
-                const int endIdx = (idPorcess+1)*stepIdx;
+                const int startIdx = getLeft(idPorcess,leafs,nbProcess);
+                const int endIdx = getRight(idPorcess,leafs,nbProcess);
 
                 struct LimitCell {
                     int counter;
@@ -400,7 +452,7 @@ public:
 
                 //std::cout << "There are " << leafs << " leafs" << std::endl;
 
-                print();
+                //print();
 
                 #pragma omp parallel num_threads(FThreadNumbers)
                 {
@@ -442,12 +494,12 @@ public:
                                 }
 
                                 // Find receiver and send him the cell
-                                const int idxReceiver = FMath::Min( cellPositionInArray / int( (leafs+1) / nbProcess) , nbProcess - 1 );
+                                const int idxReceiver = getProc(cellPositionInArray,leafs,nbProcess);
                                 #pragma omp critical(CheckToSend)
                                 {
                                     if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        std::cout << idPorcess << ">>--idxLeafs " << (idxLeafs) << " idxReceiver " << (idxReceiver)
-                                                << " cellPositionInArray " << (cellPositionInArray)  << " indexCell " << indexCell<< std::endl;
+                                        //std::cout << idPorcess << ">>--idxLeafs " << (idxLeafs) << " idxReceiver " << (idxReceiver)
+                                        //        << " cellPositionInArray " << (cellPositionInArray)  << " indexCell " << indexCell<< std::endl;
                                         sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
                                         alreadySent[idxReceiver]->set(idxLeafs,true);
                                         needData = true;
@@ -464,7 +516,7 @@ public:
                             }
                         }
                         if(needData){
-                            std::cout << idPorcess <<  ">>this cell need data " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << " neighborsCounter " << neighborsCounter << std::endl;
+                            //std::cout << idPorcess <<  ">>this cell need data " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << " neighborsCounter " << neighborsCounter << std::endl;
                             const int currentCell = idxLeafs - startIdx;
                             unfinishedCells[currentCell] = new LimitCell();
                             unfinishedCells[currentCell]->counter = neighborsCounter;
@@ -472,7 +524,7 @@ public:
                             alreadySent[idPorcess]->set(idxLeafs,true);
                         }
                         else if(neighborsCounter){
-                            std::cout << idPorcess <<  ">>compute directly " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
+                            //std::cout << idPorcess <<  ">>compute directly " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, neighborsCounter, idxLevel);
                         }
                     }
@@ -480,7 +532,7 @@ public:
                     // received computed data
                     #pragma omp single
                     {
-                        std::cout << idPorcess << ">>--needToReceive " << (needToReceive) << std::endl;
+                        //std::cout << idPorcess << ">>--needToReceive " << (needToReceive) << std::endl;
 
                         CellClass tempCell;
                         int source = 0, tag = 0, filled = 0;
@@ -492,14 +544,14 @@ public:
                             }
                             --needToReceive;
 
-                            std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp() << std::endl;
+                            //std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.up " << tempCell.getDataUp() << std::endl;
                         }
                     }
 
                     #pragma omp for
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         if(alreadySent[idPorcess]->get(idxLeafs)){
-                            std::cout << idPorcess <<  ">>finish to compute " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
+                            //std::cout << idPorcess <<  ">>finish to compute " << idxLeafs << " index " << iterArray[idxLeafs].getCurrentGlobalIndex() << std::endl;
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , unfinishedCells[idxLeafs-startIdx]->neighbors, unfinishedCells[idxLeafs-startIdx]->counter, idxLevel);
                             delete unfinishedCells[idxLeafs-startIdx];
                         }
@@ -511,6 +563,8 @@ public:
                 for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
                     delete alreadySent[idxProc];
                 }
+
+                processBarrier();
 
             }
         }
@@ -553,9 +607,8 @@ public:
                  avoidGotoLeftIterator.moveDown();
                  octreeIterator = avoidGotoLeftIterator;
 
-                 const float stepIdx = float(leafs) / nbProcess;
-                 const int startIdx = idPorcess*stepIdx;
-                 const int endIdx = (idPorcess+1)*stepIdx;
+                 const int startIdx = getLeft(idPorcess,leafs,nbProcess);
+                 const int endIdx = getRight(idPorcess,leafs,nbProcess);
 
                  const int currentLeft = startIdx;
                  const int currentRight = endIdx -1;
@@ -563,17 +616,17 @@ public:
                 #pragma omp parallel num_threads(FThreadNumbers)
                 {
                     // send computed data
-                    #pragma omp single //nowait
+                    #pragma omp single nowait
                     {
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
-                            const int idxReceiver = (currentLeft-idxLeafs)/int(leafs/nbProcess);
+                            const int idxReceiver = getProc((currentLeft-idxLeafs),leafs,nbProcess);
                             sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
                             //std::cout << idPorcess << "\t>>-- sends (1) to " << (idxReceiver) << " index " << (currentLeft-idxLeafs) << std::endl;
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
-                            const int idxReceiver = FMath::Min((currentRight+idxLeafs)/int(leafs/nbProcess),nbProcess-1);
+                            const int idxReceiver = getProc((currentRight+idxLeafs),leafs,nbProcess);
                             sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
                             //std::cout << idPorcess << "\t>>-- sends (2) to " << (idxReceiver) << " index " << (currentRight+idxLeafs) << " currentRight " << currentRight << std::endl;
                         }
@@ -595,6 +648,8 @@ public:
                                 iterArray[tag].getCurrentCell()->addCell(tempCell);
                             }
                             --needToReceive;
+
+                            //std::cout << idPorcess <<  ">>receive tag " << (tag) << " tempCell.down " << tempCell.getDataDown() << " from " << source << std::endl;
                         }
                         //std::cout << "all received" << std::endl;
                     }
@@ -609,6 +664,7 @@ public:
                     }
                 }
 
+                 processBarrier();
             }
         }
 
@@ -640,9 +696,11 @@ public:
 
         FDEBUG(computationCounter.tic());
 
-        const float stepIdx = float(leafs) / processCount();
-        const int startIdx = processId()*stepIdx;
-        const int endIdx = (processId()+1)*stepIdx;
+        const int nbProcess = processCount();
+        const int idPorcess = processId();
+
+        const int startIdx = getLeft(idPorcess,leafs,nbProcess);
+        const int endIdx = getRight(idPorcess,leafs,nbProcess);
 
         #pragma omp parallel num_threads(FThreadNumbers)
         {
@@ -669,53 +727,121 @@ public:
     /** This function test the octree to be sure that the fmm algorithm
       * has worked completly.
       */
-    void ValidateFMMAlgoProc(){
+    void ValidateFMMAlgoProc(Octree* const valideTree){
         std::cout << "Check Result\n";
-        int NbPart = 0;
-        int NbLeafs = 0;
-        { // Check that each particle has been summed with all other
+        {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
-            do{
-                NbPart += octreeIterator.getCurrentListSrc()->getSize();
-                ++NbLeafs;
-            } while(octreeIterator.moveRight());
+
+            OctreeIterator octreeIteratorValide(valideTree);
+            octreeIteratorValide.gotoBottomLeft();
+
+            //std::cout << "We start at level " << OctreeHeight - 1 << std::endl;
+
+            for(int level = OctreeHeight - 1 ; level > 0 ; --level){
+                int NbLeafs = 0;
+                do{
+                    ++NbLeafs;
+                } while(octreeIterator.moveRight());
+                octreeIterator.gotoLeft();
+
+                const int startIdx = getLeft(processId(),NbLeafs,processCount());
+                const int endIdx = getRight(processId(),NbLeafs,processCount());
+                // Check that each particle has been summed with all other
+                //std::cout << "level " << level << " start " << startIdx << " end " << endIdx << std::endl;
+
+                for(int idx = 0 ; idx < startIdx ; ++idx){
+                    octreeIterator.moveRight();
+                    octreeIteratorValide.moveRight();
+                }
+
+                for(int idx = startIdx ; idx < endIdx ; ++idx){
+                    if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
+                        std::cout << "Error index are not equal!" << std::endl;
+                    }
+                    else{
+                        if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
+                            std::cout << "M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
+                                    << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " idx " << idx << std::endl;
+                        }
+                        if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
+                            std::cout << "L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
+                                    << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " idx " << idx << std::endl;
+                        }
+                    }
+
+                    octreeIterator.moveRight();
+                    octreeIteratorValide.moveRight();
+                }
+
+                octreeIterator.moveUp();
+                octreeIterator.gotoLeft();
+
+                octreeIteratorValide.moveUp();
+                octreeIteratorValide.gotoLeft();
+            }
         }
         {
-            const float stepIdx = float(NbLeafs) / processCount();
-            const int startIdx = processId()*stepIdx;
-            const int endIdx = (processId()+1)*stepIdx;
-            // Check that each particle has been summed with all other
-            OctreeIterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-
-            for(int idx = 0 ; idx < startIdx ; ++idx){
-                octreeIterator.moveRight();
+            int NbPart = 0;
+            int NbLeafs = 0;
+            { // Check that each particle has been summed with all other
+                OctreeIterator octreeIterator(tree);
+                octreeIterator.gotoBottomLeft();
+                do{
+                    NbPart += octreeIterator.getCurrentListSrc()->getSize();
+                    ++NbLeafs;
+                } while(octreeIterator.moveRight());
             }
+            {
+                const int startIdx = getLeft(processId(),NbLeafs,processCount());
+                const int endIdx = getRight(processId(),NbLeafs,processCount());
+                // Check that each particle has been summed with all other
+                OctreeIterator octreeIterator(tree);
+                octreeIterator.gotoBottomLeft();
 
-            for(int idx = startIdx ; idx < endIdx ; ++idx){
-                typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-                const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-
-                while( iter.isValide() ){
-                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
-                    // there is a problem
-                    if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
-                        (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
-                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.value()->getDataDown() << "\n";
-                    }
-                    iter.progress();
+                for(int idx = 0 ; idx < startIdx ; ++idx){
+                    octreeIterator.moveRight();
                 }
-                octreeIterator.moveRight();
+
+                for(int idx = startIdx ; idx < endIdx ; ++idx){
+                    typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+
+                    const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
+
+                    while( iter.isValide() ){
+                        // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                        // there is a problem
+                        if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
+                            (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
+                            std::cout << "Problem L2P + P2P, value on particle is : " << iter.value()->getDataDown() << "\n";
+                        }
+                        iter.progress();
+                    }
+                    octreeIterator.moveRight();
+                }
             }
         }
 
         std::cout << "Done\n";
+
+        //print();
+        //print(valideTree);
     }
 
     void print(){
         OctreeIterator octreeIterator(tree);
+        for(int idxLevel = OctreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
+            do{
+                std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
+            } while(octreeIterator.moveRight());
+            std::cout << "\n";
+            octreeIterator.gotoLeft();
+            octreeIterator.moveDown();
+        }
+    }
+
+    void print(Octree* const valideTree){
+        OctreeIterator octreeIterator(valideTree);
         for(int idxLevel = OctreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
             do{
                 std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";

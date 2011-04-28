@@ -21,6 +21,8 @@
 #include "../Src/Extenssions/FExtendPhysicalValue.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
+#include "../Src/Core/FFmmAlgorithmThread.hpp"
+
 
 #include "../Src/Files/FFmaLoader.hpp"
 
@@ -44,7 +46,7 @@ public:
 class FTestCellPar : public FTestCell{
 public :
     void addCell(const FTestCellPar& other){
-        setDataUp(this->getDataUp() + other.getDataUp());
+        //setDataUp(this->getDataUp() + other.getDataUp());
         setDataDown(this->getDataDown() + other.getDataDown());
     }
 };
@@ -78,7 +80,6 @@ int main(int argc, char ** argv){
         return 1;
     }
 
-
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -99,6 +100,8 @@ int main(int argc, char ** argv){
 
     FOctree<TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
+    FOctree<TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> treeValide(loader.getBoxWidth(),loader.getCenterOfBox());
+
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -106,6 +109,7 @@ int main(int argc, char ** argv){
     counter.tic();
     for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         tree.insert(&particles[idxPart]);
+        treeValide.insert(&particles[idxPart]);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -116,11 +120,13 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    // FTestKernels FBasicKernels
     FTestKernels<TestParticle, FTestCellPar, NbLevels> kernels;
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThreadProc
+
     FFmmAlgorithmThreadProc<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels,argc,argv);
     algo.execute();
+
+    FFmmAlgorithmThread<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> algoValide(&treeValide,&kernels);
+    algoValide.execute();
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -128,7 +134,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    algo.ValidateFMMAlgoProc();
+    algo.ValidateFMMAlgoProc(&treeValide);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
