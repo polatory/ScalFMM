@@ -31,7 +31,7 @@
 #include <stdlib.h>
 
 
-// Compile by : g++ testFmmAlgorithmProc.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmProc.exe
+// Compile by : g++ testFmmAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmProc.exe
 
 /** This program show an example of use of
   * the fmm threaded + mpi algo

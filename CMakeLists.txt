@@ -8,7 +8,7 @@ endif(insource)
 
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
-OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
+OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" ON )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 
