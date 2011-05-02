@@ -44,7 +44,7 @@ class TestParticle : public FTestParticle, public FExtendPhysicalValue {
 public:
 };
 
-class FTestCellPar : public FTestCell{
+class FTestCellPar : public FTestCell, public FAbstractSendable{
 public :
     int bytesToSendUp() const{
         return sizeof(long);

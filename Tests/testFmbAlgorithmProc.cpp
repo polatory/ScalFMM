@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FMpi.hpp"
+#include "../Src/Utils/FAbstractSendable.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FList.hpp"
@@ -17,14 +19,11 @@
 #include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Fmb/FExtendFmbCell.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithmThreadUs.hpp"
+#include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
-
 
 #include "../Src/Files/FFmaLoader.hpp"
 
@@ -48,8 +47,37 @@ public:
 /** Custom cell
   *
   */
-class FmbCell : public FBasicCell, public FExtendFmbCell {
+class FmbCell : public FBasicCell, public FExtendFmbCell , public FAbstractSendable{
 public:
+    int bytesToSendUp() const{
+        return sizeof(FComplexe)*MultipoleSize;
+    }
+    int writeUp(void* const buffer, const int) const {
+        memcpy(buffer,multipole_exp,bytesToSendUp());
+        return bytesToSendUp();
+    }
+    int bytesToReceiveUp() const{
+        return sizeof(FComplexe)*MultipoleSize;
+    }
+    int readUp(void* const buffer, const int) {
+        memcpy(multipole_exp,buffer,bytesToSendUp());
+        return bytesToReceiveUp();
+    }
+
+    int bytesToSendDown() const{
+        return sizeof(FComplexe)*MultipoleSize;
+    }
+    int writeDown(void* const buffer, const int) const {
+        memcpy(buffer,local_exp,bytesToSendDown());
+        return bytesToSendDown();
+    }
+    int bytesToReceiveDown() const{
+        return sizeof(FComplexe)*MultipoleSize;
+    }
+    int readDown(void* const buffer, const int) {
+        memcpy(local_exp,buffer,bytesToSendDown());
+        return bytesToReceiveDown();
+    }
 };
 
 
@@ -58,6 +86,8 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
+
+    FMpi app( argc, argv);
 
     const int NbLevels = 9;//10;
     const int SizeSubLevels = 3;//3
@@ -115,39 +145,52 @@ int main(int argc, char ** argv){
     counter.tic();
 
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask FFmmAlgorithmThreadUs
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+
+    FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(app,&tree,&kernels);
     algo.execute();
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
-    //std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
-    //std::cout << "Potential = " << kernels.getPotential() << std::endl;
 
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
+
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator countLeafsIterator(octreeIterator);
+        int NbLeafs = 0;
         do{
+            ++NbLeafs;
+        } while(countLeafsIterator.moveRight());
+
+        const int startIdx = algo.getLeft(NbLeafs);
+        const int endIdx = algo.getRight(NbLeafs);
+
+        for(int idxLeaf = 0 ; idxLeaf < startIdx ; ++idxLeaf){
+            octreeIterator.moveRight();
+        }
+
+        for(int idxLeaf = startIdx ; idxLeaf < endIdx ; ++idxLeaf){
             FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.isValide() ){
                 potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
                 forces += iter.value()->getForces();
 
-                //printf("x = %e y = %e z = %e \n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ());
-                //printf("\t fx = %e fy = %e fz = %e \n",iter.value()->getForces().getX(),iter.value()->getForces().getY(),iter.value()->getForces().getZ());
-
-                //printf("\t\t Sum Forces ( %e , %e , %e)\n",
-                //forces.getX(),forces.getY(),forces.getZ());
-
                 iter.progress();
             }
-        } while(octreeIterator.moveRight());
+            octreeIterator.moveRight();
+        }
 
-        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
-        std::cout << "Potential = " << potential << std::endl;
+        potential = app.reduceSum(potential);
+        forces.setX(app.reduceSum(forces.getX()));
+        forces.setY(app.reduceSum(forces.getY()));
+        forces.setZ(app.reduceSum(forces.getZ()));
+        if(app.isMaster()){
+            std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+            std::cout << "Potential = " << potential << std::endl;
+        }
     }
 
 
