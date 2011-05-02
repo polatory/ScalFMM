@@ -443,6 +443,7 @@ public:
             FDEBUG(FTic computationCounter);
             FDEBUG(FTic sendCounter);
             FDEBUG(FTic receiveCounter);
+            FDEBUG(FTic waitingToReceiveCounter);
 
             OctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
@@ -583,7 +584,9 @@ public:
                         char buffer[BufferSize];
 
                         while(needToReceive){
+                            FDEBUG(waitingToReceiveCounter.tic());
                             app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            FDEBUG(waitingToReceiveCounter.tac());
                             for(int idxBuff = 0 ; idxBuff < filled;){
                                 memcpy(&position,&buffer[idxBuff],sizeof(int));
                                 idxBuff += sizeof(int);
@@ -627,6 +630,8 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
+            FDEBUG( FDebug::Controller << "\t\t Wait data to Receive : " << waitingToReceiveCounter.cumulated() << " s\n" );
+
         }
 
 

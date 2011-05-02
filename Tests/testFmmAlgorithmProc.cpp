@@ -1,9 +1,5 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-#include <iostream>
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "../Src/Utils/FMpi.hpp"
 #include "../Src/Utils/FTic.hpp"
@@ -28,6 +24,12 @@
 #include "../Src/Files/FFmaLoader.hpp"
 
 #include "../Src/Components/FBasicKernels.hpp"
+
+#include <iostream>
+
+#include <stdio.h>
+#include <stdlib.h>
+
 
 // Compile by : g++ testFmmAlgorithmProc.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmProc.exe
 
