@@ -288,12 +288,6 @@ public:
 
                             ++leftOffset;
                         }
-                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
-                            if(this->sendBuffer[idxProc].getSize()){
-                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
-                                this->sendBuffer[idxProc].clear();
-                            }
-                        }
                     }
                     else if(this->previousLeft > 0 && leftChildIter > MostLeftChild){
                         while( previousIterArray[previousLeft+leftOffset - 1].getCurrentGlobalIndex() >= MostLeftChild){
@@ -333,12 +327,6 @@ public:
 
                             ++rightOffset;
                         }
-                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
-                            if(this->sendBuffer[idxProc].getSize()){
-                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
-                                this->sendBuffer[idxProc].clear();
-                            }
-                        }
                     }
                     rightOffsets[idxLevel+1] = rightOffset;
                 }
@@ -346,6 +334,19 @@ public:
 
                 #pragma omp parallel
                 {
+                    // send computed data
+                    #pragma omp single nowait
+                    {
+                        if(rightOffset > 0 || leftOffset > 0){
+                            for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                                if(this->sendBuffer[idxProc].getSize()){
+                                    app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                                    this->sendBuffer[idxProc].clear();
+                                }
+                            }
+                        }
+                    }
+
                     // received computed data
                     #pragma omp single
                     {
@@ -489,7 +490,7 @@ public:
                         FDEBUG(sendCounter.tic());
                     }
 
-                    #pragma omp for
+                    #pragma omp for //schedule(dynamic)
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         const int neighborsCounter = tree->getDistantNeighborsWithIndex(neighbors, neighborsIndexes, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
                         bool needData = false;

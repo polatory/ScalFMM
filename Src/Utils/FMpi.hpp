@@ -34,8 +34,9 @@ public:
     }
 
     void sendData(const int inReceiver, const int inSize, void* const inData, const int inTag){
-        MPI_Request request;
-        MPI_Isend(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD, &request);
+        //MPI_Request request;
+        //MPI_Isend(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD, &request);
+        MPI_Send(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD);
     }
 
     void receiveData(const int inSize, void* const inData, int* const inSource, int* const inTag, int* const inFilledSize){
