@@ -7,8 +7,8 @@
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/FBoolArray.hpp"
 
+#include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
 
 #include "../Utils/FMpi.hpp"
@@ -40,6 +40,8 @@ int OctreeHeight, int SubtreeHeight>
     typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
     typedef KernelClass<ParticleClass, CellClass, OctreeHeight> Kernel;
+
+    FMpi& app;                          //< The app to communicate
 
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
@@ -76,11 +78,10 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProc(Octree* const inTree, Kernel* const inKernels, const int inArgc, char ** const inArgv )
-        : tree(inTree) , kernels(0), iterArray(0),
+    FFmmAlgorithmThreadProc(FMpi& inApp, Octree* const inTree, Kernel* const inKernels)
+        : app(inApp), tree(inTree) , kernels(0), iterArray(0),
         previousIterArray(0), previousLeft(0),previousRight(0), previousSize(0),
-        MaxThreads(omp_get_max_threads()), nbProcess(FMpi::processCount()), idPorcess(FMpi::processId()) {
-        FMpi::init(inArgc,inArgv);
+        MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -90,6 +91,7 @@ public:
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
+        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << " .\n");
     }
 
     /** Default destructor */
@@ -98,7 +100,6 @@ public:
             delete this->kernels[idxThread];
         }
         delete [] this->kernels;
-        FMpi::destroy();
     }
 
     /**
@@ -272,7 +273,7 @@ public:
                             }
 
                             const int idxReceiver = getProc(parentOffset,leafs);
-                            FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
+                            app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
 
                             ++leftOffset;
                         }
@@ -307,7 +308,7 @@ public:
                                 parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                             }
                             const int idxReceiver = getProc(parentOffset,leafs);
-                            FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
+                            app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
 
                             ++rightOffset;
                         }
@@ -327,7 +328,7 @@ public:
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 *previousIterArray[tag].getCurrentCell() = tempCell;
                             }
@@ -365,7 +366,7 @@ public:
                         parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                     }
                     const int idxReceiver = getProc(parentOffset,leafs);
-                    FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                    app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
                 }
 
                 leftOffsets[idxLevel+1] = (previousRight-previousLeft) + 1;
@@ -376,7 +377,7 @@ public:
             this->previousRight = endIdx - 1;
             this->previousSize = leafs;
 
-            FMpi::processBarrier();
+            app.processBarrier();
         }
 
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
@@ -434,7 +435,6 @@ public:
                 for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
                     alreadySent[idxProc] = new FBoolArray(leafs);
                 }
-
                 #pragma omp parallel
                 {
                     CellClass* neighbors[208];
@@ -484,7 +484,7 @@ public:
                                 #pragma omp critical(CheckToSend)
                                 {
                                     if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                                        app.sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
                                         alreadySent[idxReceiver]->set(idxLeafs,true);
                                         needData = true;
                                     }
@@ -528,7 +528,7 @@ public:
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 *iterArray[tag].getCurrentCell() = tempCell;
                             }
@@ -562,7 +562,7 @@ public:
                     delete alreadySent[idxProc];
                 }
 
-                FMpi::processBarrier();
+                app.processBarrier();
 
             }
             FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
@@ -613,12 +613,12 @@ public:
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
                             const int idxReceiver = getProc((currentLeft-idxLeafs),leafs);
-                            FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
+                            app.sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
                             const int idxReceiver = getProc((currentRight+idxLeafs),leafs);
-                            FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
+                            app.sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
                         }
                         FDEBUG(sendCounter.tac());
                     }
@@ -632,7 +632,7 @@ public:
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 iterArray[tag].getCurrentCell()->addCell(tempCell);
                             }
@@ -654,7 +654,7 @@ public:
                         }
                     }
                     FDEBUG(computationCounter.tac());
-                    FMpi::processBarrier();
+                    app.processBarrier();
                 }
             }
 

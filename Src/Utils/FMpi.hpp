@@ -5,6 +5,10 @@
 
 #include "FGlobal.hpp"
 
+#ifdef SCALFMM_USE_MPI
+#include <mpi.h>
+#endif
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FMpi
@@ -13,21 +17,19 @@
 * This namespace is to compile with or without mpi
 */
 
-
+class FMpi {
+public:
 #ifdef SCALFMM_USE_MPI
 
 ////////////////////////////////////////////////////////
 // Use MPI
 ////////////////////////////////////////////////////////
 
-#include <mpi.h>
-
-namespace FMpi {
-    void init(int inArgc, char **  inArgv ) {
+    FMpi(int inArgc, char **  inArgv ) {
         MPI_Init(&inArgc,&inArgv);
     }
 
-    void destroy(){
+    ~FMpi(){
         MPI_Finalize();
     }
 
@@ -69,17 +71,13 @@ namespace FMpi {
     void abort(const int inErrorCode = 1) {
         MPI_Abort(MPI_COMM_WORLD, inErrorCode);
     }
-};
 
 #else
 ////////////////////////////////////////////////////////
 // Without MPI
 ////////////////////////////////////////////////////////
 
-namespace FMpi {
-    void init(int inArgc, char **  inArgv ) {}
-
-    void destroy(){}
+    FMpi(int inArgc, char **  inArgv ) {}
 
     void sendData(const int, const int, void* const, const int ){}
 
@@ -107,14 +105,11 @@ namespace FMpi {
         exit(inErrorCode);
     }
 
-};
-
 #endif
 
 ////////////////////////////////////////////////////////
 // To use in any case
 ////////////////////////////////////////////////////////
-namespace FMpi {
     bool isMaster() {
         return !processId();
     }

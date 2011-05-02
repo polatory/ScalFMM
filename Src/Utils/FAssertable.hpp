@@ -17,13 +17,6 @@
 * </code>
 */
 class FAssertable {
-private:
-
-	/** To quit current application */
-    void exitApplication(const int inExitCode) const{
-
-    }
-
 protected:
 	/** Empty Destructor */
 	virtual ~FAssertable(){}
@@ -42,21 +35,14 @@ protected:
 	template <class Tmess, class Tline, class Tfile>
 	void assert(const bool inTest, const Tmess& inMessage, const Tline& inLinePosition, const Tfile& inFilePosition, const int inExitCode = 1) const {
 		if(!inTest){
-			calledBeforeExit();
-
-			std::ostringstream oss;
+                        std::ostringstream oss;
 			oss << "Error in " << inFilePosition << " at line " << inLinePosition <<" :\n";
 			oss << inMessage << "\n";
 		
 			std::cerr << oss.str();
-			exitApplication(inExitCode);
+                        exit(inExitCode);
 		}
 	}
-
-	/**
-	* May be implemented in the derived class to know when app will quit
-	*/
-	virtual void calledBeforeExit() const {}
 
 };
 

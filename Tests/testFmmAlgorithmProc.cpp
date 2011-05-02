@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../Src/Utils/FMpi.hpp"
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
@@ -23,7 +24,6 @@
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
-
 #include "../Src/Files/FFmaLoader.hpp"
 
 #include "../Src/Components/FBasicKernels.hpp"
@@ -37,7 +37,7 @@
 
 
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticle}
+  * Because we use fma loader it needs {FExtendPhysicalValue}
   */
 class TestParticle : public FTestParticle, public FExtendPhysicalValue {
 public:
@@ -57,6 +57,8 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
+
+    FMpi app( argc, argv);
 
     const int NbLevels = 10;//10;
     const int SizeSubLevels = 3;//3
@@ -124,7 +126,7 @@ int main(int argc, char ** argv){
 
     FTestKernels<TestParticle, FTestCellPar, NbLevels> kernels;
 
-    FFmmAlgorithmThreadProc<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels,argc,argv);
+    FFmmAlgorithmThreadProc<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> algo(app,&tree,&kernels);
     algo.execute();
 
     FFmmAlgorithmThread<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> algoValide(&treeValide,&kernels);
