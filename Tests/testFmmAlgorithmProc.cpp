@@ -31,7 +31,7 @@
 // Compile by : g++ testFmmAlgorithmProc.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmProc.exe
 
 /** This program show an example of use of
-  * the fmm basic algo
+  * the fmm threaded + mpi algo
   * it also check that each particles is impacted each other particles
   */
 

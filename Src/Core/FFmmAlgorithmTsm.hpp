@@ -20,6 +20,8 @@
 * It just iterates on a tree and call the kernels with good arguments.
 *
 * Of course this class does not deallocate pointer given in arguements.
+*
+* The differences with FmmAlgorithm is that it used target source model.
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
 class ParticleClass, class CellClass,
@@ -61,8 +63,6 @@ public:
       */
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
-
-        kernels->init();
 
         bottomPass();
         upwardPass();

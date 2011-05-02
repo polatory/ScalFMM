@@ -22,9 +22,6 @@ public:
     virtual ~FBasicKernels(){
     }
 
-    /** When init the kernel */
-    virtual void init(){}
-
     /** Print the number of particles */
     virtual void P2M(CellClass* const , const FList<ParticleClass*>* const ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );

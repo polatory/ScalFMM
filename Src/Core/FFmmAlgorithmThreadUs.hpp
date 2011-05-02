@@ -26,8 +26,8 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 *
-* Threaded & based on the inspector-executor model
-* schedule(runtime)
+* This algorithms is unsafe for P2P, if you need to write on neigbors
+* this can be a problem.
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
         class ParticleClass, class CellClass,

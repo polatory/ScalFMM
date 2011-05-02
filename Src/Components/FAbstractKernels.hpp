@@ -20,12 +20,6 @@ public:
     }
 
     /**
-        * Init the Kernels
-        * This function is called just before to start the computation
-        */
-    virtual void init(){}
-
-    /**
         * P2M
         * particles to multipole
         * @param pole the multipole to fill using the particles

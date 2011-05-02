@@ -26,8 +26,7 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 *
-* Threaded & based on the inspector-executor model
-* schedule(runtime)
+* When using this algorithm the P2P is thread safe.
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
         class ParticleClass, class CellClass,

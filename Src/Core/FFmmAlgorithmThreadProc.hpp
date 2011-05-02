@@ -11,19 +11,7 @@
 
 #include "../Containers/FOctree.hpp"
 
-
-//================================================================================================
-#ifdef SCALFMM_USE_MPI
-// Compile by mpic++ testApplication.cpp ../Utils/FAssertable.cpp -o testApplication.exe
-// run by mpirun -np 4 ./testApplication.exe
-#include "../Utils/FMpiApplication.hpp"
-typedef FMpiApplication ApplicationImplementation;
-#else
-// Compile by g++ testApplication.cpp ../Utils/FAssertable.cpp -o testApplication.exe
-#include "../Utils/FSingleApplication.hpp"
-typedef FSingleApplication ApplicationImplementation;
-#endif
-//================================================================================================
+#include "../Utils/FMpi.hpp"
 
 #include <omp.h>
 
@@ -33,7 +21,7 @@ typedef FSingleApplication ApplicationImplementation;
 * @brief
 * Please read the license
 *
-* This class is a threaded FMM algorithm
+* This class is a threaded FMM algorithm with mpi.
 * It just iterates on a tree and call the kernels with good arguments.
 * It used the inspector-executor model :
 * iterates on the tree and builds an array to work in parallel on this array
@@ -47,7 +35,7 @@ template<template< class ParticleClass, class CellClass, int OctreeHeight> class
 class ParticleClass, class CellClass,
 template<class ParticleClass> class LeafClass,
 int OctreeHeight, int SubtreeHeight>
-        class FFmmAlgorithmThreadProc : protected FAssertable, protected ApplicationImplementation{
+        class FFmmAlgorithmThreadProc : protected FAssertable {
     // To reduce the size of variable type based on foctree in this file
     typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
     typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
@@ -56,20 +44,26 @@ int OctreeHeight, int SubtreeHeight>
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
 
-    OctreeIterator* iterArray;
-    OctreeIterator* previousIterArray;
+    OctreeIterator* iterArray;          //< To store the iterator
+    OctreeIterator* previousIterArray;  //< To store the previous iterator
 
-    int previousLeft;
-    int previousRight;
-    int previousSize;
+    int previousLeft;                   //< To store the left limit at the previous level
+    int previousRight;                  //< To store the right limit at the previous level
+    int previousSize;                   //< To store the size at the previous level
 
-    int leftOffsets[OctreeHeight];
-    int rightOffsets[OctreeHeight];
+    int leftOffsets[OctreeHeight];      //< the right limit at different level
+    int rightOffsets[OctreeHeight];     //< the left limit at different level
 
-    const int MaxThreads;
+    const int MaxThreads;               //< the max number of thread allowed by openmp
+
+    const int nbProcess;                //< Number of process
+    const int idPorcess;                //< Id of current process
 
     void run(){}
 
+    /** To swap between two arrays
+      * the current and the previous
+      */
     void swapArray(){
         OctreeIterator* const temp = iterArray;
         iterArray = previousIterArray;
@@ -83,9 +77,10 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadProc(Octree* const inTree, Kernel* const inKernels, const int inArgc, char ** const inArgv )
-        : ApplicationImplementation(inArgc,inArgv), tree(inTree) , kernels(0), iterArray(0),
+        : tree(inTree) , kernels(0), iterArray(0),
         previousIterArray(0), previousLeft(0),previousRight(0), previousSize(0),
-        MaxThreads(omp_get_max_threads()) {
+        MaxThreads(omp_get_max_threads()), nbProcess(FMpi::processCount()), idPorcess(FMpi::processId()) {
+        FMpi::init(inArgc,inArgv);
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -103,6 +98,7 @@ public:
             delete this->kernels[idxThread];
         }
         delete [] this->kernels;
+        FMpi::destroy();
     }
 
     /**
@@ -154,20 +150,20 @@ public:
     // Utils functions
     /////////////////////////////////////////////////////////////////////////////
 
-    int getLeft(const int idProc, const int inSize, const int nbOfProc) const {
-        const float step = (float(inSize) / nbOfProc);
-        return int(FMath::Ceil(step * idProc));
+    int getLeft(const int inSize) const {
+        const float step = (float(inSize) / nbProcess);
+        return int(FMath::Ceil(step * idPorcess));
     }
 
-    int getRight(const int idProc, const int inSize, const int nbOfProc) const {
-        const float step = (float(inSize) / nbOfProc);
-        const int res = int(FMath::Ceil(step * (idProc+1)));
+    int getRight(const int inSize) const {
+        const float step = (float(inSize) / nbProcess);
+        const int res = int(FMath::Ceil(step * (idPorcess+1)));
         if(res > inSize) return inSize;
         else return res;
     }
 
-    int getProc(const int position, const int inSize, const int nbOfProc) const {
-        const float step = (float(inSize) / nbOfProc);
+    int getProc(const int position, const int inSize) const {
+        const float step = (float(inSize) / nbProcess);
         return int(position/step);
     }
 
@@ -182,8 +178,7 @@ public:
         FDEBUG(FTic counterTime);
 
         OctreeIterator octreeIterator(tree);
-        const int nbProcess = processCount();
-        const int idPorcess = processId();
+
         int leafs = 0;
 
         // Iterate on leafs
@@ -193,18 +188,14 @@ public:
             ++leafs;
         } while(octreeIterator.moveRight());
 
-        const int startIdx = getLeft(idPorcess,leafs,nbProcess);
-        const int endIdx = getRight(idPorcess,leafs,nbProcess);
-
-        this->previousLeft = startIdx;
-        this->previousRight = endIdx - 1;
-        this->previousSize = leafs;
+        const int startIdx = getLeft(leafs);
+        const int endIdx = getRight(leafs);
 
         FDEBUG(FTic computationCounter);
-#pragma omp parallel
+        #pragma omp parallel
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for
+            #pragma omp for nowait
             for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
@@ -243,9 +234,6 @@ public:
         octreeIterator.moveUp();
         OctreeIterator avoidGotoLeftIterator(octreeIterator);
 
-        const int nbProcess = processCount();
-        const int idPorcess = processId();
-
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
 
@@ -258,8 +246,8 @@ public:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-            const int startIdx = getLeft(idPorcess,leafs,nbProcess);
-            const int endIdx = getRight(idPorcess,leafs,nbProcess);
+            const int startIdx = getLeft(leafs);
+            const int endIdx = getRight(leafs);
 
             if(startIdx < leafs){
                 FDEBUG(sendCounter.tic());
@@ -283,8 +271,8 @@ public:
 
                             }
 
-                            const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
-                            sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
+                            const int idxReceiver = getProc(parentOffset,leafs);
+                            FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
 
                             ++leftOffset;
                         }
@@ -294,6 +282,7 @@ public:
                             --leftOffset;
                         }
                     }
+                    leftOffsets[idxLevel+1] = leftOffset;
                 }
 
                 int rightOffset = 0;
@@ -317,22 +306,20 @@ public:
                                 else ++parentOffset;
                                 parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                             }
-                            const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
-                            sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
+                            const int idxReceiver = getProc(parentOffset,leafs);
+                            FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
 
                             ++rightOffset;
                         }
                     }
+                    rightOffsets[idxLevel+1] = rightOffset;
                 }
                 FDEBUG(sendCounter.tac());
 
-                leftOffsets[idxLevel+1] = leftOffset;
-                rightOffsets[idxLevel+1] = rightOffset;
-
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     // received computed data
-#pragma omp single
+                    #pragma omp single
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
@@ -340,7 +327,7 @@ public:
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 *previousIterArray[tag].getCurrentCell() = tempCell;
                             }
@@ -349,18 +336,18 @@ public:
                         FDEBUG(receiveCounter.tac());
                     }
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(computationCounter.tic());
                     }
 
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for
+                    #pragma omp for nowait
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         myThreadkernels->M2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
                     }
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(computationCounter.tac());
                     }
@@ -377,8 +364,8 @@ public:
                         --parentOffset;
                         parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                     }
-                    const int idxReceiver = getProc(parentOffset,leafs,nbProcess);
-                    sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                    const int idxReceiver = getProc(parentOffset,leafs);
+                    FMpi::sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
                 }
 
                 leftOffsets[idxLevel+1] = (previousRight-previousLeft) + 1;
@@ -389,7 +376,7 @@ public:
             this->previousRight = endIdx - 1;
             this->previousSize = leafs;
 
-            processBarrier();
+            FMpi::processBarrier();
         }
 
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
@@ -418,10 +405,6 @@ public:
             octreeIterator.moveDown();
             OctreeIterator avoidGotoLeftIterator(octreeIterator);
 
-            const int nbProcess = processCount();
-            const int idPorcess = processId();
-
-
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 int leafs = 0;
@@ -433,8 +416,8 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int startIdx = getLeft(idPorcess,leafs,nbProcess);
-                const int endIdx = getRight(idPorcess,leafs,nbProcess);
+                const int startIdx = getLeft(leafs);
+                const int endIdx = getRight(leafs);
 
                 struct LimitCell {
                     int counter;
@@ -452,18 +435,18 @@ public:
                     alreadySent[idxProc] = new FBoolArray(leafs);
                 }
 
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     CellClass* neighbors[208];
                     MortonIndex neighborsIndexes[208];
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(sendCounter.tic());
                     }
 
-#pragma omp for
+                    #pragma omp for
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         const int neighborsCounter = tree->getDistantNeighborsWithIndex(neighbors, neighborsIndexes, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
                         bool needData = false;
@@ -497,16 +480,16 @@ public:
                                 }
 
                                 // Find receiver and send him the cell
-                                const int idxReceiver = getProc(cellPositionInArray,leafs,nbProcess);
-#pragma omp critical(CheckToSend)
+                                const int idxReceiver = getProc(cellPositionInArray,leafs);
+                                #pragma omp critical(CheckToSend)
                                 {
                                     if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                                        FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
                                         alreadySent[idxReceiver]->set(idxLeafs,true);
                                         needData = true;
                                     }
                                 }
-#pragma omp critical(CheckToReceive)
+                                #pragma omp critical(CheckToReceive)
                                 {
                                     if(!alreadySent[idPorcess]->get(cellPositionInArray)){
                                         ++needToReceive;
@@ -516,6 +499,7 @@ public:
                                 }
                             }
                         }
+                        // if need data we can not compute now
                         if(needData){
                             const int currentCell = idxLeafs - startIdx;
                             unfinishedCells[currentCell] = new LimitCell();
@@ -523,26 +507,28 @@ public:
                             memcpy(unfinishedCells[currentCell]->neighbors,neighbors,sizeof(CellClass*)*neighborsCounter);
                             alreadySent[idPorcess]->set(idxLeafs,true);
                         }
+                        // we can compute now !
                         else if(neighborsCounter){
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, neighborsCounter, idxLevel);
                         }
                     }
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(sendCounter.tac());
                     }
 
                     // received computed data
-#pragma omp single
+                    #pragma omp single
                     {
+                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
                         FDEBUG(receiveCounter.tic());
 
                         CellClass tempCell;
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 *iterArray[tag].getCurrentCell() = tempCell;
                             }
@@ -551,12 +537,12 @@ public:
                         FDEBUG(receiveCounter.tac());
                     }
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(computationCounter.tic());
                     }
 
-#pragma omp for
+                    #pragma omp for nowait
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                         if(alreadySent[idPorcess]->get(idxLeafs)){
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , unfinishedCells[idxLeafs-startIdx]->neighbors, unfinishedCells[idxLeafs-startIdx]->counter, idxLevel);
@@ -564,7 +550,7 @@ public:
                         }
                     }
 
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(computationCounter.tac());
                     }
@@ -576,7 +562,7 @@ public:
                     delete alreadySent[idxProc];
                 }
 
-                processBarrier();
+                FMpi::processBarrier();
 
             }
             FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
@@ -599,8 +585,6 @@ public:
             OctreeIterator avoidGotoLeftIterator(octreeIterator);
 
             const int heightMinusOne = OctreeHeight - 1;
-            const int nbProcess = processCount();
-            const int idPorcess = processId();
 
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -614,33 +598,33 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int startIdx = getLeft(idPorcess,leafs,nbProcess);
-                const int endIdx = getRight(idPorcess,leafs,nbProcess);
+                const int startIdx = getLeft(leafs);
+                const int endIdx = getRight(leafs);
 
                 const int currentLeft = startIdx;
                 const int currentRight = endIdx -1;
 
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     // send computed data
-#pragma omp single nowait
+                    #pragma omp single nowait
                     {
                         FDEBUG(sendCounter.tic());
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
-                            const int idxReceiver = getProc((currentLeft-idxLeafs),leafs,nbProcess);
-                            sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
+                            const int idxReceiver = getProc((currentLeft-idxLeafs),leafs);
+                            FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
-                            const int idxReceiver = getProc((currentRight+idxLeafs),leafs,nbProcess);
-                            sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
+                            const int idxReceiver = getProc((currentRight+idxLeafs),leafs);
+                            FMpi::sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
                         }
                         FDEBUG(sendCounter.tac());
                     }
 
                     // received computed data
-#pragma omp single
+                    #pragma omp single
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,rightOffsets[idxLevel]) + FMath::Max(0,leftOffsets[idxLevel]);
@@ -648,7 +632,7 @@ public:
                         int source = 0, tag = 0, filled = 0;
 
                         while(needToReceive){
-                            receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
+                            FMpi::receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
                             if(filled){
                                 iterArray[tag].getCurrentCell()->addCell(tempCell);
                             }
@@ -661,16 +645,16 @@ public:
 
                 if(idxLevel != heightMinusOne){
                     FDEBUG(computationCounter.tic());
-#pragma omp parallel
+                    #pragma omp parallel
                     {
                         Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for
+                        #pragma omp for
                         for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                             myThreadkernels->L2L( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentChild(), idxLevel);
                         }
                     }
                     FDEBUG(computationCounter.tac());
-                    processBarrier();
+                    FMpi::processBarrier();
                 }
             }
 
@@ -707,19 +691,16 @@ public:
 
         FDEBUG(FTic computationCounter);
 
-        const int nbProcess = processCount();
-        const int idPorcess = processId();
+        const int startIdx = getLeft(leafs);
+        const int endIdx = getRight(leafs);
 
-        const int startIdx = getLeft(idPorcess,leafs,nbProcess);
-        const int endIdx = getRight(idPorcess,leafs,nbProcess);
-
-#pragma omp parallel
+        #pragma omp parallel
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
             FList<ParticleClass*>* neighbors[26];
 
-#pragma omp for
+            #pragma omp for
             for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particles and neighbors particles
@@ -758,8 +739,8 @@ public:
                 } while(octreeIterator.moveRight());
                 octreeIterator.gotoLeft();
 
-                const int startIdx = getLeft(processId(),NbLeafs,processCount());
-                const int endIdx = getRight(processId(),NbLeafs,processCount());
+                const int startIdx = getLeft(NbLeafs);
+                const int endIdx = getRight(NbLeafs);
                 // Check that each particle has been summed with all other
 
                 for(int idx = 0 ; idx < startIdx ; ++idx){
@@ -806,8 +787,8 @@ public:
                 std::cout << "There is " << NbPart << " particles on " << NbLeafs << " Leafs" << std::endl;
             }
             {
-                const int startIdx = getLeft(processId(),NbLeafs,processCount());
-                const int endIdx = getRight(processId(),NbLeafs,processCount());
+                const int startIdx = getLeft(NbLeafs);
+                const int endIdx = getRight(NbLeafs);
                 // Check that each particle has been summed with all other
                 OctreeIterator octreeIterator(tree);
                 octreeIterator.gotoBottomLeft();

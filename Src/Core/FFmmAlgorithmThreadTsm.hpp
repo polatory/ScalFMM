@@ -26,8 +26,8 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 *
-* Threaded & based on the inspector-executor model
-* schedule(runtime)
+* Because this is a Target source model you do not need the P2P to be safe.
+* You should not write on sources in the P2P method!
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
         class ParticleClass, class CellClass,
@@ -89,10 +89,6 @@ public:
         } while(octreeIterator.moveRight());
         iterArray = new OctreeIterator[leafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
-
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread]->init();
-        }
 
         bottomPass();
         upwardPass();

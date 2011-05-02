@@ -5,8 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-class FAbstractApplication;
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAssertable
@@ -19,22 +17,12 @@ class FAbstractApplication;
 * </code>
 */
 class FAssertable {
-private:	
-	static FAbstractApplication* CurrentApp;	//< You must have only one app
-
-	/** 
-	* Called by Fapplication instance to set the current app
-	* @param inCurrentApp current app
-	*/
-	static void SetCurrentApp(FAbstractApplication* const inCurrentApp){
-		CurrentApp = inCurrentApp;
-	}
-
-	/** To set CurrentApp */
-	friend class FAbstractApplication;
+private:
 
 	/** To quit current application */
-	void exitApplication(const int inExitCode) const;
+    void exitApplication(const int inExitCode) const{
+
+    }
 
 protected:
 	/** Empty Destructor */
@@ -47,7 +35,7 @@ protected:
 	* @param inLinePosition line number
 	* @param inFilePosition file name
 	*
-        * <code> assert(toto == titi, "toto is not equal titi!", __LINE__, __FILE__); </code>
+        * <code> assert(toto == titi, "problem : toto is not equal titi!", __LINE__, __FILE__); </code>
 	*
 	* To prevent use from multiple thread we use a ostringstream before printing
 	*/
