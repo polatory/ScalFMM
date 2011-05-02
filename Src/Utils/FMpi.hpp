@@ -109,7 +109,7 @@ public:
         *inFilledSize = 0;
     }
 
-    void receiveData(const int , const int , void* const , int* const , int* const ){
+    void receiveData(const int , const int , void* const , int* const inSource, int* const inFilledSize){
         *inSource = 0;
         *inFilledSize = 0;
     }

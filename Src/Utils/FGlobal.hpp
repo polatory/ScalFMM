@@ -2,6 +2,7 @@
 #define FGLOBAL_HPP
 
 #include "ScalFmmConfig.h"
+#include <stdlib.h>
 
 ///////////////////////////////////////////////////////
 // Operating System
