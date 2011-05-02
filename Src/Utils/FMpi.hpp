@@ -46,9 +46,24 @@ public:
         MPI_Get_count(&status,MPI_CHAR,inFilledSize);
     }
 
+    void receiveData(const int inSize, const int inTag, void* const inData, int* const inSource, int* const inFilledSize){
+        MPI_Status status;
+        MPI_Recv(inData, inSize, MPI_CHAR, MPI_ANY_SOURCE, inTag, MPI_COMM_WORLD, &status);
+        *inSource = status.MPI_SOURCE;
+        MPI_Get_count(&status,MPI_CHAR,inFilledSize);
+    }
+
     bool receivedData(){
         int flag;
         MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+        return flag;
+    }
+
+    bool receivedData(int* const tag){
+        MPI_Status status;
+        int flag;
+        MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+        *tag = status.MPI_TAG;
         return flag;
     }
 
@@ -72,6 +87,13 @@ public:
         MPI_Abort(MPI_COMM_WORLD, inErrorCode);
     }
 
+
+    double reduceSum(double data){
+        double result;
+        MPI_Reduce( &data, &result, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD );
+        return result;
+    }
+
 #else
 ////////////////////////////////////////////////////////
 // Without MPI
@@ -87,7 +109,16 @@ public:
         *inFilledSize = 0;
     }
 
+    void receiveData(const int , const int , void* const , int* const , int* const ){
+        *inSource = 0;
+        *inFilledSize = 0;
+    }
+
     bool receivedData(){
+        return false;
+    }
+
+    bool receivedData(int* const){
         return false;
     }
 
@@ -103,6 +134,10 @@ public:
 
     void abort(const int inErrorCode = 1) {
         exit(inErrorCode);
+    }
+
+    double reduceSum(double data){
+        return data;
     }
 
 #endif

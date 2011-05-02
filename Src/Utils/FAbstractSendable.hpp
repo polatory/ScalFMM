@@ -14,14 +14,22 @@ protected:
     virtual ~FAbstractSendable(){}
 
     /** To know the number of bytes needed */
-    virtual int bytesToSend() const = 0;
-
+    virtual int bytesToSendUp() const = 0;
     /** To put the object into the buffer */
-    virtual int write(void* const buffer, const int limit) const = 0;
-
+    virtual int writeUp(void* const buffer, const int limit) const = 0;
+    /** To know the number of bytes needed */
+    virtual int bytesToReceiveUp() const = 0;
     /** To retreive data from a buffer */
-    virtual int read(void* const buffer, const int limit) = 0;
+    virtual int readUp(void* const buffer, const int limit) = 0;
 
+    /** To know the number of bytes needed */
+    virtual int bytesToSendDown() const = 0;
+    /** To put the object into the buffer */
+    virtual int writeDown(void* const buffer, const int limit) const = 0;
+    /** To know the number of bytes needed */
+    virtual int bytesToReceiveDown() const = 0;
+    /** To retreive data from a buffer */
+    virtual int readDown(void* const buffer, const int limit) = 0;
 };
 
 #endif //FABSTRACTSENDABLE_HPP

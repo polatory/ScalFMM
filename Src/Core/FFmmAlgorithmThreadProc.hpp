@@ -10,6 +10,7 @@
 
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
+#include "../Containers/FBufferVector.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -43,8 +44,8 @@ int OctreeHeight, int SubtreeHeight>
 
     FMpi& app;                          //< The app to communicate
 
-    Octree* const tree;                  //< The octree to work on
-    Kernel** kernels;                    //< The kernels
+    Octree* const tree;                 //< The octree to work on
+    Kernel** kernels;                   //< The kernels
 
     OctreeIterator* iterArray;          //< To store the iterator
     OctreeIterator* previousIterArray;  //< To store the previous iterator
@@ -61,7 +62,8 @@ int OctreeHeight, int SubtreeHeight>
     const int nbProcess;                //< Number of process
     const int idPorcess;                //< Id of current process
 
-    void run(){}
+    const static int BufferSize = 2000;      //< To know max of the buffer we receive
+    FBufferVector<BufferSize> * sendBuffer;  //< To put data to send into a buffer
 
     /** To swap between two arrays
       * the current and the previous
@@ -81,7 +83,8 @@ public:
     FFmmAlgorithmThreadProc(FMpi& inApp, Octree* const inTree, Kernel* const inKernels)
         : app(inApp), tree(inTree) , kernels(0), iterArray(0),
         previousIterArray(0), previousLeft(0),previousRight(0), previousSize(0),
-        MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()) {
+        MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()),
+        sendBuffer(0) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -89,6 +92,8 @@ public:
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
+
+        this->sendBuffer = new FBufferVector<2000>[nbProcess];
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
         FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << " .\n");
@@ -100,6 +105,8 @@ public:
             delete this->kernels[idxThread];
         }
         delete [] this->kernels;
+
+        delete [] this->sendBuffer;
     }
 
     /**
@@ -273,9 +280,19 @@ public:
                             }
 
                             const int idxReceiver = getProc(parentOffset,leafs);
-                            app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousLeft+leftOffset].getCurrentCell(),previousLeft+leftOffset);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[this->previousLeft+leftOffset].getCurrentCell()->bytesToSendUp())){
+                                app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                this->sendBuffer[idxReceiver].clear();
+                            }
+                            this->sendBuffer[idxReceiver].addDataUp(previousLeft+leftOffset,*previousIterArray[this->previousLeft+leftOffset].getCurrentCell());
 
                             ++leftOffset;
+                        }
+                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                            if(this->sendBuffer[idxProc].getSize()){
+                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                                this->sendBuffer[idxProc].clear();
+                            }
                         }
                     }
                     else if(this->previousLeft > 0 && leftChildIter > MostLeftChild){
@@ -308,9 +325,19 @@ public:
                                 parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                             }
                             const int idxReceiver = getProc(parentOffset,leafs);
-                            app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[this->previousRight-rightOffset].getCurrentCell(),previousRight-rightOffset);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[this->previousRight-rightOffset].getCurrentCell()->bytesToSendUp())){
+                                app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                this->sendBuffer[idxReceiver].clear();
+                            }
+                            this->sendBuffer[idxReceiver].addDataUp(previousRight-rightOffset,*previousIterArray[this->previousRight-rightOffset].getCurrentCell());
 
                             ++rightOffset;
+                        }
+                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                            if(this->sendBuffer[idxProc].getSize()){
+                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                                this->sendBuffer[idxProc].clear();
+                            }
                         }
                     }
                     rightOffsets[idxLevel+1] = rightOffset;
@@ -324,15 +351,18 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
-                        CellClass tempCell;
-                        int source = 0, tag = 0, filled = 0;
+                        int source = 0, filled = 0;
+                        int position;
+                        char buffer[BufferSize];
 
                         while(needToReceive){
-                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
-                            if(filled){
-                                *previousIterArray[tag].getCurrentCell() = tempCell;
+                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            for(int idxBuff = 0 ; idxBuff < filled;){
+                                memcpy(&position,&buffer[idxBuff],sizeof(int));
+                                idxBuff += sizeof(int);
+                                idxBuff += previousIterArray[position].getCurrentCell()->readUp(&buffer[idxBuff],filled-idxBuff);
+                                --needToReceive;
                             }
-                            --needToReceive;
                         }
                         FDEBUG(receiveCounter.tac());
                     }
@@ -366,7 +396,18 @@ public:
                         parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                     }
                     const int idxReceiver = getProc(parentOffset,leafs);
-                    app.sendData(idxReceiver,sizeof(CellClass),previousIterArray[idxLeafs].getCurrentCell(),idxLeafs);
+                    if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[idxLeafs].getCurrentCell()->bytesToSendUp())){
+                        app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                        this->sendBuffer[idxReceiver].clear();
+                    }
+                    this->sendBuffer[idxReceiver].addDataUp(idxLeafs,*previousIterArray[idxLeafs].getCurrentCell());
+                }
+
+                for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                    if(this->sendBuffer[idxProc].getSize()){
+                        app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                        this->sendBuffer[idxProc].clear();
+                    }
                 }
 
                 leftOffsets[idxLevel+1] = (previousRight-previousLeft) + 1;
@@ -377,8 +418,9 @@ public:
             this->previousRight = endIdx - 1;
             this->previousSize = leafs;
 
-            app.processBarrier();
         }
+
+        app.processBarrier();
 
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -484,9 +526,14 @@ public:
                                 #pragma omp critical(CheckToSend)
                                 {
                                     if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        app.sendData(idxReceiver,sizeof(CellClass),iterArray[idxLeafs].getCurrentCell(),idxLeafs);
                                         alreadySent[idxReceiver]->set(idxLeafs,true);
                                         needData = true;
+
+                                        if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[idxLeafs].getCurrentCell()->bytesToSendUp())){
+                                            app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                            this->sendBuffer[idxReceiver].clear();
+                                        }
+                                        this->sendBuffer[idxReceiver].addDataUp(idxLeafs,*iterArray[idxLeafs].getCurrentCell());
                                     }
                                 }
                                 #pragma omp critical(CheckToReceive)
@@ -515,6 +562,13 @@ public:
 
                     #pragma omp single nowait
                     {
+                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                            if(this->sendBuffer[idxProc].getSize()){
+                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                                this->sendBuffer[idxProc].clear();
+                            }
+                        }
+
                         FDEBUG(sendCounter.tac());
                     }
 
@@ -524,16 +578,20 @@ public:
                         FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
                         FDEBUG(receiveCounter.tic());
 
-                        CellClass tempCell;
-                        int source = 0, tag = 0, filled = 0;
+                        int source = 0, filled = 0;
+                        int position;
+                        char buffer[BufferSize];
 
                         while(needToReceive){
-                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
-                            if(filled){
-                                *iterArray[tag].getCurrentCell() = tempCell;
+                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            for(int idxBuff = 0 ; idxBuff < filled;){
+                                memcpy(&position,&buffer[idxBuff],sizeof(int));
+                                idxBuff += sizeof(int);
+                                idxBuff += iterArray[position].getCurrentCell()->readUp(&buffer[idxBuff],filled-idxBuff);
+                                --needToReceive;
                             }
-                            --needToReceive;
                         }
+
                         FDEBUG(receiveCounter.tac());
                     }
 
@@ -562,9 +620,9 @@ public:
                     delete alreadySent[idxProc];
                 }
 
-                app.processBarrier();
-
             }
+            app.processBarrier();
+
             FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
@@ -613,13 +671,29 @@ public:
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
                             const int idxReceiver = getProc((currentLeft-idxLeafs),leafs);
-                            app.sendData(idxReceiver,sizeof(CellClass),iterArray[currentLeft-idxLeafs].getCurrentCell(),currentLeft-idxLeafs);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[currentLeft-idxLeafs].getCurrentCell()->bytesToSendDown())){
+                                app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                this->sendBuffer[idxReceiver].clear();
+                            }
+                            this->sendBuffer[idxReceiver].addDataDown(currentLeft-idxLeafs,*iterArray[currentLeft-idxLeafs].getCurrentCell());
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
                             const int idxReceiver = getProc((currentRight+idxLeafs),leafs);
-                            app.sendData(idxReceiver,sizeof(CellClass),iterArray[currentRight+idxLeafs].getCurrentCell(),currentRight+idxLeafs);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[currentRight+idxLeafs].getCurrentCell()->bytesToSendDown())){
+                                app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                this->sendBuffer[idxReceiver].clear();
+                            }
+                            this->sendBuffer[idxReceiver].addDataDown(currentRight+idxLeafs,*iterArray[currentRight+idxLeafs].getCurrentCell());
                         }
+
+                        for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
+                            if(this->sendBuffer[idxProc].getSize()){
+                                app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
+                                this->sendBuffer[idxProc].clear();
+                            }
+                        }
+
                         FDEBUG(sendCounter.tac());
                     }
 
@@ -628,17 +702,20 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,rightOffsets[idxLevel]) + FMath::Max(0,leftOffsets[idxLevel]);
-                        CellClass tempCell;
-                        int source = 0, tag = 0, filled = 0;
+                        int source = 0, filled = 0;
+                        int position;
+                        char buffer[BufferSize];
 
                         while(needToReceive){
-                            app.receiveData(sizeof(CellClass),&tempCell,&source,&tag,&filled);
-                            if(filled){
-                                iterArray[tag].getCurrentCell()->addCell(tempCell);
+                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            for(int idxBuff = 0 ; idxBuff < filled;){
+                                memcpy(&position,&buffer[idxBuff],sizeof(int));
+                                idxBuff += sizeof(int);
+                                idxBuff += iterArray[position].getCurrentCell()->readDown(&buffer[idxBuff],filled-idxBuff);
+                                --needToReceive;
                             }
-                            --needToReceive;
-
                         }
+
                         FDEBUG(receiveCounter.tac());
                     }
                 }
@@ -654,9 +731,10 @@ public:
                         }
                     }
                     FDEBUG(computationCounter.tac());
-                    app.processBarrier();
                 }
             }
+
+            app.processBarrier();
 
             FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );

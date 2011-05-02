@@ -14,6 +14,7 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Utils/F3DPosition.hpp"
+#include "../Src/Utils/FAbstractSendable.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
 #include "../Src/Components/FTestParticle.hpp"
@@ -45,9 +46,40 @@ public:
 
 class FTestCellPar : public FTestCell{
 public :
-    void addCell(const FTestCellPar& other){
-        //setDataUp(this->getDataUp() + other.getDataUp());
-        setDataDown(this->getDataDown() + other.getDataDown());
+    int bytesToSendUp() const{
+        return sizeof(long);
+    }
+    int writeUp(void* const buffer, const int) const {
+        const long tmpUp = getDataUp();
+        memcpy(buffer,&tmpUp,bytesToSendUp());
+        return bytesToSendUp();
+    }
+    int bytesToReceiveUp() const{
+        return sizeof(long);
+    }
+    int readUp(void* const buffer, const int) {
+        long tmpUp;
+        memcpy(&tmpUp,buffer,bytesToSendUp());
+        setDataUp(tmpUp);
+        return bytesToReceiveUp();
+    }
+
+    int bytesToSendDown() const{
+        return sizeof(long);
+    }
+    int writeDown(void* const buffer, const int) const {
+        const long tmpDown = getDataDown();
+        memcpy(buffer,&tmpDown,bytesToSendDown());
+        return bytesToSendDown();
+    }
+    int bytesToReceiveDown() const{
+        return sizeof(long);
+    }
+    int readDown(void* const buffer, const int) {
+        long tmpDown;
+        memcpy(&tmpDown,buffer,bytesToSendDown());
+        setDataDown(tmpDown + getDataDown());
+        return bytesToReceiveDown();
     }
 };
 
