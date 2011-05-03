@@ -30,7 +30,8 @@
 * Of course this class does not deallocate pointer given in arguements.
 *
 * Threaded & based on the inspector-executor model
-* schedule(runtime)
+* schedule(runtime) export OMP_NUM_THREADS=2
+* export OMPI_CXX=`which g++-4.4`
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
 class ParticleClass, class CellClass,
@@ -50,9 +51,9 @@ int OctreeHeight, int SubtreeHeight>
     OctreeIterator* iterArray;          //< To store the iterator
     OctreeIterator* previousIterArray;  //< To store the previous iterator
 
-    int previousLeft;                   //< To store the left limit at the previous level
-    int previousRight;                  //< To store the right limit at the previous level
-    int previousSize;                   //< To store the size at the previous level
+    int leafLeft;                   //< To store the left limit at the previous level
+    int leafRight;                  //< To store the right limit at the previous level
+    int numberOfLeafs;               //< To store the size at the previous level
 
     int leftOffsets[OctreeHeight];      //< the right limit at different level
     int rightOffsets[OctreeHeight];     //< the left limit at different level
@@ -62,7 +63,7 @@ int OctreeHeight, int SubtreeHeight>
     const int nbProcess;                //< Number of process
     const int idPorcess;                //< Id of current process
 
-    const static int BufferSize = 2000;      //< To know max of the buffer we receive
+    const static int BufferSize = 500;      //< To know max of the buffer we receive
     FBufferVector<BufferSize> * sendBuffer;  //< To put data to send into a buffer
 
     /** To swap between two arrays
@@ -82,7 +83,7 @@ public:
       */
     FFmmAlgorithmThreadProc(FMpi& inApp, Octree* const inTree, Kernel* const inKernels)
         : app(inApp), tree(inTree) , kernels(0), iterArray(0),
-        previousIterArray(0), previousLeft(0),previousRight(0), previousSize(0),
+        previousIterArray(0), leafLeft(0),leafRight(0), numberOfLeafs(0),
         MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()),
         sendBuffer(0) {
 
@@ -93,7 +94,7 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        this->sendBuffer = new FBufferVector<2000>[nbProcess];
+        this->sendBuffer = new FBufferVector<BufferSize>[nbProcess];
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
         FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << " .\n");
@@ -170,6 +171,13 @@ public:
         else return res;
     }
 
+    int getOtherRight(const int inSize,const int other) const {
+        const float step = (float(inSize) / nbProcess);
+        const int res = int(FMath::Ceil(step * (other+1)));
+        if(res > inSize) return inSize;
+        else return res;
+    }
+
     int getProc(const int position, const int inSize) const {
         const float step = (float(inSize) / nbProcess);
         return int(position/step);
@@ -213,10 +221,9 @@ public:
         FDEBUG(computationCounter.tac());
 
         swapArray();
-        this->previousLeft = startIdx;
-        this->previousRight = endIdx - 1;
-        this->previousSize = leafs;
-
+        this->leafLeft = startIdx;
+        this->leafRight = endIdx - 1;
+        this->numberOfLeafs = leafs;
 
         FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
@@ -242,22 +249,26 @@ public:
         octreeIterator.moveUp();
         OctreeIterator avoidGotoLeftIterator(octreeIterator);
 
+        int previousLeft = this->leafLeft;
+        int previousRight = this->leafRight;
+        int previousSize = this->numberOfLeafs;
+
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
 
-            int leafs = 0;
+            int numberOfCells = 0;
             // for each cells
             do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
+                iterArray[numberOfCells] = octreeIterator;
+                ++numberOfCells;
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-            const int startIdx = getLeft(leafs);
-            const int endIdx = getRight(leafs);
+            const int startIdx = getLeft(numberOfCells);
+            const int endIdx = getRight(numberOfCells);
 
-            if(startIdx < leafs){
+            if(startIdx < numberOfCells){
                 FDEBUG(sendCounter.tic());
                 int leftOffset = 0;
                 {
@@ -279,17 +290,17 @@ public:
 
                             }
 
-                            const int idxReceiver = getProc(parentOffset,leafs);
-                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[this->previousLeft+leftOffset].getCurrentCell()->bytesToSendUp())){
+                            const int idxReceiver = getProc(parentOffset,numberOfCells);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[previousLeft+leftOffset].getCurrentCell()->bytesToSendUp())){
                                 app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
                                 this->sendBuffer[idxReceiver].clear();
                             }
-                            this->sendBuffer[idxReceiver].addDataUp(previousLeft+leftOffset,*previousIterArray[this->previousLeft+leftOffset].getCurrentCell());
+                            this->sendBuffer[idxReceiver].addDataUp(previousLeft+leftOffset,*previousIterArray[previousLeft+leftOffset].getCurrentCell());
 
                             ++leftOffset;
                         }
                     }
-                    else if(this->previousLeft > 0 && leftChildIter > MostLeftChild){
+                    else if(previousLeft > 0 && leftChildIter > MostLeftChild){
                         while( previousIterArray[previousLeft+leftOffset - 1].getCurrentGlobalIndex() >= MostLeftChild){
                             --leftOffset;
                         }
@@ -302,7 +313,7 @@ public:
                     const MortonIndex MostRightChild = (iterArray[endIdx-1].getCurrentGlobalIndex() << 3) | 7;
                     const MortonIndex rightChildIter = previousIterArray[previousRight].getCurrentGlobalIndex();
 
-                    if(this->previousRight < this->previousSize - 1 && rightChildIter < MostRightChild){
+                    if(previousRight < previousSize - 1 && rightChildIter < MostRightChild){
                         while( previousIterArray[previousRight-rightOffset+1].getCurrentGlobalIndex() <= MostRightChild){
                             --rightOffset;
                         }
@@ -318,12 +329,12 @@ public:
                                 else ++parentOffset;
                                 parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                             }
-                            const int idxReceiver = getProc(parentOffset,leafs);
-                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[this->previousRight-rightOffset].getCurrentCell()->bytesToSendUp())){
+                            const int idxReceiver = getProc(parentOffset,numberOfCells);
+                            if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[previousRight-rightOffset].getCurrentCell()->bytesToSendUp())){
                                 app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
                                 this->sendBuffer[idxReceiver].clear();
                             }
-                            this->sendBuffer[idxReceiver].addDataUp(previousRight-rightOffset,*previousIterArray[this->previousRight-rightOffset].getCurrentCell());
+                            this->sendBuffer[idxReceiver].addDataUp(previousRight-rightOffset,*previousIterArray[previousRight-rightOffset].getCurrentCell());
 
                             ++rightOffset;
                         }
@@ -387,7 +398,7 @@ public:
                 }
             }
             else {
-                int parentOffset = leafs - 1;
+                int parentOffset = numberOfCells - 1;
                 MortonIndex parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
 
                 for(int idxLeafs = previousRight ; idxLeafs >= previousLeft ; --idxLeafs){
@@ -396,7 +407,7 @@ public:
                         --parentOffset;
                         parentIndex = iterArray[parentOffset].getCurrentGlobalIndex();
                     }
-                    const int idxReceiver = getProc(parentOffset,leafs);
+                    const int idxReceiver = getProc(parentOffset,numberOfCells);
                     if(!this->sendBuffer[idxReceiver].addEnoughSpace(previousIterArray[idxLeafs].getCurrentCell()->bytesToSendUp())){
                         app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
                         this->sendBuffer[idxReceiver].clear();
@@ -415,9 +426,9 @@ public:
             }
 
             swapArray();
-            this->previousLeft = startIdx;
-            this->previousRight = endIdx - 1;
-            this->previousSize = leafs;
+            previousLeft = startIdx;
+            previousRight = endIdx - 1;
+            previousSize = numberOfCells;
 
         }
 
@@ -445,40 +456,52 @@ public:
             FDEBUG(FTic sendCounter);
             FDEBUG(FTic receiveCounter);
             FDEBUG(FTic waitingToReceiveCounter);
+            FDEBUG(FTic waitSendCounter);
+            FDEBUG(FTic findCounter);
 
             OctreeIterator octreeIterator(tree);
             octreeIterator.moveDown();
             OctreeIterator avoidGotoLeftIterator(octreeIterator);
 
+            FBoolArray* const indexToReceive = new FBoolArray(1 << (3*(OctreeHeight-1)));
+
+            struct LimitCell { int counter;  CellClass* neighbors[208]; };
+            LimitCell ** const unfinishedCells = new LimitCell*[this->leafRight - this->leafLeft];
+
+            FBoolArray* alreadySent[this->nbProcess];
+            MortonIndex upperLimitForProc[this->nbProcess];
+            for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
+                alreadySent[idxProc] = new FBoolArray(this->leafRight - this->leafLeft);
+            }
+
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                int leafs = 0;
+                int numberOfCells = 0;
                 // for each cells
                 do{
-                    iterArray[leafs] = octreeIterator;
-                    ++leafs;
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
                 } while(octreeIterator.moveRight());
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int startIdx = getLeft(leafs);
-                const int endIdx = getRight(leafs);
-
-                struct LimitCell {
-                    int counter;
-                    CellClass* neighbors[208];
-                };
-                LimitCell ** unfinishedCells = new LimitCell*[endIdx - startIdx];
+                const int startIdx = getLeft(numberOfCells);
+                const int endIdx = getRight(numberOfCells);
 
                 // Get limit in term of morton index
                 const MortonIndex startIdxIndex = iterArray[startIdx].getCurrentGlobalIndex();
                 const MortonIndex endIdxIndex = iterArray[endIdx-1].getCurrentGlobalIndex();
 
-                int needToReceive = 0;
-                FBoolArray* alreadySent[nbProcess];
+                // reset arrays
                 for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
-                    alreadySent[idxProc] = new FBoolArray(leafs);
+                    alreadySent[idxProc]->setToZeros();
+                    upperLimitForProc[idxProc] = iterArray[getOtherRight(numberOfCells,idxProc)-1].getCurrentGlobalIndex();
                 }
+                indexToReceive->setToZeros();
+
+                // to count missing data
+                int needToReceive = 0;
+
                 #pragma omp parallel
                 {
                     CellClass* neighbors[208];
@@ -488,6 +511,7 @@ public:
                     #pragma omp single nowait
                     {
                         FDEBUG(sendCounter.tic());
+                        FDEBUG(computationCounter.tic());
                     }
 
                     #pragma omp for //schedule(dynamic)
@@ -495,44 +519,43 @@ public:
                         const int neighborsCounter = tree->getDistantNeighborsWithIndex(neighbors, neighborsIndexes, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
                         bool needData = false;
 
+
                         for(int idxNeighbor = 0 ; idxNeighbor < neighborsCounter ; ++idxNeighbor){
                             // Get Morton index from this neigbor cell
                             const MortonIndex indexCell = neighborsIndexes[idxNeighbor];
                             // Is this cell out of our interval?
                             if(indexCell < startIdxIndex || endIdxIndex < indexCell){
+                                FDEBUG(findCounter.tic());
                                 // Yes we need to send the center of computation
                                 // but who this cell belong to?
-                                int cellPositionInArray = 0;
-                                const CellClass* const cell = neighbors[idxNeighbor];
+                                int idxReceiver = this->idPorcess;
+
                                 if(indexCell < startIdxIndex){
-                                    // This cell is on the left
-                                    for(int idxFind = startIdx - 1; idxFind >= 0 ; --idxFind){
-                                        if(iterArray[idxFind].getCurrentCell() == cell){
-                                            cellPositionInArray = idxFind;
-                                            break;
-                                        }
+                                    --idxReceiver;
+                                    while(idxReceiver && indexCell < upperLimitForProc[idxReceiver-1]){
+                                        --idxReceiver;
                                     }
                                 }
                                 else {
-                                    // This cell is on the right
-                                    for(int idxFind = endIdx ; idxFind < leafs ; ++idxFind){
-                                        if(iterArray[idxFind].getCurrentCell() == cell){
-                                            cellPositionInArray = idxFind;
-                                            break;
-                                        }
+                                    ++idxReceiver;
+                                    while(upperLimitForProc[idxReceiver] < indexCell){
+                                        ++idxReceiver;
                                     }
                                 }
 
-                                // Find receiver and send him the cell
-                                const int idxReceiver = getProc(cellPositionInArray,leafs);
+                                FDEBUG(findCounter.tac());
+
+                                FDEBUG(computationCounter.tac());
                                 #pragma omp critical(CheckToSend)
                                 {
-                                    if(!alreadySent[idxReceiver]->get(idxLeafs)){
-                                        alreadySent[idxReceiver]->set(idxLeafs,true);
+                                    if(!alreadySent[idxReceiver]->get(idxLeafs-startIdx)){
+                                        alreadySent[idxReceiver]->set(idxLeafs-startIdx,true);
                                         needData = true;
 
                                         if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[idxLeafs].getCurrentCell()->bytesToSendUp())){
+                                            FDEBUG(waitSendCounter.tic());
                                             app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
+                                            FDEBUG(waitSendCounter.tac());
                                             this->sendBuffer[idxReceiver].clear();
                                         }
                                         this->sendBuffer[idxReceiver].addDataUp(idxLeafs,*iterArray[idxLeafs].getCurrentCell());
@@ -540,36 +563,44 @@ public:
                                 }
                                 #pragma omp critical(CheckToReceive)
                                 {
-                                    if(!alreadySent[idPorcess]->get(cellPositionInArray)){
+                                    if(!indexToReceive->get(indexCell)){
                                         ++needToReceive;
-                                        alreadySent[idPorcess]->set(cellPositionInArray,true);
+                                        indexToReceive->set(indexCell,true);
                                         needData = true;
                                     }
                                 }
+                                FDEBUG(computationCounter.tic());
                             }
                         }
+                        FDEBUG(computationCounter.tac());
                         // if need data we can not compute now
                         if(needData){
                             const int currentCell = idxLeafs - startIdx;
                             unfinishedCells[currentCell] = new LimitCell();
                             unfinishedCells[currentCell]->counter = neighborsCounter;
                             memcpy(unfinishedCells[currentCell]->neighbors,neighbors,sizeof(CellClass*)*neighborsCounter);
-                            alreadySent[idPorcess]->set(idxLeafs,true);
+                            alreadySent[idPorcess]->set(idxLeafs-startIdx,true);
                         }
                         // we can compute now !
                         else if(neighborsCounter){
+                            FDEBUG(computationCounter.tic());
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , neighbors, neighborsCounter, idxLevel);
+                            FDEBUG(computationCounter.tac());
                         }
+                        FDEBUG(computationCounter.tic());
                     }
+                    FDEBUG(computationCounter.tac());
 
                     #pragma omp single nowait
                     {
+                        FDEBUG(waitSendCounter.tic());
                         for(int idxProc = 0 ; idxProc < this->nbProcess ; ++idxProc){
                             if(this->sendBuffer[idxProc].getSize()){
                                 app.sendData(idxProc,this->sendBuffer[idxProc].getSize(),this->sendBuffer[idxProc].getData(),idxLevel);
                                 this->sendBuffer[idxProc].clear();
                             }
                         }
+                        FDEBUG(waitSendCounter.tac());
 
                         FDEBUG(sendCounter.tac());
                     }
@@ -606,7 +637,7 @@ public:
 
                     #pragma omp for nowait
                     for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
-                        if(alreadySent[idPorcess]->get(idxLeafs)){
+                        if(alreadySent[idPorcess]->get(idxLeafs-startIdx)){
                             myThreadkernels->M2L(  iterArray[idxLeafs].getCurrentCell() , unfinishedCells[idxLeafs-startIdx]->neighbors, unfinishedCells[idxLeafs-startIdx]->counter, idxLevel);
                             delete unfinishedCells[idxLeafs-startIdx];
                         }
@@ -617,14 +648,15 @@ public:
                         FDEBUG(computationCounter.tac());
                     }
                 }
-
-                delete [] unfinishedCells;
-
-                for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
-                    delete alreadySent[idxProc];
-                }
-
             }
+
+            /*bogue for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
+                delete alreadySent[idxProc];
+            }*/ // bogue
+
+            delete [] unfinishedCells;// bogue
+            delete indexToReceive;
+
             app.processBarrier();
 
             FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
@@ -632,7 +664,8 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Wait data to Receive : " << waitingToReceiveCounter.cumulated() << " s\n" );
-
+            FDEBUG( FDebug::Controller << "\t\t\tTotal time to send in mpi "  << waitSendCounter.cumulated() << " s.\n" );
+            FDEBUG( FDebug::Controller << "\t\t\tTotal time to find "  << findCounter.cumulated() << " s.\n" );
         }
 
 
@@ -653,17 +686,17 @@ public:
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
 
-                int leafs = 0;
+                int numberOfCells = 0;
                 // for each cells
                 do{
-                    iterArray[leafs] = octreeIterator;
-                    ++leafs;
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
                 } while(octreeIterator.moveRight());
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int startIdx = getLeft(leafs);
-                const int endIdx = getRight(leafs);
+                const int startIdx = getLeft(numberOfCells);
+                const int endIdx = getRight(numberOfCells);
 
                 const int currentLeft = startIdx;
                 const int currentRight = endIdx -1;
@@ -676,7 +709,7 @@ public:
                         FDEBUG(sendCounter.tic());
                         const int leftOffset = -leftOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= leftOffset ; ++idxLeafs){
-                            const int idxReceiver = getProc((currentLeft-idxLeafs),leafs);
+                            const int idxReceiver = getProc((currentLeft-idxLeafs),numberOfCells);
                             if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[currentLeft-idxLeafs].getCurrentCell()->bytesToSendDown())){
                                 app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
                                 this->sendBuffer[idxReceiver].clear();
@@ -685,7 +718,7 @@ public:
                         }
                         const int rightOffset = -rightOffsets[idxLevel];
                         for(int idxLeafs = 1 ; idxLeafs <= rightOffset ; ++idxLeafs){
-                            const int idxReceiver = getProc((currentRight+idxLeafs),leafs);
+                            const int idxReceiver = getProc((currentRight+idxLeafs),numberOfCells);
                             if(!this->sendBuffer[idxReceiver].addEnoughSpace(iterArray[currentRight+idxLeafs].getCurrentCell()->bytesToSendDown())){
                                 app.sendData(idxReceiver,this->sendBuffer[idxReceiver].getSize(),this->sendBuffer[idxReceiver].getData(),idxLevel);
                                 this->sendBuffer[idxReceiver].clear();
@@ -762,21 +795,21 @@ public:
         FDEBUG(FTic counterTime);
 
         const int LeafIndex = OctreeHeight - 1;
-        int leafs = 0;
+        int numberOfCells = 0;
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
-            // for each leafs
+            // for each cells
             do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
+                iterArray[numberOfCells] = octreeIterator;
+                ++numberOfCells;
             } while(octreeIterator.moveRight());
         }
 
         FDEBUG(FTic computationCounter);
 
-        const int startIdx = getLeft(leafs);
-        const int endIdx = getRight(leafs);
+        const int startIdx = getLeft(numberOfCells);
+        const int endIdx = getRight(numberOfCells);
 
         #pragma omp parallel
         {
