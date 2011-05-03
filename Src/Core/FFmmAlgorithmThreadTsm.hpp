@@ -81,13 +81,13 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
         // Count leaf
-        int leafs = 0;
+        int numberOfLeafs = 0;
         OctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            ++leafs;
+            ++numberOfLeafs;
         } while(octreeIterator.moveRight());
-        iterArray = new OctreeIterator[leafs];
+        iterArray = new OctreeIterator[numberOfLeafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         bottomPass();
@@ -110,12 +110,12 @@ public:
         FDEBUG( FTic counterTime );
 
         OctreeIterator octreeIterator(tree);
-        int leafs = 0;
+        int numberOfLeafs = 0;
         // Iterate on leafs
         octreeIterator.gotoBottomLeft();
         do{
-            iterArray[leafs] = octreeIterator;
-            ++leafs;
+            iterArray[numberOfLeafs] = octreeIterator;
+            ++numberOfLeafs;
         } while(octreeIterator.moveRight());
 
         FDEBUG(FTic computationCounter);
@@ -123,7 +123,7 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for
-            for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
+            for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
                 FList<ParticleClass*>* const sources = iterArray[idxLeafs].getCurrentListSrc();
@@ -159,11 +159,11 @@ public:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
-            int leafs = 0;
+            int numberOfCells = 0;
             // for each cells
             do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
+                iterArray[numberOfCells] = octreeIterator;
+                ++numberOfCells;
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
@@ -173,12 +173,12 @@ public:
             {
                 Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for
-                for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
+                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
                     CellClass* potentialChild[8];
-                    CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
-                    CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                    CellClass** const realChild = iterArray[idxCell].getCurrentChild();
+                    CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                         potentialChild[idxChild] = 0;
                         if(realChild[idxChild]){
@@ -218,11 +218,11 @@ public:
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                int leafs = 0;
+                int numberOfCells = 0;
                 // for each cells
                 do{
-                    iterArray[leafs] = octreeIterator;
-                    ++leafs;
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
                 } while(octreeIterator.moveRight());
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
@@ -233,10 +233,10 @@ public:
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     CellClass* neighbors[208];
                     #pragma omp for
-                    for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                        CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),idxLevel);
+                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalIndex(),idxLevel);
                             int offsetTargetNeighbors = 0;
                             for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
                                 if(neighbors[idxRealNeighbors]->hasSrcChild()){
@@ -273,11 +273,11 @@ public:
             const int heightMinusOne = OctreeHeight - 1;
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-                int leafs = 0;
+                int numberOfCells = 0;
                 // for each cells
                 do{
-                    iterArray[leafs] = octreeIterator;
-                    ++leafs;
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
                 } while(octreeIterator.moveRight());
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
@@ -287,10 +287,10 @@ public:
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for
-                    for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
+                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* potentialChild[8];
-                        CellClass** const realChild = iterArray[idxLeafs].getCurrentChild();
-                        CellClass* const currentCell = iterArray[idxLeafs].getCurrentCell();
+                        CellClass** const realChild = iterArray[idxCell].getCurrentChild();
+                        CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                             if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
                                 potentialChild[idxChild] = realChild[idxChild];
@@ -317,14 +317,14 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
-        int leafs = 0;
+        int numberOfLeafs = 0;
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
-            // for each leafs
+            // for each leaf
             do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
+                iterArray[numberOfLeafs] = octreeIterator;
+                ++numberOfLeafs;
             } while(octreeIterator.moveRight());
         }
 
@@ -337,7 +337,7 @@ public:
             FList<ParticleClass*>* neighbors[26];
 
             #pragma omp for
-            for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
+            for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particles and neighbors particles
                 const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
