@@ -97,6 +97,8 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Width of box is " << loader.getBoxWidth() << std::endl;
+    std::cout << "Center of box is x " << loader.getCenterOfBox().getX()  << " y " << loader.getCenterOfBox().getY() << " z " << loader.getCenterOfBox().getZ()<< std::endl;
     counter.tic();
 
     Particle* particles = new Particle[loader.getNumberOfParticles()];

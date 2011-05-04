@@ -59,7 +59,6 @@ public:
             if(nbReadElements == 5){
                 this->boxWidth = fBoxWidth;
                 this->centerOfBox.setPosition(x,y,z);
-                this->boxWidth *= 2;
 
                 char buff[512];
                 char * ret = fgets(buff, 512, file);
