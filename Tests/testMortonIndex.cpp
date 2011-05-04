@@ -68,8 +68,8 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to know the box used.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 9;
-    const int SizeSubLevels = 3;
+    const int NbLevels = 6;
+    const int SizeSubLevels = 2;
     FTic counter;
     const char* const defaultFilename = "../Data/testH.txt";
     const char* filename;
