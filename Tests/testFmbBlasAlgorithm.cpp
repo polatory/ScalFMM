@@ -159,9 +159,6 @@ int main(int argc, char ** argv){
 
     std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        particles[idxPart].~FmbParticle();
-    }
     delete [] particles;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;

@@ -86,6 +86,135 @@ public :
 };
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Test function
+/////////////////////////////////////////////////////////////////////////////
+
+/** This function test the octree to be sure that the fmm algorithm
+  * has worked completly.
+  */
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
+void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const badTree,
+                         FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const valideTree,
+                         FFmmAlgorithmThreadProc<FTestKernels, ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>*const fmm){
+    std::cout << "Check Result\n";
+    {
+        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+        octreeIterator.gotoBottomLeft();
+
+        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIteratorValide(valideTree);
+        octreeIteratorValide.gotoBottomLeft();
+
+        for(int level = OctreeHeight - 1 ; level > 0 ; --level){
+            int NbLeafs = 0;
+            do{
+                ++NbLeafs;
+            } while(octreeIterator.moveRight());
+            octreeIterator.gotoLeft();
+
+            const int startIdx = fmm->getLeft(NbLeafs);
+            const int endIdx = fmm->getRight(NbLeafs);
+            // Check that each particle has been summed with all other
+
+            for(int idx = 0 ; idx < startIdx ; ++idx){
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+
+            for(int idx = startIdx ; idx < endIdx ; ++idx){
+                if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
+                    std::cout << "Error index are not equal!" << std::endl;
+                }
+                else{
+                    if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
+                        std::cout << "M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
+                                << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " idx " << idx << std::endl;
+                    }
+                    if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
+                        std::cout << "L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
+                                << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " idx " << idx << std::endl;
+                    }
+                }
+
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+
+            octreeIterator.moveUp();
+            octreeIterator.gotoLeft();
+
+            octreeIteratorValide.moveUp();
+            octreeIteratorValide.gotoLeft();
+        }
+    }
+    {
+        int NbPart = 0;
+        int NbLeafs = 0;
+        { // Check that each particle has been summed with all other
+            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                NbPart += octreeIterator.getCurrentListSrc()->getSize();
+                ++NbLeafs;
+            } while(octreeIterator.moveRight());
+            std::cout << "There is " << NbPart << " particles on " << NbLeafs << " Leafs" << std::endl;
+        }
+        {
+            const int startIdx = fmm->getLeft(NbLeafs);
+            const int endIdx = fmm->getRight(NbLeafs);
+            // Check that each particle has been summed with all other
+            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+
+            for(int idx = 0 ; idx < startIdx ; ++idx){
+                octreeIterator.moveRight();
+            }
+
+            for(int idx = startIdx ; idx < endIdx ; ++idx){
+                typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+
+                const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
+
+                while( iter.isValide() ){
+                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                    // there is a problem
+                    if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
+                        (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
+                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.value()->getDataDown() << "\n";
+                    }
+                    iter.progress();
+                }
+                octreeIterator.moveRight();
+            }
+        }
+    }
+
+    std::cout << "Done\n";
+}
+
+/** To print an octree
+  * used to debug and understand how the values were passed
+  */
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
+void print(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const valideTree){
+    typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(valideTree);
+    for(int idxLevel = OctreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
+        do{
+            std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
+        } while(octreeIterator.moveRight());
+        std::cout << "\n";
+        octreeIterator.gotoLeft();
+        octreeIterator.moveDown();
+    }
+}
+
+
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
@@ -122,8 +251,8 @@ int main(int argc, char ** argv){
     std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
-    TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-    TestParticle* particlesValide = new TestParticle[loader.getNumberOfParticles()];
+    TestParticle*const particles = new TestParticle[loader.getNumberOfParticles()];
+    TestParticle*const particlesValide = new TestParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart]);
@@ -172,7 +301,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    algo.ValidateFMMAlgoProc(&treeValide);
+    ValidateFMMAlgoProc<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

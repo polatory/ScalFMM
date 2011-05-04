@@ -21,7 +21,7 @@
 
 
 /** Basic function to convert a morton index in decimal string */
-std::string MortonToDecimal(MortonIndex index, int level){
+std::string MortonToBinary(MortonIndex index, int level){
     std::string str;
     int bits = 1 << ((level * 3) - 1);
     int dim = 0;
@@ -108,7 +108,7 @@ int main(int , char ** ){
 
                 FTreeCoordinate coord(x,y,z);
                 const MortonIndex index = coord.getMortonIndex(requiredlevel) ;
-                std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToDecimal(index,requiredlevel) << "D\n\n";
+                std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
             }
             break;
         case 2: /////////////////////////////////////////////////////////////////
@@ -140,7 +140,7 @@ int main(int , char ** ){
                 host.setZ( FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) );
 
                 const MortonIndex index = host.getMortonIndex(requiredlevel);
-                std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToDecimal(index,requiredlevel) << "d\n\n";
+                std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToBinary(index,requiredlevel) << "d\n\n";
             }
             break;
         case 3: /////////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ int main(int , char ** ){
                             FTreeCoordinate coord(x,y,z);
                             const MortonIndex index = coord.getMortonIndex(requiredlevel);
                             std::cout << "[x = " << x << " y = " << y << " z = " << z << "]\n";
-                            std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToDecimal(index,requiredlevel) << "D\n\n";
+                            std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
                         }
                     }
                 }
@@ -202,7 +202,7 @@ int main(int , char ** ){
                             FTreeCoordinate coord(x,y,z);
                             const MortonIndex index = coord.getMortonIndex(requiredlevel);
                             std::cout << "[x = " << x << " y = " << y << " z = " << z << "]\n";
-                            std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToDecimal(index,requiredlevel) << "D\n\n";
+                            std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
                         }
                     }
                 }
