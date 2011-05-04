@@ -32,6 +32,9 @@
 * Threaded & based on the inspector-executor model
 * schedule(runtime) export OMP_NUM_THREADS=2
 * export OMPI_CXX=`which g++-4.4`
+* mpirun -np 2 valgrind --suppressions=/usr/share/openmpi/openmpi-valgrind.supp
+* --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
+* ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
 class ParticleClass, class CellClass,
@@ -466,12 +469,12 @@ public:
             FBoolArray* const indexToReceive = new FBoolArray(1 << (3*(OctreeHeight-1)));
 
             struct LimitCell { int counter;  CellClass* neighbors[208]; };
-            LimitCell ** const unfinishedCells = new LimitCell*[this->leafRight - this->leafLeft];
+            LimitCell ** const unfinishedCells = new LimitCell*[this->leafRight - this->leafLeft + 1];
 
             FBoolArray* alreadySent[this->nbProcess];
             MortonIndex upperLimitForProc[this->nbProcess];
             for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
-                alreadySent[idxProc] = new FBoolArray(this->leafRight - this->leafLeft);
+                alreadySent[idxProc] = new FBoolArray(this->leafRight - this->leafLeft + 1);
             }
 
             // for each levels
@@ -650,11 +653,11 @@ public:
                 }
             }
 
-            /*bogue for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
+            for(int idxProc = 0 ; idxProc < nbProcess; ++idxProc){
                 delete alreadySent[idxProc];
-            }*/ // bogue
+            }
 
-            delete [] unfinishedCells;// bogue
+            delete [] unfinishedCells;
             delete indexToReceive;
 
             app.processBarrier();
