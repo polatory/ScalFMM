@@ -366,6 +366,8 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
+                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
+
                         int source = 0, filled = 0;
                         int position;
                         char buffer[BufferSize];
@@ -744,6 +746,8 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,rightOffsets[idxLevel]) + FMath::Max(0,leftOffsets[idxLevel]);
+                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
+
                         int source = 0, filled = 0;
                         int position;
                         char buffer[BufferSize];

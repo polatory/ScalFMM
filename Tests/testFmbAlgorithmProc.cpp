@@ -20,6 +20,7 @@
 #include "../Src/Fmb/FExtendFmbCell.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
+#include "../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
@@ -49,6 +50,9 @@ public:
   */
 class FmbCell : public FBasicCell, public FExtendFmbCell , public FAbstractSendable{
 public:
+    ///////////////////////////////////////////////////////
+    // to extend FAbstractSendable
+    ///////////////////////////////////////////////////////
     int bytesToSendUp() const{
         return sizeof(FComplexe)*MultipoleSize;
     }
@@ -75,10 +79,167 @@ public:
         return sizeof(FComplexe)*MultipoleSize;
     }
     int readDown(void* const buffer, const int) {
-        memcpy(local_exp,buffer,bytesToSendDown());
+        FComplexe*const otherLocal = static_cast<FComplexe*>(buffer);
+        for(int idx = 0 ; idx < MultipoleSize ; ++idx){
+            local_exp[idx] += otherLocal[idx];
+        }
         return bytesToReceiveDown();
     }
+
+    ///////////////////////////////////////////////////////
+    // to test equality between good or bad solution
+    ///////////////////////////////////////////////////////
+    /** To compare data */
+    bool isEqualPole(const FmbCell& other, FReal*const cumul){
+        //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
+        //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
+        *cumul = 0.0;
+        for(int idx = 0; idx < MultipoleSize; ++idx){
+            *cumul += FMath::Abs( multipole_exp[idx].getImag() - other.multipole_exp[idx].getImag() );
+            *cumul += FMath::Abs( multipole_exp[idx].getReal() - other.multipole_exp[idx].getReal() );
+        }
+
+        return *cumul == 0.0;//FMath::LookEqual(cumul,FReal(0.0));
+    }
+
+    /** To compare data */
+    bool isEqualLocal(const FmbCell& other, FReal*const cumul){
+        //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
+        //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
+        *cumul = 0.0;
+        for(int idx = 0; idx < MultipoleSize; ++idx){
+            *cumul += FMath::Abs( local_exp[idx].getImag() - other.local_exp[idx].getImag() );
+            *cumul += FMath::Abs( local_exp[idx].getReal() - other.local_exp[idx].getReal() );
+        }
+
+        return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+    }
 };
+
+
+
+template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+        class ParticleClass, class CellClass,
+        template<class ParticleClass> class LeafClass,
+        int OctreeHeight, int SubtreeHeight>
+void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const badTree,
+                         FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const valideTree,
+                         FFmmAlgorithmThreadProc<FFmbKernels, ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>*const fmm){
+    std::cout << "Check Result\n";
+    {
+        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+        octreeIterator.gotoBottomLeft();
+
+        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIteratorValide(valideTree);
+        octreeIteratorValide.gotoBottomLeft();
+
+        for(int level = OctreeHeight - 1 ; level >= 1 ; --level){
+            int NbLeafs = 0;
+            do{
+                ++NbLeafs;
+            } while(octreeIterator.moveRight());
+            octreeIterator.gotoLeft();
+
+            const int startIdx = fmm->getLeft(NbLeafs);
+            const int endIdx = fmm->getRight(NbLeafs);
+            // Check that each particle has been summed with all other
+
+            for(int idx = 0 ; idx < startIdx ; ++idx){
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+
+            for(int idx = startIdx ; idx < endIdx ; ++idx){
+                if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
+                    std::cout << "Error index are not equal!" << std::endl;
+                }
+                else{
+                    FReal cumul;
+                    if( !octreeIterator.getCurrentCell()->isEqualPole(*octreeIteratorValide.getCurrentCell(),&cumul) ){
+                        std::cout << "Pole Data are different." << idx << " Cumul " << cumul << std::endl;
+                    }
+                    if( !octreeIterator.getCurrentCell()->isEqualLocal(*octreeIteratorValide.getCurrentCell(),&cumul) ){
+                        std::cout << "Local Data are different." << idx << " Cumul " << cumul << std::endl;
+                    }
+                }
+
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+
+            octreeIterator.moveUp();
+            octreeIterator.gotoLeft();
+
+            octreeIteratorValide.moveUp();
+            octreeIteratorValide.gotoLeft();
+        }
+    }
+    {
+        int NbLeafs = 0;
+        { // Check that each particle has been summed with all other
+            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                ++NbLeafs;
+            } while(octreeIterator.moveRight());
+            std::cout << "There is " << NbLeafs << " Leafs" << std::endl;
+        }
+        {
+            const int startIdx = fmm->getLeft(NbLeafs);
+            const int endIdx = fmm->getRight(NbLeafs);
+            // Check that each particle has been summed with all other
+            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+
+            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIteratorValide(valideTree);
+            octreeIteratorValide.gotoBottomLeft();
+
+            for(int idx = 0 ; idx < startIdx ; ++idx){
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+
+            for(int idx = startIdx ; idx < endIdx ; ++idx){
+                typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+
+                typename FList<ParticleClass*>::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+
+                if( octreeIterator.getCurrentListSrc()->getSize() != octreeIteratorValide.getCurrentListSrc()->getSize()){
+                    std::cout << idx << " Particules numbers is different " << std::endl;
+                }
+                if( octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
+                    std::cout << idx << " Index are differents " << std::endl;
+                }
+
+                while( iter.isValide() && iterValide.isValide() ){
+                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                    // there is a problem
+
+                    if( iterValide.value()->getPotential() != iter.value()->getPotential() ){
+                        std::cout << idx << " Potential error : " << iterValide.value()->getPotential()  << " " << iter.value()->getPotential() << "\n";
+                    }
+                    if( !FMath::LookEqual(iterValide.value()->getForces().getX(),iter.value()->getForces().getX())
+                            || !FMath::LookEqual(iterValide.value()->getForces().getY(),iter.value()->getForces().getY())
+                            || !FMath::LookEqual(iterValide.value()->getForces().getZ(),iter.value()->getForces().getZ()) ){
+                        /*std::cout << idx << " Forces error : " << (iterValide.value()->getForces().getX() - iter.value()->getForces().getX())
+                                  << " " << (iterValide.value()->getForces().getY() - iter.value()->getForces().getY())
+                                  << " " << (iterValide.value()->getForces().getZ() - iter.value()->getForces().getZ()) << "\n";*/
+                        std::cout << idx << " Forces error : x " << iterValide.value()->getForces().getX() << " " << iter.value()->getForces().getX()
+                                  << " y " << iterValide.value()->getForces().getY()  << " " << iter.value()->getForces().getY()
+                                  << " z " << iterValide.value()->getForces().getZ()  << " " << iter.value()->getForces().getZ() << "\n";
+                    }
+                    iter.progress();
+                    iterValide.progress();
+                }
+
+                octreeIterator.moveRight();
+                octreeIteratorValide.moveRight();
+            }
+        }
+    }
+
+    std::cout << "Done\n";
+}
 
 
 // Simply create particles and try the kernels
@@ -115,15 +276,19 @@ int main(int argc, char ** argv){
 
     FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> treeValide(loader.getBoxWidth(),loader.getCenterOfBox());
+
     // -----------------------------------------------------
 
     std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
-    FmbParticle* particles = new FmbParticle[loader.getNumberOfParticles()];
+    FmbParticle*const particles = new FmbParticle[loader.getNumberOfParticles()];
+    FmbParticle*const particlesValide = new FmbParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart]);
+        particlesValide[idxPart] = particles[idxPart];
     }
 
     counter.tac();
@@ -135,6 +300,7 @@ int main(int argc, char ** argv){
     counter.tic();
     for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         tree.insert(&particles[idxPart]);
+        treeValide.insert(&particlesValide[idxPart]);
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -149,6 +315,9 @@ int main(int argc, char ** argv){
     FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(app,&tree,&kernels);
     algo.execute();
 
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algoValide(&treeValide,&kernels);
+    algoValide.execute();
+
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
@@ -156,8 +325,15 @@ int main(int argc, char ** argv){
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
+
+        FReal potentialValide = 0;
+        F3DPosition forcesValide;
+
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
+
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorValide(&treeValide);
+        octreeIteratorValide.gotoBottomLeft();
 
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator countLeafsIterator(octreeIterator);
         int NbLeafs = 0;
@@ -168,20 +344,38 @@ int main(int argc, char ** argv){
         const int startIdx = algo.getLeft(NbLeafs);
         const int endIdx = algo.getRight(NbLeafs);
 
+        std::cout <<"From " << startIdx << " to " << endIdx << "  NbLeafs is " << NbLeafs << std::endl;
+
         for(int idxLeaf = 0 ; idxLeaf < startIdx ; ++idxLeaf){
             octreeIterator.moveRight();
+            octreeIteratorValide.moveRight();
         }
 
         for(int idxLeaf = startIdx ; idxLeaf < endIdx ; ++idxLeaf){
             FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.isValide() ){
+            FList<FmbParticle*>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+
+            while( iter.isValide() && iterValide.isValide() ){
                 potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
                 forces += iter.value()->getForces();
 
+                potentialValide += iterValide.value()->getPotential() * iterValide.value()->getPhysicalValue();
+                forcesValide += iterValide.value()->getForces();
+
+                iterValide.progress();
                 iter.progress();
             }
+
             octreeIterator.moveRight();
+            octreeIteratorValide.moveRight();
         }
+
+
+        std::cout << "MPI Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+        std::cout << "Valide Foces Sum  x = " << forcesValide.getX() << " y = " << forcesValide.getY() << " z = " << forcesValide.getZ() << std::endl;
+
+        std::cout << "MPI Potential = " << potential << std::endl;
+        std::cout << "Valide Potential = " << potentialValide << std::endl;
 
         potential = app.reduceSum(potential);
         forces.setX(app.reduceSum(forces.getX()));
@@ -194,11 +388,14 @@ int main(int argc, char ** argv){
     }
 
 
+    ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
+
     // -----------------------------------------------------
 
     std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
     delete [] particles;
+    delete [] particlesValide;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 

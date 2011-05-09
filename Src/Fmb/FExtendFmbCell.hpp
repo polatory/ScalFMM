@@ -41,8 +41,8 @@ public:
 
     /** Copy constructor */
     FExtendFmbCell& operator=(const FExtendFmbCell& other) {
-        memcpy(multipole_exp, other.multipole_exp, sizeof(multipole_exp));
-        memcpy(local_exp, other.local_exp, sizeof(local_exp));
+        memcpy(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize);
+        memcpy(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize);
         return *this;
     }
 
