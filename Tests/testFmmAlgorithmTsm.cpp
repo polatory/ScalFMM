@@ -18,8 +18,8 @@
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
 
-#include "../Src/Extenssions/FExtendParticleType.hpp"
-#include "../Src/Extenssions/FExtendCellType.hpp"
+#include "../Src/Extensions/FExtendParticleType.hpp"
+#include "../Src/Extensions/FExtendCellType.hpp"
 
 #include "../Src/Core/FFmmAlgorithmTsm.hpp"
 #include "../Src/Core/FFmmAlgorithmThreadTsm.hpp"

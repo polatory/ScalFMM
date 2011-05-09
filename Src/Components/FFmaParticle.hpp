@@ -3,7 +3,7 @@
 // /!\ Please, you must read the license at the bottom of this page
 
 #include "FBasicParticle.hpp"
-#include "../Extenssions/FExtendPhysicalValue.hpp"
+#include "../Extensions/FExtendPhysicalValue.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

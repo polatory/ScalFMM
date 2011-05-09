@@ -16,7 +16,7 @@
 #include "../Src/Components/FTestParticle.hpp"
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
-#include "../Src/Extenssions/FExtendPhysicalValue.hpp"
+#include "../Src/Extensions/FExtendPhysicalValue.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"

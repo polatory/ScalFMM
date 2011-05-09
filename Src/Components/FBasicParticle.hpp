@@ -2,7 +2,7 @@
 #define FBASICPARTICLE_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-#include "../Extenssions/FExtendPosition.hpp"
+#include "../Extensions/FExtendPosition.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

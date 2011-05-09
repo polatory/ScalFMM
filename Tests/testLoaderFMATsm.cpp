@@ -17,7 +17,7 @@
 #include "../Src/Components/FFmaParticle.hpp"
 #include "../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Extenssions/FExtendParticleType.hpp"
+#include "../Src/Extensions/FExtendParticleType.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 

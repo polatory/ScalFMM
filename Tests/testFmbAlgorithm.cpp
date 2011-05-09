@@ -11,8 +11,8 @@
 #include "../Src/Containers/FList.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extenssions/FExtendForces.hpp"
-#include "../Src/Extenssions/FExtendPotential.hpp"
+#include "../Src/Extensions/FExtendForces.hpp"
+#include "../Src/Extensions/FExtendPotential.hpp"
 
 #include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Fmb/FExtendFmbCell.hpp"

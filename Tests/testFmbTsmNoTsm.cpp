@@ -11,11 +11,11 @@
 #include "../Src/Containers/FList.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extenssions/FExtendForces.hpp"
-#include "../Src/Extenssions/FExtendPotential.hpp"
+#include "../Src/Extensions/FExtendForces.hpp"
+#include "../Src/Extensions/FExtendPotential.hpp"
 
-#include "../Src/Extenssions/FExtendParticleType.hpp"
-#include "../Src/Extenssions/FExtendCellType.hpp"
+#include "../Src/Extensions/FExtendParticleType.hpp"
+#include "../Src/Extensions/FExtendCellType.hpp"
 
 
 #include "../Src/Components/FBasicCell.hpp"
