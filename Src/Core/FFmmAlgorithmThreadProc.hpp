@@ -66,7 +66,7 @@ int OctreeHeight, int SubtreeHeight>
     const int nbProcess;                //< Number of process
     const int idPorcess;                //< Id of current process
 
-    const static int BufferSize = 500;      //< To know max of the buffer we receive
+    const static int BufferSize = 2000;      //< To know max of the buffer we receive
     FBufferVector<BufferSize> * sendBuffer;  //< To put data to send into a buffer
 
     /** To swap between two arrays
@@ -366,7 +366,6 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,-rightOffset) + FMath::Max(0,-leftOffset);
-                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
 
                         int source = 0, filled = 0;
                         int position;
@@ -504,6 +503,7 @@ public:
                 }
                 indexToReceive->setToZeros();
 
+
                 // to count missing data
                 int needToReceive = 0;
 
@@ -537,7 +537,7 @@ public:
 
                                 if(indexCell < startIdxIndex){
                                     --idxReceiver;
-                                    while(idxReceiver && indexCell < upperLimitForProc[idxReceiver-1]){
+                                    while(idxReceiver && indexCell <= upperLimitForProc[idxReceiver-1]){
                                         --idxReceiver;
                                     }
                                 }
@@ -613,8 +613,10 @@ public:
                     // received computed data
                     #pragma omp single
                     {
-                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
                         FDEBUG(receiveCounter.tic());
+
+
+                        //FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
 
                         int source = 0, filled = 0;
                         int position;
@@ -746,7 +748,7 @@ public:
                     {
                         FDEBUG(receiveCounter.tic());
                         int needToReceive = FMath::Max(0,rightOffsets[idxLevel]) + FMath::Max(0,leftOffsets[idxLevel]);
-                        FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
+                        //FDEBUG( FDebug::Controller << "\t\tNeed to receive "  << needToReceive << " cells.\n" );
 
                         int source = 0, filled = 0;
                         int position;

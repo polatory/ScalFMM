@@ -26,7 +26,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = 10;
+    const long NbParticles = 2000000;
 
     // Center of the box
     const float XCenter = 0.5;

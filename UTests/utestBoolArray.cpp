@@ -12,21 +12,31 @@
 class TestArray : public FUTester<TestArray> {
 
         void TestGetSet(){
-                FBoolArray array(10);
-                for(int idx = 0 ; idx < 10 ; ++idx){
+                FBoolArray array(500);
+                for(int idx = 0 ; idx < 500 ; ++idx){
                     assert(!array.get(idx));
                 }
 
-                for(int idx = 0 ; idx < 10 ; ++idx){
+                for(int idx = 0 ; idx < 500 ; ++idx){
                     array.set(idx, true);
                     assert(array.get(idx));
+                    array.set(idx, false);
+                    assert(!array.get(idx));
+                }
+
+                for(int idx = 0 ; idx < 500 ; ++idx){
+                    array.set(idx, true);
+                }
+                array.setToZeros();
+                for(int idx = 0 ; idx < 500 ; ++idx){
+                    assert(!array.get(idx));
                 }
 	}
 
         void TestGetSet2(){
-                FBoolArray array(10);
+                FBoolArray array(100);
 
-                for(int idx = 0 ; idx < 10 ; ++idx){
+                for(int idx = 0 ; idx < 100 ; ++idx){
                     if(idx%3){
                         array.set(idx, true);
                         assert(array.get(idx));

@@ -28,6 +28,9 @@
 
 #include "../Src/Files/FFmaLoader.hpp"
 
+
+//#define VALIDATE_FMM
+
 // With openmp : g++ testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
 // icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
@@ -117,7 +120,7 @@ public:
 };
 
 
-
+#ifdef VALIDATE_FMM
 template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
         class ParticleClass, class CellClass,
         template<class ParticleClass> class LeafClass,
@@ -240,7 +243,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
 
     std::cout << "Done\n";
 }
-
+#endif
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -275,20 +278,23 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
-
+#ifdef VALIDATE_FMM
     FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> treeValide(loader.getBoxWidth(),loader.getCenterOfBox());
-
+#endif
     // -----------------------------------------------------
 
     std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
     FmbParticle*const particles = new FmbParticle[loader.getNumberOfParticles()];
+#ifdef VALIDATE_FMM
     FmbParticle*const particlesValide = new FmbParticle[loader.getNumberOfParticles()];
-
+#endif
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart]);
+#ifdef VALIDATE_FMM
         particlesValide[idxPart] = particles[idxPart];
+#endif
     }
 
     counter.tac();
@@ -300,7 +306,9 @@ int main(int argc, char ** argv){
     counter.tic();
     for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         tree.insert(&particles[idxPart]);
+#ifdef VALIDATE_FMM
         treeValide.insert(&particlesValide[idxPart]);
+#endif
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -314,10 +322,10 @@ int main(int argc, char ** argv){
 
     FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(app,&tree,&kernels);
     algo.execute();
-
+#ifdef VALIDATE_FMM
     FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algoValide(&treeValide,&kernels);
     algoValide.execute();
-
+#endif
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
@@ -325,16 +333,16 @@ int main(int argc, char ** argv){
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
-
+#ifdef VALIDATE_FMM
         FReal potentialValide = 0;
         F3DPosition forcesValide;
-
+#endif
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
-
+#ifdef VALIDATE_FMM
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorValide(&treeValide);
         octreeIteratorValide.gotoBottomLeft();
-
+#endif
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator countLeafsIterator(octreeIterator);
         int NbLeafs = 0;
         do{
@@ -348,35 +356,44 @@ int main(int argc, char ** argv){
 
         for(int idxLeaf = 0 ; idxLeaf < startIdx ; ++idxLeaf){
             octreeIterator.moveRight();
+#ifdef VALIDATE_FMM
             octreeIteratorValide.moveRight();
+#endif
         }
 
         for(int idxLeaf = startIdx ; idxLeaf < endIdx ; ++idxLeaf){
             FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+#ifdef VALIDATE_FMM
             FList<FmbParticle*>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-
-            while( iter.isValide() && iterValide.isValide() ){
+#endif
+            while( iter.isValide()
+#ifdef VALIDATE_FMM
+                  && iterValide.isValide()
+#endif
+                  ){
                 potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
                 forces += iter.value()->getForces();
-
+#ifdef VALIDATE_FMM
                 potentialValide += iterValide.value()->getPotential() * iterValide.value()->getPhysicalValue();
                 forcesValide += iterValide.value()->getForces();
-
                 iterValide.progress();
+#endif
                 iter.progress();
             }
 
             octreeIterator.moveRight();
+#ifdef VALIDATE_FMM
             octreeIteratorValide.moveRight();
+#endif
         }
 
 
+#ifdef VALIDATE_FMM
         std::cout << "MPI Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Valide Foces Sum  x = " << forcesValide.getX() << " y = " << forcesValide.getY() << " z = " << forcesValide.getZ() << std::endl;
-
         std::cout << "MPI Potential = " << potential << std::endl;
         std::cout << "Valide Potential = " << potentialValide << std::endl;
-
+#endif
         potential = app.reduceSum(potential);
         forces.setX(app.reduceSum(forces.getX()));
         forces.setY(app.reduceSum(forces.getY()));
@@ -387,15 +404,17 @@ int main(int argc, char ** argv){
         }
     }
 
-
+#ifdef VALIDATE_FMM
     ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
-
+#endif
     // -----------------------------------------------------
 
     std::cout << "Deleting particles ..." << std::endl;
     counter.tic();
     delete [] particles;
+#ifdef VALIDATE_FMM
     delete [] particlesValide;
+#endif
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
