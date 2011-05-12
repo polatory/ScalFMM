@@ -100,7 +100,7 @@ public:
         this->sendBuffer = new FBufferVector<BufferSize>[nbProcess];
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
-        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << " .\n");
+        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << app.processCount() << ".\n");
     }
 
     /** Default destructor */

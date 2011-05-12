@@ -64,7 +64,7 @@ public:
             this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmThread\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
     }
 
     /** Default destructor */

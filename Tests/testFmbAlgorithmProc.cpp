@@ -29,6 +29,7 @@
 #include "../Src/Files/FFmaLoader.hpp"
 
 
+
 //#define VALIDATE_FMM
 
 // With openmp : g++ testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe

@@ -116,14 +116,11 @@ int main(int argc, char ** argv){
 
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask FFmmAlgorithmThreadUs
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    //std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
-    //std::cout << "Potential = " << kernels.getPotential() << std::endl;
 
     { // get sum forces&potential
         FReal potential = 0;
