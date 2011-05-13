@@ -325,13 +325,14 @@ public:
         }
 
         FDEBUG(computationCounter.tic());
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            const int leafAtThisShape = this->shapeLeaf[idxShape];
-            #pragma omp parallel
-            {
-                Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                // There is a maximum of 26 neighbors
-                FList<ParticleClass*>* neighbors[26];
+        #pragma omp parallel
+        {
+            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            // There is a maximum of 26 neighbors
+            FList<ParticleClass*>* neighbors[26];
+
+            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+                const int leafAtThisShape = this->shapeLeaf[idxShape];
 
                 #pragma omp for
                 for(int idxLeafs = 0 ; idxLeafs < leafAtThisShape ; ++idxLeafs){
