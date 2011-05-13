@@ -121,7 +121,7 @@ int main(int argc, char ** argv){
         treeTyped.insert(&particlesTyped[idxPart*2+1]);
     }
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -137,7 +137,7 @@ int main(int argc, char ** argv){
     algoTyped.execute();
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 

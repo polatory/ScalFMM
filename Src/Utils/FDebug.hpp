@@ -7,11 +7,9 @@
 #ifndef SCALFMM_USE_DEBUG
 
 #define FDEBUG( X )
-#define FDEBUG( X )
 
 #else
 
-#define FDEBUG( X ) X
 #define FDEBUG( X ) X
 
 #include <iostream>

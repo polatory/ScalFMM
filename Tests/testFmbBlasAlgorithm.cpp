@@ -110,7 +110,7 @@ int main(int argc, char ** argv){
         tree.insert(&particles[idxPart]);
     }
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -124,7 +124,7 @@ int main(int argc, char ** argv){
     algo.execute();
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     //std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
     //std::cout << "Potential = " << kernels.getPotential() << std::endl;

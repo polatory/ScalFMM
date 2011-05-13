@@ -228,7 +228,7 @@ public:
         this->leafRight = endIdx - 1;
         this->numberOfLeafs = leafs;
 
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -438,7 +438,7 @@ public:
 
         app.processBarrier();
 
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
@@ -480,6 +480,7 @@ public:
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+
                 int numberOfCells = 0;
                 // for each cells
                 do{
@@ -666,7 +667,7 @@ public:
 
             app.processBarrier();
 
-            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
@@ -784,7 +785,7 @@ public:
 
             app.processBarrier();
 
-            FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
@@ -837,7 +838,7 @@ public:
         FDEBUG(computationCounter.tac());
 
 
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }

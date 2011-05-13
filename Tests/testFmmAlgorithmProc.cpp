@@ -279,7 +279,7 @@ int main(int argc, char ** argv){
         treeValide.insert(&particlesValide[idxPart]);
     }
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +296,7 @@ int main(int argc, char ** argv){
     algoValide.execute();
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

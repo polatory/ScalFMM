@@ -32,8 +32,11 @@
 
 //#define VALIDATE_FMM
 
-// With openmp : g++ testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
+// With openmp : mpicxx -g testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithmProc.exe
 // icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+
+// mpirun -np 3 `eztrace -e ./Tests/Debug/testFmbAlgorithmProc ../Data/testFMAlgorithm.fma.tmp `
+// eztrace_convert -o my_paje /tmp/berenger_eztrace_log_rank_0 /tmp/berenger_eztrace_log_rank_1 /tmp/berenger_eztrace_log_rank_2
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -91,7 +94,7 @@ public:
     }
 
     ///////////////////////////////////////////////////////
-    // to test equality between good or bad solution
+    // to test equality between good and potentialy bad solution
     ///////////////////////////////////////////////////////
     /** To compare data */
     bool isEqualPole(const FmbCell& other, FReal*const cumul){
@@ -312,7 +315,7 @@ int main(int argc, char ** argv){
 #endif
     }
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -328,7 +331,7 @@ int main(int argc, char ** argv){
     algoValide.execute();
 #endif
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
 
     { // get sum forces&potential

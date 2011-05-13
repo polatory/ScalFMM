@@ -101,7 +101,7 @@ public:
         } while(octreeIterator.moveRight());
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -154,7 +154,7 @@ public:
         }
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -205,7 +205,7 @@ public:
             }
         }
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
@@ -245,7 +245,7 @@ public:
         }
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
@@ -275,7 +275,7 @@ public:
         } while(octreeIterator.moveRight());
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished ("  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
