@@ -804,25 +804,60 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
+        // init
+        const int LeafIndex = OctreeHeight - 1;
+        const int SizeShape = 3*3*3;
+        int shapeLeaf[SizeShape];
+        OctreeIterator* shapeArray[SizeShape];
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            shapeLeaf[idxShape] = 0;
+        }
+
+        // split data
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
+            // remove useless leafs
             for(int idxLeaf = 0 ; idxLeaf < this->leafLeft ; ++idxLeaf){
                 octreeIterator.moveRight();
             }
 
+            // to store which shape for each leaf
+            int* const shapeType = new int [this->leafRight - this->leafLeft + 1];
+
             for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
                 iterArray[idxLeaf] = octreeIterator;
+
+                const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
+                FTreeCoordinate coord;
+                coord.setPositionFromMorton(index, LeafIndex);
+                const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                shapeType[idxLeaf-this->leafLeft] = shape;
+                ++shapeLeaf[shape];
+
                 octreeIterator.moveRight();
             }
+
+            // init iter array
+            int countShape[SizeShape];
+            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+                shapeArray[idxShape] = new OctreeIterator[shapeLeaf[idxShape]];
+                countShape[idxShape] = 0;
+            }
+
+            // store leafs
+            for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
+                const int idxShape = shapeType[idxLeaf - this->leafLeft];
+                shapeArray[idxShape][countShape[idxShape]++] = iterArray[idxLeaf];
+            }
+
+            delete[] shapeType;
         }
 
         FDEBUG(FTic computationCounter);
 
-        const int LeafIndex = OctreeHeight - 1;
         const int startIdx = this->leafLeft;
-        const int endIdx = this->leafRight + 1;
 
         #pragma omp parallel
         {
@@ -830,16 +865,19 @@ public:
             // There is a maximum of 26 neighbors
             FList<ParticleClass*>* neighbors[26];
 
-            #pragma omp for
-            for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
-                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),LeafIndex);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter);
+            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+                const int leafAtThisShape = shapeLeaf[idxShape];
+
+                #pragma omp for
+                for(int idxLeafs = startIdx ; idxLeafs < leafAtThisShape ; ++idxLeafs){
+                    myThreadkernels->L2P(shapeArray[idxShape][idxLeafs].getCurrentCell(), shapeArray[idxShape][idxLeafs].getCurrentListTargets());
+                    // need the current particles and neighbors particles
+                    const int counter = tree->getLeafsNeighbors(neighbors, shapeArray[idxShape][idxLeafs].getCurrentGlobalIndex(),LeafIndex);
+                    myThreadkernels->P2P( shapeArray[idxShape][idxLeafs].getCurrentListTargets(), shapeArray[idxShape][idxLeafs].getCurrentListSrc() , neighbors, counter);
+                }
             }
         }
         FDEBUG(computationCounter.tac());
-
 
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
