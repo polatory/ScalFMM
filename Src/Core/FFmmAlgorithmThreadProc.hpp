@@ -804,22 +804,25 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
-        const int LeafIndex = OctreeHeight - 1;
-        int leafs = 0;
         {
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
-            // for each cells
-            do{
-                iterArray[leafs] = octreeIterator;
-                ++leafs;
-            } while(octreeIterator.moveRight());
+
+            for(int idxLeaf = 0 ; idxLeaf < this->leafLeft ; ++idxLeaf){
+                octreeIterator.moveRight();
+            }
+
+            for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
+                iterArray[idxLeaf] = octreeIterator;
+                octreeIterator.moveRight();
+            }
         }
 
         FDEBUG(FTic computationCounter);
 
-        const int startIdx = getLeft(leafs);
-        const int endIdx = getRight(leafs);
+        const int LeafIndex = OctreeHeight - 1;
+        const int startIdx = this->leafLeft;
+        const int endIdx = this->leafRight + 1;
 
         #pragma omp parallel
         {
