@@ -138,7 +138,7 @@ public:
         #pragma omp parallel
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-            #pragma omp for
+            #pragma omp for nowait
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
@@ -191,6 +191,7 @@ public:
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
             }
+
             FDEBUG(computationCounter.tac());
         }
 
