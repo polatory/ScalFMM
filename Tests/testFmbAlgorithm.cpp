@@ -147,7 +147,6 @@ int main(int argc, char ** argv){
         std::cout << "Potential = " << potential << std::endl;
     }
 
-
     // -----------------------------------------------------
 
     std::cout << "Deleting particles ..." << std::endl;
