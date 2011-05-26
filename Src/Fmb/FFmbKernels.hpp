@@ -621,7 +621,7 @@ protected:
     FFmbKernels& operator=(const FFmbKernels&){ return *this; }
 
 public:
-    FFmbKernels(const FReal inTreeWidth, const bool inUseMutual = false) :
+    FFmbKernels(const FReal inTreeWidth, const bool inUseMutual = true) :
             treeWidthAtRoot(inTreeWidth), UseMutual(inUseMutual) {
         buildPrecompute();
     }
@@ -1347,13 +1347,11 @@ public:
         while( iterTarget.isValide() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                if(directNeighbors[idxDirectNeighbors] < targets){
-                    typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                    while( iterSource.isValide() ){
-                        DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
-                                                       &iterSource.value());
-                        iterSource.progress();
-                    }
+                typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                while( iterSource.isValide() ){
+                    DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
+                                                   &iterSource.value());
+                    iterSource.progress();
                 }
             }
 

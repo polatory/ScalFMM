@@ -658,61 +658,8 @@ public:
           * @return the number of neighbors
           */
         int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel) const{
-            // Take the neighbors != brothers
-            CellClass* directNeighbors[26];
-            const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);
-            // Then take each child of the parent's neighbors if not in directNeighbors
-            // Father coordinate
-            FTreeCoordinate center;
-            center.setPositionFromMorton(inIndex>>3, inLevel-1);
-            // Limite at parent level
-            const long limite = FMath::pow(2,inLevel-1);
-
-            int idxNeighbors = 0;
-            // We test all cells around
-            for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-                if(!FMath::Between(center.getX() + idxX,0l,limite)) continue;
-
-                for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                    if(!FMath::Between(center.getY() + idxY,0l,limite)) continue;
-
-                    for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                        if(!FMath::Between(center.getZ() + idxZ,0l,limite)) continue;
-
-                        // if we are not on the current cell
-                        if( !(!idxX && !idxY && !idxZ) ){
-
-                            const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                            const MortonIndex mortonOther = other.getMortonIndex(inLevel-1);
-                            // Get child
-                            CellClass** const cells = getCellPt(mortonOther<<3, inLevel);
-
-                            // If there is one or more child
-                            if(cells){
-                                // For each child
-                                for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
-                                    if(cells[idxCousin]){
-                                        // Test if it is a direct neighbor
-                                        bool existInDirectNeigh = false;
-                                        for(int idxDirectNeigh = 0 ; idxDirectNeigh < nbDirectNeighbors ; ++idxDirectNeigh){
-                                            if( cells[idxCousin] == directNeighbors[idxDirectNeigh] ){
-                                                existInDirectNeigh = true;
-                                                break;
-                                            }
-                                        }
-                                        // add to neighbors
-                                        if(!existInDirectNeigh){
-                                            inNeighbors[idxNeighbors++] = cells[idxCousin];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return idxNeighbors;
+            MortonIndex inNeighborsIndex[208];
+            return getDistantNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
         }
 
 
@@ -815,6 +762,17 @@ public:
           * @return the number of neighbors
           */
         int getLeafsNeighbors(FList<ParticleClass*>* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
+            MortonIndex inNeighborsIndex[26];
+            return getLeafsNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
+        }
+
+        /** This function fill an array with the neighbors of a cell
+          * @param inNeighbors the array to store the elements
+          * @param inIndex the index of the element we want the neighbors
+          * @param inLevel the level of the element
+          * @return the number of neighbors
+          */
+        int getLeafsNeighborsWithIndex(FList<ParticleClass*>* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
             FTreeCoordinate center;
             center.setPositionFromMorton(inIndex, inLevel);
 
@@ -839,7 +797,10 @@ public:
                             // get cell
                             FList<ParticleClass*>* const leaf = getLeafSrc(mortonOther);
                             // add to list if not null
-                            if(leaf) inNeighbors[idxNeighbors++] = leaf;
+                            if(leaf){
+                                inNeighborsIndex[idxNeighbors] = mortonOther;
+                                inNeighbors[idxNeighbors++] = leaf;
+                            }
                         }
                     }
                 }
