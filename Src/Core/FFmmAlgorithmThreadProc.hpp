@@ -864,16 +864,18 @@ public:
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
             FList<ParticleClass*>* neighbors[26];
+            MortonIndex neighborsIndex[26];
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int leafAtThisShape = shapeLeaf[idxShape];
 
                 #pragma omp for
                 for(int idxLeafs = startIdx ; idxLeafs < leafAtThisShape ; ++idxLeafs){
-                    myThreadkernels->L2P(shapeArray[idxShape][idxLeafs].getCurrentCell(), shapeArray[idxShape][idxLeafs].getCurrentListTargets());
+                    OctreeIterator currentIter = shapeArray[idxShape][idxLeafs];
+                    myThreadkernels->L2P(currentIter.getCurrentCell(), currentIter.getCurrentListTargets());
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighbors(neighbors, shapeArray[idxShape][idxLeafs].getCurrentGlobalIndex(),LeafIndex);
-                    myThreadkernels->P2P( shapeArray[idxShape][idxLeafs].getCurrentListTargets(), shapeArray[idxShape][idxLeafs].getCurrentListSrc() , neighbors, counter);
+                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.getCurrentGlobalIndex(),LeafIndex);
+                    myThreadkernels->P2P( currentIter.getCurrentGlobalIndex(), currentIter.getCurrentListTargets(), currentIter.getCurrentListSrc() , neighbors, neighborsIndex, counter);
                 }
             }
         }

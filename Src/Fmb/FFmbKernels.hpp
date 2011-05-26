@@ -97,8 +97,6 @@ protected:
 
     int expansion_Redirection_array_for_j[FMB_Info_M2L_P + 1 ];
 
-    // To know if we use mutal version
-    const bool UseMutual;
 
     //////////////////////////////////////////////////////////////////
     // Allocation
@@ -621,13 +619,13 @@ protected:
     FFmbKernels& operator=(const FFmbKernels&){ return *this; }
 
 public:
-    FFmbKernels(const FReal inTreeWidth, const bool inUseMutual = true) :
-            treeWidthAtRoot(inTreeWidth), UseMutual(inUseMutual) {
+    FFmbKernels(const FReal inTreeWidth) :
+            treeWidthAtRoot(inTreeWidth) {
         buildPrecompute();
     }
 
     FFmbKernels(const FFmbKernels& other)
-        : treeWidthAtRoot(other.treeWidthAtRoot), UseMutual(other.UseMutual)  {
+        : treeWidthAtRoot(other.treeWidthAtRoot) {
         buildPrecompute();
     }
 
@@ -1321,13 +1319,6 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-
-    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-                    FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size){
-        if(UseMutual) P2P_Mutual(targets,sources,directNeighbors,size);
-        else P2P_No_Mutual(targets,sources,directNeighbors,size);
-    }
-
     ///////////////////////////////////////////////////////////////////////////////
     // MUTUAL - Need
     ///////////////////////////////////////////////////////////////////////////////
@@ -1340,18 +1331,21 @@ public:
       *  )
       *
       */
-    void P2P_Mutual(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+    void P2P(const MortonIndex inCurrentIndex,
+             FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, MortonIndex const* FRestrict  inNeighborsIndex, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                while( iterSource.isValide() ){
-                    DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
-                                                   &iterSource.value());
-                    iterSource.progress();
+                if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
+                    typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                    while( iterSource.isValide() ){
+                        DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
+                                                       &iterSource.value());
+                        iterSource.progress();
+                    }
                 }
             }
 
@@ -1415,7 +1409,7 @@ public:
       *  )
       *
       */
-    void P2P_No_Mutual(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
              FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);

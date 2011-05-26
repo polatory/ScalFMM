@@ -34,6 +34,7 @@ public:
         pole->setDataUp(particles->getSize());
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
     // During upward
     void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -45,6 +46,7 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
     // Before Downward
     void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const distantNeighbors, const int size, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -54,6 +56,7 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
     // During Downward
     void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -65,6 +68,7 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
     // After Downward
     void L2P(const CellClass* const  local, FList<ParticleClass*>*const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -76,6 +80,7 @@ public:
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
     // After Downward
     void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
              FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
@@ -97,6 +102,29 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
+
+    // After Downward
+    void P2P(const MortonIndex,
+             FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
+             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors,
+             MortonIndex const* FRestrict, const int size) {
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        // Each particles targeted is impacted by the particles sources
+        long inc = sources->getSize();
+        if(targets == sources){
+            inc -= 1;
+        }
+        for(int idx = 0 ; idx < size ; ++idx){
+            inc += directNeighbors[idx]->getSize();
+        }
+
+        typename FList<ParticleClass*>::BasicIterator iter(*targets);
+        while( iter.isValide() ){
+            iter.value()->setDataDown(iter.value()->getDataDown() + inc);
+            iter.progress();
+        }
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+    }
 };
 
 
