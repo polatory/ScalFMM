@@ -22,6 +22,8 @@
 #include "../Src/Core/FFmmAlgorithmThreadUs.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FBasicKernels.hpp"
+
 
 #include "../Src/Fmb/FFmbKernels.hpp"
 
@@ -59,7 +61,7 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 9;//10;
+    const int NbLevels = 7;//10;
     const int SizeSubLevels = 3;//3
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
@@ -115,8 +117,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask FFmmAlgorithmThreadUs
-    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    //FBasicKernels<FmbParticle, FmbCell, NbLevels> kernels;
+    //FFmmAlgorithm FFmmAlgorithmThread FFmmAlgorithmThreadUs
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

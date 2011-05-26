@@ -37,7 +37,7 @@ public:
     }
 
     /** Return the forces */
-    F3DPosition getForces() const {
+    const F3DPosition& getForces() const {
         return this->forces;
     }
 

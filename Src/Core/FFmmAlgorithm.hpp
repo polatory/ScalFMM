@@ -220,15 +220,16 @@ public:
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
         FList<ParticleClass*>* neighbors[26];
+        MortonIndex neighborsIndex[26];
         // for each leafs
         do{
             FDEBUG(computationCounter.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
             FDEBUG(computationCounter.tac());
             // need the current particles and neighbors particles
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
+            const int counter = tree->getLeafsNeighborsWithIndex(neighbors,neighborsIndex, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
             FDEBUG(computationCounter.tic());
-            kernels->P2P( octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
+            kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsIndex,counter);
             FDEBUG(computationCounter.tac());
         } while(octreeIterator.moveRight());
 

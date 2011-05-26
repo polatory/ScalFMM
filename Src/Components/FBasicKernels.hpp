@@ -58,6 +58,13 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
+
+    virtual void P2P(const MortonIndex,
+             FList<ParticleClass*>* const FRestrict, const FList<ParticleClass*>* const FRestrict,
+             FList<ParticleClass*>* FRestrict const* FRestrict, MortonIndex const* FRestrict, const int){
+        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+    }
 };
 
 

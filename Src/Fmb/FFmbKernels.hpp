@@ -17,7 +17,7 @@
 
 
 // P is a input parameter
-static const int FMB_Info_P = 2;
+static const int FMB_Info_P = 6;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -1342,8 +1342,8 @@ public:
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
                     typename FList<ParticleClass*>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.isValide() ){
-                        DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
-                                                       &iterSource.value());
+                        DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.value(),
+                                                       iterSource.value());
                         iterSource.progress();
                     }
                 }
@@ -1353,8 +1353,8 @@ public:
             iterSameBox.progress();
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() < iterTarget.value()){
-                    DIRECT_COMPUTATION_MUTUAL_SOFT(&iterTarget.value(),
-                                                   &iterSameBox.value());
+                    DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.value(),
+                                                   iterSameBox.value());
                 }
                 iterSameBox.progress();
             }
@@ -1369,30 +1369,30 @@ public:
     }
 
 
-    void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass** const target, ParticleClass** const source){
+    void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass* const FRestrict target, ParticleClass* const FRestrict source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        const FReal dx = (*target)->getPosition().getX() - (*source)->getPosition().getX();
-        const FReal dy = (*target)->getPosition().getY() - (*source)->getPosition().getY();
-        const FReal dz = (*target)->getPosition().getZ() - (*source)->getPosition().getZ();
+        const FReal dx = (*target).getPosition().getX() - (*source).getPosition().getX();
+        const FReal dy = (*target).getPosition().getY() - (*source).getPosition().getY();
+        const FReal dz = (*target).getPosition().getZ() - (*source).getPosition().getZ();
 
         FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FMB_Info_eps_soft_square);
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
-        inv_distance *= (*target)->getPhysicalValue() * (*source)->getPhysicalValue();
+        inv_distance *= (*target).getPhysicalValue() * (*source).getPhysicalValue();
         inv_square_distance *= inv_distance;
 
-        (*target)->setForces(
-                (*target)->getForces().getX() + dx * inv_square_distance,
-                (*target)->getForces().getY() + dy * inv_square_distance,
-                (*target)->getForces().getZ() + dz * inv_square_distance
+        (*target).setForces(
+                (*target).getForces().getX() + dx * inv_square_distance,
+                (*target).getForces().getY() + dy * inv_square_distance,
+                (*target).getForces().getZ() + dz * inv_square_distance
                 );
-        (*target)->setPotential( inv_distance + (*target)->getPotential());
+        (*target).setPotential( inv_distance + (*target).getPotential());
 
-        (*source)->setForces(
-                (*source)->getForces().getX() + (-dx) * inv_square_distance,
-                (*source)->getForces().getY() + (-dy) * inv_square_distance,
-                (*source)->getForces().getZ() + (-dz) * inv_square_distance
+        (*source).setForces(
+                (*source).getForces().getX() + (-dx) * inv_square_distance,
+                (*source).getForces().getY() + (-dy) * inv_square_distance,
+                (*source).getForces().getZ() + (-dz) * inv_square_distance
                 );
-        (*source)->setPotential( inv_distance + (*source)->getPotential());
+        (*source).setPotential( inv_distance + (*source).getPotential());
 
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -1418,7 +1418,7 @@ public:
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 typename FList<ParticleClass*>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.isValide() ){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.value(),
                                                       iterSource.value());
                     iterSource.progress();
                 }
@@ -1427,7 +1427,7 @@ public:
             typename FList<ParticleClass*>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.isValide() ){
                 if(iterSameBox.value() != iterTarget.value()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(&iterTarget.value(),
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.value(),
                                                       iterSameBox.value());
                 }
                 iterSameBox.progress();
@@ -1443,24 +1443,24 @@ public:
     }
 
 
-    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass** const target, const ParticleClass* const source){
+    void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass* const FRestrict target, const ParticleClass* const FRestrict source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        const FReal dx = (*target)->getPosition().getX() - source->getPosition().getX();
-        const FReal dy = (*target)->getPosition().getY() - source->getPosition().getY();
-        const FReal dz = (*target)->getPosition().getZ() - source->getPosition().getZ();
+        const FReal dx = target->getPosition().getX() - source->getPosition().getX();
+        const FReal dy = target->getPosition().getY() - source->getPosition().getY();
+        const FReal dz = target->getPosition().getZ() - source->getPosition().getZ();
 
         FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FMB_Info_eps_soft_square);
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
-        inv_distance *= (*target)->getPhysicalValue() * source->getPhysicalValue();
+        inv_distance *= target->getPhysicalValue() * source->getPhysicalValue();
         inv_square_distance *= inv_distance;
 
-        (*target)->setForces(
-                (*target)->getForces().getX() + dx * inv_square_distance,
-                (*target)->getForces().getY() + dy * inv_square_distance,
-                (*target)->getForces().getZ() + dz * inv_square_distance
+        target->setForces(
+                target->getForces().getX() + dx * inv_square_distance,
+                target->getForces().getY() + dy * inv_square_distance,
+                target->getForces().getZ() + dz * inv_square_distance
                 );
 
-        (*target)->setPotential( inv_distance + (*target)->getPotential());
+        target->setPotential( inv_distance + target->getPotential());
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 };

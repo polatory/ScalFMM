@@ -38,9 +38,9 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 10;//10;
+    const int NbLevels = 6;//10;
     const int SizeSubLevels = 3;//3
-    const long NbPart = 2000;//2000000
+    const long NbPart = 200000;//2000000
     FTestParticle* particles = new FTestParticle[NbPart];
     FTic counter;
 
@@ -83,7 +83,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticle, FTestCell, NbLevels> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmThread<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

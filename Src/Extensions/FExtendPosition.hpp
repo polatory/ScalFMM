@@ -36,7 +36,7 @@ public:
     }
 
     /** To get the position */
-    F3DPosition getPosition() const {
+    const F3DPosition& getPosition() const {
         return this->position;
     }
 
