@@ -231,7 +231,7 @@ public:
                 #pragma omp parallel
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                    CellClass* neighbors[208];
+                    const CellClass* neighbors[208];
                     #pragma omp for
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();

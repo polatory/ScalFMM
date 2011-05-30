@@ -469,7 +469,7 @@ public:
 
             FBoolArray* const indexToReceive = new FBoolArray(1 << (3*(OctreeHeight-1)));
 
-            struct LimitCell { int counter;  CellClass* neighbors[208]; };
+            struct LimitCell { int counter; const CellClass* neighbors[208]; };
             LimitCell ** const unfinishedCells = new LimitCell*[this->leafRight - this->leafLeft + 1];
 
             FBoolArray* alreadySent[this->nbProcess];
@@ -510,7 +510,7 @@ public:
 
                 #pragma omp parallel
                 {
-                    CellClass* neighbors[208];
+                    const CellClass* neighbors[208];
                     MortonIndex neighborsIndexes[208];
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
 

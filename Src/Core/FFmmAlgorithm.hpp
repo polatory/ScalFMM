@@ -154,7 +154,7 @@ public:
 
             FOctreeIterator avoidGotoLeftIterator(octreeIterator);
 
-            CellClass* neighbors[208];
+            const CellClass* neighbors[208];
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells

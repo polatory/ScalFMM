@@ -35,7 +35,7 @@ public:
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int , const int ) {
+    virtual void M2L(CellClass* const FRestrict , const CellClass* [], const int , const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -54,14 +54,14 @@ public:
 
     /** Print the number of particles */
     virtual void P2P(FList<ParticleClass*>* const FRestrict , const FList<ParticleClass*>* const FRestrict ,
-                     FList<ParticleClass*>* FRestrict const* FRestrict , const int ) {
+                     const FList<ParticleClass*>* const [26], const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    virtual void P2P(const MortonIndex,
-             FList<ParticleClass*>* const FRestrict, const FList<ParticleClass*>* const FRestrict,
-             FList<ParticleClass*>* FRestrict const* FRestrict, MortonIndex const* FRestrict, const int){
+    virtual void P2P(const MortonIndex ,
+                     FList<ParticleClass*>* const FRestrict , const FList<ParticleClass*>* const FRestrict ,
+                     FList<ParticleClass*>* const [26], const MortonIndex [26], const int ){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }

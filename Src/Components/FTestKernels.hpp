@@ -48,7 +48,7 @@ public:
     }
 
     // Before Downward
-    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const distantNeighbors, const int size, const int ) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){
@@ -83,7 +83,7 @@ public:
 
     // After Downward
     void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+             const FList<ParticleClass*>* const directNeighborsParticles[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -91,7 +91,7 @@ public:
             inc -= 1;
         }
         for(int idx = 0 ; idx < size ; ++idx){
-            inc += directNeighbors[idx]->getSize();
+            inc += directNeighborsParticles[idx]->getSize();
         }
 
         typename FList<ParticleClass*>::BasicIterator iter(*targets);
@@ -104,10 +104,9 @@ public:
 
 
     // After Downward
-    void P2P(const MortonIndex,
+    void P2P(const MortonIndex ,
              FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors,
-             MortonIndex const* FRestrict, const int size) {
+             FList<ParticleClass*>* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -115,7 +114,7 @@ public:
             inc -= 1;
         }
         for(int idx = 0 ; idx < size ; ++idx){
-            inc += directNeighbors[idx]->getSize();
+            inc += directNeighborsParticles[idx]->getSize();
         }
 
         typename FList<ParticleClass*>::BasicIterator iter(*targets);

@@ -657,7 +657,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighbors(CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel) const{
+        int getDistantNeighbors(const CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel) const{
             MortonIndex inNeighborsIndex[208];
             return getDistantNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
         }
@@ -670,7 +670,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighborsWithIndex(CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208], const MortonIndex inIndex, const int inLevel) const{
+        int getDistantNeighborsWithIndex(const CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208], const MortonIndex inIndex, const int inLevel) const{
             // Take the neighbors != brothers
             CellClass* directNeighbors[26];
             const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);

@@ -838,7 +838,7 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void M2L(CellClass* const FRestrict pole, const CellClass*const FRestrict *const FRestrict distantNeighbors, const int size, const int inLevel) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int inLevel) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTreeCoordinate coordCenter;
         coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
@@ -1333,7 +1333,7 @@ public:
       */
     void P2P(const MortonIndex inCurrentIndex,
              FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, MortonIndex const* FRestrict  inNeighborsIndex, const int size) {
+             FList<ParticleClass*>* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){
@@ -1410,7 +1410,7 @@ public:
       *
       */
     void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, const int size) {
+             const FList<ParticleClass*>* const directNeighbors[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass*>::BasicIterator iterTarget(*targets);
         while( iterTarget.isValide() ){

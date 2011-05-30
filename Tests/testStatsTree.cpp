@@ -210,7 +210,7 @@ int main(int argc, char ** argv){
                         if(child[idxChild]) ++nbChildAtLevel[idxArray];
                     }
 
-                    FBasicCell* neighbors[208];
+                    const FBasicCell* neighbors[208];
                     MortonIndex neighborsIndexes[208];
                     M2LCalculusAtLevel[idxArray] += tree.getDistantNeighborsWithIndex(neighbors, neighborsIndexes, octreeIterator.getCurrentGlobalIndex(),idxLevel);
 

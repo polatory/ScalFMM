@@ -46,7 +46,7 @@ public:
         * @param size the number of neighbors
         * @param inLevel the current level of the computation
         */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass*const FRestrict  *const FRestrict distantNeighbors, const int size, const int inLevel) = 0;
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[208], const int size, const int inLevel) = 0;
 
     /**
         * L2L
@@ -76,7 +76,7 @@ public:
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
     virtual void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-                     FList<ParticleClass*>*const FRestrict  *const FRestrict directNeighborsParticles, const int size) = 0;
+                     const FList<ParticleClass*>* const directNeighborsParticles[26], const int size) = 0;
 
     /**
         * P2P
@@ -90,7 +90,7 @@ public:
         */
     virtual void P2P(const MortonIndex inCurrentLeafIndex,
              FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* FRestrict const* FRestrict directNeighbors, MortonIndex const* FRestrict inNeighborsIndex, const int size) = 0;
+             FList<ParticleClass*>* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
 };
 
 
