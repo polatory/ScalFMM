@@ -92,7 +92,7 @@ public:
 	* Push an element in the front of the list
         * @param inObject the object to insert
 	*/
-	void pushFront(Object& inObject){
+        void pushFront(const Object& inObject){
                 Node* newNode   = new Node;
 		newNode->target = inObject;
 		newNode->next 	= this->root;
@@ -106,14 +106,14 @@ public:
         * used when type is pointer and like [TYPE* const] object
         * @param inObject the object to insert
         */
-        void pushFront(Object const inObject){
+        /*void pushFront(Object const inObject){
                     Node* newNode           = new Node;
                     newNode->target         = inObject;
                     newNode->next           = this->root;
 
                     this->root  = newNode;
                     ++this->size;
-        }
+        }*/
 
         /**
         * To get front value (last pushed value)

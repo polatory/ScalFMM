@@ -108,14 +108,14 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass* const inParticle){
+    void fillParticle(ParticleClass& inParticle){
         FReal x,y,z,data;
         int isTarget;
         this->file >> x >> y >> z >> data >> isTarget;
-        inParticle->setPosition(x,y,z);
-        inParticle->setPhysicalValue(data);
-        if(isTarget) inParticle->setAsTarget();
-        else inParticle->setAsSource();
+        inParticle.setPosition(x,y,z);
+        inParticle.setPhysicalValue(data);
+        if(isTarget) inParticle.setAsTarget();
+        else inParticle.setAsSource();
     }
 
 };

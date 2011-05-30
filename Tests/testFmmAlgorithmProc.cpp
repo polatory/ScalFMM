@@ -174,16 +174,16 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
             }
 
             for(int idx = startIdx ; idx < endIdx ; ++idx){
-                typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                typename FList<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
                 while( iter.isValide() ){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
-                    if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
-                        (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
-                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.value()->getDataDown() << "\n";
+                    if( (!isUsingTsm && iter.value().getDataDown() != NbPart - 1) ||
+                        (isUsingTsm && iter.value().getDataDown() != NbPart) ){
+                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.value().getDataDown() << "\n";
                     }
                     iter.progress();
                 }
@@ -248,26 +248,10 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    counter.tic();
-
-    TestParticle*const particles = new TestParticle[loader.getNumberOfParticles()];
-    TestParticle*const particlesValide = new TestParticle[loader.getNumberOfParticles()];
-
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
-        particlesValide[idxPart] = particles[idxPart];
-    }
-
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-
     FOctree<TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
     FOctree<TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels> treeValide(loader.getBoxWidth(),loader.getCenterOfBox());
+
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -275,11 +259,15 @@ int main(int argc, char ** argv){
     std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-        treeValide.insert(&particlesValide[idxPart]);
+        TestParticle particle;
+
+        loader.fillParticle(particle);
+
+        tree.insert(particle);
+        treeValide.insert(particle);
     }
     counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -303,14 +291,6 @@ int main(int argc, char ** argv){
 
     ValidateFMMAlgoProc<FTestKernels, TestParticle, FTestCellPar, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
 
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-    delete [] particlesValide;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 

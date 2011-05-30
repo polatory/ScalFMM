@@ -36,35 +36,26 @@ int main(int , char ** ){
         const int NbLevels = 9;
         const int NbSubLevels = 3;
         const long NbPart = 2E6;
-        FList<FBasicParticle*> particles;
+
         FTic counterTime;
 
         srand ( 1 ); // volontary set seed to constant
-
-        // -----------------------------------------------------
-        std::cout << "Creating " << NbPart << " particles ..." << std::endl;
-        counterTime.tic();
-        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            FBasicParticle* const particle = new FBasicParticle();
-            particle->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-            particles.pushFront(particle);
-        }
-        counterTime.tac();
-        std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
         FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, NbLevels, NbSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
-        FList<FBasicParticle*>::BasicIterator iter(particles);
 
         // -----------------------------------------------------
-        std::cout << "Inserting particles ..." << std::endl;
+        std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
         counterTime.tic();
-        while( iter.isValide() ){
-            tree.insert(iter.value());
-            iter.progress();
+        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+            FBasicParticle particle;
+            particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+
+            tree.insert(particle);
         }
         counterTime.tac();
         std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
+
         // -----------------------------------------------------
         {
             std::cout << "Itering on particles ..." << std::endl;
@@ -104,14 +95,6 @@ int main(int , char ** ){
             counterTime.tac();
             std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         }
-        // -----------------------------------------------------
-        std::cout << "Deleting particles ..." << std::endl;
-        counterTime.tic();
-        while(particles.getSize()){
-            delete particles.popFront();
-        }
-        counterTime.tac();
-        std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
 	return 0;

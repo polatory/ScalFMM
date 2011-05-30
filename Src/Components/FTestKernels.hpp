@@ -28,7 +28,7 @@ public:
     }
 
     // Before upward
-    void P2M(CellClass* const pole, const FList<ParticleClass*>* const particles) {
+    void P2M(CellClass* const pole, const FList<ParticleClass>* const particles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // the pole represents all particles under
         pole->setDataUp(particles->getSize());
@@ -70,20 +70,20 @@ public:
     }
 
     // After Downward
-    void L2P(const CellClass* const  local, FList<ParticleClass*>*const particles){
+    void L2P(const CellClass* const  local, FList<ParticleClass>*const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The particles is impacted by the parent cell
-        typename FList<ParticleClass*>::BasicIterator iter(*particles);
+        typename FList<ParticleClass>::BasicIterator iter(*particles);
         while( iter.isValide() ){
-            iter.value()->setDataDown(iter.value()->getDataDown() + local->getDataDown());
+            iter.value().setDataDown(iter.value().getDataDown() + local->getDataDown());
             iter.progress();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     // After Downward
-    void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             const FList<ParticleClass*>* const directNeighborsParticles[26], const int size) {
+    void P2P(FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
+             const FList<ParticleClass>* const directNeighborsParticles[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -94,9 +94,9 @@ public:
             inc += directNeighborsParticles[idx]->getSize();
         }
 
-        typename FList<ParticleClass*>::BasicIterator iter(*targets);
+        typename FList<ParticleClass>::BasicIterator iter(*targets);
         while( iter.isValide() ){
-            iter.value()->setDataDown(iter.value()->getDataDown() + inc);
+            iter.value().setDataDown(iter.value().getDataDown() + inc);
             iter.progress();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
@@ -105,8 +105,8 @@ public:
 
     // After Downward
     void P2P(const MortonIndex ,
-             FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
+             FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
+             FList<ParticleClass>* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -117,9 +117,9 @@ public:
             inc += directNeighborsParticles[idx]->getSize();
         }
 
-        typename FList<ParticleClass*>::BasicIterator iter(*targets);
+        typename FList<ParticleClass>::BasicIterator iter(*targets);
         while( iter.isValide() ){
-            iter.value()->setDataDown(iter.value()->getDataDown() + inc);
+            iter.value().setDataDown(iter.value().getDataDown() + inc);
             iter.progress();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
@@ -174,16 +174,16 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
         typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename FList<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
             while( iter.isValide() ){
                 // If a particles has been impacted by less than NbPart - 1 (the current particle)
                 // there is a problem
-                if( (!isUsingTsm && iter.value()->getDataDown() != NbPart - 1) ||
-                    (isUsingTsm && iter.value()->getDataDown() != NbPart) ){
-                    std::cout << "Problem L2P + P2P : " << iter.value()->getDataDown() << "\n";
+                if( (!isUsingTsm && iter.value().getDataDown() != NbPart - 1) ||
+                    (isUsingTsm && iter.value().getDataDown() != NbPart) ){
+                    std::cout << "Problem L2P + P2P : " << iter.value().getDataDown() << "\n";
                 }
                 iter.progress();
             }

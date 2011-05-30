@@ -88,27 +88,17 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
-
-    FmbParticle* particles = new FmbParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
+        FmbParticle particleToFill;
+        loader.fillParticle(particleToFill);
+        tree.insert(particleToFill);
     }
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
-
-    std::cout << "Inserting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -132,10 +122,10 @@ int main(int argc, char ** argv){
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.isValide() ){
-                potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
-                forces += iter.value()->getForces();
+                potential += iter.value().getPotential() * iter.value().getPhysicalValue();
+                forces += iter.value().getForces();
 
                 //printf("x = %e y = %e z = %e \n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ());
                 //printf("\t fx = %e fy = %e fz = %e \n",iter.value()->getForces().getX(),iter.value()->getForces().getY(),iter.value()->getForces().getZ());
@@ -151,14 +141,6 @@ int main(int argc, char ** argv){
         std::cout << "Potential = " << potential << std::endl;
     }
 
-
-    // -----------------------------------------------------
-
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 

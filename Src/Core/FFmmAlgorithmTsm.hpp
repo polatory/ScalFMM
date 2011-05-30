@@ -88,7 +88,7 @@ public:
             // We need the current cell that represent the leaf
             // and the list of particles
             FDEBUG(computationCounter.tic());
-            FList<ParticleClass*>* const sources = octreeIterator.getCurrentListSrc();
+            FList<ParticleClass>* const sources = octreeIterator.getCurrentListSrc();
             if(sources->getSize()){
                 octreeIterator.getCurrentCell()->setSrcChildTrue();
                 kernels->P2M( octreeIterator.getCurrentCell() , sources);
@@ -262,7 +262,7 @@ public:
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        FList<ParticleClass*>* neighbors[26];
+        FList<ParticleClass>* neighbors[26];
         // for each leafs
         do{
             FDEBUG(computationCounter.tic());
@@ -275,8 +275,8 @@ public:
         } while(octreeIterator.moveRight());
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << totalComputation << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

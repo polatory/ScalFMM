@@ -16,8 +16,8 @@
 */
 template< class ParticleClass >
 class FTypedLeaf  : public FAbstractLeaf<ParticleClass>, public FAssertable {
-    FList<ParticleClass*> sources;
-    FList<ParticleClass*> targets;
+    FList<ParticleClass> sources;
+    FList<ParticleClass> targets;
 
 public:
     /** Default destructor */
@@ -28,9 +28,9 @@ public:
         * To add a new particle in the leaf
         * @param particle the new particle
         */
-    void push(ParticleClass* const particle){
-        if(particle->isTarget()) this->targets.pushFront(particle);
-        else if(particle->isSource()) this->sources.pushFront(particle);
+    void push(const ParticleClass& particle){
+        if(particle.isTarget()) this->targets.pushFront(particle);
+        else if(particle.isSource()) this->sources.pushFront(particle);
         else assert(false, "Error particle has undefined type.", __LINE__, __FILE__);
     }
 
@@ -38,7 +38,7 @@ public:
         * To get all the sources in a leaf
         * @return a pointer to the list of particles that are sources
         */
-    FList<ParticleClass*>* getSrc() {
+    FList<ParticleClass>* getSrc() {
         return &this->sources;
     }
 
@@ -46,7 +46,7 @@ public:
         * To get all the target in a leaf
         * @return a pointer to the list of particles that are targets
         */
-    FList<ParticleClass*>* getTargets() {
+    FList<ParticleClass>* getTargets() {
         return &this->targets;
     }
 

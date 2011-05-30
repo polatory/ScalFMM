@@ -25,7 +25,7 @@ public:
         * @param pole the multipole to fill using the particles
         * @param particles the particles from the same spacial boxe
         */
-    virtual void P2M(CellClass* const pole, const FList<ParticleClass*>* const particles) = 0;
+    virtual void P2M(CellClass* const pole, const FList<ParticleClass>* const particles) = 0;
 
     /**
         * M2M
@@ -65,7 +65,7 @@ public:
         * @param local the leaf element (smaller boxe local element)
         * @param particles the list of particles inside this boxe
         */
-    virtual void L2P(const CellClass* const local, FList<ParticleClass*>* const particles) = 0;
+    virtual void L2P(const CellClass* const local, FList<ParticleClass>* const particles) = 0;
 
     /**
         * P2P
@@ -75,8 +75,8 @@ public:
         * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
-    virtual void P2P(FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-                     const FList<ParticleClass*>* const directNeighborsParticles[26], const int size) = 0;
+    virtual void P2P(FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
+                     const FList<ParticleClass>* const directNeighborsParticles[26], const int size) = 0;
 
     /**
         * P2P
@@ -89,8 +89,8 @@ public:
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
     virtual void P2P(const MortonIndex inCurrentLeafIndex,
-             FList<ParticleClass*>* const FRestrict targets, const FList<ParticleClass*>* const FRestrict sources,
-             FList<ParticleClass*>* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
+             FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
+             FList<ParticleClass>* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
 };
 
 

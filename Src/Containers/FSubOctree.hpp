@@ -164,7 +164,7 @@ public:
     * @param inParticle the particle to insert (must inherite from FAbstractParticle)
     * @param inParticle the inTreeHeight the height of the tree
     */
-    virtual void insert(const MortonIndex index, ParticleClass* const inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel) = 0;
+    virtual void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel) = 0;
 
     ///////////////////////////////////////
     // This is the FOctree::Iterator Part
@@ -297,7 +297,7 @@ public:
     /**
     * Refer to FAbstractSubOctree::insert
     */
-    void insert(const MortonIndex index, ParticleClass* const inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
+    void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // Get the morton index for the leaf level
         const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);
         // is there already a leaf?
@@ -312,7 +312,7 @@ public:
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    FList<ParticleClass*>* getLeafSrc(const int index){
+    FList<ParticleClass>* getLeafSrc(const int index){
         LeafClass<ParticleClass>* const leaf = this->leafs[index];
         return (leaf ? leaf->getSrc(): 0);
     }
@@ -320,7 +320,7 @@ public:
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    FList<ParticleClass*>* getLeafTargets(const int index){
+    FList<ParticleClass>* getLeafTargets(const int index){
         LeafClass<ParticleClass>* const leaf = this->leafs[index];
         return (leaf ? leaf->getTargets(): 0);
     }
@@ -328,7 +328,7 @@ public:
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    const FList<ParticleClass*>* getLeafSrc(const int index) const {
+    const FList<ParticleClass>* getLeafSrc(const int index) const {
         LeafClass<ParticleClass>* const leaf = this->leafs[index];
         return (leaf ? leaf->getSrc(): 0);
     }
@@ -336,7 +336,7 @@ public:
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    const FList<ParticleClass*>* getLeafTargets(const int index) const {
+    const FList<ParticleClass>* getLeafTargets(const int index) const {
         LeafClass<ParticleClass>* const leaf = this->leafs[index];
         return (leaf ? leaf->getTargets() : 0);
     }
@@ -406,7 +406,7 @@ public:
     /**
     * Refer to FAbstractSubOctree::insert
     */
-    void insert(const MortonIndex index, ParticleClass* const inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
+    void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // We need the morton index at the bottom level of this sub octree
         // so we remove the right side
         const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);

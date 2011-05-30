@@ -96,29 +96,21 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating and inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     std::cout << "Width of box is " << loader.getBoxWidth() << std::endl;
     std::cout << "Center of box is x " << loader.getCenterOfBox().getX()  << " y " << loader.getCenterOfBox().getY() << " z " << loader.getCenterOfBox().getZ()<< std::endl;
     counter.tic();
 
-    Particle* particles = new Particle[loader.getNumberOfParticles()];
-
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
+        Particle particle;
+        loader.fillParticle(particle);
+
+        tree.insert(particle);
     }
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
-    // -----------------------------------------------------
-
-    std::cout << "Inserting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -131,10 +123,10 @@ int main(int argc, char ** argv){
             std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
             std::cout << "Particles :" << std::endl;
 
-            FList<Particle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FList<Particle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.isValide() ){
 
-                printf("\tx = %e y = %e z = %e data = %c\n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ(),iter.value()->getData());
+                printf("\tx = %e y = %e z = %e data = %c\n",iter.value().getPosition().getX(),iter.value().getPosition().getY(),iter.value().getPosition().getZ(),iter.value().getData());
 
                 iter.progress();
             }
@@ -142,14 +134,6 @@ int main(int argc, char ** argv){
         } while(octreeIterator.moveRight());
     }
 
-
-    // -----------------------------------------------------
-
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 

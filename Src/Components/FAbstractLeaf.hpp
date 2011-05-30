@@ -24,7 +24,7 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual void push(ParticleClass* const particle) = 0;
+    virtual void push(const ParticleClass& particle) = 0;
 
     /**
         * To get all the sources in a leaf
@@ -32,7 +32,7 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual FList<ParticleClass*>* getSrc() = 0;
+    virtual FList<ParticleClass>* getSrc() = 0;
 
     /**
         * To get all the target in a leaf
@@ -40,7 +40,7 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual FList<ParticleClass*>* getTargets() = 0;
+    virtual FList<ParticleClass>* getTargets() = 0;
 
 };
 

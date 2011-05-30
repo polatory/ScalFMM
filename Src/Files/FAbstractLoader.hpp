@@ -55,7 +55,7 @@ public:
         * Fill the next particle
         * @param inParticle the particle to fill
         */
-        virtual void fillParticle(ParticleClass* const inParticle) = 0;
+        virtual void fillParticle(ParticleClass& inParticle) = 0;
 };
 
 

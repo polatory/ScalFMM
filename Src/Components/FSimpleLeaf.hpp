@@ -15,7 +15,7 @@
 */
 template< class ParticleClass >
 class FSimpleLeaf : public FAbstractLeaf<ParticleClass> {
-    FList<ParticleClass*> particles;
+    FList<ParticleClass> particles;
 
 public:
     /** Default destructor */
@@ -26,7 +26,7 @@ public:
         * To add a new particle in the leaf
         * @param particle the new particle
         */
-    void push(ParticleClass* const particle){
+    void push(const ParticleClass& particle){
         this->particles.pushFront(particle);
     }
 
@@ -34,7 +34,7 @@ public:
         * To get all the sources in a leaf
         * @return a pointer to the list of particles that are sources
         */
-    FList<ParticleClass*>* getSrc() {
+    FList<ParticleClass>* getSrc() {
         return &this->particles;
     }
 
@@ -42,7 +42,7 @@ public:
         * To get all the target in a leaf
         * @return a pointer to the list of particles that are targets
         */
-    FList<ParticleClass*>* getTargets() {
+    FList<ParticleClass>* getTargets() {
         return &this->particles;
     }
 

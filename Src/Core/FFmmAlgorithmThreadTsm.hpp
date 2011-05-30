@@ -126,7 +126,7 @@ public:
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
-                FList<ParticleClass*>* const sources = iterArray[idxLeafs].getCurrentListSrc();
+                FList<ParticleClass>* const sources = iterArray[idxLeafs].getCurrentListSrc();
                 if(sources->getSize()){
                     iterArray[idxLeafs].getCurrentCell()->setSrcChildTrue();
                     myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
@@ -334,7 +334,7 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            FList<ParticleClass*>* neighbors[26];
+            FList<ParticleClass>* neighbors[26];
 
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
@@ -347,8 +347,8 @@ public:
         FDEBUG(computationCounter.tac());
 
         FDEBUG( counterTime.tac() );
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

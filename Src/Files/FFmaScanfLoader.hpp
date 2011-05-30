@@ -116,13 +116,13 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass* const inParticle){
+    void fillParticle(ParticleClass& inParticle){
         if(this->file){
             float x,y,z,data;
             const int nbReadElements = fscanf(this->file,"%f %f %f %f",&x,&y,&z,&data);
             if(nbReadElements == 4){
-                inParticle->setPosition(x,y,z);
-                inParticle->setPhysicalValue(data);
+                inParticle.setPosition(x,y,z);
+                inParticle.setPhysicalValue(data);
             }
             else{
                 fclose(this->file);

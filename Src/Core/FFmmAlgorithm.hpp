@@ -212,30 +212,32 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic computationCounter);
+        FDEBUG(FTic computationCounterL2P);
+        FDEBUG(FTic computationCounterP2P);
 
         const int heightMinusOne = OctreeHeight - 1;
 
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        FList<ParticleClass*>* neighbors[26];
+        FList<ParticleClass>* neighbors[26];
         MortonIndex neighborsIndex[26];
         // for each leafs
         do{
-            FDEBUG(computationCounter.tic());
+            FDEBUG(computationCounterL2P.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            FDEBUG(computationCounter.tac());
+            FDEBUG(computationCounterL2P.tac());
             // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighborsWithIndex(neighbors,neighborsIndex, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
-            FDEBUG(computationCounter.tic());
+            FDEBUG(computationCounterP2P.tic());
             kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsIndex,counter);
-            FDEBUG(computationCounter.tac());
+            FDEBUG(computationCounterP2P.tac());
         } while(octreeIterator.moveRight());
 
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation L2P : " << computationCounterL2P.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation P2P : " << computationCounterP2P.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

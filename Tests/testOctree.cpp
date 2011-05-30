@@ -31,49 +31,28 @@ int main(int , char ** ){
     std::cout << ">> how to use the Octree\n";
     //////////////////////////////////////////////////////////////
 
-        const long NbPart = 2000000;
-        FList<FBasicParticle*> particles;
-        FTic counter;
+    const long NbPart = 2000000;
+    FTic counter;
 
-        srand ( time(NULL) );
+    srand ( time(NULL) );
 
-        // -----------------------------------------------------
-        std::cout << "Creating " << NbPart << " particles ..." << std::endl;
-        counter.tic();
-        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            FBasicParticle* const particle = new FBasicParticle();
-            particle->setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-            particles.pushFront(particle);
-        }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
-        // -----------------------------------------------------
+    FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
 
-        FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
-        FList<FBasicParticle*>::BasicIterator iter(particles);
+    // -----------------------------------------------------
+    std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
+    counter.tic();
+    for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+        FBasicParticle particle;
+        particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
 
-        // -----------------------------------------------------
-        std::cout << "Inserting particles ..." << std::endl;
-        counter.tic();
-        while( iter.isValide() ){
-            tree.insert(iter.value());
-            iter.progress();
-        }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
-        // -----------------------------------------------------
+        tree.insert(particle);
+    }
+    counter.tac();
+    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
+    // -----------------------------------------------------
 
-        // -----------------------------------------------------
-        std::cout << "Deleting particles ..." << std::endl;
-        counter.tic();
-        while(particles.getSize()){
-            delete particles.popFront();
-        }
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
-        // -----------------------------------------------------
 
-	return 0;
+    return 0;
 }
 
 

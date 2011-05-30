@@ -78,35 +78,6 @@ int main(int argc, char ** argv){
     const double BoxWidth = 1.0;
     const F3DPosition CenterOfBox(0.5,0.5,0.5);
 
-    // -----------------------------------------------------
-
-    std::cout << "Creating " << NbPart << " particles ..." << std::endl;
-    counter.tic();
-
-    FmbParticle* particles = new FmbParticle[NbPart];
-    FmbParticleTyped* particlesTyped = new FmbParticleTyped[NbPart*2];
-
-    for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        const double x = FReal(rand())/RAND_MAX;
-        const double y = FReal(rand())/RAND_MAX;
-        const double z = FReal(rand())/RAND_MAX;
-        // Particle for standart model
-        particles[idxPart].setPosition(x,y,z);
-        particles[idxPart].setPhysicalValue(1);
-
-        // Create a clone for typed (Tsm) version
-        particlesTyped[idxPart*2].setPosition(x,y,z);
-        particlesTyped[idxPart*2+1].setPosition(x,y,z);
-
-        particlesTyped[idxPart*2].setPhysicalValue(1);
-        particlesTyped[idxPart*2+1].setPhysicalValue(1);
-
-        particlesTyped[idxPart*2].setAsSource();
-        particlesTyped[idxPart*2+1].setAsTarget();
-    }
-
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
     FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(BoxWidth,CenterOfBox);
@@ -116,12 +87,34 @@ int main(int argc, char ** argv){
     std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-        treeTyped.insert(&particlesTyped[idxPart*2]);
-        treeTyped.insert(&particlesTyped[idxPart*2+1]);
+        const double x = FReal(rand())/RAND_MAX;
+        const double y = FReal(rand())/RAND_MAX;
+        const double z = FReal(rand())/RAND_MAX;
+
+        FmbParticle particles;
+        FmbParticleTyped particlesTyped;
+        FmbParticleTyped particlesTyped2;
+
+        // Particle for standart model
+        particles.setPosition(x,y,z);
+        particles.setPhysicalValue(1);
+
+        // Create a clone for typed (Tsm) version
+        particlesTyped.setPosition(x,y,z);
+        particlesTyped2.setPosition(x,y,z);
+
+        particlesTyped.setPhysicalValue(1);
+        particlesTyped2.setPhysicalValue(1);
+
+        particlesTyped.setAsSource();
+        particlesTyped2.setAsTarget();
+
+        tree.insert(particles);
+        treeTyped.insert(particlesTyped);
+        treeTyped.insert(particlesTyped2);
     }
     counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -190,9 +183,6 @@ int main(int argc, char ** argv){
     }
 
     std::cout << "Done ..." << std::endl;
-
-    delete [] particles;
-    delete [] particlesTyped;
 
     return 0;
 }

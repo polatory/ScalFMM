@@ -73,27 +73,20 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
-    FFmaParticle* particles = new FFmaParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
+        FFmaParticle particle;
+
+        loader.fillParticle(particle);
+
+        tree.insert(particle);
     }
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
-
-    std::cout << "Inserting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
 
     // -----------------------------------------------------
@@ -164,7 +157,7 @@ int main(int argc, char ** argv){
             octreeIterator.gotoBottomLeft();
 
             do{
-                FList<FFmaParticle*>* neighbors[26];
+                FList<FFmaParticle>* neighbors[26];
                 // need the current particles and neighbors particles
                 const long counterNeighbors = tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1);
                 ++nbLeafs;
@@ -262,13 +255,6 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
 
     return 0;
 }

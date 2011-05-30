@@ -108,8 +108,8 @@ public:
 	* ask node to insert this particle
 	* @param inParticle the particle to insert (must inherite from FAbstractParticle)
 	*/
-        void insert(ParticleClass* const inParticle){
-                const MortonIndex particleIndex = getLeafMortonFromPosition( inParticle->getPosition() );
+        void insert(const ParticleClass& inParticle){
+                const MortonIndex particleIndex = getLeafMortonFromPosition( inParticle.getPosition() );
                 root.insert( particleIndex, inParticle, this->height, this->boxWidthAtLevel);
 	}
 
@@ -489,7 +489,7 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            FList<ParticleClass*>* getCurrentListSrc() {
+            FList<ParticleClass>* getCurrentListSrc() {
                 return this->current.leafTree->getLeafSrc(this->currentLocalIndex);
             }
 
@@ -497,7 +497,7 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            FList<ParticleClass*>* getCurrentListTargets() {
+            FList<ParticleClass>* getCurrentListTargets() {
                 return this->current.leafTree->getLeafTargets(this->currentLocalIndex);
             }
 
@@ -736,7 +736,7 @@ public:
           * @return the cell if it exist or null (0)
           *
           */
-        FList<ParticleClass*>* getLeafSrc(const MortonIndex inIndex){
+        FList<ParticleClass>* getLeafSrc(const MortonIndex inIndex){
            SubOctreeTypes workingTree;
            workingTree.tree = &this->root;
            const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
@@ -761,7 +761,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getLeafsNeighbors(FList<ParticleClass*>* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
+        int getLeafsNeighbors(FList<ParticleClass>* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
             MortonIndex inNeighborsIndex[26];
             return getLeafsNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
         }
@@ -772,7 +772,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getLeafsNeighborsWithIndex(FList<ParticleClass*>* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
+        int getLeafsNeighborsWithIndex(FList<ParticleClass>* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
             FTreeCoordinate center;
             center.setPositionFromMorton(inIndex, inLevel);
 
@@ -795,7 +795,7 @@ public:
                             const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
                             const MortonIndex mortonOther = other.getMortonIndex(inLevel);
                             // get cell
-                            FList<ParticleClass*>* const leaf = getLeafSrc(mortonOther);
+                            FList<ParticleClass>* const leaf = getLeafSrc(mortonOther);
                             // add to list if not null
                             if(leaf){
                                 inNeighborsIndex[idxNeighbors] = mortonOther;

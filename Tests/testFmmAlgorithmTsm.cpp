@@ -47,24 +47,9 @@ int main(int argc, char ** argv){
     const int NbLevels = 10;//10;
     const int SizeSubLevels = 3;//3
     const long NbPart = 2000000;//2000000
-    FTestParticleTsm* particles = new FTestParticleTsm[NbPart];
     FTic counter;
 
     srand ( 1 ); // volontary set seed to constant
-
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-
-    std::cout << "Creating " << NbPart << " particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particles[idxPart].setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-        if(rand() > RAND_MAX/2) particles[idxPart].setAsTarget();
-        else particles[idxPart].setAsSource();
-    }
-
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -74,13 +59,20 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Inserting particles ..." << std::endl;
+    std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        tree.insert(&particles[idxPart]);
+        FTestParticleTsm particle;
+        particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+        if(rand() > RAND_MAX/2) particle.setAsTarget();
+        else particle.setAsSource();
+
+        tree.insert(particle);
     }
+
     counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -102,18 +94,6 @@ int main(int argc, char ** argv){
 
     ValidateFMMAlgo(&tree);
 
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        particles[idxPart].~FTestParticleTsm();
-    }
-    delete [] particles;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
 
     return 0;
 }

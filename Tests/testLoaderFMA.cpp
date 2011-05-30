@@ -64,26 +64,24 @@ int main(int argc, char ** argv ){
         return 1;
     }
 
-    // otree
-    FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    {
+        // otree
+        FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
-    // -----------------------------------------------------
-    std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    counter.tic();
-    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
-        FFmaParticle* const part = new FFmaParticle();
-        particles.pushFront(part);
-        loader.fillParticle(part);
-        tree.insert(part);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
+        // -----------------------------------------------------
+        std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+        counter.tic();
+        for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+            FFmaParticle part;
+            loader.fillParticle(part);
+            tree.insert(part);
+        }
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
-    // -----------------------------------------------------
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    while(particles.getSize()){
-        delete particles.popFront();
+        // -----------------------------------------------------
+        std::cout << "Deleting particles ..." << std::endl;
+        counter.tic();
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

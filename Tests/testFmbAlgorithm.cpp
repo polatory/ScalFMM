@@ -61,7 +61,7 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 7;//10;
+    const int NbLevels = 9;//10;
     const int SizeSubLevels = 3;//3
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
@@ -89,27 +89,17 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
-
-    FmbParticle* particles = new FmbParticle[loader.getNumberOfParticles()];
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
+        FmbParticle particleToFill;
+        loader.fillParticle(particleToFill);
+        tree.insert(particleToFill);
     }
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
-
-    std::cout << "Inserting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -119,7 +109,7 @@ int main(int argc, char ** argv){
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FBasicKernels<FmbParticle, FmbCell, NbLevels> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread FFmmAlgorithmThreadUs
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -131,10 +121,10 @@ int main(int argc, char ** argv){
         FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.isValide() ){
-                potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
-                forces += iter.value()->getForces();
+                potential += iter.value().getPotential() * iter.value().getPhysicalValue();
+                forces += iter.value().getForces();
 
                 //printf("x = %e y = %e z = %e \n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ());
                 //printf("\t fx = %e fy = %e fz = %e \n",iter.value()->getForces().getX(),iter.value()->getForces().getY(),iter.value()->getForces().getZ());
@@ -152,13 +142,6 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
 
     return 0;
 }

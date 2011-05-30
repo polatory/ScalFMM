@@ -207,9 +207,9 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
             }
 
             for(int idx = startIdx ; idx < endIdx ; ++idx){
-                typename FList<ParticleClass*>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                typename FList<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-                typename FList<ParticleClass*>::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+                typename FList<ParticleClass>::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
 
                 if( octreeIterator.getCurrentListSrc()->getSize() != octreeIteratorValide.getCurrentListSrc()->getSize()){
                     std::cout << idx << " Particules numbers is different " << std::endl;
@@ -222,18 +222,18 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
 
-                    if( iterValide.value()->getPotential() != iter.value()->getPotential() ){
-                        std::cout << idx << " Potential error : " << iterValide.value()->getPotential()  << " " << iter.value()->getPotential() << "\n";
+                    if( iterValide.value().getPotential() != iter.value().getPotential() ){
+                        std::cout << idx << " Potential error : " << iterValide.value().getPotential()  << " " << iter.value().getPotential() << "\n";
                     }
-                    if( !FMath::LookEqual(iterValide.value()->getForces().getX(),iter.value()->getForces().getX())
-                            || !FMath::LookEqual(iterValide.value()->getForces().getY(),iter.value()->getForces().getY())
-                            || !FMath::LookEqual(iterValide.value()->getForces().getZ(),iter.value()->getForces().getZ()) ){
-                        /*std::cout << idx << " Forces error : " << (iterValide.value()->getForces().getX() - iter.value()->getForces().getX())
-                                  << " " << (iterValide.value()->getForces().getY() - iter.value()->getForces().getY())
-                                  << " " << (iterValide.value()->getForces().getZ() - iter.value()->getForces().getZ()) << "\n";*/
-                        std::cout << idx << " Forces error : x " << iterValide.value()->getForces().getX() << " " << iter.value()->getForces().getX()
-                                  << " y " << iterValide.value()->getForces().getY()  << " " << iter.value()->getForces().getY()
-                                  << " z " << iterValide.value()->getForces().getZ()  << " " << iter.value()->getForces().getZ() << "\n";
+                    if( !FMath::LookEqual(iterValide.value().getForces().getX(),iter.value().getForces().getX())
+                            || !FMath::LookEqual(iterValide.value().getForces().getY(),iter.value().getForces().getY())
+                            || !FMath::LookEqual(iterValide.value().getForces().getZ(),iter.value().getForces().getZ()) ){
+                        /*std::cout << idx << " Forces error : " << (iterValide.value().getForces().getX() - iter.value().getForces().getX())
+                                  << " " << (iterValide.value().getForces().getY() - iter.value().getForces().getY())
+                                  << " " << (iterValide.value().getForces().getZ() - iter.value().getForces().getZ()) << "\n";*/
+                        std::cout << idx << " Forces error : x " << iterValide.value().getForces().getX() << " " << iter.value().getForces().getX()
+                                  << " y " << iterValide.value().getForces().getY()  << " " << iter.value().getForces().getY()
+                                  << " z " << iterValide.value().getForces().getZ()  << " " << iter.value().getForces().getZ() << "\n";
                     }
                     iter.progress();
                     iterValide.progress();
@@ -287,35 +287,20 @@ int main(int argc, char ** argv){
 #endif
     // -----------------------------------------------------
 
-    std::cout << "Creating " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
-    FmbParticle*const particles = new FmbParticle[loader.getNumberOfParticles()];
-#ifdef VALIDATE_FMM
-    FmbParticle*const particlesValide = new FmbParticle[loader.getNumberOfParticles()];
-#endif
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart]);
+        FmbParticle particleToFill;
+        loader.fillParticle(particleToFill);
+        tree.insert(particleToFill);
 #ifdef VALIDATE_FMM
-        particlesValide[idxPart] = particles[idxPart];
+        treeValide.insert(particleToFill);
 #endif
     }
 
     counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
-
-    std::cout << "Inserting particles ..." << std::endl;
-    counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        tree.insert(&particles[idxPart]);
-#ifdef VALIDATE_FMM
-        treeValide.insert(&particlesValide[idxPart]);
-#endif
-    }
-    counter.tac();
-    std::cout << "Done  " << "(@Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
 
@@ -366,20 +351,20 @@ int main(int argc, char ** argv){
         }
 
         for(int idxLeaf = startIdx ; idxLeaf < endIdx ; ++idxLeaf){
-            FList<FmbParticle*>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
 #ifdef VALIDATE_FMM
-            FList<FmbParticle*>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+            FList<FmbParticle>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
 #endif
             while( iter.isValide()
 #ifdef VALIDATE_FMM
                   && iterValide.isValide()
 #endif
                   ){
-                potential += iter.value()->getPotential() * iter.value()->getPhysicalValue();
-                forces += iter.value()->getForces();
+                potential += iter.value().getPotential() * iter.value().getPhysicalValue();
+                forces += iter.value().getForces();
 #ifdef VALIDATE_FMM
-                potentialValide += iterValide.value()->getPotential() * iterValide.value()->getPhysicalValue();
-                forcesValide += iterValide.value()->getForces();
+                potentialValide += iterValide.value().getPotential() * iterValide.value().getPhysicalValue();
+                forcesValide += iterValide.value().getForces();
                 iterValide.progress();
 #endif
                 iter.progress();
@@ -411,17 +396,6 @@ int main(int argc, char ** argv){
 #ifdef VALIDATE_FMM
     ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
 #endif
-    // -----------------------------------------------------
-
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    delete [] particles;
-#ifdef VALIDATE_FMM
-    delete [] particlesValide;
-#endif
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
     // -----------------------------------------------------
 
     return 0;

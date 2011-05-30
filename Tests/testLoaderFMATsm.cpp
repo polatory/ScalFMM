@@ -63,27 +63,24 @@ int main(int argc, char ** argv ){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }
+    {
+        // otree
+        FOctree<ParticleTsm, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
 
-    // otree
-    FOctree<ParticleTsm, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+        // -----------------------------------------------------
+        std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+        counter.tic();
+        for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+            ParticleTsm part;
+            loader.fillParticle(part);
+            tree.insert(part);
+        }
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 
-    // -----------------------------------------------------
-    std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    counter.tic();
-    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
-        ParticleTsm* const part = new ParticleTsm();
-        particles.pushFront(part);
-        loader.fillParticle(part);
-        tree.insert(part);
-    }
-    counter.tac();
-    std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
-
-    // -----------------------------------------------------
-    std::cout << "Deleting particles ..." << std::endl;
-    counter.tic();
-    while(particles.getSize()){
-        delete particles.popFront();
+        // -----------------------------------------------------
+        std::cout << "Deleting particles ..." << std::endl;
+        counter.tic();
     }
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
