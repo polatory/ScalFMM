@@ -101,19 +101,6 @@ public:
                 ++this->size;
 	}
 
-        /**
-        * Push an element in the front of the list
-        * used when type is pointer and like [TYPE* const] object
-        * @param inObject the object to insert
-        */
-        /*void pushFront(Object const inObject){
-                    Node* newNode           = new Node;
-                    newNode->target         = inObject;
-                    newNode->next           = this->root;
-
-                    this->root  = newNode;
-                    ++this->size;
-        }*/
 
         /**
         * To get front value (last pushed value)

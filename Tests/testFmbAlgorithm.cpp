@@ -109,7 +109,7 @@ int main(int argc, char ** argv){
     FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
     //FBasicKernels<FmbParticle, FmbCell, NbLevels> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread FFmmAlgorithmThreadUs
-    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
