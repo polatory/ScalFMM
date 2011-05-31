@@ -41,9 +41,9 @@ class TestVector : public FUTester<TestVector> {
 	// test size
 	void TestSize(){
                 FVector<TestObject> vector;
-                vector.pushFront(TestObject());
-                vector.pushFront(TestObject());
-                vector.pushFront(TestObject());
+                vector.push(TestObject());
+                vector.push(TestObject());
+                vector.push(TestObject());
                 assert(vector.getSize() == 3);
 		
                 assert((TestObject::counter - TestObject::dealloced) == vector.getSize());
@@ -57,9 +57,9 @@ class TestVector : public FUTester<TestVector> {
 	// test copy
 	void TestCopy(){
                 FVector<TestObject> vector;
-                vector.pushFront(TestObject());
-                vector.pushFront(TestObject());
-                vector.pushFront(TestObject());
+                vector.push(TestObject());
+                vector.push(TestObject());
+                vector.push(TestObject());
 
                 {
                     FVector<TestObject> vector2(vector);
@@ -82,15 +82,15 @@ class TestVector : public FUTester<TestVector> {
 			assert(!iter.isValide());
 		}
 		{
-                        vector.pushFront(TestObject());
-                        vector.pushFront(TestObject());
-                        vector.pushFront(TestObject());
+                        vector.push(TestObject());
+                        vector.push(TestObject());
+                        vector.push(TestObject());
 
                         FVector<TestObject>::BasicIterator iter(vector);
 			assert(iter.isValide());
 
 			int counter = 0;
-			while(iter.isValide()){ iter.progress(); ++counter; }
+			while(iter.isValide()){ iter.gotoNext(); ++counter; }
 			assert(!iter.isValide());
                         assert(counter == vector.getSize());
 		}

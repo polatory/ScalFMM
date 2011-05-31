@@ -27,7 +27,7 @@ public:
         * @param particle the new particle
         */
     void push(const ParticleClass& particle){
-        this->particles.pushFront(particle);
+        this->particles.push(particle);
     }
 
     /**

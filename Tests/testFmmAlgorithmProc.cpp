@@ -185,7 +185,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
                         (isUsingTsm && iter.value().getDataDown() != NbPart) ){
                         std::cout << "Problem L2P + P2P, value on particle is : " << iter.value().getDataDown() << "\n";
                     }
-                    iter.progress();
+                    iter.gotoNext();
                 }
                 octreeIterator.moveRight();
             }

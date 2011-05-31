@@ -42,9 +42,9 @@ class TestList : public FUTester<TestList> {
 	// test size
 	void TestSize(){
 		FList<TestObject> list;
-		list.pushFront(TestObject());
-		list.pushFront(TestObject());
-		list.pushFront(TestObject());
+		list.push(TestObject());
+		list.push(TestObject());
+		list.push(TestObject());
 		assert(list.getSize() == 3);
 		
 		assert((TestObject::counter - TestObject::dealloced) == list.getSize());
@@ -58,9 +58,9 @@ class TestList : public FUTester<TestList> {
 	// test copy
 	void TestCopy(){
 		FList<TestObject> list;
-		list.pushFront(TestObject());
-		list.pushFront(TestObject());
-		list.pushFront(TestObject());
+		list.push(TestObject());
+		list.push(TestObject());
+		list.push(TestObject());
 
 		FList<TestObject> list2 = list;
 		assert(list.getSize() == list2.getSize());
@@ -76,15 +76,15 @@ class TestList : public FUTester<TestList> {
 			assert(!iter.isValide());
 		}
 		{
-			list.pushFront(TestObject());
-			list.pushFront(TestObject());
-			list.pushFront(TestObject());
+			list.push(TestObject());
+			list.push(TestObject());
+			list.push(TestObject());
 
 			FList<TestObject>::BasicIterator iter(list);
 			assert(iter.isValide());
 
 			int counter = 0;
-			while(iter.isValide()){ iter.progress(); ++counter; }
+			while(iter.isValide()){ iter.gotoNext(); ++counter; }
 			assert(!iter.isValide());
 			assert(counter == list.getSize());
 		}

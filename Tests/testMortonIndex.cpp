@@ -128,7 +128,7 @@ int main(int argc, char ** argv){
 
                 printf("\tx = %e y = %e z = %e data = %c\n",iter.value().getPosition().getX(),iter.value().getPosition().getY(),iter.value().getPosition().getZ(),iter.value().getData());
 
-                iter.progress();
+                iter.gotoNext();
             }
 
         } while(octreeIterator.moveRight());

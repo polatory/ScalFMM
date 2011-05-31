@@ -95,10 +95,10 @@ public:
 	}
 
 	/**
-	* Push an element in the front of the list
+        * Push an element in the head of the list
         * @param inObject the object to insert
 	*/
-        void pushFront(const Object& inObject){
+        void push(const Object& inObject){
                 Node* newNode   = new Node;
 		newNode->target = inObject;
 		newNode->next 	= this->root;
@@ -109,35 +109,35 @@ public:
 
 
         /**
-        * To get front value (last pushed value)
+        * To get head value (last pushed value)
         * if size == 0 then defaultValue is returned
         * the list is unchanged after this function
         * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
         * @return first value if exists or defaultValue otherwise
         */
-        Object& front(Object& defaultValue = Object()){
+        Object& head(Object& defaultValue = Object()){
             if(this->size) return this->root->target;
             else return defaultValue;
         }
 
         /**
-        * To get front value as const
+        * To get head value as const
         * if size == 0 then defaultValue is return
         * the list is unchanged after this function
         * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
         * @return first value if exists or defaultValue otherwise
         */
-        const Object& front(const Object& defaultValue = Object()) const {
+        const Object& head(const Object& defaultValue = Object()) const {
             if(this->size) return this->root->target;
             else return defaultValue;
         }
 
         /**
-        * To get the front value and remove it from the list
+        * To get the head value and remove it from the list
         * @return first value
         * @warning you must check the list's size before calling this function!
         */
-        Object popFront(){
+        Object pop(){
             --this->size;
             Node* newNode   = this->root;
             this->root      = this->root->next;
@@ -166,7 +166,7 @@ public:
           * FList<int>::BasicIterator iter(values); <br>
           * while( iter.isValide() ){ <br>
           *     iter.value() += 1; <br>
-          *     iter.progress(); <br>
+          *     iter.gotoNext(); <br>
           * } <br>
           * </code>
           */
@@ -182,8 +182,8 @@ public:
             BasicIterator(FList& list) : iter(list.root){
             }
 
-            /** To progress on the list */
-            void progress(){
+            /** To gotoNext on the list */
+            void gotoNext(){
                 if(this->iter) this->iter = this->iter->next;
             }
 
@@ -205,7 +205,7 @@ public:
 
             /**
             * To know if an iterator is at the end of the list
-            * @return true if the current iterator can progress and access to value, else false
+            * @return true if the current iterator can gotoNext and access to value, else false
             */
             bool isValide() const{
                 return iter;
@@ -223,7 +223,7 @@ public:
           * FList<int>::ConstBasicIterator iter(values); <br>
           * while( iter.isValide() ){ <br>
           *     iter.value() += 1; <br>
-          *     iter.progress(); <br>
+          *     iter.gotoNext(); <br>
           * } <br>
           * </code>
           */
@@ -239,8 +239,8 @@ public:
             ConstBasicIterator(const FList& list) : iter(list.root){
             }
 
-            /** to progress on the list */
-            void progress(){
+            /** to gotoNext on the list */
+            void gotoNext(){
                 if(this->iter) this->iter = this->iter->next;
             }
 
@@ -262,7 +262,7 @@ public:
 
             /**
             * To know if an iterator is at the end of the list
-            * @return true if the current iterator can progress and access to value, else false
+            * @return true if the current iterator can gotoNext and access to value, else false
             */
             bool isValide() const{
                 return iter;

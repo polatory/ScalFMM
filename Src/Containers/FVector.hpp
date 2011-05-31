@@ -112,7 +112,7 @@ public:
     *@brief last data
     *@return end->data
     */
-    const T& front() const {
+    const T& head() const {
         return this->array[this->index - 1];
     }
 
@@ -120,7 +120,7 @@ public:
     *@brief last data
     *@return end->data
     */
-    T& front() {
+    T& head() {
         return this->array[this->index - 1];
     }
 
@@ -145,15 +145,15 @@ public:
     /**
     *@brief pop the first node
     */
-    void popFront(){
+    void pop(){
         (&this->array[--this->index])->~T();
     }
 
     /**
-    *@brief push a new node in front
+    *@brief push a new node in head
     *@param inValue the new value
     */
-    void pushFront( const T & inValue ){
+    void push( const T & inValue ){
         if( this->index == this->capacity ){
             setCapacity(this->capacity * 1.5);
         }
@@ -174,7 +174,7 @@ public:
 
         BasicIterator(FVector<T>& inVector) : vector(&inVector), index(0){}
 
-        void progress(){
+        void gotoNext(){
             ++this->index;
         }
 
@@ -205,7 +205,7 @@ public:
 
         ConstBasicIterator(const FVector<T>& inVector) : vector(&inVector), index(0){}
 
-        void progress(){
+        void gotoNext(){
             ++this->index;
         }
 

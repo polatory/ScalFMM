@@ -235,8 +235,8 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
                                   << " y " << iterValide.value().getForces().getY()  << " " << iter.value().getForces().getY()
                                   << " z " << iterValide.value().getForces().getZ()  << " " << iter.value().getForces().getZ() << "\n";
                     }
-                    iter.progress();
-                    iterValide.progress();
+                    iter.gotoNext();
+                    iterValide.gotoNext();
                 }
 
                 octreeIterator.moveRight();
@@ -365,9 +365,9 @@ int main(int argc, char ** argv){
 #ifdef VALIDATE_FMM
                 potentialValide += iterValide.value().getPotential() * iterValide.value().getPhysicalValue();
                 forcesValide += iterValide.value().getForces();
-                iterValide.progress();
+                iterValide.gotoNext();
 #endif
-                iter.progress();
+                iter.gotoNext();
             }
 
             octreeIterator.moveRight();

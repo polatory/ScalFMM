@@ -132,7 +132,7 @@ int main(int argc, char ** argv){
                 //printf("\t\t Sum Forces ( %e , %e , %e)\n",
                 //forces.getX(),forces.getY(),forces.getZ());
 
-                iter.progress();
+                iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
 

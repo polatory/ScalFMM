@@ -29,8 +29,8 @@ public:
         * @param particle the new particle
         */
     void push(const ParticleClass& particle){
-        if(particle.isTarget()) this->targets.pushFront(particle);
-        else if(particle.isSource()) this->sources.pushFront(particle);
+        if(particle.isTarget()) this->targets.push(particle);
+        else if(particle.isSource()) this->sources.push(particle);
         else assert(false, "Error particle has undefined type.", __LINE__, __FILE__);
     }
 

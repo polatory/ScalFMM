@@ -304,7 +304,7 @@ public:
               * After that point we do not know where we are but we know that there is some data
               * on the right (without knowing our position!)
               *
-              * We progress on the brother to find an allocated cell (->)
+              * We gotoNext on the brother to find an allocated cell (->)
               * for example if we are on index 2 we will look until 8 = 2 | 7 + 1
               * if we arrive a 8 without finding a cell we go upper and do the same
               * we know we will find something because we are not at the right limit

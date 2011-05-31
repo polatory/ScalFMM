@@ -76,7 +76,7 @@ public:
         typename FList<ParticleClass>::BasicIterator iter(*particles);
         while( iter.isValide() ){
             iter.value().setDataDown(iter.value().getDataDown() + local->getDataDown());
-            iter.progress();
+            iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -97,7 +97,7 @@ public:
         typename FList<ParticleClass>::BasicIterator iter(*targets);
         while( iter.isValide() ){
             iter.value().setDataDown(iter.value().getDataDown() + inc);
-            iter.progress();
+            iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -120,7 +120,7 @@ public:
         typename FList<ParticleClass>::BasicIterator iter(*targets);
         while( iter.isValide() ){
             iter.value().setDataDown(iter.value().getDataDown() + inc);
-            iter.progress();
+            iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -185,7 +185,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
                     (isUsingTsm && iter.value().getDataDown() != NbPart) ){
                     std::cout << "Problem L2P + P2P : " << iter.value().getDataDown() << "\n";
                 }
-                iter.progress();
+                iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
     }
