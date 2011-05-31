@@ -218,22 +218,22 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
                     std::cout << idx << " Index are differents " << std::endl;
                 }
 
-                while( iter.isValide() && iterValide.isValide() ){
+                while( iter.hasNotFinished() && iterValide.hasNotFinished() ){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
 
-                    if( iterValide.value().getPotential() != iter.value().getPotential() ){
-                        std::cout << idx << " Potential error : " << iterValide.value().getPotential()  << " " << iter.value().getPotential() << "\n";
+                    if( iterValide.data().getPotential() != iter.data().getPotential() ){
+                        std::cout << idx << " Potential error : " << iterValide.data().getPotential()  << " " << iter.data().getPotential() << "\n";
                     }
-                    if( !FMath::LookEqual(iterValide.value().getForces().getX(),iter.value().getForces().getX())
-                            || !FMath::LookEqual(iterValide.value().getForces().getY(),iter.value().getForces().getY())
-                            || !FMath::LookEqual(iterValide.value().getForces().getZ(),iter.value().getForces().getZ()) ){
-                        /*std::cout << idx << " Forces error : " << (iterValide.value().getForces().getX() - iter.value().getForces().getX())
-                                  << " " << (iterValide.value().getForces().getY() - iter.value().getForces().getY())
-                                  << " " << (iterValide.value().getForces().getZ() - iter.value().getForces().getZ()) << "\n";*/
-                        std::cout << idx << " Forces error : x " << iterValide.value().getForces().getX() << " " << iter.value().getForces().getX()
-                                  << " y " << iterValide.value().getForces().getY()  << " " << iter.value().getForces().getY()
-                                  << " z " << iterValide.value().getForces().getZ()  << " " << iter.value().getForces().getZ() << "\n";
+                    if( !FMath::LookEqual(iterValide.data().getForces().getX(),iter.data().getForces().getX())
+                            || !FMath::LookEqual(iterValide.data().getForces().getY(),iter.data().getForces().getY())
+                            || !FMath::LookEqual(iterValide.data().getForces().getZ(),iter.data().getForces().getZ()) ){
+                        /*std::cout << idx << " Forces error : " << (iterValide.data().getForces().getX() - iter.data().getForces().getX())
+                                  << " " << (iterValide.data().getForces().getY() - iter.data().getForces().getY())
+                                  << " " << (iterValide.data().getForces().getZ() - iter.data().getForces().getZ()) << "\n";*/
+                        std::cout << idx << " Forces error : x " << iterValide.data().getForces().getX() << " " << iter.data().getForces().getX()
+                                  << " y " << iterValide.data().getForces().getY()  << " " << iter.data().getForces().getY()
+                                  << " z " << iterValide.data().getForces().getZ()  << " " << iter.data().getForces().getZ() << "\n";
                     }
                     iter.gotoNext();
                     iterValide.gotoNext();
@@ -274,7 +274,7 @@ int main(int argc, char ** argv){
     }
 
     FFmaLoader<FmbParticle> loader(filename);
-    if(!loader.isValide()){
+    if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }
@@ -355,16 +355,16 @@ int main(int argc, char ** argv){
 #ifdef VALIDATE_FMM
             FList<FmbParticle>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
 #endif
-            while( iter.isValide()
+            while( iter.hasNotFinished()
 #ifdef VALIDATE_FMM
-                  && iterValide.isValide()
+                  && iterValide.hasNotFinished()
 #endif
                   ){
-                potential += iter.value().getPotential() * iter.value().getPhysicalValue();
-                forces += iter.value().getForces();
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+                forces += iter.data().getForces();
 #ifdef VALIDATE_FMM
-                potentialValide += iterValide.value().getPotential() * iterValide.value().getPhysicalValue();
-                forcesValide += iterValide.value().getForces();
+                potentialValide += iterValide.data().getPotential() * iterValide.data().getPhysicalValue();
+                forcesValide += iterValide.data().getForces();
                 iterValide.gotoNext();
 #endif
                 iter.gotoNext();

@@ -178,12 +178,12 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
 
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
-                while( iter.isValide() ){
+                while( iter.hasNotFinished() ){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
-                    if( (!isUsingTsm && iter.value().getDataDown() != NbPart - 1) ||
-                        (isUsingTsm && iter.value().getDataDown() != NbPart) ){
-                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.value().getDataDown() << "\n";
+                    if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
+                        (isUsingTsm && iter.data().getDataDown() != NbPart) ){
+                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.data().getDataDown() << "\n";
                     }
                     iter.gotoNext();
                 }
@@ -240,7 +240,7 @@ int main(int argc, char ** argv){
     }
 
     FFmaLoader<TestParticle> loader(filename);
-    if(!loader.isValide()){
+    if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }

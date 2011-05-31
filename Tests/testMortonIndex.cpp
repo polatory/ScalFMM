@@ -85,7 +85,7 @@ int main(int argc, char ** argv){
     }
 
     FHLoader<Particle> loader(filename);
-    if(!loader.isValide()){
+    if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }
@@ -124,9 +124,9 @@ int main(int argc, char ** argv){
             std::cout << "Particles :" << std::endl;
 
             FList<Particle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.isValide() ){
+            while( iter.hasNotFinished() ){
 
-                printf("\tx = %e y = %e z = %e data = %c\n",iter.value().getPosition().getX(),iter.value().getPosition().getY(),iter.value().getPosition().getZ(),iter.value().getData());
+                printf("\tx = %e y = %e z = %e data = %c\n",iter.data().getPosition().getX(),iter.data().getPosition().getY(),iter.data().getPosition().getZ(),iter.data().getData());
 
                 iter.gotoNext();
             }

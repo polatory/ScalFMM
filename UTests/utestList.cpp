@@ -73,7 +73,7 @@ class TestList : public FUTester<TestList> {
 		FList<TestObject> list;
 		{
 			FList<TestObject>::BasicIterator iter(list);
-			assert(!iter.isValide());
+			assert(!iter.hasNotFinished());
 		}
 		{
 			list.push(TestObject());
@@ -81,11 +81,11 @@ class TestList : public FUTester<TestList> {
 			list.push(TestObject());
 
 			FList<TestObject>::BasicIterator iter(list);
-			assert(iter.isValide());
+			assert(iter.hasNotFinished());
 
 			int counter = 0;
-			while(iter.isValide()){ iter.gotoNext(); ++counter; }
-			assert(!iter.isValide());
+			while(iter.hasNotFinished()){ iter.gotoNext(); ++counter; }
+			assert(!iter.hasNotFinished());
 			assert(counter == list.getSize());
 		}
 	}

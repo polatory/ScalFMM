@@ -178,15 +178,15 @@ public:
             ++this->index;
         }
 
-        bool isValide() const{
+        bool hasNotFinished() const{
             return this->index < this->vector->index;
         }
 
-        T& value(){
+        T& data(){
             return this->vector->array[this->index];
         }
 
-        const T& value() const{
+        const T& data() const{
             return this->vector->array[this->index];
         }
 
@@ -209,11 +209,11 @@ public:
             ++this->index;
         }
 
-        bool isValide() const{
+        bool hasNotFinished() const{
             return this->index < this->vector->index;
         }
 
-        const T& value() const{
+        const T& data() const{
             return this->vector->array[this->index];
         }
 

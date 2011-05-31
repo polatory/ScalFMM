@@ -79,7 +79,7 @@ class TestVector : public FUTester<TestVector> {
                 FVector<TestObject> vector;
 		{
                         FVector<TestObject>::BasicIterator iter(vector);
-			assert(!iter.isValide());
+			assert(!iter.hasNotFinished());
 		}
 		{
                         vector.push(TestObject());
@@ -87,11 +87,11 @@ class TestVector : public FUTester<TestVector> {
                         vector.push(TestObject());
 
                         FVector<TestObject>::BasicIterator iter(vector);
-			assert(iter.isValide());
+			assert(iter.hasNotFinished());
 
 			int counter = 0;
-			while(iter.isValide()){ iter.gotoNext(); ++counter; }
-			assert(!iter.isValide());
+			while(iter.hasNotFinished()){ iter.gotoNext(); ++counter; }
+			assert(!iter.hasNotFinished());
                         assert(counter == vector.getSize());
 		}
 	}

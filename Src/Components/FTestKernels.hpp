@@ -74,8 +74,8 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The particles is impacted by the parent cell
         typename FList<ParticleClass>::BasicIterator iter(*particles);
-        while( iter.isValide() ){
-            iter.value().setDataDown(iter.value().getDataDown() + local->getDataDown());
+        while( iter.hasNotFinished() ){
+            iter.data().setDataDown(iter.data().getDataDown() + local->getDataDown());
             iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
@@ -95,8 +95,8 @@ public:
         }
 
         typename FList<ParticleClass>::BasicIterator iter(*targets);
-        while( iter.isValide() ){
-            iter.value().setDataDown(iter.value().getDataDown() + inc);
+        while( iter.hasNotFinished() ){
+            iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
@@ -118,8 +118,8 @@ public:
         }
 
         typename FList<ParticleClass>::BasicIterator iter(*targets);
-        while( iter.isValide() ){
-            iter.value().setDataDown(iter.value().getDataDown() + inc);
+        while( iter.hasNotFinished() ){
+            iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
         }
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
@@ -178,12 +178,12 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
 
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
-            while( iter.isValide() ){
+            while( iter.hasNotFinished() ){
                 // If a particles has been impacted by less than NbPart - 1 (the current particle)
                 // there is a problem
-                if( (!isUsingTsm && iter.value().getDataDown() != NbPart - 1) ||
-                    (isUsingTsm && iter.value().getDataDown() != NbPart) ){
-                    std::cout << "Problem L2P + P2P : " << iter.value().getDataDown() << "\n";
+                if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
+                    (isUsingTsm && iter.data().getDataDown() != NbPart) ){
+                    std::cout << "Problem L2P + P2P : " << iter.data().getDataDown() << "\n";
                 }
                 iter.gotoNext();
             }

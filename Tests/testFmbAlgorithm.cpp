@@ -78,7 +78,7 @@ int main(int argc, char ** argv){
     }
 
     FFmaLoader<FmbParticle> loader(filename);
-    if(!loader.isValide()){
+    if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }
@@ -122,12 +122,12 @@ int main(int argc, char ** argv){
         octreeIterator.gotoBottomLeft();
         do{
             FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.isValide() ){
-                potential += iter.value().getPotential() * iter.value().getPhysicalValue();
-                forces += iter.value().getForces();
+            while( iter.hasNotFinished() ){
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+                forces += iter.data().getForces();
 
-                //printf("x = %e y = %e z = %e \n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ());
-                //printf("\t fx = %e fy = %e fz = %e \n",iter.value()->getForces().getX(),iter.value()->getForces().getY(),iter.value()->getForces().getZ());
+                //printf("x = %e y = %e z = %e \n",iter.data()->getPosition().getX(),iter.data()->getPosition().getY(),iter.data()->getPosition().getZ());
+                //printf("\t fx = %e fy = %e fz = %e \n",iter.data()->getForces().getX(),iter.data()->getForces().getY(),iter.data()->getForces().getZ());
 
                 //printf("\t\t Sum Forces ( %e , %e , %e)\n",
                 //forces.getX(),forces.getY(),forces.getZ());

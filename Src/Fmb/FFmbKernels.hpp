@@ -666,23 +666,23 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         for(typename FList<ParticleClass>::ConstBasicIterator iterParticle(*inParticles);
-        iterParticle.isValide() ; iterParticle.gotoNext()){
+        iterParticle.hasNotFinished() ; iterParticle.gotoNext()){
 
 
-            //std::cout << "Working on part " << iterParticle.value()->getPhysicalValue() << "\n";
-            //F3DPosition tempPos = iterParticle.value()->getPosition() - inPole->getPosition();
+            //std::cout << "Working on part " << iterParticle.data()->getPhysicalValue() << "\n";
+            //F3DPosition tempPos = iterParticle.data()->getPosition() - inPole->getPosition();
             //ok printf("\tpos_rel.x=%e\tpos_rel.y=%e\tpos_rel.z=%e\n",tempPos.getX(),tempPos.getY(),tempPos.getZ());
             //ok printf("\tp_center.x=%e\tp_center.y=%e\tp_center.z=%e\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
-            //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticle.value()->getPosition().getX(),iterParticle.value()->getPosition().getY(),iterParticle.value()->getPosition().getZ());
+            //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticle.data()->getPosition().getX(),iterParticle.data()->getPosition().getY(),iterParticle.data()->getPosition().getZ());
 
-            harmonicInner(positionTsmphere(iterParticle.value().getPosition() - inPole->getPosition()),current_thread_Y);
+            harmonicInner(positionTsmphere(iterParticle.data().getPosition() - inPole->getPosition()),current_thread_Y);
 
             //printf("\tr=%e\tcos_theta=%e\tsin_theta=%e\tphi=%e\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
             FComplexe* p_exp_term = inPole->getMultipole();
             FComplexe* p_Y_term = current_thread_Y;
             FReal pow_of_minus_1_j = 1.0;//(-1)^j
-            const FReal valueParticle = iterParticle.value().getPhysicalValue();
+            const FReal valueParticle = iterParticle.data().getPhysicalValue();
 
             for(int j = 0 ; j <= FMB_Info_P ; ++j, pow_of_minus_1_j = -pow_of_minus_1_j ){
                 for(int k = 0 ; k <= j ; ++k, ++p_Y_term, ++p_exp_term){
@@ -1072,25 +1072,25 @@ public:
     void L2P(const CellClass* const local, FList<ParticleClass>* const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass>::BasicIterator iterTarget(*particles);
-        while( iterTarget.isValide() ){
+        while( iterTarget.hasNotFinished() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
             F3DPosition force_vector_in_local_base;
             Spherical spherical;
-            spherical = positionTsmphere( iterTarget.value().getPosition() - local->getPosition());
+            spherical = positionTsmphere( iterTarget.data().getPosition() - local->getPosition());
 
             /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
-                   (iterTarget.value()->getPosition()).getX(),
-                   (iterTarget.value()->getPosition()).getY(),
-                   (iterTarget.value()->getPosition()).getZ());
+                   (iterTarget.data()->getPosition()).getX(),
+                   (iterTarget.data()->getPosition()).getY(),
+                   (iterTarget.data()->getPosition()).getZ());
             printf("\t\t p_leaf_center x = %lf \t y = %lf \t z = %lf \n",
                    (local->getPosition()).getX(),
                    (local->getPosition()).getY(),
                    (local->getPosition()).getZ());*/
             /*printf("\t\t p_position_to_leaf_center x = %lf \t y = %lf \t z = %lf \n",
-                    (iterTarget.value()->getPosition() - local->getPosition()).getX(),
-                    (iterTarget.value()->getPosition() - local->getPosition()).getY(),
-                    (iterTarget.value()->getPosition() - local->getPosition()).getZ());*/
+                    (iterTarget.data()->getPosition() - local->getPosition()).getX(),
+                    (iterTarget.data()->getPosition() - local->getPosition()).getY(),
+                    (iterTarget.data()->getPosition() - local->getPosition()).getZ());*/
             /*printf("\t\t phi = %lf \t cos = %lf \t sin = %lf \t r= %lf \n",
                     spherical.phi,spherical.cosTheta,spherical.sinTheta,spherical.r);*/
 
@@ -1267,20 +1267,20 @@ public:
 
             //#ifndef _DIRECT_MATRIX_
             // When _DIRECT_MATRIX_ is defined, this multiplication is done in 'leaf_Sum_near_and_far_fields()'
-            force_vector_tmp *= iterTarget.value().getPhysicalValue();
+            force_vector_tmp *= iterTarget.data().getPhysicalValue();
             //#endif
 
             /*printf("[force_vector_tmp] fx = %e \t fy = %e \t fz = %e \n",
                    force_vector_tmp.getX(),force_vector_tmp.getY(),force_vector_tmp.getZ());*/
 
-            iterTarget.value().setForces( iterTarget.value().getForces() + force_vector_tmp );
+            iterTarget.data().setForces( iterTarget.data().getForces() + force_vector_tmp );
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
-            iterTarget.value().setPotential(potential);
+            iterTarget.data().setPotential(potential);
 
             /*printf("[END] fx = %e \t fy = %e \t fz = %e \n\n",
-                   iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());*/
+                   iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());*/
             //printf("p_potential = %lf\n", potential);
 
             iterTarget.gotoNext();
@@ -1336,14 +1336,14 @@ public:
              FList<ParticleClass>* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass>::BasicIterator iterTarget(*targets);
-        while( iterTarget.isValide() ){
+        while( iterTarget.hasNotFinished() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
                     typename FList<ParticleClass>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                    while( iterSource.isValide() ){
-                        DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.value(),
-                                                       iterSource.value());
+                    while( iterSource.hasNotFinished() ){
+                        DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.data(),
+                                                       iterSource.data());
                         iterSource.gotoNext();
                     }
                 }
@@ -1351,17 +1351,17 @@ public:
 
             typename FList<ParticleClass>::BasicIterator iterSameBox = iterTarget;//(*targets);
             iterSameBox.gotoNext();
-            while( iterSameBox.isValide() ){
-                if(&iterSameBox.value() < &iterTarget.value()){
-                    DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.value(),
-                                                   iterSameBox.value());
+            while( iterSameBox.hasNotFinished() ){
+                if(&iterSameBox.data() < &iterTarget.data()){
+                    DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.data(),
+                                                   iterSameBox.data());
                 }
                 iterSameBox.gotoNext();
             }
 
-            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
-            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
-            //printf("\t potential = %e \n",iterTarget.value()->getPotential());
+            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.data()->getPosition().getX(),iterTarget.data()->getPosition().getY(),iterTarget.data()->getPosition().getZ());
+            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
+            //printf("\t potential = %e \n",iterTarget.data()->getPotential());
 
             iterTarget.gotoNext();
         }
@@ -1413,29 +1413,29 @@ public:
              const FList<ParticleClass>* const directNeighbors[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         typename FList<ParticleClass>::BasicIterator iterTarget(*targets);
-        while( iterTarget.isValide() ){
+        while( iterTarget.hasNotFinished() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 typename FList<ParticleClass>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                while( iterSource.isValide() ){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.value(),
-                                                      iterSource.value());
+                while( iterSource.hasNotFinished() ){
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
+                                                      iterSource.data());
                     iterSource.gotoNext();
                 }
             }
 
             typename FList<ParticleClass>::ConstBasicIterator iterSameBox(*sources);
-            while( iterSameBox.isValide() ){
-                if(&iterSameBox.value() != &iterTarget.value()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.value(),
-                                                      iterSameBox.value());
+            while( iterSameBox.hasNotFinished() ){
+                if(&iterSameBox.data() != &iterTarget.data()){
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
+                                                      iterSameBox.data());
                 }
                 iterSameBox.gotoNext();
             }
 
-            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.value()->getPosition().getX(),iterTarget.value()->getPosition().getY(),iterTarget.value()->getPosition().getZ());
-            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.value()->getForces().getX(),iterTarget.value()->getForces().getY(),iterTarget.value()->getForces().getZ());
-            //printf("\t potential = %e \n",iterTarget.value()->getPotential());
+            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.data()->getPosition().getX(),iterTarget.data()->getPosition().getY(),iterTarget.data()->getPosition().getZ());
+            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
+            //printf("\t potential = %e \n",iterTarget.data()->getPotential());
 
             iterTarget.gotoNext();
         }

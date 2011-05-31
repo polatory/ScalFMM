@@ -20,7 +20,7 @@
 * ....
 * <code>
 *    FHLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
-*    if(!loader.isValide()){ <br>
+*    if(!loader.hasNotFinished()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
 *    } <br>
@@ -48,7 +48,7 @@ public:
     /**
     * The constructor need the file name
     * @param filename the name of the file to open
-    * you can test if file is successfuly open by calling isValide()
+    * you can test if file is successfuly open by calling hasNotFinished()
     */
     FHLoader(const char* const filename): file(0){
         file = fopen(filename,"r");
@@ -86,7 +86,7 @@ public:
       * To know if file is open and ready to read
       * @return true if loader can work
       */
-    bool isValide() const{
+    bool hasNotFinished() const{
         return this->file != NULL;
     }
 

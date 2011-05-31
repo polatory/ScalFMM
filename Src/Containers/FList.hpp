@@ -164,8 +164,8 @@ public:
           * FList<int> values; <br>
           * // inserting ... <br>
           * FList<int>::BasicIterator iter(values); <br>
-          * while( iter.isValide() ){ <br>
-          *     iter.value() += 1; <br>
+          * while( iter.hasNotFinished() ){ <br>
+          *     iter.data() += 1; <br>
           *     iter.gotoNext(); <br>
           * } <br>
           * </code>
@@ -189,17 +189,17 @@ public:
 
             /**
             * Current pointed value
-            * current iterator must be valide (isValide()) to use this function
+            * current iterator must be valide (hasNotFinished()) to use this function
             */
-            Object& value(){
+            Object& data(){
                 return this->iter->target;
             }
 
             /**
             * Current pointed value
-            * current iterator must be valide (isValide()) to use this function
+            * current iterator must be valide (hasNotFinished()) to use this function
             */
-            const Object& value() const{
+            const Object& data() const{
                 return this->iter->target;
             }
 
@@ -207,7 +207,7 @@ public:
             * To know if an iterator is at the end of the list
             * @return true if the current iterator can gotoNext and access to value, else false
             */
-            bool isValide() const{
+            bool hasNotFinished() const{
                 return iter;
             }
 
@@ -221,8 +221,8 @@ public:
           * FList<int> values; <br>
           * // inserting ... <br>
           * FList<int>::ConstBasicIterator iter(values); <br>
-          * while( iter.isValide() ){ <br>
-          *     iter.value() += 1; <br>
+          * while( iter.hasNotFinished() ){ <br>
+          *     iter.data() += 1; <br>
           *     iter.gotoNext(); <br>
           * } <br>
           * </code>
@@ -246,17 +246,17 @@ public:
 
             /**
             * Current pointed value
-            * current iterator must be valide (isValide()) to use this function
+            * current iterator must be valide (hasNotFinished()) to use this function
             */
-            Object value(){
+            Object data(){
                 return this->iter->target;
             }
 
             /**
             * Current pointed value
-            * current iterator must be valide (isValide()) to use this function
+            * current iterator must be valide (hasNotFinished()) to use this function
             */
-            const Object& value() const{
+            const Object& data() const{
                 return this->iter->target;
             }
 
@@ -264,7 +264,7 @@ public:
             * To know if an iterator is at the end of the list
             * @return true if the current iterator can gotoNext and access to value, else false
             */
-            bool isValide() const{
+            bool hasNotFinished() const{
                 return iter;
             }
         };
