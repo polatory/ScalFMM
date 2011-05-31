@@ -42,6 +42,7 @@ class FFmmAlgorithmThread : protected FAssertable{
     Kernel** kernels;                    //< The kernels
 
     OctreeIterator* iterArray;
+    int leafsNumber;
 
     static const int SizeShape = 3*3*3;
     int shapeLeaf[SizeShape];    
@@ -55,7 +56,8 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThread(Octree* const inTree, Kernel* const inKernels)
-                      : tree(inTree) , kernels(0), iterArray(0), MaxThreads(omp_get_max_threads()) {
+                      : tree(inTree) , kernels(0), iterArray(0), leafsNumber(0),
+                        MaxThreads(omp_get_max_threads()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -88,18 +90,18 @@ public:
         const int LeafIndex = OctreeHeight - 1;
 
         // Count leaf
-        int leafs = 0;
+        leafsNumber = 0;
         OctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            ++leafs;
+            ++leafsNumber;
             const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
             FTreeCoordinate coord;
             coord.setPositionFromMorton(index, LeafIndex);
             ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
 
         } while(octreeIterator.moveRight());
-        iterArray = new OctreeIterator[leafs];
+        iterArray = new OctreeIterator[leafsNumber];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         bottomPass();
@@ -298,62 +300,85 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounter);
+        FDEBUG(FTic computationCounterP2P);
 
-        OctreeIterator* shapeArray[SizeShape];
         int countShape[SizeShape];
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            shapeArray[idxShape] = new OctreeIterator[this->shapeLeaf[idxShape]];
             countShape[idxShape] = 0;
         }
 
+        struct LeafData{
+            MortonIndex index;
+            CellClass* cell;
+            FList<ParticleClass>* targets;
+            FList<ParticleClass>* sources;
+        };
+        LeafData* const leafsDataArray = new LeafData[this->leafsNumber];
+
         const int LeafIndex = OctreeHeight - 1;
-        //int leafs = 0;
+        int leafs = 0;
         {
+            int startPosAtShape[SizeShape];
+            startPosAtShape[0] = 0;
+            for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
+                startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + this->shapeLeaf[idxShape-1];
+            }
+
             OctreeIterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             // for each leafs
             do{
                 //iterArray[leafs] = octreeIterator;
-                //++leafs;
+                ++leafs;
                 const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
                 FTreeCoordinate coord;
                 coord.setPositionFromMorton(index, LeafIndex);
                 const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
-                shapeArray[shapePosition][countShape[shapePosition]] = octreeIterator;
-                ++countShape[shapePosition];
+
+                leafsDataArray[startPosAtShape[shapePosition]].index = octreeIterator.getCurrentGlobalIndex();
+                leafsDataArray[startPosAtShape[shapePosition]].cell = octreeIterator.getCurrentCell();
+                leafsDataArray[startPosAtShape[shapePosition]].targets = octreeIterator.getCurrentListTargets();
+                leafsDataArray[startPosAtShape[shapePosition]].sources = octreeIterator.getCurrentListSrc();
+
+                ++startPosAtShape[shapePosition];
 
             } while(octreeIterator.moveRight());
         }
 
         FDEBUG(computationCounter.tic());
+
         #pragma omp parallel
         {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             FList<ParticleClass>* neighbors[26];
             MortonIndex neighborsIndex[26];
+            int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                const int leafAtThisShape = this->shapeLeaf[idxShape];
+                const int endAtThisShape = this->shapeLeaf[idxShape] + previous;
 
                 #pragma omp for
-                for(int idxLeafs = 0 ; idxLeafs < leafAtThisShape ; ++idxLeafs){
-                    OctreeIterator currentIter = shapeArray[idxShape][idxLeafs];
-                    myThreadkernels->L2P(currentIter.getCurrentCell(), currentIter.getCurrentListTargets());
+                for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
+                    LeafData& currentIter = leafsDataArray[idxLeafs];
+                    myThreadkernels.L2P(currentIter.cell, currentIter.targets);
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.getCurrentGlobalIndex(), LeafIndex);
-                    myThreadkernels->P2P(currentIter.getCurrentGlobalIndex(), currentIter.getCurrentListTargets(), currentIter.getCurrentListSrc() , neighbors, neighborsIndex, counter);
+                    FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tic());
+                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
+                    myThreadkernels.P2P(currentIter.index, currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+                    FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
+
+                previous = endAtThisShape;
             }
         }
         FDEBUG(computationCounter.tac());
 
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            delete [] shapeArray[idxShape];
-        }
+        delete [] leafsDataArray;
 
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation P2P : " << computationCounterP2P.cumulated() << " s\n" );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 

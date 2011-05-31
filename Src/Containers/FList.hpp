@@ -4,6 +4,12 @@
 
 #include "../Utils/FGlobal.hpp"
 
+
+#define BIDON
+#ifdef BIDON
+#include "FVector.hpp"
+#define FList FVector
+#else
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FList
@@ -264,6 +270,6 @@ public:
         };
 
 };
-
+#endif
 #endif //FLIST_HPP
 // [--LICENSE--]
