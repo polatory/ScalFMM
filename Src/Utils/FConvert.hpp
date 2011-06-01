@@ -1,9 +1,6 @@
 #ifndef FCONVERT_HPP
 #define FCONVERT_HPP
 
-#include <sstream>
-#include <iostream>
-#include <string.h>
 
 #include "../Containers/FTreeCoordinate.hpp"
 #include "../Utils/F3DPosition.hpp"
@@ -36,21 +33,6 @@ public :
         return outPosition;
     }
 
-    /**
-    * This function gives a parameter in a standart type
-    * @parameter inArg parameter position has to be strictly less than argc/userParemetersCount
-    * @return argv[inArg] in the template VariableType form
-    * @warning VariableType need to work with istream >> operator
-    * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
-    */
-    template <class VariableType>
-    static const VariableType charToOther(const char* const str, const VariableType& defaultValue = VariableType()){
-            std::istringstream iss(str,std::istringstream::in);
-            VariableType value;
-            iss >> value;
-            if( /*iss.tellg()*/ iss.eof() ) return value;
-            return defaultValue;
-    }
 };
 
 #endif
