@@ -28,15 +28,14 @@
 *
 * When using this algorithm the P2P is thread safe.
 */
-template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+template<template< class ParticleClass, class CellClass> class KernelClass,
         class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass,
-        int OctreeHeight, int SubtreeHeight>
+        template<class ParticleClass> class LeafClass>
 class FFmmAlgorithmThread : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass, OctreeHeight> Kernel;
+    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass> Kernel;
 
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
@@ -49,6 +48,8 @@ class FFmmAlgorithmThread : protected FAssertable{
 
     const int MaxThreads;
 
+    const int OctreeHeight;
+
 public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
@@ -57,13 +58,13 @@ public:
       */
     FFmmAlgorithmThread(Octree* const inTree, Kernel* const inKernels)
                       : tree(inTree) , kernels(0), iterArray(0), leafsNumber(0),
-                        MaxThreads(omp_get_max_threads()) {
+                        MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
+            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");

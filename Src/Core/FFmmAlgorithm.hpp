@@ -21,17 +21,18 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+template<template< class ParticleClass, class CellClass> class KernelClass,
         class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass,
-        int OctreeHeight, int SubtreeHeight>
+        template<class ParticleClass> class LeafClass>
 class FFmmAlgorithm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator FOctreeIterator;
+    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator FOctreeIterator;
 
     Octree* const tree;                                                     //< The octree to work on
-    KernelClass<ParticleClass, CellClass, OctreeHeight>* const kernels;    //< The kernels
+    KernelClass<ParticleClass, CellClass>* const kernels;    //< The kernels
+
+    const int OctreeHeight;
 
 public:	
     /** The constructor need the octree and the kernels used for computation
@@ -39,8 +40,8 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass,OctreeHeight>* const inKernels)
-                      : tree(inTree) , kernels(inKernels) {
+    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass>* const inKernels)
+                      : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
         assert(kernels, "kernels cannot be null", __LINE__, __FILE__);

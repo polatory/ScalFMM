@@ -86,7 +86,8 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -108,9 +109,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     //FFmbKernelsBlas FFmbKernels FFmbKernelsBlockBlas
-    FFmbKernelsBlockBlas<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
+    FFmbKernelsBlockBlas<FmbParticle, FmbCell> kernels(NbLevels,loader.getBoxWidth());
     //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask
-    FFmmAlgorithm<FFmbKernelsBlockBlas, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithm<FFmbKernelsBlockBlas, FmbParticle, FmbCell, FSimpleLeaf> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -122,7 +123,7 @@ int main(int argc, char ** argv){
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());

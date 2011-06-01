@@ -125,19 +125,19 @@ public:
 
 
 #ifdef VALIDATE_FMM
-template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+template<template< class ParticleClass, class CellClass> class KernelClass,
         class ParticleClass, class CellClass,
         template<class ParticleClass> class LeafClass,
         int OctreeHeight, int SubtreeHeight>
-void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const badTree,
-                         FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>* const valideTree,
-                         FFmmAlgorithmThreadProc<FFmbKernels, ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight>*const fmm){
+void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass>* const badTree,
+                         FOctree<ParticleClass, CellClass, LeafClass>* const valideTree,
+                         FFmmAlgorithmThreadProc<FFmbKernels, ParticleClass, CellClass, LeafClass>*const fmm){
     std::cout << "Check Result\n";
     {
-        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+        typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIteratorValide(valideTree);
+        typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         for(int level = OctreeHeight - 1 ; level >= 1 ; --level){
@@ -184,7 +184,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
     {
         int NbLeafs = 0;
         { // Check that each particle has been summed with all other
-            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator octreeIterator(badTree);
             octreeIterator.gotoBottomLeft();
             do{
                 ++NbLeafs;
@@ -195,10 +195,10 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass, OctreeHeig
             const int startIdx = fmm->getLeft(NbLeafs);
             const int endIdx = fmm->getRight(NbLeafs);
             // Check that each particle has been summed with all other
-            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIterator(badTree);
+            typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator octreeIterator(badTree);
             octreeIterator.gotoBottomLeft();
 
-            typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator octreeIteratorValide(valideTree);
+            typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator octreeIteratorValide(valideTree);
             octreeIteratorValide.gotoBottomLeft();
 
             for(int idx = 0 ; idx < startIdx ; ++idx){
@@ -281,9 +281,11 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 #ifdef VALIDATE_FMM
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> treeValide(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+            treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 #endif
     // -----------------------------------------------------
 
@@ -307,12 +309,12 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(loader.getBoxWidth());
+    FFmbKernels<FmbParticle, FmbCell> kernels(NbLevels,loader.getBoxWidth());
 
-    FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(app,&tree,&kernels);
+    FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algo(app,&tree,&kernels);
     algo.execute();
 #ifdef VALIDATE_FMM
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algoValide(&treeValide,&kernels);
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algoValide(&treeValide,&kernels);
     algoValide.execute();
 #endif
     counter.tac();
@@ -326,13 +328,13 @@ int main(int argc, char ** argv){
         FReal potentialValide = 0;
         F3DPosition forcesValide;
 #endif
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 #ifdef VALIDATE_FMM
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorValide(&treeValide);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIteratorValide(&treeValide);
         octreeIteratorValide.gotoBottomLeft();
 #endif
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator countLeafsIterator(octreeIterator);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator countLeafsIterator(octreeIterator);
         int NbLeafs = 0;
         do{
             ++NbLeafs;
@@ -394,7 +396,7 @@ int main(int argc, char ** argv){
     }
 
 #ifdef VALIDATE_FMM
-    ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>(&tree,&treeValide,&algo);
+    ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf>(&tree,&treeValide,&algo);
 #endif
     // -----------------------------------------------------
 

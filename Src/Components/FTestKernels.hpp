@@ -20,8 +20,8 @@
 * correctly done on particles.
 * It used FTestCell and FTestParticle
 */
-template< class ParticleClass, class CellClass, int TreeHeight>
-class FTestKernels : public FAbstractKernels<ParticleClass,CellClass,TreeHeight> {
+template< class ParticleClass, class CellClass>
+class FTestKernels : public FAbstractKernels<ParticleClass,CellClass> {
 public:
     /** Default destructor */
     virtual ~FTestKernels(){
@@ -130,12 +130,13 @@ public:
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template< class ParticleClass, class CellClass, template<class ParticleClass> class LeafClass, int TreeHeight, int SizeSubLevels>
-void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , SizeSubLevels>* const tree){
+template< class ParticleClass, class CellClass, template<class ParticleClass> class LeafClass>
+void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass>* const tree){
     std::cout << "Check Result\n";
+    const int TreeHeight = tree->getHeight();
     int NbPart = 0;
     { // Check that each particle has been summed with all other
-        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSrc()->getSize() ){
@@ -145,7 +146,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
         } while(octreeIterator.moveRight());
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass>::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
         long res = 0;
         do{
@@ -156,7 +157,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
         }
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
             long res = 0;
@@ -171,7 +172,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, LeafClass, TreeHeight , S
         }
     }
     { // Check that each particle has been summed with all other
-        typename FOctree<ParticleClass, CellClass, LeafClass, TreeHeight, SizeSubLevels>::Iterator octreeIterator(tree);
+        typename FOctree<ParticleClass, CellClass, LeafClass>::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             typename FList<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());

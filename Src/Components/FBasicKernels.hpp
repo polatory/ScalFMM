@@ -15,8 +15,8 @@
 * This kernels simply shows the details of the information
 * it receives (in debug)
 */
-template< class ParticleClass, class CellClass, int TreeHeight>
-class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,TreeHeight> {
+template< class ParticleClass, class CellClass>
+class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass> {
 public:
     /** Default destructor */
     virtual ~FBasicKernels(){

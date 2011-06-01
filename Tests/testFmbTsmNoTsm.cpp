@@ -80,8 +80,8 @@ int main(int argc, char ** argv){
 
 
     // -----------------------------------------------------
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(BoxWidth,CenterOfBox);
-    FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> treeTyped(BoxWidth,CenterOfBox);
+    FOctree<FmbParticle, FmbCell, FSimpleLeaf> tree(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
+    FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf> treeTyped(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
 
 
     std::cout << "Inserting particles ..." << std::endl;
@@ -121,11 +121,11 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell, NbLevels> kernels(BoxWidth);
-    FFmbKernels<FmbParticleTyped, FmbCellTyped, NbLevels> kernelsTyped(BoxWidth);
+    FFmbKernels<FmbParticle, FmbCell> kernels(NbLevels,BoxWidth);
+    FFmbKernels<FmbParticleTyped, FmbCellTyped> kernelsTyped(NbLevels,BoxWidth);
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
-    FFmmAlgorithmThreadTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels> algoTyped(&treeTyped,&kernelsTyped);
+    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algo(&tree,&kernels);
+    FFmmAlgorithmThreadTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FTypedLeaf> algoTyped(&treeTyped,&kernelsTyped);
     algo.execute();
     algoTyped.execute();
 
@@ -138,10 +138,10 @@ int main(int argc, char ** argv){
 
     std::cout << "Start checking ..." << std::endl;
     {
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
-        FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf, NbLevels, SizeSubLevels>::Iterator octreeIteratorTyped(&treeTyped);
+        FOctree<FmbParticleTyped, FmbCellTyped, FTypedLeaf>::Iterator octreeIteratorTyped(&treeTyped);
         octreeIteratorTyped.gotoBottomLeft();
 
         for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){

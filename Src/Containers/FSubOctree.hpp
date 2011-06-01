@@ -49,6 +49,8 @@ protected:
     const int subOctreeHeight;              //< Height of this suboctree
     const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)
 
+    const bool isLeafSubtree;               //< To know if a subtree is leaf or not (we prefere that to a virtual method)
+
 
     /**
      * This function compute the morton index for the last level of this suboctree.
@@ -116,9 +118,9 @@ public:
     * @param inSubOctreePosition Level of the current suboctree in the global tree (1 if upper tree)
     */
     FAbstractSubOctree(FAbstractSubOctree* const inParent, const long inIndexInParent,
-                       const int inSubOctreeHeight, const int inSubOctreePosition) :
+                       const int inSubOctreeHeight, const int inSubOctreePosition, const bool inIsLeafSubtree) :
                         cells(0), parent( inParent ), indexInParent(inIndexInParent), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1),
-                        subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ) {
+                        subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ), isLeafSubtree(inIsLeafSubtree) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
         assert(this->cells, "Allocation failled", __LINE__, __FILE__);
@@ -229,6 +231,14 @@ public:
     long getIndexInParent() const{
         return indexInParent;
     }
+
+    /** To know if this class has been inherited by a leaf subtree or middle subtree
+      * Of course we can do a virtual method to do that but virtual method are slower
+      * if we point to parent class to call the method
+      */
+    bool isLeafPart() const{
+        return this->isLeafSubtree;
+    }
 };
 
 
@@ -269,7 +279,7 @@ public:
     */
     FSubOctreeWithLeafs(FAbstractSubOctree<ParticleClass,CellClass,LeafClass>* const inParent, const long inIndexInParent,
                         const int inSubOctreeHeight, const int inSubOctreePosition) :
-                        FAbstractSubOctree<ParticleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+                        FAbstractSubOctree<ParticleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, true) {
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
@@ -381,7 +391,7 @@ public:
     */
     FSubOctree(FAbstractSubOctree<ParticleClass,CellClass,LeafClass>* const inParent,  const long inIndexInParent,
                const int inSubOctreeHeight, const int inSubOctreePosition) :
-            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition) {
+            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, false) {
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
         this->subleafs = new FAbstractSubOctree<ParticleClass,CellClass,LeafClass>*[cellsAtLeafLevel];

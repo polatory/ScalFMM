@@ -66,7 +66,7 @@ int main(int argc, char ** argv){
 
     {
         // otree
-        FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+        FOctree<FBasicParticle, FBasicCell, FSimpleLeaf> tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

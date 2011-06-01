@@ -36,7 +36,7 @@ int main(int , char ** ){
 
     srand ( time(NULL) );
 
-    FOctree<FBasicParticle, FBasicCell, FSimpleLeaf, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FBasicParticle, FBasicCell, FSimpleLeaf> tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;

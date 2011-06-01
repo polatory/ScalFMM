@@ -69,7 +69,8 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>
+            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -99,7 +100,7 @@ int main(int argc, char ** argv){
             FReal averageParticles = 0;
             {
                 long nbLeafs = 0;
-                FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+                FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     averageParticles += octreeIterator.getCurrentListTargets()->getSize();
@@ -114,7 +115,7 @@ int main(int argc, char ** argv){
             FReal varianceParticles = 0;
             {
                 long nbLeafs = 0;
-                FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+                FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     varianceParticles += (averageParticles - octreeIterator.getCurrentListTargets()->getSize()) - (averageParticles - octreeIterator.getCurrentListTargets()->getSize());
@@ -128,7 +129,7 @@ int main(int argc, char ** argv){
 
         {
             FReal averageReduction = 0;
-            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             long previousCells = 0;
 
@@ -153,7 +154,7 @@ int main(int argc, char ** argv){
         {
             FReal averageNeighbors = 0;
             long nbLeafs = 0;
-            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
@@ -169,7 +170,7 @@ int main(int argc, char ** argv){
         }
 
         {
-            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+            FOctree<FFmaParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             long fullNbCells = 0;

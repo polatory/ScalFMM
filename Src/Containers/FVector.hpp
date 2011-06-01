@@ -8,7 +8,7 @@
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FList
+ * @class FVector
  * Please read the license
  *
  * This class is a vector container.
@@ -162,7 +162,9 @@ public:
         ++this->index;
     }
 
-
+    /** This class is a basic iterator
+      *
+      */
     class BasicIterator{
     protected:
         FVector* const vector;  /**< the vector to work on*/
@@ -193,7 +195,9 @@ public:
     };
     friend class BasicIterator;
 
-
+    /** This class is a basic const iterator
+      * it uses a const vector to work on
+      */
     class ConstBasicIterator{
     protected:
         const FVector* const vector;  /**< the vector to work on*/

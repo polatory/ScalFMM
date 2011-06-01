@@ -92,7 +92,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<Particle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<Particle, FBasicCell, FSimpleLeaf> tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -116,7 +116,7 @@ int main(int argc, char ** argv){
 
 
     { // print indexes
-        FOctree<Particle, FBasicCell, FSimpleLeaf, NbLevels, SizeSubLevels>::Iterator octreeIterator(&tree);
+        FOctree<Particle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();

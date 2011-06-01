@@ -36,8 +36,8 @@
 *
 * Needs cell to extend {FExtendFmbCell}
 */
-template< class ParticleClass, class CellClass, int TreeHeight>
-class FFmbKernelsBlockBlas : public FAbstractKernels<ParticleClass,CellClass, TreeHeight> {
+template< class ParticleClass, class CellClass>
+class FFmbKernelsBlockBlas : public FAbstractKernels<ParticleClass,CellClass> {
 protected:
     // _GRAVITATIONAL_
     static const int FMB_Info_eps_soft_square = 1;
@@ -62,13 +62,17 @@ protected:
     // NEXP_SIZE(FMB_Info.P)
     static const int FMB_Info_nexp_size = (FMB_Info_P + 1) * (FMB_Info_P + 1);
 
+
+    // tree height
+    const int TreeHeight;
+
     // Width of the box at the root level
     FReal treeWidthAtRoot;
 
     // transfer_M2M_container size is specific to blas
-    FComplexe transitionM2M[TreeHeight][8][FMB_Info_nexp_size];
+    FComplexe transitionM2M[MaxTreeHeight][8][FMB_Info_nexp_size];
     // transfer_L2L_container
-    FComplexe transitionL2L[TreeHeight][8][FMB_Info_nexp_size];
+    FComplexe transitionL2L[MaxTreeHeight][8][FMB_Info_nexp_size];
 
     struct block_matrix_t {
         /* 'P', 'M' and 'N' values for this block: */
@@ -94,7 +98,7 @@ protected:
     };
 
     // transfer_container transfer_M2L_matrix - ff_block_matrix_Allocate_rec
-    block_matrix_t* transferM2L[TreeHeight][size1Dim][size1Dim][size1Dim];
+    block_matrix_t* transferM2L[MaxTreeHeight][size1Dim][size1Dim][size1Dim];
 
     //[OK] spherical_harmonic_Outer_coefficients_array
     FReal sphereHarmoOuterCoef[FMB_Info_M2L_P+1];
@@ -807,13 +811,13 @@ protected:
     }
 
 public:
-    FFmbKernelsBlockBlas(const FReal inTreeWidth) :
-            treeWidthAtRoot(inTreeWidth) {
+    FFmbKernelsBlockBlas(const int inTreeHeight, const FReal inTreeWidth) :
+            TreeHeight(inTreeHeight),treeWidthAtRoot(inTreeWidth) {
         buildPrecompute();
     }
 
     FFmbKernelsBlockBlas(const FFmbKernelsBlockBlas& other)
-        : treeWidthAtRoot(other.treeWidthAtRoot) {
+        : TreeHeight(other.TreeHeight), treeWidthAtRoot(other.treeWidthAtRoot) {
         buildPrecompute();
     }
 
@@ -1380,7 +1384,7 @@ public:
             //printf("Morton %lld\n",local->getMortonIndex());
 
             F3DPosition force_vector_in_local_base;
-            typename FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::Spherical spherical;
+            typename FFmbKernelsBlockBlas<ParticleClass,CellClass>::Spherical spherical;
             spherical = positionTsmphere( iterTarget.data().getPosition() - local->getPosition());
 
             /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
@@ -1398,11 +1402,11 @@ public:
             /*printf("\t\t phi = %lf \t cos = %lf \t sin = %lf \t r= %lf \n",
                     spherical.phi,spherical.cosTheta,spherical.sinTheta,spherical.r);*/
 
-            harmonicInnerThetaDerivated( spherical, FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y, FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated);
+            harmonicInnerThetaDerivated( spherical, FFmbKernelsBlockBlas<ParticleClass,CellClass>::current_thread_Y, FFmbKernelsBlockBlas<ParticleClass,CellClass>::current_thread_Y_theta_derivated);
 
             // The maximum degree used here will be P.
-            const FComplexe* p_Y_term = FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y+1;
-            const FComplexe* p_Y_theta_derivated_term = FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y_theta_derivated+1;
+            const FComplexe* p_Y_term = FFmbKernelsBlockBlas<ParticleClass,CellClass>::current_thread_Y+1;
+            const FComplexe* p_Y_theta_derivated_term = FFmbKernelsBlockBlas<ParticleClass,CellClass>::current_thread_Y_theta_derivated+1;
             const FComplexe* p_local_exp_term = local->getLocal()+1;
 
             for (int j = 1 ; j <= FMB_Info_P ; ++j ){
@@ -1599,7 +1603,7 @@ public:
 
         FReal result = 0.0;
 
-        FComplexe* p_Y_term = FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::current_thread_Y;
+        FComplexe* p_Y_term = FFmbKernelsBlockBlas<ParticleClass,CellClass>::current_thread_Y;
         for(int j = 0 ; j<= FMB_Info_P ; ++j){
             // k=0
             (*p_Y_term) *= (*local_exp);
@@ -1770,12 +1774,12 @@ public:
 };
 
 
-template< class ParticleClass, class CellClass, int TreeHeight>
-const FReal FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+template< class ParticleClass, class CellClass>
+const FReal FFmbKernelsBlockBlas<ParticleClass,CellClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
-template< class ParticleClass, class CellClass, int TreeHeight>
-const FReal FFmbKernelsBlockBlas<ParticleClass,CellClass,TreeHeight>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+template< class ParticleClass, class CellClass>
+const FReal FFmbKernelsBlockBlas<ParticleClass,CellClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

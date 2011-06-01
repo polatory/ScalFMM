@@ -21,16 +21,21 @@
  * Please refere to testOctree.cpp to see an example.
  * <code>
  * // can be used as : <br>
- * FOctree<TestParticle, TestCell, 10, 3> tree(1.0,F3DPosition(0.5,0.5,0.5));
+ * FOctree<TestParticle, TestCell> tree(1.0,F3DPosition(0.5,0.5,0.5));
  * </code>
  *
  * Particles and cells has to respect the Abstract class definition.
  * Particle must extend {FExtendPosition}
  * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
  */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class LeafClass, int OctreeHeight, int SubtreeHeight = 3>
+template< class ParticleClass, class CellClass, template <class ParticleClass> class LeafClass>
 class FOctree {
-        FReal boxWidthAtLevel[OctreeHeight];		//< to store the width of each boxs at all levels
+        FReal*const boxWidthAtLevel;		//< to store the width of each boxs at all levels
+
+        const int height;		//< tree height
+        const int subHeight;		//< tree height
+        const int leafIndex;		//< index of leaf int array
+
         FSubOctree< ParticleClass, CellClass , LeafClass> root;   //< root suboctree
 
         const F3DPosition boxCenter;	//< the space system center
@@ -38,8 +43,6 @@ class FOctree {
 
         const FReal boxWidth;          //< the space system width
 
-        const int height;		//< tree height
-        const int leafIndex;		//< index of leaf int array
 
 	/** Forbiden copy operator */
 	FOctree& operator=(const FOctree&) {
@@ -86,9 +89,12 @@ public:
 	* @param inBoxWidth box width for this simulation
 	* @param inBoxCenter box center for this simulation
 	*/
-        FOctree(const FReal inBoxWidth, const F3DPosition& inBoxCenter)
-                        : root(0, 0, SubtreeHeight, 1), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth),
-                        height(OctreeHeight) , leafIndex(OctreeHeight-1) {
+        FOctree(const int inHeight, const int inSubHeight,
+                const FReal inBoxWidth, const F3DPosition& inBoxCenter)
+                        : boxWidthAtLevel(new FReal[this->height]),
+                          height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
+                          root(0, 0, this->subHeight, 1), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
+                           {
                 FReal tempWidth = this->boxWidth;
                 // pre compute box width for each level
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
@@ -99,7 +105,13 @@ public:
 
 	/** Desctructor */
         virtual ~FOctree() {
+            delete [] boxWidthAtLevel;
 	}
+
+        /** To get the tree height */
+        int getHeight() const {
+            return this->height;
+        }
 
 	/**
 	* Insert a particle on the tree
@@ -474,7 +486,7 @@ public:
               * @return true if we are at the bottom of the tree
               */
             bool isAtLeafLevel() const {
-                return level() + 1 == OctreeHeight;
+                return this->current.tree->isLeafPart() && this->currentLocalLevel + 1 == this->current.tree->getSubOctreeHeight();
             }
 
             /**

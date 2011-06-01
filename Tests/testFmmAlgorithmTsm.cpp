@@ -54,7 +54,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> tree(1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FTestParticleTsm, FTestCellTsm, FTypedLeaf> tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -81,9 +81,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     // FTestKernels FBasicKernels
-    FTestKernels<FTestParticleTsm, FTestCellTsm, NbLevels> kernels;
+    FTestKernels<FTestParticleTsm, FTestCellTsm> kernels;
     //FFmmAlgorithmTsm FFmmAlgorithmThreadTsm
-    FFmmAlgorithmThreadTsm<FTestKernels, FTestParticleTsm, FTestCellTsm, FTypedLeaf, NbLevels, SizeSubLevels> algo(&tree,&kernels);
+    FFmmAlgorithmThreadTsm<FTestKernels, FTestParticleTsm, FTestCellTsm, FTypedLeaf> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

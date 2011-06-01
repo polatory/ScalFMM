@@ -36,15 +36,14 @@
 * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
-template<template< class ParticleClass, class CellClass, int OctreeHeight> class KernelClass,
+template<template< class ParticleClass, class CellClass> class KernelClass,
 class ParticleClass, class CellClass,
-template<class ParticleClass> class LeafClass,
-int OctreeHeight, int SubtreeHeight>
+template<class ParticleClass> class LeafClass>
         class FFmmAlgorithmThreadProc : protected FAssertable {
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass, OctreeHeight, SubtreeHeight> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass, OctreeHeight, SubtreeHeight>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass, OctreeHeight> Kernel;
+    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass> Kernel;
 
     FMpi& app;                          //< The app to communicate
 
@@ -58,8 +57,8 @@ int OctreeHeight, int SubtreeHeight>
     int leafRight;                  //< To store the right limit at the previous level
     int numberOfLeafs;               //< To store the size at the previous level
 
-    int leftOffsets[OctreeHeight];      //< the right limit at different level
-    int rightOffsets[OctreeHeight];     //< the left limit at different level
+    int*const leftOffsets;      //< the right limit at different level
+    int*const rightOffsets;     //< the left limit at different level
 
     const int MaxThreads;               //< the max number of thread allowed by openmp
 
@@ -68,6 +67,8 @@ int OctreeHeight, int SubtreeHeight>
 
     const static int BufferSize = 2000;      //< To know max of the buffer we receive
     FBufferVector<BufferSize> * sendBuffer;  //< To put data to send into a buffer
+
+    const int OctreeHeight;
 
     /** To swap between two arrays
       * the current and the previous
@@ -87,14 +88,15 @@ public:
     FFmmAlgorithmThreadProc(FMpi& inApp, Octree* const inTree, Kernel* const inKernels)
         : app(inApp), tree(inTree) , kernels(0), iterArray(0),
         previousIterArray(0), leafLeft(0),leafRight(0), numberOfLeafs(0),
+        leftOffsets(new int[inTree->getHeight()]),rightOffsets(new int[inTree->getHeight()]),
         MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()),
-        sendBuffer(0) {
+        sendBuffer(0), OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass, OctreeHeight>(*inKernels);
+            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
         }
 
         this->sendBuffer = new FBufferVector<BufferSize>[nbProcess];
@@ -111,6 +113,9 @@ public:
         delete [] this->kernels;
 
         delete [] this->sendBuffer;
+
+        delete [] leftOffsets;
+        delete [] rightOffsets;
     }
 
     /**
