@@ -58,14 +58,14 @@ class FOctree {
         * @param inPosition position to compute
         * @return the morton index
         */
-        MortonIndex getLeafMortonFromPosition(const F3DPosition& inPosition) const {
+        FTreeCoordinate getCoordinateFromPosition(const F3DPosition& inPosition) const {
                 // box coordinate to host the particle
                 FTreeCoordinate host;
                 // position has to be relative to corner not center
                 host.setX( getTreeCoordinate( inPosition.getX() - this->boxCorner.getX() ));
                 host.setY( getTreeCoordinate( inPosition.getY() - this->boxCorner.getY() ));
                 host.setZ( getTreeCoordinate( inPosition.getZ() - this->boxCorner.getZ() ));
-                return host.getMortonIndex(leafIndex);
+                return host;
         }
 
         /**
@@ -121,8 +121,9 @@ public:
 	* @param inParticle the particle to insert (must inherite from FAbstractParticle)
 	*/
         void insert(const ParticleClass& inParticle){
-                const MortonIndex particleIndex = getLeafMortonFromPosition( inParticle.getPosition() );
-                root.insert( particleIndex, inParticle, this->height, this->boxWidthAtLevel);
+                const FTreeCoordinate host = getCoordinateFromPosition( inParticle.getPosition() );
+                const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
+                root.insert( particleIndex, host, inParticle, this->height, this->boxWidthAtLevel);
 	}
 
         /**
@@ -666,19 +667,6 @@ public:
             return &workingTree.tree->cellsAt(levelInTree)[treeLeafMask & inIndex];
         }
 
-        /** This function fill an array with the distant neighbors of a cell
-          * @param inNeighbors the array to store the elements
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
-        int getDistantNeighbors(const CellClass* inNeighbors[208],
-                                FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208],
-                                const MortonIndex inIndex, const int inLevel) const{
-            MortonIndex inNeighborsIndex[208];
-            return getDistantNeighborsWithIndex(inNeighbors, inNeighborsIndex, inCurrentPosition, inNeighborsPosition, inIndex, inLevel);
-        }
-
 
         /** This function fill an array with the distant neighbors of a cell
           * @param inNeighbors the array to store the elements
@@ -687,7 +675,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighborsWithIndex(const CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208],
+        int getDistantNeighbors(const CellClass* inNeighbors[208],
                                          FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208],
                                          const MortonIndex inIndex, const int inLevel) const{
 
@@ -733,7 +721,6 @@ public:
                                                 FMath::Abs(workingCell.getY() - potentialNeighbor.getY()) > 1 ||
                                                 FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
                                             // add to neighbors
-                                            inNeighborsIndex[idxNeighbors] = mortonOther | idxCousin;
                                             inNeighbors[idxNeighbors] = cells[idxCousin];
                                             inNeighborsPosition[idxNeighbors] = FTreeCoordinate((other.getX()<<1) | (idxCousin>>2 & 1),
                                                                                                 (other.getY()<<1) | (idxCousin>>1 & 1),

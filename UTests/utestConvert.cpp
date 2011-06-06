@@ -24,7 +24,7 @@ class TestConvert : public FUTester<TestConvert> {
     void ConvertMorton(){
         {
             const FTreeCoordinate pos(0,1,10);
-            const F3DPosition posReal = FConvert::MortonToPosition(pos.getMortonIndex(5),5,10.0);
+            const F3DPosition posReal;// = FConvert::MortonToPosition(pos.getMortonIndex(5),5,10.0);
             assert( FMath::LookEqual(posReal.getX(),FReal(5.0)) );
             assert( FMath::LookEqual(posReal.getY(),FReal(15.0)) );
             assert( FMath::LookEqual(posReal.getZ(),FReal(105.0)) );

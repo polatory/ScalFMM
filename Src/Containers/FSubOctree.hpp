@@ -76,16 +76,26 @@ protected:
      * when computing
      * @param arrayIndex the index at the leaf index of the new element
      */
-    void createPreviousCells(MortonIndex arrayIndex, MortonIndex inLeafCellIndex, const FReal* const inBoxWidthAtLevel){
+    void createPreviousCells(MortonIndex arrayIndex, MortonIndex inLeafCellIndex, const FTreeCoordinate& treePosition, const FReal* const inBoxWidthAtLevel){
         int indexLevel = this->subOctreeHeight - 1;
+        int bottomToTop = 0;
         while(indexLevel >= 0 && !this->cells[indexLevel][arrayIndex]){
             this->cells[indexLevel][arrayIndex] = new CellClass();
             this->cells[indexLevel][arrayIndex]->setMortonIndex(inLeafCellIndex);
 
+            this->cells[indexLevel][arrayIndex]->setCoordinate(treePosition.getX() >> bottomToTop,
+                                                               treePosition.getY() >> bottomToTop,
+                                                               treePosition.getZ() >> bottomToTop);
+
             const int realLevel = indexLevel + this->getSubOctreePosition();
-            this->cells[indexLevel][arrayIndex]->setPosition(FConvert::MortonToPosition(inLeafCellIndex,realLevel,inBoxWidthAtLevel[realLevel]));
+            const FReal widthAtLevel = inBoxWidthAtLevel[realLevel];
+            this->cells[indexLevel][arrayIndex]->setPosition(F3DPosition(
+                            treePosition.getX() * widthAtLevel + widthAtLevel/2.0,
+                            treePosition.getY() * widthAtLevel + widthAtLevel/2.0,
+                            treePosition.getZ() * widthAtLevel + widthAtLevel/2.0));
 
             --indexLevel;
+            ++bottomToTop;
 
             arrayIndex >>= 3;
             inLeafCellIndex >>= 3;
@@ -97,8 +107,8 @@ protected:
       * for example it updates the leaf array marges and calls createPreviousCells()
       * @param arrayIndex the position of the new leaf in the leafs array
       */
-    void newLeafInserted(const long arrayIndex, const MortonIndex inLeafCellIndex, const FReal* const inBoxWidthAtLevel){
-        createPreviousCells(arrayIndex,inLeafCellIndex, inBoxWidthAtLevel);
+    void newLeafInserted(const long arrayIndex, const MortonIndex inLeafCellIndex,  const FTreeCoordinate& host, const FReal* const inBoxWidthAtLevel){
+        createPreviousCells(arrayIndex,inLeafCellIndex, host, inBoxWidthAtLevel);
         // Update if this is the bottom left
         if(arrayIndex < this->leftLeafIndex) this->leftLeafIndex = arrayIndex;
         if(arrayIndex > this->rightLeafIndex) this->rightLeafIndex = arrayIndex;
@@ -166,7 +176,7 @@ public:
     * @param inParticle the particle to insert (must inherite from FAbstractParticle)
     * @param inParticle the inTreeHeight the height of the tree
     */
-    virtual void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel) = 0;
+    virtual void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel) = 0;
 
     ///////////////////////////////////////
     // This is the FOctree::Iterator Part
@@ -307,13 +317,19 @@ public:
     /**
     * Refer to FAbstractSubOctree::insert
     */
-    void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
+    void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // Get the morton index for the leaf level
         const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);
         // is there already a leaf?
         if( !this->leafs[arrayIndex] ){
             this->leafs[arrayIndex] = new LeafClass<ParticleClass>();
-            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex , index, inBoxWidthAtLevel);
+
+            const FTreeCoordinate hostAtLevel(
+                        host.getX() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ),
+                        host.getY() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ),
+                        host.getZ() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ));
+
+            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex , index, hostAtLevel, inBoxWidthAtLevel);
         }
         // add particle to leaf list
         this->leafs[arrayIndex]->push(inParticle);
@@ -416,7 +432,7 @@ public:
     /**
     * Refer to FAbstractSubOctree::insert
     */
-    void insert(const MortonIndex index, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
+    void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel){
         // We need the morton index at the bottom level of this sub octree
         // so we remove the right side
         const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::getLeafIndex(index,inTreeHeight);
@@ -436,10 +452,10 @@ public:
             }
 
             // We need to inform parent class
-            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), inBoxWidthAtLevel);
+            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), host, inBoxWidthAtLevel);
         }
         // Ask next suboctree to insert the particle
-        this->subleafs[arrayIndex]->insert( index, inParticle, inTreeHeight, inBoxWidthAtLevel);
+        this->subleafs[arrayIndex]->insert( index, host, inParticle, inTreeHeight, inBoxWidthAtLevel);
     }
 
     /** To get access to leafs elements (child suboctree)

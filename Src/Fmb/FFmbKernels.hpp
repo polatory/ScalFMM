@@ -1271,9 +1271,7 @@ public:
 
             iterTarget.data().setForces( iterTarget.data().getForces() + force_vector_tmp );
 
-            FReal potential;
-            expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
-            iterTarget.data().setPotential(potential);
+            iterTarget.data().setPotential(expansion_Evaluate_local_with_Y_already_computed(local->getLocal()));
 
             /*printf("[END] fx = %e \t fy = %e \t fz = %e \n\n",
                    iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());*/
@@ -1285,8 +1283,7 @@ public:
     }
 
 
-    void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
-                                                          FReal* const p_result){
+    FReal expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
         FReal result = 0.0;
@@ -1310,9 +1307,8 @@ public:
             }
         }
 
-        *p_result = result;
-
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+        return result;
     }
 
     ///////////////////////////////////////////////////////////////////////////////

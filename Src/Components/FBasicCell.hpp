@@ -4,6 +4,7 @@
 
 #include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
+#include "../Extensions/FExtendCoordinate.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -16,7 +17,7 @@
 * By using this extension it will implement the FAbstractCell without
 * inheriting from it.
 */
-class FBasicCell : public FExtendPosition, public FExtendMortonIndex {
+class FBasicCell : public FExtendPosition, public FExtendMortonIndex, public FExtendCoordinate {
 public:
     /** Default destructor */
     virtual ~FBasicCell(){

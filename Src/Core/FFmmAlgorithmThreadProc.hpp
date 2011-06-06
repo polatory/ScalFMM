@@ -516,7 +516,6 @@ public:
                 #pragma omp parallel
                 {
                     const CellClass* neighbors[208];
-                    MortonIndex neighborsIndexes[208];
                     FTreeCoordinate currentPosition;
                     FTreeCoordinate neighborsPosition[208];
 
@@ -530,13 +529,13 @@ public:
 
                     #pragma omp for //schedule(dynamic)
                     for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
-                        const int neighborsCounter = tree->getDistantNeighborsWithIndex(neighbors, neighborsIndexes, currentPosition, neighborsPosition,iterArray[idxCell].getCurrentGlobalIndex(),idxLevel);
+                        const int neighborsCounter = tree->getDistantNeighbors(neighbors, currentPosition, neighborsPosition, iterArray[idxCell].getCurrentGlobalIndex(),idxLevel);
                         bool needData = false;
 
 
                         for(int idxNeighbor = 0 ; idxNeighbor < neighborsCounter ; ++idxNeighbor){
                             // Get Morton index from this neigbor cell
-                            const MortonIndex indexCell = neighborsIndexes[idxNeighbor];
+                            const MortonIndex indexCell = neighbors[idxNeighbor]->getMortonIndex();
                             // Is this cell out of our interval?
                             if(indexCell < startIdxIndex || endIdxIndex < indexCell){
                                 FDEBUG(findCounter.tic());
@@ -845,9 +844,10 @@ public:
             for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
                 iterArray[idxLeaf] = octreeIterator;
 
-                const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-                FTreeCoordinate coord;
-                coord.setPositionFromMorton(index, LeafIndex);
+                //const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
+                //FTreeCoordinate coord;
+                //coord.setPositionFromMorton(index, LeafIndex);
+                const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
                 const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
                 shapeType[idxLeaf-this->leafLeft] = shape;
                 ++shapeLeaf[shape];

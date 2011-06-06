@@ -88,7 +88,7 @@ public:
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
             this->shapeLeaf[idxShape] = 0;
         }
-        const int LeafIndex = OctreeHeight - 1;
+        //const int LeafIndex = OctreeHeight - 1;
 
         // Count leaf
         leafsNumber = 0;
@@ -96,9 +96,9 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             ++leafsNumber;
-            const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-            FTreeCoordinate coord;
-            coord.setPositionFromMorton(index, LeafIndex);
+            const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
+            //const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
+            //coord.setPositionFromMorton(index, LeafIndex);
             ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
 
         } while(octreeIterator.moveRight());
