@@ -672,9 +672,11 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighbors(const CellClass* inNeighbors[208], const MortonIndex inIndex, const int inLevel) const{
+        int getDistantNeighbors(const CellClass* inNeighbors[208],
+                                FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208],
+                                const MortonIndex inIndex, const int inLevel) const{
             MortonIndex inNeighborsIndex[208];
-            return getDistantNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
+            return getDistantNeighborsWithIndex(inNeighbors, inNeighborsIndex, inCurrentPosition, inNeighborsPosition, inIndex, inLevel);
         }
 
 
@@ -685,12 +687,14 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighborsWithIndex(const CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208], const MortonIndex inIndex, const int inLevel) const{
+        int getDistantNeighborsWithIndex(const CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208],
+                                         FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208],
+                                         const MortonIndex inIndex, const int inLevel) const{
 
             // Then take each child of the parent's neighbors if not in directNeighbors
             // Father coordinate
-            FTreeCoordinate parentCell;
-            parentCell.setPositionFromMorton(inIndex>>3, inLevel-1);
+            inCurrentPosition.setPositionFromMorton(inIndex,inLevel);
+            const FTreeCoordinate parentCell(inCurrentPosition.getX()>>1,inCurrentPosition.getY()>>1,inCurrentPosition.getZ()>>1);
             // the current cell
             FTreeCoordinate workingCell;
             workingCell.setPositionFromMorton(inIndex, inLevel);
@@ -730,7 +734,11 @@ public:
                                                 FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
                                             // add to neighbors
                                             inNeighborsIndex[idxNeighbors] = mortonOther | idxCousin;
-                                            inNeighbors[idxNeighbors++] = cells[idxCousin];
+                                            inNeighbors[idxNeighbors] = cells[idxCousin];
+                                            inNeighborsPosition[idxNeighbors] = FTreeCoordinate((other.getX()<<1) | (idxCousin>>2 & 1),
+                                                                                                (other.getY()<<1) | (idxCousin>>1 & 1),
+                                                                                                (other.getZ()<<1) | (idxCousin&1));
+                                            ++idxNeighbors;
                                         }
                                     }
                                 }

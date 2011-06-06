@@ -156,13 +156,16 @@ public:
             FOctreeIterator avoidGotoLeftIterator(octreeIterator);
 
             const CellClass* neighbors[208];
+            FTreeCoordinate currentPosition;
+            FTreeCoordinate neighborsPosition[208];
+
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 // for each cells
                 do{
-                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                    const int counter = tree->getDistantNeighbors(neighbors, currentPosition, neighborsPosition, octreeIterator.getCurrentGlobalIndex(),idxLevel);
                     FDEBUG(computationCounter.tic());
-                    if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                    if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, currentPosition, neighborsPosition, counter, idxLevel);
                     FDEBUG(computationCounter.tac());
                 } while(octreeIterator.moveRight());
 

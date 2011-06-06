@@ -908,7 +908,8 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int inLevel) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208],
+             const FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208], const int size, const int inLevel) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTreeCoordinate coordCenter;
         coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
