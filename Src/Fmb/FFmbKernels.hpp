@@ -837,14 +837,11 @@ public:
       *
       */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208],
-             const FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208], const int size, const int inLevel) {
+             const FTreeCoordinate& coordCenter, FTreeCoordinate inNeighborsPosition[208], const int size, const int inLevel) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        FTreeCoordinate coordCenter;
-        coordCenter.setPositionFromMorton(pole->getMortonIndex(),inLevel);
 
         for(int idxSize = 0 ; idxSize < size ; ++idxSize){
-            FTreeCoordinate coordNeighbors;
-            coordNeighbors.setPositionFromMorton(distantNeighbors[idxSize]->getMortonIndex(),inLevel);
+            const FTreeCoordinate& coordNeighbors = inNeighborsPosition[idxSize];
 
             // printf("Morton = %lld\n",pole->getMortonIndex());
             //printf("\tMorton Neighbors = %lld\n",distantNeighbors[idxSize]->getMortonIndex());
