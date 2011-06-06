@@ -91,7 +91,7 @@ public:
 	*/
         FOctree(const int inHeight, const int inSubHeight,
                 const FReal inBoxWidth, const F3DPosition& inBoxCenter)
-                        : boxWidthAtLevel(new FReal[this->height]),
+                        : boxWidthAtLevel(new FReal[inHeight]),
                           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
                           root(0, 0, this->subHeight, 1), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
                            {

@@ -86,7 +86,7 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     FOctree<FmbParticle, FmbCell, FSimpleLeaf>
-            tree(NbLevels, SizeSubLevels, loader.getBoxWidth(),loader.getCenterOfBox());
+            tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
