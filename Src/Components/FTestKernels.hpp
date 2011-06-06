@@ -48,7 +48,7 @@ public:
     }
 
     // Before Downward
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const FTreeCoordinate& , FTreeCoordinate [208], const int size, const int ) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){

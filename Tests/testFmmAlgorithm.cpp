@@ -40,7 +40,7 @@ int main(int argc, char ** argv){
 
     const int NbLevels = 6;//10;
     const int SizeSubLevels = 3;//3
-    const long NbPart = 200000;//2000000
+    const long NbPart = 20000;//2000000
 
     FTic counter;
 
@@ -75,7 +75,7 @@ int main(int argc, char ** argv){
     // FTestKernels FBasicKernels
     FTestKernels<FTestParticle, FTestCell> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithmThread<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf> algo(&tree,&kernels);
+    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

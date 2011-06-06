@@ -324,12 +324,7 @@ public:
         if( !this->leafs[arrayIndex] ){
             this->leafs[arrayIndex] = new LeafClass<ParticleClass>();
 
-            const FTreeCoordinate hostAtLevel(
-                        host.getX() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ),
-                        host.getY() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ),
-                        host.getZ() >> (inTreeHeight - (this->subOctreeHeight + this->subOctreePosition) ));
-
-            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex , index, hostAtLevel, inBoxWidthAtLevel);
+            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex , index, host, inBoxWidthAtLevel);
         }
         // add particle to leaf list
         this->leafs[arrayIndex]->push(inParticle);
@@ -451,8 +446,13 @@ public:
                 this->subleafs[arrayIndex] = new FSubOctreeWithLeafs<ParticleClass,CellClass,LeafClass>(this,arrayIndex,nextSubOctreeHeight,nextSubOctreePosition);
             }
 
+            const FTreeCoordinate hostAtLevel(
+                        host.getX() >> (inTreeHeight - nextSubOctreePosition ),
+                        host.getY() >> (inTreeHeight - nextSubOctreePosition ),
+                        host.getZ() >> (inTreeHeight - nextSubOctreePosition ));
+
             // We need to inform parent class
-            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), host, inBoxWidthAtLevel);
+            FAbstractSubOctree<ParticleClass,CellClass,LeafClass>::newLeafInserted( arrayIndex, index >> (3 * (inTreeHeight-nextSubOctreePosition) ), hostAtLevel, inBoxWidthAtLevel);
         }
         // Ask next suboctree to insert the particle
         this->subleafs[arrayIndex]->insert( index, host, inParticle, inTreeHeight, inBoxWidthAtLevel);

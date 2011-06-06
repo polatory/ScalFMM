@@ -176,8 +176,15 @@ public:
           * @param other the coordinate to compare
           * @return true if other & current object have same position
           */
-    bool operator==(const FTreeCoordinate& other){
+    bool operator==(const FTreeCoordinate& other) const {
         return x == other.x && y == other.y && z == other.z;
+    }
+
+    /** To test difference
+      *
+      */
+    bool operator!=(const FTreeCoordinate& other) const{
+        return x != other.x || y != other.y || z != other.z;
     }
 };
 

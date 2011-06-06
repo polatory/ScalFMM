@@ -474,7 +474,7 @@ public:
 
             FBoolArray* const indexToReceive = new FBoolArray(1 << (3*(OctreeHeight-1)));
 
-            struct LimitCell { int counter; const CellClass* neighbors[208]; FTreeCoordinate currentPosition; FTreeCoordinate neighborsPosition[208]; };
+            struct LimitCell { int counter; const CellClass* neighbors[208]; };
             LimitCell ** const unfinishedCells = new LimitCell*[this->leafRight - this->leafLeft + 1];
 
             FBoolArray* alreadySent[this->nbProcess];
@@ -516,8 +516,6 @@ public:
                 #pragma omp parallel
                 {
                     const CellClass* neighbors[208];
-                    FTreeCoordinate currentPosition;
-                    FTreeCoordinate neighborsPosition[208];
 
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
 
@@ -529,7 +527,7 @@ public:
 
                     #pragma omp for //schedule(dynamic)
                     for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
-                        const int neighborsCounter = tree->getDistantNeighbors(neighbors, currentPosition, neighborsPosition, iterArray[idxCell].getCurrentGlobalIndex(),idxLevel);
+                        const int neighborsCounter = tree->getDistantNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                         bool needData = false;
 
 
@@ -592,18 +590,15 @@ public:
                             unfinishedCells[currentCell] = new LimitCell();
 
                             unfinishedCells[currentCell]->counter = neighborsCounter;
-                            unfinishedCells[currentCell]->currentPosition = currentPosition;
 
                             memcpy(unfinishedCells[currentCell]->neighbors,neighbors,sizeof(CellClass*)*neighborsCounter);
-                            memcpy(unfinishedCells[currentCell]->neighborsPosition,neighborsPosition,sizeof(FTreeCoordinate)*neighborsCounter);
-
 
                             alreadySent[idPorcess]->set(idxCell-startIdx,true);
                         }
                         // we can compute now !
                         else if(neighborsCounter){
                             FDEBUG(computationCounter.tic());
-                            myThreadkernels->M2L(  iterArray[idxCell].getCurrentCell() , neighbors, currentPosition, neighborsPosition, neighborsCounter, idxLevel);
+                            myThreadkernels->M2L(  iterArray[idxCell].getCurrentCell() , neighbors, neighborsCounter, idxLevel);
                             FDEBUG(computationCounter.tac());
                         }
                         FDEBUG(computationCounter.tic());
@@ -660,7 +655,6 @@ public:
                     for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
                         if(alreadySent[idPorcess]->get(idxCell-startIdx)){
                             myThreadkernels->M2L(  iterArray[idxCell].getCurrentCell() , unfinishedCells[idxCell-startIdx]->neighbors,
-                                                 unfinishedCells[idxCell-startIdx]->currentPosition, unfinishedCells[idxCell-startIdx]->neighborsPosition,
                                                  unfinishedCells[idxCell-startIdx]->counter, idxLevel);
                             delete unfinishedCells[idxCell-startIdx];
                         }

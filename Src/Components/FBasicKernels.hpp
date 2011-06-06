@@ -35,7 +35,7 @@ public:
     }
 
     /** Print the morton index */
-    virtual void M2L(CellClass* const FRestrict , const CellClass* [], const FTreeCoordinate& , FTreeCoordinate [], const int , const int ) {
+    virtual void M2L(CellClass* const FRestrict , const CellClass* [], const int , const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }

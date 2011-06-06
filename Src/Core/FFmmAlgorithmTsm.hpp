@@ -174,8 +174,6 @@ public:
             FOctreeIterator avoidGotoLeftIterator(octreeIterator);
 
             CellClass* neighbors[208];
-            FTreeCoordinate currentPosition;
-            FTreeCoordinate neighborsPosition[208];
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -184,7 +182,7 @@ public:
                     FDEBUG(computationCounter.tic());
                     CellClass* const currentCell = octreeIterator.getCurrentCell();
                     if(currentCell->hasTargetsChild()){
-                        const int counter = tree->getDistantNeighbors(neighbors, currentPosition, neighborsPosition, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                        const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
                         int offsetTargetNeighbors = 0;
                         for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
                             if(neighbors[idxRealNeighbors]->hasSrcChild()){
@@ -197,7 +195,7 @@ public:
                             }
                         }
                         if(offsetTargetNeighbors){
-                            kernels->M2L( currentCell , neighbors, currentPosition, neighborsPosition, offsetTargetNeighbors, idxLevel);
+                            kernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
                         }
                     }
                     FDEBUG(computationCounter.tac());

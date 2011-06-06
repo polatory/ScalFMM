@@ -548,6 +548,13 @@ public:
                 return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex]->getMortonIndex();
             }
 
+            /** To get the tree coordinate of the current working cell
+              *
+              */
+            const FTreeCoordinate& getCurrentGlobalCoordinate() const{
+                return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex]->getCoordinate();
+            }
+
         };
 
         // To be able to access octree root & data
@@ -676,16 +683,13 @@ public:
           * @return the number of neighbors
           */
         int getDistantNeighbors(const CellClass* inNeighbors[208],
-                                         FTreeCoordinate& inCurrentPosition, FTreeCoordinate inNeighborsPosition[208],
-                                         const MortonIndex inIndex, const int inLevel) const{
+                                         const FTreeCoordinate& workingCell,
+                                         const int inLevel) const{
 
             // Then take each child of the parent's neighbors if not in directNeighbors
             // Father coordinate
-            inCurrentPosition.setPositionFromMorton(inIndex,inLevel);
-            const FTreeCoordinate parentCell(inCurrentPosition.getX()>>1,inCurrentPosition.getY()>>1,inCurrentPosition.getZ()>>1);
-            // the current cell
-            FTreeCoordinate workingCell;
-            workingCell.setPositionFromMorton(inIndex, inLevel);
+            const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
+
             // Limite at parent level number of box (split by 2 by level)
             const long limite = FMath::pow(2,inLevel-1);
 
@@ -713,8 +717,11 @@ public:
                                 // For each child
                                 for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
                                     if(cells[idxCousin]){
-                                        FTreeCoordinate potentialNeighbor;
-                                        potentialNeighbor.setPositionFromMorton(mortonOther | idxCousin, inLevel);
+                                        //FTreeCoordinate potentialNeighbor;
+                                        //potentialNeighbor.setPositionFromMorton(mortonOther | idxCousin, inLevel);
+                                        const FTreeCoordinate potentialNeighbor((other.getX()<<1) | (idxCousin>>2 & 1),
+                                                                               (other.getY()<<1) | (idxCousin>>1 & 1),
+                                                                               (other.getZ()<<1) | (idxCousin&1));
 
                                         // Test if it is a direct neighbor
                                         if(FMath::Abs(workingCell.getX() - potentialNeighbor.getX()) > 1 ||
@@ -722,9 +729,6 @@ public:
                                                 FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
                                             // add to neighbors
                                             inNeighbors[idxNeighbors] = cells[idxCousin];
-                                            inNeighborsPosition[idxNeighbors] = FTreeCoordinate((other.getX()<<1) | (idxCousin>>2 & 1),
-                                                                                                (other.getY()<<1) | (idxCousin>>1 & 1),
-                                                                                                (other.getZ()<<1) | (idxCousin&1));
                                             ++idxNeighbors;
                                         }
                                     }

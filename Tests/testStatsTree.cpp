@@ -205,10 +205,8 @@ int main(int argc, char ** argv){
                     }
 
                     const FBasicCell* neighbors[208];
-                    FTreeCoordinate currentPosition;
-                    FTreeCoordinate neighborsPosition[208];
 
-                    M2LCalculusAtLevel[idxArray] += tree.getDistantNeighbors(neighbors, currentPosition, neighborsPosition, octreeIterator.getCurrentGlobalIndex(),idxLevel);
+                    M2LCalculusAtLevel[idxArray] += tree.getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
 
                 } while(octreeIterator.moveRight());
 

@@ -234,14 +234,12 @@ public:
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[208];
-                    FTreeCoordinate currentPosition;
-                    FTreeCoordinate neighborsPosition[208];
 
                     #pragma omp for
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getDistantNeighbors(neighbors, currentPosition, neighborsPosition, iterArray[idxCell].getCurrentGlobalIndex(),idxLevel);
+                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                             int offsetTargetNeighbors = 0;
                             for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
                                 if(neighbors[idxRealNeighbors]->hasSrcChild()){
@@ -254,7 +252,7 @@ public:
                                 }
                             }
                             if(offsetTargetNeighbors){
-                                myThreadkernels->M2L( currentCell , neighbors, currentPosition, neighborsPosition, offsetTargetNeighbors, idxLevel);
+                                myThreadkernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
                             }
                         }
                     }
