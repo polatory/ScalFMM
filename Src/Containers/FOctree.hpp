@@ -587,6 +587,9 @@ public:
           * at the same level with the same parent) because they are of course
           * direct neighbors.
           * There is a maximum of 26 (3*3*3-1) direct neighbors
+          *  // Take the neighbors != brothers
+          *  CellClass* directNeighbors[26];
+          *  const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);
           * @param inNeighbors the array to store the elements
           * @param inIndex the index of the element we want the neighbors
           * @param inLevel the level of the element
@@ -683,51 +686,50 @@ public:
           * @return the number of neighbors
           */
         int getDistantNeighborsWithIndex(const CellClass* inNeighbors[208], MortonIndex inNeighborsIndex[208], const MortonIndex inIndex, const int inLevel) const{
-            // Take the neighbors != brothers
-            CellClass* directNeighbors[26];
-            const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);
+
             // Then take each child of the parent's neighbors if not in directNeighbors
             // Father coordinate
-            FTreeCoordinate center;
-            center.setPositionFromMorton(inIndex>>3, inLevel-1);
-            // Limite at parent level
+            FTreeCoordinate parentCell;
+            parentCell.setPositionFromMorton(inIndex>>3, inLevel-1);
+            // the current cell
+            FTreeCoordinate workingCell;
+            workingCell.setPositionFromMorton(inIndex, inLevel);
+            // Limite at parent level number of box (split by 2 by level)
             const long limite = FMath::pow(2,inLevel-1);
 
             int idxNeighbors = 0;
             // We test all cells around
             for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-                if(!FMath::Between(center.getX() + idxX,0l,limite)) continue;
+                if(!FMath::Between(parentCell.getX() + idxX,0l,limite)) continue;
 
                 for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                    if(!FMath::Between(center.getY() + idxY,0l,limite)) continue;
+                    if(!FMath::Between(parentCell.getY() + idxY,0l,limite)) continue;
 
                     for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                        if(!FMath::Between(center.getZ() + idxZ,0l,limite)) continue;
+                        if(!FMath::Between(parentCell.getZ() + idxZ,0l,limite)) continue;
 
                         // if we are not on the current cell
                         if( !(!idxX && !idxY && !idxZ) ){
 
-                            const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                            const MortonIndex mortonOther = other.getMortonIndex(inLevel-1);
+                            const FTreeCoordinate other(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                            const MortonIndex mortonOther = other.getMortonIndex(inLevel-1) << 3;
                             // Get child
-                            CellClass** const cells = getCellPt(mortonOther<<3, inLevel);
+                            CellClass** const cells = getCellPt(mortonOther, inLevel);
 
                             // If there is one or more child
                             if(cells){
                                 // For each child
                                 for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
                                     if(cells[idxCousin]){
+                                        FTreeCoordinate potentialNeighbor;
+                                        potentialNeighbor.setPositionFromMorton(mortonOther | idxCousin, inLevel);
+
                                         // Test if it is a direct neighbor
-                                        bool existInDirectNeigh = false;
-                                        for(int idxDirectNeigh = 0 ; idxDirectNeigh < nbDirectNeighbors ; ++idxDirectNeigh){
-                                            if( cells[idxCousin] == directNeighbors[idxDirectNeigh] ){
-                                                existInDirectNeigh = true;
-                                                break;
-                                            }
-                                        }
-                                        // add to neighbors
-                                        if(!existInDirectNeigh){
-                                            inNeighborsIndex[idxNeighbors] = (mortonOther << 3) | idxCousin;
+                                        if(FMath::Abs(workingCell.getX() - potentialNeighbor.getX()) > 1 ||
+                                                FMath::Abs(workingCell.getY() - potentialNeighbor.getY()) > 1 ||
+                                                FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
+                                            // add to neighbors
+                                            inNeighborsIndex[idxNeighbors] = mortonOther | idxCousin;
                                             inNeighbors[idxNeighbors++] = cells[idxCousin];
                                         }
                                     }
