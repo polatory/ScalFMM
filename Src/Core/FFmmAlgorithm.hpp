@@ -8,6 +8,7 @@
 #include "../Utils/FTic.hpp"
 
 #include "../Containers/FOctree.hpp"
+#include "../Containers/FVector.hpp"
 
 
 /**
@@ -21,16 +22,16 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-        class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
 class FFmmAlgorithm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator FOctreeIterator;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator FOctreeIterator;
 
-    Octree* const tree;                                                     //< The octree to work on
-    KernelClass<ParticleClass, CellClass>* const kernels;    //< The kernels
+    Octree* const tree;                                      //< The octree to work on
+    KernelClass<ParticleClass, CellClass,ContainerClass>* const kernels;    //< The kernels
 
     const int OctreeHeight;
 
@@ -40,7 +41,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass>* const inKernels)
+    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass,ContainerClass>* const inKernels)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -222,7 +223,7 @@ public:
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        FList<ParticleClass>* neighbors[26];
+        ContainerClass<ParticleClass>* neighbors[26];
         MortonIndex neighborsIndex[26];
         // for each leafs
         do{

@@ -28,14 +28,14 @@
 *
 * When using this algorithm the P2P is thread safe.
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-        class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
 class FFmmAlgorithmThread : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass> Kernel;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass,ContainerClass,LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
 
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
@@ -64,7 +64,7 @@ public:
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
+            this->kernels[idxThread] = new Kernel(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
@@ -312,8 +312,8 @@ public:
         struct LeafData{
             MortonIndex index;
             CellClass* cell;
-            FList<ParticleClass>* targets;
-            FList<ParticleClass>* sources;
+            ContainerClass<ParticleClass>* targets;
+            ContainerClass<ParticleClass>* sources;
         };
         LeafData* const leafsDataArray = new LeafData[this->leafsNumber];
 
@@ -353,7 +353,7 @@ public:
         {
             Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
-            FList<ParticleClass>* neighbors[26];
+            ContainerClass<ParticleClass>* neighbors[26];
             MortonIndex neighborsIndex[26];
             int previous = 0;
 

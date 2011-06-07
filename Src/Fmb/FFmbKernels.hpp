@@ -6,7 +6,6 @@
 #include "../Components/FAbstractKernels.hpp"
 
 #include "../Containers/FTreeCoordinate.hpp"
-#include "../Containers/FList.hpp"
 
 #include "../Utils/F3DPosition.hpp"
 #include "../Utils/FComplexe.hpp"
@@ -36,8 +35,8 @@ static const int FMB_Info_P = 2;
 *
 * Needs cell to extend {FExtendFmbCell}
 */
-template< class ParticleClass, class CellClass>
-class FFmbKernels : public FAbstractKernels<ParticleClass,CellClass> {
+template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass>
+class FFmbKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
 protected:
 
     // _GRAVITATIONAL_
@@ -660,10 +659,10 @@ public:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void P2M(CellClass* const inPole, const FList<ParticleClass>* const inParticles) {
+    void P2M(CellClass* const inPole, const ContainerClass<ParticleClass>* const inParticles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
 
-        for(typename FList<ParticleClass>::ConstBasicIterator iterParticle(*inParticles);
+        for(typename ContainerClass<ParticleClass>::ConstBasicIterator iterParticle(*inParticles);
         iterParticle.hasNotFinished() ; iterParticle.gotoNext()){
 
 
@@ -1066,9 +1065,9 @@ public:
       *         expansion_L2P_add_to_force_vector
       *         expansion_Evaluate_local_with_Y_already_computed
       */
-    void L2P(const CellClass* const local, FList<ParticleClass>* const particles){
+    void L2P(const CellClass* const local, ContainerClass<ParticleClass>* const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticleClass>::BasicIterator iterTarget(*particles);
+        typename ContainerClass<ParticleClass>::BasicIterator iterTarget(*particles);
         while( iterTarget.hasNotFinished() ){
             //printf("Morton %lld\n",local->getMortonIndex());
 
@@ -1325,15 +1324,15 @@ public:
       *
       */
     void P2P(const MortonIndex inCurrentIndex,
-             FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
-             FList<ParticleClass>* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size) {
+             ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
+             ContainerClass<ParticleClass>* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticleClass>::BasicIterator iterTarget(*targets);
+        typename ContainerClass<ParticleClass>::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
-                    typename FList<ParticleClass>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                    typename ContainerClass<ParticleClass>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){
                         DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.data(),
                                                        iterSource.data());
@@ -1342,7 +1341,7 @@ public:
                 }
             }
 
-            typename FList<ParticleClass>::BasicIterator iterSameBox = iterTarget;//(*targets);
+            typename ContainerClass<ParticleClass>::BasicIterator iterSameBox = iterTarget;//(*targets);
             iterSameBox.gotoNext();
             while( iterSameBox.hasNotFinished() ){
                 if(&iterSameBox.data() < &iterTarget.data()){
@@ -1402,14 +1401,14 @@ public:
       *  )
       *
       */
-    void P2P(FList<ParticleClass>* const FRestrict targets, const FList<ParticleClass>* const FRestrict sources,
-             const FList<ParticleClass>* const directNeighbors[26], const int size) {
+    void P2P(ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
+             const ContainerClass<ParticleClass>* const directNeighbors[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        typename FList<ParticleClass>::BasicIterator iterTarget(*targets);
+        typename ContainerClass<ParticleClass>::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                typename FList<ParticleClass>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                typename ContainerClass<ParticleClass>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.hasNotFinished() ){
                     DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
                                                       iterSource.data());
@@ -1417,7 +1416,7 @@ public:
                 }
             }
 
-            typename FList<ParticleClass>::ConstBasicIterator iterSameBox(*sources);
+            typename ContainerClass<ParticleClass>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.hasNotFinished() ){
                 if(&iterSameBox.data() != &iterTarget.data()){
                     DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
@@ -1459,12 +1458,12 @@ public:
 };
 
 
-template< class ParticleClass, class CellClass>
-const FReal FFmbKernels<ParticleClass,CellClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass>
+const FReal FFmbKernels<ParticleClass,CellClass, ContainerClass>::PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
 
 
-template< class ParticleClass, class CellClass>
-const FReal FFmbKernels<ParticleClass,CellClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass>
+const FReal FFmbKernels<ParticleClass,CellClass, ContainerClass>::PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
 
 
 

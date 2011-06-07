@@ -29,14 +29,14 @@
 * Because this is a Target source model you do not need the P2P to be safe.
 * You should not write on sources in the P2P method!
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-        class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
 class FFmmAlgorithmThreadTsm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass> Kernel;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
 
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
@@ -61,7 +61,7 @@ public:
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
+            this->kernels[idxThread] = new Kernel(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadTsm\n");
@@ -128,7 +128,7 @@ public:
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
-                FList<ParticleClass>* const sources = iterArray[idxLeafs].getCurrentListSrc();
+                ContainerClass<ParticleClass>* const sources = iterArray[idxLeafs].getCurrentListSrc();
                 if(sources->getSize()){
                     iterArray[idxLeafs].getCurrentCell()->setSrcChildTrue();
                     myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
@@ -337,7 +337,7 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            FList<ParticleClass>* neighbors[26];
+            ContainerClass<ParticleClass>* neighbors[26];
 
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){

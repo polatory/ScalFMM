@@ -8,7 +8,7 @@
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
 #include "../Src/Extensions/FExtendForces.hpp"
@@ -85,7 +85,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>
             tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -107,10 +107,10 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell> kernels(NbLevels,loader.getBoxWidth());
-    //FBasicKernels<FmbParticle, FmbCell> kernels;
+    FFmbKernels<FmbParticle, FmbCell, FVector> kernels(NbLevels,loader.getBoxWidth());
+    //FBasicKernels<FmbParticle, FmbCell, FVector> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread FFmmAlgorithmThreadUs
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algo(&tree,&kernels);
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -119,10 +119,10 @@ int main(int argc, char ** argv){
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FVector<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();

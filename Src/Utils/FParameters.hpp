@@ -5,6 +5,10 @@
 #include <iostream>
 #include <string.h>
 
+/** This file proposes some methods
+  * to work with user input parameters.
+  */
+
 namespace FParameters{
     /**
     * This function gives a parameter in a standart type

@@ -9,7 +9,7 @@
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
@@ -36,7 +36,7 @@ int main(int , char ** ){
 
     srand ( time(NULL) );
 
-    FOctree<FBasicParticle, FBasicCell, FSimpleLeaf> tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf> tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;

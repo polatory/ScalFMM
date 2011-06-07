@@ -11,7 +11,7 @@
 * This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticleClass >
+template< class ParticleClass,template <class ParticleClass> class ContainerClass >
 class FAbstractLeaf {
 public:
     /** Default destructor */
@@ -32,7 +32,7 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual FList<ParticleClass>* getSrc() = 0;
+    virtual ContainerClass<ParticleClass>* getSrc() = 0;
 
     /**
         * To get all the target in a leaf
@@ -40,7 +40,7 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual FList<ParticleClass>* getTargets() = 0;
+    virtual ContainerClass<ParticleClass>* getTargets() = 0;
 
 };
 

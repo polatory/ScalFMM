@@ -10,7 +10,7 @@
 #include "../Src/Utils/FAbstractSendable.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
 #include "../Src/Extensions/FExtendForces.hpp"
@@ -207,9 +207,9 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, LeafClass>* const bad
             }
 
             for(int idx = startIdx ; idx < endIdx ; ++idx){
-                typename FList<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                typename FVector<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-                typename FList<ParticleClass>::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+                typename FVector<ParticleClass>::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
 
                 if( octreeIterator.getCurrentListSrc()->getSize() != octreeIteratorValide.getCurrentListSrc()->getSize()){
                     std::cout << idx << " Particules numbers is different " << std::endl;
@@ -281,10 +281,10 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>
             tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 #ifdef VALIDATE_FMM
-    FOctree<FmbParticle, FmbCell, FSimpleLeaf>
+    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>
             treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 #endif
     // -----------------------------------------------------
@@ -309,12 +309,12 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell> kernels(NbLevels,loader.getBoxWidth());
+    FFmbKernels<FmbParticle, FmbCell, FVector> kernels(NbLevels,loader.getBoxWidth());
 
-    FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algo(app,&tree,&kernels);
+    FFmmAlgorithmThreadProc<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algo(app,&tree,&kernels);
     algo.execute();
 #ifdef VALIDATE_FMM
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf> algoValide(&treeValide,&kernels);
+    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algoValide(&treeValide,&kernels);
     algoValide.execute();
 #endif
     counter.tac();
@@ -328,13 +328,13 @@ int main(int argc, char ** argv){
         FReal potentialValide = 0;
         F3DPosition forcesValide;
 #endif
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 #ifdef VALIDATE_FMM
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator octreeIteratorValide(&treeValide);
+        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIteratorValide(&treeValide);
         octreeIteratorValide.gotoBottomLeft();
 #endif
-        FOctree<FmbParticle, FmbCell, FSimpleLeaf>::Iterator countLeafsIterator(octreeIterator);
+        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator countLeafsIterator(octreeIterator);
         int NbLeafs = 0;
         do{
             ++NbLeafs;
@@ -353,9 +353,9 @@ int main(int argc, char ** argv){
         }
 
         for(int idxLeaf = startIdx ; idxLeaf < endIdx ; ++idxLeaf){
-            FList<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FVector<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
 #ifdef VALIDATE_FMM
-            FList<FmbParticle>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+            FVector<FmbParticle>::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
 #endif
             while( iter.hasNotFinished()
 #ifdef VALIDATE_FMM
@@ -396,7 +396,7 @@ int main(int argc, char ** argv){
     }
 
 #ifdef VALIDATE_FMM
-    ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FSimpleLeaf>(&tree,&treeValide,&algo);
+    ValidateFMMAlgoProc<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf>(&tree,&treeValide,&algo);
 #endif
     // -----------------------------------------------------
 

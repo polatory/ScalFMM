@@ -9,7 +9,7 @@
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Components/FBasicParticle.hpp"
 
@@ -92,7 +92,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<Particle, FBasicCell, FSimpleLeaf> tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    FOctree<Particle, FBasicCell, FVector, FSimpleLeaf> tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -116,14 +116,14 @@ int main(int argc, char ** argv){
 
 
     { // print indexes
-        FOctree<Particle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        FOctree<Particle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
             std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
             std::cout << "Particles :" << std::endl;
 
-            FList<Particle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FVector<Particle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
 
                 printf("\tx = %e y = %e z = %e data = %c\n",iter.data().getPosition().getX(),iter.data().getPosition().getY(),iter.data().getPosition().getZ(),iter.data().getData());

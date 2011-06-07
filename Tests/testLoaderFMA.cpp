@@ -9,7 +9,7 @@
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
@@ -41,7 +41,7 @@ int main(int argc, char ** argv ){
     //////////////////////////////////////////////////////////////
 
     // we store all particles to be able to dealloc
-    FList<FFmaParticle*> particles;
+    FVector<FFmaParticle*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "../../Data/testLoaderFMA.fma";
@@ -66,7 +66,7 @@ int main(int argc, char ** argv ){
 
     {
         // otree
-        FOctree<FFmaParticle, FBasicCell, FSimpleLeaf> tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf> tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

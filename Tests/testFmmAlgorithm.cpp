@@ -8,7 +8,7 @@
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
@@ -49,7 +49,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticle, FTestCell, FSimpleLeaf> tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    FOctree<FTestParticle, FTestCell, FVector, FSimpleLeaf> tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -73,9 +73,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     // FTestKernels FBasicKernels
-    FTestKernels<FTestParticle, FTestCell> kernels;
+    FTestKernels<FTestParticle, FTestCell, FVector> kernels;
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FSimpleLeaf> algo(&tree,&kernels);
+    FFmmAlgorithm<FTestKernels, FTestParticle, FTestCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();

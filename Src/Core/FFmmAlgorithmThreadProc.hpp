@@ -36,14 +36,14 @@
 * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-class ParticleClass, class CellClass,
-template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
         class FFmmAlgorithmThreadProc : protected FAssertable {
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass> Kernel;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
 
     FMpi& app;                          //< The app to communicate
 
@@ -96,7 +96,7 @@ public:
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
+            this->kernels[idxThread] = new Kernel(*inKernels);
         }
 
         this->sendBuffer = new FBufferVector<BufferSize>[nbProcess];
@@ -873,7 +873,7 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            FList<ParticleClass>* neighbors[26];
+            ContainerClass<ParticleClass>* neighbors[26];
             MortonIndex neighborsIndex[26];
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){

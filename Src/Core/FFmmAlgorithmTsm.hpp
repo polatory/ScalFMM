@@ -23,16 +23,16 @@
 *
 * The differences with FmmAlgorithm is that it used target source model.
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-class ParticleClass, class CellClass,
-template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
         class FFmmAlgorithmTsm : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator FOctreeIterator;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator FOctreeIterator;
 
     Octree* const tree;                                                     //< The octree to work on
-    KernelClass<ParticleClass, CellClass>* const kernels;    //< The kernels
+    KernelClass<ParticleClass, CellClass,ContainerClass>* const kernels;    //< The kernels
 
     const int OctreeHeight;
 
@@ -45,7 +45,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmTsm(Octree* const inTree, KernelClass<ParticleClass,CellClass>* const inKernels)
+    FFmmAlgorithmTsm(Octree* const inTree, KernelClass<ParticleClass,CellClass,ContainerClass>* const inKernels)
         : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()){
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -89,7 +89,7 @@ public:
             // We need the current cell that represent the leaf
             // and the list of particles
             FDEBUG(computationCounter.tic());
-            FList<ParticleClass>* const sources = octreeIterator.getCurrentListSrc();
+            ContainerClass<ParticleClass>* const sources = octreeIterator.getCurrentListSrc();
             if(sources->getSize()){
                 octreeIterator.getCurrentCell()->setSrcChildTrue();
                 kernels->P2M( octreeIterator.getCurrentCell() , sources);
@@ -264,7 +264,7 @@ public:
         FOctreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        FList<ParticleClass>* neighbors[26];
+        ContainerClass<ParticleClass>* neighbors[26];
         // for each leafs
         do{
             FDEBUG(computationCounter.tic());

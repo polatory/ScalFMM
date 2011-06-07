@@ -4,6 +4,7 @@
 
 #include "../Utils/FGlobal.hpp"
 
+// To get memcpy
 #include <string.h>
 
 /**
@@ -43,6 +44,10 @@ public:
         , capacity(inSize), index(0) {
     }
 
+    /**
+     * Copy constructor
+     * @param other original vector
+     */
     FVector(const FVector& other): array(reinterpret_cast< T* >( new char[SizeOfT*other.capacity]))
         , capacity(other.capacity), index(other.index) {
         for(int idx = 0 ; idx < other.index ; ++idx){
@@ -51,6 +56,12 @@ public:
         }
     }
 
+    /** Copy operator
+      * @param other the original vector
+      * @return this after copying data
+      * Objects of the current vector are deleted before
+      * copying data.
+      */
     FVector& operator=(const FVector& other){
         clear();
         if(other.getSize() > this->capacity){
@@ -78,8 +89,9 @@ public:
     }
 
     /**
-    *@brief get the buffer capacity
-    *@return the buffer capacity
+    * @brief get the buffer capacity
+    * @return the buffer capacity
+    * The capacity is the current memory size allocated.
     */
     int getCapacity() const{
         return this->capacity;
@@ -88,6 +100,7 @@ public:
     /**
     *@brief set the buffer capacity
     *@param inthis->capacity to change the capacity
+    * Warning : the memocy is duplicated using memcpy
     */
     void setCapacity(int inCapacity){
         if( inCapacity != this->capacity ){
@@ -109,23 +122,23 @@ public:
 
 
     /**
-    *@brief last data
-    *@return end->data
+    * @return end->data
+    * This function return the last insted data
     */
     const T& head() const {
         return this->array[this->index - 1];
     }
 
     /**
-    *@brief last data
     *@return end->data
+    * This function return the last insted data
     */
     T& head() {
         return this->array[this->index - 1];
     }
 
     /**
-    *@brief delete all, then size = 0
+    *@brief delete all, then size = 0 but capacity is unchanged
     */
     void clear(){
         while(this->index > 0){
@@ -134,23 +147,20 @@ public:
     }
 
     /**
-    *@brief count the value
-    *@param inValue the value to test
-    *@return the value occured number
+    *@return The number of element added into the vector
     */
     int getSize() const{
         return this->index;
     }
 
     /**
-    *@brief pop the first node
+    *@brief pop the first value
     */
     void pop(){
         (&this->array[--this->index])->~T();
     }
 
     /**
-    *@brief push a new node in head
     *@param inValue the new value
     */
     void push( const T & inValue ){
@@ -163,7 +173,13 @@ public:
     }
 
     /** This class is a basic iterator
-      *
+      * <code>
+      *  typename FVector<int>::ConstBasicIterator iter(myVector);<br>
+      *  while( iter.hasNotFinished() ){<br>
+      *      printf("%d\n",iter.data());<br>
+      *      iter.gotoNext();<br>
+      *  } <br>
+      * </code>
       */
     class BasicIterator{
     protected:

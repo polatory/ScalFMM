@@ -15,6 +15,8 @@
 * Please read the license
 *
 * This namespace is to compile with or without mpi
+* It defines a class to access MPI data, if the lib is compiled
+* without mpi support then simulate data.
 */
 
 class FMpi {

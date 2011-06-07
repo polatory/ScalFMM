@@ -5,6 +5,7 @@
 
 #include "FGlobal.hpp"
 
+// We need an os specific function
 #if defined(WINDOWS)
     #include <windows.h>
 #else

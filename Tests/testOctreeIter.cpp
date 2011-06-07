@@ -8,7 +8,7 @@
 
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FList.hpp"
+#include "../Src/Containers/FVector.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Utils/FAssertable.hpp"
@@ -42,7 +42,7 @@ int main(int , char ** ){
         srand ( 1 ); // volontary set seed to constant
         // -----------------------------------------------------
 
-        FOctree<FBasicParticle, FBasicCell, FSimpleLeaf> tree(NbLevels, NbSubLevels, 1.0,F3DPosition(0.5,0.5,0.5));
+        FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf> tree(NbLevels, NbSubLevels, 1.0,F3DPosition(0.5,0.5,0.5));
 
         // -----------------------------------------------------
         std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
@@ -61,7 +61,7 @@ int main(int , char ** ){
             std::cout << "Itering on particles ..." << std::endl;
             counterTime.tic();
 
-            FOctree<FBasicParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
+            FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             for(int idxLevel = NbLevels - 1 ; idxLevel >= 1 ; --idxLevel ){
                 int counter = 0;
@@ -81,10 +81,10 @@ int main(int , char ** ){
             std::cout << "Itering on particles fast ..." << std::endl;
             counterTime.tic();
 
-            FOctree<FBasicParticle, FBasicCell, FSimpleLeaf>::Iterator octreeIterator(&tree);
+            FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
-            FOctree<FBasicParticle, FBasicCell, FSimpleLeaf>::Iterator avoidGoLeft(octreeIterator);
+            FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
                 do{

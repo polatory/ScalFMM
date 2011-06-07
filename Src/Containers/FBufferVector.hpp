@@ -87,6 +87,7 @@ public:
         occuped += object.writeDown(&buffer[occuped], Capacity - occuped);
     }
 
+    // reset occuped memory
     void clear(){
         occuped = 0;
     }

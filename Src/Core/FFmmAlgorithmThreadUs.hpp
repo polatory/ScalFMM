@@ -29,14 +29,14 @@
 * This algorithms is unsafe for P2P, if you need to write on neigbors
 * this can be a problem.
 */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-        class ParticleClass, class CellClass,
-        template<class ParticleClass> class LeafClass>
+template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
+        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
+        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
 class FFmmAlgorithmThreadUs : protected FAssertable{
     // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass,LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass> Kernel;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
+    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator OctreeIterator;
+    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
 
     Octree* const tree;                  //< The octree to work on
     Kernel** kernels;                    //< The kernels
@@ -61,7 +61,7 @@ public:
 
         this->kernels = new Kernel*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass<ParticleClass, CellClass>(*inKernels);
+            this->kernels[idxThread] = new Kernel(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadUs\n");
@@ -290,7 +290,7 @@ public:
         {
             Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            FList<ParticleClass>* neighbors[26];
+            ContainerClass<ParticleClass>* neighbors[26];
 
             #pragma omp for
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){

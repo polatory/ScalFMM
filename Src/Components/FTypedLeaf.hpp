@@ -2,7 +2,6 @@
 #define FTYPEDLEAF_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
-#include "../Containers/FList.hpp"
 #include "../Utils/FAssertable.hpp"
 #include "FAbstractLeaf.hpp"
 
@@ -14,10 +13,10 @@
 * This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticleClass >
-class FTypedLeaf  : public FAbstractLeaf<ParticleClass>, public FAssertable {
-    FList<ParticleClass> sources;
-    FList<ParticleClass> targets;
+template< class ParticleClass ,template <class ParticleClass> class ContainerClass>
+class FTypedLeaf  : public FAbstractLeaf<ParticleClass,ContainerClass>, public FAssertable {
+    ContainerClass<ParticleClass> sources;
+    ContainerClass<ParticleClass> targets;
 
 public:
     /** Default destructor */
@@ -38,7 +37,7 @@ public:
         * To get all the sources in a leaf
         * @return a pointer to the list of particles that are sources
         */
-    FList<ParticleClass>* getSrc() {
+    ContainerClass<ParticleClass>* getSrc() {
         return &this->sources;
     }
 
@@ -46,7 +45,7 @@ public:
         * To get all the target in a leaf
         * @return a pointer to the list of particles that are targets
         */
-    FList<ParticleClass>* getTargets() {
+    ContainerClass<ParticleClass>* getTargets() {
         return &this->targets;
     }
 
