@@ -358,7 +358,7 @@ public:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = this->shapeLeaf[idxShape] + previous;
 
-                #pragma omp for
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);

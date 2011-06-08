@@ -876,7 +876,7 @@ public:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int leafAtThisShape = shapeLeaf[idxShape];
 
-                #pragma omp for
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = startIdx ; idxLeafs < leafAtThisShape ; ++idxLeafs){
                     OctreeIterator currentIter = shapeArray[idxShape][idxLeafs];
                     myThreadkernels->L2P(currentIter.getCurrentCell(), currentIter.getCurrentListTargets());
