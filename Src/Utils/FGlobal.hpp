@@ -1,7 +1,7 @@
 #ifndef FGLOBAL_HPP
 #define FGLOBAL_HPP
 
-//#include "ScalFmmConfig.h"
+#include "ScalFmmConfig.h"
 #include <stdlib.h>
 
 ///////////////////////////////////////////////////////
