@@ -838,9 +838,6 @@ public:
             for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
                 iterArray[idxLeaf] = octreeIterator;
 
-                //const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-                //FTreeCoordinate coord;
-                //coord.setPositionFromMorton(index, LeafIndex);
                 const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
                 const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
                 shapeType[idxLeaf-this->leafLeft] = shape;

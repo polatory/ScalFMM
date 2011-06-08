@@ -332,9 +332,7 @@ public:
             do{
                 //iterArray[leafs] = octreeIterator;
                 ++leafs;
-                const MortonIndex index = octreeIterator.getCurrentGlobalIndex();
-                FTreeCoordinate coord;
-                coord.setPositionFromMorton(index, LeafIndex);
+                const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
                 const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
 
                 leafsDataArray[startPosAtShape[shapePosition]].index = octreeIterator.getCurrentGlobalIndex();
