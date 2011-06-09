@@ -816,11 +816,17 @@ public:
         // init
         const int LeafIndex = OctreeHeight - 1;
         const int SizeShape = 3*3*3;
+
         int shapeLeaf[SizeShape];
-        OctreeIterator* shapeArray[SizeShape];
-        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            shapeLeaf[idxShape] = 0;
-        }
+        memset(shapeLeaf,0,SizeShape*sizeof(int));
+
+        struct LeafData{
+            MortonIndex index;
+            CellClass* cell;
+            ContainerClass<ParticleClass>* targets;
+            ContainerClass<ParticleClass>* sources;
+        };
+        LeafData* const leafsDataArray = new LeafData[this->leafRight - this->leafLeft + 1];
 
         // split data
         {
@@ -833,57 +839,66 @@ public:
             }
 
             // to store which shape for each leaf
-            int* const shapeType = new int [this->leafRight - this->leafLeft + 1];
+            OctreeIterator* const myLeafs = new OctreeIterator[this->leafRight - this->leafLeft + 1];
+            int*const shapeType = new int[this->leafRight - this->leafLeft + 1];
 
             for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
-                iterArray[idxLeaf] = octreeIterator;
+                myLeafs[idxLeaf-this->leafLeft] = octreeIterator;
 
                 const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
                 const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
                 shapeType[idxLeaf-this->leafLeft] = shape;
+
                 ++shapeLeaf[shape];
 
                 octreeIterator.moveRight();
             }
 
-            // init iter array
-            int countShape[SizeShape];
-            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                shapeArray[idxShape] = new OctreeIterator[shapeLeaf[idxShape]];
-                countShape[idxShape] = 0;
+            int startPosAtShape[SizeShape];
+            startPosAtShape[0] = 0;
+            for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
+                startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + shapeLeaf[idxShape-1];
             }
 
-            // store leafs
-            for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
-                const int idxShape = shapeType[idxLeaf - this->leafLeft];
-                shapeArray[idxShape][countShape[idxShape]++] = iterArray[idxLeaf];
+            int idxInArray = 0;
+            for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf, ++idxInArray){
+                const int shapePosition = shapeType[idxInArray];
+
+                leafsDataArray[startPosAtShape[shapePosition]].index = myLeafs[idxInArray].getCurrentGlobalIndex();
+                leafsDataArray[startPosAtShape[shapePosition]].cell = myLeafs[idxInArray].getCurrentCell();
+                leafsDataArray[startPosAtShape[shapePosition]].targets = myLeafs[idxInArray].getCurrentListTargets();
+                leafsDataArray[startPosAtShape[shapePosition]].sources = myLeafs[idxInArray].getCurrentListSrc();
+
+                ++startPosAtShape[shapePosition];
             }
 
             delete[] shapeType;
+            delete[] myLeafs;
         }
 
         FDEBUG(FTic computationCounter);
 
-        const int startIdx = this->leafLeft;
-
         #pragma omp parallel
         {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass<ParticleClass>* neighbors[26];
             MortonIndex neighborsIndex[26];
+            int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                const int leafAtThisShape = shapeLeaf[idxShape];
+                const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
                 #pragma omp for schedule(dynamic)
-                for(int idxLeafs = startIdx ; idxLeafs < leafAtThisShape ; ++idxLeafs){
-                    OctreeIterator currentIter = shapeArray[idxShape][idxLeafs];
-                    myThreadkernels->L2P(currentIter.getCurrentCell(), currentIter.getCurrentListTargets());
+                for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
+                    LeafData& currentIter = leafsDataArray[idxLeafs];
+                    myThreadkernels.L2P(currentIter.cell, currentIter.targets);
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.getCurrentGlobalIndex(),LeafIndex);
-                    myThreadkernels->P2P( currentIter.getCurrentGlobalIndex(), currentIter.getCurrentListTargets(), currentIter.getCurrentListSrc() , neighbors, neighborsIndex, counter);
+                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index,LeafIndex);
+                    myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
                 }
+
+                previous = endAtThisShape;
             }
         }
         FDEBUG(computationCounter.tac());
