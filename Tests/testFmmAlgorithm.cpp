@@ -40,7 +40,7 @@ int main(int argc, char ** argv){
 
     const int NbLevels = 6;//10;
     const int SizeSubLevels = 3;//3
-    const long NbPart = 20000;//2000000
+    const long NbPart = 2000000;//2000000
 
     FTic counter;
 
