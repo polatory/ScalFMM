@@ -61,13 +61,15 @@ int main(int argc, char ** argv){
 
     std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
-    for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+    {
         FTestParticleTsm particle;
-        particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-        if(rand() > RAND_MAX/2) particle.setAsTarget();
-        else particle.setAsSource();
+        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+            particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            if(rand() > RAND_MAX/2) particle.setAsTarget();
+            else particle.setAsSource();
 
-        tree.insert(particle);
+            tree.insert(particle);
+        }
     }
 
     counter.tac();

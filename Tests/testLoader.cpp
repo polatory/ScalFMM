@@ -71,8 +71,9 @@ int main(int argc, char ** argv){
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
+
+        FBasicParticle part;
         for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
-            FBasicParticle part;
             loader.fillParticle(part);
             tree.insert(part);
         }

@@ -128,15 +128,15 @@ int main(int argc, char ** argv){
     std::cout << "Width of box is " << loader.getBoxWidth() << std::endl;
     std::cout << "Center of box is x " << loader.getCenterOfBox().getX()  << " y " << loader.getCenterOfBox().getY() << " z " << loader.getCenterOfBox().getZ()<< std::endl;
     counter.tic();
-
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    {
         Particle particle;
-        loader.fillParticle(particle);
-        particle.setGlobalIndex( idxPart+1 );
-        particle.setMortonIndex( -1 );
-        tree.insert(particle);
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(particle);
+            particle.setGlobalIndex( idxPart+1 );
+            particle.setMortonIndex( -1 );
+            tree.insert(particle);
+        }
     }
-
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 

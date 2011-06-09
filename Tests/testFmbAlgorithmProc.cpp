@@ -292,13 +292,15 @@ int main(int argc, char ** argv){
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     counter.tic();
 
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    {
         FmbParticle particleToFill;
-        loader.fillParticle(particleToFill);
-        tree.insert(particleToFill);
-#ifdef VALIDATE_FMM
-        treeValide.insert(particleToFill);
-#endif
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(particleToFill);
+            tree.insert(particleToFill);
+            #ifdef VALIDATE_FMM
+            treeValide.insert(particleToFill);
+            #endif
+        }
     }
 
     counter.tac();

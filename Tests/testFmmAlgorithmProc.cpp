@@ -259,13 +259,15 @@ int main(int argc, char ** argv){
 
     std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
-    for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    {
         TestParticle particle;
+        for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 
-        loader.fillParticle(particle);
+            loader.fillParticle(particle);
 
-        tree.insert(particle);
-        treeValide.insert(particle);
+            tree.insert(particle);
+            treeValide.insert(particle);
+        }
     }
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;

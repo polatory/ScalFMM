@@ -47,11 +47,12 @@ int main(int , char ** ){
         // -----------------------------------------------------
         std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
         counterTime.tic();
-        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+        {
             FBasicParticle particle;
-            particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
-
-            tree.insert(particle);
+            for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+                particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+                tree.insert(particle);
+            }
         }
         counterTime.tac();
         std::cout << "Done  " << "(" << counterTime.elapsed() << "s)." << std::endl;
