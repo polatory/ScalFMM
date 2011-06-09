@@ -60,7 +60,7 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
-printf("sizeof FmbParticle %d\n",sizeof(FmbParticle));
+
     const int NbLevels = 9;//10;
     const int SizeSubLevels = 3;//3
     FTic counter;

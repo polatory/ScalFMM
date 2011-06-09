@@ -30,7 +30,8 @@
 
 #include "../Src/Files/FHLoader.hpp"
 
-#define PRES 6
+static const int PrintPrecision = 6;
+
 /** Basic function to convert a morton index in decimal string */
 std::string MortonToBinary(MortonIndex index, int level){
     std::string str;
@@ -51,18 +52,19 @@ std::string MortonToBinary(MortonIndex index, int level){
 /** This program show an example of use of
   * the moront indexing from a file
   */
-struct atomIndex  {
-  int          _globalIndex ;
-  MortonIndex  _indexMorton;
+struct AtomIndex  {
+    int          globalIndex ;
+    MortonIndex  indexMorton;
 };
-bool compareIndex(atomIndex a, atomIndex b){
-  return (a._indexMorton < b._indexMorton);
+
+bool compareIndex(const AtomIndex& a, const AtomIndex& b){
+    return (a.indexMorton < b.indexMorton);
 }
 
 class Particle : public FBasicParticle {
-  char         data   ;
-  atomIndex    index ;
-  //
+    char         data   ;
+    AtomIndex    index ;
+    //
 public:
     char getData() const{
         return data;
@@ -70,20 +72,19 @@ public:
     void setData(const char inData){
         this->data = inData;
     }
-     void setMortonIndex(const MortonIndex i) {
-        index._indexMorton = i;
+
+    MortonIndex mortonIndex() const{
+        return index.indexMorton;
     }
-   MortonIndex mortonIndex() const{
-        return index._indexMorton;
+    void setMortonIndex(const MortonIndex inIndex) {
+        index.indexMorton = inIndex;
     }
-    MortonIndex & mortonIndex() {
-        return index._indexMorton;
-    }
+
     int globalIndex() const{
-        return index._globalIndex;
+        return index.globalIndex;
     }
-    int & globalIndex() {
-        return index._globalIndex;
+    void setGlobalIndex(const int inIndex) {
+        index.globalIndex = inIndex;
     }
 
 };
@@ -131,8 +132,8 @@ int main(int argc, char ** argv){
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         Particle particle;
         loader.fillParticle(particle);
-	particle.globalIndex() = idxPart+1 ;
-	particle.mortonIndex() = -1 ;
+        particle.setGlobalIndex( idxPart+1 );
+        particle.setMortonIndex( -1 );
         tree.insert(particle);
     }
 
@@ -143,59 +144,41 @@ int main(int argc, char ** argv){
 
     counter.tic();
     int idx = 1 ;
-    std::vector<atomIndex> permutation(loader.getNumberOfParticles()) ;
+    std::vector<AtomIndex> permutation(loader.getNumberOfParticles()) ;
 
     { // print indexes
-      
-    // -----------------------------------------------------
 
-      FOctree<Particle, FBasicCell, FVector,  FSimpleLeaf>::Iterator octreeIterator(&tree);
-      octreeIterator.gotoBottomLeft();
-      idx = 0;
-      do{
-	const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
-	// std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
-	// std::cout << "Particles :" << std::endl;
-	
-	FVector<Particle>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-	while( iter.hasNotFinished() ){
-	  iter.data().setMortonIndex(currentIndex)        ;
-	  //	  iter.data().mortonIndex()       = currentIndex ;
-	  permutation[idx]._indexMorton   = currentIndex ;
-	  permutation[idx]._globalIndex   = idx + 1;
-	  ++idx;
-	  //	  printf("\tx = %e y = %e z = %e data = %c\n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ(),iter.value()->getData());
-	  //	  std::cout << "  " <<iter.value()->globalIndex()  << "   " << (int) iter.value()->mortonIndex() << std::endl;
-	  std::cout << "  "  << iter.data().getData()
-	  	    << std::setprecision(PRES)
-	  	    << std::setw(15) << iter.data().getPosition().getX()
-	  	    << std::setw(15) << iter.data().getPosition().getY()
-	  	    << std::setw(15) <<iter.data().getPosition().getZ()
-	  	    << std::endl;
-	  iter.gotoNext();
-	}
-	
-      } while(octreeIterator.moveRight());
+        // -----------------------------------------------------
+
+        FOctree<Particle, FBasicCell, FVector,  FSimpleLeaf>::Iterator octreeIterator(&tree);
+        octreeIterator.gotoBottomLeft();
+        idx = 0;
+        do{
+            const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
+            // std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
+            // std::cout << "Particles :" << std::endl;
+
+            FVector<Particle>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            while( iter.hasNotFinished() ){
+                iter.data().setMortonIndex(currentIndex);
+                //	  iter.data().mortonIndex()       = currentIndex ;
+                permutation[idx].indexMorton   = currentIndex ;
+                permutation[idx].globalIndex   = idx + 1;
+                ++idx;
+                //	  printf("\tx = %e y = %e z = %e data = %c\n",iter.value()->getPosition().getX(),iter.value()->getPosition().getY(),iter.value()->getPosition().getZ(),iter.value()->getData());
+                //	  std::cout << "  " <<iter.value()->globalIndex()  << "   " << (int) iter.value()->mortonIndex() << std::endl;
+                std::cout << "  "  << iter.data().getData()
+                          << std::setprecision(PrintPrecision)
+                          << std::setw(15) << iter.data().getPosition().getX()
+                          << std::setw(15) << iter.data().getPosition().getY()
+                          << std::setw(15) <<iter.data().getPosition().getZ()
+                          << std::endl;
+                iter.gotoNext();
+            }
+
+        } while(octreeIterator.moveRight());
     }
     
-    // Sort the permutation vector according to the Morton Index
-    // -----------------------------------------------------
-    // std::cout << "Sorting particles ..." << std::endl;
-    // std::sort(permutation.begin(), permutation.end(), compareIndex );
-    // for(long idxPart = 0 ; idxPart < permutation.size() ; ++idxPart){
-    //   idx = idxPart ; //permutation[idxPart]._globalIndex - 1  ;
-    //   //      std::cout << "  " << idxPart +1 << "   " << permutation[idxPart]._globalIndex << "   " << permutation[idxPart]._indexMorton <<std::endl;
-    //   std::cout << "  " <<particles[idx].mortonIndex()  << "   " << particles[idx].getData()
-    //   std::cout << "  " <<particles[idx].mortonIndex()  << "   " << particles[idx].getData()
-    //   		<< std::setprecision(PRES)
-    //   		<< std::setw(15) << particles[idx].getPosition().getX()
-    //   		<< std::setw(15) << particles[idx].getPosition().getY()
-    //   		<< std::setw(15) <<particles[idx].getPosition().getZ()
-    //   		<< std::endl;
-    // }
-      
-    //
-    // -----------------------------------------------------
 
 
     return 0;
