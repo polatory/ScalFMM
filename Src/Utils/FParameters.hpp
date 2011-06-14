@@ -18,7 +18,7 @@ namespace FParameters{
     * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
     */
     template <class VariableType>
-    static const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
+    const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
             std::istringstream iss(str,std::istringstream::in);
             VariableType value;
             iss >> value;
@@ -57,7 +57,7 @@ namespace FParameters{
     /** To find a parameters from user format char parameters
       *
       */
-    int findParameter(const char* const inName, const int argc, const char* const * const argv, const bool caseSensible = false){
+    int findParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
         for(int idxArg = 0; idxArg < argc ; ++idxArg){
             if(areStrEquals(inName, argv[idxArg], caseSensible)){
                 return idxArg;
@@ -65,6 +65,21 @@ namespace FParameters{
         }
         return -1;
     }
+
+    /** To get a value like :
+      * getValue(argc,argv, "Toto", 0, false);
+      * will return 55 if the command contains : -Toto 55
+      * else 0
+      */
+    template <class VariableType>
+    const VariableType getValue(const int argc, const char* const * const argv, const char* const inName, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
+        const int position = findParameter(argc,argv,inName,caseSensible);
+        if(position == -1 || position == argc - 1){
+            return defaultValue;
+        }
+        return StrToOther(argv[position+1],defaultValue);
+    }
+
 }
 
 

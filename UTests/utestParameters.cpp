@@ -58,17 +58,17 @@ class TestParameters : public FUTester<TestParameters> {
             "tu.tU"
             };
 
-            assert(FParameters::findParameter("tOto",argc,argv,false) == 0);
-            assert(FParameters::findParameter("titi",argc,argv,false) == 1);
-            assert(FParameters::findParameter("tAtA",argc,argv,false) == 2);
-            assert(FParameters::findParameter("tu.tu",argc,argv,false) == 3);
+            assert(FParameters::findParameter(argc,argv,"tOto",false) == 0);
+            assert(FParameters::findParameter(argc,argv,"titi",false) == 1);
+            assert(FParameters::findParameter(argc,argv,"tAtA",false) == 2);
+            assert(FParameters::findParameter(argc,argv,"tu.tu",false) == 3);
 
             for(int idx = 0 ; idx < argc ; ++idx){
-                assert(FParameters::findParameter(argv[idx],argc,argv,true) == idx);
+                assert(FParameters::findParameter(argc,argv,argv[idx],true) == idx);
             }
 
-            assert(FParameters::findParameter("tu.tu",argc,argv,true) == -1);
-            assert(FParameters::findParameter("TOTO",argc,argv,true) == -1);
+            assert(FParameters::findParameter(argc,argv,"tu.tu",true) == -1);
+            assert(FParameters::findParameter(argc,argv,"TOTO",true) == -1);
         }
 
         void StrToOther(){
