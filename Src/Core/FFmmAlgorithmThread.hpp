@@ -187,7 +187,7 @@ public:
             #pragma omp parallel
             {
                 Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                #pragma omp for
+                #pragma omp for nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
@@ -238,7 +238,7 @@ public:
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[208];
 
-                    #pragma omp for
+                    #pragma omp for nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                         if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
@@ -277,7 +277,7 @@ public:
                 #pragma omp parallel
                 {
                     Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                    #pragma omp for
+                    #pragma omp for nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                     }
