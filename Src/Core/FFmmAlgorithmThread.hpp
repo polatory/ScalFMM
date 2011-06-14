@@ -318,37 +318,56 @@ public:
         LeafData* const leafsDataArray = new LeafData[this->leafsNumber];
 
         const int LeafIndex = OctreeHeight - 1;
-        int leafs = 0;
-        {
-            int startPosAtShape[SizeShape];
-            startPosAtShape[0] = 0;
-            for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
-                startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + this->shapeLeaf[idxShape-1];
-            }
 
-            OctreeIterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            // for each leafs
-            do{
-                //iterArray[leafs] = octreeIterator;
-                ++leafs;
-                const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
-
-                leafsDataArray[startPosAtShape[shapePosition]].index = octreeIterator.getCurrentGlobalIndex();
-                leafsDataArray[startPosAtShape[shapePosition]].cell = octreeIterator.getCurrentCell();
-                leafsDataArray[startPosAtShape[shapePosition]].targets = octreeIterator.getCurrentListTargets();
-                leafsDataArray[startPosAtShape[shapePosition]].sources = octreeIterator.getCurrentListSrc();
-
-                ++startPosAtShape[shapePosition];
-
-            } while(octreeIterator.moveRight());
+        int startPosAtShape[SizeShape];
+        startPosAtShape[0] = 0;
+        for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
+            startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + this->shapeLeaf[idxShape-1];
         }
-
-        FDEBUG(computationCounter.tic());
 
         #pragma omp parallel
         {
+
+            const float step = (float(this->leafsNumber) / omp_get_num_threads());
+            const int start = int(FMath::Ceil(step * omp_get_thread_num()));
+            const int tempEnd = int(FMath::Ceil(step * (omp_get_thread_num()+1)));
+            const int end = (tempEnd > this->leafsNumber ? this->leafsNumber : tempEnd);
+
+            OctreeIterator octreeIterator(tree);
+            octreeIterator.gotoBottomLeft();
+
+            for(int idxPreLeaf = 0 ; idxPreLeaf < start ; ++idxPreLeaf){
+                octreeIterator.moveRight();
+            }
+
+            // for each leafs
+            for(int idxMyLeafs = start ; idxMyLeafs < end ; ++idxMyLeafs){
+                //iterArray[leafs] = octreeIterator;
+                //++leafs;
+                const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
+                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+
+                int positionToWork = 0;
+                #pragma omp critical
+                {
+                    positionToWork = startPosAtShape[shapePosition]++;
+                }
+
+                leafsDataArray[positionToWork].index = octreeIterator.getCurrentGlobalIndex();
+                leafsDataArray[positionToWork].cell = octreeIterator.getCurrentCell();
+                leafsDataArray[positionToWork].targets = octreeIterator.getCurrentListTargets();
+                leafsDataArray[positionToWork].sources = octreeIterator.getCurrentListSrc();
+
+                octreeIterator.moveRight();
+            }
+
+            #pragma omp barrier
+
+            #pragma omp master
+            {
+                FDEBUG(computationCounter.tic());
+            }
+
             Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass<ParticleClass>* neighbors[26];
@@ -372,6 +391,7 @@ public:
                 previous = endAtThisShape;
             }
         }
+
         FDEBUG(computationCounter.tac());
 
         delete [] leafsDataArray;
