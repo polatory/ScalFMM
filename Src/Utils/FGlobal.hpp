@@ -50,5 +50,23 @@ static const int MaxTreeHeight = 20;
     #define FRestrict __restrict__
 #endif
 
+///////////////////////////////////////////////////////
+// Prefetch
+///////////////////////////////////////////////////////
+
+#ifdef __GNUC__
+    #define Prefetch_Read(X) __builtin_prefetch(X)
+    #define Prefetch_Write(X) __builtin_prefetch(X,1,1)
+#else
+    #ifdef __INTEL_COMPILER
+        #define Prefetch_Read(X) _mm_prefetch(X,_MM_HINT_T0)
+        #define Prefetch_Write(X) _mm_prefetch(X,_MM_HINT_T0)
+    #else
+        #warning compiler is not defined
+        #define Prefetch_Read(X)
+        #define Prefetch_Write(X)
+    #endif
+#endif
+
 #endif //FGLOBAL_HPP
 

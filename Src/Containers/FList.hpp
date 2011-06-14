@@ -179,7 +179,10 @@ public:
 
             /** To gotoNext on the list */
             void gotoNext(){
-                if(this->iter) this->iter = this->iter->next;
+                if(this->iter){
+                    this->iter = this->iter->next;
+                    if(this->iter) Prefetch_Write(this->iter->next);
+                }
             }
 
             /**
@@ -236,7 +239,10 @@ public:
 
             /** to gotoNext on the list */
             void gotoNext(){
-                if(this->iter) this->iter = this->iter->next;
+                if(this->iter){
+                    this->iter = this->iter->next;
+                    if(this->iter) Prefetch_Read(this->iter->next);
+                }
             }
 
             /**
