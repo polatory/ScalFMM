@@ -1330,13 +1330,14 @@ public:
         typename ContainerClass<ParticleClass>::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
+            ParticleClass& target = iterTarget.data();
+
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 Prefetch_Write(directNeighbors[idxDirectNeighbors+2]);
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
                     typename ContainerClass<ParticleClass>::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){
-                        DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.data(),
-                                                       iterSource.data());
+                        DIRECT_COMPUTATION_MUTUAL_SOFT(target, iterSource.data());
                         iterSource.gotoNext();
                     }
                 }
@@ -1345,10 +1346,7 @@ public:
             typename ContainerClass<ParticleClass>::BasicIterator iterSameBox = iterTarget;//(*targets);
             iterSameBox.gotoNext();
             while( iterSameBox.hasNotFinished() ){
-                if(&iterSameBox.data() < &iterTarget.data()){
-                    DIRECT_COMPUTATION_MUTUAL_SOFT(iterTarget.data(),
-                                                   iterSameBox.data());
-                }
+                DIRECT_COMPUTATION_MUTUAL_SOFT(target, iterSameBox.data());
                 iterSameBox.gotoNext();
             }
 
@@ -1362,7 +1360,7 @@ public:
     }
 
 
-    void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass& FRestrict target, ParticleClass& source){
+    void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass& target, ParticleClass& source){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         const FReal dx = target.getPosition().getX() - source.getPosition().getX();
         const FReal dy = target.getPosition().getY() - source.getPosition().getY();
@@ -1408,10 +1406,12 @@ public:
         typename ContainerClass<ParticleClass>::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
+            ParticleClass& target = iterTarget.data();
+
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 typename ContainerClass<ParticleClass>::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                 while( iterSource.hasNotFinished() ){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(target,
                                                       iterSource.data());
                     iterSource.gotoNext();
                 }
@@ -1420,7 +1420,7 @@ public:
             typename ContainerClass<ParticleClass>::ConstBasicIterator iterSameBox(*sources);
             while( iterSameBox.hasNotFinished() ){
                 if(&iterSameBox.data() != &iterTarget.data()){
-                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(iterTarget.data(),
+                    DIRECT_COMPUTATION_NO_MUTUAL_SOFT(target,
                                                       iterSameBox.data());
                 }
                 iterSameBox.gotoNext();

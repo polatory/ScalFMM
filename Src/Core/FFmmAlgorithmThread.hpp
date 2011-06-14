@@ -363,10 +363,7 @@ public:
 
             #pragma omp barrier
 
-            #pragma omp master
-            {
-                FDEBUG(computationCounter.tic());
-            }
+            FDEBUG(if(!omp_get_thread_num()) computationCounter.tic());
 
             Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
