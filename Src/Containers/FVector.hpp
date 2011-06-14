@@ -194,7 +194,6 @@ public:
 
         void gotoNext(){
             ++this->index;
-            Prefetch_Write(&this->vector->array[this->index + 1]);
         }
 
         bool hasNotFinished() const{
@@ -228,7 +227,6 @@ public:
 
         void gotoNext(){
             ++this->index;
-            Prefetch_Read(&this->vector->array[this->index + 1]);
         }
 
         bool hasNotFinished() const{
