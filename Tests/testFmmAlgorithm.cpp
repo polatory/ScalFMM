@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../Src/Utils/FParameters.hpp"
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
@@ -38,8 +39,8 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 6;//10;
-    const int SizeSubLevels = 3;//3
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart = 2000000;//2000000
 
     FTic counter;
@@ -55,6 +56,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     std::cout << "Creating & Inserting " << NbPart << " particles ..." << std::endl;
+    std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
     {

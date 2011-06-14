@@ -9,6 +9,7 @@
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Components/FFmaParticle.hpp"
 #include "../Src/Extensions/FExtendForces.hpp"
@@ -71,8 +72,8 @@ int main(int argc, char ** argv){
     std::cout << ">> It compares the results between Tms and no Tms (except P2P & L2P).\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 9;//10;
-    const int SizeSubLevels = 3;//3
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
     const long NbPart = 200000;//2000000
     const double BoxWidth = 1.0;

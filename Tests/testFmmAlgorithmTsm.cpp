@@ -9,6 +9,7 @@
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Components/FTypedLeaf.hpp"
 
@@ -44,8 +45,8 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 10;//10;
-    const int SizeSubLevels = 3;//3
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart = 2000000;//2000000
     FTic counter;
 

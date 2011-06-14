@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../Src/Utils/FParameters.hpp"
 #include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"

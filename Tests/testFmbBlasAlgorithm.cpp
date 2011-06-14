@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -62,8 +63,8 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 9;//10;
-    const int SizeSubLevels = 3;//3
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
     const char* filename;
@@ -92,6 +93,7 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
     {
