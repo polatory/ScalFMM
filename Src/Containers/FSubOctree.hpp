@@ -79,19 +79,21 @@ protected:
         int indexLevel = this->subOctreeHeight - 1;
         int bottomToTop = 0;
         while(indexLevel >= 0 && !this->cells[indexLevel][arrayIndex]){
-            this->cells[indexLevel][arrayIndex] = new CellClass();
-            this->cells[indexLevel][arrayIndex]->setMortonIndex(inLeafCellIndex);
+            CellClass* const newNode = new CellClass();
+            newNode->setMortonIndex(inLeafCellIndex);
 
-            this->cells[indexLevel][arrayIndex]->setCoordinate(treePosition.getX() >> bottomToTop,
+            newNode->setCoordinate(treePosition.getX() >> bottomToTop,
                                                                treePosition.getY() >> bottomToTop,
                                                                treePosition.getZ() >> bottomToTop);
 
             const int realLevel = indexLevel + this->getSubOctreePosition();
             const FReal widthAtLevel = inBoxWidthAtLevel[realLevel];
-            this->cells[indexLevel][arrayIndex]->setPosition(F3DPosition(
+            newNode->setPosition(F3DPosition(
                             treePosition.getX() * widthAtLevel + widthAtLevel/2.0,
                             treePosition.getY() * widthAtLevel + widthAtLevel/2.0,
                             treePosition.getZ() * widthAtLevel + widthAtLevel/2.0));
+
+            this->cells[indexLevel][arrayIndex] = newNode;
 
             --indexLevel;
             ++bottomToTop;
