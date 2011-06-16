@@ -783,7 +783,7 @@ public:
                     #pragma omp parallel
                     {
                         Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
-                        #pragma omp for
+                        #pragma omp for nowait
                         for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
                             myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                         }
