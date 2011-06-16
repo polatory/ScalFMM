@@ -92,6 +92,9 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FVector<Particle>      ContainerClass;
+    typedef FSimpleLeaf<Particle, ContainerClass >                     LeafClass;
+    typedef FOctree<Particle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to know the box used.\n";
     //////////////////////////////////////////////////////////////
@@ -120,7 +123,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<Particle, FBasicCell, FVector, FSimpleLeaf> tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -150,7 +153,7 @@ int main(int argc, char ** argv){
 
         // -----------------------------------------------------
 
-        FOctree<Particle, FBasicCell, FVector,  FSimpleLeaf>::Iterator octreeIterator(&tree);
+        typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         idx = 0;
         do{
@@ -158,7 +161,7 @@ int main(int argc, char ** argv){
             // std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
             // std::cout << "Particles :" << std::endl;
 
-            FVector<Particle>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 iter.data().setMortonIndex(currentIndex);
                 //	  iter.data().mortonIndex()       = currentIndex ;

@@ -22,16 +22,11 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
-        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
-        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
+template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithm : protected FAssertable{
-    // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator FOctreeIterator;
 
-    Octree* const tree;                                      //< The octree to work on
-    KernelClass<ParticleClass, CellClass,ContainerClass>* const kernels;    //< The kernels
+    OctreeClass* const tree;       //< The octree to work on
+    KernelClass* const kernels;    //< The kernels
 
     const int OctreeHeight;
 
@@ -41,7 +36,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithm(Octree* const inTree, KernelClass<ParticleClass,CellClass,ContainerClass>* const inKernels)
+    FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -82,7 +77,7 @@ public:
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounter);
 
-        FOctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
 
         // Iterate on leafs
         octreeIterator.gotoBottomLeft();
@@ -111,11 +106,11 @@ public:
         FDEBUG(FTic computationCounter);
 
         // Start from leal level - 1
-        FOctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
 
-        FOctreeIterator avoidGotoLeftIterator(octreeIterator);
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
@@ -151,10 +146,10 @@ public:
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
 
-            FOctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
 
-            FOctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             const CellClass* neighbors[208];
 
@@ -180,10 +175,10 @@ public:
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter );
 
-            FOctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
 
-            FOctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             const int heightMinusOne = OctreeHeight - 1;
             // for each levels exepted leaf level
@@ -220,10 +215,10 @@ public:
 
         const int heightMinusOne = OctreeHeight - 1;
 
-        FOctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        ContainerClass<ParticleClass>* neighbors[26];
+        ContainerClass* neighbors[26];
         MortonIndex neighborsIndex[26];
         // for each leafs
         do{

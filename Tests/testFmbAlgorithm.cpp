@@ -58,6 +58,15 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FmbParticle             ParticleClass;
+    typedef FmbCell                 CellClass;
+    typedef FVector<ParticleClass>  ContainerClass;
+
+    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -78,7 +87,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFmaLoader<FmbParticle> loader(filename);
+    FFmaLoader<ParticleClass> loader(filename);
     if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -86,8 +95,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>
-            tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -96,7 +104,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FmbParticle particleToFill;
+        ParticleClass particleToFill;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(particleToFill);
             tree.insert(particleToFill);
@@ -111,10 +119,8 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell, FVector> kernels(NbLevels,loader.getBoxWidth());
-    //FBasicKernels<FmbParticle, FmbCell, FVector> kernels;
-    //FFmmAlgorithm FFmmAlgorithmThread FFmmAlgorithmThreadUs
-    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
+    KernelClass kernels(NbLevels,loader.getBoxWidth());
+    FmmClass algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -123,10 +129,10 @@ int main(int argc, char ** argv){
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
-        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            FVector<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();

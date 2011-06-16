@@ -21,7 +21,7 @@
 
 #include "../Src/Files/FBasicLoader.hpp"
 
-// Compile by : g++ testLoader.cpp ../Src/Utils/FAssertable.cpp -O2 -o testLoader.exe
+// Compile by : g++ testLoader.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -O2 -o testLoader.exe
 
 
 /**
@@ -34,6 +34,9 @@
   */
 
 int main(int argc, char ** argv){
+    typedef FVector<FBasicParticle>      ContainerClass;
+    typedef FSimpleLeaf<FBasicParticle, ContainerClass >                     LeafClass;
+    typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -66,7 +69,7 @@ int main(int argc, char ** argv){
 
     {
         // otree
-        FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf> tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        OctreeClass tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

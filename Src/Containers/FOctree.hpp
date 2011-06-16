@@ -28,8 +28,7 @@
  * Particle must extend {FExtendPosition}
  * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
  */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass,
-         template <class ParticleClass, template <class ParticleClass> class ContainerClass > class LeafClass>
+template< class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
 class FOctree {
         FReal*const boxWidthAtLevel;		//< to store the width of each boxs at all levels
 
@@ -503,7 +502,7 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            ContainerClass<ParticleClass>* getCurrentListSrc() {
+            ContainerClass* getCurrentListSrc() {
                 return this->current.leafTree->getLeafSrc(this->currentLocalIndex);
             }
 
@@ -511,7 +510,7 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            ContainerClass<ParticleClass>* getCurrentListTargets() {
+            ContainerClass* getCurrentListTargets() {
                 return this->current.leafTree->getLeafTargets(this->currentLocalIndex);
             }
 
@@ -750,7 +749,7 @@ public:
           * @return the cell if it exist or null (0)
           *
           */
-        ContainerClass<ParticleClass>* getLeafSrc(const MortonIndex inIndex){
+        ContainerClass* getLeafSrc(const MortonIndex inIndex){
            SubOctreeTypes workingTree;
            workingTree.tree = &this->root;
            const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
@@ -775,7 +774,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getLeafsNeighbors(ContainerClass<ParticleClass>* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
+        int getLeafsNeighbors(ContainerClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
             MortonIndex inNeighborsIndex[26];
             return getLeafsNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
         }
@@ -786,7 +785,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getLeafsNeighborsWithIndex(ContainerClass<ParticleClass>* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
+        int getLeafsNeighborsWithIndex(ContainerClass* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
             FTreeCoordinate center;
             center.setPositionFromMorton(inIndex, inLevel);
 
@@ -809,7 +808,7 @@ public:
                             const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
                             const MortonIndex mortonOther = other.getMortonIndex(inLevel);
                             // get cell
-                            ContainerClass<ParticleClass>* const leaf = getLeafSrc(mortonOther);
+                            ContainerClass* const leaf = getLeafSrc(mortonOther);
                             // add to list if not null
                             if(leaf){
                                 inNeighborsIndex[idxNeighbors] = mortonOther;

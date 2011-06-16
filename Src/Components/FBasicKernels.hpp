@@ -15,7 +15,7 @@
 * This kernels simply shows the details of the information
 * it receives (in debug)
 */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass>
+template< class ParticleClass, class CellClass, class ContainerClass>
 class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
 public:
     /** Default destructor */
@@ -23,7 +23,7 @@ public:
     }
 
     /** Print the number of particles */
-    virtual void P2M(CellClass* const , const ContainerClass<ParticleClass>* const ) {
+    virtual void P2M(CellClass* const , const ContainerClass* const ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
@@ -47,21 +47,21 @@ public:
     }
 
     /** Print the number of particles */
-    virtual void L2P(const CellClass* const , ContainerClass<ParticleClass>* const ){
+    virtual void L2P(const CellClass* const , ContainerClass* const ){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Print the number of particles */
-    virtual void P2P(ContainerClass<ParticleClass>* const FRestrict , const ContainerClass<ParticleClass>* const FRestrict ,
-                     const ContainerClass<ParticleClass>* const [26], const int ) {
+    virtual void P2P(ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
+                     const ContainerClass* const [26], const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     virtual void P2P(const MortonIndex ,
-                     ContainerClass<ParticleClass>* const FRestrict , const ContainerClass<ParticleClass>* const FRestrict ,
-                     ContainerClass<ParticleClass>* const [26], const MortonIndex [26], const int ){
+                     ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
+                     ContainerClass* const [26], const MortonIndex [26], const int ){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }

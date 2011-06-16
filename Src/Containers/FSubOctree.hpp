@@ -32,8 +32,7 @@
  * Please refere to testOctree.cpp to see an example
  * @warning Give the particleClass & cellClass
  */
-template< class ParticleClass, class CellClass , template <class ParticleClass> class ContainerClass,
-         template <class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
+template< class ParticleClass, class CellClass , class ContainerClass, class LeafClass>
 class FAbstractSubOctree : protected FAssertable{
 protected:
 
@@ -270,12 +269,11 @@ public:
  * Please refere to testOctree.cpp to see an example.
  * @warning Give the particleClass & cellClass
  */
-template< class ParticleClass, class CellClass , template <class ParticleClass> class ContainerClass,
-         template <class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
+template< class ParticleClass, class CellClass , class ContainerClass, class LeafClass>
 class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> {
 private:
 
-    LeafClass<ParticleClass, ContainerClass >** leafs;            //< Leafs array
+    LeafClass** leafs;            //< Leafs array
 
     /** Disable copy */
     FSubOctreeWithLeafs(const FSubOctreeWithLeafs&){}
@@ -295,7 +293,7 @@ public:
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
-        this->leafs = new LeafClass<ParticleClass, ContainerClass >*[cellsAtLeafLevel];
+        this->leafs = new LeafClass*[cellsAtLeafLevel];
         assert(this->leafs, "Allocation failled", __LINE__, __FILE__);
 
         for( long indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
@@ -324,7 +322,7 @@ public:
         const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
         // is there already a leaf?
         if( !this->leafs[arrayIndex] ){
-            this->leafs[arrayIndex] = new LeafClass<ParticleClass, ContainerClass >();
+            this->leafs[arrayIndex] = new LeafClass();
 
             FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::newLeafInserted( arrayIndex , index, host, inBoxWidthAtLevel);
         }
@@ -335,32 +333,32 @@ public:
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    ContainerClass<ParticleClass>* getLeafSrc(const int index){
-        LeafClass<ParticleClass, ContainerClass >* const leaf = this->leafs[index];
+    ContainerClass* getLeafSrc(const int index){
+        LeafClass* const leaf = this->leafs[index];
         return (leaf ? leaf->getSrc(): 0);
     }
 
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    ContainerClass<ParticleClass>* getLeafTargets(const int index){
-        LeafClass<ParticleClass, ContainerClass >* const leaf = this->leafs[index];
+    ContainerClass* getLeafTargets(const int index){
+        LeafClass* const leaf = this->leafs[index];
         return (leaf ? leaf->getTargets(): 0);
     }
 
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    const ContainerClass<ParticleClass>* getLeafSrc(const int index) const {
-        LeafClass<ParticleClass, ContainerClass >* const leaf = this->leafs[index];
+    const ContainerClass* getLeafSrc(const int index) const {
+        LeafClass* const leaf = this->leafs[index];
         return (leaf ? leaf->getSrc(): 0);
     }
 
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
-    const ContainerClass<ParticleClass>* getLeafTargets(const int index) const {
-        LeafClass<ParticleClass, ContainerClass >* const leaf = this->leafs[index];
+    const ContainerClass* getLeafTargets(const int index) const {
+        LeafClass* const leaf = this->leafs[index];
         return (leaf ? leaf->getTargets() : 0);
     }
 
@@ -385,8 +383,7 @@ public:
  *
  * @warning Give the particleClass & cellClass
  */
-template< class ParticleClass, class CellClass , template <class ParticleClass> class ContainerClass,
-         template <class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
+template< class ParticleClass, class CellClass , class ContainerClass, class LeafClass>
 class FSubOctree : public FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> {
 private:
     FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>** subleafs;    //< Last levels is composed of suboctree

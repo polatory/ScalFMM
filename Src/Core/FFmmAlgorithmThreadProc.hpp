@@ -36,22 +36,16 @@
 * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
-template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
-        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
-        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
-        class FFmmAlgorithmThreadProc : protected FAssertable {
-    // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
+template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+class FFmmAlgorithmThreadProc : protected FAssertable {
 
     FMpi& app;                          //< The app to communicate
 
-    Octree* const tree;                 //< The octree to work on
-    Kernel** kernels;                   //< The kernels
+    OctreeClass* const tree;                 //< The octree to work on
+    KernelClass** kernels;                   //< The kernels
 
-    OctreeIterator* iterArray;          //< To store the iterator
-    OctreeIterator* previousIterArray;  //< To store the previous iterator
+    typename OctreeClass::Iterator* iterArray;          //< To store the iterator
+    typename OctreeClass::Iterator* previousIterArray;  //< To store the previous iterator
 
     int leafLeft;                   //< To store the left limit at the previous level
     int leafRight;                  //< To store the right limit at the previous level
@@ -74,7 +68,7 @@ template<template< class ParticleClass, class CellClass, template <class Particl
       * the current and the previous
       */
     void swapArray(){
-        OctreeIterator* const temp = iterArray;
+        typename OctreeClass::Iterator* const temp = iterArray;
         iterArray = previousIterArray;
         previousIterArray = temp;
     }
@@ -85,7 +79,7 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProc(FMpi& inApp, Octree* const inTree, Kernel* const inKernels)
+    FFmmAlgorithmThreadProc(FMpi& inApp, OctreeClass* const inTree, KernelClass* const inKernels)
         : app(inApp), tree(inTree) , kernels(0), iterArray(0),
         previousIterArray(0), leafLeft(0),leafRight(0), numberOfLeafs(0),
         leftOffsets(new int[inTree->getHeight()]),rightOffsets(new int[inTree->getHeight()]),
@@ -94,9 +88,9 @@ public:
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
-        this->kernels = new Kernel*[MaxThreads];
+        this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new Kernel(*inKernels);
+            this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
         this->sendBuffer = new FBufferVector<BufferSize>[nbProcess];
@@ -127,16 +121,16 @@ public:
 
         // Count leaf
         int leafs = 0;
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             ++leafs;
         } while(octreeIterator.moveRight());
 
-        iterArray = new OctreeIterator[leafs];
+        iterArray = new typename OctreeClass::Iterator[leafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
-        previousIterArray = new OctreeIterator[leafs];
+        previousIterArray = new typename OctreeClass::Iterator[leafs];
         assert(previousIterArray, "previousIterArray bad alloc", __LINE__, __FILE__);
 
         // init offsets
@@ -201,7 +195,7 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
 
         int leafs = 0;
 
@@ -218,7 +212,7 @@ public:
         FDEBUG(FTic computationCounter);
         #pragma omp parallel
         {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for nowait
             for(int idxLeafs = startIdx ; idxLeafs < endIdx ; ++idxLeafs){
                 // We need the current cell that represent the leaf
@@ -252,10 +246,10 @@ public:
         FDEBUG(FTic receiveCounter);
 
         // Start from leal level - 1
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
-        OctreeIterator avoidGotoLeftIterator(octreeIterator);
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         int previousLeft = this->leafLeft;
         int previousRight = this->leafRight;
@@ -393,7 +387,7 @@ public:
                         FDEBUG(computationCounter.tic());
                     }
 
-                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for nowait
                     for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
                         myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
@@ -468,9 +462,9 @@ public:
             FDEBUG(FTic waitSendCounter);
             FDEBUG(FTic findCounter);
 
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
-            OctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             FBoolArray* const indexToReceive = new FBoolArray(1 << (3*(OctreeHeight-1)));
 
@@ -517,7 +511,7 @@ public:
                 {
                     const CellClass* neighbors[208];
 
-                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
 
                     #pragma omp single nowait
                     {
@@ -693,10 +687,10 @@ public:
             FDEBUG(FTic sendCounter);
             FDEBUG(FTic receiveCounter);
 
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
 
-            OctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             const int heightMinusOne = OctreeHeight - 1;
 
@@ -782,7 +776,7 @@ public:
                     FDEBUG(computationCounter.tic());
                     #pragma omp parallel
                     {
-                        Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                        KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                         #pragma omp for nowait
                         for(int idxCell = startIdx ; idxCell < endIdx ; ++idxCell){
                             myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
@@ -823,14 +817,14 @@ public:
         struct LeafData{
             MortonIndex index;
             CellClass* cell;
-            ContainerClass<ParticleClass>* targets;
-            ContainerClass<ParticleClass>* sources;
+            ContainerClass* targets;
+            ContainerClass* sources;
         };
         LeafData* const leafsDataArray = new LeafData[this->leafRight - this->leafLeft + 1];
 
         // split data
         {
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
             // remove useless leafs
@@ -839,7 +833,7 @@ public:
             }
 
             // to store which shape for each leaf
-            OctreeIterator* const myLeafs = new OctreeIterator[this->leafRight - this->leafLeft + 1];
+            typename OctreeClass::Iterator* const myLeafs = new typename OctreeClass::Iterator[this->leafRight - this->leafLeft + 1];
             int*const shapeType = new int[this->leafRight - this->leafLeft + 1];
 
             for(int idxLeaf = this->leafLeft ; idxLeaf <= this->leafRight ; ++idxLeaf){
@@ -880,9 +874,9 @@ public:
 
         #pragma omp parallel
         {
-            Kernel& myThreadkernels = (*kernels[omp_get_thread_num()]);
+            KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
-            ContainerClass<ParticleClass>* neighbors[26];
+            ContainerClass* neighbors[26];
             MortonIndex neighborsIndex[26];
             int previous = 0;
 

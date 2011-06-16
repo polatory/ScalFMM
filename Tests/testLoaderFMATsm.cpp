@@ -23,8 +23,6 @@
 
 #include "../Src/Files/FFmaTsmLoader.hpp"
 
-// Compile by : g++ testLoaderFMATsm.cpp ../Src/Utils/FAssertable.cpp -O2 -o testLoaderFMATsm.exe
-
 
 class ParticleTsm : public FFmaParticle, public FExtendParticleType {
 };
@@ -34,14 +32,15 @@ class ParticleTsm : public FFmaParticle, public FExtendParticleType {
   */
 
 int main(int argc, char ** argv ){
+    typedef FVector<ParticleTsm>      ContainerClass;
+    typedef FSimpleLeaf<ParticleTsm, ContainerClass >                     LeafClass;
+    typedef FOctree<ParticleTsm, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
     std::cout << ">> how to use the Tsm loader\n";
     //////////////////////////////////////////////////////////////
 
-    // we store all particles to be able to dealloc
-    FVector<ParticleTsm*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
     const char* const defaultFilename = "testLoaderFMA.tsm.fma";
@@ -65,7 +64,7 @@ int main(int argc, char ** argv ){
     }
     {
         // otree
-        FOctree<ParticleTsm, FBasicCell, FVector, FSimpleLeaf> tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        OctreeClass tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

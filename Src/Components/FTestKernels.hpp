@@ -19,7 +19,7 @@
 * correctly done on particles.
 * It used FTestCell and FTestParticle
 */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass>
+template< class ParticleClass, class CellClass, class ContainerClass>
 class FTestKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
 public:
     /** Default destructor */
@@ -27,7 +27,7 @@ public:
     }
 
     // Before upward
-    void P2M(CellClass* const pole, const ContainerClass<ParticleClass>* const particles) {
+    void P2M(CellClass* const pole, const ContainerClass* const particles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // the pole represents all particles under
         pole->setDataUp(particles->getSize());
@@ -69,10 +69,10 @@ public:
     }
 
     // After Downward
-    void L2P(const CellClass* const  local, ContainerClass<ParticleClass>*const particles){
+    void L2P(const CellClass* const  local, ContainerClass*const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The particles is impacted by the parent cell
-        typename ContainerClass<ParticleClass>::BasicIterator iter(*particles);
+        typename ContainerClass::BasicIterator iter(*particles);
         while( iter.hasNotFinished() ){
             iter.data().setDataDown(iter.data().getDataDown() + local->getDataDown());
             iter.gotoNext();
@@ -81,8 +81,8 @@ public:
     }
 
     // After Downward
-    void P2P(ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
-             const ContainerClass<ParticleClass>* const directNeighborsParticles[26], const int size) {
+    void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+             const ContainerClass* const directNeighborsParticles[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -93,7 +93,7 @@ public:
             inc += directNeighborsParticles[idx]->getSize();
         }
 
-        typename ContainerClass<ParticleClass>::BasicIterator iter(*targets);
+        typename ContainerClass::BasicIterator iter(*targets);
         while( iter.hasNotFinished() ){
             iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
@@ -104,8 +104,8 @@ public:
 
     // After Downward
     void P2P(const MortonIndex ,
-             ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
-             ContainerClass<ParticleClass>* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
+             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+             ContainerClass* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
@@ -116,7 +116,7 @@ public:
             inc += directNeighborsParticles[idx]->getSize();
         }
 
-        typename ContainerClass<ParticleClass>::BasicIterator iter(*targets);
+        typename ContainerClass::BasicIterator iter(*targets);
         while( iter.hasNotFinished() ){
             iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
@@ -129,14 +129,13 @@ public:
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass,
-         template <class ParticleClass, template <class ParticleClass> class ContainerClass > class LeafClass>
-void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>* const tree){
+template< class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
+void ValidateFMMAlgo(OctreeClass* const tree){
     std::cout << "Check Result\n";
     const int TreeHeight = tree->getHeight();
     int NbPart = 0;
     { // Check that each particle has been summed with all other
-        typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSrc()->getSize() ){
@@ -146,7 +145,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass
         } while(octreeIterator.moveRight());
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
         long res = 0;
         do{
@@ -157,7 +156,7 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass
         }
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
             long res = 0;
@@ -172,10 +171,10 @@ void ValidateFMMAlgo(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass
         }
     }
     { // Check that each particle has been summed with all other
-        typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 

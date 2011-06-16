@@ -12,9 +12,9 @@
 * This class is used as a leaf in simple system (source AND target)
 * here there is only one list that store all particles.
 */
-template< class ParticleClass ,template <class ParticleClass> class ContainerClass>
+template< class ParticleClass , class ContainerClass>
 class FSimpleLeaf : public FAbstractLeaf<ParticleClass,ContainerClass> {
-    ContainerClass<ParticleClass> particles;
+    ContainerClass particles;
 
 public:
     /** Default destructor */
@@ -33,7 +33,7 @@ public:
         * To get all the sources in a leaf
         * @return a pointer to the list of particles that are sources
         */
-    ContainerClass<ParticleClass>* getSrc() {
+    ContainerClass* getSrc() {
         return &this->particles;
     }
 
@@ -41,7 +41,7 @@ public:
         * To get all the target in a leaf
         * @return a pointer to the list of particles that are targets
         */
-    ContainerClass<ParticleClass>* getTargets() {
+    ContainerClass* getTargets() {
         return &this->particles;
     }
 

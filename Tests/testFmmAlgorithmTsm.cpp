@@ -27,6 +27,8 @@
 
 #include "../Src/Components/FBasicKernels.hpp"
 
+// Compile by : g++ testFmmAlgorithmTsm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmTsm.exe
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
@@ -41,6 +43,15 @@ class FTestCellTsm: public FTestCell , public FExtendCellType{
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FTestParticleTsm             ParticleClassTyped;
+    typedef FTestCellTsm                 CellClassTyped;
+    typedef FVector<ParticleClassTyped>  ContainerClassTyped;
+
+    typedef FTypedLeaf<ParticleClassTyped, ContainerClassTyped >                      LeafClassTyped;
+    typedef FOctree<ParticleClassTyped, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
+    typedef FTestKernels<ParticleClassTyped, CellClassTyped, ContainerClassTyped >          KernelClassTyped;
+
+    typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -55,7 +66,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticleTsm, FTestCellTsm, FVector, FTypedLeaf> tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    OctreeClassTyped tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +74,7 @@ int main(int argc, char ** argv){
     std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
     {
-        FTestParticleTsm particle;
+        ParticleClassTyped particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
             if(rand() > RAND_MAX/2) particle.setAsTarget();
@@ -83,10 +94,9 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    // FTestKernels FBasicKernels
-    FTestKernels<FTestParticleTsm, FTestCellTsm, FVector> kernels;
-    //FFmmAlgorithmTsm FFmmAlgorithmThreadTsm
-    FFmmAlgorithmThreadTsm<FTestKernels, FTestParticleTsm, FTestCellTsm, FVector, FTypedLeaf> algo(&tree,&kernels);
+    KernelClassTyped kernels;
+
+    FmmClassTyped algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -95,7 +105,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgo(&tree);
+    ValidateFMMAlgo<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, LeafClassTyped>(&tree);
 
 
     return 0;

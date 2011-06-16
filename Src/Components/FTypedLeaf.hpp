@@ -13,10 +13,10 @@
 * This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticleClass ,template <class ParticleClass> class ContainerClass>
+template< class ParticleClass , class ContainerClass>
 class FTypedLeaf  : public FAbstractLeaf<ParticleClass,ContainerClass>, public FAssertable {
-    ContainerClass<ParticleClass> sources;
-    ContainerClass<ParticleClass> targets;
+    ContainerClass sources;
+    ContainerClass targets;
 
 public:
     /** Default destructor */
@@ -37,7 +37,7 @@ public:
         * To get all the sources in a leaf
         * @return a pointer to the list of particles that are sources
         */
-    ContainerClass<ParticleClass>* getSrc() {
+    ContainerClass* getSrc() {
         return &this->sources;
     }
 
@@ -45,7 +45,7 @@ public:
         * To get all the target in a leaf
         * @return a pointer to the list of particles that are targets
         */
-    ContainerClass<ParticleClass>* getTargets() {
+    ContainerClass* getTargets() {
         return &this->targets;
     }
 

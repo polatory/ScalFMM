@@ -29,19 +29,12 @@
 * Because this is a Target source model you do not need the P2P to be safe.
 * You should not write on sources in the P2P method!
 */
-template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
-        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
-        template<class ParticleClass, template <class ParticleClass> class ContainerClass> class LeafClass>
+template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadTsm : protected FAssertable{
-    // To reduce the size of variable type based on foctree in this file
-    typedef FOctree<ParticleClass, CellClass, ContainerClass, LeafClass> Octree;
-    typedef typename FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>::Iterator OctreeIterator;
-    typedef KernelClass<ParticleClass, CellClass,ContainerClass> Kernel;
+    OctreeClass* const tree;                  //< The octree to work on
+    KernelClass** kernels;                    //< The kernels
 
-    Octree* const tree;                  //< The octree to work on
-    Kernel** kernels;                    //< The kernels
-
-    OctreeIterator* iterArray;
+    typename OctreeClass::Iterator* iterArray;
 
     const int MaxThreads;
 
@@ -53,15 +46,15 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadTsm(Octree* const inTree, Kernel* const inKernels)
+    FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels)
                       : tree(inTree) , kernels(0), iterArray(0),
                       MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()) {
 
         assert(tree, "tree cannot be null", __LINE__, __FILE__);
 
-        this->kernels = new Kernel*[MaxThreads];
+        this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new Kernel(*inKernels);
+            this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadTsm\n");
@@ -84,12 +77,12 @@ public:
 
         // Count leaf
         int numberOfLeafs = 0;
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
-        iterArray = new OctreeIterator[numberOfLeafs];
+        iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
         assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         bottomPass();
@@ -111,7 +104,7 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG( FTic counterTime );
 
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         int numberOfLeafs = 0;
         // Iterate on leafs
         octreeIterator.gotoBottomLeft();
@@ -123,12 +116,12 @@ public:
         FDEBUG(FTic computationCounter);
         #pragma omp parallel
         {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
-                ContainerClass<ParticleClass>* const sources = iterArray[idxLeafs].getCurrentListSrc();
+                ContainerClass* const sources = iterArray[idxLeafs].getCurrentListSrc();
                 if(sources->getSize()){
                     iterArray[idxLeafs].getCurrentCell()->setSrcChildTrue();
                     myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
@@ -154,10 +147,10 @@ public:
         FDEBUG(FTic computationCounter);
 
         // Start from leal level - 1
-        OctreeIterator octreeIterator(tree);
+        typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
-        OctreeIterator avoidGotoLeftIterator(octreeIterator);
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
@@ -173,7 +166,7 @@ public:
             FDEBUG(computationCounter.tic());
             #pragma omp parallel
             {
-                Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // We need the current cell and the child
@@ -214,9 +207,9 @@ public:
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
 
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
-            OctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -232,7 +225,7 @@ public:
                 FDEBUG(computationCounter.tic());
                 #pragma omp parallel
                 {
-                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[208];
 
                     #pragma omp for nowait
@@ -268,10 +261,10 @@ public:
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
 
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
 
-            OctreeIterator avoidGotoLeftIterator(octreeIterator);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             const int heightMinusOne = OctreeHeight - 1;
             // for each levels exepted leaf level
@@ -288,7 +281,7 @@ public:
                 FDEBUG(computationCounter.tic());
                 #pragma omp parallel
                 {
-                    Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* potentialChild[8];
@@ -322,7 +315,7 @@ public:
 
         int numberOfLeafs = 0;
         {
-            OctreeIterator octreeIterator(tree);
+            typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             // for each leaf
             do{
@@ -335,9 +328,9 @@ public:
         FDEBUG(FTic computationCounter);
         #pragma omp parallel
         {
-            Kernel * const myThreadkernels = kernels[omp_get_thread_num()];
+            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            ContainerClass<ParticleClass>* neighbors[26];
+            ContainerClass* neighbors[26];
 
             #pragma omp for schedule(dynamic)
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){

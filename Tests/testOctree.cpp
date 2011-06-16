@@ -18,13 +18,15 @@
 #include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-// Compile by : g++ testOctree.cpp ../Src/Utils/FAssertable.cpp -O2 -o testOctree.exe
 
 /**
 * In this file we show how to use octree
 */
 
 int main(int , char ** ){    
+    typedef FVector<FBasicParticle>      ContainerClass;
+    typedef FSimpleLeaf<FBasicParticle, ContainerClass >                     LeafClass;
+    typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -36,7 +38,7 @@ int main(int , char ** ){
 
     srand ( time(NULL) );
 
-    FOctree<FBasicParticle, FBasicCell, FVector, FSimpleLeaf> tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
+    OctreeClass tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;

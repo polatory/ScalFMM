@@ -42,6 +42,9 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FVector<FFmaParticle>      ContainerClass;
+    typedef FSimpleLeaf<FFmaParticle, ContainerClass >                     LeafClass;
+    typedef FOctree<FFmaParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
     //////////////////////////////////////////////////////////////
@@ -70,8 +73,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>
-            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -80,11 +82,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
 
+    FFmaParticle particle;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FFmaParticle particle;
-
         loader.fillParticle(particle);
-
         tree.insert(particle);
     }
 
@@ -102,7 +102,7 @@ int main(int argc, char ** argv){
             FReal averageParticles = 0;
             {
                 long nbLeafs = 0;
-                FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+                typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     averageParticles += octreeIterator.getCurrentListTargets()->getSize();
@@ -117,7 +117,7 @@ int main(int argc, char ** argv){
             FReal varianceParticles = 0;
             {
                 long nbLeafs = 0;
-                FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+                typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     varianceParticles += (averageParticles - octreeIterator.getCurrentListTargets()->getSize()) - (averageParticles - octreeIterator.getCurrentListTargets()->getSize());
@@ -131,7 +131,7 @@ int main(int argc, char ** argv){
 
         {
             FReal averageReduction = 0;
-            FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+            typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             long previousCells = 0;
 
@@ -156,11 +156,11 @@ int main(int argc, char ** argv){
         {
             FReal averageNeighbors = 0;
             long nbLeafs = 0;
-            FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+            typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
-                FVector<FFmaParticle>* neighbors[26];
+                ContainerClass* neighbors[26];
                 // need the current particles and neighbors particles
                 const long counterNeighbors = tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1);
                 ++nbLeafs;
@@ -172,7 +172,7 @@ int main(int argc, char ** argv){
         }
 
         {
-            FOctree<FFmaParticle, FBasicCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+            typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             long fullNbCells = 0;

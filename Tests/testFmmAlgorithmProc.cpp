@@ -94,19 +94,17 @@ public :
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template<template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass> class KernelClass,
-        class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass,
-        template<class ParticleClass,template <class ParticleClass> class ContainerClass > class LeafClass>
-void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>* const badTree,
-                         FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>* const valideTree,
-                         FFmmAlgorithmThreadProc<FTestKernels, ParticleClass, CellClass, ContainerClass, LeafClass>*const fmm){
+template<class OctreeClass, class ContainerClass, class FmmClassProc>
+void ValidateFMMAlgoProc(OctreeClass* const badTree,
+                         OctreeClass* const valideTree,
+                         FmmClassProc*const fmm){
     const int OctreeHeight = badTree->getHeight();
     std::cout << "Check Result\n";
     {
-        typename FOctree<ParticleClass, CellClass,ContainerClass, LeafClass>::Iterator octreeIterator(badTree);
+        typename OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        typename FOctree<ParticleClass, CellClass,ContainerClass,LeafClass>::Iterator octreeIteratorValide(valideTree);
+        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         for(int level = OctreeHeight - 1 ; level > 0 ; --level){
@@ -155,7 +153,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, ContainerClass, LeafC
         int NbPart = 0;
         int NbLeafs = 0;
         { // Check that each particle has been summed with all other
-            typename FOctree<ParticleClass, CellClass,ContainerClass,LeafClass>::Iterator octreeIterator(badTree);
+            typename OctreeClass::Iterator octreeIterator(badTree);
             octreeIterator.gotoBottomLeft();
             do{
                 NbPart += octreeIterator.getCurrentListSrc()->getSize();
@@ -167,7 +165,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, ContainerClass, LeafC
             const int startIdx = fmm->getLeft(NbLeafs);
             const int endIdx = fmm->getRight(NbLeafs);
             // Check that each particle has been summed with all other
-            typename FOctree<ParticleClass, CellClass,ContainerClass,LeafClass>::Iterator octreeIterator(badTree);
+            typename OctreeClass::Iterator octreeIterator(badTree);
             octreeIterator.gotoBottomLeft();
 
             for(int idx = 0 ; idx < startIdx ; ++idx){
@@ -175,7 +173,7 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, ContainerClass, LeafC
             }
 
             for(int idx = startIdx ; idx < endIdx ; ++idx){
-                typename FVector<ParticleClass>::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
@@ -199,11 +197,9 @@ void ValidateFMMAlgoProc(FOctree<ParticleClass, CellClass, ContainerClass, LeafC
 /** To print an octree
   * used to debug and understand how the values were passed
   */
-template<template< class ParticleClass, class CellClass> class KernelClass,
-        class ParticleClass, class CellClass,template <class ParticleClass> class ContainerClass,
-        template<class ParticleClass,template <class ParticleClass> class ContainerClass > class LeafClass>
-void print(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>* const valideTree){
-    typename FOctree<ParticleClass, CellClass,ContainerClass, LeafClass>::Iterator octreeIterator(valideTree);
+template<class OctreeClass>
+void print(OctreeClass* const valideTree){
+    typename OctreeClass::Iterator octreeIterator(valideTree);
     for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
         do{
             std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
@@ -217,6 +213,16 @@ void print(FOctree<ParticleClass, CellClass, ContainerClass, LeafClass>* const v
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef TestParticle               ParticleClass;
+    typedef FTestCellPar               CellClass;
+    typedef FVector<ParticleClass>     ContainerClass;
+
+    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassProc;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -239,7 +245,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFmaLoader<TestParticle> loader(filename);
+    FFmaLoader<ParticleClass> loader(filename);
     if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -248,11 +254,9 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<TestParticle, FTestCellPar, FVector, FSimpleLeaf>
-            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
-    FOctree<TestParticle, FTestCellPar, FVector, FSimpleLeaf>
-            treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +265,7 @@ int main(int argc, char ** argv){
     std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     {
-        TestParticle particle;
+        ParticleClass particle;
         for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 
             loader.fillParticle(particle);
@@ -279,12 +283,12 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FTestKernels<TestParticle, FTestCellPar, FVector> kernels;
+    KernelClass kernels;
 
-    FFmmAlgorithmThreadProc<FTestKernels, TestParticle, FTestCellPar, FVector, FSimpleLeaf> algo(app,&tree,&kernels);
+    FmmClassProc algo(app,&tree,&kernels);
     algo.execute();
 
-    FFmmAlgorithmThread<FTestKernels, TestParticle, FTestCellPar, FVector, FSimpleLeaf> algoValide(&treeValide,&kernels);
+    FmmClass algoValide(&treeValide,&kernels);
     algoValide.execute();
 
     counter.tac();
@@ -293,7 +297,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgoProc<FTestKernels, TestParticle, FTestCellPar, FVector, FSimpleLeaf>(&tree,&treeValide,&algo);
+    ValidateFMMAlgoProc<OctreeClass,ContainerClass,FmmClassProc>(&tree,&treeValide,&algo);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

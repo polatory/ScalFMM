@@ -12,7 +12,7 @@
 *
 * If you want to create you own kernels you have to inherit from this class.
 */
-template< class ParticleClass, class CellClass, template <class ParticleClass> class ContainerClass >
+template< class ParticleClass, class CellClass, class ContainerClass >
 class FAbstractKernels{
 public:
     /** Default destructor */
@@ -25,7 +25,7 @@ public:
         * @param pole the multipole to fill using the particles
         * @param particles the particles from the same spacial boxe
         */
-    virtual void P2M(CellClass* const pole, const ContainerClass<ParticleClass>* const particles) = 0;
+    virtual void P2M(CellClass* const pole, const ContainerClass* const particles) = 0;
 
     /**
         * M2M
@@ -66,7 +66,7 @@ public:
         * @param local the leaf element (smaller boxe local element)
         * @param particles the list of particles inside this boxe
         */
-    virtual void L2P(const CellClass* const local, ContainerClass<ParticleClass>* const particles) = 0;
+    virtual void L2P(const CellClass* const local, ContainerClass* const particles) = 0;
 
     /**
         * P2P
@@ -76,8 +76,8 @@ public:
         * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
-    virtual void P2P(ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
-                     const ContainerClass<ParticleClass>* const directNeighborsParticles[26], const int size) = 0;
+    virtual void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                     const ContainerClass* const directNeighborsParticles[26], const int size) = 0;
 
     /**
         * P2P
@@ -90,8 +90,8 @@ public:
         * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
         */
     virtual void P2P(const MortonIndex inCurrentLeafIndex,
-             ContainerClass<ParticleClass>* const FRestrict targets, const ContainerClass<ParticleClass>* const FRestrict sources,
-             ContainerClass<ParticleClass>* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
+             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+             ContainerClass* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
 };
 
 

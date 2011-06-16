@@ -33,7 +33,7 @@
 #include "../Src/Fmb/FFmbKernels.hpp"
 
 
-// With openmp : g++ testFmbTsmAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
+// With openmp : g++ testFmbTsmNoTsm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmNoTsm.exe
 // icpc -openmp -openmp-lib=compat testFmbTsmAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbTsmAlgorithm.exe
 
 /** This program show an example of use of
@@ -67,6 +67,26 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FmbParticle             ParticleClass;
+    typedef FmbCell                 CellClass;
+    typedef FVector<ParticleClass>  ContainerClass;
+
+    typedef FSimpleLeaf<ParticleClass, ContainerClass >                      LeafClass;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+    typedef FmbParticleTyped             ParticleClassTyped;
+    typedef FmbCellTyped                 CellClassTyped;
+    typedef FVector<ParticleClassTyped>  ContainerClassTyped;
+
+    typedef FTypedLeaf<ParticleClassTyped, ContainerClassTyped >                      LeafClassTyped;
+    typedef FOctree<ParticleClassTyped, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
+    typedef FFmbKernels<ParticleClassTyped, CellClassTyped, ContainerClassTyped >          KernelClassTyped;
+
+    typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
+
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
     std::cout << ">> It compares the results between Tms and no Tms (except P2P & L2P).\n";
@@ -81,8 +101,8 @@ int main(int argc, char ** argv){
 
 
     // -----------------------------------------------------
-    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf> tree(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
-    FOctree<FmbParticleTyped, FmbCellTyped, FVector, FTypedLeaf> treeTyped(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
+    OctreeClass tree(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
+    OctreeClassTyped treeTyped(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
 
 
     std::cout << "Inserting particles ..." << std::endl;
@@ -92,9 +112,9 @@ int main(int argc, char ** argv){
         const double y = FReal(rand())/RAND_MAX;
         const double z = FReal(rand())/RAND_MAX;
 
-        FmbParticle particles;
-        FmbParticleTyped particlesTyped;
-        FmbParticleTyped particlesTyped2;
+        ParticleClass particles;
+        ParticleClassTyped particlesTyped;
+        ParticleClassTyped particlesTyped2;
 
         // Particle for standart model
         particles.setPosition(x,y,z);
@@ -122,11 +142,12 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell, FVector> kernels(NbLevels,BoxWidth);
-    FFmbKernels<FmbParticleTyped, FmbCellTyped, FVector> kernelsTyped(NbLevels,BoxWidth);
-    //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithmThread<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
-    FFmmAlgorithmThreadTsm<FFmbKernels, FmbParticleTyped, FmbCellTyped, FVector, FTypedLeaf> algoTyped(&treeTyped,&kernelsTyped);
+    KernelClass kernels(NbLevels,BoxWidth);
+    KernelClassTyped kernelsTyped(NbLevels,BoxWidth);
+
+    FmmClass algo(&tree,&kernels);
+    FmmClassTyped algoTyped(&treeTyped,&kernelsTyped);
+
     algo.execute();
     algoTyped.execute();
 
@@ -139,10 +160,10 @@ int main(int argc, char ** argv){
 
     std::cout << "Start checking ..." << std::endl;
     {
-        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
-        FOctree<FmbParticleTyped, FmbCellTyped, FVector, FTypedLeaf>::Iterator octreeIteratorTyped(&treeTyped);
+        typename OctreeClassTyped::Iterator octreeIteratorTyped(&treeTyped);
         octreeIteratorTyped.gotoBottomLeft();
 
         for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){

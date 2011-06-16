@@ -25,7 +25,7 @@
 
 #include "../Src/Components/FBasicKernels.hpp"
 
-// Compile by : g++ testFMMAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFMMAlgorithm.exe
+// Compile by : g++ testFmmAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -35,6 +35,15 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FTestParticle               ParticleClass;
+    typedef FTestCell                   CellClass;
+    typedef FVector<ParticleClass>      ContainerClass;
+
+    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -50,7 +59,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FOctree<FTestParticle, FTestCell, FVector, FSimpleLeaf> tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    OctreeClass tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -77,9 +86,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     // FTestKernels FBasicKernels
-    FTestKernels<FTestParticle, FTestCell, FVector> kernels;
+    KernelClass kernels;
     //FFmmAlgorithm FFmmAlgorithmThread
-    FFmmAlgorithmThread<FTestKernels, FTestParticle, FTestCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
+    FmmClass algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -88,7 +97,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgo(&tree);
+    ValidateFMMAlgo<OctreeClass, ParticleClass, CellClass, ContainerClass, LeafClass>(&tree);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

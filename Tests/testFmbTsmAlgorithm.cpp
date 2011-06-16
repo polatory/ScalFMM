@@ -16,21 +16,20 @@
 #include "../Src/Extensions/FExtendPotential.hpp"
 
 #include "../Src/Extensions/FExtendParticleType.hpp"
+#include "../Src/Extensions/FExtendCellType.hpp"
 
 #include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Fmb/FExtendFmbCell.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithmTsm.hpp"
 
-
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../Src/Components/FTypedLeaf.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
 
 #include "../Src/Files/FFmaTsmLoader.hpp"
 
-// With openmp : g++ testFmbTsmAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
+// With openmp : g++ testFmbTsmAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
 // icpc -openmp -openmp-lib=compat testFmbTsmAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbTsmAlgorithm.exe
 
 /** This program show an example of use of
@@ -50,13 +49,22 @@ public:
 /** Custom cell
   *
   */
-class FmbCell : public FBasicCell, public FExtendFmbCell {
+class FmbCell : public FBasicCell, public FExtendFmbCell, public FExtendCellType {
 public:
 };
 
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    typedef FmbParticle             ParticleClass;
+    typedef FmbCell                 CellClass;
+    typedef FVector<ParticleClass>  ContainerClass;
+
+    typedef FTypedLeaf<ParticleClass, ContainerClass >                      LeafClass;
+    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+    typedef FFmmAlgorithmTsm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
     //////////////////////////////////////////////////////////////
@@ -77,7 +85,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FFmaTsmLoader<FmbParticle> loader(filename);
+    FFmaTsmLoader<ParticleClass> loader(filename);
     if(!loader.hasNotFinished()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -85,8 +93,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>
-            tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -95,7 +102,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FmbParticle particleToFill;
+        ParticleClass particleToFill;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(particleToFill);
             tree.insert(particleToFill);
@@ -110,33 +117,24 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    FFmbKernels<FmbParticle, FmbCell, FVector> kernels(NbLevels,loader.getBoxWidth());
-    //FFmmAlgorithm FFmmAlgorithmThreaded FFmmAlgorithmThread FFmmAlgorithmTask
-    FFmmAlgorithm<FFmbKernels, FmbParticle, FmbCell, FVector, FSimpleLeaf> algo(&tree,&kernels);
+    KernelClass kernels(NbLevels,loader.getBoxWidth());
+
+    FmmClass algo(&tree,&kernels);
     algo.execute();
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
-    //std::cout << "Foces Sum  x = " << kernels.getForcesSum().getX() << " y = " << kernels.getForcesSum().getY() << " z = " << kernels.getForcesSum().getZ() << std::endl;
-    //std::cout << "Potential = " << kernels.getPotential() << std::endl;
-
     { // get sum forces&potential
         FReal potential = 0;
         F3DPosition forces;
-        FOctree<FmbParticle, FmbCell, FVector, FSimpleLeaf>::Iterator octreeIterator(&tree);
+        typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             FVector<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();
-
-                //printf("x = %e y = %e z = %e \n",iter.data()->getPosition().getX(),iter.data()->getPosition().getY(),iter.data()->getPosition().getZ());
-                //printf("\t fx = %e fy = %e fz = %e \n",iter.data()->getForces().getX(),iter.data()->getForces().getY(),iter.data()->getForces().getZ());
-
-                //printf("\t\t Sum Forces ( %e , %e , %e)\n",
-                //forces.getX(),forces.getY(),forces.getZ());
 
                 iter.gotoNext();
             }
