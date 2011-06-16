@@ -305,8 +305,10 @@ public:
         FDEBUG(FTic computationCounterP2P);
 
         int countShape[SizeShape];
+        omp_lock_t lockShape[SizeShape];
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
             countShape[idxShape] = 0;
+            omp_init_lock(&lockShape[idxShape]);
         }
 
         struct LeafData{
@@ -347,11 +349,9 @@ public:
                 const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
                 const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
 
-                int positionToWork = 0;
-                #pragma omp critical
-                {
-                    positionToWork = startPosAtShape[shapePosition]++;
-                }
+                omp_set_lock(&lockShape[shapePosition]);
+                const int positionToWork = startPosAtShape[shapePosition]++;
+                omp_unset_lock(&lockShape[shapePosition]);
 
                 leafsDataArray[positionToWork].index = octreeIterator.getCurrentGlobalIndex();
                 leafsDataArray[positionToWork].cell = octreeIterator.getCurrentCell();
@@ -392,6 +392,10 @@ public:
         FDEBUG(computationCounter.tac());
 
         delete [] leafsDataArray;
+        for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+            omp_destroy_lock(&lockShape[idxShape]);
+        }
+
 
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated() << " s\n" );
