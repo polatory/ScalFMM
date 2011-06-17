@@ -32,7 +32,7 @@ public:
 	* Must be implemented by each user Particle class
 	* @return the position of the current cell
 	*/
-	virtual F3DPosition getPosition() const = 0;
+        virtual const F3DPosition& getPosition() const = 0;
 };
 
 
