@@ -13,6 +13,8 @@
 #include "../Utils/FMath.hpp"
 #include "../Utils/FTrace.hpp"
 
+#include "FFmbKernels.hpp"
+
 #include <iostream>
 
 
@@ -689,7 +691,7 @@ public:
             //ok printf("\tp_center.x=%e\tp_center.y=%e\tp_center.z=%e\n",inPole->getPosition().getX(),inPole->getPosition().getY(),inPole->getPosition().getZ());
             //ok printf("\tbody.x=%e\tbody.y=%e\tbody.z=%e\n",iterParticle.data()->getPosition().getX(),iterParticle.data()->getPosition().getY(),iterParticle.data()->getPosition().getZ());
 
-            harmonicInner(positionTsmphere(iterParticle.data()->getPosition() - inPole->getPosition()),current_thread_Y);
+            harmonicInner(positionTsmphere(iterParticle.data().getPosition() - inPole->getPosition()),current_thread_Y);
 
             //ok printf("\tr=%e\tcos_theta=%e\tsin_theta=%e\tphi=%e\n",spherical.r,spherical.cosTheta,spherical.sinTheta,spherical.phi);
 
@@ -1129,7 +1131,7 @@ public:
 
             F3DPosition force_vector_in_local_base;
             typename FFmbKernelsBlas<ParticleClass,CellClass,ContainerClass>::Spherical spherical;
-            spherical = positionTsmphere( iterTarget.data()->getPosition() - local->getPosition());
+            spherical = positionTsmphere( iterTarget.data().getPosition() - local->getPosition());
 
             /*printf("\t\t bodies_it_Get_p_position(&it) x = %lf \t y = %lf \t z = %lf \n",
                    (iterTarget.data()->getPosition()).getX(),
@@ -1325,7 +1327,7 @@ public:
             /*printf("[force_vector_tmp] fx = %e \t fy = %e \t fz = %e \n",
                    force_vector_tmp.getX(),force_vector_tmp.getY(),force_vector_tmp.getZ());*/
 
-            iterTarget.data()->setForces( iterTarget.data().getForces() + force_vector_tmp );
+            iterTarget.data().setForces( iterTarget.data().getForces() + force_vector_tmp );
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
