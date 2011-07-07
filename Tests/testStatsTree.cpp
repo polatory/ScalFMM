@@ -97,7 +97,7 @@ int main(int argc, char ** argv){
     { // get stats
         {
             std::cout << "[STAT] level is " << NbLevels << std::endl;
-            std::cout << "[STAT] potentials leafs number is " << (1 << (3*NbLevels)) << std::endl;
+            std::cout << "[STAT] potentials leafs number is " << (1 << (3* (NbLevels-1) )) << std::endl;
 
             FReal averageParticles = 0;
             {
@@ -162,11 +162,8 @@ int main(int argc, char ** argv){
             do{
                 ContainerClass* neighbors[26];
                 // need the current particles and neighbors particles
-                const long counterNeighbors = tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1);
+                averageNeighbors += tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1);
                 ++nbLeafs;
-                for(long idx = 0 ; idx < counterNeighbors ; ++idx){
-                    averageNeighbors += neighbors[idx]->getSize();
-                }
             } while(octreeIterator.moveRight());
             std::cout << "[STAT] Average neighbors for each leafs = " << (averageNeighbors/nbLeafs) << std::endl;
         }
