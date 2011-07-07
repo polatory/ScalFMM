@@ -36,3 +36,18 @@ INCLUDE_DIRECTORIES(
      ${CMAKE_BINARY_DIR}/Src 
 )
 
+
+# Install lib
+install( TARGETS scalfmm ARCHIVE DESTINATION lib )
+
+# Install header
+SET(my_include_dirs "Components" "Containers" "Core" "Extensions" "Files" "Fmb" "Utils")
+FOREACH(my_dir ${my_include_dirs})	
+	file(GLOB 	 	 	 	
+	 	hpp_in_dir
+		${my_dir}/*.hpp
+	)
+	INSTALL( FILES ${hpp_in_dir} DESTINATION include/${my_dir} )
+ENDFOREACH()
+
+
