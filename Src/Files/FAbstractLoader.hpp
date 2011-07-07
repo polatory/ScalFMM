@@ -49,7 +49,7 @@ public:
         * To know if the loader is valide (file opened, etc.)
         * @return true if file is open
         */
-        virtual bool hasNotFinished() const = 0;
+        virtual bool isOpen() const = 0;
 
         /**
         * Fill the next particle

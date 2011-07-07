@@ -58,7 +58,7 @@ int main(int argc, char ** argv ){
 
     // open basic particles loader
     FFmaTsmLoader<ParticleTsm> loader(filename);
-    if(!loader.hasNotFinished()){
+    if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
     }

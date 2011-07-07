@@ -1,6 +1,5 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-
 #include "../Src/Utils/FMpi.hpp"
 #include "../Src/Utils/FTic.hpp"
 
@@ -227,12 +226,14 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
+
     FMpi app( argc, argv);
+
 
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
-    const char* filename;
+    char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+    char* filename;
     FTic counter;
 
     if(argc == 1){
@@ -246,7 +247,7 @@ int main(int argc, char ** argv){
     }
 
     FFmaLoader<ParticleClass> loader(filename);
-    if(!loader.hasNotFinished()){
+    if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }

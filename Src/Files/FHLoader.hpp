@@ -20,7 +20,7 @@
 * ....
 * <code>
 *    FHLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
-*    if(!loader.hasNotFinished()){ <br>
+*    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
 *    } <br>
@@ -86,7 +86,7 @@ public:
       * To know if file is open and ready to read
       * @return true if loader can work
       */
-    bool hasNotFinished() const{
+    bool isOpen() const{
         return this->file != NULL;
     }
 

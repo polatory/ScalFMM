@@ -66,7 +66,7 @@ int main(int argc, char ** argv){
     }
 
     FFmaLoader<FFmaParticle> loader(filename);
-    if(!loader.hasNotFinished()){
+    if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }
