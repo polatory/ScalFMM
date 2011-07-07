@@ -231,7 +231,7 @@ public:
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[208];
 
-                    #pragma omp for nowait
+                    #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                         if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);

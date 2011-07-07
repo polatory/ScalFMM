@@ -228,7 +228,7 @@ public:
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[208];
 
-                    #pragma omp for nowait
+                    #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
