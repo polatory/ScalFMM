@@ -172,6 +172,24 @@ public:
         ++this->index;
     }
 
+    /**
+    *@brief get a const reference of a given value
+    *@param inPosition the query position
+    *@return the value
+    */
+    T& operator[](const int inPosition ){
+            return this->array[inPosition];
+    }
+
+    /**
+    *@brief get a const reference of a given value
+    *@param inPosition the query position
+    *@return the value
+    */
+    const T& operator[](const int inPosition ) const{
+            return this->array[inPosition];
+    }
+
     /** This class is a basic iterator
       * <code>
       *  typename FVector<int>::ConstBasicIterator iter(myVector);<br>
