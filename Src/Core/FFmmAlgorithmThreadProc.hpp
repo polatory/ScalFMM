@@ -371,7 +371,7 @@ public:
                         char buffer[BufferSize];
 
                         while(needToReceive){
-                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            app.receiveDataFromTag( BufferSize, idxLevel, buffer, &source, &filled);
                             for(int idxBuff = 0 ; idxBuff < filled;){
                                 memcpy(&position,&buffer[idxBuff],sizeof(int));
                                 idxBuff += sizeof(int);
@@ -627,7 +627,7 @@ public:
 
                         while(needToReceive){
                             FDEBUG(waitingToReceiveCounter.tic());
-                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            app.receiveDataFromTag( BufferSize, idxLevel, buffer, &source, &filled);
                             FDEBUG(waitingToReceiveCounter.tac());
                             for(int idxBuff = 0 ; idxBuff < filled;){
                                 memcpy(&position,&buffer[idxBuff],sizeof(int));
@@ -759,7 +759,7 @@ public:
                         char buffer[BufferSize];
 
                         while(needToReceive){
-                            app.receiveData( BufferSize, idxLevel, buffer, &source, &filled);
+                            app.receiveDataFromTag( BufferSize, idxLevel, buffer, &source, &filled);
                             for(int idxBuff = 0 ; idxBuff < filled;){
                                 memcpy(&position,&buffer[idxBuff],sizeof(int));
                                 idxBuff += sizeof(int);

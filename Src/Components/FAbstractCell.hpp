@@ -48,7 +48,7 @@ public:
     * Must be implemented by each user Cell class
     * @return the position in the tree coordinate
     */
-    virtual const F3DPosition& getCoordinate() const = 0;
+    virtual const FTreeCoordinate& getCoordinate() const = 0;
 
     /**
     * Must be implemented by each user Cell class
