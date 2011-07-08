@@ -301,7 +301,7 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
         {
             FVector<ParticlesGroup> groups;
-            ParticleClass*const realParticles = new ParticleClass[loader.getNumberOfParticles()];
+            ParticleClass*const realParticles = reinterpret_cast<ParticleClass*>(new char[loader.getNumberOfParticles() * sizeof(ParticleClass)]);
 
             OctreeClass sortingTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
@@ -337,10 +337,10 @@ int main(int argc, char ** argv){
                 while( iter.hasNotFinished() ){
                     realParticles[indexPart] = iter.data();
 
-                    std::cout << "Particles with index " << indexPart << " has a morton index of " << indexAtThisLeaf << std::endl;
+                    //std::cout << "Particles with index " << indexPart << " has a morton index of " << indexAtThisLeaf << std::endl;
 
-                    const F3DPosition& particlePosition = realParticles[indexPart].getPosition();
-                    std::cout << "\t The real position of this particle is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                    //const F3DPosition& particlePosition = realParticles[indexPart].getPosition();
+                    //std::cout << "\t The real position of this particle is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
 
                     ++indexPart;
                     iter.gotoNext();
@@ -362,75 +362,105 @@ int main(int argc, char ** argv){
             printf("%d I will go from %lld to %lld\n",app.processId(), startIndex, endIndex);
             printf("There is actually %d leafs\n", groups.getSize());
 
-            MortonIndex rightMortonIndex = min;
-            int groudIndex = 0;
-            for(int idxProc = 0 ; idxProc < app.processCount() ; ++idxProc){
-                const MortonIndex leftMortonIndex = rightMortonIndex;
-                rightMortonIndex = app.getOtherRight(max - min + 1, idxProc) + min;
-                printf("Working with %d, he goes from %lld to %lld \n",idxProc, leftMortonIndex,rightMortonIndex);
-                if(idxProc != app.processId()){
-                    int size = 0;
-                    int currentGroupIndex = groudIndex;
-                    while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
-                        size += groups[groudIndex].number;
-                        ++groudIndex;
-                    }
-                    printf("%d Send %d to %d (group index from %d, \n",app.processId(), size, idxProc);
-                    if(size){
-                        //send particles
-                        app.sendData(idxProc,sizeof(int),&size,0);
-                        app.sendData(idxProc,sizeof(ParticleClass) * size, &realParticles[groups[groudIndex].positionInArray],1);
+            int*const needToReceive = new int[app.processCount() * app.processCount()];
+            memset(needToReceive,0,app.processCount() * app.processCount() * sizeof(int));
+
+            FMpi::Request requests[app.processCount()];
+            {
+                int needToSend[app.processCount()];
+                memset(needToSend, 0, sizeof(int) * app.processCount());
+
+                MortonIndex rightMortonIndex = min;
+                int groudIndex = 0;
+                for(int idxProc = 0 ; idxProc < app.processCount() && groudIndex < groups.getSize() ; ++idxProc){
+                    rightMortonIndex = app.getOtherRight(max - min + 1, idxProc) + min;
+                    printf("Working with %d, he goes to %lld \n",idxProc,rightMortonIndex);
+
+                    if(idxProc != app.processId()){
+                        int size = 0;
+                        int currentGroupIndex = groudIndex;
+                        while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
+                            size += groups[groudIndex].number;
+                            ++groudIndex;
+                        }
+                        needToSend[idxProc] = size;
+
+                        printf("%d Send %d to %d\n",app.processId(), size, idxProc);
+                        app.isendData( idxProc, sizeof(ParticleClass) * size, &realParticles[groups[currentGroupIndex].positionInArray], 1, &requests[idxProc]);
                     }
                     else{
-                        //send empty message
-                        int zeros(0);
-                        app.sendData(idxProc,sizeof(int),&zeros,0);
-                    }
-                }
-                else{
-                    while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
-                        const int end = groups[groudIndex].positionInArray + groups[groudIndex].number;
-                        for(int idxPart = groups[groudIndex].positionInArray ; idxPart < end ; ++idxPart){
-                            treeInterval.insert(realParticles[idxPart]);
-                            ++myNbParticlesCounter;
+                        needToSend[idxProc] = 0;
+                        while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
+                            const int end = groups[groudIndex].positionInArray + groups[groudIndex].number;
+                            for(int idxPart = groups[groudIndex].positionInArray ; idxPart < end ; ++idxPart){
+                                //std::cout << "\t I keep (" << realParticles[idxPart].getPosition().getX() << ";" << realParticles[idxPart].getPosition().getY() << ";" << realParticles[idxPart].getPosition().getZ() << ")" << std::endl;
+                                treeInterval.insert(realParticles[idxPart]);
+                                ++myNbParticlesCounter;
+                            }
+                            ++groudIndex;
                         }
-                        ++groudIndex;
+                    }
+                }
+
+                app.allgather(needToSend, app.processCount(), needToReceive, app.processCount());
+                for(int idxSrc = 0 ; idxSrc < app.processCount() ; ++idxSrc){
+                    for(int idxTest = 0 ; idxTest < app.processCount() ; ++idxTest){
+                        printf("[%d][%d] = %d\n", idxSrc, idxTest, needToReceive[idxSrc * app.processCount() + idxTest]);
                     }
                 }
             }
 
-            delete [] realParticles;
-        }
 
+            //////////////////////////////////////////////////////////////////////////////////
+            // We receive others particles and insert them in the tree
+            //////////////////////////////////////////////////////////////////////////////////
+            int CounterProcToReceive(0);
+            int maxPartToReceive(0);
+            for(int idxProc = 0 ; idxProc < app.processCount() ; ++idxProc){
+                if(idxProc != app.processId() && needToReceive[app.processCount() * idxProc + app.processId()]){
+                    ++CounterProcToReceive;
+                    if(maxPartToReceive < needToReceive[app.processCount() * idxProc + app.processId()]){
+                        maxPartToReceive = needToReceive[app.processCount() * idxProc + app.processId()];
+                    }
+                    printf("needToReceive[idxProc][app.processId()] %d",needToReceive[app.processCount() * idxProc + app.processId()]);
+                }
+            }
 
-        //////////////////////////////////////////////////////////////////////////////////
-        // We receive others particles and insert them in the tree
-        //////////////////////////////////////////////////////////////////////////////////
-        {
-            char* buffer(0);
-            int currentBufferCapacity(0);
+            printf("maxPartToReceive %d \n",maxPartToReceive);
+
+            ParticleClass*const iterParticles = reinterpret_cast<ParticleClass*>(new char[maxPartToReceive * sizeof(ParticleClass)]);
             // we receive message from nb proc - 1 (from every other procs
-            for(int idxProc = 1 ; idxProc < app.processCount() ; ++idxProc){
-                int nbPartFromProc(0);
+            for(int idxProc = 0 ; idxProc < CounterProcToReceive ; ++idxProc){
                 int source(0);
-                app.receiveDataFromTag(sizeof(int), 0, &nbPartFromProc, &source);
-                printf("%d receive %d from %d\n",app.processId(),nbPartFromProc,source);
-                if(nbPartFromProc){
-                    if(currentBufferCapacity < int(nbPartFromProc * sizeof(ParticleClass)) ){
-                        delete [] buffer;
-                        currentBufferCapacity = nbPartFromProc * sizeof(ParticleClass);
-                        buffer = new char[currentBufferCapacity];
-                    }
-                    app.receiveDataFromTagAndSource(sizeof(ParticleClass), 1, source, buffer);
+                printf("Wait data to receive\n");
+                app.waitMessage(&source);
 
-                    ParticleClass* iterParticles = reinterpret_cast<ParticleClass*>(buffer);
-                    for(int idxPart = 0 ; idxPart < nbPartFromProc ; ++idxPart, ++iterParticles){
-                        std::cout << "\t We receive a new particle (" << (*iterParticles).getPosition().getX() << ";" << (*iterParticles).getPosition().getY() << ";" << (*iterParticles).getPosition().getZ() << ")" << std::endl;
-                        treeInterval.insert(*iterParticles);
-                        ++myNbParticlesCounter;
-                    }
+                const int nbPartFromProc = needToReceive[app.processCount() * source + app.processId()];
+                int received(0);
+
+                printf("%d receive %d\n",source,nbPartFromProc);
+                app.receiveDataFromTagAndSource(sizeof(ParticleClass) * nbPartFromProc, 1, source, iterParticles,&received);
+
+                printf("Received %d part*partcileSize %d \n",received,sizeof(ParticleClass) * nbPartFromProc);
+
+                printf("Insert into tree\n");
+                for(int idxPart = 0 ; idxPart < nbPartFromProc ; ++idxPart){
+                    //std::cout << "\t We receive a new particle (" << (*iterParticles).getPosition().getX() << ";" << (*iterParticles).getPosition().getY() << ";" << (*iterParticles).getPosition().getZ() << ")" << std::endl;
+                    treeInterval.insert(iterParticles[idxPart]);
+                    ++myNbParticlesCounter;
                 }
             }
+
+            printf("Wait all send\n");
+            for(int idxProc = 0 ; idxProc < app.processCount() ; ++idxProc){
+                if(idxProc != app.processId() && needToReceive[app.processCount() * app.processId() + idxProc ]){
+                    app.iWait(&requests[idxProc]);
+                }
+            }
+
+            printf("Delete particle array\n");
+            delete [] reinterpret_cast<char*>(realParticles);
+            delete [] needToReceive;
         }
 
         //////////////////////////////////////////////////////////////////////////////////
@@ -442,17 +472,18 @@ int main(int argc, char ** argv){
             //////////////////////////////////////////////////////////////////////////////////
             // We inform the master proc about the data we have
             //////////////////////////////////////////////////////////////////////////////////
+            printf("Inform other about leaves we have\n");
 
             FVector<ParticlesGroup> groups;
-            ParticleClass*const realParticles = new ParticleClass[myNbParticlesCounter];
+            ParticleClass*const realParticles = myNbParticlesCounter?new ParticleClass[myNbParticlesCounter]:0;
 
             int nbLeafs = 0;
-            int indexPart = 0;
 
             // we might now have any particles in our interval
             if(myNbParticlesCounter){
                 OctreeClass::Iterator octreeIterator(&treeInterval);
                 octreeIterator.gotoBottomLeft();
+                int indexPart = 0;
                 do{
                     ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
                     const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
@@ -568,8 +599,8 @@ int main(int argc, char ** argv){
                             //insert into tree
                             for(int idxPart = 0 ; idxPart < nbPartToRead ; ++idxPart){
                                 realTree.insert(rpart[idxPart]);
-                                const F3DPosition& particlePosition = rpart[idxPart].getPosition();
-                                std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                                //const F3DPosition& particlePosition = rpart[idxPart].getPosition();
+                                //std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
                             }
                         }
                     }
@@ -613,8 +644,8 @@ int main(int argc, char ** argv){
                         else{
                             for(int idxPart = 0 ; idxPart < nbPartToRead ; ++idxPart){
                                 realTree.insert(rpart[idxPart]);
-                                const F3DPosition& particlePosition = rpart[idxPart].getPosition();
-                                std::cout << "\t I receive (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                                //const F3DPosition& particlePosition = rpart[idxPart].getPosition();
+                                //std::cout << "\t I receive (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
                             }
                         }
                     }
@@ -630,7 +661,7 @@ int main(int argc, char ** argv){
                 for(int idxToRead = 0 ; idxToRead < nbLeafsToRead ; ++idxToRead){
                     int nbPartToRead(0);
                     app.receiveDataFromTag(sizeof(int), 0, &nbPartToRead);
-                    printf("%d I will receive %d particles\n",app.processId(), nbPartToRead);
+                    //printf("%d I will receive %d particles\n",app.processId(), nbPartToRead);
                     if(rpartSize < nbPartToRead){
                         rpartSize = nbPartToRead;
                         delete [] (reinterpret_cast<char*>(rpart));
@@ -640,8 +671,8 @@ int main(int argc, char ** argv){
                     app.receiveDataFromTag(nbPartToRead*sizeof(ParticleClass), 0, rpart);
                     for(int idxPart = 0 ; idxPart < nbPartToRead ; ++idxPart){
                         realTree.insert(rpart[idxPart]);
-                        const F3DPosition& particlePosition = rpart[idxPart].getPosition();
-                        std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                        //const F3DPosition& particlePosition = rpart[idxPart].getPosition();
+                        //std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
                     }
                 }
             }
@@ -650,7 +681,7 @@ int main(int argc, char ** argv){
                 printf("%d I need to receive from right\n",app.processId());
                 int nbLeafsToRead(0);
                 app.receiveDataFromTag(sizeof(int), 1, &nbLeafsToRead);
-                printf("%d I will receive from right %d\n",app.processId(), nbLeafsToRead);
+                //printf("%d I will receive from right %d\n",app.processId(), nbLeafsToRead);
                 for(int idxToRead = 0 ; idxToRead < nbLeafsToRead ; ++idxToRead){
                     int nbPartToRead(0);
                     app.receiveDataFromTag(sizeof(int), 1, &nbPartToRead);
@@ -664,26 +695,24 @@ int main(int argc, char ** argv){
                     app.receiveDataFromTag(nbPartToRead*sizeof(ParticleClass), 1, rpart);
                     for(int idxPart = 0 ; idxPart < nbPartToRead ; ++idxPart){
                         realTree.insert(rpart[idxPart]);
-                        const F3DPosition& particlePosition = rpart[idxPart].getPosition();
-                        std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                        //const F3DPosition& particlePosition = rpart[idxPart].getPosition();
+                        //std::cout << "\t I received (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
                     }
                 }
             }
 
-            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf,leftLeafs) - myLeftLeaf , FMath::Min(myRightLeaf,totalNbLeafs- rightLeafs) - myLeftLeaf);
+            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf-leftLeafs,0) , FMath::Min(myRightLeaf,totalNbLeafs- rightLeafs) - myLeftLeaf);
             // insert the particles we already have
-            for(int idxLeafInsert = FMath::Max(myLeftLeaf,leftLeafs) - myLeftLeaf ; idxLeafInsert < FMath::Min(myRightLeaf,totalNbLeafs- rightLeafs) - myLeftLeaf ; ++idxLeafInsert){
+            for(int idxLeafInsert = FMath::Max(myLeftLeaf-leftLeafs,0) ; idxLeafInsert < FMath::Min(myRightLeaf,totalNbLeafs- rightLeafs) - myLeftLeaf ; ++idxLeafInsert){
                 for(int idxPart = 0 ; idxPart < groups[idxLeafInsert].number ; ++idxPart){
                     realTree.insert(realParticles[groups[idxLeafInsert].positionInArray + idxPart]);
-                    const F3DPosition& particlePosition = realParticles[groups[idxLeafInsert].positionInArray + idxPart].getPosition();
-                    std::cout << "\t Position is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+                    //const F3DPosition& particlePosition = realParticles[groups[idxLeafInsert].positionInArray + idxPart].getPosition();
+                    //std::cout << "\t Position is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
                 }
             }
 
             delete [] reinterpret_cast<char*>(rpart);
         }
-
-
 
         app.processBarrier();
 
@@ -747,14 +776,15 @@ int main(int argc, char ** argv){
                        octreeIteratorValide.getCurrentListSrc()->getSize(), octreeIterator.getCurrentListSrc()->getSize() );
             }
 
-            printf("index %lld with %d particles\n", octreeIteratorValide.getCurrentGlobalIndex(), octreeIteratorValide.getCurrentListSrc()->getSize());
+            //printf("index %lld with %d particles\n", octreeIteratorValide.getCurrentGlobalIndex(), octreeIteratorValide.getCurrentListSrc()->getSize());
 
-            if(!octreeIterator.moveRight()){
-                printf("Error cannot test tree end to early\n");
+            if(!octreeIteratorValide.moveRight() && idxLeaf != myRightLeaf - 1){
+                printf("Error cannot valide tree end to early, idxLeaf %d myRightLeaf %d\n", idxLeaf, myRightLeaf);
                 break;
             }
-            if(!octreeIteratorValide.moveRight()){
-                printf("Error cannot valide tree end to early\n");
+
+            if(!octreeIterator.moveRight() && idxLeaf != myRightLeaf - 1){
+                printf("Error cannot test tree end to early, idxLeaf %d myRightLeaf %d\n", idxLeaf, myRightLeaf);
                 break;
             }
         }

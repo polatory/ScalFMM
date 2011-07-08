@@ -25,7 +25,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = FParameters::getValue(argc,argv,"-nb", 50000L);
+    const long NbParticles = FParameters::getValue(argc,argv,"-nb", 20000L);
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -74,13 +74,13 @@ int main(int argc, char ** argv){
     data[3] = 0.1;
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        /*data[0] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + XCenter - BoxWidth;
+        data[0] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + XCenter - BoxWidth;
         data[1] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + YCenter - BoxWidth;
-        data[2] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + ZCenter - BoxWidth;*/
+        data[2] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + ZCenter - BoxWidth;
 
-        data[0] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + XCenter - BoxWidth;
+        /*data[0] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + XCenter - BoxWidth;
         data[1] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + YCenter - BoxWidth;
-        data[2] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + ZCenter - BoxWidth;
+        data[2] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + ZCenter - BoxWidth;*/
 
         fwrite(&data, sizeof(FReal), 4, myfile);
     }

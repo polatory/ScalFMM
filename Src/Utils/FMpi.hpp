@@ -27,6 +27,7 @@ public:
 ////////////////////////////////////////////////////////
 // Use MPI
 ////////////////////////////////////////////////////////
+    typedef MPI_Request Request;
 
     FMpi(int inArgc, char **  inArgv ) {
         MPI_Init(&inArgc,&inArgv);
@@ -36,10 +37,33 @@ public:
         MPI_Finalize();
     }
 
+    void allgather(void* const sendbuf, const int sendcount, void* const recvbuf, const int recvcount, MPI_Datatype datatype = MPI_INT){
+        MPI_Allgather( sendbuf, sendcount, datatype, recvbuf, recvcount, datatype, MPI_COMM_WORLD);
+    }
+
     void sendData(const int inReceiver, const int inSize, void* const inData, const int inTag){
-        //MPI_Request request;
-        //MPI_Isend(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD, &request);
         MPI_Send(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD);
+    }
+
+    void isendData(const int inReceiver, const int inSize, void* const inData, const int inTag, MPI_Request*const request){
+        MPI_Isend(inData, inSize, MPI_CHAR , inReceiver, inTag, MPI_COMM_WORLD, request);
+    }
+
+    void iWait( MPI_Request*const request ){
+        MPI_Status status;
+        MPI_Wait(request, &status);
+    }
+
+    void iWaitall(MPI_Request requests[], const int count){
+        MPI_Status status[count];
+        MPI_Waitall(count, requests, status);
+    }
+
+    void waitMessage(int*const sender, int*const tag = 0, const int restrictsender = MPI_ANY_SOURCE, const int restricttag = MPI_ANY_TAG){
+        MPI_Status status;
+        MPI_Probe( restrictsender, restricttag, MPI_COMM_WORLD, &status );
+        if(sender) *sender = status.MPI_SOURCE;
+        if(tag) *tag = status.MPI_TAG;
     }
 
     void receiveData(const int inSize, void* const inData, int* const inSource = 0, int* const inTag = 0, int* const inFilledSize = 0){
@@ -133,10 +157,20 @@ public:
 ////////////////////////////////////////////////////////
 // Without MPI
 ////////////////////////////////////////////////////////
+    typedef int Request;
 
     FMpi(int inArgc, char **  inArgv ) {}
 
+    void allgather(void* const , const int , void* const , const int, MPI_Datatype = 0){
+    }
+
     void sendData(const int, const int, void* const, const int ){}
+
+    void isendData(const int , const int , void* const , const int , Request*const ){
+    }
+
+    void iWait( Request*const ){
+    }
 
     void receiveData(const int, void* const, int* const inSource = 0, int* const inTag = 0, int* const inFilledSize = 0){
         if(inSource) *inSource = 0;
