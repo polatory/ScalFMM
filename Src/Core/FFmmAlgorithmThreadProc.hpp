@@ -86,7 +86,7 @@ public:
         MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idPorcess(inApp.processId()),
         sendBuffer(0), OctreeHeight(tree->getHeight()) {
 
-        FAssertable::assert(tree, "tree cannot be null", __LINE__, __FILE__);
+        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -128,10 +128,10 @@ public:
         } while(octreeIterator.moveRight());
 
         iterArray = new typename OctreeClass::Iterator[leafs];
-        FAssertable::assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+        fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         previousIterArray = new typename OctreeClass::Iterator[leafs];
-        FAssertable::assert(previousIterArray, "previousIterArray bad alloc", __LINE__, __FILE__);
+        fassert(previousIterArray, "previousIterArray bad alloc", __LINE__, __FILE__);
 
         // init offsets
         for(int idxOff = 0 ; idxOff < OctreeHeight ; ++idxOff){

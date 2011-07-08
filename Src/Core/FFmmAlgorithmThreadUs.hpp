@@ -51,7 +51,7 @@ public:
                       : tree(inTree), kernels(0), iterArray(0),
                         MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()) {
 
-        FAssertable::assert(tree, "tree cannot be null", __LINE__, __FILE__);
+        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -84,7 +84,7 @@ public:
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
         iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-        FAssertable::assert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+        fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread]->init();

@@ -30,7 +30,7 @@ public:
     void push(const ParticleClass& particle){
         if(particle.isTarget()) this->targets.push(particle);
         else if(particle.isSource()) this->sources.push(particle);
-        else FAssertable::assert(false, "Error particle has undefined type.", __LINE__, __FILE__);
+        else fassert(false, "Error particle has undefined type.", __LINE__, __FILE__);
     }
 
     /**

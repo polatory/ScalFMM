@@ -191,8 +191,8 @@ public:
             */
             Iterator(FOctree* const inTarget)
                     : currentLocalIndex(0) , currentLocalLevel(0) {
-                FAssertable::assert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
-                FAssertable::assert(inTarget->root.getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
+                fassert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
+                fassert(inTarget->root.getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
 
                 // Start by the root
                 this->current.tree = &inTarget->root;

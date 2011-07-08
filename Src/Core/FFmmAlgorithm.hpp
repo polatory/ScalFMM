@@ -39,8 +39,8 @@ public:
     FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
-        FAssertable::assert(tree, "tree cannot be null", __LINE__, __FILE__);
-        FAssertable::assert(kernels, "kernels cannot be null", __LINE__, __FILE__);
+        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+        fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithm\n");
     }

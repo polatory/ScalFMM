@@ -133,13 +133,13 @@ public:
                         subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ), isLeafSubtree(inIsLeafSubtree) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
-        FAssertable::assert(this->cells, "Allocation failled", __LINE__, __FILE__);
+        fassert(this->cells, "Allocation failled", __LINE__, __FILE__);
 
         // We start at a sub-level - 8^1
         long cellsAtlevel = 8;
         for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
             this->cells[indexLevel] = new CellClass*[cellsAtlevel];
-            FAssertable::assert(this->cells[indexLevel], "Allocation failled", __LINE__, __FILE__);
+            fassert(this->cells[indexLevel], "Allocation failled", __LINE__, __FILE__);
 
             for( int indexCells = 0 ; indexCells < cellsAtlevel ; ++indexCells ){
                 this->cells[indexLevel][indexCells] = 0;
@@ -212,7 +212,7 @@ public:
       * @param level the level to access cells array (must be < subOctreeHeight)
       * @return cells[level] */
     CellClass** cellsAt(const int level) const{
-        FAssertable::assert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
+        fassert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
         return cells[level];
     }
 
@@ -294,7 +294,7 @@ public:
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
         this->leafs = new LeafClass*[cellsAtLeafLevel];
-        FAssertable::assert(this->leafs, "Allocation failled", __LINE__, __FILE__);
+        fassert(this->leafs, "Allocation failled", __LINE__, __FILE__);
 
         for( long indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
             this->leafs[indexLeaf] = 0;
@@ -406,7 +406,7 @@ public:
 
         const long cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
         this->subleafs = new FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>*[cellsAtLeafLevel];
-        FAssertable::assert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
+        fassert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
 
         for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
             this->subleafs[indexLeaf] = 0;

@@ -29,12 +29,12 @@ protected:
 	* @param inLinePosition line number
 	* @param inFilePosition file name
 	*
-        * <code> FAssertable::assert(toto == titi, "problem : toto is not equal titi!", __LINE__, __FILE__); </code>
+        * <code> fassert(toto == titi, "problem : toto is not equal titi!", __LINE__, __FILE__); </code>
 	*
 	* To prevent use from multiple thread we use a ostringstream before printing
 	*/
 	template <class Tmess, class Tline, class Tfile>
-        void assert(const bool inTest, const Tmess& inMessage, const Tline& inLinePosition, const Tfile& inFilePosition, const int inExitCode = 1) const {
+        void fassert(const bool inTest, const Tmess& inMessage, const Tline& inLinePosition, const Tfile& inFilePosition, const int inExitCode = 1) const {
 		if(!inTest){
                         std::ostringstream oss;
 			oss << "Error in " << inFilePosition << " at line " << inLinePosition <<" :\n";
