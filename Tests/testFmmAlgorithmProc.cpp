@@ -249,18 +249,64 @@ struct ParticlesGroup {
 };
 
 
+typedef TestParticle               ParticleClass;
+typedef FTestCellPar               CellClass;
+typedef FVector<ParticleClass>     ContainerClass;
+
+typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+
+typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassProc;
+
+
+struct IndexedParticle{
+    MortonIndex index;
+    ParticleClass particle;
+};
+
+long getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
+        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
+        const long index = FMath::dfloor(indexFReal);
+        if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * index ) ){
+                return index - 1;
+        }
+        return index;
+}
+
+long partition(IndexedParticle arr[], const long left, const long right) {
+    long i = left, j = right;
+    IndexedParticle tmp;
+    IndexedParticle pivot = arr[(left + right) / 2];
+    /* partition */
+    while (i <= j) {
+        while (arr[i].index < pivot.index)
+            i++;
+        while (arr[j].index > pivot.index)
+            j--;
+        if (i <= j) {
+            tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+            i++;
+            j--;
+        }
+    }
+    return j;
+}
+void quick_sort(IndexedParticle arr[], const long left, const long right){
+    /* recursion */
+    long part_index = partition(arr, left, right);
+    if (left < part_index)
+        quick_sort(arr, left, part_index);
+    if (part_index + 1 < right)
+        quick_sort(arr, part_index + 1, right);
+}
+
+
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef TestParticle               ParticleClass;
-    typedef FTestCellPar               CellClass;
-    typedef FVector<ParticleClass>     ContainerClass;
-
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
-
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-    typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassProc;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -303,14 +349,34 @@ int main(int argc, char ** argv){
             FVector<ParticlesGroup> groups;
             ParticleClass*const realParticles = reinterpret_cast<ParticleClass*>(new char[loader.getNumberOfParticles() * sizeof(ParticleClass)]);
 
-            OctreeClass sortingTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
             //////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////
 
-            std::cout << "Inserting particles ..." << std::endl;
+
+            std::cout << "Inserting & Sorting my particles ..." << std::endl;
             counter.tic();
+
             {
+                IndexedParticle*const realParticlesIndexed = reinterpret_cast<IndexedParticle*>(new char[loader.getNumberOfParticles() * sizeof(ParticleClass)]);
+                F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
+                FTreeCoordinate host;
+                const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / (2 << (NbLevels - 1) );
+                for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+                    loader.fillParticle(realParticlesIndexed[idxPart].particle);
+                    host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
+                    host.setY( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
+                    host.setZ( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+                    realParticlesIndexed[idxPart].index = host.getMortonIndex(NbLevels - 1);
+                }
+
+                quick_sort(realParticlesIndexed,0,loader.getNumberOfParticles()-1);
+
+                delete [] reinterpret_cast<char*>(realParticlesIndexed);
+            }
+
+            /*{
+                OctreeClass sortingTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
                 ParticleClass particle;
                 for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
@@ -318,34 +384,36 @@ int main(int argc, char ** argv){
                     //printf("%f %f %f\n",particle.getPosition().getX(),particle.getPosition().getY(),particle.getPosition().getZ());
                     sortingTree.insert(particle);
                 }
-            }
+
+                //////////////////////////////////////////////////////////////////////////////////
+                //////////////////////////////////////////////////////////////////////////////////
+                int indexPart = 0;
+
+                OctreeClass::Iterator octreeIterator(&sortingTree);
+                octreeIterator.gotoBottomLeft();
+                do{
+                    ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+                    const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
+
+                    groups.push(ParticlesGroup(octreeIterator.getCurrentListTargets()->getSize(),indexPart, indexAtThisLeaf));
+
+                    while( iter.hasNotFinished() ){
+                        realParticles[indexPart] = iter.data();
+
+                        //std::cout << "Particles with index " << indexPart << " has a morton index of " << indexAtThisLeaf << std::endl;
+
+                        //const F3DPosition& particlePosition = realParticles[indexPart].getPosition();
+                        //std::cout << "\t The real position of this particle is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
+
+                        ++indexPart;
+                        iter.gotoNext();
+                    }
+                } while(octreeIterator.moveRight());
+
+            }*/
+
             counter.tac();
             std::cout << "Done  " << "(@Creating and Inserting Temporary Particles = " << counter.elapsed() << "s)." << std::endl;
-
-            //////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////
-            int indexPart = 0;
-
-            OctreeClass::Iterator octreeIterator(&sortingTree);
-            octreeIterator.gotoBottomLeft();
-            do{
-                ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-                const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
-
-                groups.push(ParticlesGroup(octreeIterator.getCurrentListTargets()->getSize(),indexPart, indexAtThisLeaf));
-
-                while( iter.hasNotFinished() ){
-                    realParticles[indexPart] = iter.data();
-
-                    //std::cout << "Particles with index " << indexPart << " has a morton index of " << indexAtThisLeaf << std::endl;
-
-                    //const F3DPosition& particlePosition = realParticles[indexPart].getPosition();
-                    //std::cout << "\t The real position of this particle is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
-
-                    ++indexPart;
-                    iter.gotoNext();
-                }
-            } while(octreeIterator.moveRight());
 
 
             //////////////////////////////////////////////////////////////////////////////////
