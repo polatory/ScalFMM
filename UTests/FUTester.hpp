@@ -124,7 +124,7 @@ protected:
 	*/
 	template <class T>
         void equal(const T& v1, const T& v2){
-		assert(v1 == v2);
+                assert(v1 == v2);
 	}
 	
 	/**
@@ -135,7 +135,7 @@ protected:
 	*/
 	template <class T>
         void different(const T& v1, const T& v2){
-		assert(v1 != v2);
+                assert(v1 != v2);
 	}
 	
 public :

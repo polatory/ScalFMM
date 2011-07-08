@@ -39,7 +39,7 @@ template <int Capacity>
 public:
     // Constructor, set buffer to null
     FBufferVector() : buffer(0), occuped(0) {
-        assert(Capacity > 0, "Capacity has to be positive", __LINE__, __FILE__);
+        FAssertable::assert(Capacity > 0, "Capacity has to be positive", __LINE__, __FILE__);
     }
 
     // Dealloc buffer if needed
