@@ -4,6 +4,7 @@
 
 #include "FAbstractKernels.hpp"
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/FTrace.hpp"
 
 /**

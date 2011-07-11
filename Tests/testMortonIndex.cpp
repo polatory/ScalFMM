@@ -26,7 +26,7 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
-
+#include "../Src/Utils/FGlobal.hpp"
 
 #include "../Src/Files/FHLoader.hpp"
 

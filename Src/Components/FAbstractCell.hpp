@@ -2,6 +2,7 @@
 #define FABSTRACTCELL_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)

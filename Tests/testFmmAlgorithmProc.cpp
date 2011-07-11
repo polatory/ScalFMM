@@ -6,6 +6,7 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 #include "../Src/Utils/FParameters.hpp"
+#include "../Src/Utils/FGlobal.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 

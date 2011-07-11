@@ -2,6 +2,7 @@
 #define FFMMALGORITHM_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FDebug.hpp"
 #include "../Utils/FTrace.hpp"
