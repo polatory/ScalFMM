@@ -264,7 +264,6 @@ public:
 
                 // sort QsLocal part of the array
                 const PivotType pivot = (PivotType(array[startIndex]) + PivotType(array[endIndex]) )/2;
-                printf("pivot %lld\n",pivot);
                 OmpBarrier( mutex, firstProc, lastProc, myThreadId);
 
                 QsLocal(array, pivot, myLeft, myRight, fixes[myThreadId].pre, fixes[myThreadId].suf);
@@ -413,7 +412,7 @@ public:
                         sendToProc = fixes[currentRank].suf - sent;
                     }
 
-                    mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], sendToProc, MPI_LONG_LONG , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     sent += sendToProc;
                 }
             }
@@ -435,7 +434,7 @@ public:
                         sendToProc = fixes[currentRank].pre - sent;
                     }
 
-                    mpiassert( MPI_Isend(&outputArray[sent], sendToProc, MPI_LONG_LONG , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    mpiassert( MPI_Isend(&outputArray[sent], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     sent += sendToProc;
                 }
             }
@@ -470,7 +469,7 @@ public:
                     const int firstIndex = Max(myLeft , (long int) fixesSum[idxProc].pre );
                     const int endIndex = Min((long int)fixesSum[idxProc + 1].pre,  myRightLimit);
 
-                    mpiassert( MPI_Irecv(&buffer[indexArray], endIndex - firstIndex, MPI_LONG_LONG, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
@@ -504,7 +503,7 @@ public:
                     const int firstIndex = Max(myLeft , (long int)fixesSum[idxProc].suf );
                     const int endIndex = Min((long int)fixesSum[idxProc + 1].suf,  myRightLimit);
 
-                    mpiassert( MPI_Irecv(&buffer[indexArray], endIndex - firstIndex, MPI_LONG_LONG, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }

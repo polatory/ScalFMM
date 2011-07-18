@@ -826,16 +826,18 @@ int main(int argc, char ** argv){
                 }
             }
 
-            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf-leftLeafs,0) , FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs - rightLeafs) - myLeftLeaf);
+            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf-leftLeafs,0) , FMath::Min(nbLeafs , FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs - rightLeafs) - myLeftLeaf));
             printf("myLeftLeaf %d leftLeafs %d myRightLeaf %d rightLeafs %d totalNbLeafs %d\n",myLeftLeaf,leftLeafs, myRightLeaf, rightLeafs, totalNbLeafs);
             // insert the particles we already have
             if(leftLeafs != totalNbLeafs){
-                for(int idxLeafInsert = FMath::Max(myLeftLeaf-leftLeafs,0) ; idxLeafInsert < FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs- rightLeafs) - myLeftLeaf ; ++idxLeafInsert){
+                for(int idxLeafInsert = FMath::Max(myLeftLeaf-leftLeafs,0) ; idxLeafInsert < FMath::Min(nbLeafs , FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs - rightLeafs) - myLeftLeaf) ; ++idxLeafInsert){
                     for(int idxPart = 0 ; idxPart < groups[idxLeafInsert].number ; ++idxPart){
                         realTree.insert(realParticles[groups[idxLeafInsert].positionInArray + idxPart]);
                     }
                 }
             }
+
+            printf("Done\n");
 
             delete [] reinterpret_cast<char*>(rpart);
         }
