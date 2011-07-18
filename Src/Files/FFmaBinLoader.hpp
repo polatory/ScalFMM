@@ -44,30 +44,32 @@ protected:
     FReal boxWidth;              //< the box width read from file
     int nbParticles;             //< the number of particles read from file
 
+    int removeWarning;
+
 public:
     /**
     * The constructor need the file name
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling hasNotFinished()
     */
-    FFmaBinLoader(const char* const filename): file(fopen(filename, "rb")){
+    FFmaBinLoader(const char* const filename): file(fopen(filename, "rb")), removeWarning(0) {
         // test if open
         if(this->file != NULL) {
             int sizeOfElement(0);
-            fread(&sizeOfElement, sizeof(int), 1, file);
+            removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
             FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
                 FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     printf("%d sizeofelement\n",sizeOfElement);
             FDEBUG(})
-            fread(&this->nbParticles, sizeof(int), 1, file);
+            removeWarning += fread(&this->nbParticles, sizeof(int), 1, file);
 
-            fread(&this->boxWidth, sizeof(FReal), 1, file);
+            removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
             this->boxWidth *= 2;
 
             FReal x,y,z;
-            fread(&x, sizeof(FReal), 1, file);
-            fread(&y, sizeof(FReal), 1, file);
-            fread(&z, sizeof(FReal), 1, file);
+            removeWarning += fread(&x, sizeof(FReal), 1, file);
+            removeWarning += fread(&y, sizeof(FReal), 1, file);
+            removeWarning += fread(&z, sizeof(FReal), 1, file);
             this->centerOfBox.setPosition(x,y,z);
         }
         else {
@@ -123,10 +125,10 @@ public:
     void fillParticle(ParticleClass& inParticle){
         FReal x,y,z,data;
 
-        fread(&x, sizeof(FReal), 1, file);
-        fread(&y, sizeof(FReal), 1, file);
-        fread(&z, sizeof(FReal), 1, file);
-        fread(&data, sizeof(FReal), 1, file);
+        removeWarning += fread(&x, sizeof(FReal), 1, file);
+        removeWarning += fread(&y, sizeof(FReal), 1, file);
+        removeWarning += fread(&z, sizeof(FReal), 1, file);
+        removeWarning += fread(&data, sizeof(FReal), 1, file);
 
         inParticle.setPosition(x,y,z);
         inParticle.setPhysicalValue(data);
