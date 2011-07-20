@@ -190,6 +190,21 @@ public:
             return this->array[inPosition];
     }
 
+    /** To get the entire array
+      * @return the array allocated by the vector
+      */
+    T* data(){
+        return this->array;
+    }
+
+    /** To get the entire array
+      * @return the array allocated by the vector
+      */
+    const T* data() const{
+        return this->array;
+    }
+
+
     /** This class is a basic iterator
       * <code>
       *  typename FVector<int>::ConstBasicIterator iter(myVector);<br>

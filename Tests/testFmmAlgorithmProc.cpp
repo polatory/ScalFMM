@@ -212,34 +212,6 @@ void print(OctreeClass* const valideTree){
     }
 }
 
-class MyFackParticle : public FBasicParticle {
-    int myIndex;
-public:
-    MyFackParticle() : myIndex(0) {
-    }
-    void setIndex(const int inIndex){
-        this->myIndex = inIndex;
-    }
-    int getIndex() const{
-        return this->myIndex;
-    }
-};
-
-// My leaf store the indexes of the particles it receives
-// in a vector
-class MyLeaf : public FAbstractLeaf<MyFackParticle, FVector<int> > {
-    FVector<int> indexes;
-public:
-    void push(const MyFackParticle& particle){
-        indexes.push( particle.getIndex() );
-    }
-    FVector<int>* getSrc(){
-        return &indexes;
-    }
-    FVector<int>* getTargets(){
-        return &indexes;
-    }
-};
 
 struct ParticlesGroup {
     int number;
