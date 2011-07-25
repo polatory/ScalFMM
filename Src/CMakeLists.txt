@@ -47,7 +47,7 @@ FOREACH(my_dir ${my_include_dirs})
 	 	hpp_in_dir
 		${my_dir}/*.hpp
 	)
-	INSTALL( FILES ${hpp_in_dir} DESTINATION include/${my_dir} )
+	INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/${my_dir} )
 ENDFOREACH()
-INSTALL( FILES "${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/Utils/${my_dir} )
+INSTALL( FILES "${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/ScalFmm/Utils/${my_dir} )
 
