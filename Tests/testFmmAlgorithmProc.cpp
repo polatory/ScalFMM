@@ -892,7 +892,6 @@ int main(int argc, char ** argv){
 
 
     }
-    return 0;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -905,8 +904,8 @@ int main(int argc, char ** argv){
     FmmClassProc algo(app,&realTree,&kernels);
     algo.execute();
 
-    FmmClass algoValide(&treeValide,&kernels);
-    algoValide.execute();
+    ///FmmClass algoValide(&treeValide,&kernels);
+    ///algoValide.execute();
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -914,7 +913,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgoProc<OctreeClass,ContainerClass,FmmClassProc>(&realTree,&treeValide,&algo);
+    ///ValidateFMMAlgoProc<OctreeClass,ContainerClass,FmmClassProc>(&realTree,&treeValide,&algo);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

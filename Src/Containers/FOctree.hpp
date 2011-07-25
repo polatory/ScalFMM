@@ -113,6 +113,21 @@ public:
             return this->height;
         }
 
+        /** To get the tree subheight */
+        int getSubHeight() const{
+            return this->subHeight;
+        }
+
+        /** To get the box width */
+        FReal getBoxWidth() const{
+            return this->boxWidth;
+        }
+
+        /** To get the center of the box */
+        const F3DPosition& getBoxCenter() const{
+            return this->boxCenter;
+        }
+
 	/**
 	* Insert a particle on the tree
 	* algorithm is :
