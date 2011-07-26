@@ -10,7 +10,6 @@
 
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
-#include "../Containers/FBufferVector.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -59,8 +58,8 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
         MortonIndex max;
     };
     Interval*const intervals;
-    Interval*const intervalsPerLevel;
     Interval*const realIntervalsPerLevel;
+    Interval*const workingIntervalsPerLevel;
 
 
     static void mpiassert(const int test, const unsigned line, const char* const message = 0){
@@ -87,8 +86,8 @@ public:
             : app(inApp), tree(inTree) , kernels(0), numberOfLeafs(0),
             MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idProcess(inApp.processId()),
             OctreeHeight(tree->getHeight()),intervals(new Interval[inApp.processCount()]),
-            intervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]),
-            realIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]){
+            realIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]),
+            workingIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]){
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -109,8 +108,8 @@ public:
         delete [] this->kernels;
 
         delete [] intervals;
-        delete [] intervalsPerLevel;
         delete [] realIntervalsPerLevel;
+        delete [] workingIntervalsPerLevel;
     }
 
     /**
@@ -137,26 +136,22 @@ public:
         for(int idxLevel = 0 ; idxLevel < OctreeHeight ; ++idxLevel){
             const int offset = idxLevel * nbProcess;
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                intervalsPerLevel[offset + idxProc].max = intervals[idxProc].max >> (3 * (OctreeHeight - idxLevel - 1));
-                intervalsPerLevel[offset + idxProc].min = intervals[idxProc].min >> (3 * (OctreeHeight - idxLevel - 1));
+                realIntervalsPerLevel[offset + idxProc].max = intervals[idxProc].max >> (3 * (OctreeHeight - idxLevel - 1));
+                realIntervalsPerLevel[offset + idxProc].min = intervals[idxProc].min >> (3 * (OctreeHeight - idxLevel - 1));
             }
 
-            realIntervalsPerLevel[offset + 0] = intervalsPerLevel[offset + 0];
+            workingIntervalsPerLevel[offset + 0] = realIntervalsPerLevel[offset + 0];
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc){
-                realIntervalsPerLevel[offset + idxProc].min = FMath::Max( intervalsPerLevel[offset + idxProc].min,
-                                                                          intervalsPerLevel[offset + idxProc - 1].max + 1);
-                realIntervalsPerLevel[offset + idxProc].max = intervalsPerLevel[offset + idxProc].max;
+                workingIntervalsPerLevel[offset + idxProc].min = FMath::Max( realIntervalsPerLevel[offset + idxProc].min,
+                                                                          realIntervalsPerLevel[offset + idxProc - 1].max + 1);
+                workingIntervalsPerLevel[offset + idxProc].max = realIntervalsPerLevel[offset + idxProc].max;
             }
         }
 
         // run;
-        preP2P();
-
         bottomPass();
 
         upwardPass();
-
-        return;
 
         downardPass();
 
@@ -169,149 +164,6 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
-    void preP2P(){
-        // Copy leafs
-        {
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            int idxLeaf = 0;
-            do{
-                this->iterArray[idxLeaf++] = octreeIterator;
-            } while(octreeIterator.moveRight());
-        }
-
-        printf("Prepare P2P\n");
-
-        // Box limite
-        const long limite = 1 << (this->OctreeHeight - 1);
-        // pointer to send
-        typename OctreeClass::Iterator* toSend[nbProcess];
-        memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess );
-        int sizeToSend[nbProcess];
-        memset(sizeToSend, 0, sizeof(int) * nbProcess);
-        // index
-        int indexToSend[nbProcess];
-        memset(indexToSend, 0, sizeof(int) * nbProcess);
-
-        // To know if a leaf has been already sent to a proc
-        bool alreadySent[nbProcess];
-
-        for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf){
-            FTreeCoordinate center;
-            center.setPositionFromMorton(iterArray[idxLeaf].getCurrentGlobalIndex(), OctreeHeight - 1);
-
-            memset(alreadySent, false, sizeof(bool) * nbProcess);
-
-            // We test all cells around
-            for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-                if(!FMath::Between(center.getX() + idxX,0l,limite)) continue;
-
-                for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                    if(!FMath::Between(center.getY() + idxY,0l,limite)) continue;
-
-                    for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                        if(!FMath::Between(center.getZ() + idxZ,0l,limite)) continue;
-
-                        // if we are not on the current cell
-                        if( !(!idxX && !idxY && !idxZ) ){
-                            const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                            const MortonIndex mortonOther = other.getMortonIndex(this->OctreeHeight - 1);
-
-                            if(mortonOther < intervals[idProcess].min || intervals[idProcess].max < mortonOther){
-                                // find the proc that need this information
-                                int procToReceive = idProcess;
-                                while( procToReceive != 0 && mortonOther < intervals[procToReceive].min){
-                                    --procToReceive;
-                                }
-                                while( procToReceive != nbProcess - 1 && intervals[procToReceive].max < mortonOther){
-                                    ++procToReceive;
-                                }
-
-                                if( !alreadySent[procToReceive] && intervals[procToReceive].min <= mortonOther && mortonOther <= intervals[procToReceive].max){
-                                    alreadySent[procToReceive] = true;
-                                    if(indexToSend[procToReceive] ==  sizeToSend[procToReceive]){
-                                        const int previousSize = sizeToSend[procToReceive];
-                                        sizeToSend[procToReceive] = FMath::Max(50, int(sizeToSend[procToReceive] * 1.5));
-                                        typename OctreeClass::Iterator* temp = toSend[procToReceive];
-                                        toSend[procToReceive] = reinterpret_cast<typename OctreeClass::Iterator*>(new char[sizeof(typename OctreeClass::Iterator) * sizeToSend[procToReceive]]);
-                                        memcpy(toSend[procToReceive], temp, previousSize * sizeof(typename OctreeClass::Iterator));
-                                        delete[] reinterpret_cast<char*>(temp);
-                                    }
-                                    toSend[procToReceive][indexToSend[procToReceive]++] = iterArray[idxLeaf];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        int globalReceiveMap[nbProcess * nbProcess];
-        memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
-
-        mpiassert( MPI_Allgather( indexToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
-
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            printf("indexToSend[%d] = %d\n", idxProc, indexToSend[idxProc]);
-        }
-
-        printf("Will send ...\n");
-
-        // To send in asynchrone way
-        MPI_Request requests[2 * nbProcess];
-        int iterRequest = 0;
-
-        ParticleClass* sendBuffer[nbProcess];
-        memset(sendBuffer, 0, sizeof(ParticleClass*) * nbProcess);        
-
-        ParticleClass* recvBuffer[nbProcess];
-        memset(recvBuffer, 0, sizeof(ParticleClass*) * nbProcess);
-
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            if(indexToSend[idxProc] != 0){
-                printf("Send %d to %d\n", indexToSend[idxProc], idxProc);
-                sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * indexToSend[idxProc]]);
-
-                int currentIndex = 0;
-                for(int idxLeaf = idxProc ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
-                    memcpy(&sendBuffer[idxProc][currentIndex], toSend[idxProc][idxLeaf].getCurrentListSrc()->data(),
-                           sizeof(ParticleClass) * toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize() );
-                    currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
-                }
-
-                mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * indexToSend[idxProc] , MPI_BYTE ,
-                                     idxProc, TAG_P2P_PART, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
-
-            }
-            if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                printf("Receive %d from %d\n", globalReceiveMap[idxProc * nbProcess + idProcess], idxProc);
-                recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
-
-                mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
-                                    idxProc, TAG_P2P_PART, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
-            }
-        }
-
-        printf("Wait ...\n");
-        MPI_Waitall(iterRequest, requests, 0);
-
-        printf("Put data in the tree\n");
-        OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
-                otherP2Ptree.insert(recvBuffer[idxProc][idxPart]);
-            }
-        }
-
-
-        printf("Delete array\n");
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            delete [] reinterpret_cast<char*>(sendBuffer[idxProc]);
-            delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
-            delete [] reinterpret_cast<char*>(toSend[idxProc]);
-        }
-        printf("p2p is finished\n");
-    }
 
     /////////////////////////////////////////////////////////////////////////////
     // Utils functions
@@ -397,28 +249,22 @@ public:
         octreeIterator.moveUp();
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        int previousLeftProc = idProcess;
-        bool getWork = true;
+        int sendToProc = idProcess;
 
-        MPI_Status status[nbProcess];
-        MPI_Request requests[nbProcess];
-        int received[nbProcess];
-        memset(received, 0, sizeof(int) * nbProcess);
+        MPI_Request requests[14];
 
-        char* buffer[nbProcess];
-        memset(buffer, 0, sizeof(char*) * nbProcess);
+        KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
 
-        int sizeBuffer[nbProcess];
-        memset(sizeBuffer, 0, sizeof(int) * nbProcess);
+        const int recvBufferOffset = 8 * sizeof(CellClass) + 1;
+        char sendBuffer[recvBufferOffset];
+        char recvBuffer[nbProcess * recvBufferOffset];
 
         // for each levels
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 && getWork ; --idxLevel ){
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             // We do not touche cells that we are not responsible
-            while( octreeIterator.getCurrentGlobalIndex() < (realIntervalsPerLevel[(idxLevel + 1) * nbProcess + idProcess].min >>3) && (getWork = octreeIterator.moveRight()) ){}
-            if(!getWork) continue;
             printf("at level %d I go from %lld to %lld and the previous level >> 3 min %lld\n",
-                   idxLevel,realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min,
-                   realIntervalsPerLevel[idxLevel * nbProcess + idProcess].max ,realIntervalsPerLevel[(idxLevel + 1) * nbProcess + idProcess].min >>3);
+                   idxLevel,workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min,
+                   workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max ,workingIntervalsPerLevel[(idxLevel + 1) * nbProcess + idProcess].min >>3);
 
             // copy cells to work with
             int numberOfCells = 0;
@@ -429,108 +275,97 @@ public:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
 
-            int needToSend = 0;
             int iterRequests = 0;
+            bool cellsToSend = false;
 
             // find cells to send
-            if(idProcess != 0){
-                while( needToSend < numberOfCells && iterArray[needToSend].getCurrentGlobalIndex() < realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min ){
-                    ++needToSend;
+            if(idProcess != 0
+                    && iterArray[0].getCurrentGlobalIndex() < workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                cellsToSend = true;
+                char state = 0;
+                int idxBuff = 1;
+
+                const CellClass* const* const child = iterArray[0].getCurrentChild();
+                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                    if( child[idxChild] ){
+                        memcpy(&sendBuffer[idxBuff], child[idxChild], sizeof(CellClass));
+                        idxBuff += sizeof(CellClass);
+                        state |= (0x1 << idxChild);
+                    }
                 }
-                if(needToSend){
-                    // find the proc to send the data to
-                    while(previousLeftProc != 0 && this->intervals[idxLevel * nbProcess + previousLeftProc - 1].max <= iterArray[needToSend].getCurrentGlobalIndex() ){
-                        --previousLeftProc;
-                    }
+                sendBuffer[0] = state;
 
-                    if(sizeBuffer[previousLeftProc] < int((sizeof(CellClass) * 8 + sizeof(MortonIndex) + 1) * needToSend) ){
-                        sizeBuffer[previousLeftProc] = (sizeof(CellClass) * 8 + sizeof(MortonIndex) + 1) * needToSend;
-                        delete[] buffer[previousLeftProc];
-                        buffer[previousLeftProc] = new char[ sizeBuffer[previousLeftProc] ];
-                    }
-
-                    int cellStartIndex = 0;
-
-                    for(int idxCell = 0 ; idxCell < needToSend ; ++idxCell){
-                        int cellIndex = cellStartIndex + 1;
-
-                        const MortonIndex currentIndex = iterArray[idxCell].getCurrentGlobalIndex();
-                        memcpy(&buffer[previousLeftProc][cellIndex], &currentIndex , sizeof(MortonIndex));
-                        cellIndex += sizeof(MortonIndex);
-
-                        CellClass** const child = iterArray[idxCell].getCurrentChild();
-                        char state = 0x0;
-                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                            if(child[idxChild]){
-                                state |= (1 << idxChild);
-                                memcpy(&buffer[previousLeftProc][cellIndex], child[idxChild], sizeof(CellClass));
-                                cellIndex += sizeof(CellClass);
-                            }
-                        }
-                        buffer[previousLeftProc][cellStartIndex] = state;
-                        cellStartIndex = cellIndex;
-                    }
-
-                    printf("I send %d bytes to proc id %d \n", cellStartIndex, previousLeftProc);
-                    MPI_Isend(buffer[previousLeftProc], cellStartIndex, MPI_BYTE, previousLeftProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                while( sendToProc && iterArray[0].getCurrentGlobalIndex() < workingIntervalsPerLevel[idxLevel * nbProcess + sendToProc].min){
+                    --sendToProc;
                 }
+
+                printf("I send %d bytes to proc id %d \n", idxBuff, sendToProc);
+                MPI_Isend(sendBuffer, idxBuff, MPI_BYTE, sendToProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
             }
 
 
+            bool hasToReceive = false;
             int firstProcThatSend = idProcess + 1;
             int endProcThatSend = firstProcThatSend;
-            MortonIndex indexUntilToRecv = realIntervalsPerLevel[idxLevel * nbProcess + idProcess].max;
 
             if(idProcess != nbProcess - 1){
                 while(firstProcThatSend < nbProcess &&
-                      (intervalsPerLevel[(idxLevel+1) * nbProcess + firstProcThatSend].max >> 3) <= realIntervalsPerLevel[idxLevel * nbProcess + idProcess].max ){
+                      workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].max < workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].min ){
                     ++firstProcThatSend;
                 }
                 endProcThatSend = firstProcThatSend;
                 while( endProcThatSend < nbProcess &&
-                        (realIntervalsPerLevel[(idxLevel+1) * nbProcess + endProcThatSend].min >> 3) <= intervalsPerLevel[idxLevel * nbProcess + idProcess].max){
+                        realIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].min == workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max){
                     ++endProcThatSend;
                 }
                 if(firstProcThatSend != endProcThatSend){
-                    indexUntilToRecv = realIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].max;
+                    hasToReceive = true;
 
                     for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-
-                        const int maxToReceive = FMath::Min(realIntervalsPerLevel[idxLevel * nbProcess + idProcess].max,realIntervalsPerLevel[(idxLevel+1) * nbProcess + idxProc].max >> 3)
-                                                - (realIntervalsPerLevel[(idxLevel+1) * nbProcess + idxProc].min >> 3) + 1;
-
-                        if(sizeBuffer[idxProc] < int((sizeof(CellClass) * 8 + sizeof(MortonIndex) + 1) * maxToReceive) ){
-                            sizeBuffer[idxProc] = (sizeof(CellClass) * 8 + sizeof(MortonIndex) + 1) * maxToReceive;
-                            delete[] buffer[idxProc];
-                            buffer[idxProc] = new char[ sizeBuffer[idxProc] ];
-                        }
-
-                        printf("I irecv max %d bytes from proc id %d \n", sizeBuffer[idxProc], idxProc);
-                        MPI_Irecv(buffer[idxProc], sizeBuffer[idxProc], MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                        printf("I irecv from proc id %d \n", idxProc);
+                        MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
                 }
             }
 
-            printf("level %d I need to send %d, need to receive from %d procs\n",idxLevel, needToSend, endProcThatSend - firstProcThatSend);
-
-            KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-            int idxCell = needToSend;
-            for( ; idxCell < numberOfCells && iterArray[idxCell].getCurrentGlobalIndex() <= indexUntilToRecv ; ++idxCell){
+            for( int idxCell = cellsToSend ; idxCell < (hasToReceive?numberOfCells-1:numberOfCells) ; ++idxCell){
                 myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
             }
 
-            if(iterRequests) MPI_Waitall( iterRequests, requests, status);
+            if(iterRequests){
+                MPI_Waitall( iterRequests, requests, 0);
 
-            int statusIter = (needToSend ? 1 : 0);
-            for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
-                MPI_Get_count( &status[statusIter++], MPI_BYTE, &received[idxProc]);
-                printf("Has received %d from %d\n", received[idxProc], idxProc);
+                if( hasToReceive ){
+                    CellClass* currentChild[8];
+                    memcpy(currentChild, iterArray[numberOfCells - 1].getCurrentChild(), 8 * sizeof(CellClass*));
+
+                    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
+                        char state = recvBuffer[idxProc * recvBufferOffset];
+
+                        int position = 0;
+                        int bufferIndex = 1;
+                        while( state && position < 8){
+                            while(!(state & 0x1)){
+                                state >>= 1;
+                                ++position;
+                            }
+
+                            fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
+                            currentChild[position] = (CellClass*) &recvBuffer[idxProc * recvBufferOffset + bufferIndex];
+                            bufferIndex += sizeof(CellClass);
+
+                            state >>= 1;
+                            ++position;
+                        }
+                    }
+
+                    printf("Before M2M\n");
+                    myThreadkernels.M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
+                    printf("After M2M\n");
+                }
             }
         }
 
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc ){
-            delete[] buffer[idxProc];
-        }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -558,6 +393,35 @@ public:
             FDEBUG(FTic findCounter);
 
 
+            typename OctreeClass::Iterator octreeIterator(tree);
+            octreeIterator.moveDown();
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+            // for each levels
+            for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                int numberOfCells = 0;
+                // for each cells
+                do{
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
+                } while(octreeIterator.moveRight());
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
+
+                FDEBUG(computationCounter.tic());
+                #pragma omp parallel
+                {
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
+                    const CellClass* neighbors[208];
+
+                    #pragma omp for  schedule(dynamic) nowait
+                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                        const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+                        if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                    }
+                }
+                FDEBUG(computationCounter.tac());
+            }
 
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -576,6 +440,72 @@ public:
             FDEBUG(FTic sendCounter);
             FDEBUG(FTic receiveCounter);
 
+            // Start from leal level - 1
+            typename OctreeClass::Iterator octreeIterator(tree);
+            octreeIterator.moveDown();
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+            KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
+
+            MPI_Request requests[nbProcess];
+
+            const int heightMinusOne = OctreeHeight - 1;
+
+            // for each levels exepted leaf level
+            for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+                // copy cells to work with
+                int numberOfCells = 0;
+                // for each cells
+                do{
+                    iterArray[numberOfCells++] = octreeIterator;
+                } while(octreeIterator.moveRight());
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
+
+
+                bool needToRecv = false;
+                int iterRequests = 0;
+
+                // do we need to receive one or zeros cell
+                if(idProcess != 0
+                        && realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min != workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    needToRecv = true;
+                    printf("I recv one cell at index %lld\n", iterArray[0].getCurrentGlobalIndex() );
+                    MPI_Irecv( iterArray[0].getCurrentCell(), sizeof(CellClass), MPI_BYTE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                }
+
+
+                if(idProcess != nbProcess - 1){
+                    int firstProcThatRecv = idProcess + 1;
+                    while( firstProcThatRecv < nbProcess &&
+                            workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatRecv].max < workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatRecv].min){
+                        ++firstProcThatRecv;
+                    }
+
+                    int endProcThatRecv = firstProcThatRecv;
+                    while( endProcThatRecv < nbProcess &&
+                            (realIntervalsPerLevel[(idxLevel+1) * nbProcess + endProcThatRecv].min >> 3) == iterArray[numberOfCells - 1].getCurrentGlobalIndex()){
+                        ++endProcThatRecv;
+                    }
+                    if(endProcThatRecv != idProcess + 1){
+                        for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
+                            printf("I send 1 to proc %d at index %lld\n", idxProc, iterArray[numberOfCells - 1].getCurrentGlobalIndex());
+                            MPI_Isend(iterArray[numberOfCells - 1].getCurrentCell(), sizeof(CellClass), MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                        }
+                    }
+                }
+
+                for(int idxCell = (needToRecv ? 1 : 0) ; idxCell < numberOfCells ; ++idxCell){
+                    myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                }
+
+                if(iterRequests){
+                    MPI_Waitall( iterRequests, requests, 0);
+                    if(needToRecv){
+                        myThreadkernels.L2L( iterArray[0].getCurrentCell() , iterArray[0].getCurrentChild(), idxLevel);
+                    }
+                }
+            }
 
 
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -596,6 +526,153 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
+
+        ///////////////////////////////////////////////////
+        // Precompute
+        ///////////////////////////////////////////////////
+        FBoolArray leafsNeedOther(this->numberOfLeafs);
+        OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
+
+        {
+            // Copy leafs
+            {
+                typename OctreeClass::Iterator octreeIterator(tree);
+                octreeIterator.gotoBottomLeft();
+                int idxLeaf = 0;
+                do{
+                    this->iterArray[idxLeaf++] = octreeIterator;
+                } while(octreeIterator.moveRight());
+            }
+
+            printf("Prepare P2P\n");
+
+            // Box limite
+            const long limite = 1 << (this->OctreeHeight - 1);
+            // pointer to send
+            typename OctreeClass::Iterator* toSend[nbProcess];
+            memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess );
+            int sizeToSend[nbProcess];
+            memset(sizeToSend, 0, sizeof(int) * nbProcess);
+            // index
+            int indexToSend[nbProcess];
+            memset(indexToSend, 0, sizeof(int) * nbProcess);
+
+            // To know if a leaf has been already sent to a proc
+            bool alreadySent[nbProcess];
+
+            MortonIndex indexesNeighbors[26];
+
+            for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf){
+                FTreeCoordinate center;
+                center.setPositionFromMorton(iterArray[idxLeaf].getCurrentGlobalIndex(), OctreeHeight - 1);
+
+                memset(alreadySent, false, sizeof(bool) * nbProcess);
+                bool needOther = false;
+
+                getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalIndex(), limite, indexesNeighbors);
+
+                for(int idxNeigh = 0 ; idxNeigh < 26 ; ++idxNeigh){
+                    if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
+                        needOther = true;
+
+                        // find the proc that need this information
+                        int procToReceive = idProcess;
+                        while( procToReceive != 0 && indexesNeighbors[idxNeigh] < intervals[procToReceive].min){
+                            --procToReceive;
+                        }
+                        while( procToReceive != nbProcess - 1 && intervals[procToReceive].max < indexesNeighbors[idxNeigh]){
+                            ++procToReceive;
+                        }
+
+                        if( !alreadySent[procToReceive] && intervals[procToReceive].min <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].max){
+                            alreadySent[procToReceive] = true;
+                            if(indexToSend[procToReceive] ==  sizeToSend[procToReceive]){
+                                const int previousSize = sizeToSend[procToReceive];
+                                sizeToSend[procToReceive] = FMath::Max(50, int(sizeToSend[procToReceive] * 1.5));
+                                typename OctreeClass::Iterator* temp = toSend[procToReceive];
+                                toSend[procToReceive] = reinterpret_cast<typename OctreeClass::Iterator*>(new char[sizeof(typename OctreeClass::Iterator) * sizeToSend[procToReceive]]);
+                                memcpy(toSend[procToReceive], temp, previousSize * sizeof(typename OctreeClass::Iterator));
+                                delete[] reinterpret_cast<char*>(temp);
+                            }
+                            toSend[procToReceive][indexToSend[procToReceive]++] = iterArray[idxLeaf];
+                        }
+                    }
+                }
+
+                if(needOther){
+                    leafsNeedOther.set(idxLeaf,true);
+                }
+            }
+
+            int globalReceiveMap[nbProcess * nbProcess];
+            memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
+
+            mpiassert( MPI_Allgather( indexToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                printf("indexToSend[%d] = %d\n", idxProc, indexToSend[idxProc]);
+            }
+
+            printf("Will send ...\n");
+
+            // To send in asynchrone way
+            MPI_Request requests[2 * nbProcess];
+            int iterRequest = 0;
+
+            ParticleClass* sendBuffer[nbProcess];
+            memset(sendBuffer, 0, sizeof(ParticleClass*) * nbProcess);
+
+            ParticleClass* recvBuffer[nbProcess];
+            memset(recvBuffer, 0, sizeof(ParticleClass*) * nbProcess);
+
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                if(indexToSend[idxProc] != 0){
+                    printf("Send %d to %d\n", indexToSend[idxProc], idxProc);
+                    sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * indexToSend[idxProc]]);
+
+                    int currentIndex = 0;
+                    for(int idxLeaf = idxProc ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
+                        memcpy(&sendBuffer[idxProc][currentIndex], toSend[idxProc][idxLeaf].getCurrentListSrc()->data(),
+                               sizeof(ParticleClass) * toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize() );
+                        currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
+                    }
+
+                    mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * indexToSend[idxProc] , MPI_BYTE ,
+                                         idxProc, TAG_P2P_PART, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+
+                }
+                if(globalReceiveMap[idxProc * nbProcess + idProcess]){
+                    printf("Receive %d from %d\n", globalReceiveMap[idxProc * nbProcess + idProcess], idxProc);
+                    recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
+
+                    mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
+                                        idxProc, TAG_P2P_PART, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                }
+            }
+
+            printf("Wait ...\n");
+            MPI_Waitall(iterRequest, requests, 0);
+
+            printf("Put data in the tree\n");
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
+                    otherP2Ptree.insert(recvBuffer[idxProc][idxPart]);
+                }
+            }
+
+
+            printf("Delete array\n");
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                delete [] reinterpret_cast<char*>(sendBuffer[idxProc]);
+                delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
+                delete [] reinterpret_cast<char*>(toSend[idxProc]);
+            }
+            printf("prep2p is finished\n");
+        }
+
+        ///////////////////////////////////////////////////
+        // Direct Computation
+        ///////////////////////////////////////////////////
 
         // init
         const int LeafIndex = OctreeHeight - 1;
@@ -664,6 +741,8 @@ public:
             ContainerClass* neighbors[26];
             MortonIndex neighborsIndex[26];
             int previous = 0;
+            // Box limite
+            const long limite = 1 << (this->OctreeHeight - 1);
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
@@ -672,9 +751,29 @@ public:
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);
+
                     // need the current particles and neighbors particles
                     const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index,LeafIndex);
-                    myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+
+                    if(leafsNeedOther.get(idxLeafs)){
+                        MortonIndex indexesNeighbors[26];
+                        getNeighborsIndexes(currentIter.index, limite, indexesNeighbors);
+                        int counterAll = counter;
+                        for(int idxNeigh = 0 ; idxNeigh < 26 ; ++idxNeigh){
+                            if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
+                                ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
+                                if(hypotheticNeighbor){
+                                    neighbors[counterAll] = hypotheticNeighbor;
+                                    neighborsIndex[counterAll] = indexesNeighbors[idxNeigh];
+                                    ++counterAll;
+                                }
+                            }
+                        }
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counterAll);
+                    }
+                    else{
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+                    }
                 }
 
                 previous = endAtThisShape;
@@ -687,6 +786,30 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
+
+    void getNeighborsIndexes(const MortonIndex centerIndex, const long limite, MortonIndex indexes[26]){
+        FTreeCoordinate center;
+        center.setPositionFromMorton(centerIndex, OctreeHeight - 1);
+        int idxNeig = 0;
+        // We test all cells around
+        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(center.getX() + idxX,0l, limite)) continue;
+
+            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(center.getY() + idxY,0l, limite)) continue;
+
+                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(center.getZ() + idxZ,0l, limite)) continue;
+
+                    // if we are not on the current cell
+                    if( idxX || idxY || idxZ ){
+                        const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
+                        indexes[idxNeig++] = other.getMortonIndex(this->OctreeHeight - 1);
+                    }
+                }
+            }
+        }
+    }
 };
 
 
