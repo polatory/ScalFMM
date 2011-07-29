@@ -30,7 +30,7 @@ public:
     void P2M(CellClass* const pole, const ContainerClass* const particles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // the pole represents all particles under
-        pole->setDataUp(particles->getSize());
+        pole->setDataUp(pole->getDataUp() + particles->getSize());
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 

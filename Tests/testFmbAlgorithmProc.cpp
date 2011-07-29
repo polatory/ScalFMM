@@ -321,8 +321,8 @@ int main(int argc, char ** argv){
 
     KernelClass kernels(NbLevels,loader.getBoxWidth());
 
-    FmmClass algo(app,&tree,&kernels);
-    algo.execute();
+    //FmmClass algo(app,&tree,&kernels);
+    //algo.execute();
 #ifdef VALIDATE_FMM
     FmmClassNoProc algoValide(&treeValide,&kernels);
     algoValide.execute();
@@ -350,8 +350,8 @@ int main(int argc, char ** argv){
             ++NbLeafs;
         } while(countLeafsIterator.moveRight());
 
-        const int startIdx = algo.getLeft(NbLeafs);
-        const int endIdx = algo.getRight(NbLeafs);
+        const int startIdx = 0;//algo.getLeft(NbLeafs);
+        const int endIdx = 0;//algo.getRight(NbLeafs);
 
         std::cout <<"From " << startIdx << " to " << endIdx << "  NbLeafs is " << NbLeafs << std::endl;
 

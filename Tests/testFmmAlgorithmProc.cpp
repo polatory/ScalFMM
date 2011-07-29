@@ -96,13 +96,12 @@ public :
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template<class OctreeClass, class ContainerClass, class FmmClassProc>
+template<class OctreeClass, class ContainerClass>
 void ValidateFMMAlgoProc(OctreeClass* const badTree,
-                         OctreeClass* const valideTree,
-                         FmmClassProc*const fmm){
-    const int OctreeHeight = badTree->getHeight();
+                         OctreeClass* const valideTree){
     std::cout << "Check Result\n";
-    {
+    /*{
+        const int OctreeHeight = badTree->getHeight();
         typename OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
@@ -150,12 +149,12 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             octreeIteratorValide.moveUp();
             octreeIteratorValide.gotoLeft();
         }
-    }
+    }*/
     {
         int NbPart = 0;
         int NbLeafs = 0;
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(badTree);
+            typename OctreeClass::Iterator octreeIterator(valideTree);
             octreeIterator.gotoBottomLeft();
             do{
                 NbPart += octreeIterator.getCurrentListSrc()->getSize();
@@ -164,37 +163,69 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             std::cout << "There is " << NbPart << " particles on " << NbLeafs << " Leafs" << std::endl;
         }
         {
-            const int startIdx = fmm->getLeft(NbLeafs);
-            const int endIdx = fmm->getRight(NbLeafs);
             // Check that each particle has been summed with all other
             typename OctreeClass::Iterator octreeIterator(badTree);
             octreeIterator.gotoBottomLeft();
 
-            for(int idx = 0 ; idx < startIdx ; ++idx){
-                octreeIterator.moveRight();
-            }
-
-            for(int idx = startIdx ; idx < endIdx ; ++idx){
+            do {
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-
-                while( iter.hasNotFinished() ){
+                for(int idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getSize() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
                     if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
                         (isUsingTsm && iter.data().getDataDown() != NbPart) ){
-                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.data().getDataDown() << "\n";
+                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.data().getDataDown() <<
+                                     " at pos " << idxPart << " index is " << octreeIterator.getCurrentGlobalIndex() << "\n";
                     }
                     iter.gotoNext();
                 }
-                octreeIterator.moveRight();
-            }
+            } while( octreeIterator.moveRight());
         }
+    }
+    {
+        {
+            // Check that each particle has been summed with all other
+            typename OctreeClass::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+
+            do {
+                if(octreeIterator.getCurrentListSrc()->getSize() != octreeIterator.getCurrentCell()->getDataUp()){
+                    printf("P2M problem nb part %d data up %ld \n",
+                           octreeIterator.getCurrentListSrc()->getSize(), octreeIterator.getCurrentCell()->getDataUp());
+                }
+            } while( octreeIterator.moveRight());
+        }
+    }
+
+    {
+        // Check that each particle has been summed with all other
+        typename OctreeClass::Iterator octreeIterator(badTree);
+        octreeIterator.gotoBottomLeft();
+
+        typename OctreeClass::Iterator valideOctreeIterator(valideTree);
+        valideOctreeIterator.gotoBottomLeft();
+        while(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+            valideOctreeIterator.moveRight();
+        }
+
+        do {
+            if(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+                printf("Do not have the same index valide %lld invalide %lld \n",
+                       valideOctreeIterator.getCurrentGlobalIndex(), octreeIterator.getCurrentGlobalIndex());
+                break;
+            }
+
+            if(octreeIterator.getCurrentListTargets()->getSize() != valideOctreeIterator.getCurrentListTargets()->getSize()){
+                printf("Do not have the same number of particle at leaf id %lld, valide %d invalide %d \n",
+                       octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getSize(), octreeIterator.getCurrentListTargets()->getSize());
+            }
+        }while( octreeIterator.moveRight() && valideOctreeIterator.moveRight());
     }
 
     std::cout << "Done\n";
 }
+
 
 /** To print an octree
   * used to debug and understand how the values were passed
@@ -211,7 +242,6 @@ void print(OctreeClass* const valideTree){
         octreeIterator.moveDown();
     }
 }
-
 
 struct ParticlesGroup {
     int number;
@@ -844,9 +874,9 @@ int main(int argc, char ** argv){
 
             OctreeClass::Iterator octreeIterator(&treeValide);
             octreeIterator.gotoBottomLeft();
-            do{
+            do {
                 ++totalNbLeafs;
-            }while(octreeIterator.moveRight());
+            } while(octreeIterator.moveRight());
         }
 
         const int myLeftLeaf = app.getLeft(totalNbLeafs);
@@ -889,8 +919,6 @@ int main(int argc, char ** argv){
             }
         }
 
-
-
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -904,8 +932,8 @@ int main(int argc, char ** argv){
     FmmClassProc algo(app,&realTree,&kernels);
     algo.execute();
 
-    ///FmmClass algoValide(&treeValide,&kernels);
-    ///algoValide.execute();
+    FmmClass algoValide(&treeValide,&kernels);
+    algoValide.execute();
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -913,7 +941,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ///ValidateFMMAlgoProc<OctreeClass,ContainerClass,FmmClassProc>(&realTree,&treeValide,&algo);
+    ValidateFMMAlgoProc<OctreeClass,ContainerClass>(&realTree,&treeValide);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
