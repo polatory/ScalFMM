@@ -53,13 +53,6 @@ class FQuickSort {
         else return res;
     }
 
-    static long getOtherRight(const long inSize, const int other, const int inNbProc) {
-        const double step = (double(inSize) / inNbProc);
-        const long res = long(ceil(step * (other+1)));
-        if(res > inSize) return inSize;
-        else return res;
-    }
-
     static int getProc(const int position, const long inSize, const int inNbProc) {
         const double step = (double(inSize) / inNbProc);
         return int(position/step);
@@ -411,8 +404,9 @@ public:
                     if(sendToProc + sent > fixes[currentRank].suf){
                         sendToProc = fixes[currentRank].suf - sent;
                     }
-
-                    mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    if( sendToProc ){
+                        mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    }
                     sent += sendToProc;
                 }
             }
@@ -433,8 +427,9 @@ public:
                     if(sendToProc + sent > fixes[currentRank].pre){
                         sendToProc = fixes[currentRank].pre - sent;
                     }
-
-                    mpiassert( MPI_Isend(&outputArray[sent], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    if(sendToProc){
+                        mpiassert( MPI_Isend(&outputArray[sent], sendToProc * sizeof(SortType), MPI_BYTE , idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    }
                     sent += sendToProc;
                 }
             }
@@ -468,8 +463,9 @@ public:
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
                     const int firstIndex = Max(myLeft , (long int) fixesSum[idxProc].pre );
                     const int endIndex = Min((long int)fixesSum[idxProc + 1].pre,  myRightLimit);
-
-                    mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    if( (endIndex - firstIndex) ){
+                        mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
@@ -502,8 +498,9 @@ public:
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
                     const int firstIndex = Max(myLeft , (long int)fixesSum[idxProc].suf );
                     const int endIndex = Min((long int)fixesSum[idxProc + 1].suf,  myRightLimit);
-
-                    mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    if( (endIndex - firstIndex) ){
+                        mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
+                    }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
