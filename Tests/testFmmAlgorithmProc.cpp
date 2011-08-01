@@ -230,18 +230,18 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 /** To print an octree
   * used to debug and understand how the values were passed
   */
-template<class OctreeClass>
-void print(OctreeClass* const valideTree){
-    typename OctreeClass::Iterator octreeIterator(valideTree);
-    for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
-        do{
-            std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
-        } while(octreeIterator.moveRight());
-        std::cout << "\n";
-        octreeIterator.gotoLeft();
-        octreeIterator.moveDown();
-    }
-}
+//template<class OctreeClass>
+//void print(OctreeClass* const valideTree){
+//    typename OctreeClass::Iterator octreeIterator(valideTree);
+//    for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
+//        do{
+//            std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
+//        } while(octreeIterator.moveRight());
+//        std::cout << "\n";
+//        octreeIterator.gotoLeft();
+//        octreeIterator.moveDown();
+//    }
+//}
 
 struct ParticlesGroup {
     int number;
@@ -337,7 +337,7 @@ int main(int argc, char ** argv){
                 long outputSize = 0;
                 {
                     // create particles
-                    IndexedParticle*const realParticlesIndexed = reinterpret_cast<IndexedParticle*>(new char[loader.getNumberOfParticles() * sizeof(IndexedParticle)]);
+                    IndexedParticle*const realParticlesIndexed = new IndexedParticle[loader.getNumberOfParticles()];
                     F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
                     FTreeCoordinate host;
                     const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / (1 << (NbLevels - 1) );
@@ -353,7 +353,7 @@ int main(int argc, char ** argv){
 
                     // sort particles
                     FQuickSort::QsMpi<IndexedParticle,MortonIndex>(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
-                    delete [] reinterpret_cast<char*>(realParticlesIndexed);
+                    delete [] (realParticlesIndexed);
 
                     std::cout << "Sorted "<< outputSize <<  " particles..." << std::endl;
                 }
@@ -369,10 +369,11 @@ int main(int argc, char ** argv){
                         }
                         if( app.processId() != app.processCount() - 1){
                             MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, app.processId() + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
-                            std::cout << "I receive index from right " << otherFirstIndex << std::endl;
                         }
 
                         MPI_Waitall(reqiter,req,0);
+                        std::cout << "I receive index from right " << otherFirstIndex << std::endl;
+
                         if( 0 < app.processId() && !outputSize){
                             std::cout << "I send to left the first index is from right " << otherFirstIndex << std::endl;
                             MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, app.processId() - 1, 0, MPI_COMM_WORLD);
@@ -828,11 +829,11 @@ int main(int argc, char ** argv){
                 }
             }
 
-            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf-leftLeafs,0) , FMath::Min(nbLeafs , FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs - rightLeafs) - myLeftLeaf));
+            printf("Will now take my own particles from %d to %d\n",FMath::Max(myLeftLeaf-leftLeafs,0) , totalNbLeafs - rightLeafs - leftLeafs - FMath::Max(0,leftLeafs + nbLeafs - myRightLeaf));
             printf("myLeftLeaf %d leftLeafs %d myRightLeaf %d rightLeafs %d totalNbLeafs %d\n",myLeftLeaf,leftLeafs, myRightLeaf, rightLeafs, totalNbLeafs);
             // insert the particles we already have
             if(leftLeafs != totalNbLeafs){
-                for(int idxLeafInsert = FMath::Max(myLeftLeaf-leftLeafs,0) ; idxLeafInsert < FMath::Min(nbLeafs , FMath::Max(myLeftLeaf-leftLeafs,0) + FMath::Min(myRightLeaf,totalNbLeafs - rightLeafs) - myLeftLeaf) ; ++idxLeafInsert){
+                for(int idxLeafInsert = FMath::Max(myLeftLeaf-leftLeafs,0) ; idxLeafInsert <  totalNbLeafs - rightLeafs - leftLeafs - FMath::Max(0,leftLeafs + nbLeafs - myRightLeaf) ; ++idxLeafInsert){
                     for(int idxPart = 0 ; idxPart < groups[idxLeafInsert].number ; ++idxPart){
                         realTree.insert(realParticles[groups[idxLeafInsert].positionInArray + idxPart]);
                     }

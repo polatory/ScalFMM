@@ -71,6 +71,18 @@ public:
 };
 
 
+template<class OctreeClass>
+void print(OctreeClass* const valideTree){
+    typename OctreeClass::Iterator octreeIterator(valideTree);
+    for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
+        do{
+            std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
+        } while(octreeIterator.moveRight());
+        std::cout << "\n";
+        octreeIterator.gotoLeft();
+        octreeIterator.moveDown();
+    }
+}
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -347,7 +359,7 @@ public:
 
                 const CellClass* const* const child = iterArray[0].getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( child[idxChild] ){
+                    if( child[idxChild] && workingIntervalsPerLevel[(idxLevel+1) * nbProcess + idProcess].min <= child[idxChild]->getMortonIndex() ){
                         memcpy(&sendBuffer[idxBuff], child[idxChild], sizeof(CellClass));
                         idxBuff += sizeof(CellClass);
                         state |= (0x1 << idxChild);
@@ -395,6 +407,8 @@ public:
             if(iterRequests){
                 MPI_Waitall( iterRequests, requests, 0);
 
+                printf("Send/Receive what I need\n");
+
                 if( hasToReceive ){
                     CellClass* currentChild[8];
                     memcpy(currentChild, iterArray[numberOfCells - 1].getCurrentChild(), 8 * sizeof(CellClass*));
@@ -409,6 +423,8 @@ public:
                                 state >>= 1;
                                 ++position;
                             }
+
+                            printf("Receive Index is %lld child position is %d\n", iterArray[numberOfCells - 1].getCurrentGlobalIndex(), position);
 
                             fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
                             currentChild[position] = (CellClass*) &recvBuffer[idxProc * recvBufferOffset + bufferIndex];
@@ -425,6 +441,7 @@ public:
                 }
             }
         }
+
 
         FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -474,18 +491,21 @@ public:
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     int numberOfCells = 0;
-                    while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+
+                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
                         octreeIterator.moveRight();
                     }
+
                     // for each cells
                     do{
                         iterArray[numberOfCells] = octreeIterator;
                         ++numberOfCells;
-                    } while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
                     leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
+
 
                     // Which cell potentialy need other data and in the same time
                     // are potentialy needed by other
@@ -598,14 +618,14 @@ public:
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     int numberOfCells = 0;
-                    while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
                         octreeIterator.moveRight();
                     }
                     // for each cells
                     do{
                         iterArray[numberOfCells] = octreeIterator;
                         ++numberOfCells;
-                    } while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -654,7 +674,7 @@ public:
                     int numberOfCells = 0;
                     int realCellId = 0;
 
-                    while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
                         octreeIterator.moveRight();
                     }
                     // for each cells
@@ -662,7 +682,7 @@ public:
                         if(leafsNeedOther[idxLevel]->get(realCellId++)){
                             iterArray[numberOfCells++] = octreeIterator;
                         }
-                    } while(octreeIterator.getCurrentGlobalIndex() !=  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -708,8 +728,6 @@ public:
             FDEBUG( FDebug::Controller << "\t\t\tTotal time to send in mpi "  << waitSendCounter.cumulated() << " s.\n" );
             FDEBUG( FDebug::Controller << "\t\t\tTotal time to find "  << findCounter.cumulated() << " s.\n" );
         }
-
-
 
         { // second L2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
@@ -786,7 +804,6 @@ public:
                 }
             }
 
-
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
@@ -835,6 +852,9 @@ public:
             // index
             int indexToSend[nbProcess];
             memset(indexToSend, 0, sizeof(int) * nbProcess);
+            // index
+            int partsToSend[nbProcess];
+            memset(partsToSend, 0, sizeof(int) * nbProcess);
 
             // To know if a leaf has been already sent to a proc
             bool alreadySent[nbProcess];
@@ -875,6 +895,7 @@ public:
                                 delete[] reinterpret_cast<char*>(temp);
                             }
                             toSend[procToReceive][indexToSend[procToReceive]++] = iterArray[idxLeaf];
+                            partsToSend[procToReceive] += iterArray[idxLeaf].getCurrentListSrc()->getSize();
                         }
                     }
                 }
@@ -887,10 +908,10 @@ public:
             int globalReceiveMap[nbProcess * nbProcess];
             memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
 
-            mpiassert( MPI_Allgather( indexToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+            mpiassert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
 
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                printf("indexToSend[%d] = %d\n", idxProc, indexToSend[idxProc]);
+                printf("indexToSend[%d] = %d leafs %d parts\n", idxProc, indexToSend[idxProc], partsToSend[idxProc]);
             }
 
             printf("Will send ...\n");
@@ -908,16 +929,16 @@ public:
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(indexToSend[idxProc] != 0){
                     printf("Send %d to %d\n", indexToSend[idxProc], idxProc);
-                    sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * indexToSend[idxProc]]);
+                    sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * partsToSend[idxProc]]);
 
                     int currentIndex = 0;
-                    for(int idxLeaf = idxProc ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
+                    for(int idxLeaf = 0 ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
                         memcpy(&sendBuffer[idxProc][currentIndex], toSend[idxProc][idxLeaf].getCurrentListSrc()->data(),
                                sizeof(ParticleClass) * toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize() );
                         currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
                     }
 
-                    mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * indexToSend[idxProc] , MPI_BYTE ,
+                    mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
                                          idxProc, TAG_P2P_PART, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }
