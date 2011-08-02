@@ -1,5 +1,5 @@
-#ifndef FPROCFMALOADER_HPP
-#define FPROCFMALOADER_HPP
+#ifndef FMPIFMALOADER_HPP
+#define FMPIFMALOADER_HPP
 // /!\ Please, you must read the license at the bottom of this page
 
 #include <iostream>
@@ -12,7 +12,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FProcFmaLoader
+* @class FMpiFmaLoader
 * Please read the license
 *
 * Load a file with a format like :
@@ -20,7 +20,7 @@
 * X Y Z // one particle by line
 * ....
 * <code>
-*    FProcFmaLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
+*    FMpiFmaLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
@@ -38,7 +38,7 @@
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
 template <class ParticleClass>
-class FProcFmaLoader : public FAbstractLoader<ParticleClass> {
+class FMpiFmaLoader : public FAbstractLoader<ParticleClass> {
 protected:
     F3DPosition centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
@@ -54,7 +54,7 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling hasNotFinished()
     */
-    FProcFmaLoader(const char* const filename, FMpi& app)
+    FMpiFmaLoader(const char* const filename, FMpi& app)
             : boxWidth(0), totalNbParticles(0), nbParticles(0), isOpenFlag(false), particles(0), idxParticles(0) {
         char nonConstFilename[512];
         strcpy(nonConstFilename,filename);
@@ -118,7 +118,7 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FProcFmaLoader(){
+    virtual ~FMpiFmaLoader(){
         if(isOpen()){
             delete [] particles;
         }
@@ -170,6 +170,6 @@ public:
 };
 
 
-#endif //FPROCFMALOADER_HPP
+#endif //FMPIFMALOADER_HPP
 
 // [--LICENSE--]
