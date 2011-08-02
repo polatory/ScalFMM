@@ -857,7 +857,7 @@ public:
             memset(partsToSend, 0, sizeof(int) * nbProcess);
 
             // To know if a leaf has been already sent to a proc
-            bool alreadySent[nbProcess];
+            int alreadySent[nbProcess];
 
             MortonIndex indexesNeighbors[26];
 
@@ -865,7 +865,7 @@ public:
                 FTreeCoordinate center;
                 center.setPositionFromMorton(iterArray[idxLeaf].getCurrentGlobalIndex(), OctreeHeight - 1);
 
-                memset(alreadySent, false, sizeof(bool) * nbProcess);
+                memset(alreadySent, 0, sizeof(int) * nbProcess);
                 bool needOther = false;
 
                 const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalIndex(), limite, indexesNeighbors);
@@ -885,7 +885,8 @@ public:
                         }
 
                         if( !alreadySent[procToReceive] && intervals[procToReceive].min <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].max){
-                            alreadySent[procToReceive] = true;
+
+                            alreadySent[procToReceive] = 1;
                             if(indexToSend[procToReceive] ==  sizeToSend[procToReceive]){
                                 const int previousSize = sizeToSend[procToReceive];
                                 sizeToSend[procToReceive] = FMath::Max(10*int(sizeof(typename OctreeClass::Iterator)), int(sizeToSend[procToReceive] * 1.5));
@@ -990,6 +991,8 @@ public:
         };
         LeafData* const leafsDataArray = new LeafData[this->numberOfLeafs];
 
+        FBoolArray leafsNeedOtherShaped(this->numberOfLeafs);
+
         // split data
         {
             typename OctreeClass::Iterator octreeIterator(tree);
@@ -1025,6 +1028,7 @@ public:
                 leafsDataArray[startPosAtShape[shapePosition]].cell = myLeafs[idxInArray].getCurrentCell();
                 leafsDataArray[startPosAtShape[shapePosition]].targets = myLeafs[idxInArray].getCurrentListTargets();
                 leafsDataArray[startPosAtShape[shapePosition]].sources = myLeafs[idxInArray].getCurrentListSrc();
+                if( leafsNeedOther.get(idxLeaf) ) leafsNeedOtherShaped.set(startPosAtShape[shapePosition], true);
 
                 ++startPosAtShape[shapePosition];
             }
@@ -1054,9 +1058,10 @@ public:
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index,LeafIndex);
+                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
 
-                    if(leafsNeedOther.get(idxLeafs)){
+                    if(leafsNeedOtherShaped.get(idxLeafs)){
+
                         MortonIndex indexesNeighbors[26];
                         const int neighCount = getNeighborsIndexes(currentIter.index, limite, indexesNeighbors);
                         int counterAll = counter;
