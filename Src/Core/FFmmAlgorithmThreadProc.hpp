@@ -466,6 +466,9 @@ public:
             FDEBUG(FTic prepareCounter);
             FDEBUG(FTic gatherCounter);
 
+            //////////////////////////////////////////////////////////////////
+            // First know what to send to who
+            //////////////////////////////////////////////////////////////////
 
             // pointer to send
             typename OctreeClass::Iterator* toSend[nbProcess * OctreeHeight];
@@ -560,6 +563,9 @@ public:
 
             }
 
+            //////////////////////////////////////////////////////////////////
+            // Gather this information
+            //////////////////////////////////////////////////////////////////
 
             FDEBUG(gatherCounter.tic());
             // All process say to each others
@@ -568,6 +574,11 @@ public:
             memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
             mpiassert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
             FDEBUG(gatherCounter.tac());
+
+
+            //////////////////////////////////////////////////////////////////
+            // Send and receive for real
+            //////////////////////////////////////////////////////////////////
 
             FDEBUG(sendCounter.tic());
             // Then they can send and receive (because they know what they will receive)
@@ -608,6 +619,10 @@ public:
             }
             FDEBUG(sendCounter.tac());
 
+            //////////////////////////////////////////////////////////////////
+            // Do M2L
+            //////////////////////////////////////////////////////////////////
+
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -643,6 +658,9 @@ public:
                 }
             }
 
+            //////////////////////////////////////////////////////////////////
+            // Wait received data and compute
+            //////////////////////////////////////////////////////////////////
 
             // Wait to receive every things (and send every things)
             MPI_Waitall(iterRequest, requests, 0);
@@ -675,6 +693,7 @@ public:
                     }
                     // for each cells
                     do{
+                        // copy cells that need data from others
                         if(leafsNeedOther[idxLevel]->get(realCellId++)){
                             iterArray[numberOfCells++] = octreeIterator;
                         }
@@ -724,6 +743,10 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
             FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         }
+
+        //////////////////////////////////////////////////////////////////
+        // ---------------- L2L ---------------
+        //////////////////////////////////////////////////////////////////
 
         { // second L2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
@@ -1076,6 +1099,7 @@ public:
         MPI_Waitall(iterRequest, requests, 0);
         FDEBUG(waitCounter.tac());
 
+        // Create an octree with leaves from others
         OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
         for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
             for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
