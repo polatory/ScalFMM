@@ -1,0 +1,278 @@
+\documentclass[10pt,letterpaper,titlepage]{report}
+\usepackage{algorithm2e}
+\usepackage{hyperref}
+\usepackage{listings}
+
+% latex test.tex ; dvipdf test.dvi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{Berenger Bramas}
+\title{ScalFmm - Parallel Algorithms (Draft)}
+\date{August, 2011}
+
+\lstset{language=c++}
+
+\setcounter{secnumdepth}{-1}
+
+\begin{document}
+\maketitle{}
+\newpage
+
+\tableofcontents
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+In this document we are going to introduce the principles and the algorithms used in our library to run in a distributed environement with MPI.
+The algorithms in this document may not be up to date compare to those used in the code.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Load a data file in Parallel}
+\section{Description}
+The main motivation to create a distributed version of the FMM is to run large simulation.
+These simulations contains more particles than the memory of one computer.
+That is the reason why it is not reasonable to ask a master process to load an entire file and to dispatch the data to other processes.
+
+The solution we use can be view as a two steps process.
+First, each process loads a part of the file and will have several particles.
+Each process can compute the Morton index for the particles he has.
+The Morton index of particle depends of the system but also of the tree height.
+The second step is a parallel sort based on the Morton index with a balancing operation at the end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Load a file}
+To split a file with all the processes we are using the MPI IO.
+The prerequiste is to have a binary file to make the things easier.
+
+\begin{lstlisting}
+// From FMpiFmaLoader
+particles = new FReal[bufsize];
+MPI_File_set_view(file, headDataOffSet + startPart * 4 * sizeof(FReal),
+	MPI_FLOAT, MPI_FLOAT, const_cast<char*>("native"), MPI_INFO_NULL);
+MPI_File_read(file, particles, bufsize, MPI_FLOAT, &status);
+\end{lstlisting}
+
+It is easy to build the particles from a array of real that represents their position and a physical value.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Sorting the particles}
+\subsection{Using QuickSort}
+A first approach is to use the quick sort algorithm.
+Our implementation has been taken from \cite{itpc03}.
+Efficiency of this algorithm dependands roughly of the choice of the pivot.
+Whe are choosing our pivot as the average of the first Morton index of all array distributed on the processes.
+This can be describe as:
+
+\begin{algorithm}[H]
+\SetLine
+\KwData{none}
+\KwResult{A Morton index as the pivot}
+\BlankLine
+firstIndexes $\leftarrow$ MortonIndex$[nbprocs]$\;
+allGather(myFirstIndex, firstIndexes)\;
+pivot $\leftarrow$ Sum(firstIndexes) / nbprocs\;
+\BlankLine
+\caption{Get a pivot for the next QS iteration}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Using an intermediate Octree}
+The second approach is to use an octree to sort the particles in each process.
+After inserting the particles in the tree, we can iterate at the leaves level and access to the particles in an ordered way.
+Then, the processes are doing a minimum and a maximum reduction to know the real Morton interval of the system.
+Finally, the processes are exchanging data with P² communication.
+
+The result is, as with the Quick Sort, each process has some particles but this not balanced between proceeses.
+In fact, at this time, the data has been cut using the entire Morton interval.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Balancing the leaves}
+After sorting, each process has leaves.
+We know that for two processes Pi and Pj with i < j, all leaves hosted by Pi have their Morton indexes inferior of those hosted by Pj.
+Using this information we are doing a two passes algorithm:
+\begin{enumerate}
+\item Each process has to know the number of leaves it has on its left and on its right
+\item Each process compute to know if it has to send or receive something
+\end{enumerate}
+The result is that every processes have the same number of leaves.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Simple operators: P2M, M2M, L2L}
+This tree operators are more easy to understand.
+They need only small message to be exchanged and moreover it is very easy to know which process to communicate with.
+
+\section{P2M}
+The P2M is unchanged from the sequential or shared memory model to the distributed memory one.
+In fact, a leaf belong to only one process so doing the P2M operator do not require any information from other process.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{M2M}
+During the upward pass information moves from one level to another.
+The problem with the distributed memory is that one cell can exist in several trees ie in several processes.
+We have decided that the rank with the smallest rank will have the responsability to compute the M2M and propagate the value for the futur operations.
+Others processes have to send their child of this shared cell.
+At each iteration a process never needs to send more than 8-1 cells, also process never needs to receive more than 8-1 cells.
+In fact, the shared cells are always at the extrimity and one process cannot be designed to be the responsible of more than one shared cell at a level.
+
+\begin{algorithm}[H]
+\SetLine
+\KwData{none}
+\KwResult{none}
+\BlankLine
+\For{idxLevel $\leftarrow$ $Height - 2$ \KwTo 1}{
+	\ForAll{Cell c at level idxLevel}{
+		M2M(c, c.child)\;
+	}
+}
+\BlankLine
+\caption{Traditional M2M}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
+\SetLine
+\KwData{none}
+\KwResult{none}
+\BlankLine
+\For{idxLevel $\leftarrow$ $Height - 2$ \KwTo 1}{
+	\uIf{$cells[0]$ not in my working interval}{
+		isend($cells[0].child$)\;
+		hasSend $\leftarrow$ true\;
+	}
+	\uIf{$cells[end]$ in another working interval}{
+		irecv(recvBuffer)\;
+		hasRecv $\leftarrow$ true\;
+	}
+	\ForAll{Cell c at level idxLevel in working interval}{
+		M2M(c, c.child)\;
+	}
+	\emph{Wait send and recv if needed}\;
+	\uIf{hasRecv is true}{
+		M2M($cells[end]$, recvBuffer)\;
+	}
+}
+\BlankLine
+\caption{Distributed M2M}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{L2L}
+The L2L operator is very close to M2M.
+There are shared cells and a process may need these cell to compute L2L on its own cells at a lower level.
+
+\begin{algorithm}[H]
+\SetLine
+\KwData{none}
+\KwResult{none}
+\BlankLine
+\For{idxLevel $\leftarrow$ 2 \KwTo $Height - 2$ }{
+	\uIf{$cells[0]$ not in my working interval}{
+		irecv($cells[0]$)\;
+		hasRecv $\leftarrow$ true\;
+	}
+	\uIf{$cells[end]$ in another working interval}{
+		isend($cells[end]$)\;
+		hasSend $\leftarrow$ true\;
+	}
+	\ForAll{Cell c at level idxLevel in working interval}{
+		M2M(c, c.child)\;
+	}
+	\emph{Wait send and recv if needed}\;
+	\uIf{hasRecv is true}{
+		M2M($cells[0]$, $cells[0].child$)\;
+	}
+}
+\BlankLine
+\caption{Distributed L2L}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Complexe operators: P2P, M2L}
+This two operators are more complexe than the ones presented in the previous chapter.
+In fact, they require a gather and a preprocess task that take time.
+
+\section{P2P}
+To process the P2P we need the neighbors of all our leaves.
+But this neighbors can be potentialy hosted by any other process because of the Morton indexing.
+Also, our tree is an indirection tree, so a leaf may not exist because there is particles at this place.
+From that description of the problem we have implemented the fallowing algorithm.
+
+\begin{algorithm}[H]
+\SetLine
+\KwData{none}
+\KwResult{none}
+\BlankLine
+
+\ForAll{Leaf lf}{
+	neighborsIndexes $\leftarrow$ $lf.potentialNeighbors()$\;
+	\ForAll{index in neighborsIndexes}{
+		\uIf{index belong to another proc}{
+			isend(lf)\;
+			\emph{Mark lf as a leaf that is linked to another proc}\;
+		}
+	}
+}
+\emph{all gather how many particles to send to who}\;
+\emph{prepare the buffer to receive data}\;
+\ForAll{Leaf lf}{
+	\uIf{lf is not linked to another proc}{
+		neighbors $\leftarrow$ $tree.getNeighbors(lf)$\;
+		P2P(lf, neighbors)\;
+	}
+}
+\emph{Wait send and recv if needed}\;
+\emph{Put received particles in a fake tree}\;
+\ForAll{Leaf lf}{
+	\uIf{lf is linked to another proc}{
+		neighbors $\leftarrow$ $tree.getNeighbors(lf)$\;
+		otherNeighbors $\leftarrow$ $fakeTree.getNeighbors(lf)$\;
+		P2P(lf, neighbors + otherNeighbors)\;
+	}
+}
+
+\BlankLine
+\caption{Distributed P2P}
+\end{algorithm}
+
+\section{M2L}
+The M2L operator can be viewed as an P2P but done at each level of the tree.
+So, at each level we need to have access to neighbors and those ones can be hosted by any processes.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{9}
+
+\bibitem{itpc03}
+   Ananth Grama, George Karypis, Vipin Kumar, Anshul Gupta,
+   \emph{Introduction to Parallel Computing}.
+   Addison Wesley, Massachusetts,
+   2nd Edition,
+   2003.
+
+\end{thebibliography}
+
+\end{document}
