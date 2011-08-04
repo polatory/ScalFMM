@@ -231,8 +231,9 @@ public:
         MPI_Bcast ( &min, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD );
         MPI_Bcast ( &max, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD );
 
-        const MortonIndex startIndex = GetLeft(max - min + 1) + min;
-        const MortonIndex endIndex = GetRight(max - min + 1) + min;
+        // Used for print information
+        //const MortonIndex startIndex = GetLeft(max - min + 1) + min;
+        //const MortonIndex endIndex = GetRight(max - min + 1) + min;
 
         int*const needToReceive = new int[nbProcs * nbProcs];
         memset(needToReceive,0,nbProcs * nbProcs * sizeof(int));
