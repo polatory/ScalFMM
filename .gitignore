@@ -18,3 +18,9 @@ tmp/
 *#*#
 *.bin.*
 
+#ignore latex temporary files
+*.out
+*.dvi
+*.toc
+*.log
+*.aux
