@@ -13,11 +13,11 @@ protected:
     /** Empty Destructor */
     virtual ~FAbstractSendable(){}
 
-    //static const int SerializedSizeUp = sizeof(long);
+    //static const int SerializedSizeUp = sizeof(?);
     virtual void serializeUp(void* const buffer) const  = 0;
     virtual void deserializeUp(const void* const buffer) = 0;
 
-    //static const int SerializedSizeDown = sizeof(long);
+    //static const int SerializedSizeDown = sizeof(?);
     virtual void serializeDown(void* const buffer) const = 0;
     virtual void deserializeDown(const void* const buffer) = 0;
 };

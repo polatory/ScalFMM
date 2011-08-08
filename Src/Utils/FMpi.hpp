@@ -287,6 +287,11 @@ MPI_Datatype FMpi::getType<double>(){
 }
 
 template <>
+MPI_Datatype FMpi::getType<float>(){
+    return MPI_FLOAT;
+}
+
+template <>
 MPI_Datatype FMpi::getType<int>(){
     return MPI_INT;
 }

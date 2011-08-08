@@ -38,10 +38,10 @@ struct FMath{
     /** To know if 2 values seems to be equal */
     template <class NumType>
     static bool LookEqual(const NumType inV1, const NumType inV2){
-        /*const FReal relTol = 0.00001;
+        const FReal relTol = 0.00001;
 		const FReal absTol = 0.00001;
-                return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));*/
-        return Abs(inV1 - inV2) <= (Abs(inV1 < Abs(inV2) ? Abs(inV2) : Abs(inV1)) * 0.00001);
+                return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));
+        //return Abs(inV1 - inV2) <= ((Abs(inV1) < Abs(inV2) ? Abs(inV2) : Abs(inV1)) * 0.00001);
     }
 
     /** To get floor of a FReal */
