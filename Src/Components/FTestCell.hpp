@@ -13,6 +13,7 @@
 * look at this class to know whit it is.
 */
 class FTestCell : public FBasicCell  {
+protected:
     // To store data during upward and downward pass
     long dataUp, dataDown;
 public:

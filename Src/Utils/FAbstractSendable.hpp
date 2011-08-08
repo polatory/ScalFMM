@@ -13,23 +13,13 @@ protected:
     /** Empty Destructor */
     virtual ~FAbstractSendable(){}
 
-    /** To know the number of bytes needed */
-    virtual int bytesToSendUp() const = 0;
-    /** To put the object into the buffer */
-    virtual int writeUp(void* const buffer, const int limit) const = 0;
-    /** To know the number of bytes needed */
-    virtual int bytesToReceiveUp() const = 0;
-    /** To retreive data from a buffer */
-    virtual int readUp(void* const buffer, const int limit) = 0;
+    //static const int SerializedSizeUp = sizeof(long);
+    virtual void serializeUp(void* const buffer) const  = 0;
+    virtual void deserializeUp(const void* const buffer) = 0;
 
-    /** To know the number of bytes needed */
-    virtual int bytesToSendDown() const = 0;
-    /** To put the object into the buffer */
-    virtual int writeDown(void* const buffer, const int limit) const = 0;
-    /** To know the number of bytes needed */
-    virtual int bytesToReceiveDown() const = 0;
-    /** To retreive data from a buffer */
-    virtual int readDown(void* const buffer, const int limit) = 0;
+    //static const int SerializedSizeDown = sizeof(long);
+    virtual void serializeDown(void* const buffer) const = 0;
+    virtual void deserializeDown(const void* const buffer) = 0;
 };
 
 #endif //FABSTRACTSENDABLE_HPP

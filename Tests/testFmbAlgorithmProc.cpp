@@ -56,7 +56,7 @@ public:
 /** Custom cell
   *
   */
-class FmbCell : public FBasicCell, public FExtendFmbCell , public FAbstractSendable{
+class FmbCell : public FBasicCell, public FExtendFmbCell{
 public:
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable

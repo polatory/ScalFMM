@@ -19,11 +19,10 @@
 /** This class is a light octree
   * It is just a linked list with 8 pointers per node
   */
-template <class CellClass>
 class FLightOctree {
     class Node {
-        char data[sizeof(CellClass)];
         Node* next[8];
+        const void* data;
     public:
         Node(){
             memset(next, 0, sizeof(Node*)*8);
@@ -33,7 +32,7 @@ class FLightOctree {
                 delete next[idxNext];
             }
         }
-        void insert(const MortonIndex& index, const CellClass& cell, const int level){
+        void insert(const MortonIndex& index, const void* const cell, const int level){
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
                 if(!next[host]){
@@ -42,10 +41,10 @@ class FLightOctree {
                 next[host]->insert(index, cell, level - 1);
             }
             else{
-                memcpy(data, &cell, sizeof(CellClass));
+                data = cell;
             }
         }
-        const CellClass* getCell(const MortonIndex& index, const int level) const {
+        const void* getCell(const MortonIndex& index, const int level) const {
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
                 if(next[host]){
@@ -54,7 +53,7 @@ class FLightOctree {
                 return 0;
             }
             else{
-                return (CellClass*) data;
+                return data;
             }
         }
     };
@@ -65,11 +64,11 @@ public:
     FLightOctree(){
     }
 
-    void insertCell(const MortonIndex& index, const CellClass& cell, const int level){
+    void insertCell(const MortonIndex& index, const void* const cell, const int level){
         root.insert(index, cell, level);
     }
 
-    const CellClass* getCell(const MortonIndex& index, const int level) const{
+    const void* getCell(const MortonIndex& index, const int level) const{
         return root.getCell(index, level);
     }
 };
@@ -320,9 +319,10 @@ public:
         MPI_Request requests[14];
 
         // Maximum data per message is:
-        const int recvBufferOffset = 8 * sizeof(CellClass) + 1;
+        const int recvBufferOffset = 8 * CellClass::SerializedSizeUp + 1;
         char sendBuffer[recvBufferOffset];
         char recvBuffer[nbProcess * recvBufferOffset];
+        CellClass recvBufferCells[8];
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
@@ -349,8 +349,8 @@ public:
                 const CellClass* const* const child = iterArray[0].getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if( child[idxChild] && workingIntervalsPerLevel[(idxLevel+1) * nbProcess + idProcess].min <= child[idxChild]->getMortonIndex() ){
-                        memcpy(&sendBuffer[idxBuff], child[idxChild], sizeof(CellClass));
-                        idxBuff += sizeof(CellClass);
+                        child[idxChild]->serializeUp(&sendBuffer[idxBuff]);
+                        idxBuff += CellClass::SerializedSizeUp;
                         state |= (0x1 << idxChild);
                     }
                 }
@@ -425,8 +425,11 @@ public:
                             }
 
                             fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
-                            currentChild[position] = (CellClass*) &recvBuffer[idxProc * recvBufferOffset + bufferIndex];
-                            bufferIndex += sizeof(CellClass);
+
+                            recvBufferCells[position].deserializeUp(&recvBuffer[idxProc * recvBufferOffset + bufferIndex]);
+                            bufferIndex += CellClass::SerializedSizeUp;
+
+                            currentChild[position] = (CellClass*) &recvBufferCells[position];
 
                             state >>= 1;
                             ++position;
@@ -586,10 +589,15 @@ public:
             MPI_Request requests[2 * nbProcess * OctreeHeight];
             int iterRequest = 0;
 
-            CellClass* sendBuffer[nbProcess * OctreeHeight];
+            struct CellToSend{
+                MortonIndex index;
+                char data[CellClass::SerializedSizeUp];
+            };
+
+            CellToSend* sendBuffer[nbProcess * OctreeHeight];
             memset(sendBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
 
-            CellClass* recvBuffer[nbProcess * OctreeHeight];
+            CellToSend* recvBuffer[nbProcess * OctreeHeight];
             memset(recvBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
 
 
@@ -597,22 +605,22 @@ public:
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                     if(toSendAtProcAtLevel != 0){
-                        sendBuffer[idxLevel * nbProcess + idxProc] = reinterpret_cast<CellClass*>(new char[sizeof(CellClass) * toSendAtProcAtLevel]);
+                        sendBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toSendAtProcAtLevel];
 
                         for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
-                            memcpy(&sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf], toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell(),
-                                   sizeof(CellClass) );
+                            sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].index = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
+                            toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
                         }
 
-                        mpiassert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellClass) , MPI_BYTE ,
+                        mpiassert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellToSend) , MPI_BYTE ,
                                              idxProc, idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
 
                     const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                     if(toReceiveFromProcAtLevel){
-                        recvBuffer[idxLevel * nbProcess + idxProc] = reinterpret_cast<CellClass*>(new char[sizeof(CellClass) * toReceiveFromProcAtLevel]);
+                        recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
 
-                        mpiassert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellClass), MPI_BYTE,
+                        mpiassert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellToSend), MPI_BYTE,
                                             idxProc, idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
                 }
@@ -674,12 +682,12 @@ public:
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     // put the received data into a temporary tree
-                    FLightOctree<CellClass> tempTree;
+                    FLightOctree tempTree;
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                         const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-                        const CellClass* const cells = reinterpret_cast<CellClass*>(recvBuffer[idxLevel * nbProcess + idxProc]);
+                        const CellToSend* const cells = recvBuffer[idxLevel * nbProcess + idxProc];
                         for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                            tempTree.insertCell(cells[idxCell].getMortonIndex(), cells[idxCell], idxLevel);
+                            tempTree.insertCell(cells[idxCell].index, cells[idxCell].data, idxLevel);
                         }
                     }
 
@@ -711,6 +719,7 @@ public:
                         KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                         MortonIndex neighborsIndex[208];
                         const CellClass* neighbors[208];
+                        CellClass neighborsData[208];
 
                         #pragma omp for  schedule(dynamic) nowait
                         for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
@@ -720,9 +729,11 @@ public:
                             int counter = 0;
                             // does we receive this index from someone?
                             for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                                const CellClass* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
+                                const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
                                 if(cellFromOtherProc){
-                                    neighbors[counter++] = cellFromOtherProc;
+                                    neighborsData[counter].deserializeUp(cellFromOtherProc);
+                                    neighbors[counter] = &neighborsData[counter];
+                                    ++counter;
                                 }
                             }
                             // need to compute
@@ -734,6 +745,11 @@ public:
                     FDEBUG(computationCounter.tac());
                 }
                 FDEBUG(receiveCounter.tac());
+            }
+
+            for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
+                delete[] sendBuffer[idxComm];
+                delete[] recvBuffer[idxComm];
             }
 
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -764,6 +780,9 @@ public:
 
             const int heightMinusOne = OctreeHeight - 1;
 
+            char sendBuffer[CellClass::SerializedSizeDown];
+            char recvBuffer[CellClass::SerializedSizeDown];
+
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
                 // copy cells to work with
@@ -785,7 +804,7 @@ public:
                 if(idProcess != 0
                         && realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min != workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
                     needToRecv = true;
-                    MPI_Irecv( iterArray[0].getCurrentCell(), sizeof(CellClass), MPI_BYTE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                    MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
                 }
 
 
@@ -803,8 +822,9 @@ public:
                     }
 
                     if(endProcThatRecv != idProcess + 1){
+                        iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
                         for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-                            MPI_Isend(iterArray[numberOfCells - 1].getCurrentCell(), sizeof(CellClass), MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
+                            MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
                         }
                     }
                 }
@@ -831,6 +851,7 @@ public:
                     if(needToRecv){
                         // Need to compute
                         FDEBUG(computationCounter.tic());
+                        iterArray[0].getCurrentCell()->deserializeDown(recvBuffer);
                         kernels[0]->L2L( iterArray[0].getCurrentCell() , iterArray[0].getCurrentChild(), idxLevel);
                         FDEBUG(computationCounter.tac());
                     }

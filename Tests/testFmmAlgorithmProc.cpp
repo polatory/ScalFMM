@@ -129,10 +129,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                     std::cout << "Error index are not equal!" << std::endl;
                 }
                 else{
-                    if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
+                    /*if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
                         std::cout << "M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
                                 << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
-                    }
+                    }*/
                     if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
                         std::cout << "L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
                                 << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
@@ -270,12 +270,30 @@ void print(OctreeClass* const valideTree){
   * Because we use fma loader it needs {FExtendPhysicalValue}
   */
 class TestParticle : public FTestParticle, public FExtendPhysicalValue {
-public:
 };
 
 
+class TestCell : public FTestCell , public FAbstractSendable {
+public:
+    static const int SerializedSizeUp = sizeof(long);
+    void serializeUp(void* const buffer) const {
+        *(long*)buffer = this->dataUp;
+    }
+    void deserializeUp(const void* const buffer){
+        this->dataUp = *(long*)buffer;
+    }
+
+    static const int SerializedSizeDown = sizeof(long);
+    void serializeDown(void* const buffer) const {
+        *(long*)buffer = this->dataDown;
+    }
+    void deserializeDown(const void* const buffer){
+        this->dataDown = *(long*)buffer;
+    }
+};
+
 typedef TestParticle               ParticleClass;
-typedef FTestCell                  CellClass;
+typedef TestCell                   CellClass;
 typedef FVector<ParticleClass>     ContainerClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
