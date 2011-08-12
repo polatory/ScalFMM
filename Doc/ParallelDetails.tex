@@ -9,7 +9,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \author{Berenger Bramas}
 \title{ScalFmm - Parallel Algorithms (Draft)}
-\date{August, 2011}
+\date{August 11, 2011}
 
 %% Package config
 \lstset{language=c++, frame=lines}
@@ -74,6 +74,9 @@ Finally, a particle is represented by four decimal values: a position and a phys
 \section{Sorting the particles}
 Once each node has a set of particles we need to sort them.
 This problem boils down to a simple parallel sort where Morton index are used to compare particles.
+We use two different approaches to sort the data.
+In the next version of scalfmm the less efficient method should be deleted.
+
 \subsection{Using QuickSort}
 A first approach is to use a famous sorting algorithm.
 We choose to use the quick sort algorithm because the distributed and the shared memory approaches are mostly similar.
@@ -138,6 +141,7 @@ At the end of the algorithm our system is completely balanced with the same numb
 \caption{Sand Settling Example}
 \end{center}
 \end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Simple operators: P2M, M2M, L2L}
@@ -159,8 +163,16 @@ Moreover, we have to decide which process will be responsible of the computation
 We have decided that the node with the smallest rank has the responsibility to compute the M2M and propagate the value for the future operations.
 Despite the fact that others processes are not computing this cell, they have to send the child of this shared cell to the responsible node.
 We can establish some rules and some properties of the communication during this operation.
-In fact, at each iteration a process never needs to send more than 8-1 cells, also a process never needs to receive more than 8-1 cells.
+In fact, at each iteration a process never needs to send more than 7 cells, also a process never needs to receive more than 7 cells.
 The shared cells are always at extremities and one process cannot be designed to be the responsible of more than one shared cell at a level.
+
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=14cm, height=7cm, keepaspectratio=true]{ruleillu.jpg}
+\caption{Potential Conflicts}
+\end{center}
+\end{figure}
+
 \begin{algorithm}[H]
 \restylealgo{boxed}
 \linesnumbered
