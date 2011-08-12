@@ -4,7 +4,7 @@
 
 #include "../Utils/FQuickSort.hpp"
 
-template<class ContainerClass, class ParticleClass>
+template<class ParticleClass>
 class FMpiTreeBuilder{
     static long getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
             const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
@@ -77,12 +77,26 @@ class FMpiTreeBuilder{
         }
     };
 
+    IndexedParticle* intervals;
+    int nbLeavesInIntervals;
+
+private:
+    FMpiTreeBuilder(const FMpiTreeBuilder&){}
+    FMpiTreeBuilder& operator=(const FMpiTreeBuilder&){return *this;}
+
 public:
-    template <class OctreeClass, class LoaderClass>
-    static bool SplitAndSortFile(OctreeClass& treeInterval, int& myNbParticlesCounter, LoaderClass& loader){
+    FMpiTreeBuilder()
+        :  intervals(0), nbLeavesInIntervals(0) {
+    }
+
+    virtual ~FMpiTreeBuilder(){
+        delete [] intervals;
+    }
+
+    template <class LoaderClass>
+    bool splitAndSortFile(LoaderClass& loader, const int NbLevels){
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
-        const int NbLevels = treeInterval.getHeight();
 
         IndexedParticle* outputArray = 0;
         long outputSize = 0;
@@ -123,12 +137,19 @@ public:
                     MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, 0, MPI_COMM_WORLD);
                 }
             }
+            MPI_Request req[2];
+            int reqiter = 0;
             // at this point every one know the first index of his right neighbors
-            const bool needToRecvBeforeSend = (rank != 0 && ((outputSize && outputArray[0].index == otherFirstIndex) || !outputSize));
+            const bool needToRecvBeforeSend = (rank != 0 && ((outputSize && otherFirstIndex == outputArray[0].index ) || !outputSize));
             if( needToRecvBeforeSend || (rank == nbProcs - 1) ){
-                long sendByOther = 0;
-                MPI_Recv(&sendByOther, 1, MPI_LONG, rank - 1, 0, MPI_COMM_WORLD,0);
+                int sendByOther = 0;
+
+                MPI_Status status;
+                MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &status);
+                MPI_Get_count( &status,  MPI_BYTE, &sendByOther);
+
                 if(sendByOther){
+                    sendByOther /= sizeof(IndexedParticle);
                     const IndexedParticle* const reallocOutputArray = outputArray;
                     const long reallocOutputSize = outputSize;
 
@@ -137,7 +158,10 @@ public:
                     memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, 0);
+                    MPI_Irecv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
+                }
+                else{
+                    MPI_Irecv(0, 0, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                 }
             }
             if(rank != nbProcs - 1){
@@ -146,14 +170,24 @@ public:
                     --idxPart;
                 }
                 long toSend = outputSize - 1 - idxPart;
-                MPI_Send( &toSend, 1, MPI_LONG, rank + 1, 0, MPI_COMM_WORLD);
-                if(toSend){
-                    MPI_Send( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, 0, MPI_COMM_WORLD);
-                }
+                MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
+
                 if( rank != 0 && !needToRecvBeforeSend ){
-                    long sendByOther = 0;
-                    MPI_Recv(&sendByOther, 1, MPI_LONG, rank - 1, 0, MPI_COMM_WORLD, 0);
+                    int sendByOther = 0;
+
+                    MPI_Status status;
+                    MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &status);
+                    MPI_Get_count( &status,  MPI_BYTE, &sendByOther);
+
                     if(sendByOther){
+                        sendByOther /= sizeof(IndexedParticle);
+                        char* const tempBuffer = new char[sizeof(IndexedParticle) * sendByOther];
+
+                        MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
+
+                        MPI_Waitall(reqiter,req,0);
+                        reqiter = 0;
+
                         const IndexedParticle* const reallocOutputArray = outputArray;
                         const long reallocOutputSize = outputSize;
 
@@ -161,190 +195,59 @@ public:
                         outputArray = new IndexedParticle[outputSize];
                         memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                         delete[] reallocOutputArray;
-
-                        MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD,0);
+                        memcpy(outputArray, tempBuffer, sendByOther * sizeof(IndexedParticle));
+                        delete[] tempBuffer;
+                    }
+                    else{
+                        MPI_Irecv( 0, 0, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                     }
                 }
             }
+            MPI_Waitall(reqiter,req,0);
         }
 
-        // we can insert into the tree
-        for(int idxPart = 0 ; idxPart < outputSize ; ++idxPart){
-            treeInterval.insert(outputArray[idxPart].particle);
+
+        int leavesCounter = 0;
+
+        MortonIndex previousIndex = -1;
+        char* writeIndex = reinterpret_cast<char*>(outputArray);
+        int* writeCounter = 0;
+
+        for( int idxPart = 0; idxPart < outputSize ; ++idxPart){
+            if( outputArray[idxPart].index != previousIndex ){
+                previousIndex = outputArray[idxPart].index;
+                ++leavesCounter;
+
+                writeCounter = reinterpret_cast<int*>( writeIndex );
+                writeIndex += sizeof(int);
+
+                (*writeCounter) = 0;
+            }
+
+            memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
+
+            writeIndex += sizeof(ParticleClass);
+            ++(*writeCounter);
         }
-        myNbParticlesCounter = outputSize;
-        delete[] outputArray;
+
+        intervals = outputArray;
+        nbLeavesInIntervals = leavesCounter;
 
         return true;
     }
-
-    template <class OctreeClass, class LoaderClass>
-    static bool SplitAndSortFileWithoutQS(OctreeClass& treeInterval, int& myNbParticlesCounter, LoaderClass& loader){
-        const int rank = MpiGetRank();
-        const int nbProcs = MpiGetNbProcs();
-
-        //////////////////////////////////////////////////////////////////////////////////
-        // My method
-        //////////////////////////////////////////////////////////////////////////////////
-        FVector<ParticlesGroup> groups;
-        ParticleClass*const realParticles = reinterpret_cast<ParticleClass*>(new char[loader.getNumberOfParticles() * sizeof(ParticleClass)]);
-
-        {
-            OctreeClass sortingTree(treeInterval.getHeight(), treeInterval.getSubHeight() ,loader.getBoxWidth(),loader.getCenterOfBox());
-
-            ParticleClass particle;
-            for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                loader.fillParticle(particle);
-                sortingTree.insert(particle);
-            }
-
-            //////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////
-            int indexPart = 0;
-
-            typename OctreeClass::Iterator octreeIterator(&sortingTree);
-            octreeIterator.gotoBottomLeft();
-            do{
-                typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-                const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
-
-                groups.push(ParticlesGroup(octreeIterator.getCurrentListTargets()->getSize(),indexPart, indexAtThisLeaf));
-
-                while( iter.hasNotFinished() ){
-                    realParticles[indexPart] = iter.data();
-                    ++indexPart;
-                    iter.gotoNext();
-                }
-            } while(octreeIterator.moveRight());
-
-        }
-
-        //////////////////////////////////////////////////////////////////////////////////
-        // We send the particle that do not belong to us
-        //////////////////////////////////////////////////////////////////////////////////
-
-        MortonIndex min = 0;
-        MortonIndex max = 0;
-
-        MPI_Reduce( &groups[0].index, &min, 1, MPI_LONG_LONG, MPI_MIN, 0, MPI_COMM_WORLD );
-        MPI_Reduce( &groups[groups.getSize() - 1].index, &max, 1, MPI_LONG_LONG, MPI_MAX, 0, MPI_COMM_WORLD );
-
-        MPI_Bcast ( &min, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD );
-        MPI_Bcast ( &max, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD );
-
-        // Used for print information
-        //const MortonIndex startIndex = GetLeft(max - min + 1) + min;
-        //const MortonIndex endIndex = GetRight(max - min + 1) + min;
-
-        int*const needToReceive = new int[nbProcs * nbProcs];
-        memset(needToReceive,0,nbProcs * nbProcs * sizeof(int));
-
-        FMpi::Request requests[nbProcs];
-        {
-            int needToSend[nbProcs];
-            memset(needToSend, 0, sizeof(int) * nbProcs);
-
-            MortonIndex rightMortonIndex = min;
-            int groudIndex = 0;
-            for(int idxProc = 0 ; idxProc < nbProcs && groudIndex < groups.getSize() ; ++idxProc){
-                rightMortonIndex = GetOtherRight(max - min + 1, idxProc) + min;
-
-                if(idxProc != rank){
-                    int size = 0;
-                    int currentGroupIndex = groudIndex;
-                    while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
-                        size += groups[groudIndex].number;
-                        ++groudIndex;
-                    }
-                    needToSend[idxProc] = size;
-
-                    MPI_Isend(&realParticles[groups[currentGroupIndex].positionInArray], sizeof(ParticleClass) * size, MPI_BYTE , idxProc, 1, MPI_COMM_WORLD, &requests[idxProc]);
-                }
-                else{
-                    needToSend[idxProc] = 0;
-                    while(groudIndex < groups.getSize() && groups[groudIndex].index < rightMortonIndex){
-                        const int end = groups[groudIndex].positionInArray + groups[groudIndex].number;
-                        for(int idxPart = groups[groudIndex].positionInArray ; idxPart < end ; ++idxPart){
-                            //std::cout << "\t I keep (" << realParticles[idxPart].getPosition().getX() << ";" << realParticles[idxPart].getPosition().getY() << ";" << realParticles[idxPart].getPosition().getZ() << ")" << std::endl;
-                            treeInterval.insert(realParticles[idxPart]);
-                            ++myNbParticlesCounter;
-                        }
-                        ++groudIndex;
-                    }
-                }
-            }
-
-            MPI_Allgather( needToSend, nbProcs, MPI_INT, needToReceive, nbProcs, MPI_INT, MPI_COMM_WORLD);
-        }
-
-
-        //////////////////////////////////////////////////////////////////////////////////
-        // We receive others particles and insert them in the tree
-        //////////////////////////////////////////////////////////////////////////////////
-        int CounterProcToReceive(0);
-        int maxPartToReceive(0);
-        for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
-            if(idxProc != rank && needToReceive[nbProcs * idxProc + rank]){
-                ++CounterProcToReceive;
-                if(maxPartToReceive < needToReceive[nbProcs * idxProc + rank]){
-                    maxPartToReceive = needToReceive[nbProcs * idxProc + rank];
-                }
-            }
-        }
-
-
-        ParticleClass*const iterParticles = reinterpret_cast<ParticleClass*>(new char[maxPartToReceive * sizeof(ParticleClass)]);
-        // we receive message from nb proc - 1 (from every other procs
-        for(int idxProc = 0 ; idxProc < CounterProcToReceive ; ++idxProc){
-            MPI_Status status;
-            MPI_Probe( MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status );
-            const int source = status.MPI_SOURCE;
-
-            const int nbPartFromProc = needToReceive[nbProcs * source + rank];
-            int received(0);
-
-            MPI_Recv(iterParticles, sizeof(ParticleClass) * nbPartFromProc, MPI_BYTE, source, 1, MPI_COMM_WORLD, &status);
-            MPI_Get_count(&status,MPI_BYTE, &received);
-
-            for(int idxPart = 0 ; idxPart < nbPartFromProc ; ++idxPart){
-                //std::cout << "\t We receive a new particle (" << (*iterParticles).getPosition().getX() << ";" << (*iterParticles).getPosition().getY() << ";" << (*iterParticles).getPosition().getZ() << ")" << std::endl;
-                treeInterval.insert(iterParticles[idxPart]);
-                ++myNbParticlesCounter;
-            }
-        }
-
-        for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
-            if(idxProc != rank && needToReceive[nbProcs * rank + idxProc ]){
-                MPI_Wait(&requests[idxProc], 0);
-            }
-        }
-
-        delete [] reinterpret_cast<char*>(realParticles);
-        delete [] needToReceive;
-
-        return true;
-    }
-
 
     template <class OctreeClass>
-    static bool IntervalsToTree(OctreeClass& realTree, OctreeClass& treeInterval, const int myNbParticlesCounter){
+    bool intervalsToTree(OctreeClass& realTree){
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
 
+        FTic counter;
+        counter.tic();
         //////////////////////////////////////////////////////////////////////////////////
         // We inform the master proc about the data we have
         //////////////////////////////////////////////////////////////////////////////////
 
-        int nbLeafs = 0;
-
-        // we might now have any particles in our interval
-        if(myNbParticlesCounter){
-            typename OctreeClass::Iterator octreeIterator(&treeInterval);
-            octreeIterator.gotoBottomLeft();
-            do{
-                ++nbLeafs;
-            } while(octreeIterator.moveRight());
-        }
+        int nbLeafs = nbLeavesInIntervals;
 
         // receive from left and right
         if((rank == 0)){
@@ -382,6 +285,7 @@ public:
             }
         }
 
+
         //////////////////////////////////////////////////////////////////////////////////
         // We balance the data
         //////////////////////////////////////////////////////////////////////////////////
@@ -406,7 +310,7 @@ public:
         const int iNeedToSendRightCount = leftLeafs + nbLeafs - myRightLeaf;
         const int iCanSendToRight = nbLeafs;
 
-        MPI_Request requests[10];
+        MPI_Request requests[2];
         int iterRequest = 0;
 
         int hasBeenSentToLeft = 0;
@@ -414,87 +318,99 @@ public:
 
         char* particlesToSend = 0;
 
+
+        printf("on my left %d on my right %d\n",leftLeafs, rightLeafs);
+        printf("iNeedToSendLeftCount %d iCanSendToLeft %d\n",iNeedToSendLeftCount, iCanSendToLeft);
+        printf("iNeedToSendRightCount %d iCanSendToRight %d \n",iNeedToSendRightCount, iCanSendToRight);
+        printf("Elapsed %lf\n", counter.tacAndElapsed());
+
         ///////////////////////////////
         // Manage data we already have
         ///////////////////////////////
 
-        if(myNbParticlesCounter){
-            particlesToSend = new char[sizeof(ParticleClass) * myNbParticlesCounter + sizeof(int) * nbLeafs];
-            int idxWriteParticles = 0;
+        if(nbLeafs){
+            particlesToSend = reinterpret_cast<char*>(intervals);
 
-            typename OctreeClass::Iterator octreeIterator(&treeInterval);
-            octreeIterator.gotoBottomLeft();
+            int currentLeafPosition = 0;
 
             //Send to Left (the first leaves
             if(iNeedToSendToLeft){
                 for(int idxLeaf = 0 ; idxLeaf < iNeedToSendLeftCount && idxLeaf < iCanSendToLeft ; ++idxLeaf){
-                    *(int*)&particlesToSend[idxWriteParticles] = octreeIterator.getCurrentListTargets()->getSize();
-                    idxWriteParticles += sizeof(int);
-
-                    memcpy(&particlesToSend[idxWriteParticles], octreeIterator.getCurrentListTargets()->data(), sizeof(ParticleClass) * octreeIterator.getCurrentListTargets()->getSize());
-                    idxWriteParticles += sizeof(ParticleClass) * octreeIterator.getCurrentListTargets()->getSize();
-
-                    octreeIterator.moveRight();
+                    currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
-
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
-                MPI_Isend(particlesToSend, idxWriteParticles, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Isend(particlesToSend, currentLeafPosition, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                printf("I send to left %d bytes %d leaves\n", currentLeafPosition, hasBeenSentToLeft);
             }
+            printf("Elapsed %lf\n", counter.tacAndElapsed());
 
             // Insert the particles I host and that belong to me
             const int beginForMe = (iNeedToSendToLeft ? FMath::Min(iNeedToSendLeftCount,iCanSendToLeft) : 0);
             const int endForMe = nbLeafs - (iNeedToSendToRight ? FMath::Min(iNeedToSendRightCount,iCanSendToRight) : 0);
+            printf("I insert my particles from %d to %d \n", beginForMe, endForMe);
             for(int idxLeaf = beginForMe ; idxLeaf < endForMe ; ++idxLeaf){
-                typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-                while( iter.hasNotFinished() ){
-                    realTree.insert(iter.data());
-                    iter.gotoNext();
+                const int nbPartInLeaf = (*(int*)&particlesToSend[currentLeafPosition]);
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&particlesToSend[currentLeafPosition] + sizeof(int));
+
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
                 }
 
-                octreeIterator.moveRight();
+                currentLeafPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
             }
+            printf("Done\n");
+            printf("Elapsed %lf\n", counter.tacAndElapsed());
 
             //Send to Right (the right-est leaves
             if(iNeedToSendToRight){
-                const int beginWriteIndex = idxWriteParticles;
+                const int beginWriteIndex = currentLeafPosition;
 
                 for(int idxLeaf = 0 ; idxLeaf < iNeedToSendRightCount && idxLeaf < iCanSendToRight ; ++idxLeaf){
-                    *(int*)&particlesToSend[idxWriteParticles] = octreeIterator.getCurrentListTargets()->getSize();
-                    idxWriteParticles += sizeof(int);
-
-                    memcpy(&particlesToSend[idxWriteParticles], octreeIterator.getCurrentListTargets()->data(), sizeof(ParticleClass) * octreeIterator.getCurrentListTargets()->getSize());
-                    idxWriteParticles += sizeof(ParticleClass) * octreeIterator.getCurrentListTargets()->getSize();
-
-                    octreeIterator.moveRight();
+                    currentLeafPosition += (*(int*)&particlesToSend[currentLeafPosition]* sizeof(ParticleClass)) + sizeof(int);
                 }
 
                 hasBeenSentToRight = FMath::Min(iNeedToSendRightCount, iCanSendToRight);
-                MPI_Isend( &particlesToSend[beginWriteIndex], idxWriteParticles - beginWriteIndex, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Isend( &particlesToSend[beginWriteIndex], currentLeafPosition - beginWriteIndex, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                printf("I send to right %d bytes %d leaves\n", currentLeafPosition - beginWriteIndex, hasBeenSentToRight);
             }
+            printf("Elapsed %lf\n", counter.tacAndElapsed());
         }
 
         char* toRecvFromLeft = 0;
         char* toRecvFromRight = 0;
         int countReceive = int(iWillReceiveFromLeft) + int(iWillReceiveFromRight);
-        int bytesRecvFromLeft = 0;
-        int bytesRecvFromRight = 0;
+        int sizeOfLeftBuffer = 0;
+        int sizeOfRightBuffer = 0;
+        int sizeOfRightData = 0;
+        int sizeOfLeftData = 0;
+
+        int sourceToWhileRecv = MPI_ANY_SOURCE;
+
+        printf("countReceive %d\n", countReceive);
+        printf("Elapsed %lf\n", counter.tacAndElapsed());
 
         // Now prepare to receive data
         while(countReceive--){
             MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+            MPI_Probe(sourceToWhileRecv, 0, MPI_COMM_WORLD, &status);
             // receive from left
             if(status.MPI_SOURCE == rank - 1){
-                MPI_Get_count( &status,  MPI_BYTE, &bytesRecvFromLeft);
-                toRecvFromLeft = new char[bytesRecvFromLeft];
-                MPI_Irecv(toRecvFromLeft, bytesRecvFromLeft, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftBuffer);
+                toRecvFromLeft = new char[sizeOfLeftBuffer];
+                sizeOfLeftData = sizeOfLeftBuffer;
+                MPI_Irecv(toRecvFromLeft, sizeOfLeftBuffer, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
+                sourceToWhileRecv = rank + 1;
+                printf("I will receive %d bytes from left\n", sizeOfLeftBuffer);
             }
             // receive from right
             else{
-                MPI_Get_count( &status,  MPI_BYTE, &bytesRecvFromRight);
-                toRecvFromRight = new char[bytesRecvFromRight];
-                MPI_Irecv(toRecvFromRight, bytesRecvFromRight, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightBuffer);
+                toRecvFromRight = new char[sizeOfRightBuffer];
+                sizeOfRightData = sizeOfRightBuffer;
+                MPI_Irecv(toRecvFromRight, sizeOfRightBuffer, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
+                sourceToWhileRecv = rank - 1;
+                printf("I will receive %d bytes from right\n", sizeOfRightBuffer);
             }
         }
 
@@ -503,8 +419,9 @@ public:
         ///////////////////////////////
         MPI_Waitall(iterRequest, requests, 0);
         // We can delete the buffer use to send our particles only
-        delete[] particlesToSend;
-        particlesToSend = 0;
+
+        printf("Wait passed...\n");
+        printf("Elapsed %lf\n", counter.tacAndElapsed());
 
         ///////////////////////////////
         // Process received data
@@ -517,56 +434,67 @@ public:
         int arrayIdxLeft = 0;
 
         if(iDoNotHaveEnoughtToSendLeft){
+            printf("iDoNotHaveEnoughtToSendLeft\n");
             do{
                 arrayIdxRight = 0;
-                while(arrayIdxRight < bytesRecvFromRight && hasBeenSentToLeft < iNeedToSendLeftCount){
+                while(arrayIdxRight < sizeOfRightData && hasBeenSentToLeft < iNeedToSendLeftCount){
                     const int particlesInThisLeaf = *(int*)&toRecvFromRight[arrayIdxRight];
                     arrayIdxRight += sizeof(int) + sizeof(ParticleClass) * particlesInThisLeaf;
                     --hasToBeReceivedFromRight;
+                    ++hasBeenSentToLeft;
                 }
+                printf("Send %d to left, total leaves sent %d / %d\n", arrayIdxRight, hasBeenSentToLeft, iNeedToSendLeftCount);
+                printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToLeft < iNeedToSendLeftCount){
                     MPI_Status status;
                     MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    int status_size = 0;
-                    MPI_Get_count( &status,  MPI_BYTE, &status_size);
-                    if(bytesRecvFromRight < status_size){
-                        bytesRecvFromRight = status_size;
+                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightData);
+                    if(sizeOfRightBuffer < sizeOfRightData){
+                        sizeOfRightBuffer = sizeOfRightData;
                         delete[] toRecvFromRight;
-                        toRecvFromRight = new char[status_size];
+                        toRecvFromRight = new char[sizeOfRightData];
                     }
-                    MPI_Recv(toRecvFromRight, status_size, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    printf("Receive %d bytes from right\n", sizeOfRightData);
+                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToLeft < iNeedToSendLeftCount);
         }
         // We have to receive from left and transfere to right
         else if(iDoNotHaveEnoughtToSendRight){
+            printf("iDoNotHaveEnoughtToSendRight\n");
             do{
                 arrayIdxLeft = 0;
-                while(arrayIdxLeft < bytesRecvFromLeft && hasBeenSentToRight < iNeedToSendRightCount){
+                while(arrayIdxLeft < sizeOfLeftData && hasBeenSentToRight < iNeedToSendRightCount){
                     const int particlesInThisLeaf = *(int*)&toRecvFromLeft[arrayIdxLeft];
                     arrayIdxLeft += sizeof(int) + sizeof(ParticleClass) * particlesInThisLeaf;
                     --hasToBeReceivedFromLeft;
+                    ++hasBeenSentToRight;
                 }
+                printf("Send %d to right, total leaves sent %d / %d\n", arrayIdxLeft, hasBeenSentToRight, iNeedToSendRightCount);
+                printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToRight < iNeedToSendRightCount){
                     MPI_Status status;
                     MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    int status_size = 0;
-                    MPI_Get_count( &status,  MPI_BYTE, &status_size);
-                    if(bytesRecvFromLeft < status_size){
-                        bytesRecvFromLeft = status_size;
+                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftData);
+                    if(sizeOfLeftBuffer < sizeOfLeftData){
+                        sizeOfLeftBuffer = sizeOfLeftData;
                         delete[] toRecvFromLeft;
-                        toRecvFromLeft = new char[status_size];
+                        toRecvFromLeft = new char[sizeOfLeftData];
                     }
-                    MPI_Recv(toRecvFromLeft, status_size, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    printf("Receive %d bytes from left", sizeOfLeftData);
+                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToRight < iNeedToSendRightCount);
         }
 
+        printf("Finished to send\n");
+
         if(iWillReceiveFromLeft ){ // I need to wait
+            printf("iWillReceiveFromLeft (hasToBeReceivedFromLeft %d leaves)\n", hasToBeReceivedFromLeft);
             do{
-                while(arrayIdxLeft < bytesRecvFromLeft){
+                while(arrayIdxLeft < sizeOfLeftData){
                     const int particlesInThisLeaf = *(int*)&toRecvFromLeft[arrayIdxLeft];
                     arrayIdxLeft += sizeof(int);
                     ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&toRecvFromLeft[arrayIdxLeft]);
@@ -580,23 +508,27 @@ public:
                 }
                 arrayIdxLeft = 0;
 
+                printf("Remains hasToBeReceivedFromLeft %d leaves to receive\n",hasToBeReceivedFromLeft);
+                printf("Elapsed %lf\n", counter.tacAndElapsed());
+
                 if(hasToBeReceivedFromLeft){
                     MPI_Status status;
-                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    int status_size = 0;
-                    MPI_Get_count( &status,  MPI_BYTE, &status_size);
-                    if(bytesRecvFromLeft < status_size){
-                        bytesRecvFromLeft = status_size;
+                    MPI_Probe( rank - 1, 0, MPI_COMM_WORLD, &status);
+                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftData);
+                    if(sizeOfLeftBuffer < sizeOfLeftData){
+                        sizeOfLeftBuffer = sizeOfLeftData;
                         delete[] toRecvFromLeft;
-                        toRecvFromLeft = new char[status_size];
+                        toRecvFromLeft = new char[sizeOfLeftData];
                     }
-                    MPI_Recv(toRecvFromLeft, status_size, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    printf("Received %d bytes from left\n", sizeOfLeftData);
+                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasToBeReceivedFromLeft);
         }
         if(iWillReceiveFromRight){
+            printf("iWillReceiveFromRight (hasToBeReceivedFromRight %d leaves)\n", hasToBeReceivedFromRight);
             do{
-                while(arrayIdxRight < bytesRecvFromRight){
+                while(arrayIdxRight < sizeOfRightData){
                     const int particlesInThisLeaf = *(int*)&toRecvFromRight[arrayIdxRight];
                     arrayIdxRight += sizeof(int);
                     ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&toRecvFromRight[arrayIdxRight]);
@@ -610,17 +542,21 @@ public:
                 }
                 arrayIdxRight = 0;
 
+                printf("Remains hasToBeReceivedFromRight %d leaves to receive\n",hasToBeReceivedFromRight);
+                printf("Elapsed %lf\n", counter.tacAndElapsed());
+
                 if(hasToBeReceivedFromRight){
                     MPI_Status status;
-                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    int status_size = 0;
-                    MPI_Get_count( &status,  MPI_BYTE, &status_size);
-                    if(bytesRecvFromRight < status_size){
-                        bytesRecvFromRight = status_size;
+                    printf("Probe\n");
+                    MPI_Probe( rank + 1, 0, MPI_COMM_WORLD, &status);
+                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightData);
+                    printf("Receive %d bytes from right\n", sizeOfRightData);
+                    if(sizeOfRightBuffer < sizeOfRightData){
+                        sizeOfRightBuffer = sizeOfRightData;
                         delete[] toRecvFromRight;
-                        toRecvFromRight = new char[status_size];
+                        toRecvFromRight = new char[sizeOfRightData];
                     }
-                    MPI_Recv(toRecvFromRight, status_size, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasToBeReceivedFromRight);
         }

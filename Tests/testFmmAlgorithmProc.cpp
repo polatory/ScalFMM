@@ -340,19 +340,16 @@ int main(int argc, char ** argv){
     // The real tree to work on
     OctreeClass realTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
-    {
-        // Buffer data
-        OctreeClass treeInterval(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
-        int myNbParticlesCounter = 0;
-
+    if( app.processCount() != 1){
         //////////////////////////////////////////////////////////////////////////////////
         // We sort our particles
         //////////////////////////////////////////////////////////////////////////////////
         std::cout << "Create intervals ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ContainerClass, ParticleClass>::SplitAndSortFile(treeInterval,myNbParticlesCounter,loader);
-        //FMpiTreeBuilder<ContainerClass, ParticleClass>::SplitAndSortFileWithoutQS(treeInterval,myNbParticlesCounter,loader);
+        FMpiTreeBuilder<ParticleClass> builder;
+
+        builder.splitAndSortFile(loader, NbLevels);
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -363,16 +360,20 @@ int main(int argc, char ** argv){
         std::cout << "Create real tree ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ContainerClass, ParticleClass>::IntervalsToTree(realTree,treeInterval,myNbParticlesCounter);
+        builder.intervalsToTree(realTree);
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
         //////////////////////////////////////////////////////////////////////////////////
-
-        app.processBarrier();
-
-        //////////////////////////////////////////////////////////////////////////////////
+    }    
+    else{
+        FFmaBinLoader<ParticleClass> loaderSeq(filename);
+        ParticleClass partToInsert;
+        for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+            loaderSeq.fillParticle(partToInsert);
+            realTree.insert(partToInsert);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////
