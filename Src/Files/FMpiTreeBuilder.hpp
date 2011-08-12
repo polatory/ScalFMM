@@ -173,6 +173,7 @@ public:
             treeInterval.insert(outputArray[idxPart].particle);
         }
         myNbParticlesCounter = outputSize;
+        delete[] outputArray;
 
         return true;
     }
@@ -437,7 +438,7 @@ public:
                 }
 
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
-                MPI_Send(particlesToSend, idxWriteParticles, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
+                MPI_Isend(particlesToSend, idxWriteParticles, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
             }
 
             // Insert the particles I host and that belong to me
