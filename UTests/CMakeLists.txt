@@ -45,4 +45,9 @@ foreach(exec ${source_tests_files})
 		${execname}
 		${fmb_lib}
 	)
+
+	add_test(
+		${execname}
+		${CMAKE_CURRENT_BINARY_DIR}/${execname}
+	)
 endforeach(exec)

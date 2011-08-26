@@ -56,6 +56,7 @@ endif()
 # Build - UTests
 MESSAGE( STATUS "SCALFMM_BUILD_UTESTS = ${SCALFMM_BUILD_UTESTS}" )
 if( SCALFMM_BUILD_UTESTS )
+	ENABLE_TESTING()
 	add_subdirectory(UTests)
 endif()
 
