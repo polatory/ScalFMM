@@ -32,7 +32,9 @@ class FLightOctree {
                 delete next[idxNext];
             }
         }
+        /** Insert a cell */
         void insert(const MortonIndex& index, const void* const cell, const int level){
+            /** As long as the level is not 0 go downward */
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
                 if(!next[host]){
@@ -44,6 +46,7 @@ class FLightOctree {
                 data = cell;
             }
         }
+        /** Retreive data */
         const void* getCell(const MortonIndex& index, const int level) const {
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
@@ -58,16 +61,19 @@ class FLightOctree {
         }
     };
 
+    /** The tree root */
     Node root;
 
 public:
     FLightOctree(){
     }
 
+    /** Insert a cell into the light octree */
     void insertCell(const MortonIndex& index, const void* const cell, const int level){
         root.insert(index, cell, level);
     }
 
+    /** Get a cell or null if it does not exist */
     const void* getCell(const MortonIndex& index, const int level) const{
         return root.getCell(index, level);
     }
@@ -96,8 +102,6 @@ public:
 */
 template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : protected FAssertable {
-
-    FMpi& app;                               //< The app to communicate
 
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
@@ -142,7 +146,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadProc(FMpi& inApp, OctreeClass* const inTree, KernelClass* const inKernels)
-            : app(inApp), tree(inTree) , kernels(0), numberOfLeafs(0),
+            : tree(inTree) , kernels(0), numberOfLeafs(0),
             MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idProcess(inApp.processId()),
             OctreeHeight(tree->getHeight()),intervals(new Interval[inApp.processCount()]),
             realIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]),
@@ -513,7 +517,7 @@ public:
                     leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
 
 
-                    // Which cell potentialy need other data and in the same time
+                    // Which cells potentialy need other data and in the same time
                     // are potentialy needed by other
                     MortonIndex neighborsIndexes[208];
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){

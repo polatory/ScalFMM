@@ -103,7 +103,7 @@ void ValidateTree(OctreeClass& realTree,
 
 
 
-/** This function test the octree to be sure that the fmm algorithm
+/** This function tests the octree to be sure that the fmm algorithm
   * has worked completly.
   */
 template<class OctreeClass, class ContainerClass>
@@ -291,6 +291,10 @@ public:
         this->dataDown = *(long*)buffer;
     }
 };
+
+/////////////////////////////////////////////////////////////////////
+// Define the classes to use
+/////////////////////////////////////////////////////////////////////
 
 typedef TestParticle               ParticleClass;
 typedef TestCell                   CellClass;
