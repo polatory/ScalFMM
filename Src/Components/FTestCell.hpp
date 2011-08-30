@@ -10,7 +10,9 @@
 * Please read the license
 *
 * This class is used in the FTestKernels, please
-* look at this class to know whit it is.
+* look at this class to know what it is.
+*
+* This cell simply store the data when up/down
 */
 class FTestCell : public FBasicCell  {
 protected:
@@ -22,15 +24,19 @@ public:
     /** Default destructor */
     virtual ~FTestCell(){
     }
+    /** When doing the upward pass */
     long getDataUp() const {
         return this->dataUp;
     }
+    /** When doing the upward pass */
     void setDataUp(const long inData){
         this->dataUp = inData;
     }
+    /** When doing the downard pass */
     long getDataDown() const {
         return this->dataDown;
     }
+    /** When doing the downard pass */
     void setDataDown(const long inData){
         this->dataDown = inData;
     }

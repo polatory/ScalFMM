@@ -26,7 +26,7 @@ public:
     virtual ~FTestKernels(){
     }
 
-    // Before upward
+    /** Before upward */
     void P2M(CellClass* const pole, const ContainerClass* const particles) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // the pole represents all particles under
@@ -34,7 +34,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    // During upward
+    /** During upward */
     void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // A parent represents the sum of the child
@@ -46,7 +46,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    // Before Downward
+    /** Before Downward */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int ) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The pole is impacted by what represent other poles
@@ -56,7 +56,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    // During Downward
+    /** During Downward */
     void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // Each child is impacted by the father
@@ -68,7 +68,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    // After Downward
+    /** After Downward */
     void L2P(const CellClass* const  local, ContainerClass*const particles){
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
         // The particles is impacted by the parent cell
@@ -80,7 +80,7 @@ public:
         FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
-    // After Downward
+    /** After Downward */
     void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              const ContainerClass* const directNeighborsParticles[26], const int size) {
         FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
@@ -102,7 +102,7 @@ public:
     }
 
 
-    // After Downward
+    /** After Downward */
     void P2P(const MortonIndex ,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              ContainerClass* const directNeighborsParticles[26], const MortonIndex [26], const int size) {

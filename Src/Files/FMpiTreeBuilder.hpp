@@ -4,8 +4,17 @@
 
 #include "../Utils/FQuickSort.hpp"
 
+
+/** This class manage the loading of particles
+  * for the mpi version.
+  * It use a BinLoader and then sort the data
+  * with a parallel quick sort.
+  */
 template<class ParticleClass>
 class FMpiTreeBuilder{
+    /** This method has been tacken from the octree
+      * it computes a tree coordinate (x or y or z) from real position
+      */
     static long getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
             const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
             const long index = FMath::dfloor(indexFReal);
@@ -29,6 +38,7 @@ class FMpiTreeBuilder{
         return nb;
     }
 
+    /** receive data from a tag function */
     static void receiveDataFromTag(const int inSize, const int inTag, void* const inData, int* const inSource = 0, int* const inFilledSize = 0){
         MPI_Status status;
         MPI_Recv(inData, inSize, MPI_CHAR, MPI_ANY_SOURCE, inTag, MPI_COMM_WORLD, &status);
@@ -58,6 +68,9 @@ class FMpiTreeBuilder{
         else return res;
     }
 
+    /** This struct is used to represent a particles group to
+      * sort them easily
+      */
     struct ParticlesGroup {
         int number;
         int positionInArray;
@@ -68,6 +81,10 @@ class FMpiTreeBuilder{
     };
 
 
+    /** A particle may not have a MortonIndex Method
+      * but they are sorted on their morton index
+      * so this struct store a particle and its index
+      */
     struct IndexedParticle{
         MortonIndex index;
         ParticleClass particle;
@@ -77,22 +94,26 @@ class FMpiTreeBuilder{
         }
     };
 
-    IndexedParticle* intervals;
-    int nbLeavesInIntervals;
+    IndexedParticle* intervals; //< Current intervals
+    int nbLeavesInIntervals;    //< Nb intervals
 
 private:
+    // Forbid copy
     FMpiTreeBuilder(const FMpiTreeBuilder&){}
     FMpiTreeBuilder& operator=(const FMpiTreeBuilder&){return *this;}
 
 public:
+    /** Constructor */
     FMpiTreeBuilder()
         :  intervals(0), nbLeavesInIntervals(0) {
     }
 
+    /** Destructor */
     virtual ~FMpiTreeBuilder(){
         delete [] intervals;
     }
 
+    /** Split and sort the file */
     template <class LoaderClass>
     bool splitAndSortFile(LoaderClass& loader, const int NbLevels){
         const int rank = MpiGetRank();
@@ -236,6 +257,7 @@ public:
         return true;
     }
 
+    /** Put the interval into a tree */
     template <class OctreeClass>
     bool intervalsToTree(OctreeClass& realTree){
         const int rank = MpiGetRank();

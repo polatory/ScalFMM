@@ -58,6 +58,7 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
 
         bottomPass();
+
         upwardPass();
 
         downardPass();

@@ -11,6 +11,8 @@
 *
 * This class is used in the FTestKernels, please
 * look at this class to know whit it is.
+*
+* Particles just need the data down.
 */
 class FTestParticle : public FBasicParticle {
 protected:
