@@ -10,13 +10,13 @@ class MyTest : public FUTester<MyTest> {
 
 	void TestOne(){
 		assert(true);
-		assert(false);
+                //or assert(false); make an error
 		assert(1 == 1);
 	}
 	
 	void TestTwo(){
 		equal(1 , 1);
-		different(1 , 1);
+                different(1 , 2);
 	}
 	
 	void After(){

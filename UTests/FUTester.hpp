@@ -11,8 +11,7 @@
 #define TestClass(X)\
 int main(void){\
 	X Controller;\
-	Controller.Run();\
-	return 0;\
+        return Controller.Run();\
 }\
 
 
@@ -141,8 +140,9 @@ protected:
 public :
 	/**
 	* Processing the test
+        * return application exit code (= nb of errors)
 	*/
-	void Run(){
+        int Run(){
 		tests.clear();
 		// register tests
 		SetTests();
@@ -181,6 +181,8 @@ public :
 		After();
 
 		std::cout <<"Test is over, " << (totalTests-failledTests) << " Passed, " << failledTests << " Failled\n";
+
+                return failledTests;
 	}
 
 };
