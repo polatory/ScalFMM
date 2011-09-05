@@ -94,8 +94,8 @@ class FMpiTreeBuilder{
         }
     };
 
-    IndexedParticle* intervals; //< Current intervals
-    int nbLeavesInIntervals;    //< Nb intervals
+    char* intervals;
+    int nbLeavesInIntervals;
 
 private:
     // Forbid copy
@@ -124,6 +124,7 @@ public:
         {
             // create particles
             IndexedParticle*const realParticlesIndexed = new IndexedParticle[loader.getNumberOfParticles()];
+            memset(realParticlesIndexed, 0, sizeof(IndexedParticle)* loader.getNumberOfParticles());
             F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
             FTreeCoordinate host;
             const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / (1 << (NbLevels - 1) );
@@ -144,6 +145,7 @@ public:
             MortonIndex otherFirstIndex = -1;
             {
                 FMpi::Request req[2];
+                MPI_Status status[2];
                 int reqiter = 0;
                 if( 0 < rank && outputSize){
                     MPI_Isend( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
@@ -152,22 +154,26 @@ public:
                     MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                 }
 
-                MPI_Waitall(reqiter,req,0);
+                MPI_Waitall(reqiter,req,status);
 
                 if( 0 < rank && !outputSize){
                     MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, 0, MPI_COMM_WORLD);
                 }
             }
+
+
             MPI_Request req[2];
+            MPI_Status status[2];
             int reqiter = 0;
+
             // at this point every one know the first index of his right neighbors
             const bool needToRecvBeforeSend = (rank != 0 && ((outputSize && otherFirstIndex == outputArray[0].index ) || !outputSize));
             if( needToRecvBeforeSend || (rank == nbProcs - 1) ){
                 int sendByOther = 0;
 
-                MPI_Status status;
-                MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &status);
-                MPI_Get_count( &status,  MPI_BYTE, &sendByOther);
+                MPI_Status probStatus;
+                MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &probStatus);
+                MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                 if(sendByOther){
                     sendByOther /= sizeof(IndexedParticle);
@@ -179,26 +185,28 @@ public:
                     memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Irecv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
+                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &probStatus);
                 }
                 else{
                     MPI_Irecv(0, 0, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                 }
             }
+
             if(rank != nbProcs - 1){
+
                 long idxPart = outputSize - 1 ;
                 while(idxPart >= 0 && outputArray[idxPart].index == otherFirstIndex){
                     --idxPart;
                 }
-                long toSend = outputSize - 1 - idxPart;
+                const long toSend = outputSize - 1 - idxPart;
                 MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
 
-                if( rank != 0 && !needToRecvBeforeSend ){
+                if( rank != 0 && !needToRecvBeforeSend && (rank != nbProcs - 1)){
                     int sendByOther = 0;
 
-                    MPI_Status status;
-                    MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &status);
-                    MPI_Get_count( &status,  MPI_BYTE, &sendByOther);
+                    MPI_Status probStatus;
+                    MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &probStatus);
+                    MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                     if(sendByOther){
                         sendByOther /= sizeof(IndexedParticle);
@@ -206,7 +214,7 @@ public:
 
                         MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
 
-                        MPI_Waitall(reqiter,req,0);
+                        MPI_Waitall(reqiter,req, status);
                         reqiter = 0;
 
                         const IndexedParticle* const reallocOutputArray = outputArray;
@@ -224,35 +232,38 @@ public:
                     }
                 }
             }
-            MPI_Waitall(reqiter,req,0);
+            MPI_Waitall(reqiter,req,status);
         }
 
+        nbLeavesInIntervals = 0;
+        if(outputSize){
+            intervals = new char[outputSize * (sizeof(ParticleClass) + sizeof(int))];
 
-        int leavesCounter = 0;
+            MortonIndex previousIndex = -1;
+            char* writeIndex = intervals;
+            int* writeCounter = 0;
 
-        MortonIndex previousIndex = -1;
-        char* writeIndex = reinterpret_cast<char*>(outputArray);
-        int* writeCounter = 0;
+            for( int idxPart = 0; idxPart < outputSize ; ++idxPart){
+                printf("X inserted %f (idxPart %d)\n", outputArray[idxPart].particle.getPosition().getX(), idxPart );
 
-        for( int idxPart = 0; idxPart < outputSize ; ++idxPart){
-            if( outputArray[idxPart].index != previousIndex ){
-                previousIndex = outputArray[idxPart].index;
-                ++leavesCounter;
+                if( outputArray[idxPart].index != previousIndex ){
+                    previousIndex = outputArray[idxPart].index;
+                    ++nbLeavesInIntervals;
 
-                writeCounter = reinterpret_cast<int*>( writeIndex );
-                writeIndex += sizeof(int);
+                    writeCounter = reinterpret_cast<int*>( writeIndex );
+                    writeIndex += sizeof(int);
 
-                (*writeCounter) = 0;
+                    (*writeCounter) = 0;
+                }
+
+                memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
+                printf("X inserted %f (idxPart %d)\n", ((ParticleClass*)writeIndex)->getPosition().getX(), idxPart );
+
+                writeIndex += sizeof(ParticleClass);
+                ++(*writeCounter);
             }
-
-            memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
-
-            writeIndex += sizeof(ParticleClass);
-            ++(*writeCounter);
         }
-
-        intervals = outputArray;
-        nbLeavesInIntervals = leavesCounter;
+        delete [] outputArray;
 
         return true;
     }
@@ -333,6 +344,7 @@ public:
         const int iCanSendToRight = nbLeafs;
 
         MPI_Request requests[2];
+        MPI_Status status[2];
         int iterRequest = 0;
 
         int hasBeenSentToLeft = 0;
@@ -351,7 +363,7 @@ public:
         ///////////////////////////////
 
         if(nbLeafs){
-            particlesToSend = reinterpret_cast<char*>(intervals);
+            particlesToSend = intervals;
 
             int currentLeafPosition = 0;
 
@@ -414,11 +426,11 @@ public:
 
         // Now prepare to receive data
         while(countReceive--){
-            MPI_Status status;
-            MPI_Probe(sourceToWhileRecv, 0, MPI_COMM_WORLD, &status);
+            MPI_Status recvStatus;
+            MPI_Probe(sourceToWhileRecv, 0, MPI_COMM_WORLD, &recvStatus);
             // receive from left
-            if(status.MPI_SOURCE == rank - 1){
-                MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftBuffer);
+            if(recvStatus.MPI_SOURCE == rank - 1){
+                MPI_Get_count( &recvStatus,  MPI_BYTE, &sizeOfLeftBuffer);
                 toRecvFromLeft = new char[sizeOfLeftBuffer];
                 sizeOfLeftData = sizeOfLeftBuffer;
                 MPI_Irecv(toRecvFromLeft, sizeOfLeftBuffer, MPI_BYTE, rank - 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
@@ -427,7 +439,7 @@ public:
             }
             // receive from right
             else{
-                MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightBuffer);
+                MPI_Get_count( &recvStatus,  MPI_BYTE, &sizeOfRightBuffer);
                 toRecvFromRight = new char[sizeOfRightBuffer];
                 sizeOfRightData = sizeOfRightBuffer;
                 MPI_Irecv(toRecvFromRight, sizeOfRightBuffer, MPI_BYTE, rank + 1 , 0 , MPI_COMM_WORLD, &requests[iterRequest++]);
@@ -439,7 +451,7 @@ public:
         ///////////////////////////////
         // Wait send receive
         ///////////////////////////////
-        MPI_Waitall(iterRequest, requests, 0);
+        MPI_Waitall(iterRequest, requests, status);
         // We can delete the buffer use to send our particles only
 
         printf("Wait passed...\n");
@@ -469,9 +481,9 @@ public:
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToLeft < iNeedToSendLeftCount){
-                    MPI_Status status;
-                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightData);
+                    MPI_Status probStatus;
+                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &probStatus);
+                    MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfRightData);
                     if(sizeOfRightBuffer < sizeOfRightData){
                         sizeOfRightBuffer = sizeOfRightData;
                         delete[] toRecvFromRight;
@@ -497,9 +509,9 @@ public:
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToRight < iNeedToSendRightCount){
-                    MPI_Status status;
-                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftData);
+                    MPI_Status probStatus;
+                    MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &probStatus);
+                    MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfLeftData);
                     if(sizeOfLeftBuffer < sizeOfLeftData){
                         sizeOfLeftBuffer = sizeOfLeftData;
                         delete[] toRecvFromLeft;
@@ -534,9 +546,9 @@ public:
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
 
                 if(hasToBeReceivedFromLeft){
-                    MPI_Status status;
-                    MPI_Probe( rank - 1, 0, MPI_COMM_WORLD, &status);
-                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfLeftData);
+                    MPI_Status probStatus;
+                    MPI_Probe( rank - 1, 0, MPI_COMM_WORLD, &probStatus);
+                    MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfLeftData);
                     if(sizeOfLeftBuffer < sizeOfLeftData){
                         sizeOfLeftBuffer = sizeOfLeftData;
                         delete[] toRecvFromLeft;
@@ -568,10 +580,10 @@ public:
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
 
                 if(hasToBeReceivedFromRight){
-                    MPI_Status status;
+                    MPI_Status probStatus;
                     printf("Probe\n");
-                    MPI_Probe( rank + 1, 0, MPI_COMM_WORLD, &status);
-                    MPI_Get_count( &status,  MPI_BYTE, &sizeOfRightData);
+                    MPI_Probe( rank + 1, 0, MPI_COMM_WORLD, &probStatus);
+                    MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfRightData);
                     printf("Receive %d bytes from right\n", sizeOfRightData);
                     if(sizeOfRightBuffer < sizeOfRightData){
                         sizeOfRightBuffer = sizeOfRightData;

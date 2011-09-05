@@ -32,9 +32,7 @@ class FLightOctree {
                 delete next[idxNext];
             }
         }
-        /** Insert a cell */
         void insert(const MortonIndex& index, const void* const cell, const int level){
-            /** As long as the level is not 0 go downward */
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
                 if(!next[host]){
@@ -46,7 +44,6 @@ class FLightOctree {
                 data = cell;
             }
         }
-        /** Retreive data */
         const void* getCell(const MortonIndex& index, const int level) const {
             if(level){
                 const int host = (index >> (3 * (level-1))) & 0x07;
@@ -61,19 +58,16 @@ class FLightOctree {
         }
     };
 
-    /** The tree root */
     Node root;
 
 public:
     FLightOctree(){
     }
 
-    /** Insert a cell into the light octree */
     void insertCell(const MortonIndex& index, const void* const cell, const int level){
         root.insert(index, cell, level);
     }
 
-    /** Get a cell or null if it does not exist */
     const void* getCell(const MortonIndex& index, const int level) const{
         return root.getCell(index, level);
     }
@@ -102,6 +96,7 @@ public:
 */
 template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : protected FAssertable {
+
 
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
@@ -160,7 +155,7 @@ public:
         }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
-        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ".\n");
+        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
 
     /** Default destructor */
@@ -197,6 +192,7 @@ public:
 
         // We get the min/max indexes from each procs
         mpiassert( MPI_Allgather( &intervals[idProcess], sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+
         for(int idxLevel = 0 ; idxLevel < OctreeHeight ; ++idxLevel){
             const int offset = idxLevel * nbProcess;
             // Then we can compute min/max per level and per proc
@@ -321,6 +317,7 @@ public:
 
         // There are a maximum of 8-1 sends and 8-1 receptions
         MPI_Request requests[14];
+        MPI_Status status[14];
 
         // Maximum data per message is:
         const int recvBufferOffset = 8 * CellClass::SerializedSizeUp + 1;
@@ -389,7 +386,7 @@ public:
                         MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, 0, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
                 }
-            }            
+            }
             FDEBUG(prepareCounter.tac());
 
             // Compute
@@ -408,7 +405,7 @@ public:
             // Are we sending or waiting anything?
             if(iterRequests){
                 FDEBUG(waitCounter.tic());
-                MPI_Waitall( iterRequests, requests, 0);
+                MPI_Waitall( iterRequests, requests, status);
                 FDEBUG(waitCounter.tac());
 
                 // we were receiving data
@@ -517,7 +514,7 @@ public:
                     leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
 
 
-                    // Which cells potentialy need other data and in the same time
+                    // Which cell potentialy needs other data and in the same time
                     // are potentialy needed by other
                     MortonIndex neighborsIndexes[208];
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
@@ -591,6 +588,7 @@ public:
             // Then they can send and receive (because they know what they will receive)
             // To send in asynchrone way
             MPI_Request requests[2 * nbProcess * OctreeHeight];
+            MPI_Status status[2 * nbProcess * OctreeHeight];
             int iterRequest = 0;
 
             struct CellToSend{
@@ -675,7 +673,7 @@ public:
             //////////////////////////////////////////////////////////////////
 
             // Wait to receive every things (and send every things)
-            MPI_Waitall(iterRequest, requests, 0);
+            MPI_Waitall(iterRequest, requests, status);
 
             {
                 FDEBUG(receiveCounter.tic());
@@ -781,6 +779,7 @@ public:
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
             MPI_Request requests[nbProcess];
+            MPI_Status status[nbProcess];
 
             const int heightMinusOne = OctreeHeight - 1;
 
@@ -849,7 +848,7 @@ public:
                 if(iterRequests){
                     // process
                     FDEBUG(waitCounter.tic());
-                    MPI_Waitall( iterRequests, requests, 0);
+                    MPI_Waitall( iterRequests, requests, status);
                     FDEBUG(waitCounter.tac());
 
                     if(needToRecv){
@@ -891,6 +890,7 @@ public:
 
         // To send in asynchrone way
         MPI_Request requests[2 * nbProcess];
+        MPI_Status status[2 * nbProcess];
         int iterRequest = 0;
 
         ParticleClass* sendBuffer[nbProcess];
@@ -1121,7 +1121,7 @@ public:
 
         // Wait data
         FDEBUG(waitCounter.tic());
-        MPI_Waitall(iterRequest, requests, 0);
+        MPI_Waitall(iterRequest, requests, status);
         FDEBUG(waitCounter.tac());
 
         // Create an octree with leaves from others
