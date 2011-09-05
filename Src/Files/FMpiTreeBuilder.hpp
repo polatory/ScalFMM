@@ -119,6 +119,10 @@ public:
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
 
+        // First we create the particles that belong to us (our proc)
+        // we compute their morton index to be able to sort them
+        //
+
         IndexedParticle* outputArray = 0;
         long outputSize = 0;
         {
@@ -127,12 +131,14 @@ public:
             memset(realParticlesIndexed, 0, sizeof(IndexedParticle)* loader.getNumberOfParticles());
             F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
             FTreeCoordinate host;
+
             const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / (1 << (NbLevels - 1) );
             for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
                 loader.fillParticle(realParticlesIndexed[idxPart].particle);
                 host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
                 host.setY( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
                 host.setZ( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+
                 realParticlesIndexed[idxPart].index = host.getMortonIndex(NbLevels - 1);
             }
 
@@ -141,12 +147,14 @@ public:
             delete [] (realParticlesIndexed);
         }
         // be sure there is no splited leaves
+        // to do that we exchange the first index with the left proc
         {
             MortonIndex otherFirstIndex = -1;
             {
                 FMpi::Request req[2];
                 MPI_Status status[2];
                 int reqiter = 0;
+                // can I send my first index? == I am not rank 0 & I have data
                 if( 0 < rank && outputSize){
                     MPI_Isend( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                 }
@@ -156,6 +164,8 @@ public:
 
                 MPI_Waitall(reqiter,req,status);
 
+                // I could not send because I do not have data, so I transmit the data coming
+                // from my right neigbors
                 if( 0 < rank && !outputSize){
                     MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, 0, MPI_COMM_WORLD);
                 }
@@ -169,6 +179,11 @@ public:
             // at this point every one know the first index of his right neighbors
             const bool needToRecvBeforeSend = (rank != 0 && ((outputSize && otherFirstIndex == outputArray[0].index ) || !outputSize));
             if( needToRecvBeforeSend || (rank == nbProcs - 1) ){
+                // Here we want to send data we do not have
+                // so we first receive other data and put then into the array
+                // this case happens only if I have one leaf with index MX
+                // and if proc[rank - 1].last.index == MX && proc[rank + 1].first.index == MX
+
                 int sendByOther = 0;
 
                 MPI_Status probStatus;
@@ -235,6 +250,8 @@ public:
             MPI_Waitall(reqiter,req,status);
         }
 
+        // We now copy the data from a sorted type into real particles array + counter
+
         nbLeavesInIntervals = 0;
         if(outputSize){
             intervals = new char[outputSize * (sizeof(ParticleClass) + sizeof(int))];
@@ -244,8 +261,6 @@ public:
             int* writeCounter = 0;
 
             for( int idxPart = 0; idxPart < outputSize ; ++idxPart){
-                printf("X inserted %f (idxPart %d)\n", outputArray[idxPart].particle.getPosition().getX(), idxPart );
-
                 if( outputArray[idxPart].index != previousIndex ){
                     previousIndex = outputArray[idxPart].index;
                     ++nbLeavesInIntervals;
@@ -257,7 +272,6 @@ public:
                 }
 
                 memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
-                printf("X inserted %f (idxPart %d)\n", ((ParticleClass*)writeIndex)->getPosition().getX(), idxPart );
 
                 writeIndex += sizeof(ParticleClass);
                 ++(*writeCounter);
