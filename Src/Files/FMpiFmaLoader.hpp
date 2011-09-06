@@ -94,8 +94,8 @@ public:
                 const int bufsize = nbParticles * 4;
                 // local number to read
                 particles = new FReal[bufsize];
-                MPI_File_set_view(file, headDataOffSet + startPart * 4 * sizeof(FReal), MPI_FLOAT, MPI_FLOAT, const_cast<char*>("native"), MPI_INFO_NULL);
-                MPI_File_read(file, particles, bufsize, MPI_FLOAT, &status);
+
+                MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_FLOAT, &status);
 
                 // check if needed
                 int count(0);
