@@ -179,19 +179,22 @@ public:
 
         // Count leaf
         this->numberOfLeafs = 0;
-        typename OctreeClass::Iterator octreeIterator(tree);
-        octreeIterator.gotoBottomLeft();
-        intervals[idProcess].min = octreeIterator.getCurrentGlobalIndex();
-        do{
-            ++this->numberOfLeafs;
-        } while(octreeIterator.moveRight());
-        intervals[idProcess].max = octreeIterator.getCurrentGlobalIndex();
+        {
+            Interval myIntervals;
+            typename OctreeClass::Iterator octreeIterator(tree);
+            octreeIterator.gotoBottomLeft();
+            myIntervals.min = octreeIterator.getCurrentGlobalIndex();
+            do{
+                ++this->numberOfLeafs;
+            } while(octreeIterator.moveRight());
+            myIntervals.max = octreeIterator.getCurrentGlobalIndex();
 
-        iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-        fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+            iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
+            fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
-        // We get the min/max indexes from each procs
-        mpiassert( MPI_Allgather( &intervals[idProcess], sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+            // We get the min/max indexes from each procs
+            mpiassert( MPI_Allgather( &myIntervals, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+        }
 
         for(int idxLevel = 0 ; idxLevel < OctreeHeight ; ++idxLevel){
             const int offset = idxLevel * nbProcess;
@@ -752,6 +755,7 @@ public:
             for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
                 delete[] sendBuffer[idxComm];
                 delete[] recvBuffer[idxComm];
+                delete[] reinterpret_cast<char*>( toSend[idxComm] );
             }
 
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -1189,6 +1193,9 @@ public:
                 previous = endAtThisShape;
             }
         }
+
+        delete[] leafsDataArray;
+
         FDEBUG(computation2Counter.tac());
 
 
