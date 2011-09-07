@@ -3,6 +3,7 @@
 
 
 #include "../Utils/FQuickSort.hpp"
+#include "../Utils/FMemUtils.hpp"
 
 
 /** This class manage the loading of particles
@@ -95,7 +96,7 @@ class FMpiTreeBuilder{
     };
 
     char* intervals;
-    int nbLeavesInIntervals;
+    FSize nbLeavesInIntervals;
 
 private:
     // Forbid copy
@@ -124,11 +125,11 @@ public:
         //
 
         IndexedParticle* outputArray = 0;
-        long outputSize = 0;
+        FSize outputSize = 0;
         {
             // create particles
             IndexedParticle*const realParticlesIndexed = new IndexedParticle[loader.getNumberOfParticles()];
-            memset(realParticlesIndexed, 0, sizeof(IndexedParticle)* loader.getNumberOfParticles());
+            FMemUtils::memset(realParticlesIndexed, 0, sizeof(IndexedParticle) * loader.getNumberOfParticles());
             F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
             FTreeCoordinate host;
 
@@ -193,11 +194,11 @@ public:
                 if(sendByOther){
                     sendByOther /= sizeof(IndexedParticle);
                     const IndexedParticle* const reallocOutputArray = outputArray;
-                    const long reallocOutputSize = outputSize;
+                    const FSize reallocOutputSize = outputSize;
 
                     outputSize += sendByOther;
                     outputArray = new IndexedParticle[outputSize];
-                    memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
+                    FMemUtils::memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
                     MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &probStatus);
@@ -209,11 +210,11 @@ public:
 
             if(rank != nbProcs - 1){
 
-                long idxPart = outputSize - 1 ;
+                FSize idxPart = outputSize - 1 ;
                 while(idxPart >= 0 && outputArray[idxPart].index == otherFirstIndex){
                     --idxPart;
                 }
-                const long toSend = outputSize - 1 - idxPart;
+                const int toSend = int(outputSize - 1 - idxPart);
                 MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
 
                 if( rank != 0 && !needToRecvBeforeSend && (rank != nbProcs - 1)){
@@ -233,11 +234,11 @@ public:
                         reqiter = 0;
 
                         const IndexedParticle* const reallocOutputArray = outputArray;
-                        const long reallocOutputSize = outputSize;
+                        const FSize reallocOutputSize = outputSize;
 
                         outputSize += sendByOther;
                         outputArray = new IndexedParticle[outputSize];
-                        memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
+                        FMemUtils::memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                         delete[] reallocOutputArray;
                         memcpy(outputArray, tempBuffer, sendByOther * sizeof(IndexedParticle));
                         delete[] tempBuffer;
@@ -260,7 +261,7 @@ public:
             char* writeIndex = intervals;
             int* writeCounter = 0;
 
-            for( int idxPart = 0; idxPart < outputSize ; ++idxPart){
+            for( FSize idxPart = 0; idxPart < outputSize ; ++idxPart){
                 if( outputArray[idxPart].index != previousIndex ){
                     previousIndex = outputArray[idxPart].index;
                     ++nbLeavesInIntervals;
@@ -294,41 +295,41 @@ public:
         // We inform the master proc about the data we have
         //////////////////////////////////////////////////////////////////////////////////
 
-        int nbLeafs = nbLeavesInIntervals;
+        FSize nbLeafs = nbLeavesInIntervals;
 
         // receive from left and right
         if((rank == 0)){
-            MPI_Send(&nbLeafs, sizeof(int), MPI_BYTE , 1, 0, MPI_COMM_WORLD);
+            MPI_Send(&nbLeafs, sizeof(FSize), MPI_BYTE , 1, 0, MPI_COMM_WORLD);
         }
         else if(rank == nbProcs - 1){
-            MPI_Send(&nbLeafs, sizeof(int), MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
+            MPI_Send(&nbLeafs, sizeof(FSize), MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
         }
         // receive
-        int leftLeafs = 0;
-        int rightLeafs = 0;
+        FSize leftLeafs = 0;
+        FSize rightLeafs = 0;
         if(!(rank == 0) && rank != nbProcs - 1){
             for(int idxToReceive = 0 ; idxToReceive < 2 ; ++idxToReceive){
                 int source(0);
-                int temp = 0;
-                receiveDataFromTag(sizeof(int), 0, &temp, &source);
+                FSize temp = 0;
+                receiveDataFromTag(sizeof(FSize), 0, &temp, &source);
                 if(source < rank){ // come from left
                     leftLeafs = temp;
                     temp += nbLeafs;
-                    MPI_Send(&temp, sizeof(int), MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD);
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD);
                 }
                 else { // come from right
                     rightLeafs = temp;
                     temp += nbLeafs;
-                    MPI_Send(&temp, sizeof(int), MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
                 }
             }
         }
         else {
             if((rank == 0)){ // come from right
-                receiveDataFromTag(sizeof(int), 0, &rightLeafs);
+                receiveDataFromTag(sizeof(FSize), 0, &rightLeafs);
             }
             else { // come from left
-                receiveDataFromTag(sizeof(int), 0, &leftLeafs);
+                receiveDataFromTag(sizeof(FSize), 0, &leftLeafs);
             }
         }
 
@@ -337,9 +338,9 @@ public:
         // We balance the data
         //////////////////////////////////////////////////////////////////////////////////
 
-        const int totalNbLeafs = (leftLeafs + nbLeafs + rightLeafs);
-        const int myLeftLeaf = GetLeft(totalNbLeafs);
-        const int myRightLeaf = GetRight(totalNbLeafs);
+        const FSize totalNbLeafs = (leftLeafs + nbLeafs + rightLeafs);
+        const FSize myLeftLeaf = GetLeft(totalNbLeafs);
+        const FSize myRightLeaf = GetRight(totalNbLeafs);
 
         const bool iNeedToSendToLeft = leftLeafs < myLeftLeaf;
         const bool iNeedToSendToRight = myRightLeaf < leftLeafs + nbLeafs;
@@ -351,25 +352,25 @@ public:
         const bool iDoNotHaveEnoughtToSendLeft = leftLeafs + nbLeafs < myLeftLeaf;
 
 
-        const int iNeedToSendLeftCount = myLeftLeaf - leftLeafs;
-        const int iCanSendToLeft = nbLeafs;
+        const FSize iNeedToSendLeftCount = myLeftLeaf - leftLeafs;
+        const FSize iCanSendToLeft = nbLeafs;
 
-        const int iNeedToSendRightCount = leftLeafs + nbLeafs - myRightLeaf;
-        const int iCanSendToRight = nbLeafs;
+        const FSize iNeedToSendRightCount = leftLeafs + nbLeafs - myRightLeaf;
+        const FSize iCanSendToRight = nbLeafs;
 
         MPI_Request requests[2];
         MPI_Status status[2];
         int iterRequest = 0;
 
-        int hasBeenSentToLeft = 0;
-        int hasBeenSentToRight = 0;
+        FSize hasBeenSentToLeft = 0;
+        FSize hasBeenSentToRight = 0;
 
         char* particlesToSend = 0;
 
 
-        printf("on my left %d on my right %d\n",leftLeafs, rightLeafs);
-        printf("iNeedToSendLeftCount %d iCanSendToLeft %d\n",iNeedToSendLeftCount, iCanSendToLeft);
-        printf("iNeedToSendRightCount %d iCanSendToRight %d \n",iNeedToSendRightCount, iCanSendToRight);
+        printf("on my left %lld on my right %lld\n",leftLeafs, rightLeafs);
+        printf("iNeedToSendLeftCount %lld iCanSendToLeft %lld\n",iNeedToSendLeftCount, iCanSendToLeft);
+        printf("iNeedToSendRightCount %lld iCanSendToRight %lld \n",iNeedToSendRightCount, iCanSendToRight);
         printf("Elapsed %lf\n", counter.tacAndElapsed());
 
         ///////////////////////////////
@@ -383,20 +384,20 @@ public:
 
             //Send to Left (the first leaves
             if(iNeedToSendToLeft){
-                for(int idxLeaf = 0 ; idxLeaf < iNeedToSendLeftCount && idxLeaf < iCanSendToLeft ; ++idxLeaf){
+                for(FSize idxLeaf = 0 ; idxLeaf < iNeedToSendLeftCount && idxLeaf < iCanSendToLeft ; ++idxLeaf){
                     currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
                 MPI_Isend(particlesToSend, currentLeafPosition, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
-                printf("I send to left %d bytes %d leaves\n", currentLeafPosition, hasBeenSentToLeft);
+                printf("I send to left %d bytes %lld leaves\n", currentLeafPosition, hasBeenSentToLeft);
             }
             printf("Elapsed %lf\n", counter.tacAndElapsed());
 
             // Insert the particles I host and that belong to me
-            const int beginForMe = (iNeedToSendToLeft ? FMath::Min(iNeedToSendLeftCount,iCanSendToLeft) : 0);
-            const int endForMe = nbLeafs - (iNeedToSendToRight ? FMath::Min(iNeedToSendRightCount,iCanSendToRight) : 0);
-            printf("I insert my particles from %d to %d \n", beginForMe, endForMe);
-            for(int idxLeaf = beginForMe ; idxLeaf < endForMe ; ++idxLeaf){
+            const FSize beginForMe = (iNeedToSendToLeft ? FMath::Min(iNeedToSendLeftCount,iCanSendToLeft) : 0);
+            const FSize endForMe = nbLeafs - (iNeedToSendToRight ? FMath::Min(iNeedToSendRightCount,iCanSendToRight) : 0);
+            printf("I insert my particles from %lld to %lld \n", beginForMe, endForMe);
+            for(FSize idxLeaf = beginForMe ; idxLeaf < endForMe ; ++idxLeaf){
 
                 const int nbPartInLeaf = (*(int*)&particlesToSend[currentLeafPosition]);
                 ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&particlesToSend[currentLeafPosition] + sizeof(int));
@@ -412,15 +413,15 @@ public:
 
             //Send to Right (the right-est leaves
             if(iNeedToSendToRight){
-                const int beginWriteIndex = currentLeafPosition;
+                const FSize beginWriteIndex = currentLeafPosition;
 
                 for(int idxLeaf = 0 ; idxLeaf < iNeedToSendRightCount && idxLeaf < iCanSendToRight ; ++idxLeaf){
                     currentLeafPosition += (*(int*)&particlesToSend[currentLeafPosition]* sizeof(ParticleClass)) + sizeof(int);
                 }
 
                 hasBeenSentToRight = FMath::Min(iNeedToSendRightCount, iCanSendToRight);
-                MPI_Isend( &particlesToSend[beginWriteIndex], currentLeafPosition - beginWriteIndex, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
-                printf("I send to right %d bytes %d leaves\n", currentLeafPosition - beginWriteIndex, hasBeenSentToRight);
+                MPI_Isend( &particlesToSend[beginWriteIndex], int(currentLeafPosition - beginWriteIndex), MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                printf("I send to right %d bytes %lld leaves\n", int(currentLeafPosition - beginWriteIndex), hasBeenSentToRight);
             }
             printf("Elapsed %lf\n", counter.tacAndElapsed());
         }
@@ -476,8 +477,8 @@ public:
         // and transfer if needed
         ///////////////////////////////
         // We have to receive from right and transfere to left
-        int hasToBeReceivedFromLeft = leftLeafs - myLeftLeaf;
-        int hasToBeReceivedFromRight = myRightLeaf - (leftLeafs + nbLeafs);
+        int hasToBeReceivedFromLeft = int(leftLeafs - myLeftLeaf);
+        int hasToBeReceivedFromRight = int(myRightLeaf - (leftLeafs + nbLeafs));
         int arrayIdxRight = 0;
         int arrayIdxLeft = 0;
 
@@ -491,7 +492,7 @@ public:
                     --hasToBeReceivedFromRight;
                     ++hasBeenSentToLeft;
                 }
-                printf("Send %d to left, total leaves sent %d / %d\n", arrayIdxRight, hasBeenSentToLeft, iNeedToSendLeftCount);
+                printf("Send %d to left, total leaves sent %lld / %lld\n", arrayIdxRight, hasBeenSentToLeft, iNeedToSendLeftCount);
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToLeft < iNeedToSendLeftCount){
@@ -519,7 +520,7 @@ public:
                     --hasToBeReceivedFromLeft;
                     ++hasBeenSentToRight;
                 }
-                printf("Send %d to right, total leaves sent %d / %d\n", arrayIdxLeft, hasBeenSentToRight, iNeedToSendRightCount);
+                printf("Send %d to right, total leaves sent %lld / %lld\n", arrayIdxLeft, hasBeenSentToRight, iNeedToSendRightCount);
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
                 MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, 0, MPI_COMM_WORLD);
                 if(hasBeenSentToRight < iNeedToSendRightCount){

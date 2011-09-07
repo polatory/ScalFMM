@@ -31,7 +31,7 @@ public:
         * Get the number of particles for this simulation
         * @return number of particles that the loader can fill
         */
-        virtual long getNumberOfParticles() const = 0;
+        virtual FSize getNumberOfParticles() const = 0;
 
         /**
         * Get the center of the simulation box

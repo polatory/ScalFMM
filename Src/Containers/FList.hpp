@@ -17,11 +17,11 @@
  */
 template< class Object >
 class FList {
-	/** A list node */
-	struct Node {
-		Object target;	//< Object of the node
-		Node* next;	//< Next node
-	};
+        /** A list node */
+        struct Node {
+                Object target;	//< Object of the node
+                Node* next;	//< Next node
+        };
 
         Node* root; //< Root node, NULL if size is 0
         int size;		 //< Elements in the list
@@ -30,77 +30,77 @@ class FList {
         * Copy a list into current object
         * The current list has to be empty when this function is called
         */
-	void copy(const FList& other){
+        void copy(const FList& other){
                 const Node* FRestrict  otherRoot = other.root;
                 Node * FRestrict * myRoot = &this->root;
-		while(otherRoot){
-			(*myRoot) = new Node;
-			(*myRoot)->target = otherRoot->target;
+                while(otherRoot){
+                        (*myRoot) = new Node;
+                        (*myRoot)->target = otherRoot->target;
 
-			myRoot = &(*myRoot)->next;
-			otherRoot = otherRoot->next;
-		}
-		*myRoot = 0;
-		this->size = other.size;
-	}
+                        myRoot = &(*myRoot)->next;
+                        otherRoot = otherRoot->next;
+                }
+                *myRoot = 0;
+                this->size = other.size;
+        }
 
 public:
         /** Constructor (of an empty list) */
-	FList() : root(0) , size(0) {		
-	}
+        FList() : root(0) , size(0) {
+        }
 
-	/** Desctructor */
+        /** Desctructor */
         virtual ~FList(){
-		clear();
-	}
+                clear();
+        }
 
-	/**
-	* Copy operator
-	* This will clear the current list before copying
-	* @param other the source list
+        /**
+        * Copy operator
+        * This will clear the current list before copying
+        * @param other the source list
         * @return the current list as a reference
-	*/
-	FList& operator=(const FList& other){
+        */
+        FList& operator=(const FList& other){
             if(this != &other){
-		clear();
-		copy(other);
+                clear();
+                copy(other);
             }
             return *this;
-	}
+        }
 
-	/**
-	* Copy constructor
+        /**
+        * Copy constructor
         * @param other the source/original list
-	*/
-	FList(const FList& other): root(0) , size(0)  {
-		copy(other);
-	}
+        */
+        FList(const FList& other): root(0) , size(0)  {
+                copy(other);
+        }
 
-	/**
-	* To clear the list
-	* Size is 0 after calling this function
-	*/
-	void clear(){
-		while(this->root){
+        /**
+        * To clear the list
+        * Size is 0 after calling this function
+        */
+        void clear(){
+                while(this->root){
                         Node*const FRestrict next = this->root->next;
-			delete this->root;
-			this->root = next;
-		}
-		this->size = 0;
-	}
+                        delete this->root;
+                        this->root = next;
+                }
+                this->size = 0;
+        }
 
-	/**
+        /**
         * Push an element in the head of the list
         * @param inObject the object to insert
-	*/
+        */
         void push(const Object& inObject){
                 Node* newNode   = new Node;
-		newNode->target = inObject;
-		newNode->next 	= this->root;
+                newNode->target = inObject;
+                newNode->next 	= this->root;
 
-		this->root 	= newNode;
+                this->root 	= newNode;
                 ++this->size;
-	}
+        }
 
 
         /**
@@ -143,13 +143,13 @@ public:
             return value;
         }
 
-	/**
-	* To get the number of elements in the list
-	* @return size
-	*/
-	int getSize() const{
+        /**
+        * To get the number of elements in the list
+        * @return size
+        */
+        int getSize() const{
                 return this->size;
-	}
+        }
 
         /**
           * This iterator allow accessing list's elements

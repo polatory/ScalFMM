@@ -49,7 +49,7 @@
 template<class OctreeClass>
 void ValidateTree(OctreeClass& realTree,
                         OctreeClass& treeValide, FMpi& app){
-    int totalNbLeafs = 0;
+    FSize totalNbLeafs = 0;
     {
 
         typename OctreeClass::Iterator octreeIterator(&treeValide);
@@ -59,23 +59,23 @@ void ValidateTree(OctreeClass& realTree,
         } while(octreeIterator.moveRight());
     }
 
-    const int myLeftLeaf = app.getLeft(totalNbLeafs);
-    const int myRightLeaf = app.getRight(totalNbLeafs);
+    const FSize myLeftLeaf = app.getLeft(totalNbLeafs);
+    const FSize myRightLeaf = app.getRight(totalNbLeafs);
 
     //printf("%d should go from %d to %d leaf (on %d total leafs)\n", app.processId(), myLeftLeaf, myRightLeaf, totalNbLeafs);
 
     typename OctreeClass::Iterator octreeIteratorValide(&treeValide);
     octreeIteratorValide.gotoBottomLeft();
-    for(int idxLeaf = 0 ; idxLeaf < myLeftLeaf ; ++idxLeaf){
+    for(FSize idxLeaf = 0 ; idxLeaf < myLeftLeaf ; ++idxLeaf){
         if(!octreeIteratorValide.moveRight()){
-            printf("Error cannot access to the left leaf %d in the valide tree\n", myLeftLeaf);
+            printf("Error cannot access to the left leaf %lld in the valide tree\n", myLeftLeaf);
         }
     }
 
     typename OctreeClass::Iterator octreeIterator(&realTree);
     octreeIterator.gotoBottomLeft();
 
-    for(int idxLeaf = myLeftLeaf ; idxLeaf < myRightLeaf ; ++idxLeaf){
+    for(FSize idxLeaf = myLeftLeaf ; idxLeaf < myRightLeaf ; ++idxLeaf){
         if(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
             printf("Error index are different, valide %lld invalid %lld\n",octreeIteratorValide.getCurrentGlobalIndex(),
                    octreeIterator.getCurrentGlobalIndex());
@@ -89,12 +89,12 @@ void ValidateTree(OctreeClass& realTree,
         //printf("index %lld with %d particles\n", octreeIteratorValide.getCurrentGlobalIndex(), octreeIteratorValide.getCurrentListSrc()->getSize());
 
         if(!octreeIteratorValide.moveRight() && idxLeaf != myRightLeaf - 1){
-            printf("Error cannot valide tree end to early, idxLeaf %d myRightLeaf %d\n", idxLeaf, myRightLeaf);
+            printf("Error cannot valide tree end to early, idxLeaf %lld myRightLeaf %lld\n", idxLeaf, myRightLeaf);
             break;
         }
 
         if(!octreeIterator.moveRight() && idxLeaf != myRightLeaf - 1){
-            printf("Error cannot test tree end to early, idxLeaf %d myRightLeaf %d\n", idxLeaf, myRightLeaf);
+            printf("Error cannot test tree end to early, idxLeaf %lld myRightLeaf %lld\n", idxLeaf, myRightLeaf);
             break;
         }
     }
@@ -123,7 +123,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 octreeIteratorValide.moveRight();
             }
 
-            int countCheck = 0;
+            FSize countCheck = 0;
             do{
                 if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
                     std::cout << "Error index are not equal!" << std::endl;
@@ -151,8 +151,8 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
         }
     }
     {
-        int NbPart = 0;
-        int NbLeafs = 0;
+        FSize NbPart = 0;
+        FSize NbLeafs = 0;
         { // Check that each particle has been summed with all other
             typename OctreeClass::Iterator octreeIterator(valideTree);
             octreeIterator.gotoBottomLeft();
@@ -169,7 +169,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             do {
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-                for(int idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getSize() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getSize() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
                     if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
@@ -374,7 +374,7 @@ int main(int argc, char ** argv){
     else{
         FFmaBinLoader<ParticleClass> loaderSeq(filename);
         ParticleClass partToInsert;
-        for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
             loaderSeq.fillParticle(partToInsert);
             realTree.insert(partToInsert);
         }
@@ -388,7 +388,7 @@ int main(int argc, char ** argv){
     {
         FFmaBinLoader<ParticleClass> loaderSeq(filename);
         ParticleClass partToInsert;
-        for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
             loaderSeq.fillParticle(partToInsert);
             treeValide.insert(partToInsert);
         }

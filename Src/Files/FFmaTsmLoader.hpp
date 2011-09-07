@@ -83,8 +83,8 @@ public:
       * To get the number of particles from this loader
       * @param the number of particles the loader can fill
       */
-    long getNumberOfParticles() const{
-        return this->nbParticles;
+    FSize getNumberOfParticles() const{
+        return FSize(this->nbParticles);
     }
 
     /**

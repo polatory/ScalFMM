@@ -286,7 +286,7 @@ int main(int argc, char ** argv){
     else{
         FFmaBinLoader<ParticleClass> loaderSeq(filename);
         ParticleClass partToInsert;
-        for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
             loaderSeq.fillParticle(partToInsert);
             tree.insert(partToInsert);
         }
@@ -343,7 +343,7 @@ int main(int argc, char ** argv){
         {
             FFmaBinLoader<ParticleClass> loaderSeq(filename);
             ParticleClass partToInsert;
-            for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
                 loaderSeq.fillParticle(partToInsert);
                 treeValide.insert(partToInsert);
             }

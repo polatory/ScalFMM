@@ -42,7 +42,7 @@ protected:
     FILE* const file;            //< The file to read
     F3DPosition centerOfBox;     //< The center of box read from file
     FReal boxWidth;              //< the box width read from file
-    int nbParticles;             //< the number of particles read from file
+    FSize nbParticles;             //< the number of particles read from file
 
     int removeWarning;
 
@@ -61,7 +61,7 @@ public:
                 FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     printf("%d sizeofelement\n",sizeOfElement);
             FDEBUG(})
-            removeWarning += fread(&this->nbParticles, sizeof(int), 1, file);
+            removeWarning += fread(&this->nbParticles, sizeof(FSize), 1, file);
 
             removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
             this->boxWidth *= 2;
@@ -97,7 +97,7 @@ public:
       * To get the number of particles from this loader
       * @param the number of particles the loader can fill
       */
-    long getNumberOfParticles() const{
+    FSize getNumberOfParticles() const{
         return this->nbParticles;
     }
 

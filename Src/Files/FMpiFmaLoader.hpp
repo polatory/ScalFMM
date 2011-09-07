@@ -42,8 +42,8 @@ class FMpiFmaLoader : public FAbstractLoader<ParticleClass> {
 protected:
     F3DPosition centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
-    int totalNbParticles;       //< the number of particles read from file
-    int nbParticles;            //< the number of particles read from file
+    FSize totalNbParticles;     //< the number of particles read from file
+    FSize nbParticles;          //< the number of particles read from file
     bool isOpenFlag;            //< to knwo if the file is open now
     FReal* particles;           //< the particles loaded from the binary file
     MPI_Offset idxParticles;    //< to iterate on the particles array
@@ -65,7 +65,7 @@ public:
 
             MPI_Status status;
             if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
-                && MPI_File_read(file, &this->totalNbParticles, 1, MPI_INT, &status) == MPI_SUCCESS
+                && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
                 && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
 
                 FDEBUG(if(sizeOfElement != sizeof(FReal)){)
@@ -78,28 +78,28 @@ public:
                 this->isOpenFlag = true;
 
                 // load my particles
-                MPI_Offset headDataOffSet;
+                MPI_Offset headDataOffSet(0);
                 MPI_File_get_position(file, &headDataOffSet);
 
                 MPI_Offset filesize(0);
                 MPI_File_get_size(file, &filesize); /* in bytes */
                 filesize = (filesize - headDataOffSet) / sizeof(FReal);
                 if(filesize/4 != this->totalNbParticles){
-                    printf("Error fileSize %lld, nbPart %d\n",filesize/4, this->totalNbParticles);
+                    printf("Error fileSize %lld, nbPart %lld\n",filesize/4, this->totalNbParticles);
                 }
                 // in number of floats
-                const long startPart = app.getLeft(this->totalNbParticles);
-                const long endPart = app.getRight(this->totalNbParticles);
+                const FSize startPart = app.getLeft(this->totalNbParticles);
+                const FSize endPart   = app.getRight(this->totalNbParticles);
                 nbParticles = (endPart - startPart);
-                const int bufsize = nbParticles * 4;
+                const FSize bufsize = nbParticles * 4;
                 // local number to read
                 particles = new FReal[bufsize];
 
                 if( sizeof(FReal) == sizeof(float) ){
-                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_FLOAT, &status);
+                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_FLOAT, &status);
                 }
                 else{
-                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_DOUBLE, &status);
+                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_DOUBLE, &status);
                 }
 
 
@@ -142,7 +142,7 @@ public:
       * To get the number of particles from this loader
       * @param the number of particles the loader can fill
       */
-    long getNumberOfParticles() const{
+    FSize getNumberOfParticles() const{
         return this->nbParticles;
     }
 

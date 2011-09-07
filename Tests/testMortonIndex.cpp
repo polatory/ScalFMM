@@ -147,7 +147,7 @@ int main(int argc, char ** argv){
 
     counter.tic();
     int idx = 1 ;
-    std::vector<AtomIndex> permutation(loader.getNumberOfParticles()) ;
+    std::vector<AtomIndex> permutation( int(loader.getNumberOfParticles()) ) ;
 
     { // print indexes
 
