@@ -24,6 +24,7 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const long NbParticles = 200000;
+    const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -62,9 +63,9 @@ int main(int argc, char ** argv){
 
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        const FReal px = ((FReal(rand())/RAND_MAX) * BoxWidth) + XCenter - (BoxWidth/2);
-        const FReal py = ((FReal(rand())/RAND_MAX) * BoxWidth) + YCenter - (BoxWidth/2);
-        const FReal pz = ((FReal(rand())/RAND_MAX) * BoxWidth) + ZCenter - (BoxWidth/2);
+        const FReal px = ((FReal(rand())/FRandMax) * BoxWidth) + XCenter - (BoxWidth/FReal(2.0));
+        const FReal py = ((FReal(rand())/FRandMax) * BoxWidth) + YCenter - (BoxWidth/FReal(2.0));
+        const FReal pz = ((FReal(rand())/FRandMax) * BoxWidth) + ZCenter - (BoxWidth/FReal(2.0));
 
         myfile << " \n" << px << " " << py << " " <<  pz;
     }

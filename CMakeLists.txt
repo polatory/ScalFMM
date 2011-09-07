@@ -39,7 +39,7 @@ if( SCALFMM_USE_CBLAS )
 endif()
 
 # Compile option
-ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual)
+ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
 
 CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )

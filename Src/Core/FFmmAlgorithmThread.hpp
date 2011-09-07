@@ -323,9 +323,9 @@ public:
         #pragma omp parallel
         {
 
-            const float step = (float(this->leafsNumber) / omp_get_num_threads());
-            const int start = int(FMath::Ceil(step * omp_get_thread_num()));
-            const int tempEnd = int(FMath::Ceil(step * (omp_get_thread_num()+1)));
+            const float step = float(this->leafsNumber) / float(omp_get_num_threads());
+            const int start = int(FMath::Ceil(step * float(omp_get_thread_num())));
+            const int tempEnd = int(FMath::Ceil(step * float(omp_get_thread_num()+1)));
             const int end = (tempEnd > this->leafsNumber ? this->leafsNumber : tempEnd);
 
             typename OctreeClass::Iterator octreeIterator(tree);

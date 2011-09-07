@@ -76,8 +76,8 @@ class FOctree {
         */
         long getTreeCoordinate(const FReal inRelativePosition) const {
                 const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-                const long index = FMath::dfloor(indexFReal);
-                if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * index ) ){
+                const long index = long(FMath::dfloor(indexFReal));
+                if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * FReal(index) ) ){
                         return index - 1;
                 }
                 return index;
@@ -99,7 +99,7 @@ public:
                 // pre compute box width for each level
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
                         this->boxWidthAtLevel[indexLevel] = tempWidth;
-			tempWidth /= 2.0;
+                        tempWidth /= FReal(2.0);
 		}
 	}
 
@@ -674,7 +674,7 @@ public:
                 // compute the leaf index
                 const MortonIndex fullIndex = inIndex >> 3 * (inLevel + 1 - (workingTree.tree->getSubOctreeHeight() + workingTree.tree->getSubOctreePosition()) );
                 // point to next suboctree
-                workingTree.tree = workingTree.middleTree->leafs(treeMiddleMask & fullIndex);
+                workingTree.tree = workingTree.middleTree->leafs(int(treeMiddleMask & fullIndex));
                 if(!workingTree.tree) return 0;
             }
 
@@ -774,13 +774,13 @@ public:
                 // compute the leaf index
                 const MortonIndex fullIndex = inIndex >> (3 * (leafIndex + 1  - (workingTree.tree->getSubOctreeHeight() + workingTree.tree->getSubOctreePosition()) ) );
                 // point to next suboctree
-                workingTree.tree = workingTree.middleTree->leafs(treeSubLeafMask & fullIndex);
+                workingTree.tree = workingTree.middleTree->leafs(int(treeSubLeafMask & fullIndex));
                 if(!workingTree.tree) return 0;
             }
 
             // compute correct index in the array
             const MortonIndex treeLeafMask = ~(~0x00LL << (3 *  (leafIndex + 1 - workingTree.tree->getSubOctreePosition()) ));
-            return workingTree.leafTree->getLeafSrc(treeLeafMask & inIndex);
+            return workingTree.leafTree->getLeafSrc(int(treeLeafMask & inIndex));
         }
 
         /** This function fill an array with the neighbors of a cell

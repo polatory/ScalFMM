@@ -98,6 +98,7 @@ int main(int argc, char ** argv){
     const long NbPart = 200000;//2000000
     const double BoxWidth = 1.0;
     const F3DPosition CenterOfBox(0.5,0.5,0.5);
+    const FReal FRandMax = FReal(RAND_MAX);
 
 
     // -----------------------------------------------------
@@ -108,9 +109,9 @@ int main(int argc, char ** argv){
     std::cout << "Inserting particles ..." << std::endl;
     counter.tic();
     for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-        const double x = FReal(rand())/RAND_MAX;
-        const double y = FReal(rand())/RAND_MAX;
-        const double z = FReal(rand())/RAND_MAX;
+        const FReal x = FReal(rand())/FRandMax;
+        const FReal y = FReal(rand())/FRandMax;
+        const FReal z = FReal(rand())/FRandMax;
 
         ParticleClass particles;
         ParticleClassTyped particlesTyped;

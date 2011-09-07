@@ -355,7 +355,7 @@ public:
                     if( child[idxChild] && workingIntervalsPerLevel[(idxLevel+1) * nbProcess + idProcess].min <= child[idxChild]->getMortonIndex() ){
                         child[idxChild]->serializeUp(&sendBuffer[idxBuff]);
                         idxBuff += CellClass::SerializedSizeUp;
-                        state |= (0x1 << idxChild);
+                        state |= char(0x1 << idxChild);
                     }
                 }
                 sendBuffer[0] = state;
@@ -418,7 +418,7 @@ public:
 
                     // retreive data and merge my child and the child from others
                     for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
-                        char state = recvBuffer[idxProc * recvBufferOffset];
+                        int state = int(recvBuffer[idxProc * recvBufferOffset]);
 
                         int position = 0;
                         int bufferIndex = 1;

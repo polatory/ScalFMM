@@ -143,7 +143,7 @@ protected:
         //std::cout << "sphereHarmoOuterCoef\n";
         FReal factOuter = 1.0;
         // in FMB code stoped at <= FMB_Info_M2L_P but this is not sufficient
-        for(int idxP = 0 ; idxP <= FMB_Info_M2L_P; factOuter *= (++idxP) ){
+        for(int idxP = 0 ; idxP <= FMB_Info_M2L_P; factOuter *= FReal(++idxP) ){
             this->sphereHarmoOuterCoef[idxP] = factOuter;
             //printf("spherical_harmonic_Outer_coefficients_array %.15e\n",this->sphereHarmoOuterCoef[idxP]);
             //printf("fact_l %.15e\n",factOuter);
@@ -155,9 +155,9 @@ protected:
         FReal factInner = 1.0;
         FReal powN1idxP = 1.0;
         //std::cout << "sphereHarmoInnerCoef\n";
-        for(int idxP = 0 ; idxP <= this->FMB_Info_M2L_P ; factInner *= (++idxP), powN1idxP = -powN1idxP){
-            for(int idxMP = 0, fact_l_m = factInner; idxMP <= idxP ; fact_l_m *= idxP+(++idxMP), ++currentInner){
-                *currentInner = powN1idxP / fact_l_m;
+        for(int idxP = 0 ; idxP <= this->FMB_Info_M2L_P ; factInner *= FReal(++idxP), powN1idxP = -powN1idxP){
+            for(int idxMP = 0, fact_l_m = int(factInner); idxMP <= idxP ; fact_l_m *= idxP+(++idxMP), ++currentInner){
+                *currentInner = powN1idxP / FReal(fact_l_m);
                 //std::cout << (*currentInner) << "\n";
             }
         }
@@ -348,8 +348,8 @@ protected:
         for(int idxl = 2; idxl <= lmax ; ++idxl ){
             for( int idxm = 0; idxm <= idxl - 2 ; ++idxm , ++idxCurrent , ++idxCurrent1m , ++idxCurrent2m ){
                 // Compute P_l^m, l >= m+2, using (1) and store it into results_array:
-                outResults[idxCurrent] = (inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m] - ( idxl + idxm - 1 )
-                                          * outResults[idxCurrent2m] ) / ( idxl - idxm );
+                outResults[idxCurrent] = (inCosTheta * FReal( 2 * idxl - 1 ) * outResults[idxCurrent1m] - FReal( idxl + idxm - 1 )
+                                          * outResults[idxCurrent2m] ) / FReal( idxl - idxm );
                 /*printf("\tres (%.18e) = inCosTheta (%.18e) idxl (%d) outResults 1m (%.18e) idxm (%d) outResults 2m (%.18e)\n",
                        outResults[idxCurrent],inCosTheta,idxl,outResults[idxCurrent1m],idxm,outResults[idxCurrent2m]);
                 printf("\t\t temp1 = %.18e temp2 = %.18e temp3 = %.18e\n",
@@ -360,12 +360,12 @@ protected:
             // p_results_array_l_minus_1_m now points on P_{l-1}^{l-1}
 
             // Compute P_l^{l-1} using (3) and store it into ptrResults:
-            outResults[idxCurrent++] = inCosTheta * ( 2 * idxl - 1 ) * outResults[idxCurrent1m];
+            outResults[idxCurrent++] = inCosTheta * FReal( 2 * idxl - 1 ) * outResults[idxCurrent1m];
 
             // Compute P_l^l using (2 bis) and store it into results_array:
             outResults[idxCurrent++] = fact * invSinTheta * outResults[idxCurrent1m];
 
-            fact += 2.0;
+            fact += FReal(2.0);
             ++idxCurrent1m;
         }
 
@@ -432,7 +432,7 @@ protected:
 
         for(int idxl = 0, idxlMod4 = 0; idxl <= FMB_Info_M2L_P ; ++idxl, ++idxlMod4){
             if(idxlMod4 == 4) idxlMod4 = 0;
-            const FReal angle = idxl * inSphere.phi + this->PiArrayOuter[idxlMod4];
+            const FReal angle = FReal(idxl) * inSphere.phi + this->PiArrayOuter[idxlMod4];
 
             cosSin[idxl].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
             cosSin[idxl].setImag( FMath::Sin(angle) );
@@ -514,7 +514,7 @@ protected:
         // Initialization of precomputed_cos_and_sin_array:
         for(int idxm = 0 , idxmMod4 = 0; idxm <= FMB_Info_P ; ++idxm, ++idxmMod4){
             if(idxmMod4 == 4) idxmMod4 = 0;
-            const FReal angle = idxm*inSphere.phi + PiArrayInner[idxmMod4];
+            const FReal angle = FReal(idxm) *inSphere.phi + PiArrayInner[idxmMod4];
             cosSin[idxm].setReal(FMath::Sin(angle + FMath::FPiDiv2));
             cosSin[idxm].setImag(FMath::Sin(angle));
 
@@ -561,8 +561,8 @@ protected:
                        );*/
 
                 // Computation of {\partial Inner_l^m(r, theta, phi)}/{\partial theta}:
-                magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * ((l*inSphere.cosTheta*(*ptr_associated_Legendre_function_Array)
-                                                                                       - (l+m)*(*(start_ptr_associated_Legendre_function_Array + expansion_Redirection_array_for_j[l-1] + m))) / inSphere.sinTheta);
+                magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * FReal(r_l) * ((FReal(l)*inSphere.cosTheta*(*ptr_associated_Legendre_function_Array)
+                                                                                       - FReal(l+m)*(*(start_ptr_associated_Legendre_function_Array + expansion_Redirection_array_for_j[l-1] + m))) / inSphere.sinTheta);
                 p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
                 p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
 
@@ -590,7 +590,7 @@ protected:
                    );*/
 
             // Computation of {\partial Inner_m^m(r, theta, phi)}/{\partial theta}:
-            magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (m * inSphere.cosTheta * (*ptr_associated_Legendre_function_Array) / inSphere.sinTheta);
+            magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * FReal(r_l) * (FReal(m) * inSphere.cosTheta * (*ptr_associated_Legendre_function_Array) / inSphere.sinTheta);
             p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
             p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
 
@@ -625,9 +625,9 @@ protected:
                 childBox.setPositionFromMorton(idxChild,1);
 
                 const F3DPosition M2MVector (
-                        father.getX() - (treeWidthAtLevel * (1 + (childBox.getX() * 2))),
-                        father.getY() - (treeWidthAtLevel * (1 + (childBox.getY() * 2))),
-                        father.getZ() - (treeWidthAtLevel * (1 + (childBox.getZ() * 2)))
+                        father.getX() - (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))),
+                        father.getY() - (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))),
+                        father.getZ() - (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2)))
                         );
 
                 harmonicInner(positionTsmphere(M2MVector),this->transitionM2M[idxLevel][idxChild]);
@@ -641,9 +641,9 @@ protected:
                 }*/
 
                 const F3DPosition L2LVector (
-                        (treeWidthAtLevel * (1 + (childBox.getX() * 2))) - father.getX(),
-                        (treeWidthAtLevel * (1 + (childBox.getY() * 2))) - father.getY(),
-                        (treeWidthAtLevel * (1 + (childBox.getZ() * 2))) - father.getZ()
+                        (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
+                        (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))) - father.getY(),
+                        (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2))) - father.getZ()
                         );
 
                 harmonicInner(positionTsmphere(L2LVector),this->transitionL2L[idxLevel][idxChild]);
@@ -683,8 +683,8 @@ protected:
                         k = NN-n-m;
                         if (k < 0){
                             const int pow_of_minus_1 = ((k%2) ? -1 : 1);
-                            data->setReal( pow_of_minus_1 * (transfer_exp + expansion_Redirection_array_for_j[MM+NN] - k)->getReal());
-                            data->setImag((-pow_of_minus_1) * (transfer_exp + expansion_Redirection_array_for_j[MM+NN] - k)->getImag());
+                            data->setReal( FReal(pow_of_minus_1) * (transfer_exp + expansion_Redirection_array_for_j[MM+NN] - k)->getReal());
+                            data->setImag( FReal(-pow_of_minus_1) * (transfer_exp + expansion_Redirection_array_for_j[MM+NN] - k)->getImag());
                         }
                         else {
                             *data = *(transfer_exp + expansion_Redirection_array_for_j[MM+NN] + k);
@@ -767,14 +767,14 @@ protected:
                 for( int idxd2 = 0; idxd2 < this->size1Dim ; ++idxd2 ){
 
                     for( int idxd3 = 0; idxd3 < this->size1Dim ; ++idxd3 ){
-                        const long x = idxd1 - this->halphSize1Dim;
-                        const long y = idxd2 - this->halphSize1Dim;
-                        const long z = idxd3 - this->halphSize1Dim;
+                        const FReal x = FReal(idxd1 - this->halphSize1Dim);
+                        const FReal y = FReal(idxd2 - this->halphSize1Dim);
+                        const FReal z = FReal(idxd3 - this->halphSize1Dim);
 
                         //printf("x=%ld \t y=%ld \t z=%ld\n",x,y,z);
 
                         if( ( x*x + y*y + z*z ) >= ( 3*FMB_Info_ws*FMB_Info_ws + 0.1 ) ){
-                            const F3DPosition relativePos( x*treeWidthAtLevel , y*treeWidthAtLevel , z*treeWidthAtLevel );                            
+                            const F3DPosition relativePos( x*treeWidthAtLevel , y*treeWidthAtLevel , z*treeWidthAtLevel );
 
 
                             //printf("blas\n");
@@ -1035,7 +1035,7 @@ public:
          * Position in 'nexp':  j*(j+1)      + k
          */
             int jj_plus_1      = j*(j+1);
-            int half_jj_plus_1 = (int) jj_plus_1*0.5;
+            int half_jj_plus_1 = int(FReal(jj_plus_1)*0.5);
             p_exp  = exp + half_jj_plus_1 + j;
             p_nexp = exp + jj_plus_1      + j;
 
@@ -1415,7 +1415,7 @@ public:
                 exp_term_aux.setReal( (p_Y_term->getReal() * p_local_exp_term->getReal()) - (p_Y_term->getImag() * p_local_exp_term->getImag()) );
                 exp_term_aux.setImag( (p_Y_term->getReal() * p_local_exp_term->getImag()) + (p_Y_term->getImag() * p_local_exp_term->getReal()) );
 
-                force_vector_in_local_base.setX( force_vector_in_local_base.getX() + j * exp_term_aux.getReal());
+                force_vector_in_local_base.setX( force_vector_in_local_base.getX() + FReal(j) * exp_term_aux.getReal());
                 // F_phi: k=0 => nothing to do for F_phi
                 // F_theta:
                 exp_term_aux.setReal( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getReal()) - (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getImag()) );
@@ -1450,9 +1450,9 @@ public:
                     exp_term_aux.setReal( (p_Y_term->getReal() * p_local_exp_term->getReal()) - (p_Y_term->getImag() * p_local_exp_term->getImag()) );
                     exp_term_aux.setImag( (p_Y_term->getReal() * p_local_exp_term->getImag()) + (p_Y_term->getImag() * p_local_exp_term->getReal()) );
 
-                    force_vector_in_local_base.setX(force_vector_in_local_base.getX() + 2 * j * exp_term_aux.getReal());
+                    force_vector_in_local_base.setX(force_vector_in_local_base.getX() + FReal(2 * j) * exp_term_aux.getReal());
                     // F_phi:
-                    force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() - 2 * k * exp_term_aux.getImag());
+                    force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() - FReal(2 * k) * exp_term_aux.getImag());
                     // F_theta:
 
                     /*printf("\t\t k = %d \t j = %d \t exp_term_aux real = %.15e imag = %.15e \n",
@@ -1487,9 +1487,9 @@ public:
             // We want: - gradient(POTENTIAL_SIGN potential).
             // The -(- 1.0) computing is not the most efficient programming ...
             //#define FMB_TMP_SIGN -(POTENTIAL_SIGN 1.0)
-            force_vector_in_local_base.setX( force_vector_in_local_base.getX() * (-1.0) / spherical.r);
-            force_vector_in_local_base.setY( force_vector_in_local_base.getY() * (-1.0) / spherical.r);
-            force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() * (-1.0) / (spherical.r * spherical.sinTheta));
+            force_vector_in_local_base.setX( force_vector_in_local_base.getX() * FReal(-1.0) / spherical.r);
+            force_vector_in_local_base.setY( force_vector_in_local_base.getY() * FReal(-1.0) / spherical.r);
+            force_vector_in_local_base.setZ( force_vector_in_local_base.getZ() * FReal(-1.0) / (spherical.r * spherical.sinTheta));
             //#undef FMB_TMP_SIGN
 
             /////////////////////////////////////////////////////////////////////
@@ -1682,7 +1682,7 @@ public:
         const FReal dy = target.getPosition().getY() - source.getPosition().getY();
         const FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
 
-        FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FMB_Info_eps_soft_square);
+        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz + FReal(FMB_Info_eps_soft_square));
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
         inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
         inv_square_distance *= inv_distance;
@@ -1756,7 +1756,7 @@ public:
         const FReal dy = target.getPosition().getY() - source.getPosition().getY();
         const FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
 
-        FReal inv_square_distance = 1.0/ (dx*dx + dy*dy + dz*dz + FMB_Info_eps_soft_square);
+        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz + FReal(FMB_Info_eps_soft_square));
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
         inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
         inv_square_distance *= inv_distance;

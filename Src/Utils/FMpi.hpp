@@ -248,22 +248,22 @@ public:
 
     template< class T >
     T getLeft(const T inSize) {
-        const float step = (float(inSize) / processCount());
-        return T(FMath::Ceil(step * processId()));
+        const float step = (float(inSize) / float(processCount()));
+        return T(FMath::Ceil(step * float(processId())));
     }
 
     template< class T >
     T getRight(const T inSize) {
-        const float step = (float(inSize) / processCount());
-        const T res = T(FMath::Ceil(step * (processId()+1)));
+        const float step = (float(inSize) / float(processCount()));
+        const T res = T(FMath::Ceil(step * float(processId()+1)));
         if(res > inSize) return inSize;
         else return res;
     }
 
     template< class T >
     T getOtherRight(const T inSize, const int other) {
-        const float step = (float(inSize) / processCount());
-        const T res = T(FMath::Ceil(step * (other+1)));
+        const float step = (float(inSize) / float(processCount()));
+        const T res = T(FMath::Ceil(step * float(other+1)));
         if(res > inSize) return inSize;
         else return res;
     }

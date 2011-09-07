@@ -2,8 +2,8 @@
 
 // Constant values
 
-const double FMath::FPi = M_PI;
-const double FMath::FPiDiv2 = M_PI_2;
-const double FMath::Epsilon = 0.00000000000000000001;
+const FReal FMath::FPi = FReal(M_PI);
+const FReal FMath::FPiDiv2 = FReal(M_PI_2);
+const FReal FMath::Epsilon = FReal(0.00000000000000000001);
 
 

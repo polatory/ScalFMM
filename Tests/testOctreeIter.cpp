@@ -39,6 +39,7 @@ int main(int , char ** ){
         const int NbLevels = 9;
         const int NbSubLevels = 3;
         const long NbPart = 2E6;
+        const FReal FRandMax = FReal(RAND_MAX);
 
         FTic counterTime;
 
@@ -53,7 +54,7 @@ int main(int , char ** ){
         {
             FBasicParticle particle;
             for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-                particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+                particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
                 tree.insert(particle);
             }
         }

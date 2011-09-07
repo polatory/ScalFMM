@@ -59,6 +59,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart = 2000000;//2000000
+    const FReal FRandMax = FReal(RAND_MAX);
     FTic counter;
 
     srand ( 1 ); // volontary set seed to constant
@@ -76,7 +77,7 @@ int main(int argc, char ** argv){
     {
         ParticleClassTyped particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
             if(rand() > RAND_MAX/2) particle.setAsTarget();
             else particle.setAsSource();
 

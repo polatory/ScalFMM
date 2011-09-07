@@ -51,6 +51,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart = 2000000;//2000000
+    const FReal FRandMax = FReal(RAND_MAX);
 
     FTic counter;
 
@@ -71,7 +72,7 @@ int main(int argc, char ** argv){
     {
         FTestParticle particleToFill;
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particleToFill.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            particleToFill.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
             tree.insert(particleToFill);
         }
     }

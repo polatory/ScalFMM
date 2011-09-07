@@ -67,7 +67,7 @@ public:
         if(other.getSize() > this->capacity){
             delete [] reinterpret_cast< char* >(this->array);
 
-            this->capacity = other.getSize() * 1.5;
+            this->capacity = int(other.getSize() * 1.5);
             array = reinterpret_cast< T* >( new char[SizeOfT*this->capacity]);
         }
         this->index = other.index;
@@ -165,7 +165,7 @@ public:
     */
     void push( const T & inValue ){
         if( this->index == this->capacity ){
-            setCapacity(this->capacity * 1.5);
+            setCapacity(int(this->capacity * 1.5));
         }
         new((void*)&this->array[this->index]) T;
         this->array[this->index] = inValue;

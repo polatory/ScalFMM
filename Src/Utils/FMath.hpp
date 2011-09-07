@@ -13,9 +13,9 @@
 * Propose basic math functions or indirections to std math.
 */
 struct FMath{
-    static const double FPi;        //< Pi constant
-    static const double FPiDiv2;    //< Pi/2 constant
-    static const double Epsilon;     //< Epsilon
+    static const FReal FPi;        //< Pi constant
+    static const FReal FPiDiv2;    //< Pi/2 constant
+    static const FReal Epsilon;    //< Epsilon
 
     /** To get absolute value */
     template <class NumType>
@@ -38,19 +38,25 @@ struct FMath{
     /** To know if 2 values seems to be equal */
     template <class NumType>
     static bool LookEqual(const NumType inV1, const NumType inV2){
-        const FReal relTol = 0.00001;
-		const FReal absTol = 0.00001;
+        const FReal relTol = FReal(0.00001);
+                const FReal absTol = FReal(0.00001);
                 return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));
         //return Abs(inV1 - inV2) <= ((Abs(inV1) < Abs(inV2) ? Abs(inV2) : Abs(inV1)) * 0.00001);
     }
 
     /** To get floor of a FReal */
-    static FReal dfloor(const FReal inValue){
+    static float dfloor(const float inValue){
+        return floorf(inValue);
+    }
+    static double dfloor(const double inValue){
         return floor(inValue);
     }
 
     /** To get ceil of a FReal */
-    static FReal Ceil(const FReal inValue){
+    static float Ceil(const float inValue){
+        return ceilf(inValue);
+    }
+    static double Ceil(const double inValue){
         return ceil(inValue);
     }
 
@@ -69,32 +75,50 @@ struct FMath{
     }
 
     /** To get sqrt of a FReal */
-    static FReal Sqrt(const FReal inValue){
+    static float Sqrt(const float inValue){
+        return sqrtf(inValue);
+    }
+    static double Sqrt(const double inValue){
         return sqrt(inValue);
     }
 
     /** To get atan2 of a 2 FReal */
-    static FReal Atan2(const FReal inValue1,const FReal inValue2){
+    static float Atan2(const float inValue1,const float inValue2){
+        return atan2f(inValue1,inValue2);
+    }
+    static double Atan2(const double inValue1,const double inValue2){
         return atan2(inValue1,inValue2);
     }
 
     /** To get sqrt of a FReal */
-    static FReal Sin(const FReal inValue){
+    static float Sin(const float inValue){
+        return sinf(inValue);
+    }
+    static double Sin(const double inValue){
         return sin(inValue);
     }
 
     /** To get cos of a FReal */
-    static FReal Cos(const FReal inValue){
+    static float Cos(const float inValue){
+        return cosf(inValue);
+    }
+    static double Cos(const double inValue){
         return cos(inValue);
     }
 
     /** To get acos of a FReal */
-    static FReal ACos(const FReal inValue){
+    static float ACos(const float inValue){
+        return acosf(inValue);
+    }
+    static double ACos(const double inValue){
         return acos(inValue);
     }
 
     /** To get atan2 of a 2 FReal */
-    static FReal Fmod(const FReal inValue1,const FReal inValue2){
+    static float Fmod(const float inValue1,const float inValue2){
+        return fmodf(inValue1,inValue2);
+    }
+    static double Fmod(const double inValue1,const double inValue2){
         return fmod(inValue1,inValue2);
     }
 };

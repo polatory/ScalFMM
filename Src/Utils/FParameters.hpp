@@ -30,7 +30,7 @@ namespace FParameters{
       *
       */
     char toLower(const char c){
-        return ('A' <= c && c <= 'Z' ? (c - 'A') + 'a' : c);
+        return char('A' <= c && c <= 'Z' ? (c - 'A') + 'a' : c);
     }
 
     /** To know if two char are equals

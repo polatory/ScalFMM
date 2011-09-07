@@ -136,9 +136,9 @@ int main(int , char ** ){
 
                 FTreeCoordinate host;
                 // position has to be relative to corner not center
-                host.setX( FMath::dfloor(( x - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) );
-                host.setY( FMath::dfloor(( y - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) );
-                host.setZ( FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) );
+                host.setX( long(FMath::dfloor(( x - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setY( long(FMath::dfloor(( y - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setZ( long(FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
 
                 const MortonIndex index = host.getMortonIndex(requiredlevel);
                 std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToBinary(index,requiredlevel) << "d\n\n";

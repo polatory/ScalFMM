@@ -53,7 +53,7 @@ class FQuickSort {
         else return res;
     }
 
-    static int getProc(const int position, const long inSize, const int inNbProc) {
+    static int getProc(const long position, const long inSize, const int inNbProc) {
         const double step = (double(inSize) / inNbProc);
         return int(position/step);
     }
@@ -183,7 +183,7 @@ class FQuickSort {
     template <class SortType, class PivotType>
     static void QsLocal(SortType array[], const PivotType& pivot,
                long myLeft, long myRight,
-               int& prefix, int& sufix){
+               long& prefix, long& sufix){
 
         long leftIter = myLeft;
         long rightIter = myRight;
@@ -221,8 +221,8 @@ public:
     template <class SortType, class PivotType>
     static void QsOmp(SortType array[], const long size){
         struct Fix{
-            int pre;
-            int suf;
+            long pre;
+            long suf;
         };
 
         const int NbOfThreads = omp_get_max_threads();
@@ -287,7 +287,7 @@ public:
                 memcpy(&array[startIndex + fixesSum[myThreadId].pre], &temporaryArray[myLeft], sizeof(SortType) * fixes[myThreadId].pre);
 
                 // copy my result where it belong (> pivot)
-                const int sufoffset = fixesSum[lastProc + 1].pre + startIndex;
+                const long sufoffset = fixesSum[lastProc + 1].pre + startIndex;
                 memcpy(&array[sufoffset + fixesSum[myThreadId].suf], &temporaryArray[myLeft + fixes[myThreadId].pre ], sizeof(SortType) * fixes[myThreadId].suf);
 
                 OmpBarrier( mutex, firstProc, lastProc, myThreadId);
@@ -322,8 +322,8 @@ public:
     static void QsMpi(const SortType originalArray[], long size, SortType* & outputArray, long& outputSize, MPI_Comm originalComm = MPI_COMM_WORLD){
         // We need a structure see the algorithm detail to know more
         struct Fix{
-            int pre;
-            int suf;
+            long pre;
+            long suf;
         };
 
         // first we copy data into our working buffer : outputArray
@@ -391,15 +391,15 @@ public:
             if( fixes[currentRank].suf ){
                 const int procsInSuf = currentNbProcs - 1 - splitProc;
                 const int firstProcInSuf = splitProc + 1;
-                const int elementsInSuf = fixesSum[currentNbProcs].suf;
+                const long elementsInSuf = fixesSum[currentNbProcs].suf;
 
                 const int firstProcToSend = getProc(fixesSum[currentRank].suf, elementsInSuf, procsInSuf) + firstProcInSuf;
                 const int lastProcToSend = getProc(fixesSum[currentRank + 1].suf - 1, elementsInSuf, procsInSuf) + firstProcInSuf;
 
-                int sent = 0;
+                long sent = 0;
                 for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
                     const int thisProcRight = getRight(elementsInSuf, idxProc - firstProcInSuf, procsInSuf);
-                    int sendToProc = thisProcRight - fixesSum[currentRank].suf - sent;
+                    long sendToProc = thisProcRight - fixesSum[currentRank].suf - sent;
 
                     if(sendToProc + sent > fixes[currentRank].suf){
                         sendToProc = fixes[currentRank].suf - sent;
@@ -414,15 +414,15 @@ public:
             // under pivot (left part)
             if( fixes[currentRank].pre ){
                 const int procsInPre = splitProc + 1;
-                const int elementsInPre = fixesSum[currentNbProcs].pre;
+                const long elementsInPre = fixesSum[currentNbProcs].pre;
 
                 const int firstProcToSend = getProc(fixesSum[currentRank].pre, elementsInPre, procsInPre);
                 const int lastProcToSend = getProc(fixesSum[currentRank + 1].pre - 1, elementsInPre, procsInPre);
 
-                int sent = 0;
+                long sent = 0;
                 for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
                     const int thisProcRight = getRight(elementsInPre, idxProc, procsInPre);
-                    int sendToProc = thisProcRight - fixesSum[currentRank].pre - sent;
+                    long sendToProc = thisProcRight - fixesSum[currentRank].pre - sent;
 
                     if(sendToProc + sent > fixes[currentRank].pre){
                         sendToProc = fixes[currentRank].pre - sent;
@@ -441,7 +441,7 @@ public:
             if( currentRank <= splitProc ){
                 // I am in S-Part (smaller than pivot)
                 const int procsInPre = splitProc + 1;
-                const int elementsInPre = fixesSum[currentNbProcs].pre;
+                const long elementsInPre = fixesSum[currentNbProcs].pre;
 
                 long myLeft = getLeft(elementsInPre, currentRank, procsInPre);
                 long myRightLimit = getRight(elementsInPre, currentRank, procsInPre);
@@ -458,11 +458,11 @@ public:
                     ++idxProc;
                 }
 
-                int indexArray = 0;
+                long indexArray = 0;
 
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const int firstIndex = Max(myLeft , (long int) fixesSum[idxProc].pre );
-                    const int endIndex = Min((long int)fixesSum[idxProc + 1].pre,  myRightLimit);
+                    const long firstIndex = Max(myLeft , (long int) fixesSum[idxProc].pre );
+                    const long endIndex = Min((long int)fixesSum[idxProc + 1].pre,  myRightLimit);
                     if( (endIndex - firstIndex) ){
                         mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }
@@ -475,7 +475,7 @@ public:
             else{
                 // I am in L-Part (larger than pivot)
                 const int procsInSuf = currentNbProcs - 1 - splitProc;
-                const int elementsInSuf = fixesSum[currentNbProcs].suf;
+                const long elementsInSuf = fixesSum[currentNbProcs].suf;
 
                 const int rankInL = currentRank - splitProc - 1;
                 long myLeft = getLeft(elementsInSuf, rankInL, procsInSuf);
@@ -493,11 +493,11 @@ public:
                     ++idxProc;
                 }
 
-                int indexArray = 0;
+                long indexArray = 0;
 
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const int firstIndex = Max(myLeft , (long int)fixesSum[idxProc].suf );
-                    const int endIndex = Min((long int)fixesSum[idxProc + 1].suf,  myRightLimit);
+                    const long firstIndex = Max(myLeft , (long int)fixesSum[idxProc].suf );
+                    const long endIndex = Min((long int)fixesSum[idxProc + 1].suf,  myRightLimit);
                     if( (endIndex - firstIndex) ){
                         mpiassert( MPI_Irecv(&buffer[indexArray], (endIndex - firstIndex) * sizeof(SortType), MPI_BYTE, idxProc, 0, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }

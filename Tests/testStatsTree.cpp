@@ -105,10 +105,10 @@ int main(int argc, char ** argv){
                 typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
-                    averageParticles += octreeIterator.getCurrentListTargets()->getSize();
+                    averageParticles += FReal(octreeIterator.getCurrentListTargets()->getSize());
                     ++nbLeafs;
                 } while(octreeIterator.moveRight());
-                averageParticles /= nbLeafs;
+                averageParticles /= FReal(nbLeafs);
 
                 std::cout << "[STAT] Nb leafs : " << nbLeafs << std::endl;
             }
@@ -120,10 +120,10 @@ int main(int argc, char ** argv){
                 typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
-                    varianceParticles += (averageParticles - octreeIterator.getCurrentListTargets()->getSize()) - (averageParticles - octreeIterator.getCurrentListTargets()->getSize());
+                    varianceParticles += (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize())) - (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize()));
                     ++nbLeafs;
                 } while(octreeIterator.moveRight());
-                varianceParticles /= nbLeafs;
+                varianceParticles /= FReal(nbLeafs);
             }
             std::cout << "[STAT] Variances of particles on leafs is = " << FMath::Sqrt(varianceParticles) << std::endl;
         }
@@ -147,10 +147,10 @@ int main(int argc, char ** argv){
                 do{
                     ++nbCells;
                 } while(octreeIterator.moveRight());
-                averageReduction += nbCells/float(previousCells);
+                averageReduction += FReal(nbCells)/FReal(previousCells);
                 previousCells = nbCells;
             }
-            std::cout << "[STAT] Average reduction by level = " << (averageReduction/(NbLevels-2)) << std::endl;
+            std::cout << "[STAT] Average reduction by level = " << (averageReduction/FReal(NbLevels-2)) << std::endl;
         }
 
         {
@@ -162,10 +162,10 @@ int main(int argc, char ** argv){
             do{
                 ContainerClass* neighbors[26];
                 // need the current particles and neighbors particles
-                averageNeighbors += tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1);
+                averageNeighbors += FReal(tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1));
                 ++nbLeafs;
             } while(octreeIterator.moveRight());
-            std::cout << "[STAT] Average neighbors for each leafs = " << (averageNeighbors/nbLeafs) << std::endl;
+            std::cout << "[STAT] Average neighbors for each leafs = " << (averageNeighbors/FReal(nbLeafs)) << std::endl;
         }
 
         {

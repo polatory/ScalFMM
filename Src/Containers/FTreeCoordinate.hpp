@@ -159,11 +159,11 @@ public:
         this->z = 0;
 
         for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
-            z |= (inIndex & mask);
+            z |= long(inIndex & mask);
             inIndex >>= 1;
-            y |= (inIndex & mask);
+            y |= long(inIndex & mask);
             inIndex >>= 1;
-            x |= (inIndex & mask);
+            x |= long(inIndex & mask);
 
             mask <<= 1;
         }

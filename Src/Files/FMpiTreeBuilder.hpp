@@ -17,8 +17,8 @@ class FMpiTreeBuilder{
       */
     static long getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
             const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-            const long index = FMath::dfloor(indexFReal);
-            if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * index ) ){
+            const long index = long(FMath::dfloor(indexFReal));
+            if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * FReal(index) ) ){
                     return index - 1;
             }
             return index;
@@ -48,14 +48,14 @@ class FMpiTreeBuilder{
 
     template< class T >
     static T GetLeft(const T inSize) {
-        const float step = (float(inSize) / MpiGetNbProcs());
-        return T(FMath::Ceil(step * MpiGetRank()));
+        const float step = (float(inSize) / float(MpiGetNbProcs()));
+        return T(FMath::Ceil(step * float(MpiGetRank())));
     }
 
     template< class T >
     static T GetRight(const T inSize) {
-        const float step = (float(inSize) / MpiGetNbProcs());
-        const T res = T(FMath::Ceil(step * (MpiGetRank()+1)));
+        const float step = (float(inSize) / float(MpiGetNbProcs()));
+        const T res = T(FMath::Ceil(step * float(MpiGetRank()+1)));
         if(res > inSize) return inSize;
         else return res;
     }
@@ -132,7 +132,7 @@ public:
             F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
             FTreeCoordinate host;
 
-            const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / (1 << (NbLevels - 1) );
+            const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / FReal(1 << (NbLevels - 1) );
             for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
                 loader.fillParticle(realParticlesIndexed[idxPart].particle);
                 host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));

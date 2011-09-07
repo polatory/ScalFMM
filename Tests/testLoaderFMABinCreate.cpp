@@ -61,6 +61,7 @@ int main(int argc, char ** argv){
 
     // System properties
     const int sizeOfFreal = int(sizeof(FReal));
+    const FReal FRandMax = FReal(RAND_MAX);
 
     fwrite(&sizeOfFreal, sizeof(int), 1, myfile);
     fwrite(&NbParticles, sizeof(int), 1, myfile);
@@ -71,12 +72,12 @@ int main(int argc, char ** argv){
     fwrite(&ZCenter, sizeof(FReal), 1, myfile);
 
     FReal data[4];
-    data[3] = 0.1;
+    data[3] = FReal(0.1);
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        data[0] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + XCenter - BoxWidth;
-        data[1] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + YCenter - BoxWidth;
-        data[2] = ((FReal(rand())/RAND_MAX) * BoxWidth * 2) + ZCenter - BoxWidth;
+        data[0] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + XCenter - BoxWidth;
+        data[1] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + YCenter - BoxWidth;
+        data[2] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + ZCenter - BoxWidth;
 
         /*data[0] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + XCenter - BoxWidth;
         data[1] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + YCenter - BoxWidth;

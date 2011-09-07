@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FMath.hpp"
 
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreateSphere.cpp -O2 -o testLoaderCreateSphere.exe
@@ -27,13 +28,14 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const long NbParticles = 2000000;
+    const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
-    const float XCenter = 0.5;
-    const float YCenter = 0.5;
-    const float ZCenter = 0.5;
+    const FReal XCenter = 0.5;
+    const FReal YCenter = 0.5;
+    const FReal ZCenter = 0.5;
     // Box width
-    const float BoxWidth = 1.0;
+    const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
     const char * const defaultFilename = "Sphere.fma";
 
@@ -65,18 +67,18 @@ int main(int argc, char ** argv){
     myfile << NbParticles << " " << BoxWidth << " " << XCenter << " " << YCenter << " " << ZCenter;
 
 
-    const float rayon = 0.4;
-    const float thresh = 0.2;
+    const FReal rayon = FReal(0.4);
+    const FReal thresh = FReal(0.2);
 
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        const float phi = ((float(rand())/RAND_MAX) * thresh - (thresh/2)) + rayon;
-        const float theta = M_PI * (float(rand())/RAND_MAX);
-        const float omega = 2 * M_PI * (float(rand())/RAND_MAX);
+        const FReal phi = ((FReal(rand())/FRandMax) * thresh - (thresh/FReal(2))) + rayon;
+        const FReal theta = FMath::FPi * (FReal(rand())/FRandMax);
+        const FReal omega = FReal(2) * FMath::FPi * (FReal(rand())/FRandMax);
 
-        const float px = phi*cos(omega)*sin(theta) + XCenter;
-        const float py = phi*sin(omega)*cos(theta) + YCenter;
-        const float pz = phi*cos(theta) + ZCenter;
+        const FReal px = phi*FMath::Cos(omega)*FMath::Sin(theta) + XCenter;
+        const FReal py = phi*FMath::Sin(omega)*FMath::Cos(theta) + YCenter;
+        const FReal pz = phi*FMath::Cos(theta) + ZCenter;
 
         myfile << " \n" << px << " " << py << " " <<  pz << " 0.01";
     }

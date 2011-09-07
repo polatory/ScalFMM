@@ -34,6 +34,7 @@ int main(int , char ** ){
     //////////////////////////////////////////////////////////////
 
     const long NbPart = 2000000;
+    const FReal FRandMax = FReal(RAND_MAX);
     FTic counter;
 
     srand ( time(NULL) );
@@ -46,7 +47,7 @@ int main(int , char ** ){
     {
         FBasicParticle particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particle.setPosition(FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX,FReal(rand())/RAND_MAX);
+            particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
 
             tree.insert(particle);
         }
