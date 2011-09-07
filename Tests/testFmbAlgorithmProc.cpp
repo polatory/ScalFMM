@@ -1,9 +1,5 @@
 // /!\ Please, you must read the license at the bottom of this page
 
-#include <iostream>
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FMpi.hpp"
@@ -21,7 +17,7 @@
 #include "../Src/Fmb/FExtendFmbCell.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
@@ -31,12 +27,15 @@
 #include "../Src/Files/FMpiTreeBuilder.hpp"
 #include "../Src/Files/FFmaBinLoader.hpp"
 
+#include <iostream>
 
+#include <stdio.h>
+#include <stdlib.h>
 
 //#define VALIDATE_FMM
 
-// With openmp : mpicxx -g testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithmProc.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
+// With openmp : mpicxx -g testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp ../Src/Utils/FMath.cpp ../Src/Utils/F3DPosition.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithmProc.exe
+// mpicxx -openmp testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp ../Src/Utils/FMath.cpp ../Src/Utils/F3DPosition.cpp -O2 -o testFmbAlgorithmProc.exe
 
 // mpirun -np 3 `eztrace -e ./Tests/Debug/testFmbAlgorithmProc ../Data/testFMAlgorithm.fma.tmp `
 // eztrace_convert -o my_paje /tmp/berenger_eztrace_log_rank_0 /tmp/berenger_eztrace_log_rank_1 /tmp/berenger_eztrace_log_rank_2
@@ -218,7 +217,7 @@ int main(int argc, char ** argv){
     typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
