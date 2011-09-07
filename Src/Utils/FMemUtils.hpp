@@ -5,10 +5,10 @@
 
 // To get memcpy
 #include <cstring>
-#include <limits>
+#include <climits>
 
 namespace FMemUtils {
-    static const FSize MaxSize_t = std::numeric_limits<std::size_t>::max();
+    static const FSize MaxSize_t = UINT_MAX; //std::numeric_limits<std::size_t>::max();
 
     static void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
