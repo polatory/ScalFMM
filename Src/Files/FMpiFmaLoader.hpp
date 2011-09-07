@@ -95,7 +95,13 @@ public:
                 // local number to read
                 particles = new FReal[bufsize];
 
-                MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_FLOAT, &status);
+                if( sizeof(FReal) == sizeof(float) ){
+                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_FLOAT, &status);
+                }
+                else{
+                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, bufsize, MPI_DOUBLE, &status);
+                }
+
 
                 // check if needed
                 int count(0);
