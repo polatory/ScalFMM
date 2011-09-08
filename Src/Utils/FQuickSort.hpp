@@ -511,7 +511,7 @@ public:
             }
 
             // Proceed all send/receive
-            mpiassert( MPI_Waitall(iterRequest, requests, NULL),  __LINE__ );
+            mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
 
             // Copy res into outputArray

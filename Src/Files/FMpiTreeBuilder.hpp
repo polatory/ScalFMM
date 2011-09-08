@@ -153,7 +153,6 @@ public:
             MortonIndex otherFirstIndex = -1;
             {
                 FMpi::Request req[2];
-                MPI_Status status[2];
                 int reqiter = 0;
                 // can I send my first index? == I am not rank 0 & I have data
                 if( 0 < rank && outputSize){
@@ -163,7 +162,7 @@ public:
                     MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
                 }
 
-                MPI_Waitall(reqiter,req,status);
+                MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
 
                 // I could not send because I do not have data, so I transmit the data coming
                 // from my right neigbors
@@ -174,7 +173,6 @@ public:
 
 
             MPI_Request req[2];
-            MPI_Status status[2];
             int reqiter = 0;
 
             // at this point every one know the first index of his right neighbors
@@ -230,7 +228,7 @@ public:
 
                         MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, 0, MPI_COMM_WORLD, &req[reqiter++]);
 
-                        MPI_Waitall(reqiter,req, status);
+                        MPI_Waitall(reqiter,req, MPI_STATUSES_IGNORE);
                         reqiter = 0;
 
                         const IndexedParticle* const reallocOutputArray = outputArray;
@@ -248,7 +246,7 @@ public:
                     }
                 }
             }
-            MPI_Waitall(reqiter,req,status);
+            MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
         }
 
         // We now copy the data from a sorted type into real particles array + counter
@@ -359,7 +357,6 @@ public:
         const FSize iCanSendToRight = nbLeafs;
 
         MPI_Request requests[2];
-        MPI_Status status[2];
         int iterRequest = 0;
 
         FSize hasBeenSentToLeft = 0;
@@ -466,7 +463,7 @@ public:
         ///////////////////////////////
         // Wait send receive
         ///////////////////////////////
-        MPI_Waitall(iterRequest, requests, status);
+        MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE);
         // We can delete the buffer use to send our particles only
 
         printf("Wait passed...\n");
