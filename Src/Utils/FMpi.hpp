@@ -29,8 +29,18 @@ public:
 ////////////////////////////////////////////////////////
     typedef MPI_Request Request;
 
+    /*
+[fourmi062:15896] [[13237,0],1]-[[13237,1],1] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+[fourmi056:04597] [[13237,0],3]-[[13237,1],3] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+[fourmi053:08571] [[13237,0],5]-[[13237,1],5] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+
+Erreur pour le proc1
+[[13237,1],1][btl_openib_component.c:3227:handle_wc] from fourmi062 to: fourmi056 error polling LP CQ with status LOCAL LENGTH ERROR status number 1 for wr_id 7134664 opcode 0  vendor error 105 qp_idx 3
+Tous on la meme erreur le 2e 1 est remplacé par le rang.
+*/
     FMpi(int inArgc, char **  inArgv ) {
-        MPI_Init(&inArgc,&inArgv);
+        int provided = 0;
+        MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_MULTIPLE, &provided);
     }
 
     ~FMpi(){

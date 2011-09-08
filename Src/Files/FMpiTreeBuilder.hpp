@@ -380,7 +380,7 @@ public:
         if(nbLeafs){
             particlesToSend = intervals;
 
-            int currentLeafPosition = 0;
+            FSize currentLeafPosition = 0;
 
             //Send to Left (the first leaves
             if(iNeedToSendToLeft){
@@ -388,8 +388,8 @@ public:
                     currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
-                MPI_Isend(particlesToSend, currentLeafPosition, MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
-                printf("I send to left %d bytes %lld leaves\n", currentLeafPosition, hasBeenSentToLeft);
+                MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, 0, MPI_COMM_WORLD, &requests[iterRequest++]);
+                printf("I send to left %lld bytes %lld leaves\n", currentLeafPosition, hasBeenSentToLeft);
             }
             printf("Elapsed %lf\n", counter.tacAndElapsed());
 
