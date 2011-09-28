@@ -471,6 +471,8 @@ public:
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
+                // Proceed all send/receive
+                mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
                 MpiChangeGroup(currentGroup, currentComm, 0, splitProc);
             }
@@ -506,12 +508,12 @@ public:
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
+                // Proceed all send/receive
+                mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
                 MpiChangeGroup(currentGroup, currentComm, splitProc + 1, currentNbProcs - 1);
             }
 
-            // Proceed all send/receive
-            mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
 
             // Copy res into outputArray
