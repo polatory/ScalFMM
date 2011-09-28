@@ -56,7 +56,7 @@ public:
     */
     FMpiFmaLoader(const char* const filename, FMpi& app)
             : boxWidth(0), totalNbParticles(0), nbParticles(0), isOpenFlag(false), particles(0), idxParticles(0) {
-        char nonConstFilename[512];
+        /*char nonConstFilename[512];
         strcpy(nonConstFilename,filename);
         MPI_File file;
         if(MPI_File_open(MPI::COMM_WORLD, nonConstFilename, MPI::MODE_RDONLY, MPI::INFO_NULL, &file) == MPI_SUCCESS){
@@ -82,7 +82,7 @@ public:
                 MPI_File_get_position(file, &headDataOffSet);
 
                 MPI_Offset filesize(0);
-                MPI_File_get_size(file, &filesize); /* in bytes */
+                MPI_File_get_size(file, &filesize); // in bytes
                 filesize = (filesize - headDataOffSet) / sizeof(FReal);
                 if(filesize/4 != this->totalNbParticles){
                     printf("Error fileSize %lld, nbPart %lld\n",filesize/4, this->totalNbParticles);
@@ -114,10 +114,52 @@ public:
                 this->totalNbParticles = 0;
             }
             MPI_File_close(&file);
-        }
-        else {
-             this->boxWidth = 0;
-             this->totalNbParticles = 0;
+        }*/
+
+        FILE* file(fopen(filename, "rb"));
+        int removeWarning(0);
+        // test if open
+        if(file != NULL) {
+            int sizeOfElement(0);
+            removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
+            FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
+                FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                    printf("%d sizeofelement\n",sizeOfElement);
+            FDEBUG(})
+            removeWarning += fread(&this->nbParticles, sizeof(FSize), 1, file);
+
+            removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
+            this->boxWidth *= 2;
+
+            FReal x,y,z;
+            removeWarning += fread(&x, sizeof(FReal), 1, file);
+            removeWarning += fread(&y, sizeof(FReal), 1, file);
+            removeWarning += fread(&z, sizeof(FReal), 1, file);
+            this->centerOfBox.setPosition(x,y,z);
+
+            this->isOpenFlag = true;
+
+            const long int headDataOffSet = ftell(file);
+            fseek(file, 0L, SEEK_END);
+            const long int filesize = (ftell(file) - headDataOffSet) / sizeof(FReal);
+
+            if(filesize/4 != this->totalNbParticles){
+                printf("Error fileSize %ld, nbPart %lld\n", filesize/4, this->totalNbParticles);
+            }
+
+            // in number of floats
+            const FSize startPart = app.getLeft(this->totalNbParticles);
+            const FSize endPart   = app.getRight(this->totalNbParticles);
+            nbParticles = (endPart - startPart);
+            const FSize bufsize = nbParticles * 4;
+            // local number to read
+            particles = new FReal[bufsize];
+
+            fseek(file, long(headDataOffSet + startPart * 4 * sizeof(FReal)), SEEK_SET);
+
+            removeWarning += fread(particles, sizeof(FReal), int(bufsize), file);
+
+            fclose(file);
         }
     }
 
