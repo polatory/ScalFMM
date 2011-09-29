@@ -536,6 +536,7 @@ public:
                 }
             } while(hasToBeReceivedFromLeft);
         }
+
         if(iWillReceiveFromRight){
             do{
                 while(arrayIdxRight < sizeOfRightData){
