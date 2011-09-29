@@ -407,7 +407,7 @@ public:
                         sendToProc = fixes[currentRank].suf - sent;
                     }
                     if( sendToProc ){
-                        mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }
                     sent += sendToProc;
                 }
@@ -430,7 +430,7 @@ public:
                         sendToProc = fixes[currentRank].pre - sent;
                     }
                     if(sendToProc){
-                        mpiassert( MPI_Isend(&outputArray[sent], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        mpiassert( MPI_Isend(&outputArray[sent], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }
                     sent += sendToProc;
                 }
@@ -466,7 +466,7 @@ public:
                     const FSize firstIndex = Max(myLeft , fixesSum[idxProc].pre );
                     const FSize endIndex = Min(fixesSum[idxProc + 1].pre,  myRightLimit);
                     if( (endIndex - firstIndex) ){
-                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
@@ -503,7 +503,7 @@ public:
                     const FSize firstIndex = Max(myLeft , fixesSum[idxProc].suf );
                     const FSize endIndex = Min(fixesSum[idxProc + 1].suf,  myRightLimit);
                     if( (endIndex - firstIndex) ){
-                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
                     }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;

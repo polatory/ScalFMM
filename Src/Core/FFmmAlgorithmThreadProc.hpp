@@ -361,7 +361,7 @@ public:
                     --sendToProc;
                 }
 
-                MPI_Isend(sendBuffer, idxBuff, MPI_BYTE, sendToProc, TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                MPI_Isend(sendBuffer, idxBuff, MPI_BYTE, sendToProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
             }
 
             // We may need to receive something
@@ -383,7 +383,7 @@ public:
                     hasToReceive = true;
 
                     for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-                        MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                        MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
                 }
             }
@@ -615,7 +615,7 @@ public:
                         }
 
                         mpiassert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellToSend) , MPI_BYTE ,
-                                             idxProc, TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                             idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
 
                     const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -623,7 +623,7 @@ public:
                         recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
 
                         mpiassert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellToSend), MPI_BYTE,
-                                            idxProc, TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                            idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
                 }
             }
@@ -808,7 +808,7 @@ public:
                 if(idProcess != 0
                         && realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min != workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
                     needToRecv = true;
-                    MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                    MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                 }
 
 
@@ -828,7 +828,7 @@ public:
                     if(endProcThatRecv != idProcess + 1){
                         iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
                         for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-                            MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                            MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                         }
                     }
                 }
@@ -998,14 +998,14 @@ public:
                     }
 
                     mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
-                                         idxProc, TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                         idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
                     recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
 
                     mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
-                                        idxProc, TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                        idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
 

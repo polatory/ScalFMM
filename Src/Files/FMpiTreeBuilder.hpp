@@ -156,10 +156,10 @@ public:
                 int reqiter = 0;
                 // can I send my first index? == I am not rank 0 & I have data
                 if( 0 < rank && outputSize){
-                    MPI_Isend( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
+                    MPI_Isend( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
                 }
                 if( rank != nbProcs - 1){
-                    MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
+                    MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
                 }
 
                 MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
@@ -167,7 +167,7 @@ public:
                 // I could not send because I do not have data, so I transmit the data coming
                 // from my right neigbors
                 if( 0 < rank && !outputSize){
-                    MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, TagExchangeIndexs, MPI_COMM_WORLD);
+                    MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
                 }
             }
 
@@ -185,7 +185,7 @@ public:
                 int sendByOther = 0;
 
                 MPI_Status probStatus;
-                MPI_Probe(rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
+                MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
                 MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                 if(sendByOther){
@@ -198,10 +198,10 @@ public:
                     FMemUtils::memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
+                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
                 }
                 else{
-                    MPI_Irecv(0, 0, MPI_BYTE, rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
+                    MPI_Irecv(0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
                 }
             }
 
@@ -212,20 +212,20 @@ public:
                     --idxPart;
                 }
                 const int toSend = int(outputSize - 1 - idxPart);
-                MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
+                MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
 
                 if( rank != 0 && !needToRecvBeforeSend && (rank != nbProcs - 1)){
                     int sendByOther = 0;
 
                     MPI_Status probStatus;
-                    MPI_Probe(rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
+                    MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                     if(sendByOther){
                         sendByOther /= sizeof(IndexedParticle);
                         char* const tempBuffer = new char[sizeof(IndexedParticle) * sendByOther];
 
-                        MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
+                        MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
 
                         MPI_Waitall(reqiter,req, MPI_STATUSES_IGNORE);
                         reqiter = 0;
@@ -241,7 +241,7 @@ public:
                         delete[] tempBuffer;
                     }
                     else{
-                        MPI_Irecv( 0, 0, MPI_BYTE, rank - 1, TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
+                        MPI_Irecv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
                     }
                 }
             }
@@ -300,30 +300,30 @@ public:
         // receive from left and right
         if((rank == 0)){
             MPI_Request requests[2];
-            MPI_Isend(&nbLeafs, sizeof(FSize), MPI_BYTE , 1, TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
-            MPI_Irecv(&rightLeafs, sizeof(FSize), MPI_BYTE, 1 , TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
+            MPI_Isend(&nbLeafs, sizeof(FSize), MPI_BYTE , 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
+            MPI_Irecv(&rightLeafs, sizeof(FSize), MPI_BYTE, 1 , FMpi::TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
             MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
         }
         else if(rank == nbProcs - 1){
             MPI_Request requests[2];
-            MPI_Isend(&nbLeafs, sizeof(FSize), MPI_BYTE , rank - 1, TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
-            MPI_Irecv(&leftLeafs, sizeof(FSize), MPI_BYTE, rank - 1 , TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
+            MPI_Isend(&nbLeafs, sizeof(FSize), MPI_BYTE , rank - 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
+            MPI_Irecv(&leftLeafs, sizeof(FSize), MPI_BYTE, rank - 1 , FMpi::TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
             MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
         }
         else { //rank != 0) && rank != nbProcs - 1
             for(int idxToReceive = 0 ; idxToReceive < 2 ; ++idxToReceive){
                 int source(0);
                 FSize temp = 0;
-                receiveDataFromTag(sizeof(FSize), TagExchangeNbLeafs, &temp, &source);
+                receiveDataFromTag(sizeof(FSize), FMpi::TagExchangeNbLeafs, &temp, &source);
                 if(source < rank){ // come from left
                     leftLeafs = temp;
                     temp += nbLeafs;
-                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank + 1, TagExchangeNbLeafs, MPI_COMM_WORLD);
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank + 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD);
                 }
                 else { // come from right
                     rightLeafs = temp;
                     temp += nbLeafs;
-                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank - 1, TagExchangeNbLeafs, MPI_COMM_WORLD);
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank - 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD);
                 }
             }
         }
@@ -381,7 +381,7 @@ public:
                     currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
-                MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
                 printf("I send to left %lld bytes %lld leaves\n", currentLeafPosition, hasBeenSentToLeft);
             }
             printf("Elapsed %lf\n", counter.tacAndElapsed());
@@ -413,7 +413,7 @@ public:
                 }
 
                 hasBeenSentToRight = FMath::Min(iNeedToSendRightCount, iCanSendToRight);
-                MPI_Isend( &particlesToSend[beginWriteIndex], int(currentLeafPosition - beginWriteIndex), MPI_BYTE , rank + 1, TagSandSettling,
+                MPI_Isend( &particlesToSend[beginWriteIndex], int(currentLeafPosition - beginWriteIndex), MPI_BYTE , rank + 1, FMpi::TagSandSettling,
                           MPI_COMM_WORLD, &requests[iterRequest++]);
                 printf("I send to right %d bytes %lld leaves\n", int(currentLeafPosition - beginWriteIndex), hasBeenSentToRight);
             }
@@ -436,13 +436,13 @@ public:
         // Now prepare to receive data
         while(countReceive--){
             MPI_Status recvStatus;
-            MPI_Probe(sourceToWhileRecv, TagSandSettling, MPI_COMM_WORLD, &recvStatus);
+            MPI_Probe(sourceToWhileRecv, FMpi::TagSandSettling, MPI_COMM_WORLD, &recvStatus);
             // receive from left
             if(recvStatus.MPI_SOURCE == rank - 1){
                 MPI_Get_count( &recvStatus,  MPI_BYTE, &sizeOfLeftBuffer);
                 toRecvFromLeft = new char[sizeOfLeftBuffer];
                 sizeOfLeftData = sizeOfLeftBuffer;
-                MPI_Irecv(toRecvFromLeft, sizeOfLeftBuffer, MPI_BYTE, rank - 1 , TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Irecv(toRecvFromLeft, sizeOfLeftBuffer, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
                 sourceToWhileRecv = rank + 1;
                 printf("I will receive %d bytes from left\n", sizeOfLeftBuffer);
             }
@@ -451,7 +451,7 @@ public:
                 MPI_Get_count( &recvStatus,  MPI_BYTE, &sizeOfRightBuffer);
                 toRecvFromRight = new char[sizeOfRightBuffer];
                 sizeOfRightData = sizeOfRightBuffer;
-                MPI_Irecv(toRecvFromRight, sizeOfRightBuffer, MPI_BYTE, rank + 1 , TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
+                MPI_Irecv(toRecvFromRight, sizeOfRightBuffer, MPI_BYTE, rank + 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
                 sourceToWhileRecv = rank - 1;
                 printf("I will receive %d bytes from right\n", sizeOfRightBuffer);
             }
@@ -488,10 +488,10 @@ public:
                 }
                 printf("Send %d to left, total leaves sent %lld / %lld\n", arrayIdxRight, hasBeenSentToLeft, iNeedToSendLeftCount);
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
-                MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, TagSandSettling, MPI_COMM_WORLD);
+                MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD);
                 if(hasBeenSentToLeft < iNeedToSendLeftCount){
                     MPI_Status probStatus;
-                    MPI_Probe(MPI_ANY_SOURCE, TagSandSettling, MPI_COMM_WORLD, &probStatus);
+                    MPI_Probe(MPI_ANY_SOURCE, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfRightData);
                     if(sizeOfRightBuffer < sizeOfRightData){
                         sizeOfRightBuffer = sizeOfRightData;
@@ -499,7 +499,7 @@ public:
                         toRecvFromRight = new char[sizeOfRightData];
                     }
                     printf("Receive %d bytes from right\n", sizeOfRightData);
-                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToLeft < iNeedToSendLeftCount);
         }
@@ -516,10 +516,10 @@ public:
                 }
                 printf("Send %d to right, total leaves sent %lld / %lld\n", arrayIdxLeft, hasBeenSentToRight, iNeedToSendRightCount);
                 printf("Elapsed %lf\n", counter.tacAndElapsed());
-                MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, TagSandSettling, MPI_COMM_WORLD);
+                MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD);
                 if(hasBeenSentToRight < iNeedToSendRightCount){
                     MPI_Status probStatus;
-                    MPI_Probe(MPI_ANY_SOURCE, TagSandSettling, MPI_COMM_WORLD, &probStatus);
+                    MPI_Probe(MPI_ANY_SOURCE, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfLeftData);
                     if(sizeOfLeftBuffer < sizeOfLeftData){
                         sizeOfLeftBuffer = sizeOfLeftData;
@@ -527,7 +527,7 @@ public:
                         toRecvFromLeft = new char[sizeOfLeftData];
                     }
                     printf("Receive %d bytes from left", sizeOfLeftData);
-                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToRight < iNeedToSendRightCount);
         }
@@ -556,7 +556,7 @@ public:
 
                 if(hasToBeReceivedFromLeft){
                     MPI_Status probStatus;
-                    MPI_Probe( rank - 1, TagSandSettling, MPI_COMM_WORLD, &probStatus);
+                    MPI_Probe( rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfLeftData);
                     if(sizeOfLeftBuffer < sizeOfLeftData){
                         sizeOfLeftBuffer = sizeOfLeftData;
@@ -564,7 +564,7 @@ public:
                         toRecvFromLeft = new char[sizeOfLeftData];
                     }
                     printf("Received %d bytes from left\n", sizeOfLeftData);
-                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasToBeReceivedFromLeft);
         }
@@ -591,7 +591,7 @@ public:
                 if(hasToBeReceivedFromRight){
                     MPI_Status probStatus;
                     printf("Probe\n");
-                    MPI_Probe( rank + 1, TagSandSettling, MPI_COMM_WORLD, &probStatus);
+                    MPI_Probe( rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfRightData);
                     printf("Receive %d bytes from right\n", sizeOfRightData);
                     if(sizeOfRightBuffer < sizeOfRightData){
@@ -599,7 +599,7 @@ public:
                         delete[] toRecvFromRight;
                         toRecvFromRight = new char[sizeOfRightData];
                     }
-                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasToBeReceivedFromRight);
         }

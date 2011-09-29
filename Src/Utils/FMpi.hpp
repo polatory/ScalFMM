@@ -20,7 +20,23 @@
 * without mpi support then simulate data.
 */
 
-class FMpi {
+class FMpi {    
+    enum FMpiTag {
+        // FMpiTreeBuilder
+        TagExchangeIndexs,
+        TagSplittedLeaf,
+        TagExchangeNbLeafs,
+        TagSandSettling,
+        // FQuickSort
+        TagQuickSort,
+        // FMM
+        TagFmmM2M,
+        TagFmmL2L,
+        TagFmmP2P,
+        // Last defined tag
+        TagLast,
+    };
+
 public:
 #ifdef SCALFMM_USE_MPI
 
@@ -307,21 +323,6 @@ MPI_Datatype FMpi::getType<int>(){
 }
 #endif
 
-enum FMpiTag {
-    // FMpiTreeBuilder
-    TagExchangeIndexs,
-    TagSplittedLeaf,
-    TagExchangeNbLeafs,
-    TagSandSettling,
-    // FQuickSort
-    TagQuickSort,
-    // FMM
-    TagFmmM2M,
-    TagFmmL2L,
-    TagFmmP2P,
-    // Last defined tag
-    TagLast,
-};
 
 #endif //FMPI_HPP
 
