@@ -10,68 +10,11 @@
 
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
+#include "../Containers/FLightOctree.hpp"
 
 #include "../Utils/FMpi.hpp"
 
 #include <omp.h>
-
-
-/** This class is a light octree
-  * It is just a linked list with 8 pointers per node
-  */
-class FLightOctree {
-    class Node {
-        Node* next[8];
-        const void* data;
-    public:
-        Node(){
-            memset(next, 0, sizeof(Node*)*8);
-        }
-        virtual ~Node(){
-            for(int idxNext = 0 ; idxNext < 8 ; ++idxNext){
-                delete next[idxNext];
-            }
-        }
-        void insert(const MortonIndex& index, const void* const cell, const int level){
-            if(level){
-                const int host = (index >> (3 * (level-1))) & 0x07;
-                if(!next[host]){
-                    next[host] = new Node();
-                }
-                next[host]->insert(index, cell, level - 1);
-            }
-            else{
-                data = cell;
-            }
-        }
-        const void* getCell(const MortonIndex& index, const int level) const {
-            if(level){
-                const int host = (index >> (3 * (level-1))) & 0x07;
-                if(next[host]){
-                    return next[host]->getCell(index, level - 1);
-                }
-                return 0;
-            }
-            else{
-                return data;
-            }
-        }
-    };
-
-    Node root;
-
-public:
-    FLightOctree(){
-    }
-
-    void insertCell(const MortonIndex& index, const void* const cell, const int level){
-        root.insert(index, cell, level);
-    }
-
-    const void* getCell(const MortonIndex& index, const int level) const{
-        return root.getCell(index, level);
-    }
-};
 
 
 /**
