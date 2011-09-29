@@ -287,8 +287,6 @@ public:
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
 
-        FTic counter;
-        counter.tic();
         //////////////////////////////////////////////////////////////////////////////////
         // We inform the master proc about the data we have
         //////////////////////////////////////////////////////////////////////////////////
@@ -360,12 +358,6 @@ public:
 
         char* particlesToSend = 0;
 
-
-        printf("on my left %lld on my right %lld\n",leftLeafs, rightLeafs);
-        printf("iNeedToSendLeftCount %lld iCanSendToLeft %lld\n",iNeedToSendLeftCount, iCanSendToLeft);
-        printf("iNeedToSendRightCount %lld iCanSendToRight %lld \n",iNeedToSendRightCount, iCanSendToRight);
-        printf("Elapsed %lf\n", counter.tacAndElapsed());
-
         ///////////////////////////////
         // Manage data we already have
         ///////////////////////////////
@@ -382,14 +374,12 @@ public:
                 }
                 hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
                 MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
-                printf("I send to left %lld bytes %lld leaves\n", currentLeafPosition, hasBeenSentToLeft);
             }
-            printf("Elapsed %lf\n", counter.tacAndElapsed());
 
             // Insert the particles I host and that belong to me
             const FSize beginForMe = (iNeedToSendToLeft ? FMath::Min(iNeedToSendLeftCount,iCanSendToLeft) : 0);
             const FSize endForMe = nbLeafs - (iNeedToSendToRight ? FMath::Min(iNeedToSendRightCount,iCanSendToRight) : 0);
-            printf("I insert my particles from %lld to %lld \n", beginForMe, endForMe);
+
             for(FSize idxLeaf = beginForMe ; idxLeaf < endForMe ; ++idxLeaf){
 
                 const int nbPartInLeaf = (*(int*)&particlesToSend[currentLeafPosition]);
@@ -401,8 +391,6 @@ public:
 
                 currentLeafPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
             }
-            printf("Done\n");
-            printf("Elapsed %lf\n", counter.tacAndElapsed());
 
             //Send to Right (the right-est leaves
             if(iNeedToSendToRight){
@@ -415,9 +403,7 @@ public:
                 hasBeenSentToRight = FMath::Min(iNeedToSendRightCount, iCanSendToRight);
                 MPI_Isend( &particlesToSend[beginWriteIndex], int(currentLeafPosition - beginWriteIndex), MPI_BYTE , rank + 1, FMpi::TagSandSettling,
                           MPI_COMM_WORLD, &requests[iterRequest++]);
-                printf("I send to right %d bytes %lld leaves\n", int(currentLeafPosition - beginWriteIndex), hasBeenSentToRight);
             }
-            printf("Elapsed %lf\n", counter.tacAndElapsed());
         }
 
         char* toRecvFromLeft = 0;
@@ -430,9 +416,6 @@ public:
 
         int sourceToWhileRecv = MPI_ANY_SOURCE;
 
-        printf("countReceive %d\n", countReceive);
-        printf("Elapsed %lf\n", counter.tacAndElapsed());
-
         // Now prepare to receive data
         while(countReceive--){
             MPI_Status recvStatus;
@@ -444,7 +427,6 @@ public:
                 sizeOfLeftData = sizeOfLeftBuffer;
                 MPI_Irecv(toRecvFromLeft, sizeOfLeftBuffer, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
                 sourceToWhileRecv = rank + 1;
-                printf("I will receive %d bytes from left\n", sizeOfLeftBuffer);
             }
             // receive from right
             else{
@@ -453,7 +435,6 @@ public:
                 sizeOfRightData = sizeOfRightBuffer;
                 MPI_Irecv(toRecvFromRight, sizeOfRightBuffer, MPI_BYTE, rank + 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, &requests[iterRequest++]);
                 sourceToWhileRecv = rank - 1;
-                printf("I will receive %d bytes from right\n", sizeOfRightBuffer);
             }
         }
 
@@ -462,9 +443,6 @@ public:
         ///////////////////////////////
         MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE);
         // We can delete the buffer use to send our particles only
-
-        printf("Wait passed...\n");
-        printf("Elapsed %lf\n", counter.tacAndElapsed());
 
         ///////////////////////////////
         // Process received data
@@ -477,7 +455,7 @@ public:
         int arrayIdxLeft = 0;
 
         if(iDoNotHaveEnoughtToSendLeft){
-            printf("iDoNotHaveEnoughtToSendLeft\n");
+
             do{
                 arrayIdxRight = 0;
                 while(arrayIdxRight < sizeOfRightData && hasBeenSentToLeft < iNeedToSendLeftCount){
@@ -486,8 +464,7 @@ public:
                     --hasToBeReceivedFromRight;
                     ++hasBeenSentToLeft;
                 }
-                printf("Send %d to left, total leaves sent %lld / %lld\n", arrayIdxRight, hasBeenSentToLeft, iNeedToSendLeftCount);
-                printf("Elapsed %lf\n", counter.tacAndElapsed());
+
                 MPI_Send(toRecvFromRight, arrayIdxRight, MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD);
                 if(hasBeenSentToLeft < iNeedToSendLeftCount){
                     MPI_Status probStatus;
@@ -498,14 +475,14 @@ public:
                         delete[] toRecvFromRight;
                         toRecvFromRight = new char[sizeOfRightData];
                     }
-                    printf("Receive %d bytes from right\n", sizeOfRightData);
+
                     MPI_Recv(toRecvFromRight, sizeOfRightData, MPI_BYTE, rank + 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToLeft < iNeedToSendLeftCount);
         }
         // We have to receive from left and transfere to right
         else if(iDoNotHaveEnoughtToSendRight){
-            printf("iDoNotHaveEnoughtToSendRight\n");
+
             do{
                 arrayIdxLeft = 0;
                 while(arrayIdxLeft < sizeOfLeftData && hasBeenSentToRight < iNeedToSendRightCount){
@@ -514,8 +491,7 @@ public:
                     --hasToBeReceivedFromLeft;
                     ++hasBeenSentToRight;
                 }
-                printf("Send %d to right, total leaves sent %lld / %lld\n", arrayIdxLeft, hasBeenSentToRight, iNeedToSendRightCount);
-                printf("Elapsed %lf\n", counter.tacAndElapsed());
+
                 MPI_Send(toRecvFromLeft, arrayIdxLeft, MPI_BYTE , rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD);
                 if(hasBeenSentToRight < iNeedToSendRightCount){
                     MPI_Status probStatus;
@@ -526,16 +502,12 @@ public:
                         delete[] toRecvFromLeft;
                         toRecvFromLeft = new char[sizeOfLeftData];
                     }
-                    printf("Receive %d bytes from left", sizeOfLeftData);
                     MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasBeenSentToRight < iNeedToSendRightCount);
         }
 
-        printf("Finished to send\n");
-
         if(iWillReceiveFromLeft ){ // I need to wait
-            printf("iWillReceiveFromLeft (hasToBeReceivedFromLeft %d leaves)\n", hasToBeReceivedFromLeft);
             do{
                 while(arrayIdxLeft < sizeOfLeftData){
                     const int particlesInThisLeaf = *(int*)&toRecvFromLeft[arrayIdxLeft];
@@ -551,9 +523,6 @@ public:
                 }
                 arrayIdxLeft = 0;
 
-                printf("Remains hasToBeReceivedFromLeft %d leaves to receive\n",hasToBeReceivedFromLeft);
-                printf("Elapsed %lf\n", counter.tacAndElapsed());
-
                 if(hasToBeReceivedFromLeft){
                     MPI_Status probStatus;
                     MPI_Probe( rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
@@ -563,13 +532,11 @@ public:
                         delete[] toRecvFromLeft;
                         toRecvFromLeft = new char[sizeOfLeftData];
                     }
-                    printf("Received %d bytes from left\n", sizeOfLeftData);
                     MPI_Recv(toRecvFromLeft, sizeOfLeftData, MPI_BYTE, rank - 1 , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             } while(hasToBeReceivedFromLeft);
         }
         if(iWillReceiveFromRight){
-            printf("iWillReceiveFromRight (hasToBeReceivedFromRight %d leaves)\n", hasToBeReceivedFromRight);
             do{
                 while(arrayIdxRight < sizeOfRightData){
                     const int particlesInThisLeaf = *(int*)&toRecvFromRight[arrayIdxRight];
@@ -585,15 +552,12 @@ public:
                 }
                 arrayIdxRight = 0;
 
-                printf("Remains hasToBeReceivedFromRight %d leaves to receive\n",hasToBeReceivedFromRight);
-                printf("Elapsed %lf\n", counter.tacAndElapsed());
-
                 if(hasToBeReceivedFromRight){
                     MPI_Status probStatus;
-                    printf("Probe\n");
+
                     MPI_Probe( rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
                     MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfRightData);
-                    printf("Receive %d bytes from right\n", sizeOfRightData);
+
                     if(sizeOfRightBuffer < sizeOfRightData){
                         sizeOfRightBuffer = sizeOfRightData;
                         delete[] toRecvFromRight;
