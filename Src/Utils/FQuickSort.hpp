@@ -11,6 +11,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FMemUtils.hpp"
+#include "../Utils/FTrace.hpp"
 
 class FQuickSort {
     ////////////////////////////////////////////////////////////
@@ -222,6 +223,7 @@ public:
     /* the openmp qs */
     template <class SortType, class PivotType>
     static void QsOmp(SortType array[], const FSize size){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
         struct Fix{
             FSize pre;
             FSize suf;
@@ -322,6 +324,7 @@ public:
     /* the mpi qs */
     template <class SortType, class PivotType>
     static void QsMpi(const SortType originalArray[], FSize size, SortType* & outputArray, FSize& outputSize, MPI_Comm originalComm = MPI_COMM_WORLD){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
         // We need a structure see the algorithm detail to know more
         struct Fix{
             FSize pre;

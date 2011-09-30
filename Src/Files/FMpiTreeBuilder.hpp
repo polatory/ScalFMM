@@ -4,7 +4,7 @@
 #include "../Utils/FMpi.hpp"
 #include "../Utils/FQuickSort.hpp"
 #include "../Utils/FMemUtils.hpp"
-
+#include "../Utils/FTrace.hpp"
 
 /** This class manage the loading of particles
   * for the mpi version.
@@ -117,6 +117,7 @@ public:
     /** Split and sort the file */
     template <class LoaderClass>
     bool splitAndSortFile(LoaderClass& loader, const int NbLevels){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader" , __FILE__ , __LINE__) );
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
 
@@ -127,6 +128,7 @@ public:
         IndexedParticle* outputArray = 0;
         FSize outputSize = 0;
         {
+            FTRACE( FTrace::FRegion regionTrace("Insert Particles", __FUNCTION__ , __FILE__ , __LINE__) );
             // create particles
             IndexedParticle*const realParticlesIndexed = new IndexedParticle[loader.getNumberOfParticles()];
             FMemUtils::memset(realParticlesIndexed, 0, sizeof(IndexedParticle) * loader.getNumberOfParticles());
@@ -150,6 +152,8 @@ public:
         // be sure there is no splited leaves
         // to do that we exchange the first index with the left proc
         {
+            FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
+
             MortonIndex otherFirstIndex = -1;
             {
                 FMpi::Request req[2];
@@ -284,12 +288,14 @@ public:
     /** Put the interval into a tree */
     template <class OctreeClass>
     bool intervalsToTree(OctreeClass& realTree){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader" , __FILE__ , __LINE__) );
         const int rank = MpiGetRank();
         const int nbProcs = MpiGetNbProcs();
 
         //////////////////////////////////////////////////////////////////////////////////
         // We inform the master proc about the data we have
         //////////////////////////////////////////////////////////////////////////////////
+        FTRACE( FTrace::FRegion preprocessTrace("Preprocess", __FUNCTION__ , __FILE__ , __LINE__) );
 
         FSize nbLeafs = nbLeavesInIntervals;
         FSize leftLeafs = 0;
@@ -325,7 +331,7 @@ public:
                 }
             }
         }
-
+        FTRACE( preprocessTrace.end() );
         //////////////////////////////////////////////////////////////////////////////////
         // We balance the data
         //////////////////////////////////////////////////////////////////////////////////
@@ -361,6 +367,7 @@ public:
         ///////////////////////////////
         // Manage data we already have
         ///////////////////////////////
+        FTRACE( FTrace::FRegion step1Trace("Step1", __FUNCTION__ , __FILE__ , __LINE__) );
 
         if(nbLeafs){
             particlesToSend = intervals;
@@ -443,7 +450,8 @@ public:
         ///////////////////////////////
         MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE);
         // We can delete the buffer use to send our particles only
-
+        FTRACE( step1Trace.end() );
+        FTRACE( FTrace::FRegion step2Trace("Step2", __FUNCTION__ , __FILE__ , __LINE__) );
         ///////////////////////////////
         // Process received data
         // and transfer if needed
