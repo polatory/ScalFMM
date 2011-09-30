@@ -646,8 +646,8 @@ public:
     }
 
     virtual void init(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+
+         
     }
 
     /** Default destructor */
@@ -679,7 +679,7 @@ public:
     *
     */
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
 
         for(typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
                                 iterParticle.hasNotFinished() ; iterParticle.gotoNext()){
@@ -710,7 +710,7 @@ public:
             }
         }
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
     /**
@@ -735,7 +735,7 @@ public:
     * Warning: if j-n < |k-l| we do nothing.
      */
     void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
 
         // We do NOT have: for(l=n-j+k; l<=j-n+k ;++l){} <=> for(l=-n; l<=n ;++l){if (j-n >= abs(k-l)){}}
         //     But we have:  for(k=MAX(0,n-j+l); k<=j-n+l; ++k){} <=> for(k=0; k<=j; ++k){if (j-n >= abs(k-l)){}}
@@ -838,7 +838,7 @@ public:
             } // for n
         }
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
     void convert_exp2nexp_inplace(FComplexe* const exp){
@@ -911,7 +911,7 @@ public:
       */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208],
              const int size, const int inLevel) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
 
         const FTreeCoordinate& coordCenter = pole->getCoordinate();
         for(int idxSize = 0 ; idxSize < size ; ++idxSize){
@@ -1000,7 +1000,7 @@ public:
 
         }
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -1025,7 +1025,7 @@ public:
       *Warning: if |l-k| > n-j, we do nothing.
       */
     void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if no child at this position
@@ -1114,7 +1114,7 @@ public:
                 }
             }
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
@@ -1124,7 +1124,7 @@ public:
       *         expansion_Evaluate_local_with_Y_already_computed
       */
     void L2P(const CellClass* const local, ContainerClass* const particles){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         typename ContainerClass::BasicIterator iterTarget(*particles);
         while( iterTarget.hasNotFinished() ){
             //printf("Morton %lld\n",local->getMortonIndex());
@@ -1339,13 +1339,13 @@ public:
 
             iterTarget.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
     void expansion_Evaluate_local_with_Y_already_computed(const FComplexe* local_exp,
                                                           FReal* const p_result){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
 
         FReal result = 0.0;
 
@@ -1370,7 +1370,7 @@ public:
 
         *p_result = result;
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
@@ -1389,7 +1389,7 @@ public:
     void P2P(const MortonIndex inCurrentIndex,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              ContainerClass* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         typename ContainerClass::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
@@ -1421,12 +1421,12 @@ public:
 
             iterTarget.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
     void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass& FRestrict target, ParticleClass& source){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         const FReal dx = target.getPosition().getX() - source.getPosition().getX();
         const FReal dy = target.getPosition().getY() - source.getPosition().getY();
         const FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
@@ -1450,7 +1450,7 @@ public:
                 );
         source.setPotential( inv_distance + source.getPotential());
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
@@ -1467,7 +1467,7 @@ public:
       */
     void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              const ContainerClass* const directNeighbors[26], const int size) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         typename ContainerClass::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
@@ -1495,12 +1495,12 @@ public:
 
             iterTarget.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 
 
     void DIRECT_COMPUTATION_NO_MUTUAL_SOFT(ParticleClass& target, const ParticleClass& source){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         const FReal dx = target.getPosition().getX() - source.getPosition().getX();
         const FReal dy = target.getPosition().getY() - source.getPosition().getY();
         const FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
@@ -1517,7 +1517,7 @@ public:
                 );
 
         target.setPotential( inv_distance + target.getPotential());
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+         
     }
 };
 

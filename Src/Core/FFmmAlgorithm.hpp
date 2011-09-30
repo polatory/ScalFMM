@@ -55,7 +55,7 @@ public:
       * Call this function to run the complete algorithm
       */
     void execute(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         bottomPass();
 
@@ -63,9 +63,7 @@ public:
 
         downardPass();
 
-        directPass();
-
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+        directPass();         
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -74,7 +72,7 @@ public:
 
     /** P2M */
     void bottomPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounter);
@@ -93,7 +91,6 @@ public:
 
         FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -102,7 +99,7 @@ public:
 
     /** M2M */
     void upwardPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounter);
@@ -132,7 +129,6 @@ public:
 
         FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -141,7 +137,7 @@ public:
 
     /** M2L L2L */
     void downardPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         { // first M2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
@@ -200,7 +196,7 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -209,7 +205,7 @@ public:
 
     /** P2P */
     void directPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounterL2P);
@@ -238,7 +234,7 @@ public:
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation L2P : " << computationCounterL2P.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation P2P : " << computationCounterP2P.cumulated() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+
     }
 
 };

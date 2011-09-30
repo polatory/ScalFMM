@@ -9,6 +9,7 @@ endif(insource)
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
 OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" ON )
+OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" ON )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
@@ -25,6 +26,12 @@ project(scalfmm CXX)
 MESSAGE( STATUS "SCALFMM_BUILD_DEBUG = ${SCALFMM_BUILD_DEBUG}" )
 if( SCALFMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
+endif()
+
+# Trace
+MESSAGE( STATUS "SCALFMM_USE_TRACE = ${SCALFMM_USE_TRACE}" )
+if( SCALFMM_USE_TRACE )
+  OPTION( SCALFMM_USE_ITAC "Set to ON to use itac trace" OFF )
 endif()
 
 # Blas option

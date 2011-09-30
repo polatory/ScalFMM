@@ -36,9 +36,15 @@
 
 // With openmp : mpicxx -g testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp ../Src/Utils/FMath.cpp ../Src/Utils/F3DPosition.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithmProc.exe
 // mpicxx -openmp testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp ../Src/Utils/FMath.cpp ../Src/Utils/F3DPosition.cpp -O2 -o testFmbAlgorithmProc.exe
+// mpirun -perhost 1 -trace -l -np 8 ../testFmbAlgorithmProc.exe /lustre/bramas/200kk.fma.bin -h 9
 
 // mpirun -np 3 `eztrace -e ./Tests/Debug/testFmbAlgorithmProc ../Data/testFMAlgorithm.fma.tmp `
 // eztrace_convert -o my_paje /tmp/berenger_eztrace_log_rank_0 /tmp/berenger_eztrace_log_rank_1 /tmp/berenger_eztrace_log_rank_2
+
+//mpicxx -I$VT_ROOT/include -trace -openmp testFmbAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp ../Src/Utils/FMath.cpp ../Src/Utils/F3DPosition.cpp -O2 -o testFmbAlgorithmProc.exe
+
+// mpirun -np 8 -npernode 1 -output-filename tempmpi/out.mpi.temp `eztrace -e ./testFmbAlgorithmProc.exe /lustre/bramas/200kk.fma.bin -h 9`
+// eztrace_convert -o my_paje /tmp/berenger_eztrace_log_rank_0 /tmp/berenger_eztrace_log_rank_1 /tmp/berenger_eztrace_log_rank_2 /tmp/berenger_eztrace_log_rank_3 /tmp/berenger_eztrace_log_rank_4 /tmp/berenger_eztrace_log_rank_5 /tmp/berenger_eztrace_log_rank_6 /tmp/berenger_eztrace_log_rank_7
 
 /** This program show an example of use of
   * the fmm basic algo

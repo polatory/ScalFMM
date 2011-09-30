@@ -1,12 +1,8 @@
 #include "FTrace.hpp"
 #ifdef SCALFMM_USE_TRACE
 
-/**
-* Singleton debug
-*/
-FTrace FTrace::Controller;
-
-
+int FTrace::Deep = 0;
+FTic FTrace::TimeSinceBegining;
 
 #endif // SCALFMM_USE_TRACE
 

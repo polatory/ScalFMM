@@ -115,11 +115,13 @@ public:
       * Call this function to run the complete algorithm
       */
     void execute(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace( __FUNCTION__, "Fmm" , __FILE__ , __LINE__ ) );
 
         // Count leaf
         this->numberOfLeafs = 0;
         {
+            FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
+
             Interval myIntervals;
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
@@ -167,7 +169,7 @@ public:
         delete [] iterArray;
         iterArray = 0;
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+         
     }
 
 
@@ -205,7 +207,7 @@ public:
 
     /** P2M Bottom Pass */
     void bottomPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
@@ -232,7 +234,7 @@ public:
 
         FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+         
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -241,7 +243,7 @@ public:
 
     /** M2M */
     void upwardPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
         FDEBUG(FTic computationCounter);
@@ -282,6 +284,8 @@ public:
             // We may need to send something
             int iterRequests = 0;
             bool cellsToSend = false;
+
+            FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
             FDEBUG(prepareCounter.tic());
             if(idProcess != 0
@@ -331,6 +335,7 @@ public:
                 }
             }
             FDEBUG(prepareCounter.tac());
+            FTRACE( regionTrace.end() );
 
             // Compute
             FDEBUG(computationCounter.tic());
@@ -393,7 +398,7 @@ public:
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+         
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -402,7 +407,7 @@ public:
 
     /** M2L L2L */
     void downardPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         { // first M2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
@@ -433,6 +438,7 @@ public:
             memset(leafsNeedOther, 0, sizeof(FBoolArray) * OctreeHeight);
 
             {
+                FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
                 FDEBUG(prepareCounter.tic());
 
                 typename OctreeClass::Iterator octreeIterator(tree);
@@ -811,7 +817,7 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
         }
 
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+         
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -820,7 +826,7 @@ public:
 
     /** P2P */
     void directPass(){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG( FTic counterTime);
         FDEBUG( FTic prepareCounter);
@@ -849,6 +855,7 @@ public:
         FBoolArray leafsNeedOther(this->numberOfLeafs);
 
         {
+            FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
             // Copy leafs
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
@@ -982,6 +989,8 @@ public:
 
         // split data
         {
+            FTRACE( FTrace::FRegion regionTrace( "Split" , __FUNCTION__ , __FILE__ , __LINE__) );
+
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
@@ -1145,7 +1154,7 @@ public:
         FDEBUG( FDebug::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::FMM) );
+         
     }
 
 

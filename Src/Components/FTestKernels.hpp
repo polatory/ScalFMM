@@ -28,62 +28,59 @@ public:
 
     /** Before upward */
     void P2M(CellClass* const pole, const ContainerClass* const particles) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // the pole represents all particles under
         pole->setDataUp(pole->getDataUp() + particles->getSize());
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** During upward */
     void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int ) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
                 pole->setDataUp(pole->getDataUp() + child[idx]->getDataUp());
             }
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** Before Downward */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int ) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){
             pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
     }
 
     /** During Downward */
     void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
                 child[idx]->setDataDown(local->getDataDown() + child[idx]->getDataDown());
             }
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+
     }
 
     /** After Downward */
     void L2P(const CellClass* const  local, ContainerClass*const particles){
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // The particles is impacted by the parent cell
         typename ContainerClass::BasicIterator iter(*particles);
         while( iter.hasNotFinished() ){
             iter.data().setDataDown(iter.data().getDataDown() + local->getDataDown());
             iter.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+
     }
 
     /** After Downward */
     void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              const ContainerClass* const directNeighborsParticles[26], const int size) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
         if(targets == sources){
@@ -98,7 +95,7 @@ public:
             iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+
     }
 
 
@@ -106,7 +103,7 @@ public:
     void P2P(const MortonIndex ,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              ContainerClass* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
-        FTRACE( FTrace::Controller.enterFunction(FTrace::KERNELS, __FUNCTION__ , __FILE__ , __LINE__) );
+
         // Each particles targeted is impacted by the particles sources
         long inc = sources->getSize();
         if(targets == sources){
@@ -121,7 +118,7 @@ public:
             iter.data().setDataDown(iter.data().getDataDown() + inc);
             iter.gotoNext();
         }
-        FTRACE( FTrace::Controller.leaveFunction(FTrace::KERNELS) );
+
     }
 };
 
