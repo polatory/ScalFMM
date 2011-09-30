@@ -32,6 +32,9 @@ endif()
 MESSAGE( STATUS "SCALFMM_USE_TRACE = ${SCALFMM_USE_TRACE}" )
 if( SCALFMM_USE_TRACE )
   OPTION( SCALFMM_USE_ITAC "Set to ON to use itac trace" OFF )
+  if( SCALFMM_USE_ITAC )
+    ADD_DEFINITIONS(-I$VT_ROOT/include -trace)
+  endif()
 endif()
 
 # Blas option
