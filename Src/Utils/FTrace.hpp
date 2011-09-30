@@ -33,7 +33,6 @@ public:
     class FFunction {
     public:
         FFunction(const char*, const char*, const char* = 0, const int = 0){}
-        void end(){}
     };
 };
 
@@ -67,9 +66,6 @@ public:
             : function( functionName, className) {}
         FFunction(const char*const functionName, const char*const className, const char* const file, const int line)
             : function( functionName, className, file, line ) {}
-        void end(){
-            function.end();
-        }
     };
 };
 
@@ -143,9 +139,6 @@ public:
             ++FTrace::Deep;
         }
         ~FFunction(){
-            close();
-        }
-        void end(){
             close();
         }
     };
