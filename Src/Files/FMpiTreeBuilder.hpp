@@ -49,21 +49,21 @@ class FMpiTreeBuilder{
 
     template< class T >
     static T GetLeft(const T inSize) {
-        const float step = (float(inSize) / float(MpiGetNbProcs()));
-        return T(FMath::Ceil(step * float(MpiGetRank())));
+        const double step = (double(inSize) / double(MpiGetNbProcs()));
+        return T(FMath::Ceil(step * double(MpiGetRank())));
     }
 
     template< class T >
     static T GetRight(const T inSize) {
-        const float step = (float(inSize) / float(MpiGetNbProcs()));
-        const T res = T(FMath::Ceil(step * float(MpiGetRank()+1)));
+        const double step = (double(inSize) / double(MpiGetNbProcs()));
+        const T res = T(FMath::Ceil(step * double(MpiGetRank()+1)));
         if(res > inSize) return inSize;
         else return res;
     }
 
     template< class T >
     static T GetOtherRight(const T inSize, const int other) {
-        const float step = (float(inSize) / MpiGetNbProcs());
+        const double step = (double(inSize) / MpiGetNbProcs());
         const T res = T(FMath::Ceil(step * (other+1)));
         if(res > inSize) return inSize;
         else return res;
@@ -583,6 +583,398 @@ public:
 
         return true;
     }
+
+    /*
+    template <class OctreeClass>
+    bool intervalsToTree(OctreeClass& realTree){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader" , __FILE__ , __LINE__) );
+        const int rank = MpiGetRank();
+        const int nbProcs = MpiGetNbProcs();
+
+        //////////////////////////////////////////////////////////////////////////////////
+        // We inform the master proc about the data we have
+        //////////////////////////////////////////////////////////////////////////////////
+        FTRACE( FTrace::FRegion preprocessTrace("Preprocess", __FUNCTION__ , __FILE__ , __LINE__) );
+
+        FSize currentNbLeafs = nbLeavesInIntervals;
+        FSize currentLeafsOnMyLeft = 0;
+        FSize currentLeafsOnMyRight = 0;
+
+        // receive from left and right
+        if((rank == 0)){
+            MPI_Request requests[2];
+            MPI_Isend(&currentNbLeafs, sizeof(FSize), MPI_BYTE , 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
+            MPI_Irecv(&currentLeafsOnMyRight, sizeof(FSize), MPI_BYTE, 1 , FMpi::TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
+            MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
+        }
+        else if(rank == nbProcs - 1){
+            MPI_Request requests[2];
+            MPI_Isend(&currentNbLeafs, sizeof(FSize), MPI_BYTE , rank - 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD, &requests[0]);
+            MPI_Irecv(&currentLeafsOnMyLeft, sizeof(FSize), MPI_BYTE, rank - 1 , FMpi::TagExchangeNbLeafs , MPI_COMM_WORLD, &requests[1]);
+            MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
+        }
+        else { //rank != 0) && rank != nbProcs - 1
+            for(int idxToReceive = 0 ; idxToReceive < 2 ; ++idxToReceive){
+                int source(0);
+                FSize temp = 0;
+                receiveDataFromTag(sizeof(FSize), FMpi::TagExchangeNbLeafs, &temp, &source);
+                if(source < rank){ // come from left
+                    currentLeafsOnMyLeft = temp;
+                    temp += currentNbLeafs;
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank + 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD);
+                }
+                else { // come from right
+                    currentLeafsOnMyRight = temp;
+                    temp += currentNbLeafs;
+                    MPI_Send(&temp, sizeof(FSize), MPI_BYTE , rank - 1, FMpi::TagExchangeNbLeafs, MPI_COMM_WORLD);
+                }
+            }
+        }
+        FTRACE( preprocessTrace.end() );
+        //////////////////////////////////////////////////////////////////////////////////
+        // We balance the data
+        //////////////////////////////////////////////////////////////////////////////////
+
+        const FSize totalNbLeafs = (currentLeafsOnMyLeft + currentNbLeafs + currentLeafsOnMyRight);
+        const FSize nbLeafsOnMyLeft = GetLeft(totalNbLeafs);
+        const FSize nbLeafsOnMyRight = GetRight(totalNbLeafs);
+
+        const bool iNeedToSendToLeft = currentLeafsOnMyLeft < nbLeafsOnMyLeft;
+        const bool iNeedToSendToRight = nbLeafsOnMyRight < currentLeafsOnMyLeft + currentNbLeafs;
+
+        const bool iWillReceiveFromRight = currentLeafsOnMyLeft + currentNbLeafs < nbLeafsOnMyRight;
+        const bool iWillReceiveFromLeft = currentLeafsOnMyLeft > nbLeafsOnMyLeft;
+
+        const bool iDoNotHaveEnoughtToSendRight = nbLeafsOnMyRight < currentLeafsOnMyLeft;
+        const bool iDoNotHaveEnoughtToSendLeft = currentLeafsOnMyLeft + currentNbLeafs < nbLeafsOnMyLeft;
+
+
+        const FSize iNeedToSendLeftCount = nbLeafsOnMyLeft - currentLeafsOnMyLeft;
+        const FSize iCanSendToLeft = currentNbLeafs;
+
+        const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - nbLeafsOnMyRight;
+        const FSize iCanSendToRight = currentNbLeafs;
+
+        int hasToBeReceivedFromLeft  = int(currentLeafsOnMyLeft - nbLeafsOnMyLeft);
+        int hasToBeReceivedFromRight = int(nbLeafsOnMyRight - (currentLeafsOnMyLeft + currentNbLeafs));
+
+        ///////////////////////////////
+        // Manage data we already have
+        ///////////////////////////////
+        FTRACE( FTrace::FRegion step1Trace("Step1", __FUNCTION__ , __FILE__ , __LINE__) );
+        char* particlesToSend = intervals;
+
+        // We have enought to send right and left it means we will not receive anything
+        if( !iWillReceiveFromRight && !iWillReceiveFromLeft ){
+            printf("I may send %d to left and %d to right\n", iNeedToSendLeftCount, iNeedToSendRightCount);
+            MPI_Request requests[2];
+            int iterRequest = 0;
+
+            FSize currentLeafPosition = 0;
+
+            //Send to Left (the first leaves)
+            if(iNeedToSendToLeft){
+                for(FSize idxLeaf = 0 ; idxLeaf < iNeedToSendLeftCount && idxLeaf < iCanSendToLeft ; ++idxLeaf){
+                    currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
+                }
+                MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+            }
+
+            // Insert the particles I host and that belong to me
+            FSize endForMe = currentNbLeafs;
+            if(iNeedToSendToRight) endForMe -= iNeedToSendRightCount;
+
+            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
+                const int nbPartInLeaf = (*(int*)&particlesToSend[currentLeafPosition]);
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&particlesToSend[currentLeafPosition] + sizeof(int));
+
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
+                }
+                currentLeafPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+            }
+
+            //Send to Right (the right-est leaves)
+            if(iNeedToSendToRight){
+                const FSize beginWriteIndex = currentLeafPosition;
+                for(int idxLeaf = 0 ; idxLeaf < iNeedToSendRightCount && idxLeaf < iCanSendToRight ; ++idxLeaf){
+                    currentLeafPosition += (*(int*)&particlesToSend[currentLeafPosition]* sizeof(ParticleClass)) + sizeof(int);
+                }
+                MPI_Isend( &particlesToSend[beginWriteIndex], int(currentLeafPosition - beginWriteIndex), MPI_BYTE , rank + 1, FMpi::TagSandSettling,
+                          MPI_COMM_WORLD, &requests[iterRequest++]);
+            }
+            printf("Wait all\n");
+            MPI_Waitall( iterRequest, requests, MPI_STATUSES_IGNORE);
+        }
+        // I will receive from left and right means I will not send anything
+        else if(iWillReceiveFromLeft && iWillReceiveFromRight){
+            // I receive from both part and insert
+            printf("I may receive %d from left and %d from right\n", hasToBeReceivedFromLeft, hasToBeReceivedFromRight);
+
+            char* buffer    = 0;
+            int bufferSize  = 0;
+
+            while(hasToBeReceivedFromLeft || hasToBeReceivedFromRight){
+                MPI_Status probStatus;
+                MPI_Probe( MPI_ANY_SOURCE, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
+
+                int sizeOfLeftData    = 0;
+                MPI_Get_count( &probStatus,  MPI_BYTE, &sizeOfLeftData);
+                if(bufferSize < sizeOfLeftData){
+                    bufferSize = sizeOfLeftData;
+                    delete[] buffer;
+                    buffer = new char[bufferSize];
+                }
+                MPI_Recv(buffer, sizeOfLeftData, MPI_BYTE, probStatus.MPI_SOURCE , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+                int nbLeafsInThisBuffer = 0;
+                int currentIdxArray = 0;
+                while(currentIdxArray < sizeOfLeftData){
+                    const int particlesInThisLeaf = *(int*)&buffer[currentIdxArray];
+                    currentIdxArray += sizeof(int);
+                    ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&buffer[currentIdxArray]);
+                    currentIdxArray += sizeof(ParticleClass) * particlesInThisLeaf;
+
+                    for( int idxPart = 0 ; idxPart < particlesInThisLeaf ; ++idxPart){
+                        realTree.insert( particles[ idxPart ] );
+                    }
+
+                    ++nbLeafsInThisBuffer;
+                }
+
+                if( probStatus.MPI_SOURCE == rank - 1) {
+                    hasToBeReceivedFromLeft -= nbLeafsInThisBuffer;
+                }
+                else {
+                    hasToBeReceivedFromRight -= nbLeafsInThisBuffer;
+                }
+            }
+
+            // I insert all my particles because I did not send anything
+            FSize currentLeafPosition = 0;
+            for(FSize idxLeaf = 0 ; idxLeaf < currentNbLeafs ; ++idxLeaf){
+                const int nbPartInLeaf = (*(int*)&intervals[currentLeafPosition]);
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentLeafPosition] + sizeof(int));
+
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
+                }
+                currentLeafPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+            }
+
+        }
+        // if I may send to right and may receive from left
+        else if( iWillReceiveFromLeft || iNeedToSendToRight ){
+            printf("I may receive %d from left and send %d to right\n", hasToBeReceivedFromLeft, iNeedToSendRightCount);
+            int hasBeenSentToRight = 0;
+            MPI_Request requests[nbProcs];
+            int iterRequest = 0;
+            // If we do not have enought it means we can send all the buffer
+            if(iDoNotHaveEnoughtToSendRight){
+                FSize currentLeafPosition = 0;
+                // Send all the data!
+                for(int idxLeaf = 0 ; idxLeaf < currentNbLeafs ; ++idxLeaf){
+                    currentLeafPosition += (*(int*)&particlesToSend[currentLeafPosition]* sizeof(ParticleClass)) + sizeof(int);
+                }
+                if(currentLeafPosition){
+                    MPI_Isend( particlesToSend, currentLeafPosition, MPI_BYTE , rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+                }
+                hasBeenSentToRight = currentNbLeafs;
+            }
+            else {
+                // Else we have to send a part only
+                FSize currentLeafPosition = 0;
+                for(FSize idxLeaf = 0 ; idxLeaf < iNeedToSendRightCount && idxLeaf < iCanSendToRight ; ++idxLeaf){
+                    currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
+                }
+                hasBeenSentToRight = FMath::Min(iNeedToSendRightCount, iCanSendToRight);
+                if(currentLeafPosition){
+                    MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+                }
+                // and insert the other part into the tree
+                for(FSize idxLeaf = hasBeenSentToRight ; idxLeaf < currentNbLeafs ; ++idxLeaf){
+                    const int particlesInThisLeaf = *(int*)&particlesToSend[currentLeafPosition];
+                    currentLeafPosition += sizeof(int);
+                    ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&particlesToSend[currentLeafPosition]);
+                    currentLeafPosition += sizeof(ParticleClass) * particlesInThisLeaf;
+
+                    for( int idxPart = 0 ; idxPart < particlesInThisLeaf ; ++idxPart){
+                        realTree.insert( particles[ idxPart ] );
+                    }
+                }
+            }
+
+            // Now we have to receive the data
+            struct BufferDescriptor {
+                char* buffer;
+                int bufferSize;
+            };
+            int currentBufferIdx = 0;
+            BufferDescriptor buffers[nbProcs];
+
+            // While we have to receive some data
+            while( hasToBeReceivedFromLeft ){
+                // We must wait the message size
+                MPI_Status probStatus;
+                MPI_Probe( rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
+
+                BufferDescriptor currentMessage;
+                MPI_Get_count( &probStatus,  MPI_BYTE, &currentMessage.bufferSize);
+                currentMessage.buffer = new char[currentMessage.bufferSize];
+                // Receive data
+                MPI_Recv(currentMessage.buffer, currentMessage.bufferSize, MPI_BYTE, probStatus.MPI_SOURCE , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+                int nbLeafsInThisBuffer = 0;
+                int currentIdxArray = 0;
+
+                // If needed we transfer some data to the next proc
+                if(hasBeenSentToRight < iNeedToSendRightCount){
+                    FSize currentLeafPosition = 0;
+                    while(currentLeafPosition < currentMessage.bufferSize && hasBeenSentToRight + nbLeafsInThisBuffer < iNeedToSendRightCount){
+                        ++nbLeafsInThisBuffer;
+                        currentLeafPosition += ((*(int*)&currentMessage.buffer[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
+                    }
+                    hasBeenSentToRight += nbLeafsInThisBuffer;
+                    MPI_Isend(currentMessage.buffer, int(currentLeafPosition), MPI_BYTE , rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+
+                    currentIdxArray = currentLeafPosition;
+                }
+
+                // Then we insert the other data
+                while(currentIdxArray < currentMessage.bufferSize){
+                    const int particlesInThisLeaf = *(int*)&currentMessage.buffer[currentIdxArray];
+                    currentIdxArray += sizeof(int);
+                    ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&currentMessage.buffer[currentIdxArray]);
+                    currentIdxArray += sizeof(ParticleClass) * particlesInThisLeaf;
+
+                    for( int idxPart = 0 ; idxPart < particlesInThisLeaf ; ++idxPart){
+                        realTree.insert( particles[ idxPart ] );
+                    }
+
+                    ++nbLeafsInThisBuffer;
+                }
+                // We keep the buffer alive
+                buffers[currentBufferIdx++] = currentMessage;
+                hasToBeReceivedFromLeft -= nbLeafsInThisBuffer;
+            }
+            // Wait message to be sent
+            MPI_Waitall( iterRequest, requests, MPI_STATUSES_IGNORE);
+            for(int idxBuffer = 0 ; idxBuffer < currentBufferIdx ; ++idxBuffer){
+                delete[] buffers[idxBuffer].buffer;
+            }
+        }
+        // if I may send to left and may receive from right
+        else if( iWillReceiveFromRight || iNeedToSendToLeft ){
+            printf("I may send %d to left and receive %d from right\n", iNeedToSendLeftCount, hasToBeReceivedFromRight);
+            int hasBeenSentToLeft = 0;
+            MPI_Request requests[nbProcs];
+            int iterRequest = 0;
+            // If we do not have enought it means we can send all the buffer
+            if(iDoNotHaveEnoughtToSendLeft){
+                printf("iDoNotHaveEnoughtToSendLeft, first send %d\n", currentNbLeafs);
+                FSize currentLeafPosition = 0;
+                // Send all the data!
+                for(int idxLeaf = 0 ; idxLeaf < currentNbLeafs ; ++idxLeaf){
+                    currentLeafPosition += (*(int*)&particlesToSend[currentLeafPosition]* sizeof(ParticleClass)) + sizeof(int);
+                }
+                if(currentLeafPosition){
+                    MPI_Isend( particlesToSend, currentLeafPosition, MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+                }
+                hasBeenSentToLeft = currentNbLeafs;
+            }
+            else {
+                // Else we have to send a part only
+                FSize currentLeafPosition = 0;
+                for(FSize idxLeaf = 0 ; idxLeaf < iNeedToSendLeftCount && idxLeaf < iCanSendToLeft ; ++idxLeaf){
+                    currentLeafPosition += ((*(int*)&particlesToSend[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
+                }
+                hasBeenSentToLeft = FMath::Min(iNeedToSendLeftCount, iCanSendToLeft);
+                if(currentLeafPosition){
+                    MPI_Isend(particlesToSend, int(currentLeafPosition), MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+                }
+
+                printf("I have enought to send left, first send %d\n", hasBeenSentToLeft);
+                // and insert the other part into the tree
+                for(FSize idxLeaf = hasBeenSentToLeft ; idxLeaf < currentNbLeafs ; ++idxLeaf){
+                    const int particlesInThisLeaf = *(int*)&particlesToSend[currentLeafPosition];
+                    currentLeafPosition += sizeof(int);
+                    ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&particlesToSend[currentLeafPosition]);
+                    currentLeafPosition += sizeof(ParticleClass) * particlesInThisLeaf;
+
+                    for( int idxPart = 0 ; idxPart < particlesInThisLeaf ; ++idxPart){
+                        realTree.insert( particles[ idxPart ] );
+                    }
+                }
+            }
+
+            // Now we have to receive the data
+            struct BufferDescriptor {
+                char* buffer;
+                int bufferSize;
+            };
+            int currentBufferIdx = 0;
+            BufferDescriptor buffers[nbProcs];
+
+            // While we have to receive some data
+            while( hasToBeReceivedFromRight ){
+                printf("Go into loop...\n");
+                // We must wait the message size
+                MPI_Status probStatus;
+                MPI_Probe( rank + 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &probStatus);
+
+                BufferDescriptor currentMessage;
+                MPI_Get_count( &probStatus,  MPI_BYTE, &currentMessage.bufferSize);
+                currentMessage.buffer = new char[currentMessage.bufferSize];
+                // Receive data
+                MPI_Recv(currentMessage.buffer, currentMessage.bufferSize, MPI_BYTE, probStatus.MPI_SOURCE , FMpi::TagSandSettling , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                printf("Received a message of size %d...\n", currentMessage.bufferSize);
+                int nbLeafsInThisBuffer = 0;
+                int currentIdxArray = 0;
+
+                // If needed we transfer some data to the next proc
+                if(hasBeenSentToLeft < iNeedToSendLeftCount){
+                    FSize currentLeafPosition = 0;
+                    while(currentLeafPosition < currentMessage.bufferSize && hasBeenSentToLeft + nbLeafsInThisBuffer < iNeedToSendLeftCount){
+                        ++nbLeafsInThisBuffer;
+                        currentLeafPosition += ((*(int*)&currentMessage.buffer[currentLeafPosition]) * sizeof(ParticleClass)) + sizeof(int);
+                    }
+                    hasBeenSentToLeft += nbLeafsInThisBuffer;
+                    MPI_Isend(currentMessage.buffer, int(currentLeafPosition), MPI_BYTE , rank - 1, FMpi::TagSandSettling, MPI_COMM_WORLD, &requests[iterRequest++]);
+
+                    currentIdxArray = currentLeafPosition;
+                }
+
+                // Then we insert the other data
+                while(currentIdxArray < currentMessage.bufferSize){
+                    const int particlesInThisLeaf = *(int*)&currentMessage.buffer[currentIdxArray];
+                    currentIdxArray += sizeof(int);
+                    ParticleClass*const particles = reinterpret_cast<ParticleClass*>(&currentMessage.buffer[currentIdxArray]);
+                    currentIdxArray += sizeof(ParticleClass) * particlesInThisLeaf;
+
+                    for( int idxPart = 0 ; idxPart < particlesInThisLeaf ; ++idxPart){
+                        realTree.insert( particles[ idxPart ] );
+                    }
+
+                    ++nbLeafsInThisBuffer;
+                }
+                // We keep the buffer alive
+                buffers[currentBufferIdx++] = currentMessage;
+                hasToBeReceivedFromRight -= nbLeafsInThisBuffer;
+                printf("nbLeafsInThisBuffer %d, hasToBeReceivedFromRight %d\n", nbLeafsInThisBuffer, hasToBeReceivedFromRight);
+            }
+            printf("Wait all\n");
+            // Wait message to be sent
+            MPI_Waitall( iterRequest, requests, MPI_STATUSES_IGNORE);
+            printf("delete all\n");
+            for(int idxBuffer = 0 ; idxBuffer < currentBufferIdx ; ++idxBuffer){
+                delete[] buffers[idxBuffer].buffer;
+            }
+        }
+
+        return true;
+    }
+      */
+
 };
 
 #endif // FMPITREEBUILDER_H
