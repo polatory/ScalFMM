@@ -130,9 +130,9 @@ class FQuickSort {
         // We do an average of the first element of each proc array
         PivotType sum = 0;
         for(int idxProc = 0 ; idxProc < nbProcs ;++idxProc){
-            sum += result[idxProc];
+            sum += result[idxProc] / nbProcs;
         }
-        return sum / nbProcs;
+        return sum ;
     }
 
     /** change the group and communicator */
@@ -367,7 +367,7 @@ public:
             /////////////////////////////////////////////////
 
             // sort QsLocal part of the outputArray
-            const PivotType pivot = MpiGetPivot<PivotType>(outputArray[0], currentComm, currentNbProcs);
+            const PivotType pivot = MpiGetPivot<PivotType>(outputArray[size/2], currentComm, currentNbProcs);
             Fix myFix;
             QsLocal(outputArray, pivot, 0, size - 1, myFix.pre, myFix.suf);
 
