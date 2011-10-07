@@ -410,6 +410,7 @@ public:
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         { // first M2L
+            FTRACE( FTrace::FRegion regionM2LTrace("M2L", __FUNCTION__ , __FILE__ , __LINE__) );
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
@@ -583,6 +584,7 @@ public:
             //////////////////////////////////////////////////////////////////
 
             {
+                FTRACE( FTrace::FRegion regionTrace("Compute", __FUNCTION__ , __FILE__ , __LINE__) );
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
                 typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
@@ -625,6 +627,7 @@ public:
             MPI_Waitall(iterRequest, requests, status);
 
             {
+                FTRACE( FTrace::FRegion regionTrace("Compute Received data", __FUNCTION__ , __FILE__ , __LINE__) );
                 FDEBUG(receiveCounter.tic());
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -717,6 +720,7 @@ public:
         //////////////////////////////////////////////////////////////////
 
         { // second L2L
+            FTRACE( FTrace::FRegion regionTrace("L2L", __FUNCTION__ , __FILE__ , __LINE__) );
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
@@ -1037,6 +1041,7 @@ public:
         //////////////////////////////////////////////////////////
         // Computation P2P that DO NOT need others data
         //////////////////////////////////////////////////////////
+        FTRACE( FTrace::FRegion regionP2PTrace("Compute P2P", __FUNCTION__ , __FILE__ , __LINE__) );
 
         FDEBUG(FTic computationCounter);
 
@@ -1067,6 +1072,7 @@ public:
             }
         }
         FDEBUG(computationCounter.tac());
+        FTRACE( regionP2PTrace.end() );
 
         //////////////////////////////////////////////////////////
         // Wait send receive
@@ -1094,6 +1100,8 @@ public:
         //////////////////////////////////////////////////////////
         // Computation P2P that need others data
         //////////////////////////////////////////////////////////
+
+        FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
 
         FDEBUG(FTic computation2Counter);
 

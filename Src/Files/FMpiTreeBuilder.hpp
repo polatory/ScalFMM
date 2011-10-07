@@ -261,7 +261,10 @@ public:
                 }
             }
 
-            MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
+            {
+                FTRACE( FTrace::FRegion regionWaitAllTrace("Wait all", __FUNCTION__ , __FILE__ , __LINE__) );
+                MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
+            }
         }
 
         // We now copy the data from a sorted type into real particles array + counter
@@ -334,6 +337,7 @@ public:
 
         int leftProcToStartSend = rank;
         if(iNeedToSendToLeft){
+            FTRACE( FTrace::FRegion regionTrace("Calcul SendToLeft", __FUNCTION__ , __FILE__ , __LINE__) );
             int idxProc = rank - 1;
             while( idxProc >= 0 ){
                 const FSize thisProcRight = GetOtherRight(totalNbLeafs, idxProc);
@@ -344,26 +348,26 @@ public:
             }
 
             leftProcToStartSend = idxProc;
-            int hasToGive = currentNbLeafs;
-            leavesToSend[idxProc] = Min(GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive);
+            int hasToGive = int(currentNbLeafs);
+            leavesToSend[idxProc] = int(Min(GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive));
             {
                 bytesOffset[idxProc] = 0;
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
                     currentIntervalPosition += ((*(int*)&intervals[currentIntervalPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
-                bytesToSend[idxProc] = currentIntervalPosition - bytesOffset[idxProc];
+                bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
             }
             hasToGive -= leavesToSend[idxProc];
             ++idxProc;
 
             while(idxProc < rank && hasToGive){
-                leavesToSend[idxProc] = Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive);
+                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive));
 
-                bytesOffset[idxProc] = currentIntervalPosition;
+                bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
                     currentIntervalPosition += ((*(int*)&intervals[currentIntervalPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
-                bytesToSend[idxProc] = currentIntervalPosition - bytesOffset[idxProc];
+                bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
 
                 hasToGive -= leavesToSend[idxProc];
                 ++idxProc;
@@ -371,6 +375,7 @@ public:
         }
 
         {
+            FTRACE( FTrace::FRegion regionTrace("Insert My particles", __FUNCTION__ , __FILE__ , __LINE__) );
             const FSize iNeedToSendLeftCount = nbLeafsOnMyLeft - currentLeafsOnMyLeft;
             const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - nbLeafsOnMyRight;
             FSize endForMe = currentNbLeafs;
@@ -389,6 +394,7 @@ public:
 
         int rightProcToStartSend = rank;
         if(iNeedToSendToRight){
+            FTRACE( FTrace::FRegion regionTrace("Calcul SendToRight", __FUNCTION__ , __FILE__ , __LINE__) );
             int idxProc = rank + 1;
             while( idxProc + 1 < nbProcs ){
                 const FSize thisProcLeft = GetOtherLeft(totalNbLeafs, idxProc + 1);
@@ -399,27 +405,27 @@ public:
             }
 
             rightProcToStartSend = idxProc;
-            int hasToGive = currentNbLeafs;
-            leavesToSend[idxProc] = Min((totalNbLeafs - currentLeafsOnMyRight) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive);
+            int hasToGive = int(currentNbLeafs);
+            leavesToSend[idxProc] = int(Min((totalNbLeafs - currentLeafsOnMyRight) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive));
 
             {
-                bytesOffset[idxProc] = currentIntervalPosition;
+                bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
                     currentIntervalPosition += ((*(int*)&intervals[currentIntervalPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
-                bytesToSend[idxProc] = currentIntervalPosition - bytesOffset[idxProc];
+                bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
             }
             hasToGive -= leavesToSend[idxProc];
             --idxProc;
 
             while(rank < idxProc && hasToGive){
-                leavesToSend[idxProc] = Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive);
+                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive));
 
-                bytesOffset[idxProc] = currentIntervalPosition;
+                bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
                     currentIntervalPosition += ((*(int*)&intervals[currentIntervalPosition]) * sizeof(ParticleClass)) + sizeof(int);
                 }
-                bytesToSend[idxProc] = currentIntervalPosition - bytesOffset[idxProc];
+                bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
 
                 hasToGive -= leavesToSend[idxProc];
                 --idxProc;
@@ -438,8 +444,8 @@ public:
         FSize sumBytesToRecv = 0;
         for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
             if( bytesToSendRecv[idxProc * nbProcs + rank] ){
-                bytesOffsetToRecv[idxProc] = sumBytesToRecv;
-                sumBytesToRecv += bytesToSendRecv[idxProc * nbProcs + rank];
+                bytesOffsetToRecv[idxProc] = int(sumBytesToRecv);
+                sumBytesToRecv += FSize(bytesToSendRecv[idxProc * nbProcs + rank]);
                 bytesToRecv[idxProc] = bytesToSendRecv[idxProc * nbProcs + rank];
             }
         }
@@ -450,17 +456,19 @@ public:
                       recvbuf, bytesToRecv, bytesOffsetToRecv, MPI_BYTE,
                       MPI_COMM_WORLD);
 
-        FSize recvBufferPosition = 0;
-        while( recvBufferPosition < sumBytesToRecv){
-            const int nbPartInLeaf = (*reinterpret_cast<int*>(&recvbuf[recvBufferPosition]));
-            ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&recvbuf[recvBufferPosition] + sizeof(int));
+        {
+            FTRACE( FTrace::FRegion regionTrace("Insert Received data", __FUNCTION__ , __FILE__ , __LINE__) );
+            FSize recvBufferPosition = 0;
+            while( recvBufferPosition < sumBytesToRecv){
+                const int nbPartInLeaf = (*reinterpret_cast<int*>(&recvbuf[recvBufferPosition]));
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&recvbuf[recvBufferPosition] + sizeof(int));
 
-            for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
-                realTree.insert(particles[idxPart]);
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
+                }
+                recvBufferPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
             }
-            recvBufferPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
         }
-
         delete[] recvbuf;
 
         return true;

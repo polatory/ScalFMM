@@ -314,6 +314,8 @@ int main(int argc, char ** argv){
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     { // get sum forces&potential
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Sum Result" , __FILE__ , __LINE__) );
+
         FReal potential = 0;
         F3DPosition forces;
 
