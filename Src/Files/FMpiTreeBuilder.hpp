@@ -77,8 +77,14 @@ class FMpiTreeBuilder{
 
     template <class T1, class T2>
     static T1 Min( const T1 v1, const T2 v2){
-        return (v1 < v2 ? v1 : v2);
+        return T1(v1 < v2 ? v1 : v2);
     }
+
+    template <class T1, class T2>
+    static T1 Max( const T1 v1, const T2 v2){
+        return T1(v1 > v2 ? v1 : v2);
+    }
+
 
     /** This struct is used to represent a particles group to
       * sort them easily
@@ -307,10 +313,12 @@ public:
         const int nbProcs = MpiGetNbProcs();
         const FSize currentNbLeafs = nbLeavesInIntervals;
 
-        int leavesPerProcs[nbProcs];
+        // We have to know the number of leaves each procs holds
+        FSize leavesPerProcs[nbProcs];
         memset(leavesPerProcs, 0, sizeof(int) * nbProcs);
-        MPI_Allgather(&nbLeavesInIntervals, 1, MPI_INT, leavesPerProcs, 1, MPI_INT, MPI_COMM_WORLD);
+        MPI_Allgather(&nbLeavesInIntervals, 1, MPI_LONG_LONG, leavesPerProcs, 1, MPI_LONG_LONG, MPI_COMM_WORLD);
 
+        // Count the number of leaves on each side
         FSize currentLeafsOnMyLeft  = 0;
         FSize currentLeafsOnMyRight = 0;
         for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc ){
@@ -318,38 +326,47 @@ public:
             if(rank < idxProc) currentLeafsOnMyRight += leavesPerProcs[idxProc];
         }
 
-        const FSize totalNbLeafs     = (currentLeafsOnMyLeft + currentNbLeafs + currentLeafsOnMyRight);
-        const FSize nbLeafsOnMyLeft  = GetLeft(totalNbLeafs);
-        const FSize nbLeafsOnMyRight = GetRight(totalNbLeafs);
+        // So we can know the number of total leafs and
+        // the number of leaves each procs must have at the end
+        const FSize totalNbLeaves               = (currentLeafsOnMyLeft + currentNbLeafs + currentLeafsOnMyRight);
+        const FSize correctLeftLeavesNumber     = GetLeft(totalNbLeaves);
+        const FSize correctRightLeavesIndex     = GetRight(totalNbLeaves);
 
-
+        // This will be used for the all to all
         int leavesToSend[nbProcs];
-        memset(leavesPerProcs, 0, sizeof(int) * nbProcs);
+        memset(leavesToSend, 0, sizeof(int) * nbProcs);
         int bytesToSend[nbProcs];
         memset(bytesToSend, 0, sizeof(int) * nbProcs);
         int bytesOffset[nbProcs];
         memset(bytesToSend, 0, sizeof(int) * nbProcs);
 
+        // Buffer Position
         FSize currentIntervalPosition = 0;
 
-        const bool iNeedToSendToLeft  = currentLeafsOnMyLeft < nbLeafsOnMyLeft;
-        const bool iNeedToSendToRight = nbLeafsOnMyRight < currentLeafsOnMyLeft + currentNbLeafs;
+        // I need to send left if I hold leaves that belong to procs on my left
+        const bool iNeedToSendToLeft  = currentLeafsOnMyLeft < correctLeftLeavesNumber;
+        // I need to send right if I hold leaves that belong to procs on my right
+        const bool iNeedToSendToRight = correctRightLeavesIndex < currentLeafsOnMyLeft + currentNbLeafs;
 
         int leftProcToStartSend = rank;
         if(iNeedToSendToLeft){
             FTRACE( FTrace::FRegion regionTrace("Calcul SendToLeft", __FUNCTION__ , __FILE__ , __LINE__) );
+            // Find the first proc that need my data
             int idxProc = rank - 1;
-            while( idxProc >= 0 ){
-                const FSize thisProcRight = GetOtherRight(totalNbLeafs, idxProc);
-                if( currentLeafsOnMyLeft < thisProcRight ){
+            while( idxProc > 0 ){
+                const FSize thisProcRight = GetOtherRight(totalNbLeaves, idxProc - 1);
+                // Go to left until proc-1 has a right index lower than my current left
+                if( thisProcRight < currentLeafsOnMyLeft){
                     break;
                 }
                 --idxProc;
             }
 
+            // Count data for this proc
             leftProcToStartSend = idxProc;
-            int hasToGive = int(currentNbLeafs);
-            leavesToSend[idxProc] = int(Min(GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive));
+            int ICanGive = int(currentNbLeafs);
+            leavesToSend[idxProc] = int(Min(GetOtherRight(totalNbLeaves, idxProc), totalNbLeaves - currentLeafsOnMyRight)
+                                        - Max( currentLeafsOnMyLeft , GetOtherLeft(totalNbLeaves, idxProc)));
             {
                 bytesOffset[idxProc] = 0;
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -357,11 +374,12 @@ public:
                 }
                 bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
             }
-            hasToGive -= leavesToSend[idxProc];
+            ICanGive -= leavesToSend[idxProc];
             ++idxProc;
 
-            while(idxProc < rank && hasToGive){
-                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive));
+            // count data to other proc
+            while(idxProc < rank && ICanGive){
+                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeaves, idxProc) - GetOtherLeft(totalNbLeaves, idxProc), ICanGive));
 
                 bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -369,45 +387,48 @@ public:
                 }
                 bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
 
-                hasToGive -= leavesToSend[idxProc];
+                ICanGive -= leavesToSend[idxProc];
                 ++idxProc;
             }
         }
 
+        // Store the index of my data but we do not insert the now
+        const FSize myParticlesPosition = currentIntervalPosition;
         {
-            FTRACE( FTrace::FRegion regionTrace("Insert My particles", __FUNCTION__ , __FILE__ , __LINE__) );
-            const FSize iNeedToSendLeftCount = nbLeafsOnMyLeft - currentLeafsOnMyLeft;
-            const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - nbLeafsOnMyRight;
+            FTRACE( FTrace::FRegion regionTrace("Jump My particles", __FUNCTION__ , __FILE__ , __LINE__) );
+            const FSize iNeedToSendLeftCount = correctLeftLeavesNumber - currentLeafsOnMyLeft;
             FSize endForMe = currentNbLeafs;
-            if(iNeedToSendToRight) endForMe -= iNeedToSendRightCount;
-
+            if(iNeedToSendToRight){
+                const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex;
+                endForMe -= iNeedToSendRightCount;
+            }
+            // We have to jump the correct number of leaves
             for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
                 const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
-                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentIntervalPosition] + sizeof(int));
-
-                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
-                    realTree.insert(particles[idxPart]);
-                }
                 currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
             }
         }
 
+        // Proceed same on the right
         int rightProcToStartSend = rank;
         if(iNeedToSendToRight){
             FTRACE( FTrace::FRegion regionTrace("Calcul SendToRight", __FUNCTION__ , __FILE__ , __LINE__) );
+            // Find the last proc on the right that need my data
             int idxProc = rank + 1;
-            while( idxProc + 1 < nbProcs ){
-                const FSize thisProcLeft = GetOtherLeft(totalNbLeafs, idxProc + 1);
-                if( totalNbLeafs - currentLeafsOnMyRight < thisProcLeft ){
+            while( idxProc < nbProcs ){
+                const FSize thisProcRight = GetOtherRight(totalNbLeaves, idxProc);
+                // Progress until the proc+1 has its left index upper to my current right
+                if( thisProcRight < totalNbLeaves - currentLeafsOnMyRight ){
                     break;
                 }
                 ++idxProc;
             }
 
+            // Count the data
             rightProcToStartSend = idxProc;
-            int hasToGive = int(currentNbLeafs);
-            leavesToSend[idxProc] = int(Min((totalNbLeafs - currentLeafsOnMyRight) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive));
-
+            int ICanGive = int(currentNbLeafs);
+            leavesToSend[idxProc] = int(Min(GetOtherRight(totalNbLeaves, idxProc) , (totalNbLeaves - currentLeafsOnMyRight))
+                                        - Max(GetOtherLeft(totalNbLeaves, idxProc), currentLeafsOnMyLeft) );
             {
                 bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -415,11 +436,12 @@ public:
                 }
                 bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
             }
-            hasToGive -= leavesToSend[idxProc];
+            ICanGive -= leavesToSend[idxProc];
             --idxProc;
 
-            while(rank < idxProc && hasToGive){
-                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeafs, idxProc) - GetOtherLeft(totalNbLeafs, idxProc), hasToGive));
+            // Now Count the data to other
+            while(idxProc < nbProcs && ICanGive){
+                leavesToSend[idxProc] = int(Min( GetOtherRight(totalNbLeaves, idxProc) - GetOtherLeft(totalNbLeaves, idxProc), ICanGive));
 
                 bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -427,11 +449,12 @@ public:
                 }
                 bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
 
-                hasToGive -= leavesToSend[idxProc];
-                --idxProc;
+                ICanGive -= leavesToSend[idxProc];
+                ++idxProc;
             }
         }
 
+        // Inform other about who will send/receive what
         int bytesToSendRecv[nbProcs * nbProcs];
         memset(bytesToSendRecv, 0, sizeof(int) * nbProcs * nbProcs);
         MPI_Allgather(bytesToSend, nbProcs, MPI_INT, bytesToSendRecv, nbProcs, MPI_INT, MPI_COMM_WORLD);
@@ -441,6 +464,7 @@ public:
         int bytesOffsetToRecv[nbProcs];
         memset(bytesOffsetToRecv, 0, sizeof(int) * nbProcs);
 
+        // Prepare needed buffer
         FSize sumBytesToRecv = 0;
         for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
             if( bytesToSendRecv[idxProc * nbProcs + rank] ){
@@ -450,13 +474,13 @@ public:
             }
         }
 
+        // Send alll to  all
         char* const recvbuf = new char[sumBytesToRecv];
-
         MPI_Alltoallv(intervals, bytesToSend, bytesOffset, MPI_BYTE,
                       recvbuf, bytesToRecv, bytesOffsetToRecv, MPI_BYTE,
                       MPI_COMM_WORLD);
 
-        {
+        { // Insert received data
             FTRACE( FTrace::FRegion regionTrace("Insert Received data", __FUNCTION__ , __FILE__ , __LINE__) );
             FSize recvBufferPosition = 0;
             while( recvBufferPosition < sumBytesToRecv){
@@ -470,6 +494,28 @@ public:
             }
         }
         delete[] recvbuf;
+
+
+        { // Insert my data
+            FTRACE( FTrace::FRegion regionTrace("Insert My particles", __FUNCTION__ , __FILE__ , __LINE__) );
+            currentIntervalPosition = myParticlesPosition;
+            const FSize iNeedToSendLeftCount = correctLeftLeavesNumber - currentLeafsOnMyLeft;
+            FSize endForMe = currentNbLeafs;
+            if(iNeedToSendToRight){
+                const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex;
+                endForMe -= iNeedToSendRightCount;
+            }
+
+            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
+                const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentIntervalPosition] + sizeof(int));
+
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
+                }
+                currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+            }
+        }
 
         return true;
     }
