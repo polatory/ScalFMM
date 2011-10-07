@@ -319,6 +319,7 @@ public:
         const FSize nbLeafsOnMyLeft  = GetLeft(totalNbLeafs);
         const FSize nbLeafsOnMyRight = GetRight(totalNbLeafs);
 
+
         int leavesToSend[nbProcs];
         memset(leavesPerProcs, 0, sizeof(int) * nbProcs);
         int bytesToSend[nbProcs];
@@ -339,6 +340,7 @@ public:
                 if( currentLeafsOnMyLeft < thisProcRight ){
                     break;
                 }
+                --idxProc;
             }
 
             leftProcToStartSend = idxProc;
@@ -368,21 +370,38 @@ public:
             }
         }
 
-        const FSize myParticlesIndex = currentIntervalPosition;
+        {
+            const FSize iNeedToSendLeftCount = nbLeafsOnMyLeft - currentLeafsOnMyLeft;
+            const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - nbLeafsOnMyRight;
+            FSize endForMe = currentNbLeafs;
+            if(iNeedToSendToRight) endForMe -= iNeedToSendRightCount;
+
+            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
+                const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
+                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentIntervalPosition] + sizeof(int));
+
+                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
+                    realTree.insert(particles[idxPart]);
+                }
+                currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+            }
+        }
 
         int rightProcToStartSend = rank;
         if(iNeedToSendToRight){
             int idxProc = rank + 1;
-            while( idxProc < nbProcs ){
-                const FSize thisProcLeft = GetOtherLeft(totalNbLeafs, idxProc);
-                if( thisProcLeft < currentLeafsOnMyRight ){
+            while( idxProc + 1 < nbProcs ){
+                const FSize thisProcLeft = GetOtherLeft(totalNbLeafs, idxProc + 1);
+                if( totalNbLeafs - currentLeafsOnMyRight < thisProcLeft ){
                     break;
                 }
+                ++idxProc;
             }
 
             rightProcToStartSend = idxProc;
             int hasToGive = currentNbLeafs;
-            leavesToSend[idxProc] = Min(GetOtherLeft(totalNbLeafs, idxProc) - currentLeafsOnMyRight , hasToGive);
+            leavesToSend[idxProc] = Min((totalNbLeafs - currentLeafsOnMyRight) - GetOtherLeft(totalNbLeafs, idxProc) , hasToGive);
+
             {
                 bytesOffset[idxProc] = currentIntervalPosition;
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -406,7 +425,6 @@ public:
                 --idxProc;
             }
         }
-
 
         int bytesToSendRecv[nbProcs * nbProcs];
         memset(bytesToSendRecv, 0, sizeof(int) * nbProcs * nbProcs);
@@ -434,7 +452,7 @@ public:
 
         FSize recvBufferPosition = 0;
         while( recvBufferPosition < sumBytesToRecv){
-            const int nbPartInLeaf = (*(int*)&recvbuf[recvBufferPosition]);
+            const int nbPartInLeaf = (*reinterpret_cast<int*>(&recvbuf[recvBufferPosition]));
             ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&recvbuf[recvBufferPosition] + sizeof(int));
 
             for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
@@ -444,25 +462,6 @@ public:
         }
 
         delete[] recvbuf;
-
-        {
-            currentIntervalPosition = myParticlesIndex;
-
-            const FSize iNeedToSendLeftCount = nbLeafsOnMyLeft - currentLeafsOnMyLeft;
-            const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - nbLeafsOnMyRight;
-            FSize endForMe = currentNbLeafs;
-            if(iNeedToSendToRight) endForMe -= iNeedToSendRightCount;
-
-            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
-                const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
-                ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentIntervalPosition] + sizeof(int));
-
-                for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
-                    realTree.insert(particles[idxPart]);
-                }
-                currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
-            }
-        }
 
         return true;
     }
