@@ -18,7 +18,7 @@ namespace FMemUtils {
             char* iterDest          = static_cast<char*>(dest);
             const char* iterSource  = static_cast<const char*>(source);
 
-            for(FSize idx = 0 ; idx < nbBytes ; idx += MaxSize_t ){
+            for(FSize idx = 0 ; idx < nbBytes - MaxSize_t ; idx += MaxSize_t ){
                 ::memcpy(iterDest, iterSource, size_t(MaxSize_t));
                 iterDest += MaxSize_t;
                 iterSource += MaxSize_t;
@@ -34,9 +34,9 @@ namespace FMemUtils {
             return ::memset(dest, val, size_t(nbBytes));
         }
         else{
-            char* iterDest          = static_cast<char*>(dest);
+            char* iterDest  = static_cast<char*>(dest);
 
-            for(FSize idx = 0 ; idx < nbBytes ; idx += MaxSize_t ){
+            for(FSize idx = 0 ; idx < nbBytes - MaxSize_t ; idx += MaxSize_t ){
                 ::memset(iterDest, val, size_t(MaxSize_t));
                 iterDest += MaxSize_t;
             }
