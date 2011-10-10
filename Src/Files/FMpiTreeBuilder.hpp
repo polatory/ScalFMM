@@ -402,6 +402,7 @@ public:
                 const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex;
                 endForMe -= iNeedToSendRightCount;
             }
+
             // We have to jump the correct number of leaves
             for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
                 const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
@@ -410,25 +411,25 @@ public:
         }
 
         // Proceed same on the right
-        int rightProcToStartSend = rank;
         if(iNeedToSendToRight){
             FTRACE( FTrace::FRegion regionTrace("Calcul SendToRight", __FUNCTION__ , __FILE__ , __LINE__) );
             // Find the last proc on the right that need my data
             int idxProc = rank + 1;
             while( idxProc < nbProcs ){
+                const FSize thisProcLeft = GetOtherLeft(totalNbLeaves, idxProc);
                 const FSize thisProcRight = GetOtherRight(totalNbLeaves, idxProc);
                 // Progress until the proc+1 has its left index upper to my current right
-                if( thisProcRight < totalNbLeaves - currentLeafsOnMyRight ){
+                if( thisProcLeft < currentLeafsOnMyLeft || (totalNbLeaves - currentLeafsOnMyRight) < thisProcRight){
                     break;
                 }
                 ++idxProc;
             }
 
             // Count the data
-            rightProcToStartSend = idxProc;
-            int ICanGive = int(currentNbLeafs);
+            int ICanGive = int(currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex);
             leavesToSend[idxProc] = int(Min(GetOtherRight(totalNbLeaves, idxProc) , (totalNbLeaves - currentLeafsOnMyRight))
                                         - Max(GetOtherLeft(totalNbLeaves, idxProc), currentLeafsOnMyLeft) );
+
             {
                 bytesOffset[idxProc] = int(currentIntervalPosition);
                 for(FSize idxLeaf = 0 ; idxLeaf < leavesToSend[idxProc] ; ++idxLeaf){
@@ -437,7 +438,7 @@ public:
                 bytesToSend[idxProc] = int(currentIntervalPosition - bytesOffset[idxProc]);
             }
             ICanGive -= leavesToSend[idxProc];
-            --idxProc;
+            ++idxProc;
 
             // Now Count the data to other
             while(idxProc < nbProcs && ICanGive){
@@ -491,6 +492,7 @@ public:
                     realTree.insert(particles[idxPart]);
                 }
                 recvBufferPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+
             }
         }
         delete[] recvbuf;
@@ -514,8 +516,10 @@ public:
                     realTree.insert(particles[idxPart]);
                 }
                 currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
+
             }
         }
+
 
         return true;
     }
