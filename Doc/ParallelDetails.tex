@@ -5,7 +5,7 @@
 \usepackage{graphicx}
 \usepackage[hypertexnames=false, pdftex]{hyperref}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% use pdflatex ParallelDetails.tex
+% use:$ pdflatex ParallelDetails.tex
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \author{Berenger Bramas}
 \title{ScalFmm - Parallel Algorithms (Draft)}
@@ -131,10 +131,13 @@ At the end of the algorithm our system is completely balanced with the same numb
 
 \begin{figure}[h!]
 \begin{center}
-\includegraphics[width=14cm, height=17cm, keepaspectratio=true]{SandSettling.png}
-\caption{Sand Settling Example}
+\includegraphics[width=15cm, height=15cm, keepaspectratio=true]{Balance.png}
+\caption{Balancing Example}
 \end{center}
 \end{figure}
+
+A process has to send data to the left if its current left limit is upper than its objective limit.
+Same in the other side, and we can reverse the calculs to know if a process has to received data.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,11 +145,13 @@ At the end of the algorithm our system is completely balanced with the same numb
 We present the different FMM operators in two separated parts depending on their parallel complexity.
 In this first part we present the three simplest operators P2M, M2M and L2L.
 Their simplicity is explained by the possible prediction to know which node hosts a cell and how to organize the communication.
+
 \section{P2M}
 The P2M still unchanged from the sequential approach to the distributed memory algorithm.
 In fact, in the sequential model we compute a P2M between all particles of a leaf and this leaf which is also a cell.
 Although, a leaf and the particles it hosts belong to only one node so doing the P2M operator do not require any information from another node.
 From that point, using the shared memory operator makes sense.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{M2M}
@@ -283,14 +288,16 @@ Finally they send and receive data in an asynchronous way and cover it by the P2
                 P2P(lf, neighbors)\;
         }
 }
-\emph{Wait send and recv if needed}\;
-\emph{Put received particles in a fake tree}\;
+\While{We do not have receive/send everything}{
+	\emph{Wait some send and recv}\;
+	\emph{Put received particles in a fake tree}\;
+}
 \ForAll{Leaf lf}{
-        \uIf{lf is linked to another proc}{
-                neighbors $\leftarrow$ $tree.getNeighbors(lf)$\;
-                otherNeighbors $\leftarrow$ $fakeTree.getNeighbors(lf)$\;
-                P2P(lf, neighbors + otherNeighbors)\;
-        }
+	\uIf{lf is linked to another proc}{
+	        neighbors $\leftarrow$ $tree.getNeighbors(lf)$\;
+	        otherNeighbors $\leftarrow$ $fakeTree.getNeighbors(lf)$\;
+	        P2P(lf, neighbors + otherNeighbors)\;
+	}
 }
 \BlankLine
 \caption{Distributed P2P}
