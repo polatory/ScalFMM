@@ -169,7 +169,7 @@ public:
         delete [] iterArray;
         iterArray = 0;
 
-         
+
     }
 
 
@@ -234,7 +234,7 @@ public:
 
         FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
-         
+
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -398,7 +398,7 @@ public:
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
-         
+
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -821,7 +821,7 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
         }
 
-         
+
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -846,6 +846,7 @@ public:
         MPI_Request requests[2 * nbProcess];
         MPI_Status status[2 * nbProcess];
         int iterRequest = 0;
+        int nbMessagesToRecv = 0;
 
         ParticleClass* sendBuffer[nbProcess];
         memset(sendBuffer, 0, sizeof(ParticleClass*) * nbProcess);
@@ -940,6 +941,17 @@ public:
             FDEBUG(gatherCounter.tac());
 
 
+            // Prepare receive
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                if(globalReceiveMap[idxProc * nbProcess + idProcess]){
+                    recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
+
+                    mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
+                                        idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                }
+            }
+            nbMessagesToRecv = iterRequest;
+            // Prepare send
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(indexToSend[idxProc] != 0){
                     sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * partsToSend[idxProc]]);
@@ -954,12 +966,6 @@ public:
                     mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
                                          idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
-                }
-                if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                    recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
-
-                    mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
-                                        idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
 
@@ -1078,32 +1084,40 @@ public:
         // Wait send receive
         //////////////////////////////////////////////////////////
 
-        // Wait data
-        FDEBUG(waitCounter.tic());
-        MPI_Waitall(iterRequest, requests, status);
-        FDEBUG(waitCounter.tac());
+        FDEBUG(FTic computation2Counter);
 
         // Create an octree with leaves from others
         OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
-                otherP2Ptree.insert(recvBuffer[idxProc][idxPart]);
+        int complete = 0;
+        while( complete != iterRequest){
+
+            int indexMessage[nbProcess * 2];
+            memset(indexMessage, 0, sizeof(int) * nbProcess * 2);
+            int countMessages = 0;
+            // Wait data
+            FDEBUG(waitCounter.tic());
+            MPI_Waitsome(iterRequest, requests, &countMessages, indexMessage, status);
+            FDEBUG(waitCounter.tac());
+            complete += countMessages;
+
+
+            for(int idxRcv = 0 ; idxRcv < countMessages ; ++idxRcv){
+                if( indexMessage[idxRcv] < nbMessagesToRecv ){
+                    const int idxProc = status[idxRcv].MPI_SOURCE;
+                    for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
+                        otherP2Ptree.insert(recvBuffer[idxProc][idxPart]);
+                    }
+                    delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
+                }
             }
         }
-
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            delete [] reinterpret_cast<char*>(sendBuffer[idxProc]);
-            delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
-        }
-
 
         //////////////////////////////////////////////////////////
         // Computation P2P that need others data
         //////////////////////////////////////////////////////////
 
         FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
-
-        FDEBUG(FTic computation2Counter);
+        FDEBUG( computation2Counter.tic() );
 
         #pragma omp parallel
         {
@@ -1151,6 +1165,11 @@ public:
             }
         }
 
+        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+            delete [] reinterpret_cast<char*>(sendBuffer[idxProc]);
+            //delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
+        }
+
         delete[] leafsDataArray;
 
         FDEBUG(computation2Counter.tac());
@@ -1162,7 +1181,7 @@ public:
         FDEBUG( FDebug::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
-         
+
     }
 
 

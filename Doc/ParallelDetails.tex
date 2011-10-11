@@ -121,20 +121,14 @@ That is the reason why we need to balance the data among nodes.
 After sorting, each process has potentially several leaves.
 If we have two processes $P_{i}$ and $P_{j}$ with $i < j$ the sort guarantees that all leaves from node i are inferior than the leaves on the node j in a Morton indexing way.
 But the leaves are randomly distributed among the nodes and we need to balance them.
-Our idea is to use a two passes algorithm describes as a sand settling:
+It is a simple reordoring of the data, but the data has to stayed sorted.
+
 \begin{enumerate}
-\item We can see each node as a heap of sand.
-This heap represents the leaves of the octree.
-Some nodes have lot of leaves and then are a big heap.
-On the contrary, some are small heaps because composed by a few leaves.
-Starting from the extremities, each node can know the sand there is on its left and on its right.
-\item Because each node knows the total among of sand in the system which is the sum of the sand there is on each of its sides plus its own sand it can compute a balancing calculus.
-What should happen if we put a heavy plank above all our sand heaps?
-Well the system should balance until all heaps have the same size.
-The same happens here, each node can know what to do to balance the system.
-Each node communicates only with its two neighbors by sending or receiving entire leaves.
+\item Each process informs other to tell how many leaves it holds.
+\item Each process compute how many leaves it has to send or to receive from left or right.
 \end{enumerate}
 At the end of the algorithm our system is completely balanced with the same number of leaves on each process.
+
 \begin{figure}[h!]
 \begin{center}
 \includegraphics[width=14cm, height=17cm, keepaspectratio=true]{SandSettling.png}
