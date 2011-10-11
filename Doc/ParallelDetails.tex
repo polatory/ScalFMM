@@ -57,18 +57,18 @@ size per proc \leftarrow \left (file size - header size \right ) / nbprocs
 offset \leftarrow header size + size per proc .\left ( rank - 1 \right )
 \end{equation}
 \newline
-The MPI $I/O$ functions use a view model to manage data access.
-We first construct a view using the function MPI\_File\_set\_view and then read the data with MPI\_File\_read as described in the fallowing $C++$ code.
+We do not use the view system to read that data as it is used to write. The MPI\_File\_read is called as described in the fallowing $C++$ code.
 \begin{lstlisting}
 // From FMpiFmaLoader
-particles = new FReal[bufsize];
-MPI_File_set_view(file, headDataOffSet + startPart * 4 * sizeof(FReal),
-        MPI_FLOAT, MPI_FLOAT, const_cast<char*>("native"), MPI_INFO_NULL);
-MPI_File_read(file, particles, bufsize, MPI_FLOAT, &status);
+MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal),
+                 particles, int(bufsize), MPI_FLOAT, &status);
 \end{lstlisting}
 Our files are composed by a header fallowing by all the particles.
 The header enables to check several properties as the precision of the file.
 Finally, a particle is represented by four decimal values: a position and a physical value.
+\newline
+\underline{Remark:} The MPI IO function do not work if we use a MPI\_Initthread(MPI\_THREAD\_MULTIPLE) and a version above 1.5.1.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Sorting the particles}
@@ -95,12 +95,15 @@ To choose the pivot we tried to use an average of all the data hosted by the nod
 \KwResult{A Morton index as next iteration pivot}
 \BlankLine
 myFirstIndex $\leftarrow$ particles$[0]$.index\;
-allFirstIndexes $\leftarrow$ MortonIndex$[nbprocs]$\;
+allFirstIndexes = MortonIndex$[nbprocs]$\;
 allGather(myFirstIndex, allFirstIndexes)\;
-pivot $\leftarrow$ Sum(allFirstIndexes) / nbprocs\;
+pivot $\leftarrow$ Sum(allFirstIndexes(:) / nbprocs)\;
 \BlankLine
 \caption{Choosing the QS pivot}
 \end{algorithm}
+\newline
+A bug was made when at the beginning we did an average by summing and dividing after. But the Morton index may be extremly high, so we need to to divide first and then sum.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Using an intermediate Octree}
@@ -115,6 +118,7 @@ Finally, the processes split the interval in a uniform manner and exchange data 
 In both approaches the data may not be balanced at the end.
 In fact, the first method is pivot dependent and the second consider that the data are uniformly distributed.
 That is the reason why we need to balance the data among nodes.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Balancing the leaves}
@@ -143,7 +147,7 @@ Same in the other side, and we can reverse the calculs to know if a process has 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Simple operators: P2M, M2M, L2L}
 We present the different FMM operators in two separated parts depending on their parallel complexity.
-In this first part we present the three simplest operators P2M, M2M and L2L.
+In this first part, we present the three simplest operators P2M, M2M and L2L.
 Their simplicity is explained by the possible prediction to know which node hosts a cell and how to organize the communication.
 
 \section{P2M}
