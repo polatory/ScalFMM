@@ -9,9 +9,11 @@
 
 #include <mpi.h>
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FMemUtils.hpp"
-#include "../Utils/FTrace.hpp"
+#include "FGlobal.hpp"
+#include "FMemUtils.hpp"
+#include "FTrace.hpp"
+
+#include "FOmpBarrier.hpp"
 
 class FQuickSort {
     ////////////////////////////////////////////////////////////
@@ -61,37 +63,6 @@ class FQuickSort {
         return int(double(position)/step);
     }
 
-    ////////////////////////////////////////////////////////////
-    // OMP Function
-    ////////////////////////////////////////////////////////////
-
-    /* custom barrier to wait proc from first to last, not all threads! */
-    static void OmpBarrier(int mutex[], const int firstProc, const int lastProc, const int myThreadId){
-        if(lastProc != firstProc){
-            const int idRelative = myThreadId - firstProc;
-
-            while(mutex[firstProc] != idRelative ){
-                #pragma omp flush(mutex)
-            }
-
-            ++mutex[firstProc];
-            #pragma omp flush(mutex)
-
-            if(myThreadId == lastProc){
-                mutex[firstProc] = idRelative - 1;
-            }
-            else{
-                while(mutex[firstProc] != idRelative ){
-                    #pragma omp flush(mutex)
-                }
-                if(idRelative != 0){
-                    --mutex[firstProc];
-                    #pragma omp flush(mutex)
-                }
-            }
-        }
-    }
-
 
     ////////////////////////////////////////////////////////////
     // MPI Function
@@ -100,7 +71,7 @@ class FQuickSort {
     /** generic mpi assert function */
     static void mpiassert(const int test, const unsigned line, const char* const message = 0){
         if(test != MPI_SUCCESS){
-            printf("[ERROR] Test failled at line %d, result is %d", line, test);
+            printf("[ERROR-QS] Test failled at line %d, result is %d", line, test);
             if(message) printf(", message: %s",message);
             printf("\n");
             fflush(stdout);
@@ -239,8 +210,7 @@ public:
 
         SortType*const temporaryArray = reinterpret_cast<SortType*>(new char[sizeof(SortType) * size]);
 
-        int mutex[NbOfThreads];
-        memset(mutex, 0, sizeof(int) * NbOfThreads);
+        FOmpBarrier barriers[NbOfThreads];
 
         #pragma omp parallel
         {
@@ -259,15 +229,19 @@ public:
                 Fix* const fixesSum = &allFixesSum[0][firstProc];
                 const FSize nbElements = endIndex - startIndex + 1;
 
+                if(myThreadId == firstProc){
+                    barriers[firstProc].setNbThreads( lastProc - firstProc + 1);
+                }
+
                 // sort QsLocal part of the array
                 const PivotType pivot = (PivotType(array[startIndex]) + PivotType(array[endIndex]) )/2;
-                OmpBarrier( mutex, firstProc, lastProc, myThreadId);
+                barriers[firstProc].wait();
 
                 QsLocal(array, pivot, myLeft, myRight, fixes[myThreadId].pre, fixes[myThreadId].suf);
 
                 // wait others that work on this part
                 #pragma omp flush(array)
-                OmpBarrier( mutex, firstProc, lastProc, myThreadId);
+                barriers[firstProc].wait();
 
                 // merge result
                 if(myThreadId == firstProc){
@@ -285,7 +259,7 @@ public:
                     #pragma omp flush(temporaryArray)
                 }
 
-                OmpBarrier( mutex, firstProc, lastProc, myThreadId);
+                barriers[firstProc].wait();
 
                 // copy my result where it belong (< pivot)
                 FMemUtils::memcpy(&array[startIndex + fixesSum[myThreadId].pre], &temporaryArray[myLeft], sizeof(SortType) * fixes[myThreadId].pre);
@@ -294,7 +268,7 @@ public:
                 const FSize sufoffset = fixesSum[lastProc + 1].pre + startIndex;
                 FMemUtils::memcpy(&array[sufoffset + fixesSum[myThreadId].suf], &temporaryArray[myLeft + fixes[myThreadId].pre ], sizeof(SortType) * fixes[myThreadId].suf);
 
-                OmpBarrier( mutex, firstProc, lastProc, myThreadId);
+                barriers[firstProc].wait();
 
                 // find my next QsLocal part
                 int splitProc = getProc(sufoffset - startIndex, nbElements, lastProc - firstProc + 1) + firstProc;
