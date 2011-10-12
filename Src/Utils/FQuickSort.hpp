@@ -12,6 +12,7 @@
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
 #include "FTrace.hpp"
+#include "FMpi.hpp"
 
 #include "FOmpBarrier.hpp"
 
