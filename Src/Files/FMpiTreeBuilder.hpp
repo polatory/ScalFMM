@@ -3,6 +3,8 @@
 
 #include "../Utils/FMpi.hpp"
 #include "../Utils/FQuickSort.hpp"
+#include "../Utils/BitonicSort.hpp"
+
 #include "../Utils/FMemUtils.hpp"
 #include "../Utils/FTrace.hpp"
 
@@ -163,8 +165,11 @@ public:
             }
 
             // sort particles
-            FQuickSort::QsMpi<IndexedParticle,MortonIndex>(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
-            delete [] (realParticlesIndexed);
+            //FQuickSort::QsMpi<IndexedParticle,MortonIndex>(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
+            //delete [] (realParticlesIndexed);
+
+            BitonicSort::sort<IndexedParticle,MortonIndex>( realParticlesIndexed, loader.getNumberOfParticles() );
+            outputArray = realParticlesIndexed;
         }
         // be sure there is no splited leaves
         // to do that we exchange the first index with the left proc
