@@ -165,12 +165,15 @@ public:
             }
 
             // sort particles
-            FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
-            delete [] (realParticlesIndexed);
-
-            //FBitonicSort::sort<IndexedParticle,MortonIndex>( realParticlesIndexed, loader.getNumberOfParticles() );
-            //outputArray = realParticlesIndexed;
-            //outputSize = loader.getNumberOfParticles();
+            if(false){
+                FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
+                delete [] (realParticlesIndexed);
+            }
+            else {
+                FBitonicSort::sort<IndexedParticle,MortonIndex>( realParticlesIndexed, loader.getNumberOfParticles() );
+                outputArray = realParticlesIndexed;
+                outputSize = loader.getNumberOfParticles();
+            }
         }
         // be sure there is no splited leaves
         // to do that we exchange the first index with the left proc
@@ -178,37 +181,46 @@ public:
             FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
 
             MortonIndex otherFirstIndex = -1;
-            {
-                FMpi::Request req[2];
-                int reqiter = 0;
-                // can I send my first index? == I am not rank 0 & I have data
-                if( 0 < rank && outputSize){
-                    MPI_Isend( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
-                }
-                if( rank != nbProcs - 1){
-                    MPI_Irecv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, &req[reqiter++]);
-                }
-
-                MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
-
-                // I could not send because I do not have data, so I transmit the data coming
-                // from my right neigbors
-                if( 0 < rank && !outputSize){
-                    MPI_Send( &otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
-                }
+            if(outputSize != 0 && rank != 0 && rank != nbProcs - 1){
+                MPI_Sendrecv(&outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs,
+                             &otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs,
+                             MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
-
-            MPI_Request req[2];
-            int reqiter = 0;
+            else if( rank == 0){
+                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
+            else if( rank == nbProcs - 1){
+                MPI_Send( &outputArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
+            }
+            else {
+                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send(&otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
+            }
 
             // at this point every one know the first index of his right neighbors
             const bool needToRecvBeforeSend = (rank != 0 && ((outputSize && otherFirstIndex == outputArray[0].index ) || !outputSize));
-            if( needToRecvBeforeSend || (rank == nbProcs - 1) ){
-                // Here we want to send data we do not have
-                // so we first receive other data and put then into the array
-                // this case happens only if I have one leaf with index MX
-                // and if proc[rank - 1].last.index == MX && proc[rank + 1].first.index == MX
+            MPI_Request requestSendLeaf;
 
+            IndexedParticle* sendBuffer = 0;
+            if(rank != nbProcs - 1 && needToRecvBeforeSend == false){
+                FSize idxPart = outputSize - 1 ;
+                while(idxPart >= 0 && outputArray[idxPart].index == otherFirstIndex){
+                    --idxPart;
+                }
+                const int particlesToSend = int(outputSize - 1 - idxPart);
+                if(particlesToSend){
+                    outputSize -= particlesToSend;
+                    sendBuffer = new IndexedParticle[particlesToSend];
+                    memcpy(sendBuffer, &outputArray[idxPart + 1], particlesToSend * sizeof(IndexedParticle));
+
+                    MPI_Isend( sendBuffer, particlesToSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
+                }
+                else{
+                    MPI_Isend( 0, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
+                }
+            }
+
+            if( rank != 0 ){
                 int sendByOther = 0;
 
                 MPI_Status probStatus;
@@ -217,6 +229,7 @@ public:
 
                 if(sendByOther){
                     sendByOther /= sizeof(IndexedParticle);
+
                     const IndexedParticle* const reallocOutputArray = outputArray;
                     const FSize reallocOutputSize = outputSize;
 
@@ -225,88 +238,57 @@ public:
                     FMemUtils::memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
+                    MPI_Recv(outputArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
                 else{
-                    MPI_Irecv(0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
+                    MPI_Recv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
             }
 
-            if(rank != nbProcs - 1){
-
-                FSize idxPart = outputSize - 1 ;
-                while(idxPart >= 0 && outputArray[idxPart].index == otherFirstIndex){
-                    --idxPart;
-                }
-                const int toSend = int(outputSize - 1 - idxPart);
-                MPI_Isend( &outputArray[idxPart + 1], toSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
-
-                if( rank != 0 && !needToRecvBeforeSend && (rank != nbProcs - 1)){
-                    int sendByOther = 0;
-
-                    MPI_Status probStatus;
-                    MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
-                    MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
-
-                    if(sendByOther){
-                        sendByOther /= sizeof(IndexedParticle);
-                        char* const tempBuffer = new char[sizeof(IndexedParticle) * sendByOther];
-
-                        MPI_Irecv(tempBuffer, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
-
-                        MPI_Waitall(reqiter,req, MPI_STATUSES_IGNORE);
-                        reqiter = 0;
-
-                        const IndexedParticle* const reallocOutputArray = outputArray;
-                        const FSize reallocOutputSize = outputSize;
-
-                        outputSize += sendByOther;
-                        outputArray = new IndexedParticle[outputSize];
-                        FMemUtils::memcpy(&outputArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
-                        delete[] reallocOutputArray;
-                        memcpy(outputArray, tempBuffer, sendByOther * sizeof(IndexedParticle));
-                        delete[] tempBuffer;
-                    }
-                    else{
-                        MPI_Irecv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &req[reqiter++]);
-                    }
-                }
+            if(rank != nbProcs - 1 && needToRecvBeforeSend == true){
+                MPI_Send( outputArray, int(outputSize * sizeof(IndexedParticle)), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD);
+                delete[] outputArray;
+                outputArray = 0;
+                outputSize  = 0;
             }
-
-            {
-                FTRACE( FTrace::FRegion regionWaitAllTrace("Wait all", __FUNCTION__ , __FILE__ , __LINE__) );
-                MPI_Waitall(reqiter,req,MPI_STATUSES_IGNORE);
+            else if(rank != nbProcs - 1){
+                MPI_Wait( &requestSendLeaf, MPI_STATUS_IGNORE);
+                delete[] sendBuffer;
+                sendBuffer = 0;
             }
         }
 
-        // We now copy the data from a sorted type into real particles array + counter
+        {
+            FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
+            // We now copy the data from a sorted type into real particles array + counter
 
-        nbLeavesInIntervals = 0;
-        if(outputSize){
-            intervals = new char[outputSize * (sizeof(ParticleClass) + sizeof(int))];
+            nbLeavesInIntervals = 0;
+            if(outputSize){
+                intervals = new char[outputSize * (sizeof(ParticleClass) + sizeof(int))];
 
-            MortonIndex previousIndex = -1;
-            char* writeIndex = intervals;
-            int* writeCounter = 0;
+                MortonIndex previousIndex = -1;
+                char* writeIndex = intervals;
+                int* writeCounter = 0;
 
-            for( FSize idxPart = 0; idxPart < outputSize ; ++idxPart){
-                if( outputArray[idxPart].index != previousIndex ){
-                    previousIndex = outputArray[idxPart].index;
-                    ++nbLeavesInIntervals;
+                for( FSize idxPart = 0; idxPart < outputSize ; ++idxPart){
+                    if( outputArray[idxPart].index != previousIndex ){
+                        previousIndex = outputArray[idxPart].index;
+                        ++nbLeavesInIntervals;
 
-                    writeCounter = reinterpret_cast<int*>( writeIndex );
-                    writeIndex += sizeof(int);
+                        writeCounter = reinterpret_cast<int*>( writeIndex );
+                        writeIndex += sizeof(int);
 
-                    (*writeCounter) = 0;
+                        (*writeCounter) = 0;
+                    }
+
+                    memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
+
+                    writeIndex += sizeof(ParticleClass);
+                    ++(*writeCounter);
                 }
-
-                memcpy(writeIndex, &outputArray[idxPart].particle, sizeof(ParticleClass));
-
-                writeIndex += sizeof(ParticleClass);
-                ++(*writeCounter);
             }
+            delete [] outputArray;
         }
-        delete [] outputArray;
 
         return true;
     }
@@ -408,13 +390,6 @@ public:
                 const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex;
                 endForMe -= iNeedToSendRightCount;
             }
-printf("iNeedToSendToLeft %s\n", iNeedToSendToLeft?"True":"False");
-printf("iNeedToSendToRight %s\n", iNeedToSendToRight?"True":"False");
-printf("currentNbLeafs %lld\n",currentNbLeafs);
-printf("iNeedToSendLeftCount %lld\n",iNeedToSendLeftCount);
-printf("correctLeftLeavesNumber %lld\n",correctLeftLeavesNumber);
-printf("currentLeafsOnMyLeft %lld\n",currentLeafsOnMyLeft);
-printf("endForMe %lld\n",endForMe);
 
             // We have to jump the correct number of leaves
             for(FSize idxLeaf = Max(iNeedToSendLeftCount,0) ; idxLeaf < endForMe ; ++idxLeaf){
