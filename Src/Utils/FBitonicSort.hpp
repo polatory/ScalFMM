@@ -9,7 +9,7 @@
 #include "FTrace.hpp"
 #include "FMpi.hpp"
 
-class BitonicSort {
+class FBitonicSort {
 private:
 
     ////////////////////////////////////////////////////////////////
