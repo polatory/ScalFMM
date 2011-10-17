@@ -33,7 +33,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
                 array[idx] = rand();
             }
 
-            FQuickSort::QsOmp<long long, long long>(array, Size);
+            FQuickSort<long long, long long, long>::QsOmp(array, Size);
 
             assert(IsSorted(array,Size));
         }
@@ -50,7 +50,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
             array[idx] = rand();
         }
 
-        FQuickSort::QsOmp<long long, long long>(array, Size);
+        FQuickSort<long long, long long, long>::QsOmp(array, Size);
         assert(IsSorted(array,Size));
 
         delete [] array;

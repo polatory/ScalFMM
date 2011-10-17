@@ -8,59 +8,10 @@
 
 #include "FTrace.hpp"
 #include "FMpi.hpp"
+#include "FQuickSort.hpp"
 
 class FBitonicSort {
 private:
-
-    ////////////////////////////////////////////////////////////////
-    // Sequential sort first!
-    ////////////////////////////////////////////////////////////////
-
-    template <class SortType>
-    static inline void swap(SortType& v1, SortType& v2){
-        const SortType tmp = v1;
-        v1 = v2;
-        v2 = tmp;
-    }
-
-    template <class SortType, class CompareType, class FSize>
-    static FSize partition(SortType* const array, FSize left, FSize right){
-        FSize part = right;
-        swap( array[part], array[(right+left) / 2]);
-        --right;
-
-        while(true){
-            while( CompareType(array[left]) < CompareType(array[part]) ){
-                ++left;
-            }
-            while(right >= left && CompareType(array[part]) <= CompareType(array[right])){
-                --right;
-            }
-            if(right < left) break;
-
-            swap(array[left],array[right]);
-            ++left;
-            --right;
-        }
-
-        swap(array[part],array[left]);
-
-        return left;
-    }
-
-    template <class SortType, class CompareType, class FSize>
-    static void qs(SortType* const array, const FSize left, const FSize right){
-        if(left < right){
-            const FSize part = partition<SortType,CompareType>(array, left, right);
-            qs<SortType,CompareType>(array,part + 1,right);
-            qs<SortType,CompareType>(array,left,part - 1);
-        }
-    }
-
-    template <class SortType, class CompareType, class FSize>
-    static void quick(SortType* const array, const FSize size){
-        qs<SortType,CompareType,FSize>(array,0,size-1);
-    }
 
     ////////////////////////////////////////////////////////////////
     // Bitonic parallel sort !
@@ -74,11 +25,11 @@ private:
 
     // This function exchange data with the other rank,
     // its send the max value and receive min value
-    template <class SortType, class CompareType, class FSize>
-    static void sendMaxAndGetMin(SortType array[], const FSize size, const int otherRank){
-        FSize left  = -1;
-        FSize right = size - 1;
-        FSize pivot = left + (right - left + 1)/2;
+    template <class SortType, class CompareType, class IndexType>
+    static void sendMaxAndGetMin(SortType array[], const IndexType size, const int otherRank){
+        IndexType left  = -1;
+        IndexType right = size - 1;
+        IndexType pivot = left + (right - left + 1)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
         MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
@@ -115,11 +66,11 @@ private:
 
     // This function exchange data with the other rank,
     // its send the min value and receive max value
-    template <class SortType, class CompareType, class FSize>
-    static void sendMinAndGetMax(SortType array[], const FSize size, const int otherRank){
-        FSize left  = 0;
-        FSize right = size ;
-        FSize pivot = left + (right - left)/2;
+    template <class SortType, class CompareType, class IndexType>
+    static void sendMinAndGetMax(SortType array[], const IndexType size, const int otherRank){
+        IndexType left  = 0;
+        IndexType right = size ;
+        IndexType pivot = left + (right - left)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
         MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
@@ -176,11 +127,11 @@ public:
         endfor
     endfor
       */
-    template <class SortType, class CompareType, class FSize>
-    static void sort(SortType array[], const FSize size, const int np, const int rank){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
+    template <class SortType, class CompareType, class IndexType>
+    static void sort(SortType array[], const IndexType size, const int np, const int rank){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Bitonic" , __FILE__ , __LINE__) );
 
-        quick<SortType,CompareType>(array, size);
+        FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
 
         const int logNp = int(log2(np));
         for(int bitIdx = 1 ; bitIdx <= logNp ; ++bitIdx){
@@ -202,13 +153,13 @@ public:
                 }
                 // A merge sort is possible since the array is composed
                 // by two part already sorted, but we want to do this in space
-                quick<SortType,CompareType>(array, size);
+                FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
             }
         }
     }
 
-    template <class SortType, class CompareType, class FSize>
-    static void sort(SortType array[], const FSize size){
+    template <class SortType, class CompareType, class IndexType>
+    static void sort(SortType array[], const IndexType size){
         int rank = 0;
         int nprocs = 0;
 

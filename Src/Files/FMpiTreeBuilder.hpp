@@ -3,7 +3,7 @@
 
 #include "../Utils/FMpi.hpp"
 #include "../Utils/FQuickSort.hpp"
-#include "../Utils/BitonicSort.hpp"
+#include "../Utils/FBitonicSort.hpp"
 
 #include "../Utils/FMemUtils.hpp"
 #include "../Utils/FTrace.hpp"
@@ -165,11 +165,12 @@ public:
             }
 
             // sort particles
-            //FQuickSort::QsMpi<IndexedParticle,MortonIndex>(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
-            //delete [] (realParticlesIndexed);
+            FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(),outputArray,outputSize);
+            delete [] (realParticlesIndexed);
 
-            BitonicSort::sort<IndexedParticle,MortonIndex>( realParticlesIndexed, loader.getNumberOfParticles() );
-            outputArray = realParticlesIndexed;
+            //FBitonicSort::sort<IndexedParticle,MortonIndex>( realParticlesIndexed, loader.getNumberOfParticles() );
+            //outputArray = realParticlesIndexed;
+            //outputSize = loader.getNumberOfParticles();
         }
         // be sure there is no splited leaves
         // to do that we exchange the first index with the left proc
@@ -407,9 +408,16 @@ public:
                 const FSize iNeedToSendRightCount = currentLeafsOnMyLeft + currentNbLeafs - correctRightLeavesIndex;
                 endForMe -= iNeedToSendRightCount;
             }
+printf("iNeedToSendToLeft %s\n", iNeedToSendToLeft?"True":"False");
+printf("iNeedToSendToRight %s\n", iNeedToSendToRight?"True":"False");
+printf("currentNbLeafs %lld\n",currentNbLeafs);
+printf("iNeedToSendLeftCount %lld\n",iNeedToSendLeftCount);
+printf("correctLeftLeavesNumber %lld\n",correctLeftLeavesNumber);
+printf("currentLeafsOnMyLeft %lld\n",currentLeafsOnMyLeft);
+printf("endForMe %lld\n",endForMe);
 
             // We have to jump the correct number of leaves
-            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
+            for(FSize idxLeaf = Max(iNeedToSendLeftCount,0) ; idxLeaf < endForMe ; ++idxLeaf){
                 const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
                 currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
             }
@@ -513,7 +521,7 @@ public:
                 endForMe -= iNeedToSendRightCount;
             }
 
-            for(FSize idxLeaf = iNeedToSendLeftCount ; idxLeaf < endForMe ; ++idxLeaf){
+            for(FSize idxLeaf = Max(iNeedToSendLeftCount,0) ; idxLeaf < endForMe ; ++idxLeaf){
                 const int nbPartInLeaf = (*(int*)&intervals[currentIntervalPosition]);
                 ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&intervals[currentIntervalPosition] + sizeof(int));
 
