@@ -246,7 +246,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FMpiFmaLoader<ParticleClass> loader(filename, app);
+    FMpiFmaLoader<ParticleClass> loader(filename, app.global());
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -262,27 +262,14 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    if( app.processCount() != 1){
+    if( app.global().processCount() != 1){
         //////////////////////////////////////////////////////////////////////////////////
-        // We sort our particles
+        // Build tree from mpi loader
         //////////////////////////////////////////////////////////////////////////////////
-        std::cout << "Create intervals ..." << std::endl;
+        std::cout << "Build Tree ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ParticleClass> builder;
-
-        builder.splitAndSortFile(loader, NbLevels);
-
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-        //////////////////////////////////////////////////////////////////////////////////
-        // Now we can build the real tree
-        //////////////////////////////////////////////////////////////////////////////////
-        std::cout << "Create real tree ..." << std::endl;
-        counter.tic();
-
-        builder.intervalsToTree(tree);
+        FMpiTreeBuilder<ParticleClass>::LoaderToTree(app.global(), loader, tree);
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -290,10 +277,9 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }
     else{
-        FFmaBinLoader<ParticleClass> loaderSeq(filename);
         ParticleClass partToInsert;
-        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-            loaderSeq.fillParticle(partToInsert);
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(partToInsert);
             tree.insert(partToInsert);
         }
     }
@@ -307,7 +293,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     KernelClass kernels(NbLevels,loader.getBoxWidth());
-    FmmClass algo(app,&tree,&kernels);
+    FmmClass algo(app.global(),&tree,&kernels);
     algo.execute();
 
     counter.tac();
@@ -333,13 +319,13 @@ int main(int argc, char ** argv){
 
         std::cout << "My potential is " << potential << std::endl;
 
-        potential = app.reduceSum(potential);
-        forces.setX(app.reduceSum(forces.getX()));
-        forces.setY(app.reduceSum(forces.getY()));
-        forces.setZ(app.reduceSum(forces.getZ()));
+        potential = app.global().reduceSum(potential);
+        forces.setX(app.global().reduceSum(forces.getX()));
+        forces.setY(app.global().reduceSum(forces.getY()));
+        forces.setZ(app.global().reduceSum(forces.getZ()));
 
 
-        if(app.isMaster()){
+        if(app.global().processId() == 0){
             std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
             std::cout << "Potential Sum = " << potential << std::endl;
         }

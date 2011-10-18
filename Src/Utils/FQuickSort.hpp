@@ -16,24 +16,21 @@
 
 #include "FOmpBarrier.hpp"
 
+/** This class is parallel quick sort
+  * It hold a mpi version
+  * + 2 openmp versions (one on tasks and the other like mpi)
+  * + a sequential version
+  *
+  * The task based algorithm is easy to undestand,
+  * for the mpi/openmp2nd please see
+  * Introduction to parallel computing (Grama Gupta Karypis Kumar)
+  */
+
 template <class SortType, class CompareType, class IndexType>
 class FQuickSort {
     ////////////////////////////////////////////////////////////
     // Miscialenous functions
     ////////////////////////////////////////////////////////////
-
-
-    /** To get max between 2 values */
-    template <class NumType>
-    static NumType Max(const NumType inV1, const NumType inV2){
-        return (inV1 > inV2 ? inV1 : inV2);
-    }
-
-    /** To get min between 2 values */
-    template <class NumType>
-    static NumType Min(const NumType inV1, const NumType inV2){
-        return (inV1 < inV2 ? inV1 : inV2);
-    }
 
     /** swap to value */
     template <class NumType>
@@ -43,92 +40,11 @@ class FQuickSort {
         other = temp;
     }
 
-
-    ////////////////////////////////////////////////////////////
-    // Split information
-    ////////////////////////////////////////////////////////////
-
-    static IndexType getLeft(const IndexType inSize, const int inIdProc, const int inNbProc) {
-        const double step = (double(inSize) / inNbProc);
-        return IndexType(ceil(step * inIdProc));
-    }
-
-    static IndexType getRight(const IndexType inSize, const int inIdProc, const int inNbProc) {
-        const double step = (double(inSize) / inNbProc);
-        const IndexType res = IndexType(ceil(step * (inIdProc+1)));
-        if(res > inSize) return inSize;
-        else return res;
-    }
-
-    static int getProc(const IndexType position, const IndexType inSize, const int inNbProc) {
-        const double step = double(inSize) / double(inNbProc);
-        return int(double(position)/step);
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    // MPI Function
-    ////////////////////////////////////////////////////////////
-
-    /** generic mpi assert function */
-    static void mpiassert(const int test, const unsigned line, const char* const message = 0){
-        if(test != MPI_SUCCESS){
-            printf("[ERROR-QS] Test failled at line %d, result is %d", line, test);
-            if(message) printf(", message: %s",message);
-            printf("\n");
-            fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, int(line) );
-        }
-    }
-
-    /** get current rank */
-    static int MpiGetRank(MPI_Comm comm){
-        int rank(0);
-        mpiassert( MPI_Comm_rank(comm, &rank),  __LINE__ );
-        return rank;
-    }
-
-    /** get current nb procs */
-    static int MpiGetNbProcs(MPI_Comm comm){
-        int nb(0);
-        mpiassert( MPI_Comm_size(comm, &nb), __LINE__);
-        return nb;
-    }
-
-    /** get the pivot from several procs in Comm */
-    static CompareType MpiGetPivot(CompareType myData, MPI_Comm& comm, const int nbProcs){
-        CompareType result[nbProcs];
-        mpiassert( MPI_Allgather( &myData, sizeof(CompareType), MPI_BYTE, result, sizeof(CompareType), MPI_BYTE, comm),  __LINE__ );
-        // We do an average of the first element of each proc array
-        CompareType sum = 0;
-        for(int idxProc = 0 ; idxProc < nbProcs ;++idxProc){
-            sum += result[idxProc] / nbProcs;
-        }
-        return sum ;
-    }
-
-    /** change the group and communicator */
-    static void MpiChangeGroup(MPI_Group& currentGroup, MPI_Comm& currentComm, const int from , const int to){
-        int procsIdArray[to - from + 1];
-        for(int idxProc = from ;idxProc <= to ; ++idxProc){
-            procsIdArray[idxProc - from] = idxProc;
-        }
-
-        MPI_Group previousGroup = currentGroup;
-        mpiassert( MPI_Group_incl(previousGroup, to - from + 1 , procsIdArray, &currentGroup),  __LINE__ );
-
-        MPI_Comm previousComm = currentComm;
-        mpiassert( MPI_Comm_create(previousComm, currentGroup, &currentComm),  __LINE__ );
-
-        MPI_Comm_free(&previousComm);
-        MPI_Group_free(&previousGroup);
-    }
-
     ////////////////////////////////////////////////////////////
     // Quick sort
     ////////////////////////////////////////////////////////////
 
-    /* use in the sequential qs */
+    /* Use in the sequential qs */
     static IndexType QsPartition(SortType array[], IndexType left, IndexType right){
         const IndexType part = right;
         Swap(array[part],array[(right + left ) / 2]);
@@ -153,7 +69,7 @@ class FQuickSort {
         return left;
     }
 
-    /* a local iteration of qs */
+    /* A local iteration of qs */
     static void QsLocal(SortType array[], const CompareType& pivot,
                IndexType myLeft, IndexType myRight,
                IndexType& prefix, IndexType& sufix){
@@ -179,7 +95,7 @@ class FQuickSort {
         sufix = myRight - myLeft - prefix + 1;
     }
 
-    /* a sequential qs */
+    /* The sequential qs */
     static void QsSequentialStep(SortType array[], const IndexType left, const IndexType right){
         if(left < right){
             const IndexType part = QsPartition(array, left, right);
@@ -206,7 +122,7 @@ class FQuickSort {
         }
     }
 
-    /* the openmp qs */
+    /* The openmp qs */
     static void QsOmpNoTask(SortType array[], const IndexType size){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
         struct Fix{
@@ -230,8 +146,8 @@ class FQuickSort {
         {
             const int myThreadId = omp_get_thread_num();
 
-            IndexType myLeft = getLeft(size, myThreadId, omp_get_num_threads());
-            IndexType myRight = getRight(size, myThreadId, omp_get_num_threads()) - 1;
+            IndexType myLeft = FMpi::GetLeft(size, myThreadId, omp_get_num_threads());
+            IndexType myRight = FMpi::GetRight(size, myThreadId, omp_get_num_threads()) - 1;
 
             IndexType startIndex = 0;
             IndexType endIndex = size - 1;
@@ -285,7 +201,7 @@ class FQuickSort {
                 barriers[firstProc].wait();
 
                 // find my next QsLocal part
-                int splitProc = getProc(sufoffset - startIndex, nbElements, lastProc - firstProc + 1) + firstProc;
+                int splitProc = FMpi::GetProc(sufoffset - startIndex, nbElements, lastProc - firstProc + 1) + firstProc;
                 if(splitProc == lastProc){
                     --splitProc;
                 }
@@ -299,8 +215,8 @@ class FQuickSort {
                     firstProc = splitProc + 1;
                 }
 
-                myLeft = getLeft(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex;
-                myRight = getRight(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex - 1;
+                myLeft = FMpi::GetLeft(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex;
+                myRight = FMpi::GetRight(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex - 1;
             }
 
             QsSequentialStep(array,myLeft,myRight);
@@ -331,7 +247,7 @@ public:
     }
 
     /* the mpi qs */
-    static void QsMpi(const SortType originalArray[], IndexType size, SortType* & outputArray, IndexType& outputSize, MPI_Comm originalComm = MPI_COMM_WORLD){
+    static void QsMpi(const SortType originalArray[], IndexType size, SortType* & outputArray, IndexType& outputSize, const FMpi::FComm& originalComm){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
         // We need a structure see the algorithm detail to know more
         struct Fix{
@@ -345,27 +261,22 @@ public:
         outputSize = size;
 
         // alloc outputArray to store pre/sufixe, maximum needed is nb procs[comm world] + 1
-        Fix fixes[MpiGetNbProcs(MPI_COMM_WORLD) + 1];
-        Fix fixesSum[MpiGetNbProcs(MPI_COMM_WORLD) + 1];
-        memset(fixes,0,sizeof(Fix) * MpiGetNbProcs(MPI_COMM_WORLD));
-        memset(fixesSum,0,sizeof(Fix) * (MpiGetNbProcs(MPI_COMM_WORLD) + 1) );
+        Fix fixes[originalComm.processCount() + 1];
+        Fix fixesSum[originalComm.processCount() + 1];
+        memset(fixes,0,sizeof(Fix) * originalComm.processCount());
+        memset(fixesSum,0,sizeof(Fix) * (originalComm.processCount() + 1) );
 
         // receiving buffer
         IndexType bufferSize = 0;
         SortType* buffer = 0;
 
-        // Create the first group
-        MPI_Group currentGroup;
         // Create the first com
-        MPI_Comm currentComm;
-
-        mpiassert( MPI_Comm_dup(originalComm, &currentComm),  __LINE__ );
-        mpiassert( MPI_Comm_group(currentComm, &currentGroup),  __LINE__ );
+        FMpi::FComm currentComm(originalComm.getComm());
 
         // While I am not working alone on my own data
-        while( MpiGetNbProcs(currentComm) != 1 ){
-            const int currentRank = MpiGetRank(currentComm);
-            const int currentNbProcs = MpiGetNbProcs(currentComm);
+        while( currentComm.processCount() != 1 ){
+            const int currentRank = currentComm.processId();
+            const int currentNbProcs = currentComm.processCount();
 
             MPI_Request requests[currentNbProcs * 2];
             int iterRequest = 0;
@@ -375,12 +286,12 @@ public:
             /////////////////////////////////////////////////
 
             // sort QsLocal part of the outputArray
-            const CompareType pivot = MpiGetPivot(outputArray[size/2], currentComm, currentNbProcs);
+            const CompareType pivot = currentComm.reduceAverageAll( CompareType(outputArray[size/2]) );
             Fix myFix;
             QsLocal(outputArray, pivot, 0, size - 1, myFix.pre, myFix.suf);
 
             // exchange fixes
-            mpiassert( MPI_Allgather( &myFix, sizeof(Fix), MPI_BYTE, fixes, sizeof(Fix), MPI_BYTE, currentComm),  __LINE__ );
+            FMpi::Assert( MPI_Allgather( &myFix, sizeof(Fix), MPI_BYTE, fixes, sizeof(Fix), MPI_BYTE, currentComm.getComm()),  __LINE__ );
 
             // each procs compute the summation
             fixesSum[0].pre = 0;
@@ -391,7 +302,7 @@ public:
             }
 
             // then I need to know which procs will be in the middle
-            int splitProc = getProc(fixesSum[currentNbProcs].pre - 1, fixesSum[currentNbProcs].pre + fixesSum[currentNbProcs].suf, currentNbProcs);
+            int splitProc = FMpi::GetProc(fixesSum[currentNbProcs].pre - 1, fixesSum[currentNbProcs].pre + fixesSum[currentNbProcs].suf, currentNbProcs);
             if(splitProc == currentNbProcs - 1){
                 --splitProc;
             }
@@ -406,19 +317,19 @@ public:
                 const int firstProcInSuf = splitProc + 1;
                 const IndexType elementsInSuf = fixesSum[currentNbProcs].suf;
 
-                const int firstProcToSend = getProc(fixesSum[currentRank].suf, elementsInSuf, procsInSuf) + firstProcInSuf;
-                const int lastProcToSend = getProc(fixesSum[currentRank + 1].suf - 1, elementsInSuf, procsInSuf) + firstProcInSuf;
+                const int firstProcToSend = FMpi::GetProc(fixesSum[currentRank].suf, elementsInSuf, procsInSuf) + firstProcInSuf;
+                const int lastProcToSend = FMpi::GetProc(fixesSum[currentRank + 1].suf - 1, elementsInSuf, procsInSuf) + firstProcInSuf;
 
                 IndexType sent = 0;
                 for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
-                    const IndexType thisProcRight = getRight(elementsInSuf, idxProc - firstProcInSuf, procsInSuf);
+                    const IndexType thisProcRight = FMpi::GetRight(elementsInSuf, idxProc - firstProcInSuf, procsInSuf);
                     IndexType sendToProc = thisProcRight - fixesSum[currentRank].suf - sent;
 
                     if(sendToProc + sent > fixes[currentRank].suf){
                         sendToProc = fixes[currentRank].suf - sent;
                     }
                     if( sendToProc ){
-                        mpiassert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        FMpi::Assert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
                     }
                     sent += sendToProc;
                 }
@@ -429,19 +340,19 @@ public:
                 const int procsInPre = splitProc + 1;
                 const IndexType elementsInPre = fixesSum[currentNbProcs].pre;
 
-                const int firstProcToSend = getProc(fixesSum[currentRank].pre, elementsInPre, procsInPre);
-                const int lastProcToSend = getProc(fixesSum[currentRank + 1].pre - 1, elementsInPre, procsInPre);
+                const int firstProcToSend = FMpi::GetProc(fixesSum[currentRank].pre, elementsInPre, procsInPre);
+                const int lastProcToSend = FMpi::GetProc(fixesSum[currentRank + 1].pre - 1, elementsInPre, procsInPre);
 
                 IndexType sent = 0;
                 for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
-                    const IndexType thisProcRight = getRight(elementsInPre, idxProc, procsInPre);
+                    const IndexType thisProcRight = FMpi::GetRight(elementsInPre, idxProc, procsInPre);
                     IndexType sendToProc = thisProcRight - fixesSum[currentRank].pre - sent;
 
                     if(sendToProc + sent > fixes[currentRank].pre){
                         sendToProc = fixes[currentRank].pre - sent;
                     }
                     if(sendToProc){
-                        mpiassert( MPI_Isend(&outputArray[sent], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        FMpi::Assert( MPI_Isend(&outputArray[sent], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
                     }
                     sent += sendToProc;
                 }
@@ -456,8 +367,8 @@ public:
                 const int procsInPre = splitProc + 1;
                 const IndexType elementsInPre = fixesSum[currentNbProcs].pre;
 
-                IndexType myLeft = getLeft(elementsInPre, currentRank, procsInPre);
-                IndexType myRightLimit = getRight(elementsInPre, currentRank, procsInPre);
+                IndexType myLeft = FMpi::GetLeft(elementsInPre, currentRank, procsInPre);
+                IndexType myRightLimit = FMpi::GetRight(elementsInPre, currentRank, procsInPre);
 
                 size = myRightLimit - myLeft;
                 if(bufferSize < size){
@@ -474,18 +385,18 @@ public:
                 IndexType indexArray = 0;
 
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const IndexType firstIndex = Max(myLeft , fixesSum[idxProc].pre );
-                    const IndexType endIndex = Min(fixesSum[idxProc + 1].pre,  myRightLimit);
+                    const IndexType firstIndex = FMath::Max(myLeft , fixesSum[idxProc].pre );
+                    const IndexType endIndex = FMath::Min(fixesSum[idxProc + 1].pre,  myRightLimit);
                     if( (endIndex - firstIndex) ){
-                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        FMpi::Assert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
                     }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
                 // Proceed all send/receive
-                mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
+                FMpi::Assert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
-                MpiChangeGroup(currentGroup, currentComm, 0, splitProc);
+                currentComm.groupReduce( 0, splitProc);
             }
             else{
                 // I am in L-Part (larger than pivot)
@@ -493,8 +404,8 @@ public:
                 const IndexType elementsInSuf = fixesSum[currentNbProcs].suf;
 
                 const int rankInL = currentRank - splitProc - 1;
-                IndexType myLeft = getLeft(elementsInSuf, rankInL, procsInSuf);
-                IndexType myRightLimit = getRight(elementsInSuf, rankInL, procsInSuf);
+                IndexType myLeft = FMpi::GetLeft(elementsInSuf, rankInL, procsInSuf);
+                IndexType myRightLimit = FMpi::GetRight(elementsInSuf, rankInL, procsInSuf);
 
                 size = myRightLimit - myLeft;
                 if(bufferSize < size){
@@ -511,18 +422,18 @@ public:
                 IndexType indexArray = 0;
 
                 while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const IndexType firstIndex = Max(myLeft , fixesSum[idxProc].suf );
-                    const IndexType endIndex = Min(fixesSum[idxProc + 1].suf,  myRightLimit);
+                    const IndexType firstIndex = FMath::Max(myLeft , fixesSum[idxProc].suf );
+                    const IndexType endIndex = FMath::Min(fixesSum[idxProc + 1].suf,  myRightLimit);
                     if( (endIndex - firstIndex) ){
-                        mpiassert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm, &requests[iterRequest++]),  __LINE__ );
+                        FMpi::Assert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
                     }
                     indexArray += endIndex - firstIndex;
                     ++idxProc;
                 }
                 // Proceed all send/receive
-                mpiassert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
+                FMpi::Assert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
-                MpiChangeGroup(currentGroup, currentComm, splitProc + 1, currentNbProcs - 1);
+                currentComm.groupReduce( splitProc + 1, currentNbProcs - 1);
             }
 
 
@@ -543,8 +454,6 @@ public:
 
         // Clean
         delete[] buffer;
-        MPI_Comm_free(&currentComm);
-        MPI_Group_free(&currentGroup);
 
         // Normal Quick sort
         QsOmp(outputArray, size);

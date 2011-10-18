@@ -10,6 +10,13 @@
 #include "FMpi.hpp"
 #include "FQuickSort.hpp"
 
+
+/** This class is a parallel bitonic sort
+  * it is based on the paper :
+  * Library Support for Parallel Sorting in Scientific Computations
+  * Holger Dachsel1 , Michael Hofmann2, , and Gudula R ̈nger2
+  */
+template <class SortType, class CompareType, class IndexType>
 class FBitonicSort {
 private:
 
@@ -17,22 +24,15 @@ private:
     // Bitonic parallel sort !
     ////////////////////////////////////////////////////////////////
 
-    // Mpi flag
-    static const int FlagMin = 5;
-    static const int FlagMax = 6;
-    static const int FlagMinMess = 4;
-    static const int FlagMaxMess = 3;
-
     // This function exchange data with the other rank,
     // its send the max value and receive min value
-    template <class SortType, class CompareType, class IndexType>
-    static void sendMaxAndGetMin(SortType array[], const IndexType size, const int otherRank){
+    static void SendMaxAndGetMin(SortType array[], const IndexType size, const int otherRank){
         IndexType left  = -1;
         IndexType right = size - 1;
         IndexType pivot = left + (right - left + 1)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
-        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
         while( pivot != left && pivot != right  && array[pivot] != otherValue) {
 
@@ -45,19 +45,19 @@ private:
             pivot = left + (right - left + 1)/2;
             tempCompareValue = CompareType(array[pivot]);
 
-            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
         }
 
         if( otherValue <= array[pivot] ){
             MPI_Sendrecv_replace(&array[pivot], int((size - pivot) * sizeof(SortType)) , MPI_BYTE,
-                                   otherRank, FlagMinMess, otherRank, FlagMaxMess,
+                                   otherRank, FMpi::TagBitonicMinMess, otherRank, FMpi::TagBitonicMaxMess,
                                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         }
         else if( array[pivot] < otherValue){
             if(pivot != size - 1){
                 MPI_Sendrecv_replace(&array[pivot + 1], int((size - pivot - 1) * sizeof(SortType)) , MPI_BYTE,
-                                       otherRank, FlagMinMess, otherRank, FlagMaxMess,
+                                       otherRank, FMpi::TagBitonicMinMess, otherRank, FMpi::TagBitonicMaxMess,
                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
         }
@@ -66,14 +66,13 @@ private:
 
     // This function exchange data with the other rank,
     // its send the min value and receive max value
-    template <class SortType, class CompareType, class IndexType>
-    static void sendMinAndGetMax(SortType array[], const IndexType size, const int otherRank){
+    static void SendMinAndGetMax(SortType array[], const IndexType size, const int otherRank){
         IndexType left  = 0;
         IndexType right = size ;
         IndexType pivot = left + (right - left)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
-        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
         while(  pivot != left  && array[pivot] != otherValue) {
 
@@ -85,19 +84,19 @@ private:
             }
             pivot = left + (right - left)/2;
             tempCompareValue = CompareType(array[pivot]);
-            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FlagMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
         }
 
 
         if( array[pivot] <= otherValue ){
             MPI_Sendrecv_replace(&array[0], int((pivot + 1) * sizeof(SortType)) , MPI_BYTE,
-                                   otherRank, FlagMaxMess, otherRank, FlagMinMess,
+                                   otherRank, FMpi::TagBitonicMaxMess, otherRank, FMpi::TagBitonicMinMess,
                                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
         else if( otherValue < array[pivot]){
             if(pivot != 0){
                 MPI_Sendrecv_replace(&array[0], int((pivot) * sizeof(SortType)) , MPI_BYTE,
-                                       otherRank, FlagMaxMess, otherRank, FlagMinMess,
+                                       otherRank, FMpi::TagBitonicMaxMess, otherRank, FMpi::TagBitonicMinMess,
                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
         }
@@ -127,9 +126,10 @@ public:
         endfor
     endfor
       */
-    template <class SortType, class CompareType, class IndexType>
-    static void sort(SortType array[], const IndexType size, const int np, const int rank){
+    static void Sort(SortType array[], const IndexType size, const FMpi::FComm& comm){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Bitonic" , __FILE__ , __LINE__) );
+        const int np = comm.processCount();
+        const int rank = comm.processId();
 
         FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
 
@@ -146,27 +146,16 @@ public:
                 const int otherRank = rank ^ (1 << otherBit);
 
                 if( diBit != myOtherBit ){
-                    sendMinAndGetMax<SortType,CompareType>(array, size, otherRank);
+                    SendMinAndGetMax(array, size, otherRank);
                 }
                 else{
-                    sendMaxAndGetMin<SortType,CompareType>(array, size, otherRank);
+                    SendMaxAndGetMin(array, size, otherRank);
                 }
                 // A merge sort is possible since the array is composed
                 // by two part already sorted, but we want to do this in space
                 FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
             }
         }
-    }
-
-    template <class SortType, class CompareType, class IndexType>
-    static void sort(SortType array[], const IndexType size){
-        int rank = 0;
-        int nprocs = 0;
-
-        MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-        sort<SortType, CompareType>(array, size, nprocs, rank);
     }
 };
 

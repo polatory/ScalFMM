@@ -54,112 +54,115 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling hasNotFinished()
     */
-    FMpiFmaLoader(const char* const filename, FMpi& app)
+    FMpiFmaLoader(const char* const filename, const FMpi::FComm& comm, const bool useMpiIO = false)
             : boxWidth(0), totalNbParticles(0), nbParticles(0), isOpenFlag(false), particles(0), idxParticles(0) {
-        /*char nonConstFilename[512];
-        strcpy(nonConstFilename,filename);
-        MPI_File file;
-        if(MPI_File_open(MPI::COMM_WORLD, nonConstFilename, MPI::MODE_RDONLY, MPI::INFO_NULL, &file) == MPI_SUCCESS){
-            int sizeOfElement(0);
-            FReal xyzBoxWidth[4];
+        if( useMpiIO ){
+            char nonConstFilename[512];
+            strcpy(nonConstFilename,filename);
+            MPI_File file;
+            if(MPI_File_open(MPI::COMM_WORLD, nonConstFilename, MPI::MODE_RDONLY, MPI::INFO_NULL, &file) == MPI_SUCCESS){
+                int sizeOfElement(0);
+                FReal xyzBoxWidth[4];
 
-            MPI_Status status;
-            if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
-                && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
-                && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
+                MPI_Status status;
+                if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
+                    && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
+                    && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
 
-                FDEBUG(if(sizeOfElement != sizeof(FReal)){)
+                    FDEBUG(if(sizeOfElement != sizeof(FReal)){)
+                        FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                    FDEBUG(})
+
+                    this->boxWidth = xyzBoxWidth[3];
+                    this->centerOfBox.setPosition(xyzBoxWidth[0],xyzBoxWidth[1],xyzBoxWidth[2]);
+                    this->boxWidth *= 2;
+                    this->isOpenFlag = true;
+
+                    // load my particles
+                    MPI_Offset headDataOffSet(0);
+                    MPI_File_get_position(file, &headDataOffSet);
+
+                    MPI_Offset filesize(0);
+                    MPI_File_get_size(file, &filesize); // in bytes
+                    filesize = (filesize - headDataOffSet) / sizeof(FReal);
+                    if(filesize/4 != this->totalNbParticles){
+                        printf("Error fileSize %lld, nbPart %lld\n",filesize/4, this->totalNbParticles);
+                    }
+                    // in number of floats
+                    const FSize startPart = comm.getLeft(this->totalNbParticles);
+                    const FSize endPart   = comm.getRight(this->totalNbParticles);
+                    nbParticles = (endPart - startPart);
+                    const FSize bufsize = nbParticles * 4;
+                    // local number to read
+                    particles = new FReal[bufsize];
+
+                    if( sizeof(FReal) == sizeof(float) ){
+                        MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_FLOAT, &status);
+                    }
+                    else{
+                        MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_DOUBLE, &status);
+                    }
+
+
+                    // check if needed
+                    int count(0);
+                    MPI_Get_count(&status, MPI_INT, &count);
+                    FDEBUG(if(count  / 4 != this->nbParticles){)
+                        FDEBUG( FDebug::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
+                    FDEBUG(})
+                }
+                else{
+                    this->totalNbParticles = 0;
+                }
+                MPI_File_close(&file);
+            }
+        }
+        else {
+            FILE* file(fopen(filename, "rb"));
+            int removeWarning(0);
+            // test if open
+            if(file != NULL) {
+                int sizeOfElement(0);
+                removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
+                FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
                     FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                        printf("%d sizeofelement\n",sizeOfElement);
                 FDEBUG(})
+                removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
 
-                this->boxWidth = xyzBoxWidth[3];
-                this->centerOfBox.setPosition(xyzBoxWidth[0],xyzBoxWidth[1],xyzBoxWidth[2]);
+                removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
                 this->boxWidth *= 2;
+
+                FReal x,y,z;
+                removeWarning += fread(&x, sizeof(FReal), 1, file);
+                removeWarning += fread(&y, sizeof(FReal), 1, file);
+                removeWarning += fread(&z, sizeof(FReal), 1, file);
+                this->centerOfBox.setPosition(x,y,z);
+
                 this->isOpenFlag = true;
 
-                // load my particles
-                MPI_Offset headDataOffSet(0);
-                MPI_File_get_position(file, &headDataOffSet);
+                const long int headDataOffSet = ftell(file);
+                fseek(file, 0L, SEEK_END);
+                const long int filesize = (ftell(file) - headDataOffSet) / sizeof(FReal);
 
-                MPI_Offset filesize(0);
-                MPI_File_get_size(file, &filesize); // in bytes
-                filesize = (filesize - headDataOffSet) / sizeof(FReal);
                 if(filesize/4 != this->totalNbParticles){
-                    printf("Error fileSize %lld, nbPart %lld\n",filesize/4, this->totalNbParticles);
+                    printf("Error fileSize %ld, nbPart %lld\n", filesize/4, this->totalNbParticles);
                 }
+
                 // in number of floats
-                const FSize startPart = app.getLeft(this->totalNbParticles);
-                const FSize endPart   = app.getRight(this->totalNbParticles);
+                const FSize startPart = comm.getLeft(this->totalNbParticles);
+                const FSize endPart   = comm.getRight(this->totalNbParticles);
                 nbParticles = (endPart - startPart);
                 const FSize bufsize = nbParticles * 4;
                 // local number to read
                 particles = new FReal[bufsize];
 
-                if( sizeof(FReal) == sizeof(float) ){
-                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_FLOAT, &status);
-                }
-                else{
-                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_DOUBLE, &status);
-                }
+                fseek(file, long(headDataOffSet + startPart * 4 * sizeof(FReal)), SEEK_SET);
 
+                removeWarning += fread(particles, sizeof(FReal), int(bufsize), file);
 
-                // check if needed
-                int count(0);
-                MPI_Get_count(&status, MPI_INT, &count);
-                FDEBUG(if(count  / 4 != this->nbParticles){)
-                    FDEBUG( FDebug::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
-                FDEBUG(})
+                fclose(file);
             }
-            else{
-                this->totalNbParticles = 0;
-            }
-            MPI_File_close(&file);
-        }*/
-
-        FILE* file(fopen(filename, "rb"));
-        int removeWarning(0);
-        // test if open
-        if(file != NULL) {
-            int sizeOfElement(0);
-            removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
-            FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
-                FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
-                    printf("%d sizeofelement\n",sizeOfElement);
-            FDEBUG(})
-            removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
-
-            removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
-            this->boxWidth *= 2;
-
-            FReal x,y,z;
-            removeWarning += fread(&x, sizeof(FReal), 1, file);
-            removeWarning += fread(&y, sizeof(FReal), 1, file);
-            removeWarning += fread(&z, sizeof(FReal), 1, file);
-            this->centerOfBox.setPosition(x,y,z);
-
-            this->isOpenFlag = true;
-
-            const long int headDataOffSet = ftell(file);
-            fseek(file, 0L, SEEK_END);
-            const long int filesize = (ftell(file) - headDataOffSet) / sizeof(FReal);
-
-            if(filesize/4 != this->totalNbParticles){
-                printf("Error fileSize %ld, nbPart %lld\n", filesize/4, this->totalNbParticles);
-            }
-
-            // in number of floats
-            const FSize startPart = app.getLeft(this->totalNbParticles);
-            const FSize endPart   = app.getRight(this->totalNbParticles);
-            nbParticles = (endPart - startPart);
-            const FSize bufsize = nbParticles * 4;
-            // local number to read
-            particles = new FReal[bufsize];
-
-            fseek(file, long(headDataOffSet + startPart * 4 * sizeof(FReal)), SEEK_SET);
-
-            removeWarning += fread(particles, sizeof(FReal), int(bufsize), file);
-
-            fclose(file);
         }
     }
 

@@ -48,7 +48,7 @@
 // Check if tree is built correctly
 template<class OctreeClass>
 void ValidateTree(OctreeClass& realTree,
-                        OctreeClass& treeValide, FMpi& app){
+                        OctreeClass& treeValide, const FMpi::FComm& comm){
     FSize totalNbLeafs = 0;
     {
 
@@ -59,10 +59,10 @@ void ValidateTree(OctreeClass& realTree,
         } while(octreeIterator.moveRight());
     }
 
-    const FSize myLeftLeaf = app.getLeft(totalNbLeafs);
-    const FSize myRightLeaf = app.getRight(totalNbLeafs);
+    const FSize myLeftLeaf = comm.getLeft(totalNbLeafs);
+    const FSize myRightLeaf = comm.getRight(totalNbLeafs);
 
-    //printf("%d should go from %d to %d leaf (on %d total leafs)\n", app.processId(), myLeftLeaf, myRightLeaf, totalNbLeafs);
+    //printf("%d should go from %d to %d leaf (on %d total leafs)\n", comm.processId(), myLeftLeaf, myRightLeaf, totalNbLeafs);
 
     typename OctreeClass::Iterator octreeIteratorValide(&treeValide);
     octreeIteratorValide.gotoBottomLeft();
@@ -335,7 +335,7 @@ int main(int argc, char ** argv){
         std::cout << "Opening : " << filename << "\n";
     }
 
-    FMpiFmaLoader<ParticleClass> loader(filename,app);
+    FMpiFmaLoader<ParticleClass> loader(filename,app.global());
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -344,27 +344,14 @@ int main(int argc, char ** argv){
     // The real tree to work on
     OctreeClass realTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
-    if( app.processCount() != 1){
+    if( app.global().processCount() != 1){
         //////////////////////////////////////////////////////////////////////////////////
-        // We sort our particles
+        // Build tree from mpi loader
         //////////////////////////////////////////////////////////////////////////////////
-        std::cout << "Create intervals ..." << std::endl;
+        std::cout << "Build Tree ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ParticleClass> builder;
-
-        builder.splitAndSortFile(loader, NbLevels);
-
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-        //////////////////////////////////////////////////////////////////////////////////
-        // Now we can build the real tree
-        //////////////////////////////////////////////////////////////////////////////////
-        std::cout << "Create real tree ..." << std::endl;
-        counter.tic();
-
-        builder.intervalsToTree(realTree);
+        FMpiTreeBuilder<ParticleClass>::LoaderToTree(app.global(), loader, realTree);
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -372,10 +359,9 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }    
     else{
-        FFmaBinLoader<ParticleClass> loaderSeq(filename);
         ParticleClass partToInsert;
-        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-            loaderSeq.fillParticle(partToInsert);
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(partToInsert);
             realTree.insert(partToInsert);
         }
     }
@@ -400,7 +386,7 @@ int main(int argc, char ** argv){
     std::cout << "Validate tree ..." << std::endl;
     counter.tic();
 
-    ValidateTree(realTree, treeValide, app);
+    ValidateTree(realTree, treeValide, app.global());
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -412,7 +398,7 @@ int main(int argc, char ** argv){
 
     KernelClass kernels;
 
-    FmmClassProc algo(app,&realTree,&kernels);
+    FmmClassProc algo(app.global(),&realTree,&kernels);
     algo.execute();
 
     counter.tac();

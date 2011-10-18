@@ -80,12 +80,12 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProc(FMpi& inApp, OctreeClass* const inTree, KernelClass* const inKernels)
+    FFmmAlgorithmThreadProc(const FMpi::FComm& comm, OctreeClass* const inTree, KernelClass* const inKernels)
             : tree(inTree) , kernels(0), numberOfLeafs(0),
-            MaxThreads(omp_get_max_threads()), nbProcess(inApp.processCount()), idProcess(inApp.processId()),
-            OctreeHeight(tree->getHeight()),intervals(new Interval[inApp.processCount()]),
-            realIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]),
-            workingIntervalsPerLevel(new Interval[inApp.processCount() * tree->getHeight()]){
+            MaxThreads(omp_get_max_threads()), nbProcess(comm.processCount()), idProcess(comm.processId()),
+            OctreeHeight(tree->getHeight()),intervals(new Interval[comm.processCount()]),
+            realIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]),
+            workingIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]){
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
