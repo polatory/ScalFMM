@@ -45,7 +45,7 @@ public:
     }
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208], const int size, const int ) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189], const int size, const int ) {
 
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < size ; ++idx){

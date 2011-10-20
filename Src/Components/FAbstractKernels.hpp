@@ -46,7 +46,7 @@ public:
         * @param size the number of neighbors
         * @param inLevel the current level of the computation
         */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[208],
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
                      const int size, const int inLevel) = 0;
 
     /**

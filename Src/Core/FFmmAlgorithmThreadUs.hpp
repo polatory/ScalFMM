@@ -207,7 +207,7 @@ public:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    CellClass* neighbors[208];
+                    CellClass* neighbors[189];
 
                     #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){

@@ -203,7 +203,7 @@ int main(int argc, char ** argv){
                         if(child[idxChild]) ++nbChildAtLevel[idxArray];
                     }
 
-                    const FBasicCell* neighbors[208];
+                    const FBasicCell* neighbors[189];
 
                     M2LCalculusAtLevel[idxArray] += tree.getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
 

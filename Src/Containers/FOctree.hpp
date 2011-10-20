@@ -697,7 +697,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-        int getDistantNeighbors(const CellClass* inNeighbors[208],
+        int getDistantNeighbors(const CellClass* inNeighbors[189],
                                          const FTreeCoordinate& workingCell,
                                          const int inLevel) const{
 

@@ -149,7 +149,7 @@ public:
 
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-            const CellClass* neighbors[208];
+            const CellClass* neighbors[189];
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){

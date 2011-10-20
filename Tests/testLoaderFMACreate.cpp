@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files in the FMA format
 // g++ testLoaderFMACreate.cpp -o testLoaderFMACreate.exe
@@ -24,17 +25,19 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = 50000;
+    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(200000));
+
     const FReal FRandMax = FReal(RAND_MAX);
     const FReal f2 = 2;
 
-    // Center of the box
-    const FReal XCenter = 0.5;
-    const FReal YCenter = 0.5;
-    const FReal ZCenter = 0.5;
-
     // Box width
-    const FReal BoxWidth = 1.0/2;
+    const FReal BoxWidth = FParameters::getValue(argc,argv,"-width", FReal(1.0/2.0));
+
+    // Center of the box
+    const FReal XCenter = BoxWidth;
+    const FReal YCenter = BoxWidth;
+    const FReal ZCenter = BoxWidth;
+
     // Output file please let .temp extension
     const char * const defaultFilename = "testLoaderFMA.fma";
 

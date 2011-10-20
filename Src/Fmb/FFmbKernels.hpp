@@ -16,7 +16,7 @@
 
 
 // P is a input parameter
-static const int FMB_Info_P = 2;
+static const int FMB_Info_P = 12;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -835,7 +835,7 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[208],
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
              const int size, const int inLevel) {
 
 

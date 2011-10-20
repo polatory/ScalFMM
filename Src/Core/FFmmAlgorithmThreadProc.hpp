@@ -466,7 +466,7 @@ public:
 
                     // Which cell potentialy needs other data and in the same time
                     // are potentialy needed by other
-                    MortonIndex neighborsIndexes[208];
+                    MortonIndex neighborsIndexes[189];
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // Find the M2L neigbors of a cell
                         const int counter = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,neighborsIndexes);
@@ -607,7 +607,7 @@ public:
                     #pragma omp parallel
                     {
                         KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                        const CellClass* neighbors[208];
+                        const CellClass* neighbors[189];
 
                         #pragma omp for  schedule(dynamic) nowait
                         for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
@@ -671,9 +671,9 @@ public:
                     #pragma omp parallel
                     {
                         KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                        MortonIndex neighborsIndex[208];
-                        const CellClass* neighbors[208];
-                        CellClass neighborsData[208];
+                        MortonIndex neighborsIndex[189];
+                        const CellClass* neighbors[189];
+                        CellClass neighborsData[189];
 
                         #pragma omp for  schedule(dynamic) nowait
                         for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
@@ -1210,7 +1210,7 @@ public:
         return idxNeig;
     }
 
-    int getDistantNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[208]) const{
+    int getDistantNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189]) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
