@@ -6,26 +6,17 @@
 #include <stdlib.h>
 
 #include "../Src/Utils/FTic.hpp"
-
-#include "../Src/Containers/FOctree.hpp"
 #include "../Src/Utils/FParameters.hpp"
-#include "../Src/Containers/FVector.hpp"
-
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extensions/FExtendForces.hpp"
-#include "../Src/Extensions/FExtendPotential.hpp"
-
-#include "../Src/Extensions/FExtendParticleType.hpp"
-#include "../Src/Extensions/FExtendCellType.hpp"
-
-#include "../Src/Components/FBasicCell.hpp"
-#include "../Src/Fmb/FExtendFmbCell.hpp"
-
-#include "../Src/Core/FFmmAlgorithmTsm.hpp"
 
 #include "../Src/Components/FTypedLeaf.hpp"
 
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FVector.hpp"
+
+#include "../Src/Core/FFmmAlgorithmTsm.hpp"
+
 #include "../Src/Fmb/FFmbKernels.hpp"
+#include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Files/FFmaTsmLoader.hpp"
 
@@ -39,25 +30,10 @@
   */
 
 
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticle}
-  */
-class FmbParticle : public FFmaParticle, public FExtendParticleType, public FExtendForces, public FExtendPotential {
-public:
-};
-
-/** Custom cell
-  *
-  */
-class FmbCell : public FBasicCell, public FExtendFmbCell, public FExtendCellType {
-public:
-};
-
-
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbParticle             ParticleClass;
-    typedef FmbCell                 CellClass;
+    typedef FmbTypedParticle        ParticleClass;
+    typedef FmbTypedCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FTypedLeaf<ParticleClass, ContainerClass >                      LeafClass;
@@ -131,7 +107,7 @@ int main(int argc, char ** argv){
         typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            FVector<FmbParticle>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            FVector<ParticleClass>::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();

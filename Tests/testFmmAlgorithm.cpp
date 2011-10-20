@@ -48,10 +48,10 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 9);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
-    const FReal FRandMax = FReal(RAND_MAX);
+    const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
+    const FReal FRandMax    = FReal(RAND_MAX);
 
     FTic counter;
 
@@ -60,7 +60,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    OctreeClass tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    OctreeClass tree(NbLevels, SizeSubLevels, 1.0, F3DPosition(0.5,0.5,0.5));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

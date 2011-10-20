@@ -9,19 +9,14 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extensions/FExtendForces.hpp"
-#include "../Src/Extensions/FExtendPotential.hpp"
-
-#include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Fmb/FExtendFmbCell.hpp"
+#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Fmb/FFmbKernels.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
-
-#include "../Src/Fmb/FFmbKernels.hpp"
 
 #include "../Src/Files/FMpiFmaLoader.hpp"
 #include "../Src/Files/FMpiTreeBuilder.hpp"
@@ -53,70 +48,36 @@
   */
 
 
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticle}
-  */
-class FmbParticle : public FFmaParticle, public FExtendForces, public FExtendPotential {
-public:
-};
 
-/** Custom cell
-  *
-  */
-class FmbCell : public FBasicCell, public FExtendFmbCell , public FAbstractSendable {
-public:
-    ///////////////////////////////////////////////////////
-    // to extend FAbstractSendable
-    ///////////////////////////////////////////////////////
-    static const int SerializedSizeUp = sizeof(FComplexe)*MultipoleSize + sizeof(FBasicCell);
-    void serializeUp(void* const buffer) const {
-        memcpy(buffer, (FBasicCell*)this, sizeof(FBasicCell));
-        memcpy((char*)(buffer) + sizeof(FBasicCell), multipole_exp, sizeof(FComplexe)*MultipoleSize );
-    }
-    void deserializeUp(const void* const buffer){
-        memcpy((FBasicCell*)this, buffer, sizeof(FBasicCell));
-        memcpy(multipole_exp, (char*)(buffer) + sizeof(FBasicCell), sizeof(FComplexe)*MultipoleSize );
+///////////////////////////////////////////////////////
+// to test equality between good and potentialy bad solution
+///////////////////////////////////////////////////////
+/** To compare data */
+bool isEqualPole(const FmbSendableCell& me, const FmbSendableCell& other, FReal*const cumul){
+    //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
+    //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
+    *cumul = 0.0;
+    for(int idx = 0; idx < FExtendFmbCell::MultipoleSize; ++idx){
+        *cumul += FMath::Abs( me.getMultipole()[idx].getImag() - other.getMultipole()[idx].getImag() );
+        *cumul += FMath::Abs( me.getMultipole()[idx].getReal() - other.getMultipole()[idx].getReal() );
     }
 
-    static const int SerializedSizeDown = sizeof(FComplexe)*MultipoleSize + sizeof(FBasicCell);
-    void serializeDown(void* const buffer) const {
-        memcpy(buffer, (FBasicCell*)this, sizeof(FBasicCell));
-        memcpy((char*)(buffer) + sizeof(FBasicCell), local_exp, sizeof(FComplexe)*MultipoleSize );
-    }
-    void deserializeDown(const void* const buffer){
-        memcpy((FBasicCell*)this, buffer, sizeof(FBasicCell));
-        memcpy(local_exp, (char*)(buffer) + sizeof(FBasicCell), sizeof(FComplexe)*MultipoleSize );
-    }
+    return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+}
 
-    ///////////////////////////////////////////////////////
-    // to test equality between good and potentialy bad solution
-    ///////////////////////////////////////////////////////
-    /** To compare data */
-    bool isEqualPole(const FmbCell& other, FReal*const cumul){
-        //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
-        //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
-        *cumul = 0.0;
-        for(int idx = 0; idx < MultipoleSize; ++idx){
-            *cumul += FMath::Abs( multipole_exp[idx].getImag() - other.multipole_exp[idx].getImag() );
-            *cumul += FMath::Abs( multipole_exp[idx].getReal() - other.multipole_exp[idx].getReal() );
-        }
-
-        return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+/** To compare data */
+bool isEqualLocal(const FmbSendableCell& me, const FmbSendableCell& other, FReal*const cumul){
+    //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
+    //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
+    *cumul = 0.0;
+    for(int idx = 0; idx < FExtendFmbCell::MultipoleSize; ++idx){
+        *cumul += FMath::Abs( me.getLocal()[idx].getImag() - other.getLocal()[idx].getImag() );
+        *cumul += FMath::Abs( me.getLocal()[idx].getReal() - other.getLocal()[idx].getReal() );
     }
 
-    /** To compare data */
-    bool isEqualLocal(const FmbCell& other, FReal*const cumul){
-        //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
-        //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
-        *cumul = 0.0;
-        for(int idx = 0; idx < MultipoleSize; ++idx){
-            *cumul += FMath::Abs( local_exp[idx].getImag() - other.local_exp[idx].getImag() );
-            *cumul += FMath::Abs( local_exp[idx].getReal() - other.local_exp[idx].getReal() );
-        }
+    return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+}
 
-        return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
-    }
-};
 
 #ifdef VALIDATE_FMM
 template<class OctreeClass, class ContainerClass>
@@ -215,7 +176,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef FmbParticle             ParticleClass;
-    typedef FmbCell                 CellClass;
+    typedef FmbSendableCell                 CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;

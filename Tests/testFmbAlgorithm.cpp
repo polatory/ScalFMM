@@ -11,23 +11,12 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extensions/FExtendForces.hpp"
-#include "../Src/Extensions/FExtendPotential.hpp"
-
-#include "../Src/Components/FBasicCell.hpp"
-#include "../Src/Fmb/FExtendFmbCell.hpp"
-
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithmThreadUs.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Components/FBasicKernels.hpp"
-
-
 #include "../Src/Fmb/FFmbKernels.hpp"
-
+#include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Files/FFmaLoader.hpp"
 
@@ -39,21 +28,6 @@
   * it also check that eachh particles is little or longer
   * related that each other
   */
-
-
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticle}
-  */
-class FmbParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
-public:
-};
-
-/** Custom cell
-  *
-  */
-class FmbCell : public FBasicCell, public FExtendFmbCell {
-public:
-};
 
 
 // Simply create particles and try the kernels

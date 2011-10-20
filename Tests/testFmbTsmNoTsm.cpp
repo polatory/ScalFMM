@@ -6,21 +6,14 @@
 #include <stdlib.h>
 
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
-#include "../Src/Utils/FParameters.hpp"
 
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extensions/FExtendForces.hpp"
-#include "../Src/Extensions/FExtendPotential.hpp"
-
-#include "../Src/Extensions/FExtendParticleType.hpp"
-#include "../Src/Extensions/FExtendCellType.hpp"
-
-
-#include "../Src/Components/FBasicCell.hpp"
 #include "../Src/Fmb/FExtendFmbCell.hpp"
+#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Fmb/FFmbKernels.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmTsm.hpp"
@@ -30,7 +23,6 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Components/FTypedLeaf.hpp"
 
-#include "../Src/Fmb/FFmbKernels.hpp"
 
 
 // With openmp : g++ testFmbTsmNoTsm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmNoTsm.exe
@@ -42,28 +34,6 @@
   * related that each other
   */
 
-
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
-  * Because we use fma loader it needs {FFmaParticle}
-  */
-class FmbParticle : public FFmaParticle, public FExtendForces, public FExtendPotential {
-public:
-};
-
-class FmbParticleTyped : public FmbParticle, public FExtendParticleType {
-public:
-};
-
-/** Custom cell
-  *
-  */
-class FmbCell : public FBasicCell, public FExtendFmbCell {
-public:
-};
-
-class FmbCellTyped : public FmbCell, public FExtendCellType {
-public:
-};
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -77,8 +47,8 @@ int main(int argc, char ** argv){
 
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-    typedef FmbParticleTyped             ParticleClassTyped;
-    typedef FmbCellTyped                 CellClassTyped;
+    typedef FmbTypedParticle             ParticleClassTyped;
+    typedef FmbTypedCell                 CellClassTyped;
     typedef FVector<ParticleClassTyped>  ContainerClassTyped;
 
     typedef FTypedLeaf<ParticleClassTyped, ContainerClassTyped >                      LeafClassTyped;
