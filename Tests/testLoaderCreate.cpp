@@ -33,7 +33,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char * const defaultFilename = "testLoader.basic.temp";
+    const char defaultFilename[] = "testLoader.basic.temp";
     const char* Output;
 
     if(argc == 1){

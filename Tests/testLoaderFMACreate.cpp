@@ -39,7 +39,7 @@ int main(int argc, char ** argv){
     const FReal ZCenter = BoxWidth;
 
     // Output file please let .temp extension
-    const char * const defaultFilename = "testLoaderFMA.fma";
+    const char defaultFilename[] = "testLoaderFMA.fma";
 
     const char* Output;
 

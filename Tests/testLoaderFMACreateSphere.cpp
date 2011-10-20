@@ -37,7 +37,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char * const defaultFilename = "Sphere.fma";
+    const char defaultFilename[] = "Sphere.fma";
 
     const char* Output;
 
