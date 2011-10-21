@@ -362,6 +362,9 @@ public:
         return (leaf ? leaf->getTargets() : 0);
     }
 
+    LeafClass* getLeaf(const int index){
+        return this->leafs[index];
+    }
 };
 
 

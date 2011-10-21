@@ -513,6 +513,13 @@ public:
                 return this->currentLocalLevel + this->current.tree->getSubOctreePosition();
             }
 
+            /** Get the current pointed leaf
+              * @return current leaf element
+              */
+            LeafClass* getCurrentLeaf() {
+                return this->current.leafTree->getLeaf(this->currentLocalIndex);
+            }
+
             /** To access the current particles list
               * You have to be at the leaf level to call this function!
               * @return current element list
