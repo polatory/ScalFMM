@@ -59,7 +59,6 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
         MortonIndex max;
     };
     Interval*const intervals;
-    Interval*const realIntervalsPerLevel;
     Interval*const workingIntervalsPerLevel;
 
 
@@ -73,8 +72,21 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
         }
     }
 
+    Interval& getWorkingInterval(const int level, const int proc){
+        return workingIntervalsPerLevel[OctreeHeight * proc + level];
+    }
+
 
 public:
+
+    Interval& getWorkingInterval(const int level){
+        return getWorkingInterval(level, idProcess);
+    }
+
+    bool hasWorkAtLevel(const int level){
+        return idProcess == 0 || getWorkingInterval(level, idProcess - 1).max < getWorkingInterval(level, idProcess).max;
+    }
+
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
@@ -84,7 +96,6 @@ public:
             : tree(inTree) , kernels(0), numberOfLeafs(0),
             MaxThreads(omp_get_max_threads()), nbProcess(comm.processCount()), idProcess(comm.processId()),
             OctreeHeight(tree->getHeight()),intervals(new Interval[comm.processCount()]),
-            realIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]),
             workingIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]){
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -106,7 +117,6 @@ public:
         delete [] this->kernels;
 
         delete [] intervals;
-        delete [] realIntervalsPerLevel;
         delete [] workingIntervalsPerLevel;
     }
 
@@ -122,38 +132,48 @@ public:
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
-            Interval myIntervals;
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            myIntervals.min = octreeIterator.getCurrentGlobalIndex();
-            do{
-                ++this->numberOfLeafs;
-            } while(octreeIterator.moveRight());
-            myIntervals.max = octreeIterator.getCurrentGlobalIndex();
-
+            Interval myLastInterval;
+            {
+                typename OctreeClass::Iterator octreeIterator(tree);
+                octreeIterator.gotoBottomLeft();
+                myLastInterval.min = octreeIterator.getCurrentGlobalIndex();
+                do{
+                    ++this->numberOfLeafs;
+                } while(octreeIterator.moveRight());
+                myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
+            }
             iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
             fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
             // We get the min/max indexes from each procs
-            mpiassert( MPI_Allgather( &myIntervals, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
-        }
+            mpiassert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
 
-        for(int idxLevel = 0 ; idxLevel < OctreeHeight ; ++idxLevel){
-            const int offset = idxLevel * nbProcess;
-            // Then we can compute min/max per level and per proc
-            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                realIntervalsPerLevel[offset + idxProc].max = intervals[idxProc].max >> (3 * (OctreeHeight - idxLevel - 1));
-                realIntervalsPerLevel[offset + idxProc].min = intervals[idxProc].min >> (3 * (OctreeHeight - idxLevel - 1));
+            Interval myIntervals[OctreeHeight];
+            myIntervals[OctreeHeight - 1] = myLastInterval;
+            for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
+                myIntervals[idxLevel].min = myIntervals[idxLevel+1].min >> 3;
+                myIntervals[idxLevel].max = myIntervals[idxLevel+1].max >> 3;
+            }
+            if(idProcess != 0){
+                typename OctreeClass::Iterator octreeIterator(tree);
+                octreeIterator.gotoBottomLeft();
+                octreeIterator.moveUp();
+
+                MortonIndex currentLimit = intervals[idProcess-1].max >> 3;
+
+                for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 ; --idxLevel){
+                    while(octreeIterator.getCurrentGlobalIndex() <= currentLimit){
+                        if( !octreeIterator.moveRight() ) break;
+                    }
+                    myIntervals[idxLevel].min = octreeIterator.getCurrentGlobalIndex();
+                    octreeIterator.moveUp();
+                    currentLimit >>= 3;
+                }
             }
 
-            // Finally we can decide which procs will have the responsabilty of shared
-            // cells in all levels
-            workingIntervalsPerLevel[offset + 0] = realIntervalsPerLevel[offset + 0];
-            for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc){
-                workingIntervalsPerLevel[offset + idxProc].min = FMath::Max( realIntervalsPerLevel[offset + idxProc].min,
-                                                                          realIntervalsPerLevel[offset + idxProc - 1].max + 1);
-                workingIntervalsPerLevel[offset + idxProc].max = realIntervalsPerLevel[offset + idxProc].max;
-            }
+            // We get the min/max indexes from each procs
+            mpiassert( MPI_Allgather( myIntervals, sizeof(Interval) * OctreeHeight, MPI_BYTE,
+                                      workingIntervalsPerLevel, sizeof(Interval) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
         }
 
         // run;
@@ -270,8 +290,16 @@ public:
         char recvBuffer[nbProcess * recvBufferOffset];
         CellClass recvBufferCells[8];
 
+        int firstProcThatSend = idProcess + 1;
+
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+            // No more work for me
+            if(idProcess != 0
+                    && getWorkingInterval((idxLevel+1), idProcess).max <= getWorkingInterval((idxLevel+1), idProcess - 1).max){
+                break;
+            }
+
             // copy cells to work with
             int numberOfCells = 0;
             // for each cells
@@ -283,20 +311,24 @@ public:
 
             // We may need to send something
             int iterRequests = 0;
-            bool cellsToSend = false;
+            int cellsToSend = -1;
+
+            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).min){
+                ++cellsToSend;
+            }
 
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
             FDEBUG(prepareCounter.tic());
             if(idProcess != 0
-                    && iterArray[0].getCurrentGlobalIndex() < workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
-                cellsToSend = true;
+                    && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
+
                 char state = 0;
                 int idxBuff = 1;
 
-                const CellClass* const* const child = iterArray[0].getCurrentChild();
+                const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( child[idxChild] && workingIntervalsPerLevel[(idxLevel+1) * nbProcess + idProcess].min <= child[idxChild]->getMortonIndex() ){
+                    if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
                         child[idxChild]->serializeUp(&sendBuffer[idxBuff]);
                         idxBuff += CellClass::SerializedSizeUp;
                         state |= char(0x1 << idxChild);
@@ -304,7 +336,7 @@ public:
                 }
                 sendBuffer[0] = state;
 
-                while( sendToProc && iterArray[0].getCurrentGlobalIndex() < workingIntervalsPerLevel[idxLevel * nbProcess + sendToProc].min){
+                while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , sendToProc - 1).max){
                     --sendToProc;
                 }
 
@@ -313,24 +345,32 @@ public:
 
             // We may need to receive something
             bool hasToReceive = false;
-            int firstProcThatSend = idProcess + 1;
             int endProcThatSend = firstProcThatSend;
 
             if(idProcess != nbProcess - 1){
-                while(firstProcThatSend < nbProcess &&
-                      workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].max < workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatSend].min ){
+                while(firstProcThatSend < nbProcess
+                      && getWorkingInterval((idxLevel+1), firstProcThatSend).max < getWorkingInterval((idxLevel+1), idProcess).max){
                     ++firstProcThatSend;
                 }
-                endProcThatSend = firstProcThatSend;
-                while( endProcThatSend < nbProcess &&
-                        realIntervalsPerLevel[idxLevel * nbProcess + endProcThatSend].min <= workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max){
-                    ++endProcThatSend;
-                }
-                if(firstProcThatSend != endProcThatSend){
-                    hasToReceive = true;
 
-                    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-                        MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                if(firstProcThatSend < nbProcess &&
+                      (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+
+                    endProcThatSend = firstProcThatSend;
+
+                    while( endProcThatSend < nbProcess &&
+                             (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+                        ++endProcThatSend;
+                    }
+
+
+                    if(firstProcThatSend != endProcThatSend){
+                        hasToReceive = true;
+
+                        for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
+
+                            MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                        }
                     }
                 }
             }
@@ -344,7 +384,7 @@ public:
                 const int endIndex = (hasToReceive?numberOfCells-1:numberOfCells);
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                 #pragma omp for
-                for( int idxCell = cellsToSend ; idxCell < endIndex ; ++idxCell){
+                for( int idxCell = cellsToSend + 1 ; idxCell < endIndex ; ++idxCell){
                     myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
             }
@@ -389,6 +429,9 @@ public:
                     FDEBUG(computationCounter.tic());
                     (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
                     FDEBUG(computationCounter.tac());
+
+
+                    firstProcThatSend = endProcThatSend - 1;
                 }
             }
         }
@@ -447,9 +490,17 @@ public:
                 typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    if(idProcess != 0
+                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                        avoidGotoLeftIterator.moveDown();
+                        octreeIterator = avoidGotoLeftIterator;
+
+                        continue;
+                    }
+
                     int numberOfCells = 0;
 
-                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
                         octreeIterator.moveRight();
                     }
 
@@ -457,7 +508,7 @@ public:
                     do{
                         iterArray[numberOfCells] = octreeIterator;
                         ++numberOfCells;
-                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -475,19 +526,19 @@ public:
                         bool needOther = false;
                         // Test each negibors to know which one do not belong to us
                         for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-                            if(neighborsIndexes[idxNeigh] < workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min
-                                    || workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max < neighborsIndexes[idxNeigh]){
+                            if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
+                                    || getWorkingInterval(idxLevel , idProcess).max < neighborsIndexes[idxNeigh]){
                                 int procToReceive = idProcess;
-                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < workingIntervalsPerLevel[idxLevel * nbProcess + procToReceive].min ){
+                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
                                     --procToReceive;
                                 }
-                                while( procToReceive != nbProcess -1 && workingIntervalsPerLevel[idxLevel * nbProcess + procToReceive].max < neighborsIndexes[idxNeigh]){
+                                while( procToReceive != nbProcess -1 && getWorkingInterval(idxLevel , procToReceive).max < neighborsIndexes[idxNeigh]){
                                     ++procToReceive;
                                 }
                                 // Maybe already sent to that proc?
                                 if( !alreadySent[procToReceive]
-                                    && workingIntervalsPerLevel[idxLevel * nbProcess + procToReceive].min <= neighborsIndexes[idxNeigh]
-                                    && neighborsIndexes[idxNeigh] <= workingIntervalsPerLevel[idxLevel * nbProcess + procToReceive].max){
+                                    && getWorkingInterval(idxLevel , procToReceive).min <= neighborsIndexes[idxNeigh]
+                                    && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).max){
 
                                     alreadySent[procToReceive] = true;
 
@@ -591,15 +642,24 @@ public:
                 // Now we can compute all the data
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    if(idProcess != 0
+                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+
+                        avoidGotoLeftIterator.moveDown();
+                        octreeIterator = avoidGotoLeftIterator;
+
+                        continue;
+                    }
+
                     int numberOfCells = 0;
-                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
                         octreeIterator.moveRight();
                     }
                     // for each cells
                     do{
                         iterArray[numberOfCells] = octreeIterator;
                         ++numberOfCells;
-                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -635,6 +695,15 @@ public:
                 // compute the second time
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    if(idProcess != 0
+                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+
+                        avoidGotoLeftIterator.moveDown();
+                        octreeIterator = avoidGotoLeftIterator;
+
+                        continue;
+                    }
+
                     // put the received data into a temporary tree
                     FLightOctree tempTree;
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
@@ -650,7 +719,7 @@ public:
                     int numberOfCells = 0;
                     int realCellId = 0;
 
-                    while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
                         octreeIterator.moveRight();
                     }
                     // for each cells
@@ -659,7 +728,7 @@ public:
                         if(leafsNeedOther[idxLevel]->get(realCellId++)){
                             iterArray[numberOfCells++] = octreeIterator;
                         }
-                    } while(octreeIterator.getCurrentGlobalIndex() <  workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].max && octreeIterator.moveRight());
+                    } while(octreeIterator.moveRight());
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -742,6 +811,15 @@ public:
 
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+                if(idProcess != 0
+                        && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
+
+                    avoidGotoLeftIterator.moveDown();
+                    octreeIterator = avoidGotoLeftIterator;
+
+                    continue;
+                }
+
                 // copy cells to work with
                 int numberOfCells = 0;
                 // for each cells
@@ -751,6 +829,10 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
+                int firstCellWork = -1;
+                while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).min){
+                    ++firstCellWork;
+                }
 
                 bool needToRecv = false;
                 int iterRequests = 0;
@@ -759,8 +841,9 @@ public:
 
                 // do we need to receive one or zeros cell
                 if(idProcess != 0
-                        && realIntervalsPerLevel[idxLevel * nbProcess + idProcess].min != workingIntervalsPerLevel[idxLevel * nbProcess + idProcess].min){
+                        && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
                     needToRecv = true;
+
                     MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                 }
 
@@ -768,19 +851,20 @@ public:
                 if(idProcess != nbProcess - 1){
                     int firstProcThatRecv = idProcess + 1;
                     while( firstProcThatRecv < nbProcess &&
-                            workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatRecv].max < workingIntervalsPerLevel[idxLevel * nbProcess + firstProcThatRecv].min){
+                            getWorkingInterval((idxLevel + 1) , firstProcThatRecv).max <= getWorkingInterval((idxLevel+1) , idProcess).max){
                         ++firstProcThatRecv;
                     }
 
                     int endProcThatRecv = firstProcThatRecv;
                     while( endProcThatRecv < nbProcess &&
-                            (realIntervalsPerLevel[(idxLevel+1) * nbProcess + endProcThatRecv].min >> 3) == iterArray[numberOfCells - 1].getCurrentGlobalIndex()){
+                            (getWorkingInterval((idxLevel + 1) , endProcThatRecv).min >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).max >> 3) ){
                         ++endProcThatRecv;
                     }
 
-                    if(endProcThatRecv != idProcess + 1){
+                    if(firstProcThatRecv != endProcThatRecv){
                         iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
                         for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
+
                             MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                         }
                     }
@@ -792,7 +876,7 @@ public:
                 {
                     KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                     #pragma omp for
-                    for(int idxCell = (needToRecv ? 1 : 0) ; idxCell < numberOfCells ; ++idxCell){
+                    for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
                         myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                     }
                 }
@@ -808,8 +892,8 @@ public:
                     if(needToRecv){
                         // Need to compute
                         FDEBUG(computationCounter.tic());
-                        iterArray[0].getCurrentCell()->deserializeDown(recvBuffer);
-                        kernels[0]->L2L( iterArray[0].getCurrentCell() , iterArray[0].getCurrentChild(), idxLevel);
+                        iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
+                        kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
                         FDEBUG(computationCounter.tac());
                     }
                 }

@@ -106,9 +106,10 @@ void ValidateTree(OctreeClass& realTree,
 /** This function tests the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template<class OctreeClass, class ContainerClass>
+template<class OctreeClass, class ContainerClass, class FmmClassProc>
 void ValidateFMMAlgoProc(OctreeClass* const badTree,
-                         OctreeClass* const valideTree){
+                         OctreeClass* const valideTree,
+                         FmmClassProc* const fmm){
     const int OctreeHeight = badTree->getHeight();
     {
         typename OctreeClass::Iterator octreeIterator(badTree);
@@ -117,10 +118,15 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
         typename OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
-        for(int level = OctreeHeight - 1 ; level > 0 ; --level){
+        for(int level = OctreeHeight - 1 ; level > 0 && fmm->hasWorkAtLevel(level) ; --level){
 
             while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()) {
                 octreeIteratorValide.moveRight();
+            }
+
+            while(octreeIteratorValide.getCurrentGlobalIndex() != fmm->getWorkingInterval(level).min){
+                octreeIteratorValide.moveRight();
+                octreeIterator.moveRight();
             }
 
             FSize countCheck = 0;
@@ -129,10 +135,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                     std::cout << "Error index are not equal!" << std::endl;
                 }
                 else{
-                    /*if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
+                    if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
                         std::cout << "M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
                                 << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
-                    }*/
+                    }
                     if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
                         std::cout << "L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
                                 << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
@@ -150,6 +156,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             octreeIteratorValide.gotoLeft();
         }
     }
+
     {
         FSize NbPart = 0;
         FSize NbLeafs = 0;
@@ -421,7 +428,7 @@ int main(int argc, char ** argv){
     std::cout << "Checking data ..." << std::endl;
     counter.tic();
 
-    ValidateFMMAlgoProc<OctreeClass,ContainerClass>(&realTree,&treeValide);
+    ValidateFMMAlgoProc<OctreeClass,ContainerClass, FmmClassProc>(&realTree,&treeValide,&algo);
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
