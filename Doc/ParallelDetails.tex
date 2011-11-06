@@ -83,7 +83,7 @@ We choose to use the quick sort algorithm because the distributed and the shared
 Our implementation is based on the algorithm described in \cite{itpc03}.
 The efficiency of this algorithm depends roughly of the pivot choice.
 In fact, a wrong idea of the parallel quick sort is to think that each process first sort their particles using quick sort and then use a merge sort to share their results.
-Instead, the nodes choose a pivot and progress for one quick sort iteration together.
+Instead, the nodes choose a common pivot and progress for one quick sort iteration together.
 From that point all process has an array with a left part where all values are lower than the pivot and a right part where all values are upper or equal than the pivot.
 Then, the nodes exchange data and some of them will work on the lower part and the other on the upper parts until there is one process for a part.
 At this point, the process performs a shared memory quick sort.
@@ -102,7 +102,16 @@ pivot $\leftarrow$ Sum(allFirstIndexes(:) / nbprocs)\;
 \caption{Choosing the QS pivot}
 \end{algorithm}
 \newline
-A bug was made when at the beginning we did an average by summing and dividing after. But the Morton index may be extremly high, so we need to to divide first and then sum.
+A bug was made when at the beginning, we did an average by summing all the values first and dividing after. But the Morton index may be extremly high, so we need to to divide all the value before performing the sum.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Using a Sorting Network}
+In \cite{ptttplwaefmm11}, a proposition has been made to sort the data using a sorting network.
+We implemented a such sorting algorithm but the result were not extremly efficient.
+Contrary to Quick sort, a sorting network is extremly stable and all the nodes performs similar work.
+The quick sort is pivot dependant and some nodes may work much more than other.
+But, the average case the quick sort enable higher efficiency.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,7 +270,7 @@ Each step requires pre-processing to know what are the potential communications 
 To compute the P2P a leaf need to know all its direct neighbors.
 Even if the Morton indexing maximizes the locality, the neighbors of a leaf can be on any node.
 Also, the tree used in our library is an indirection tree.
-It means that only the leaf that contains particles is created.
+It means that only the leaves that contain particles are created.
 That is the reason why when we know that a leaf needs another one on a different node, this other node may not realize this relation if this neighbor leaf do not exist on its own tree.
 At the contrary, if this neighbor leaf exists then the node wills require the first leaf to compute the P2P too.
 In our current version we are first processing each potential needs to know the communication we should need.
@@ -364,6 +373,10 @@ The algorithm can be viewed as several tasks:
    Addison Wesley, Massachusetts,
    2nd Edition,
    2003.
+\bibitem{ptttplwaefmm11}
+   I. Kabadshow, H. Dachsel,
+   \emph{Passing The Three Trillion Particle Limit With An Error-Controlled Fast Multipole Method}.
+   2011.
 \end{thebibliography}
 \end{document}
 
