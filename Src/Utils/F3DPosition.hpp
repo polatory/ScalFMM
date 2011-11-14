@@ -26,7 +26,7 @@ public:
 	}
 
         /** Constructor from values */
-	F3DPosition(const FReal inX,const FReal inY,const FReal inZ)
+        explicit F3DPosition(const FReal inX,const FReal inY,const FReal inZ)
 		: x(inX), y(inY), z(inZ){
 	}
 
@@ -40,6 +40,14 @@ public:
 	*/
         F3DPosition(const F3DPosition& other): x(other.x), y(other.y), z(other.z){
 	}
+
+        /**
+        * Assignement operator
+        * @param other the source class to copy
+        */
+        F3DPosition(const F3DPosition& other, const FReal addset)
+            : x(other.x + addset), y(other.y + addset), z(other.z + addset){
+        }
 
 	/**
 	* Copy constructor
@@ -172,13 +180,53 @@ public:
                 return *this;
         }
 
+        /**
+        * Operator F3Position minus FReal
+        * This substract inValue to all dimensions of the inPosition
+        * @param inPosition the position to compute
+        * @param inValue the value to decrease/substract position
+        * @return the resulting position
+        */
+        friend inline F3DPosition operator-(const F3DPosition& inPosition, const FReal inValue){
+            return F3DPosition(inPosition, -inValue);
+        }
+
+        /**
+        * Operator F3Position plus FReal
+        * This affect from inValue all dimensions of the inPosition
+        * @param inPosition the position to compute
+        * @param inValue the value to increase/affect position
+        * @return the resulting position
+        */
+        friend inline F3DPosition operator+(const F3DPosition& inPosition, const FReal inValue){
+            return F3DPosition(inPosition, inValue);
+        }
+
+        /**
+        * Operator F3Position minus F3Position
+        * This substract one from anther
+        * @param inPosition the position to reduce
+        * @param inOther the position to decrease/substract inPosition
+        * @return the resulting position
+        */
+        friend inline F3DPosition operator-(const F3DPosition& inPosition, const F3DPosition& inOther){
+            return F3DPosition(inPosition.x - inOther.x, inPosition.y - inOther.y, inPosition.z - inOther.z);
+        }
+
+        /**
+        * Operator F3Position plus F3Position
+        * This substract one from anther
+        * @param inPosition the position to reduce
+        * @param inOther the position to increase inPosition
+        * @return the resulting position
+        */
+        friend inline F3DPosition operator+(const F3DPosition& inPosition, const F3DPosition& inOther){
+            return F3DPosition(inPosition.x + inOther.x, inPosition.y + inOther.y, inPosition.z + inOther.z);
+        }
 };
 
 
-F3DPosition operator-(const F3DPosition& inPosition, const FReal inValue);;
-F3DPosition operator+(const F3DPosition& inPosition, const FReal inValue);;
-F3DPosition operator-(const F3DPosition& inPosition, const F3DPosition& inOther);;
-F3DPosition operator+(const F3DPosition& inPosition, const F3DPosition& inOther);
+
 
 
 #endif //F3DPOSITION_HPP
