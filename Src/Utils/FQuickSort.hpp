@@ -47,7 +47,7 @@ class FQuickSort {
     /* Use in the sequential qs */
     static IndexType QsPartition(SortType array[], IndexType left, IndexType right){
         const IndexType part = right;
-        Swap(array[part],array[(right + left ) / 2]);
+        Swap(array[part],array[((right - left ) / 2) + left]);
         --right;
 
         while(true){

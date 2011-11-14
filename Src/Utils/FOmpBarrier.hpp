@@ -42,7 +42,7 @@ public:
         if(nbThreadsArrived == nbThreads) {
             currentNbThread = 0;
             sense = !sense;
-            #pragma omp flush(sense)
+            #pragma omp flush
         }
         else {
             volatile const bool* const ptSense = &sense;
