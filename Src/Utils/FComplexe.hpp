@@ -27,7 +27,7 @@ public:
       * @param inImag the imaginary
       * @param inReal the real
       */
-    FComplexe(const FReal inImag, const FReal inReal)
+    explicit FComplexe(const FReal inImag, const FReal inReal)
         : real(inReal),imag(inImag){
     }
 
@@ -140,12 +140,11 @@ public:
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */
-FComplexe operator*=(const FComplexe& first, const FComplexe& second){
-    const FComplexe result(
+inline FComplexe operator*=(const FComplexe& first, const FComplexe& second){
+    return FComplexe(
             (first.getReal() * second.getImag()) + (first.getImag() * second.getReal()),
             (first.getReal() * second.getReal()) - (first.getImag() * second.getImag())
             );
-    return result;
 }
 
 #endif //FCOMPLEXE_HPP
