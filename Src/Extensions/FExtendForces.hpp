@@ -42,15 +42,15 @@ public:
     }
 
     /** Set Forces */
-    void setForces(const F3DPosition& inForces) {
-        this->forces = inForces;
+    void incForces(const F3DPosition& inForces) {
+        this->forces += inForces;
     }
 
     /** Set Forces with 3 FReals */
-    void setForces(const FReal inFx, const FReal inFy, const FReal inFz) {
-        this->forces.setX(inFx);
-        this->forces.setY(inFy);
-        this->forces.setZ(inFz);
+    void incForces(const FReal inFx, const FReal inFy, const FReal inFz) {
+        this->forces.incX(inFx);
+        this->forces.incY(inFy);
+        this->forces.incZ(inFz);
     }
 
 };

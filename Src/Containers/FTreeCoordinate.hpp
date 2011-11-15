@@ -30,12 +30,8 @@ public:
         * @param inY the y
         * @param inZ the z
         */
-    FTreeCoordinate(const long inX,const long inY,const long inZ)
+    explicit FTreeCoordinate(const long inX,const long inY,const long inZ)
         : x(inX), y(inY), z(inZ){
-    }
-
-    /** Default destructor */
-    virtual ~FTreeCoordinate(){
     }
 
     /**

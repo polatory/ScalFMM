@@ -44,6 +44,11 @@ public:
         this->potential = inPotential;
     }
 
+    /** To inc the potential */
+    void incPotential(const FReal inPotential) {
+        this->potential += inPotential;
+    }
+
 };
 
 

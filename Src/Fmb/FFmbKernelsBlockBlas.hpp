@@ -1579,7 +1579,7 @@ public:
             /*printf("[force_vector_tmp] fx = %.15e \t fy = %.15e \t fz = %.15e \n",
                    force_vector_tmp.getX(),force_vector_tmp.getY(),force_vector_tmp.getZ());*/
 
-            iterTarget.data().setForces( iterTarget.data().getForces() + force_vector_tmp );
+            iterTarget.data().incForces( force_vector_tmp );
 
             FReal potential;
             expansion_Evaluate_local_with_Y_already_computed(local->getLocal(),&potential);
@@ -1678,28 +1678,32 @@ public:
 
     void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass& FRestrict target, ParticleClass& source){
 
-        const FReal dx = target.getPosition().getX() - source.getPosition().getX();
-        const FReal dy = target.getPosition().getY() - source.getPosition().getY();
-        const FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
+        FReal dx = target.getPosition().getX() - source.getPosition().getX();
+        FReal dy = target.getPosition().getY() - source.getPosition().getY();
+        FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz + FReal(FMB_Info_eps_soft_square));
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
         inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
         inv_square_distance *= inv_distance;
 
-        target.setForces(
-                target.getForces().getX() + dx * inv_square_distance,
-                target.getForces().getY() + dy * inv_square_distance,
-                target.getForces().getZ() + dz * inv_square_distance
-                );
-        target.setPotential( inv_distance + target.getPotential());
+        dx *= inv_square_distance;
+        dy *= inv_square_distance;
+        dz *= inv_square_distance;
 
-        source.setForces(
-                source.getForces().getX() + (-dx) * inv_square_distance,
-                source.getForces().getY() + (-dy) * inv_square_distance,
-                source.getForces().getZ() + (-dz) * inv_square_distance
+        target.incForces(
+                dx,
+                dy,
+                dz
                 );
-        source.setPotential( inv_distance + source.getPotential());
+        target.incPotential( inv_distance );
+
+        source.incForces(
+                (-dx),
+                (-dy),
+                (-dz)
+                );
+        source.incPotential( inv_distance );
 
          
     }
@@ -1761,13 +1765,13 @@ public:
         inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
         inv_square_distance *= inv_distance;
 
-        target.setForces(
-                target.getForces().getX() + dx * inv_square_distance,
-                target.getForces().getY() + dy * inv_square_distance,
-                target.getForces().getZ() + dz * inv_square_distance
+        target.incForces(
+                dx * inv_square_distance,
+                dy * inv_square_distance,
+                dz * inv_square_distance
                 );
 
-        target.setPotential( inv_distance + target.getPotential());
+        target.incPotential( inv_distance );
          
     }
 };

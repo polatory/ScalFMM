@@ -82,8 +82,8 @@ protected:
             newNode->setMortonIndex(inLeafCellIndex);
 
             newNode->setCoordinate(treePosition.getX() >> bottomToTop,
-                                                               treePosition.getY() >> bottomToTop,
-                                                               treePosition.getZ() >> bottomToTop);
+                                   treePosition.getY() >> bottomToTop,
+                                   treePosition.getZ() >> bottomToTop);
 
             const int realLevel = indexLevel + this->getSubOctreePosition();
             const FReal widthAtLevel = inBoxWidthAtLevel[realLevel];
