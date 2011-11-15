@@ -24,10 +24,6 @@ public:
     FExtendPotential(const FExtendPotential& other) : potential(other.potential) {
     }
 
-    /** Destructor */
-    virtual ~FExtendPotential(){
-    }
-
     /** Copy operator */
     FExtendPotential& operator=(const FExtendPotential& other) {
         this->potential = other.potential;

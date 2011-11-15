@@ -32,10 +32,6 @@ public:
     FExtendCellType(const FExtendCellType& other) : type(other.type) {
     }
 
-    /** Destructor */
-    virtual ~FExtendCellType(){
-    }
-
     /** Copy operator */
     FExtendCellType& operator=(const FExtendCellType& other) {
         this->type = other.type;

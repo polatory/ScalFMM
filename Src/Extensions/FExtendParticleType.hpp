@@ -31,10 +31,6 @@ public:
     FExtendParticleType(const FExtendParticleType& other) : type(other.type) {
     }
 
-    /** Destructor */
-    virtual ~FExtendParticleType(){
-    }
-
     /** Copy operator */
     FExtendParticleType& operator=(const FExtendParticleType& other) {
         this->type = other.type;

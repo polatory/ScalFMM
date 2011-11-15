@@ -26,10 +26,6 @@ public:
     FExtendForces(const FExtendForces& other) : forces(other.forces) {
     }
 
-    /** Destructor */
-    virtual ~FExtendForces(){
-    }
-
     /** Copy operator */
     FExtendForces& operator=(const FExtendForces& other) {
         this->forces = other.forces;

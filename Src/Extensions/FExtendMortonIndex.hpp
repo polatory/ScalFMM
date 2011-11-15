@@ -25,10 +25,6 @@ public:
     FExtendMortonIndex(const FExtendMortonIndex& other) : mortonIndex(other.mortonIndex) {
     }
 
-    /** Destructor */
-    virtual ~FExtendMortonIndex(){
-    }
-
     /** Copy operator */
     FExtendMortonIndex& operator=(const FExtendMortonIndex& other) {
         this->mortonIndex = other.mortonIndex;

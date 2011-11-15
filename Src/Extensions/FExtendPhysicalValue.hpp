@@ -24,10 +24,6 @@ public:
     FExtendPhysicalValue(const FExtendPhysicalValue& other) : physicalValue(other.physicalValue) {
     }
 
-    /** Destructor */
-    virtual ~FExtendPhysicalValue(){
-    }
-
     /** Copy Constructor */
     FExtendPhysicalValue& operator=(const FExtendPhysicalValue& other) {
         this->physicalValue = other.physicalValue;

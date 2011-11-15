@@ -25,10 +25,6 @@ public:
     FExtendCoordinate(const FExtendCoordinate& other) : coordinate(other.coordinate) {
     }
 
-    /** Destructor */
-    virtual ~FExtendCoordinate(){
-    }
-
     /** Copy operator */
     FExtendCoordinate& operator=(const FExtendCoordinate& other) {
         this->coordinate = other.coordinate;

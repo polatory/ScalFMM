@@ -25,10 +25,6 @@ public:
     FExtendPosition(const FExtendPosition& other) : position(other.position) {
     }
 
-    /** Destructor */
-    virtual ~FExtendPosition(){
-    }
-
     /** Copy operator */
     FExtendPosition& operator=(const FExtendPosition& other) {
         this->position = other.position;
