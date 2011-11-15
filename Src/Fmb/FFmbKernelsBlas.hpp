@@ -1394,7 +1394,6 @@ public:
         while( iterTarget.hasNotFinished() ){
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                Prefetch_Write(directNeighbors[idxDirectNeighbors+2]);
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
                     typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){

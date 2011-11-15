@@ -840,6 +840,8 @@ public:
 
 
         const FTreeCoordinate& coordCenter = pole->getCoordinate();
+        const FTreeCoordinate coordCenterHalphSizeDim(coordCenter, halphSize1Dim);
+
         for(int idxSize = 0 ; idxSize < size ; ++idxSize){
             const FTreeCoordinate& coordNeighbors = distantNeighbors[idxSize]->getCoordinate();
 
@@ -848,9 +850,9 @@ public:
             //printf("\tidxSize = %d\tleve = %d\tMorton = %lld\n",idxSize,inLevel,distantNeighbors[idxSize]->getMortonIndex());
 
             const FComplexe* const M2L_transfer = transferM2L[inLevel]
-                                                  [(coordCenter.getX()+halphSize1Dim-coordNeighbors.getX())]
-                                                  [(coordCenter.getY()+halphSize1Dim-coordNeighbors.getY())]
-                                                  [(coordCenter.getZ()+halphSize1Dim-coordNeighbors.getZ())];
+                                                  [(coordCenterHalphSizeDim.getX() - coordNeighbors.getX())]
+                                                  [(coordCenterHalphSizeDim.getY() - coordNeighbors.getY())]
+                                                  [(coordCenterHalphSizeDim.getZ() - coordNeighbors.getZ())];
             /*printf("level = %d\tx=%ld\ty=%ld\tz=%ld\n", inLevel,
                    (coordCenter.getX()-coordNeighbors.getX()),
                    (coordCenter.getY()-coordNeighbors.getY()),
@@ -1333,7 +1335,6 @@ public:
             ParticleClass& target = iterTarget.data();
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                Prefetch_Write(directNeighbors[idxDirectNeighbors+2]);
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
                     typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){

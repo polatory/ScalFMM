@@ -42,6 +42,14 @@ public:
     }
 
     /**
+        * Copy constructor
+        * @param other the source class to copy
+        */
+    FTreeCoordinate(const FTreeCoordinate& other, const int inOffset)
+        : x(other.x + inOffset), y(other.y + inOffset), z(other.z + inOffset){
+    }
+
+    /**
 	* Copy constructor
 	* @param other the source class to copy
 	* @return this a reference to the current object
