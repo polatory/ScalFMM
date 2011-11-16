@@ -843,7 +843,6 @@ public:
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
              const int size, const int inLevel) {
 
-        FComplexe multipole_exp[MultipoleSize]; //< For multipole extenssion
         FComplexe local_exp[MultipoleSize];     //< For local extenssion
 
         memcpy(local_exp, pole->getLocal(), sizeof(FComplexe) * MultipoleSize);
@@ -870,8 +869,7 @@ public:
             printf("M2L_transfer[1]= %e/%e\n",M2L_transfer[1].getReal(),M2L_transfer[1].getImag());
             printf("M2L_transfer[2]= %e/%e\n",M2L_transfer[2].getReal(),M2L_transfer[2].getImag());*/
 
-            memcpy(multipole_exp, distantNeighbors[idxSize]->getMultipole(), sizeof(FComplexe) * MultipoleSize);
-            const FComplexe* const multipole_exp_src = multipole_exp;
+            const FComplexe* const multipole_exp_src = distantNeighbors[idxSize]->getMultipole();
 
             FComplexe* p_target_exp_term = local_exp;
 
