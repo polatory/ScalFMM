@@ -192,34 +192,7 @@ public:
 
     }
 
-
-    /////////////////////////////////////////////////////////////////////////////
-    // Utils functions
-    /////////////////////////////////////////////////////////////////////////////
-
-    int getLeft(const int inSize) const {
-        const float step = (float(inSize) / nbProcess);
-        return int(FMath::Ceil(step * idProcess));
-    }
-
-    int getRight(const int inSize) const {
-        const float step = (float(inSize) / nbProcess);
-        const int res = int(FMath::Ceil(step * (idProcess+1)));
-        if(res > inSize) return inSize;
-        else return res;
-    }
-
-    int getOtherRight(const int inSize,const int other) const {
-        const float step = (float(inSize) / nbProcess);
-        const int res = int(FMath::Ceil(step * (other+1)));
-        if(res > inSize) return inSize;
-        else return res;
-    }
-
-    int getProc(const int position, const int inSize) const {
-        const float step = (float(inSize) / nbProcess);
-        return int(position/step);
-    }
+private:
 
     /////////////////////////////////////////////////////////////////////////////
     // P2M
