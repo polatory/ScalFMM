@@ -838,6 +838,11 @@ public:
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
              const int size, const int inLevel) {
 
+        static const int MultipoleSize = int(((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5); //< The size of the multipole
+        FComplexe multipole_exp[MultipoleSize]; //< For multipole extenssion
+        FComplexe local_exp[MultipoleSize];     //< For local extenssion
+
+        memcpy(local_exp, pole->getLocal(), sizeof(FComplexe) * MultipoleSize);
 
         const FTreeCoordinate& coordCenter = pole->getCoordinate();
         const FTreeCoordinate coordCenterHalphSizeDim(coordCenter, halphSize1Dim);
@@ -860,9 +865,12 @@ public:
             /*printf("M2L_transfer[0]= %e/%e\n",M2L_transfer->getReal(),M2L_transfer->getImag());
             printf("M2L_transfer[1]= %e/%e\n",M2L_transfer[1].getReal(),M2L_transfer[1].getImag());
             printf("M2L_transfer[2]= %e/%e\n",M2L_transfer[2].getReal(),M2L_transfer[2].getImag());*/
-            const FComplexe* const multipole_exp_src = distantNeighbors[idxSize]->getMultipole();
+            memcpy(multipole_exp, distantNeighbors[idxSize]->getMultipole(), sizeof(FComplexe) * MultipoleSize);
+            const FComplexe* const multipole_exp_src = multipole_exp;
+
+            FComplexe* p_target_exp_term = local_exp;
+
             // L_j^k
-            FComplexe* p_target_exp_term = pole->getLocal();
             int start_for_j = 0;
 
             //    HPMSTART(51, "M2L computation (loops)");
@@ -944,6 +952,8 @@ public:
                 }
             }
         }
+
+        memcpy(pole->getLocal(), local_exp, sizeof(FComplexe) * MultipoleSize);
          
     }
 
