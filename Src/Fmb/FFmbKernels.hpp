@@ -1342,7 +1342,7 @@ public:
         typename ContainerClass::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
-            ParticleClass& target = iterTarget.data();
+            ParticleClass target( iterTarget.data() );
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
@@ -1365,9 +1365,11 @@ public:
             //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
             //printf("\t potential = %e \n",iterTarget.data()->getPotential());
 
+            iterTarget.data() = target;
+
             iterTarget.gotoNext();
         }
-         
+
     }
 
 
@@ -1421,7 +1423,7 @@ public:
         typename ContainerClass::BasicIterator iterTarget(*targets);
         while( iterTarget.hasNotFinished() ){
 
-            ParticleClass& target = iterTarget.data();
+            ParticleClass target( iterTarget.data() );
 
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
                 typename ContainerClass::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
@@ -1445,9 +1447,11 @@ public:
             //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
             //printf("\t potential = %e \n",iterTarget.data()->getPotential());
 
+            iterTarget.data() = target;
+
             iterTarget.gotoNext();
         }
-         
+
     }
 
 
