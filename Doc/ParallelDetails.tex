@@ -354,7 +354,7 @@ The algorithm can be viewed as several tasks:
 \ForAll{Cell c received}{
         $lightOctree.insert( c )$\;
 }
-\ForAll{Level idxLeve from 2 to Height - 2}{
+\ForAll{Level idxLeve from 2 to Height - 1}{
         \ForAll{Cell c at level idxLevel that are marked}{
                 neighborsIndexes $\leftarrow$ $c.potentialDistantNeighbors()$\;
                 neighbors $\leftarrow$ lightOctree.get(neighborsIndexes)\;
