@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreate.cpp -o testLoaderCreate.exe
@@ -23,7 +24,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = 200000;
+    const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(200000));
     const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
