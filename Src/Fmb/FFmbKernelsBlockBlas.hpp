@@ -268,7 +268,7 @@ protected:
             ff_block_matrix_Free(p->right);
 
             /* Free current block matrix: */
-            delete(p->data);
+            delete [] (p->data);
 
             /* Free 'p' itself: */
             delete(p);
@@ -1079,7 +1079,7 @@ public:
 
         FComplexe exp_term_tmp;
 
-        FReal alpha_and_beta[2] = {1.0,0.0};
+        const FReal alpha_and_beta[2] = {1.0,0.0};
 
         /*    fprintf(stdout, "ff_block_matrix_Product() with P=%i, M=%i, N=%i\n", P, M, N); */
 
@@ -1155,8 +1155,8 @@ public:
              * ('square' in the number of
              * blocks, in each dimension, it contains). */
             /* bssm: biggest square sub-matrix */
-            int bssm_row_dim = p_transfer_block_matrix->bssm_row_dim;
-            int bssm_column_dim = p_transfer_block_matrix->bssm_column_dim;
+            const int bssm_row_dim = p_transfer_block_matrix->bssm_row_dim;
+            const int bssm_column_dim = p_transfer_block_matrix->bssm_column_dim;
 
             /*     HPMSTART_DETAILED(61, "M2L blas BLOCK: bssm");  */
 
