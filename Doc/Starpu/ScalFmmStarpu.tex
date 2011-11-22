@@ -72,11 +72,11 @@ Finally it has to transfer data from its parents (L2L) and to transfer data to i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Simple FMM implementation}
-\section{Serial}
+\section{Sequential}
 The more basic approach to perform the steps of the FMM is to compute all operators one after the others.
 Each operator required a loop over the cells at one or every levels of the tree.
 Then, we only need to be careful about operators order in a general view.
-For example, we can perform an upward pass (P2M, M2M), the M2L, the downward pass (L2L, L2P) and then the direct pass (P2P) even if the direct interaction can be computed at any time.
+For example, we can perform an upward pass (P2M, M2M), the M2L, the downward pass (L2L, L2P) and then the direct pass (P2P) even if the direct interactions can be computed at any time.
 \BlankLine
 \begin{algorithm}[H]
 \restylealgo{boxed}
@@ -175,12 +175,17 @@ Also, it is possible to perform things a little differently by computing the M2L
 \ForAll{Cell cl at level $Height - 1$}{
         neighbors $\leftarrow$ tree.getBoxInteractions( cl , $Height - 1$)\;
         M2L( cl, neighbors)\;
+	Leaf lf as cl\;
+	L2P( cl , lf.particles )\;
 }
 \BlankLine
 \caption{M2M \& M2L}
 \end{algorithm}
 \BlankLine
-From this first serial approach we can imagine a straightforward task implementation.
+From this first serial approach we can imagine a straightforward task-based implementation.
+
+Remark: we do not detail how the P2P can be computed in parallel in this document.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{A task oriented implementation}
@@ -224,6 +229,8 @@ The key idea is to understand that for each level we can perform operations simu
                 \{ \linebreak
                 neighbors $\leftarrow$ tree.getBoxInteractions( cl , $Height - 1$)\;
                 M2L( cl, neighbors)\;
+		Leaf lf as cl\;
+		L2P( cl , lf.particles )\;
                 \} \linebreak
         }
         \#pragma omp taskwait \linebreak
@@ -233,7 +240,7 @@ The key idea is to understand that for each level we can perform operations simu
 \end{algorithm}
 \BlankLine
 This approach, even better, does not use all the parallelism supported by the FMM.
-In fact, when a cell receives the data from its child it becomes able to transfer it data to its parent. However, we wait the end of the entire level before working to another one.
+In fact, when a cell receives the data from its child it becomes able to transfer its data to its parent. However, we wait the end of the entire level before working on another one.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{DAG}
@@ -270,7 +277,7 @@ And the P2M and P2P write the same part of a particle.
 \begin{figure}[h!]
 \begin{center}
 \includegraphics[width=15cm, height=15cm, keepaspectratio=true]{dag.jpg}
-\caption{Cells operations}
+\caption{FMM DAG}
 \end{center}
 \end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -343,6 +350,8 @@ This reduces the parallelism but makes the thing much easier to code.
 \ForAll{Cell cl at level $Height - 1$}{
         neighbors $\leftarrow$ tree.getBoxInteractions( cl , $Height - 1$)\;
         StarpuInsertTask( M2L, WRITE, cl, READ, neighbors)\;
+	Leaf lf as cl\;
+	StarpuInsertTask( L2P, READ, cl, WRITE, lf.particles)\;
 }
 \BlankLine
 StarpuWaitAllTask();
