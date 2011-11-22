@@ -76,7 +76,7 @@ public:
     * Default destructor, simply close the file
     */
     virtual ~FFmaScanfLoader(){
-        fclose(file);
+        if(file) fclose(file);
     }
 
     /**
@@ -130,7 +130,6 @@ public:
             }
         }
     }
-
 };
 
 
