@@ -204,7 +204,7 @@ public:
             * After building a iterator, this one is positioned at the level 0
             * of the root (level 1 of octree) at the left limit index
             */
-            Iterator(FOctree* const inTarget)
+            explicit Iterator(FOctree* const inTarget)
                     : currentLocalIndex(0) , currentLocalLevel(0) {
                 fassert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
                 fassert(inTarget->root.getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
