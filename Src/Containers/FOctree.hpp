@@ -516,7 +516,7 @@ public:
             /** Get the current pointed leaf
               * @return current leaf element
               */
-            LeafClass* getCurrentLeaf() {
+            LeafClass* getCurrentLeaf() const {
                 return this->current.leafTree->getLeaf(this->currentLocalIndex);
             }
 
@@ -524,7 +524,7 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            ContainerClass* getCurrentListSrc() {
+            ContainerClass* getCurrentListSrc() const {
                 return this->current.leafTree->getLeafSrc(this->currentLocalIndex);
             }
 
@@ -532,14 +532,14 @@ public:
               * You have to be at the leaf level to call this function!
               * @return current element list
               */
-            ContainerClass* getCurrentListTargets() {
+            ContainerClass* getCurrentListTargets() const {
                 return this->current.leafTree->getLeafTargets(this->currentLocalIndex);
             }
 
             /** Get the current pointed cell
               * @return current cell element
               */
-            CellClass* getCurrentCell() {
+            CellClass* getCurrentCell() const {
                 return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex];
             }
 
@@ -548,7 +548,7 @@ public:
               * User has to test each case to know if there is a cell
               * @return the child array
               */
-            CellClass** getCurrentChild() {
+            CellClass** getCurrentChild() const {
                 // are we at the bottom of the suboctree
                 if(this->current.tree->getSubOctreeHeight() - 1 == this->currentLocalLevel ){
                     // then return first level of the suboctree under
