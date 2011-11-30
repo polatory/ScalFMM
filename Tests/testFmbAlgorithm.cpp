@@ -13,7 +13,6 @@
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithmThreadUs.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"

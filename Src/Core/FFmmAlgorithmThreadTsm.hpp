@@ -40,7 +40,7 @@ class FFmmAlgorithmThreadTsm : protected FAssertable{
 
     const int OctreeHeight;
 
-public:	
+public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
@@ -95,7 +95,7 @@ public:
         delete [] iterArray;
         iterArray = 0;
 
-         
+
     }
 
     /** P2M */
@@ -136,7 +136,7 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
-         
+
     }
 
     /** M2M */
@@ -195,7 +195,7 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-         
+
     }
 
     /** M2L L2L */
@@ -304,7 +304,7 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-         
+
     }
 
     /** P2P */
@@ -345,7 +345,7 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
-         
+
     }
 
 };
