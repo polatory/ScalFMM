@@ -397,46 +397,6 @@ private:
          
     }
 
-    /** P2P */
-    void directPassUnsafe(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-
-        int numberOfLeafs = 0;
-        {
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            // for each numberOfLeafs
-            do{
-                iterArray[numberOfLeafs] = octreeIterator;
-                ++numberOfLeafs;
-            } while(octreeIterator.moveRight());
-        }
-
-        const int heightMinusOne = OctreeHeight - 1;
-        FDEBUG(FTic computationCounter);
-        #pragma omp parallel
-        {
-            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-            // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[26];
-
-            #pragma omp for schedule(dynamic)
-            for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
-                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalIndex(),heightMinusOne);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter);
-            }
-        }
-        FDEBUG(computationCounter.tac());
-
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
-
-    }
-
 };
 
 
