@@ -160,7 +160,6 @@ private:
                     if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
                     FDEBUG(computationCounter.tac());
                 } while(octreeIterator.moveRight());
-
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
             }
@@ -250,7 +249,7 @@ private:
         {
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoLeft();
-            kernels->M2M( &upperCells[0], octreeIterator.getCurrentCell(), 0);
+            kernels->M2M( &upperCells[0], octreeIterator.getCurrentBox(), 0);
         }
         // Then M2M from level 0 to level -LIMITE
         {
@@ -259,7 +258,7 @@ private:
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     virtualChild[idxChild] = &upperCells[idxLevel-1];
                 }
-                kernels->M2M( upperCells[idxLevel], virtualChild, -idxLevel);
+                kernels->M2M( &upperCells[idxLevel], virtualChild, -idxLevel);
             }
         }
         // Then M2L at all level
@@ -282,14 +281,14 @@ private:
 
             const CellClass* neighbors[189];
             const int counter = 189;
-            FDEBUG(computationCounter.tic());
+
             for(int idxLevel = 0 ; idxLevel < PeriodicLimit ; ++idxLevel ){
                 for(int idxNeigh = 0 ; idxNeigh < 189 ; ++idxNeigh){
                     neighbors[idxNeigh] = &upperCells[idxLevel];
                 }
-                kernels->M2L( upperCells[idxLevel] , neighbors, relativePosition, counter, -idxLevel);
+                kernels->M2L( &upperCells[idxLevel] , neighbors, relativePosition, counter, -idxLevel);
             }
-            FDEBUG(computationCounter.tac());
+
         }
 
         // Finally L2L until level 0
@@ -298,7 +297,7 @@ private:
             memset(virtualChild, 0, sizeof(CellClass*) * 8);
             for(int idxLevel = PeriodicLimit - 1 ; idxLevel > 0  ; --idxLevel){
                 virtualChild[0] = &upperCells[idxLevel-1];
-                kernels->L2L( upperCells[idxLevel], virtualChild, -idxLevel);
+                kernels->L2L( &upperCells[idxLevel], virtualChild, -idxLevel);
             }
         }
 
@@ -306,7 +305,7 @@ private:
         {
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoLeft();
-            kernels->L2L( &upperCells[0], octreeIterator.getCurrentCell(), 0);
+            kernels->L2L( &upperCells[0], octreeIterator.getCurrentBox(), 0);
         }
 
     }

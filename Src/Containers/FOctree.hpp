@@ -560,6 +560,13 @@ public:
                 }
             }
 
+            /** Get the part of array that contains all the pointers
+              *
+              */
+            CellClass** getCurrentBox() const {
+                return &this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex & ~7];
+            }
+
             /** Get the Morton index of the current cell pointed by the iterator
               * @return The global morton index
               * <code>iter.getCurrentGlobalIndex();<br>
@@ -794,17 +801,20 @@ public:
                         // if we are not on the current cell
                         if( idxX || idxY || idxZ ){
 
-                            FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                            const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                            FTreeCoordinate otherParentInBox(otherParent);
                             // periodic
-                            if( otherParent.getX() < 0 ) otherParent.setX( otherParent.getX() + limite );
-                            else if( limite <= otherParent.getX() ) otherParent.setX( otherParent.getX() - limite );
-                            if( otherParent.getY() < 0 ) otherParent.setY( otherParent.getY() + limite );
-                            else if( limite <= otherParent.getY() ) otherParent.setY( otherParent.getY() - limite );
-                            if( otherParent.getZ() < 0 ) otherParent.setZ( otherParent.getZ() + limite );
-                            else if( limite <= otherParent.getZ() ) otherParent.setZ( otherParent.getZ() - limite );
+                            if( otherParentInBox.getX() < 0 ) otherParentInBox.setX( otherParentInBox.getX() + limite );
+                            else if( limite <= otherParentInBox.getX() ) otherParentInBox.setX( otherParentInBox.getX() - limite );
+
+                            if( otherParentInBox.getY() < 0 ) otherParentInBox.setY( otherParentInBox.getY() + limite );
+                            else if( limite <= otherParentInBox.getY() ) otherParentInBox.setY( otherParentInBox.getY() - limite );
+
+                            if( otherParentInBox.getZ() < 0 ) otherParentInBox.setZ( otherParentInBox.getZ() + limite );
+                            else if( limite <= otherParentInBox.getZ() ) otherParentInBox.setZ( otherParentInBox.getZ() - limite );
 
 
-                            const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
                             // Get child
                             CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -819,9 +829,9 @@ public:
                                                                                (otherParent.getY()<<1) | (idxCousin>>1 & 1),
                                                                                (otherParent.getZ()<<1) | (idxCousin&1));
 
-                                        const FTreeCoordinate relativePosition(workingCell.getX() - potentialNeighbor.getX(),
-                                                                               workingCell.getY() - potentialNeighbor.getY(),
-                                                                               workingCell.getZ() - potentialNeighbor.getZ());
+                                        const FTreeCoordinate relativePosition(potentialNeighbor.getX() - workingCell.getX(),
+                                                                               potentialNeighbor.getY() - workingCell.getY(),
+                                                                               potentialNeighbor.getZ() - workingCell.getZ());
 
                                         // Test if it is a direct neighbor
                                         if(FMath::Abs(relativePosition.getX()) > 1 ||
