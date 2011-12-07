@@ -283,6 +283,16 @@ public:
         return int(double(position)/step);
     }
 
+    /** assert if mpi error */
+    static void MpiAssert(const int test, const unsigned line, const char* const message = 0){
+        if(test != MPI_SUCCESS){
+            printf("[ERROR] Test failled at line %d, result is %d", line, test);
+            if(message) printf(", message: %s",message);
+            printf("\n");
+            fflush(stdout);
+            MPI_Abort(MPI_COMM_WORLD, int(line) );
+        }
+    }
 
 private:
     /** The original communicator */

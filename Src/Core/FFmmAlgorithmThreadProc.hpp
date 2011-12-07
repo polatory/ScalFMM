@@ -62,16 +62,6 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
     Interval*const workingIntervalsPerLevel;
 
 
-    static void mpiassert(const int test, const unsigned line, const char* const message = 0){
-        if(test != MPI_SUCCESS){
-            printf("[ERROR] Test failled at line %d, result is %d", line, test);
-            if(message) printf(", message: %s",message);
-            printf("\n");
-            fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, int(line) );
-        }
-    }
-
     Interval& getWorkingInterval(const int level, const int proc){
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
@@ -146,7 +136,7 @@ public:
             fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
             // We get the min/max indexes from each procs
-            mpiassert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
 
             Interval myIntervals[OctreeHeight];
             myIntervals[OctreeHeight - 1] = myLastInterval;
@@ -172,7 +162,7 @@ public:
             }
 
             // We get the min/max indexes from each procs
-            mpiassert( MPI_Allgather( myIntervals, sizeof(Interval) * OctreeHeight, MPI_BYTE,
+            FMpi::MpiAssert( MPI_Allgather( myIntervals, sizeof(Interval) * OctreeHeight, MPI_BYTE,
                                       workingIntervalsPerLevel, sizeof(Interval) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
         }
 
@@ -550,7 +540,7 @@ private:
             // what the will send to who
             int globalReceiveMap[nbProcess * nbProcess * OctreeHeight];
             memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
-            mpiassert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
             FDEBUG(gatherCounter.tac());
 
 
@@ -588,7 +578,7 @@ private:
                             toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
                         }
 
-                        mpiassert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellToSend) , MPI_BYTE ,
+                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellToSend) , MPI_BYTE ,
                                              idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
 
@@ -596,7 +586,7 @@ private:
                     if(toReceiveFromProcAtLevel){
                         recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
 
-                        mpiassert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellToSend), MPI_BYTE,
+                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellToSend), MPI_BYTE,
                                             idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
                 }
@@ -994,7 +984,7 @@ private:
             }
 
             FDEBUG(gatherCounter.tic());
-            mpiassert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
             FDEBUG(gatherCounter.tac());
 
 
@@ -1003,7 +993,7 @@ private:
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
                     recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
 
-                    mpiassert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
                                         idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
@@ -1020,7 +1010,7 @@ private:
                         currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
                     }
 
-                    mpiassert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
+                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
                                          idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }

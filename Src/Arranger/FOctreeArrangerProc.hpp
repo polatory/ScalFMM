@@ -20,16 +20,6 @@ class FOctreeArrangerProc : FAssertable {
         MortonIndex max;
     };
 
-    /** assert if needed */
-    static void mpiassert(const int test, const unsigned line, const char* const message = 0){
-        if(test != MPI_SUCCESS){
-            printf("[ERROR] Test failled at line %d, result is %d", line, test);
-            if(message) printf(", message: %s",message);
-            printf("\n");
-            fflush(stdout);
-            MPI_Abort(MPI_COMM_WORLD, int(line) );
-        }
-    }
 
     /** Find the interval that contains mindex */
     int getInterval(const MortonIndex mindex, const int size, const Interval intervals[]) const{
@@ -71,7 +61,7 @@ public:
             myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
 
             // We get the min/max indexes from each procs
-            mpiassert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
 
             // increase interval in the empty morton index
             intervals[0].min = 0;
@@ -129,7 +119,7 @@ public:
             }
             // say who send to who
             int*const allcounter = new int[comm.processCount()*comm.processCount()];
-            mpiassert( MPI_Allgather( counter, comm.processCount(), MPI_INT, allcounter, comm.processCount(), MPI_INT, comm.getComm()),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( counter, comm.processCount(), MPI_INT, allcounter, comm.processCount(), MPI_INT, comm.getComm()),  __LINE__ );
 
             // prepare buffer to receive
             long long int sumToRecv = 0;
@@ -145,7 +135,7 @@ public:
             // send
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && allcounter[idxProc * comm.processCount() + comm.processId()]){
-                    mpiassert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], allcounter[idxProc * comm.processCount() + comm.processId()] * sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], allcounter[idxProc * comm.processCount() + comm.processId()] * sizeof(ParticleClass), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                     hasToRecvFrom += 1;
                 }
@@ -156,7 +146,7 @@ public:
             // recv
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && toMove[idxProc].getSize()){
-                    mpiassert( MPI_Isend(toMove[idxProc].data(), toMove[idxProc].getSize() * sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Isend(toMove[idxProc].data(), toMove[idxProc].getSize() * sizeof(ParticleClass), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                 }
             }
@@ -176,7 +166,7 @@ public:
             MPI_Status status;
             while( hasToRecvFrom ){
                 int done = 0;
-                mpiassert( MPI_Waitany( iterRequests, requests, &done, &status ),  __LINE__ );
+                FMpi::MpiAssert( MPI_Waitany( iterRequests, requests, &done, &status ),  __LINE__ );
                 if( done < limitRecvSend ){
                     const int source = status.MPI_SOURCE;
                     for(long long int idxPart = indexToReceive[source] ; idxPart < indexToReceive[source+1] ; ++idxPart){
@@ -216,7 +206,7 @@ public:
         }
 
         // wait all send
-        mpiassert( MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        FMpi::MpiAssert( MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE),  __LINE__ );
 
         delete[] intervals;
         delete[] toMove;
