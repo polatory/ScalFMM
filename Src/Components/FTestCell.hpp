@@ -17,7 +17,7 @@
 class FTestCell : public FBasicCell  {
 protected:
     // To store data during upward and downward pass
-    long dataUp, dataDown;
+    long long int dataUp, dataDown;
 public:
     FTestCell(): dataUp(0) , dataDown(0){
     }
@@ -25,19 +25,19 @@ public:
     virtual ~FTestCell(){
     }
     /** When doing the upward pass */
-    long getDataUp() const {
+    long long int getDataUp() const {
         return this->dataUp;
     }
     /** When doing the upward pass */
-    void setDataUp(const long inData){
+    void setDataUp(const long long int inData){
         this->dataUp = inData;
     }
     /** When doing the downard pass */
-    long getDataDown() const {
+    long long int getDataDown() const {
         return this->dataDown;
     }
     /** When doing the downard pass */
-    void setDataDown(const long inData){
+    void setDataDown(const long long int inData){
         this->dataDown = inData;
     }
 };

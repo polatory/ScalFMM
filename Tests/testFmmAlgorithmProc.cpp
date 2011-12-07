@@ -197,7 +197,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
             do {
                 if(octreeIterator.getCurrentListSrc()->getSize() != octreeIterator.getCurrentCell()->getDataUp()){
-                    printf("P2M problem nb part %d data up %ld \n",
+                    printf("P2M problem nb part %d data up %lld \n",
                            octreeIterator.getCurrentListSrc()->getSize(), octreeIterator.getCurrentCell()->getDataUp());
                 }
             } while( octreeIterator.moveRight() );
@@ -282,20 +282,20 @@ class TestParticle : public FTestParticle, public FExtendPhysicalValue {
 
 class TestCell : public FTestCell , public FAbstractSendable {
 public:
-    static const int SerializedSizeUp = sizeof(long);
+    static const int SerializedSizeUp = sizeof(long long int);
     void serializeUp(void* const buffer) const {
-        *(long*)buffer = this->dataUp;
+        *(long long int*)buffer = this->dataUp;
     }
     void deserializeUp(const void* const buffer){
-        this->dataUp = *(long*)buffer;
+        this->dataUp = *(long long int*)buffer;
     }
 
     static const int SerializedSizeDown = sizeof(long);
     void serializeDown(void* const buffer) const {
-        *(long*)buffer = this->dataDown;
+        *(long long int*)buffer = this->dataDown;
     }
     void deserializeDown(const void* const buffer){
-        this->dataDown = *(long*)buffer;
+        this->dataDown = *(long long int*)buffer;
     }
 };
 

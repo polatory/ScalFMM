@@ -82,7 +82,7 @@ public:
              const ContainerClass* const directNeighborsParticles[26], const int size) {
 
         // Each particles targeted is impacted by the particles sources
-        long inc = sources->getSize();
+        long long int inc = sources->getSize();
         if(targets == sources){
             inc -= 1;
         }
@@ -105,7 +105,7 @@ public:
              ContainerClass* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
 
         // Each particles targeted is impacted by the particles sources
-        long inc = sources->getSize();
+        long long int inc = sources->getSize();
         if(targets == sources){
             inc -= 1;
         }
@@ -130,7 +130,7 @@ template< class OctreeClass, class ParticleClass, class CellClass, class Contain
 void ValidateFMMAlgo(OctreeClass* const tree){
     std::cout << "Check Result\n";
     const int TreeHeight = tree->getHeight();
-    int NbPart = 0;
+    long long int NbPart = 0;
     { // Check that each particle has been summed with all other
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
@@ -144,7 +144,7 @@ void ValidateFMMAlgo(OctreeClass* const tree){
     { // Ceck if there is number of NbPart summed at level 1
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
-        long res = 0;
+        long long int res = 0;
         do{
             res += octreeIterator.getCurrentCell()->getDataUp();
         } while(octreeIterator.moveRight());
@@ -156,7 +156,7 @@ void ValidateFMMAlgo(OctreeClass* const tree){
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
-            long res = 0;
+            long long int res = 0;
             do{
                 res += octreeIterator.getCurrentCell()->getDataUp();
             } while(octreeIterator.moveRight());

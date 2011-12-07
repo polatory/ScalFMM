@@ -141,7 +141,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    const int PeriodicDeep = 1;
+    const int PeriodicDeep = 4;
     // FTestKernels FBasicKernels
     KernelClass kernels;
     //FFmmAlgorithm FFmmAlgorithmThread

@@ -17,7 +17,7 @@
 class FTestParticle : public FBasicParticle {
 protected:
     // To store data during downard pass
-    long dataDown;
+    long long int dataDown;
 public:
     FTestParticle(): dataDown(0){
     }
@@ -26,11 +26,11 @@ public:
     virtual ~FTestParticle(){
     }
 
-    long getDataDown() const {
+    long long int getDataDown() const {
         return this->dataDown;
     }
 
-    void setDataDown(const long inData){
+    void setDataDown(const long long int inData){
         this->dataDown = inData;
     }
 };
