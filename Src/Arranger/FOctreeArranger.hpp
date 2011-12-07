@@ -5,7 +5,7 @@
 #include "../Containers/FVector.hpp"
 #include "../Utils/FAssertable.hpp"
 
-template <class OctreeClass, class ParticleClass>
+template <class OctreeClass, class ContainerClass, class ParticleClass>
 class FOctreeArranger : FAssertable {
     OctreeClass* const tree;
 
@@ -15,12 +15,12 @@ public:
     }
 
     void rearrange(){
-        FVector<CellClass> tomove;
+        FVector<ParticleClass> tomove;
         { // iterate on the leafs and found particle to remove
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
-                const MortonIndex currentIndex = octreeIterator.currentGlobalIndex();
+                const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
 
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 while( iter.hasNotFinished() ){
@@ -47,7 +47,7 @@ public:
             do{
                 // Empty leaf
                 if( octreeIterator.getCurrentListTargets()->getSize() == 0 ){
-                    const MortonIndex currentIndex = octreeIterator.currentGlobalIndex();
+                    const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                     workOnNext = octreeIterator.moveRight();
                     tree->removeLeaf( currentIndex );
                 }
