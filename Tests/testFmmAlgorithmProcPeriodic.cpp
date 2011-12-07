@@ -82,7 +82,7 @@ public:
         this->dataUp = *(long long int*)buffer;
     }
 
-    static const int SerializedSizeDown = sizeof(long);
+    static const int SerializedSizeDown = sizeof(long long int);
     void serializeDown(void* const buffer) const {
         *(long long int*)buffer = this->dataDown;
     }
