@@ -220,25 +220,42 @@ public:
         int index;              /**< the current node*/
 
     public:
-
+        /** Empty destructor */
         virtual ~BasicIterator(){}
 
+        /** Constructor need a vector */
         BasicIterator(FVector<T>& inVector) : vector(&inVector), index(0){}
 
+        /** Go to next vector element */
         void gotoNext(){
             ++this->index;
         }
 
+        /** is it over
+          * @return true if we are over the vector
+          */
         bool hasNotFinished() const{
             return this->index < this->vector->index;
         }
 
+        /** Get current data */
         T& data(){
             return this->vector->array[this->index];
         }
 
+        /** Get current data */
         const T& data() const{
             return this->vector->array[this->index];
+        }
+
+        /** Remove current data */
+        void remove(){
+            if( hasNotFinished() ){
+                for(int idxMove = this->index + 1; idxMove < this->vector->index ; ++idxMove){
+                    vector->array[idxMove - 1] = vector->array[idxMove];
+                }
+                this->vector->index -= 1;
+            }
         }
 
     };
@@ -253,19 +270,25 @@ public:
         int index;              /**< the current node*/
 
     public:
-
+        /** Empty destructor */
         virtual ~ConstBasicIterator(){}
 
+        /** Constructor need a vector */
         ConstBasicIterator(const FVector<T>& inVector) : vector(&inVector), index(0){}
 
+        /** Go to next vector element */
         void gotoNext(){
             ++this->index;
         }
 
+        /** is it over
+          * @return true if we are over the vector
+          */
         bool hasNotFinished() const{
             return this->index < this->vector->index;
         }
 
+        /** Get current data */
         const T& data() const{
             return this->vector->array[this->index];
         }

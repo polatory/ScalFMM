@@ -78,7 +78,7 @@ class TestVector : public FUTester<TestVector> {
 	void TestIter(){		
                 FVector<TestObject> vector;
 		{
-                        FVector<TestObject>::BasicIterator iter(vector);
+                        FVector<TestObject>::ConstBasicIterator iter(vector);
 			assert(!iter.hasNotFinished());
 		}
 		{
@@ -86,7 +86,7 @@ class TestVector : public FUTester<TestVector> {
                         vector.push(TestObject());
                         vector.push(TestObject());
 
-                        FVector<TestObject>::BasicIterator iter(vector);
+                        FVector<TestObject>::ConstBasicIterator iter(vector);
 			assert(iter.hasNotFinished());
 
 			int counter = 0;
@@ -95,12 +95,39 @@ class TestVector : public FUTester<TestVector> {
                         assert(counter == vector.getSize());
 		}
 	}
+
+        // test remove
+        void TestRemove(){
+                FVector<TestObject> vector;
+                {
+                        FVector<TestObject>::BasicIterator iter(vector);
+                        assert(!iter.hasNotFinished());
+                }
+                {
+                        vector.push(TestObject());
+                        vector.push(TestObject());
+                        vector.push(TestObject());
+
+                        FVector<TestObject>::BasicIterator iter(vector);
+                        assert(iter.hasNotFinished());
+
+                        iter.gotoNext();
+                        iter.remove();
+                        assert(iter.hasNotFinished());
+
+                        iter.gotoNext();
+                        assert(!iter.hasNotFinished());
+
+                        assert(2 == vector.getSize());
+                }
+        }
 		
 	// set test
 	void SetTests(){
             AddTest(&TestVector::TestSize,"Test Size");
             AddTest(&TestVector::TestCopy,"Test Copy");
             AddTest(&TestVector::TestIter,"Test Iter");
+            AddTest(&TestVector::TestRemove,"Test Remove");
 	}
 };
 

@@ -141,6 +141,22 @@ public:
                 root.insert( particleIndex, host, inParticle, this->height, this->boxWidthAtLevel);
 	}
 
+        /** Remove a leaf from its morton index
+          * @param the index of the leaf to remove
+          */
+        void removeLeaf(const MortonIndex indexToRemove ){
+            root.removeLeaf( indexToRemove , this->height);
+        }
+
+        /**
+        * Get a morton index from a real position
+        * @param a position to compute MI
+        * @return the morton index
+        */
+        MortonIndex getMortonFromPosition(const F3DPosition& position) const {
+            return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
+        }
+
         /**
           * The class works on suboctree. Most of the resources needed
           * are avaiblable by using FAbstractSubOctree. But when accessing

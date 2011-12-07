@@ -114,6 +114,51 @@ protected:
         if(arrayIndex > this->rightLeafIndex) this->rightLeafIndex = arrayIndex;
     }
 
+    /** Remove every cells from the array index
+      * the leaf cell is removed, then we go upper and test,
+      * does the upper cell do no have any more child, if tree remove
+      * this cell too and go upper, etc.
+      * @return true if there is no more cells in this tree
+      */
+    bool removeCellsFromLeaf( long arrayIndex ){
+        // last array index
+        int indexLevel = this->subOctreeHeight - 1;
+
+        // Manage border limits
+        if(arrayIndex == this->leftLeafIndex && arrayIndex == this->rightLeafIndex){
+            // only one cells, return true
+            return true;
+        }
+        else if(arrayIndex == this->leftLeafIndex){
+            while( !this->cells[indexLevel][++this->leftLeafIndex] );
+        }
+        else if(arrayIndex == this->rightLeafIndex){
+            while( !this->cells[indexLevel][--this->rightLeafIndex] );
+        }
+
+        // remove the last cells
+        delete this->cells[indexLevel][arrayIndex];
+        this->cells[indexLevel][arrayIndex] = 0;
+        // progress upper
+        --indexLevel;
+        arrayIndex >>= 3;
+
+        // to test if 8 child are empty
+        CellClass* emptyArray[8];
+        memset(emptyArray , 0, sizeof(CellClass*) * 8);
+
+        // continue while we are not in the last level and our child are empty
+        while(indexLevel >= 0 && memcmp(&this->cells[indexLevel+1][arrayIndex<<3], emptyArray, 8 * sizeof(CellClass*)) == 0 ){
+            delete this->cells[indexLevel][arrayIndex];
+            this->cells[indexLevel][arrayIndex] = 0;
+
+            --indexLevel;
+            arrayIndex >>= 3;
+        }
+        // return true if there is no more child == 0 cell at level 0
+        return memcmp(this->cells[0], emptyArray, 8 * sizeof(CellClass*)) == 0;
+    }
+
     /** Disable copy */
 private:
     FAbstractSubOctree(const FAbstractSubOctree&){}
@@ -177,6 +222,12 @@ public:
     * @param inParticle the inTreeHeight the height of the tree
     */
     virtual void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight, const FReal* const inBoxWidthAtLevel) = 0;
+
+    /**
+      * Remove a leaf and every cells if needed
+      * @return true if the subtree does not contains any more cells
+      */
+    virtual bool removeLeaf(const MortonIndex index, const int inTreeHeight) = 0;
 
     ///////////////////////////////////////
     // This is the FOctree::Iterator Part
@@ -330,6 +381,22 @@ public:
         this->leafs[arrayIndex]->push(inParticle);
     }
 
+    /**
+      * Remove a leaf and every cells if needed
+      */
+    bool removeLeaf(const MortonIndex index, const int inTreeHeight) {
+        // Get the morton index for the leaf level
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        if( this->leafs[arrayIndex] ){
+            // remove container
+            delete this->leafs[arrayIndex];
+            this->leafs[arrayIndex] = 0;
+
+            return FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::removeCellsFromLeaf( long(arrayIndex) );
+        }
+        return false;
+    }
+
     /** To get access to leafs elements
       * @param index the position of the leaf
       * @return the list of particles at this index */
@@ -459,6 +526,22 @@ public:
         }
         // Ask next suboctree to insert the particle
         this->subleafs[arrayIndex]->insert( index, host, inParticle, inTreeHeight, inBoxWidthAtLevel);
+    }
+
+    /**
+      * Remove a leaf and every cells if needed
+      */
+    bool removeLeaf(const MortonIndex index, const int inTreeHeight) {
+        // Get the morton index for the leaf level
+        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        if( this->subleafs[arrayIndex]->removeLeaf(index, inTreeHeight) ){
+            // remove container
+            delete this->subleafs[arrayIndex];
+            this->subleafs[arrayIndex] = 0;
+
+            return FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::removeCellsFromLeaf( long(arrayIndex) );
+        }
+        return false;
     }
 
     /** To get access to leafs elements (child suboctree)
