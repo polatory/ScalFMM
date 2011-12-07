@@ -122,6 +122,8 @@ int main(int argc, char ** argv){
     counter.tic();
 
     { // Check that each particle has been put into the right leaf
+        long counterPart = 0;
+
         typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
@@ -138,11 +140,15 @@ int main(int argc, char ** argv){
 
                 iter.gotoNext();
             }
-
+            counterPart += octreeIterator.getCurrentListTargets()->getSize();
             if(octreeIterator.getCurrentListTargets()->getSize() == 0){
                 std::cout << "Problem, leaf is empty at index " << leafIndex << std::endl;
             }
         } while(octreeIterator.moveRight());
+
+        if( counterPart != NbPart ){
+            std::cout <<"Wrong particles number, should be " << NbPart << " but is " << counterPart << std::endl;
+        }
     }
 
     { // Check that each particle has been summed with all other
