@@ -6,13 +6,21 @@
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FMpi.hpp"
 
+/** This class is an arranger, it move the particles that need
+  * to be hosted in a different leaf
+  * This is the parallel version.
+  */
 template <class OctreeClass, class ContainerClass, class ParticleClass>
 class FOctreeArrangerProc : FAssertable {
+    /** Interval is the min/max morton index
+      * for a proc
+      */
     struct Interval{
         MortonIndex min;
         MortonIndex max;
     };
 
+    /** assert if needed */
     static void mpiassert(const int test, const unsigned line, const char* const message = 0){
         if(test != MPI_SUCCESS){
             printf("[ERROR] Test failled at line %d, result is %d", line, test);
@@ -23,12 +31,15 @@ class FOctreeArrangerProc : FAssertable {
         }
     }
 
+    /** Find the interval that contains mindex */
     int getInterval(const MortonIndex mindex, const int size, const Interval intervals[]) const{
         for(int idxProc = 0 ; idxProc < size ; ++idxProc){
+            // does it contains the index?
             if( intervals[idxProc].min <= mindex && mindex < intervals[idxProc].max){
                 return idxProc;
             }
         }
+        // if no interval found return the lastest one
         return size - 1;
     }
 
@@ -36,27 +47,33 @@ class FOctreeArrangerProc : FAssertable {
 
 
 public:
+    /** Basic constructor */
     FOctreeArrangerProc(OctreeClass* const inTree) : tree(inTree) {
         fassert(tree, "Tree cannot be null", __LINE__ , __FILE__ );
     }
 
-    /** return false if tree is empty after processing */
+    /** return false if the tree is empty after processing */
     bool rearrange(const FMpi::FComm& comm){
+        // interval of each procs
         Interval*const intervals = new Interval[comm.processCount()];
         memset(intervals, 0, sizeof(Interval) * comm.processCount());
-        {   // We need to give an interval to each process, this interval
-            // will be based on the current interval
+
+        {   // We need to exchange interval of each process, this interval
+            // will be based on the current morton min max
             Interval myLastInterval;
 
+            // take fist index
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             myLastInterval.min = octreeIterator.getCurrentGlobalIndex();
+            // take last index
             octreeIterator.gotoRight();
             myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
 
             // We get the min/max indexes from each procs
             mpiassert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
 
+            // increase interval in the empty morton index
             intervals[0].min = 0;
             for(int idxProc = 1 ; idxProc < comm.processCount() ; ++idxProc){
                 intervals[idxProc].min = ((intervals[idxProc].min - intervals[idxProc-1].max)/2) + intervals[idxProc-1].max;
@@ -64,9 +81,9 @@ public:
             }
 
             intervals[comm.processCount() - 1].max = ((1 << (3*(tree->getHeight()-1))) - 1);
-
         }
 
+        // Particles that move
         FVector<ParticleClass>*const toMove = new FVector<ParticleClass>[comm.processCount()];
 
         { // iterate on the leafs and found particle to remove or to send
@@ -147,11 +164,13 @@ public:
             delete[] allcounter;
             delete[] counter;
         }
+
         { // insert particles that moved
             for(int idxPart = 0 ; idxPart < toMove[comm.processId()].getSize() ; ++idxPart){
                 tree->insert(toMove[comm.processId()][idxPart]);
             }
         }
+
         {   // wait any recv or send
             // if it is a recv then insert particles
             MPI_Status status;
@@ -167,6 +186,7 @@ public:
                 }
             }            
         }
+
         int counterLeavesAlive = 0;
         { // Remove empty leaves
             typename OctreeClass::Iterator octreeIterator(tree);
@@ -193,7 +213,6 @@ public:
                     counterLeavesAlive += 1;                    
                 }
             } while( workOnNext );
-
         }
 
         // wait all send
