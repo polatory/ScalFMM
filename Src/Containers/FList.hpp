@@ -134,8 +134,8 @@ public:
         */
         Object pop(){
             --this->size;
-            Node* newNode   = this->root;
-            this->root      = this->root->next;
+            Node*const FRestrict newNode   = this->root;
+            this->root                     = this->root->next;
 
             Object value    = newNode->target;
             delete newNode;
@@ -167,21 +167,22 @@ public:
           */
         class BasicIterator {
         private:
-            Node* iter; //< current node on the list
+            Node** iter; //< current node on the list
 
         public:
             /**
               * Constructor needs the target list
               * @param the list to iterate on
               */
-            BasicIterator(FList& list) : iter(list.root){
+            BasicIterator(FList& list) : iter(&list.root) {
             }
 
             /** To gotoNext on the list */
             void gotoNext(){
-                if(this->iter){
-                    this->iter = this->iter->next;
-                    if(this->iter) Prefetch_Write(this->iter->next);
+                if( hasNotFinished() ){
+                    // TODO bug! printf("%s %p to %p\n",((*iter) != 0?"Not null":"Null"), *iter, &((*iter)->next));
+                    iter = &((*iter)->next);
+                    if( (*iter)->next ) Prefetch_Write( (*iter)->next->next);
                 }
             }
 
@@ -190,7 +191,7 @@ public:
             * current iterator must be valide (hasNotFinished()) to use this function
             */
             Object& data(){
-                return this->iter->target;
+                return (*iter)->target;
             }
 
             /**
@@ -198,7 +199,7 @@ public:
             * current iterator must be valide (hasNotFinished()) to use this function
             */
             const Object& data() const{
-                return this->iter->target;
+                return (*iter)->target;
             }
 
             /**
@@ -206,7 +207,17 @@ public:
             * @return true if the current iterator can gotoNext and access to value, else false
             */
             bool hasNotFinished() const{
-                return iter;
+                return (*iter) != 0;
+            }
+
+            /** Remove an element
+              */
+            void remove() {
+                if( hasNotFinished() ){
+                    Node* temp = (*iter)->next;
+                    delete (*iter);
+                    (*iter) = temp;
+                }
             }
 
         };
