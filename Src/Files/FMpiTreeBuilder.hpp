@@ -87,6 +87,41 @@ private:
         }
     }
 
+    static void SortParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass array[], const int size, const SortingType type,
+                                       const F3DPosition& centerOfBox, const FReal boxWidth,
+                        const int TreeHeight, IndexedParticle**const outputArray, FSize* const outputSize){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__ , "Loader to Tree" , __FILE__ , __LINE__) );
+
+        // create particles
+        IndexedParticle*const realParticlesIndexed = new IndexedParticle[size];
+        FMemUtils::memset(realParticlesIndexed, 0, sizeof(IndexedParticle) * size);
+
+        F3DPosition boxCorner(centerOfBox - (boxWidth/2));
+        FTreeCoordinate host;
+
+        const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
+
+        for(long idxPart = 0 ; idxPart < size ; ++idxPart){
+            realParticlesIndexed[idxPart].particle = array[idxPart];
+            host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
+            host.setY( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
+            host.setZ( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+
+            realParticlesIndexed[idxPart].index = host.getMortonIndex(TreeHeight - 1);
+        }
+
+        // sort particles
+        if(type == QuickSort){
+            FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, size, *outputArray, *outputSize,communicator);
+            delete [] (realParticlesIndexed);
+        }
+        else {
+            FBitonicSort<IndexedParticle,MortonIndex, FSize>::Sort( realParticlesIndexed, size, communicator );
+            *outputArray = realParticlesIndexed;
+            *outputSize = size;
+        }
+    }
+
 
     //////////////////////////////////////////////////////////////////////////
     // To merge the leaves
@@ -457,6 +492,22 @@ public:
         IndexedParticle* particlesArray = 0;
         FSize particlesSize = 0;
         SortParticles(communicator, loader, type, realTree.getHeight(), &particlesArray, &particlesSize);
+
+        char* leavesArray = 0;
+        FSize leavesSize = 0;
+        MergeLeaves(communicator, particlesArray, particlesSize, &leavesArray, &leavesSize);
+
+        EqualizeAndFillTree(communicator, realTree, leavesArray, leavesSize);
+    }
+
+    template <class OctreeClass>
+    static void ArrayToTree(const FMpi::FComm& communicator, const ParticleClass array[], const int size,
+                            const F3DPosition& boxCenter, const FReal boxWidth,
+                             OctreeClass& realTree, const SortingType type = QuickSort){
+
+        IndexedParticle* particlesArray = 0;
+        FSize particlesSize = 0;
+        SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, realTree.getHeight(), &particlesArray, &particlesSize);
 
         char* leavesArray = 0;
         FSize leavesSize = 0;

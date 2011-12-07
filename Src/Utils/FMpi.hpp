@@ -229,6 +229,10 @@ public:
         return MPI_LONG_LONG;
     }
 
+    static MPI_Datatype GetType(long int&){
+        return MPI_LONG;
+    }
+
     static MPI_Datatype GetType(double&){
         return MPI_DOUBLE;
     }
