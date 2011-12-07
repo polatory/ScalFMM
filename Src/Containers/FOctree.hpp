@@ -100,7 +100,7 @@ public:
                 for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
                         this->boxWidthAtLevel[indexLevel] = tempWidth;
                         tempWidth /= FReal(2.0);
-		}
+                }
 	}
 
 	/** Desctructor */

@@ -30,6 +30,7 @@ class FFmmAlgorithmPeriodic : protected FAssertable{
     KernelClass* const kernels;    //< The kernels
 
     const int OctreeHeight;
+    const int periodicLimit;
 
 public:
     /** The constructor need the octree and the kernels used for computation
@@ -37,8 +38,8 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmPeriodic(OctreeClass* const inTree, KernelClass* const inKernels)
-                      : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
+    FFmmAlgorithmPeriodic(OctreeClass* const inTree, KernelClass* const inKernels, const int inPeriodicLimit = 0)
+                      : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()), periodicLimit(inPeriodicLimit) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
@@ -242,8 +243,11 @@ private:
 
     /** Periodicity */
     void processPeriodicLevels(){
-        const int PeriodicLimit = 10;
-        CellClass upperCells[PeriodicLimit];
+        if( !periodicLimit ){
+            return;
+        }
+
+        CellClass upperCells[periodicLimit];
 
         // First M2M from level 1 to level 0
         {
@@ -254,7 +258,7 @@ private:
         // Then M2M from level 0 to level -LIMITE
         {
             CellClass* virtualChild[8];
-            for(int idxLevel = 1 ; idxLevel < PeriodicLimit ; ++idxLevel){
+            for(int idxLevel = 1 ; idxLevel < periodicLimit ; ++idxLevel){
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     virtualChild[idxChild] = &upperCells[idxLevel-1];
                 }
@@ -282,7 +286,7 @@ private:
             const CellClass* neighbors[189];
             const int counter = 189;
 
-            for(int idxLevel = 0 ; idxLevel < PeriodicLimit ; ++idxLevel ){
+            for(int idxLevel = 0 ; idxLevel < periodicLimit ; ++idxLevel ){
                 for(int idxNeigh = 0 ; idxNeigh < 189 ; ++idxNeigh){
                     neighbors[idxNeigh] = &upperCells[idxLevel];
                 }
@@ -295,7 +299,7 @@ private:
         {
             CellClass* virtualChild[8];
             memset(virtualChild, 0, sizeof(CellClass*) * 8);
-            for(int idxLevel = PeriodicLimit - 1 ; idxLevel > 0  ; --idxLevel){
+            for(int idxLevel = periodicLimit - 1 ; idxLevel > 0  ; --idxLevel){
                 virtualChild[0] = &upperCells[idxLevel-1];
                 kernels->L2L( &upperCells[idxLevel], virtualChild, -idxLevel);
             }
