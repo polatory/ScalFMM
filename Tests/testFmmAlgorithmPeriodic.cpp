@@ -52,7 +52,7 @@ public:
              ContainerClass* const directNeighborsParticles[26], const FTreeCoordinate [26], const int size) {
 
         // Each particles targeted is impacted by the particles sources
-        long inc = sources->getSize();
+        long long int inc = sources->getSize();
         if(targets == sources){
             inc -= 1;
         }
@@ -157,7 +157,7 @@ int main(int argc, char ** argv){
     //ValidateFMMAlgo<OctreeClass, ParticleClass, CellClass, ContainerClass, LeafClass>(&tree);
 
     { // Check that each particle has been summed with all other
-        long counterNbPart = 0;
+        long long int counterNbPart = 0;
 
         typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
