@@ -21,6 +21,7 @@
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithmTask.hpp"
 
 
 #include "../Src/Components/FBasicKernels.hpp"
@@ -43,7 +44,8 @@ int main(int argc, char ** argv){
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
 
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    // FFmmAlgorithmTask FFmmAlgorithmThread
+    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
