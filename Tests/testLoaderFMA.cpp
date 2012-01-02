@@ -68,7 +68,8 @@ int main(int argc, char ** argv ){
 
     {
         // otree
-        OctreeClass tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 9), FParameters::getValue(argc,argv,"-sh", 3),
+                         loader.getBoxWidth(), loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

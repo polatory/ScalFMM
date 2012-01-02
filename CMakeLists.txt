@@ -13,6 +13,8 @@ OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
+OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" ON )
+
 
 # MPI option has to be set before project
 if( SCALFMM_USE_MPI )
@@ -69,6 +71,9 @@ if( SCALFMM_BUILD_UTESTS )
 	ENABLE_TESTING()
 	add_subdirectory(UTests)
 endif()
+
+# Use Mem stats
+MESSAGE( STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
 
 # Build - doc
 add_subdirectory(Doc)

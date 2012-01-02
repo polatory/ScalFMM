@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -69,7 +70,8 @@ int main(int argc, char ** argv){
 
     {
         // otree
-        OctreeClass tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 9), FParameters::getValue(argc,argv,"-sh", 3),
+                         loader.getBoxWidth(), loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
