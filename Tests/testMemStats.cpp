@@ -19,6 +19,9 @@
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
 
+#include "../Src/Fmb/FFmbKernels.hpp"
+#include "../Src/Fmb/FFmbComponents.hpp"
+
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
 
@@ -33,13 +36,17 @@
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     {
-        typedef FTestParticle               ParticleClass;
-        typedef FTestCell                   CellClass;
+        //typedef FTestParticle               ParticleClass;
+        //typedef FTestCell                   CellClass;
+        typedef FmbParticle             ParticleClass;
+        typedef FmbCell                 CellClass;
+
         typedef FVector<ParticleClass>      ContainerClass;
 
         typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
         typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-        typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+        //typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+        typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
         typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
         ///////////////////////What we do/////////////////////////////
@@ -58,7 +65,8 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
 
-        OctreeClass tree(NbLevels, SizeSubLevels, 1.0, F3DPosition(0.5,0.5,0.5));
+        const FReal boxWidth = 1.0;
+        OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, F3DPosition(0.5,0.5,0.5));
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +76,7 @@ int main(int argc, char ** argv){
         counter.tic();
 
         {
-            FTestParticle particleToFill;
+            ParticleClass particleToFill;
             for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
                 particleToFill.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
                 tree.insert(particleToFill);
@@ -85,7 +93,8 @@ int main(int argc, char ** argv){
         counter.tic();
 
         // FTestKernels FBasicKernels
-        KernelClass kernels;
+        //KernelClass kernels;
+        KernelClass kernels(NbLevels,boxWidth);
         FmmClass algo(&tree,&kernels);
         algo.execute();
 
