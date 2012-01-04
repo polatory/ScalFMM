@@ -63,6 +63,18 @@ public:
     std::size_t getCurrentAllocated() const{
         return currentAllocated;
     }
+
+    float getMaxAllocatedMB() const{
+        return float(getMaxAllocated()) / 1024 / 1024;
+    }
+
+    float getTotalAllocatedMB() const{
+        return float(getTotalAllocated()) / 1024 / 1024;
+    }
+
+    float getCurrentAllocatedMB() const{
+        return float(getCurrentAllocated()) / 1024 / 1024;
+    }
 };
 
 

@@ -1,8 +1,9 @@
 #include "FMemStats.h"
+#include "ScalFmmConfig.h"
 
 FMemStats FMemStats::controler;
 
-
+#include <cstdio>
 #ifdef SCALFMM_USE_MEM_STATS
     // Regular scalar new
     void* operator new(std::size_t n) throw(std::bad_alloc)
@@ -56,7 +57,7 @@ FMemStats FMemStats::controler;
     void operator delete(void* p) throw(){
         if(p){
             FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
-            free(reinterpret_cast<unsigned char*>(p) - 8);
+            free(static_cast<unsigned char*>(p) - 8);
         }
     }
 
