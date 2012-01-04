@@ -5,7 +5,6 @@
 #include <new>
 #include <stdexcept>
 #include <stdlib.h>
-#include <cstdio>
 
 #ifdef SCALFMM_USE_MEM_STATS
     void* operator new(std::size_t n) throw(std::bad_alloc);

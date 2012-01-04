@@ -7,7 +7,7 @@ if(insource)
 endif(insource)
 
 # Options
-OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
+OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" OFF )
 OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" ON )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )

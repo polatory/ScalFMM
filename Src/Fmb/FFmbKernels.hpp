@@ -47,7 +47,7 @@ protected:
 
     // Can be FMB_Info_P if user ask to -- if FMB_Info.up_to_P_in_M2L it true
     static const int FMB_Info_M2L_P = FMB_Info_up_to_P_in_M2L? FMB_Info_P : 2 * FMB_Info_P;
-    static const int FMB_Info_M2L_exp_size = ((FMB_Info_M2L_P)+1) * ((FMB_Info_M2L_P)+2) * 0.5;
+    static const int FMB_Info_M2L_exp_size = int(((FMB_Info_M2L_P)+1) * ((FMB_Info_M2L_P)+2) * 0.5);
 
     // Default value set in main
     static const int FMB_Info_ws = 1;
@@ -58,7 +58,7 @@ protected:
     static const int halphSize1Dim =  (2*(FMB_Info_ws)+1);
 
     // EXPANSION_SIZE(FMB_Info.P)
-    static const int FMB_Info_exp_size = ((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5;
+    static const int FMB_Info_exp_size = int(((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5);
     // NEXP_SIZE(FMB_Info.P)
     static const int FMB_Info_nexp_size = (FMB_Info_P + 1) * (FMB_Info_P + 1);
 
@@ -1226,9 +1226,9 @@ public:
                 if (th < -M_PI + FMath::Epsilon)  th += 2 * FMath::Epsilon;
             }
             //spherical_position_Set_r
-            FReal rh = spherical.r;
+            //FReal rh = spherical.r;
             if (spherical.r < 0){
-                rh = -spherical.r;
+                //rh = -spherical.r;
                 //spherical_position_Set_ph(p, M_PI - spherical_position_Get_th(p));
                 ph = FMath::Fmod(FMath::FPi - th, 2*FMath::FPi);
                 if (ph > M_PI) ph -= 2*FMath::FPi;

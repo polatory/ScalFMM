@@ -46,7 +46,7 @@ protected:
 
     // Can be FMB_Info_P if user ask to -- if FMB_Info.up_to_P_in_M2L it true
     static const int FMB_Info_M2L_P = FMB_Info_up_to_P_in_M2L? FMB_Info_P : 2 * FMB_Info_P;
-    static const int FMB_Info_M2L_exp_size = ((FMB_Info_M2L_P)+1) * ((FMB_Info_M2L_P)+2) * 0.5;
+    static const int FMB_Info_M2L_exp_size = int(((FMB_Info_M2L_P)+1) * ((FMB_Info_M2L_P)+2) * 0.5);
 
     // Default value set in main
     static const int FMB_Info_ws = 1;
@@ -57,7 +57,7 @@ protected:
     static const int halphSize1Dim =  (2*(FMB_Info_ws)+1);
 
     // EXPANSION_SIZE(FMB_Info.P)
-    static const int FMB_Info_exp_size = ((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5;
+    static const int FMB_Info_exp_size = int(((FMB_Info_P)+1) * ((FMB_Info_P)+2) * 0.5);
     // NEXP_SIZE(FMB_Info.P)
     static const int FMB_Info_nexp_size = (FMB_Info_P + 1) * (FMB_Info_P + 1);
 

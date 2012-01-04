@@ -302,7 +302,6 @@ private:
         // I need to send right if I hold leaves that belong to procs on my right
         const bool iNeedToSendToRight = correctRightLeavesIndex < currentLeafsOnMyLeft + currentNbLeafs;
 
-        int leftProcToStartSend = rank;
         if(iNeedToSendToLeft){
             FTRACE( FTrace::FRegion regionTrace("Calcul SendToLeft", __FUNCTION__ , __FILE__ , __LINE__) );
             // Find the first proc that need my data
@@ -317,7 +316,6 @@ private:
             }
 
             // Count data for this proc
-            leftProcToStartSend = idxProc;
             int ICanGive = int(currentNbLeafs);
             leavesToSend[idxProc] = int(FMath::Min(communicator.getOtherRight(totalNbLeaves, idxProc), totalNbLeaves - currentLeafsOnMyRight)
                                         - FMath::Max( currentLeafsOnMyLeft , communicator.getOtherLeft(totalNbLeaves, idxProc)));

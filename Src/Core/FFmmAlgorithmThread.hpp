@@ -298,10 +298,8 @@ private:
         FDEBUG(FTic computationCounter);
         FDEBUG(FTic computationCounterP2P);
 
-        int countShape[SizeShape];
         omp_lock_t lockShape[SizeShape];
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            countShape[idxShape] = 0;
             omp_init_lock(&lockShape[idxShape]);
         }
 
