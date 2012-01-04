@@ -1,6 +1,6 @@
 #ifndef FFMMALGORITHMTHREAD_HPP
 #define FFMMALGORITHMTHREAD_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FDebug.hpp"
@@ -400,4 +400,4 @@ private:
 
 #endif //FFMMALGORITHMTHREAD_HPP
 
-// [--LICENSE--]
+// [--END--]

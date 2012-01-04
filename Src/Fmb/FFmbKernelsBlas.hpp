@@ -1,6 +1,6 @@
 #ifndef FFMBKERNELSBLAS_HPP
 #define FFMBKERNELSBLAS_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FBlas.hpp"
@@ -1536,4 +1536,4 @@ const FReal FFmbKernelsBlas<ParticleClass,CellClass,ContainerClass>::PiArrayOute
 
 #endif //FFMBKERNELSBLAS_HPP
 
-// [--LICENSE--]
+// [--END--]

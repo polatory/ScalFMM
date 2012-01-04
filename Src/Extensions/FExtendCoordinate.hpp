@@ -1,6 +1,6 @@
 #ifndef FEXTENDCOORDINATE_HPP
 #define FEXTENDCOORDINATE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
@@ -53,4 +53,4 @@ public:
 
 #endif //FEXTENDCOORDINATE_HPP
 
-// [--LICENSE--]
+// [--END--]

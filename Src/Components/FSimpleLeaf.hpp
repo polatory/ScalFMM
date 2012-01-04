@@ -1,6 +1,6 @@
 #ifndef FSIMPLELEAF_HPP
 #define FSIMPLELEAF_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FAbstractLeaf.hpp"
 
@@ -50,4 +50,4 @@ public:
 
 #endif //FSIMPLELEAF_HPP
 
-// [--LICENSE--]
+// [--END--]

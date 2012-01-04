@@ -1,6 +1,6 @@
 #ifndef FABSTRACTLOADER_HPP
 #define FABSTRACTLOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 class F3DPosition;
@@ -61,4 +61,4 @@ public:
 
 #endif //FABSTRACTLOADER_HPP
 
-// [--LICENSE--]
+// [--END--]

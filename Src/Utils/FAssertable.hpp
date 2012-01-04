@@ -1,6 +1,6 @@
 #ifndef FASSERTABLE_HPP
 #define FASSERTABLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <stdlib.h>
 #include <sstream>
@@ -49,4 +49,4 @@ protected:
 
 #endif //FASSERTABLE_HPP
 
-// [--LICENSE--]
+// [--END--]

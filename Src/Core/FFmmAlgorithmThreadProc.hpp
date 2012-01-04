@@ -1,6 +1,6 @@
 #ifndef FFMMALGORITHMTHREADPROC_HPP
 #define FFMMALGORITHMTHREADPROC_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FDebug.hpp"
@@ -1311,4 +1311,4 @@ private:
 
 #endif //FFMMALGORITHMTHREAD_HPP
 
-// [--LICENSE--]
+// [--END--]

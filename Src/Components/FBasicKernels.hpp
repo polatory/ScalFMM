@@ -1,6 +1,6 @@
 #ifndef FBASICKERNELS_HPP
 #define FBASICKERNELS_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FAbstractKernels.hpp"
 
@@ -65,4 +65,4 @@ public:
 
 #endif //FBASICKERNELS_HPP
 
-// [--LICENSE--]
+// [--END--]

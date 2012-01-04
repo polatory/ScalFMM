@@ -1,6 +1,6 @@
 #ifndef FEXTENDFMBCELL_HPP
 #define FEXTENDFMBCELL_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <string.h>
 
@@ -69,4 +69,4 @@ public:
 
 #endif //FEXTENDFMBCELL_HPP
 
-// [--LICENSE--]
+// [--END--]

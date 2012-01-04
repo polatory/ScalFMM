@@ -1,6 +1,6 @@
 #ifndef FABSTRACTPARTICLE_HPP
 #define FABSTRACTPARTICLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 /* forward declaration to avoid include */
 class F3DPosition;
@@ -38,4 +38,4 @@ public:
 
 #endif //FABSTRACTPARTICLE_HPP
 
-// [--LICENSE--]
+// [--END--]

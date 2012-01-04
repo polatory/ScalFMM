@@ -1,6 +1,6 @@
 #ifndef FFMABINLOADER_HPP
 #define FFMABINLOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <cstdio>
 
@@ -139,4 +139,4 @@ public:
 
 #endif //FFmaBinLoader_HPP
 
-// [--LICENSE--]
+// [--END--]

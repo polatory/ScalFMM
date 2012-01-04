@@ -1,6 +1,6 @@
 #ifndef FABSTRACTSENDABLE_HPP
 #define FABSTRACTSENDABLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 
 /**
@@ -24,4 +24,4 @@ protected:
 
 #endif //FABSTRACTSENDABLE_HPP
 
-// [--LICENSE--]
+// [--END--]

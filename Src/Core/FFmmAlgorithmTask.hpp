@@ -1,6 +1,6 @@
 #ifndef FFMMALGORITHMTASK_HPP
 #define FFMMALGORITHMTASK_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssertable.hpp"
@@ -329,4 +329,4 @@ private:
 
 #endif //FFMMALGORITHMTASK_HPP
 
-// [--LICENSE--]
+// [--END--]

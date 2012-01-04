@@ -1,6 +1,6 @@
 #ifndef FMATH_HPP
 #define FMATH_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <math.h>
 #include "FGlobal.hpp"
@@ -126,4 +126,4 @@ struct FMath{
 
 #endif //FMATH_HPP
 
-// [--LICENSE--]
+// [--END--]

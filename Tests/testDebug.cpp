@@ -1,4 +1,4 @@
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Src/Utils/FDebug.hpp"
 
@@ -36,4 +36,4 @@ int main(void){
 }
 
 
-// [--LICENSE--]
+// [--END--]

@@ -1,6 +1,6 @@
 #ifndef FFMBKERNELS_HPP
 #define FFMBKERNELS_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Components/FAbstractKernels.hpp"
@@ -1500,4 +1500,4 @@ const FReal FFmbKernels<ParticleClass,CellClass, ContainerClass>::PiArrayOuter[4
 
 #endif //FFMBKERNELS_HPP
 
-// [--LICENSE--]
+// [--END--]

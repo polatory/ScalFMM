@@ -1,6 +1,6 @@
 #ifndef FHLOADER_HPP
 #define FHLOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 #include <fstream>
@@ -140,4 +140,4 @@ public:
 
 #endif //FHLOADER_HPP
 
-// [--LICENSE--]
+// [--END--]

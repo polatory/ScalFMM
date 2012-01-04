@@ -1,6 +1,6 @@
 #ifndef FTESTPARTICLE_HPP
 #define FTESTPARTICLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FBasicParticle.hpp"
 
@@ -38,4 +38,4 @@ public:
 
 #endif //FTESTPARTICLE_HPP
 
-// [--LICENSE--]
+// [--END--]

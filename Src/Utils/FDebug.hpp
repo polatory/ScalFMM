@@ -1,6 +1,6 @@
 #ifndef FDEBUG_HPP
 #define FDEBUG_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FGlobal.hpp"
 
@@ -182,4 +182,4 @@ public:
 
 #endif //FDEBUG_HPP
 
-// [--LICENSE--]
+// [--END--]

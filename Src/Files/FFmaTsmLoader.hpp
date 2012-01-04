@@ -1,6 +1,6 @@
 #ifndef FFMATSMLOADER_HPP
 #define FFMATSMLOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 #include <fstream>
@@ -123,4 +123,4 @@ public:
 
 #endif //FFMATSMLOADER_HPP
 
-// [--LICENSE--]
+// [--END--]

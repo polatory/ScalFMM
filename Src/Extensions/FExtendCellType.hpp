@@ -1,6 +1,6 @@
 #ifndef FEXTENDCELLTYPE_HPP
 #define FEXTENDCELLTYPE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 
 /**
@@ -62,4 +62,4 @@ public:
 
 #endif //FEXTENDCELLTYPE_HPP
 
-// [--LICENSE--]
+// [--END--]

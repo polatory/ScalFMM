@@ -1,6 +1,6 @@
 #ifndef FABSTRACTCELL_HPP
 #define FABSTRACTCELL_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 
@@ -83,4 +83,4 @@ public:
 
 #endif //FABSTRACTCELL_HPP
 
-// [--LICENSE--]
+// [--END--]

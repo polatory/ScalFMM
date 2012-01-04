@@ -1,6 +1,6 @@
 #ifndef FBASICLOADER_HPP
 #define FBASICLOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 #include <fstream>
@@ -116,4 +116,4 @@ public:
 
 #endif //FBASICLOADER_HPP
 
-// [--LICENSE--]
+// [--END--]

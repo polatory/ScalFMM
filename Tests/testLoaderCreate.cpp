@@ -1,4 +1,4 @@
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 #include <fstream>
@@ -79,4 +79,4 @@ int main(int argc, char ** argv){
 }
 
 
-// [--LICENSE--]
+// [--END--]

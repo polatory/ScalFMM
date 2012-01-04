@@ -1,6 +1,6 @@
 #ifndef FFmaPARTICLE_HPP
 #define FFmaPARTICLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FBasicParticle.hpp"
 #include "../Extensions/FExtendPhysicalValue.hpp"
@@ -23,4 +23,4 @@ public:
 
 #endif //FFmaPARTICLE_HPP
 
-// [--LICENSE--]
+// [--END--]

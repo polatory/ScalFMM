@@ -1,6 +1,6 @@
 #ifndef FSUBOCTREE_HPP
 #define FSUBOCTREE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
@@ -199,16 +199,19 @@ public:
     * Delete cells arrays and allocated cells
     */
     virtual ~FAbstractSubOctree(){
-        long cellsAtlevel = 8;
-        for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
-            for( int indexCells = 0 ; indexCells < cellsAtlevel ; ++indexCells ){
+        long mostRight = rightLeafIndex;
+        long mostLeft = leftLeafIndex;
+
+        for( int indexLevel = this->subOctreeHeight - 1 ; indexLevel >= 0 ; --indexLevel ){
+            for( long indexCells = mostLeft ; indexCells <= mostRight ; ++indexCells ){
                 if(this->cells[indexLevel][indexCells]){
-                    delete this->cells[indexLevel][indexCells];
+                    //delete this->cells[indexLevel][indexCells];
                 }
             }
 
             delete [] this->cells[indexLevel];
-            cellsAtlevel <<= 3; // => * 8 >> 8^indexLevel
+            mostLeft  >>= 3;
+            mostRight >>= 3;
         }
 
         delete [] this->cells;
@@ -561,4 +564,4 @@ public:
 
 
 #endif //FSUBOCTREE_HPP
-// [--LICENSE--]
+// [--END--]

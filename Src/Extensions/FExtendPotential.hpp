@@ -1,6 +1,6 @@
 #ifndef FEXTENDPOTENTIAL_HPP
 #define FEXTENDPOTENTIAL_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 
@@ -50,4 +50,4 @@ public:
 
 #endif //FEXTENDPOTENTIAL_HPP
 
-// [--LICENSE--]
+// [--END--]

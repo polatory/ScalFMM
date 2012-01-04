@@ -1,6 +1,6 @@
 #ifndef FTREECOORDINATE_HPP
 #define FTREECOORDINATE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 
@@ -194,4 +194,4 @@ public:
 
 #endif //FTREECOORDINATE_HPP
 
-// [--LICENSE--]
+// [--END--]

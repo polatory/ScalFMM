@@ -13,7 +13,7 @@ OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
-OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" ON )
+OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 
 
 # MPI option has to be set before project
@@ -28,6 +28,9 @@ project(scalfmm CXX)
 MESSAGE( STATUS "SCALFMM_BUILD_DEBUG = ${SCALFMM_BUILD_DEBUG}" )
 if( SCALFMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
+  ADD_DEFINITIONS(-O0)
+else()
+  ADD_DEFINITIONS(-O2)
 endif()
 
 # Trace
@@ -51,7 +54,7 @@ if( SCALFMM_USE_CBLAS )
 endif()
 
 # Compile option
-ADD_DEFINITIONS(-O2 -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
+ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
 
 CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )

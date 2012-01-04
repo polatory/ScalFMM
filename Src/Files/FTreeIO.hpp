@@ -206,7 +206,7 @@ public:
                 }
             }
 
-            delete[] particles;
+            //delete[] particles;
         }
 
         // Start from leal level - 1

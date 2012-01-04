@@ -1,6 +1,6 @@
 #ifndef FExtendPhysicalValue_HPP
 #define FExtendPhysicalValue_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 
@@ -45,4 +45,4 @@ public:
 
 #endif //FExtendPhysicalValue_HPP
 
-// [--LICENSE--]
+// [--END--]

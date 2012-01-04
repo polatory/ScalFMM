@@ -1,6 +1,6 @@
 #ifndef FLIST_HPP
 #define FLIST_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 
@@ -284,4 +284,4 @@ public:
 };
 
 #endif //FLIST_HPP
-// [--LICENSE--]
+// [--END--]

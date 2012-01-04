@@ -1,6 +1,6 @@
 #ifndef FTRACE_HPP
 #define FTRACE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FGlobal.hpp"
 
@@ -153,4 +153,4 @@ public:
 
 #endif //FTRACE_HPP
 
-// [--LICENSE--]
+// [--END--]

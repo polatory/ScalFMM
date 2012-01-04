@@ -1,6 +1,6 @@
 #ifndef FFMMALGORITHMTSM_HPP
 #define FFMMALGORITHMTSM_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FDebug.hpp"
@@ -282,4 +282,4 @@ public:
 
 #endif //FFMMALGORITHMTSM_HPP
 
-// [--LICENSE--]
+// [--END--]

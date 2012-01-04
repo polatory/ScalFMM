@@ -1,4 +1,4 @@
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 
 #include "../Src/Utils/FTic.hpp"
@@ -342,4 +342,4 @@ int main(int argc, char ** argv){
 }
 
 
-// [--LICENSE--]
+// [--END--]

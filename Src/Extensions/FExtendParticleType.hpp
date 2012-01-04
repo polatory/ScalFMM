@@ -1,6 +1,6 @@
 #ifndef FEXTENDPARTICLETYPE_HPP
 #define FEXTENDPARTICLETYPE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 
 /**
@@ -77,4 +77,4 @@ public:
 
 #endif //FEXTENDPARTICLETYPE_HPP
 
-// [--LICENSE--]
+// [--END--]

@@ -1,6 +1,6 @@
 #ifndef FFMALOADER_HPP
 #define FFMALOADER_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 #include <fstream>
@@ -120,4 +120,4 @@ public:
 
 #endif //FFmaLoader_HPP
 
-// [--LICENSE--]
+// [--END--]

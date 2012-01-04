@@ -1,6 +1,6 @@
 #ifndef FOCTREE_HPP
 #define FOCTREE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FSubOctree.hpp"
 
@@ -1005,4 +1005,4 @@ public:
 };
 
 #endif //FOCTREE_HPP
-// [--LICENSE--]
+// [--END--]

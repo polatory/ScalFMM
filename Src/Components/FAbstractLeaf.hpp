@@ -1,6 +1,6 @@
 #ifndef FABSTRACTLEAF_HPP
 #define FABSTRACTLEAF_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 
 /**
@@ -47,4 +47,4 @@ public:
 
 #endif //FABSTRACTLEAF_HPP
 
-// [--LICENSE--]
+// [--END--]

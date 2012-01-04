@@ -1,6 +1,6 @@
 #ifndef FBASICCELL_HPP
 #define FBASICCELL_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
@@ -27,4 +27,4 @@ public:
 
 #endif //FBASICCELL_HPP
 
-// [--LICENSE--]
+// [--END--]

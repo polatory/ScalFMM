@@ -1,6 +1,6 @@
 #ifndef FEXTENDMORTONINDEX_HPP
 #define FEXTENDMORTONINDEX_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
@@ -46,4 +46,4 @@ public:
 
 #endif //FEXTENDMORTONINDEX_HPP
 
-// [--LICENSE--]
+// [--END--]

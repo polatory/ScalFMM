@@ -1,6 +1,6 @@
 #ifndef FTESTKERNELS_HPP
 #define FTESTKERNELS_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include <iostream>
 
@@ -194,4 +194,4 @@ void ValidateFMMAlgo(OctreeClass* const tree){
 
 #endif //FTESTKERNELS_HPP
 
-// [--LICENSE--]
+// [--END--]

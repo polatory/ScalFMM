@@ -1,6 +1,6 @@
 #ifndef FVECTOR_HPP
 #define FVECTOR_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 

@@ -2,11 +2,13 @@
 #define FMEMSTATS_H
 
 
-#include <new>
-#include <stdexcept>
 #include <stdlib.h>
+#include <cstring>
 
 #ifdef SCALFMM_USE_MEM_STATS
+#include <new>
+#include <stdexcept>
+#warning use meme stats
     void* operator new(std::size_t n) throw(std::bad_alloc);
     void* operator new(size_t n, std::nothrow_t const&) throw();
     void* operator new[](size_t n) throw(std::bad_alloc);
@@ -40,6 +42,7 @@ private:
         currentAllocated -= size;
     }
 
+#ifdef SCALFMM_USE_MEM_STATS
     friend void* operator new(std::size_t n) throw(std::bad_alloc);
     friend void* operator new(size_t n, std::nothrow_t const&) throw();
     friend void* operator new[](size_t n) throw(std::bad_alloc);
@@ -48,6 +51,7 @@ private:
     friend void operator delete(void* p, std::nothrow_t const&) throw();
     friend void operator delete[](void* p) throw();
     friend void operator delete[](void* p, std::nothrow_t const&) throw();
+#endif
 
 public:
     static FMemStats controler;

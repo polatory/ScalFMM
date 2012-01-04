@@ -1,6 +1,6 @@
 #ifndef FEXTENDPOSITION_HPP
 #define FEXTENDPOSITION_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
@@ -53,4 +53,4 @@ public:
 
 #endif //FEXTENDPOSITION_HPP
 
-// [--LICENSE--]
+// [--END--]

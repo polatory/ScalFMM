@@ -1,6 +1,6 @@
 #ifndef FCOMPLEXE_HPP
 #define FCOMPLEXE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FMath.hpp"
 
@@ -149,4 +149,4 @@ inline FComplexe operator*=(const FComplexe& first, const FComplexe& second){
 
 #endif //FCOMPLEXE_HPP
 
-// [--LICENSE--]
+// [--END--]

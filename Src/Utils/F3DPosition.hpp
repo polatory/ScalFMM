@@ -1,6 +1,6 @@
 #ifndef F3DPOSITION_HPP
 #define F3DPOSITION_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 // To get memcpy
 #include <cstring>
@@ -251,4 +251,4 @@ public:
 
 #endif //F3DPOSITION_HPP
 
-// [--LICENSE--]
+// [--END--]

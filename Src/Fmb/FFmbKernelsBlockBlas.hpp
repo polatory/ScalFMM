@@ -1,6 +1,6 @@
 #ifndef FFMBKERNELSBLOCKBLAS_HPP
 #define FFMBKERNELSBLOCKBLAS_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FBlas.hpp"
@@ -1787,4 +1787,4 @@ const FReal FFmbKernelsBlockBlas<ParticleClass,CellClass,ContainerClass>::PiArra
 
 #endif //FFMBKERNELSBLOCKBLAS_HPP
 
-// [--LICENSE--]
+// [--END--]

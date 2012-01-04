@@ -1,6 +1,6 @@
 #ifndef FBASICPARTICLE_HPP
 #define FBASICPARTICLE_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Extensions/FExtendPosition.hpp"
 
@@ -25,4 +25,4 @@ public:
 
 #endif //FBASICPARTICLE_HPP
 
-// [--LICENSE--]
+// [--END--]

@@ -1,6 +1,6 @@
 #ifndef FEXTENDFORCES_HPP
 #define FEXTENDFORCES_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
@@ -54,4 +54,4 @@ public:
 
 #endif //FEXTENDFORCES_HPP
 
-// [--LICENSE--]
+// [--END--]

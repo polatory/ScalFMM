@@ -1,6 +1,6 @@
 #ifndef FBOOLARRAY_HPP
 #define FBOOLARRAY_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 // To get memcpy
 #include <cstring>
@@ -102,4 +102,4 @@ public :
 
 #endif //FBOOLARRAY_HPP
 
-// [--LICENSE--]
+// [--END--]

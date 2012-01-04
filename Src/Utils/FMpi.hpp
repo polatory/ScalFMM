@@ -1,6 +1,6 @@
 #ifndef FMPI_HPP
 #define FMPI_HPP
-// /!\ Please, you must read the license at the bottom of this page
+// [--License--]
 
 #include "FGlobal.hpp"
 #include "FMath.hpp"
@@ -303,4 +303,4 @@ private:
 
 #endif //FMPI_HPP
 
-// [--LICENSE--]
+// [--END--]
