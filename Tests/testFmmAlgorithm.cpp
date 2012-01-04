@@ -50,7 +50,7 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 9);
+    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
     const FReal FRandMax    = FReal(RAND_MAX);

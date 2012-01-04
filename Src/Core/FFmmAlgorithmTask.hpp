@@ -11,7 +11,6 @@
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
 
-#include <list>
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -274,7 +273,7 @@ private:
             #pragma omp single nowait
             {
                 const int SizeShape = 3*3*3;
-                std::list<typename OctreeClass::Iterator> shapes[SizeShape];
+                FVector<typename OctreeClass::Iterator> shapes[SizeShape];
 
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.gotoBottomLeft();
@@ -298,7 +297,7 @@ private:
                         }
                     }
                     else{
-                        shapes[shapePosition].push_front(octreeIterator);
+                        shapes[shapePosition].push(octreeIterator);
                     }
 
                 } while(octreeIterator.moveRight());
@@ -306,14 +305,14 @@ private:
                 #pragma omp taskwait
 
                 for( int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
-                    while( shapes[idxShape].size() ){
-                        typename OctreeClass::Iterator toWork = shapes[idxShape].front();
+                    int iterLeaf = shapes[idxShape].getSize();
+                    while( iterLeaf-- ){
+                        typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
                         #pragma omp task
                         {
                             const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, toWork.getCurrentGlobalIndex(),heightMinusOne);
                             myThreadkernels->P2P(toWork.getCurrentGlobalIndex(),toWork.getCurrentListTargets(), toWork.getCurrentListSrc() , neighbors, neighborsIndex, counter);
                         }
-                        shapes[idxShape].pop_front();
                     }
 
                     #pragma omp taskwait
