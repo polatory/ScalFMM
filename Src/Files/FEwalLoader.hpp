@@ -46,13 +46,13 @@ public:
             FReal tempf(0);
             file >> tempi >> tempi >> this->nbParticles >> tempf;
 
-            FReal x,y,z;
-            file >> x >> tempf >> tempf;
-            file >> tempf >> y >> tempf;
-            file >> tempf >> tempf >> z;
+            FReal widthx, widthy, widthz;
+            file >> widthx >> tempf >> tempf;
+            file >> tempf >> widthy >> tempf;
+            file >> tempf >> tempf >> widthz;
 
-            this->centerOfBox.setPosition(x,y,z);
-            this->boxWidth *= 2;
+            this->centerOfBox.setPosition(0.0,0.0,0.0);
+            this->boxWidth = widthx;
         }
         else {
              this->boxWidth = 0;
