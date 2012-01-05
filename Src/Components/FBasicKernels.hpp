@@ -60,6 +60,20 @@ public:
                      ContainerClass* const [26], const MortonIndex [26], const int ){
 
     }
+
+    // ------------------- Periodic  --------------------
+
+
+    /** Before Downward */
+    void M2L(CellClass* const FRestrict , const CellClass* [189], FTreeCoordinate [189], const int , const int ) {
+    }
+
+
+    /** After Downward */
+    void P2P(const MortonIndex ,
+             ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
+             ContainerClass* const [26], const FTreeCoordinate [26], const int ) {
+    }
 };
 
 
