@@ -49,6 +49,10 @@ public:
         this->forces.incZ(inFz);
     }
 
+    /** set the forces from 3 variables */
+    void setForces(const FReal inFx, const FReal inFy, const FReal inFz) {
+        this->forces.setPosition(inFx , inFy, inFz);
+    }
 };
 
 
