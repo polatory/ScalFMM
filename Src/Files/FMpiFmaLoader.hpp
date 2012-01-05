@@ -60,7 +60,7 @@ public:
             char nonConstFilename[512];
             strcpy(nonConstFilename,filename);
             MPI_File file;
-            if(MPI_File_open(MPI::COMM_WORLD, nonConstFilename, MPI::MODE_RDONLY, MPI::INFO_NULL, &file) == MPI_SUCCESS){
+            if(MPI_File_open(MPI_COMM_WORLD, nonConstFilename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file) == MPI_SUCCESS){
                 int sizeOfElement(0);
                 FReal xyzBoxWidth[4];
 

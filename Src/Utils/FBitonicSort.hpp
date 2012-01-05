@@ -4,8 +4,6 @@
 #include <cstdlib>
 #include <cmath>
 
-#include <mpi.h>
-
 #include "FTrace.hpp"
 #include "FMpi.hpp"
 #include "FQuickSort.hpp"

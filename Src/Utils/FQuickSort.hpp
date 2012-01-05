@@ -7,8 +7,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <mpi.h>
-
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
 #include "FTrace.hpp"

@@ -2,12 +2,143 @@
 #define FMPI_HPP
 // [--License--]
 
+#include <cstdio>
+
 #include "FGlobal.hpp"
 #include "FMath.hpp"
 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
 #ifdef SCALFMM_USE_MPI
 #include <mpi.h>
+#else
+struct MPI_Request{};
+struct MPI_Status{ int MPI_SOURCE; };
+
+typedef int MPI_Datatype;
+typedef long long MPI_Offset;
+typedef int MPI_Comm;
+typedef int MPI_Group;
+typedef int MPI_File;
+typedef int MPI_Op;
+typedef int MPI_Info;
+
+MPI_Status* MPI_STATUSES_IGNORE = 0;
+MPI_Status* MPI_STATUS_IGNORE = 0;
+
+
+enum{
+    MPI_SUCCESS,
+    MPI_LONG_LONG,
+    MPI_LONG,
+    MPI_DOUBLE,
+    MPI_FLOAT,
+    MPI_INT,
+    MPI_COMM_WORLD,
+    MPI_BYTE,
+    MPI_SUM,
+    MPI_THREAD_MULTIPLE,
+    MPI_ANY_SOURCE,
+    MPI_MODE_RDONLY,
+    MPI_INFO_NULL,
+};
+
+int MPI_Comm_rank( MPI_Comm comm, int *rank ){ return 0; }
+int MPI_Comm_size( MPI_Comm comm, int *size ){ return 0; }
+
+int MPI_Probe( int source, int tag, MPI_Comm comm, MPI_Status *status ){ return 0; }
+
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm){ return 0; }
+int MPI_Comm_group(MPI_Comm comm, MPI_Group *group){ return 0; }
+int MPI_Comm_free(MPI_Comm *comm){ return 0; }
+int MPI_Group_free(MPI_Group *group){ return 0; }
+int MPI_Group_incl(MPI_Group group, int n, int *ranks, MPI_Group *newgroup){ return 0; }
+int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm){ return 0; }
+int MPI_Init_thread(int *argc, char ***argv, int required, int *provided ){ return 0; }
+
+int MPI_Finalize(){ return 0; }
+int MPI_Abort(MPI_Comm comm, int errorcode){ return 0; }
+
+int MPI_Reduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, int root, MPI_Comm comm){ return 0; }
+
+int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm){ return 0; }
+
+int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
+              int tag, MPI_Comm comm, MPI_Request *request){ return 0; }
+
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+             MPI_Comm comm, MPI_Status *status){ return 0; }
+
+int MPI_Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+              MPI_Comm comm, MPI_Request *request){ return 0; }
+
+int MPI_Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+             MPI_Comm comm){ return 0; }
+
+int MPI_Alltoallv(void *sendbuf, int *sendcnts, int *sdispls,
+                  MPI_Datatype sendtype, void *recvbuf, int *recvcnts,
+                  int *rdispls, MPI_Datatype recvtype, MPI_Comm comm){ return 0; }
+
+int MPI_Wait(MPI_Request *request, MPI_Status *status){ return 0; }
+
+int MPI_Waitany(int count, MPI_Request array_of_requests[], int *index,
+               MPI_Status *status){ return 0; }
+
+int MPI_Waitall(int count, MPI_Request array_of_requests[],
+               MPI_Status array_of_statuses[]){ return 0; }
+
+int MPI_Waitsome(int incount, MPI_Request array_of_requests[],
+                int *outcount, int array_of_indices[],
+                MPI_Status array_of_statuses[]){ return 0; }
+
+int MPI_File_open(MPI_Comm comm, char *filename, int amode,
+                  MPI_Info info, MPI_File *fh){ return 0; }
+
+int MPI_File_read(MPI_File mpi_fh, void *buf, int count,
+                  MPI_Datatype datatype, MPI_Status *status){ return 0; }
+
+int MPI_File_get_position(MPI_File mpi_fh, MPI_Offset *offset){ return 0; }
+
+int MPI_File_get_size(MPI_File mpi_fh, MPI_Offset *size){ return 0; }
+
+int MPI_File_read_at(MPI_File mpi_fh, MPI_Offset offset, void *buf,
+                    int count, MPI_Datatype datatype, MPI_Status *status){ return 0; }
+
+int MPI_Get_count( MPI_Status *status,  MPI_Datatype datatype, int *count ){ return 0; }
+
+int MPI_File_close(MPI_File *mpi_fh){ return 0; }
+
+int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                int dest, int sendtag,
+                void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                int source, int recvtag,
+                MPI_Comm comm, MPI_Status *status){ return 0; }
+
+int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype,
+                       int dest, int sendtag, int source, int recvtag,
+                       MPI_Comm comm, MPI_Status *status){ return 0; }
+
+int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root,
+               MPI_Comm comm ){ return 0; }
+
 #endif
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -151,7 +282,7 @@ public:
         /** Reduce a value for proc == 0 */
         template< class T >
         T reduceSum(T data) const {
-            T result;
+            T result(0);
             FMpi::Assert( MPI_Reduce( &data, &result, 1, FMpi::GetType(data), MPI_SUM, 0, communicator ), __LINE__);
             return result;
         }
@@ -298,7 +429,6 @@ private:
     /** The original communicator */
     FComm* communicator;
 };
-
 
 
 #endif //FMPI_HPP
