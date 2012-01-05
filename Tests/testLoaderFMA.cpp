@@ -46,7 +46,7 @@ int main(int argc, char ** argv ){
 
     // Use testLoaderCreate.exe to create this file
     FTic counter;
-    const char* const defaultFilename = "../../Data/testLoaderFMA.fma";
+    const char* const defaultFilename = "../Data/test20k.fma";
     const char* filename;
 
     if(argc == 1){
@@ -68,7 +68,7 @@ int main(int argc, char ** argv ){
 
     {
         // otree
-        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 9), FParameters::getValue(argc,argv,"-sh", 3),
+        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 5), FParameters::getValue(argc,argv,"-sh", 3),
                          loader.getBoxWidth(), loader.getCenterOfBox());
 
         // -----------------------------------------------------

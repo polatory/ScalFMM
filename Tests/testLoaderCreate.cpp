@@ -24,7 +24,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(200000));
+    const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(20000));
     const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
@@ -34,7 +34,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char defaultFilename[] = "testLoader.basic.temp";
+    const char defaultFilename[] = "../Data/test20k.basic";
     const char* Output;
 
     if(argc == 1){

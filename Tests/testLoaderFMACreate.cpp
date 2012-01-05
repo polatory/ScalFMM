@@ -25,7 +25,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(200000));
+    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
 
     const FReal FRandMax = FReal(RAND_MAX);
     const FReal f2 = 2;
@@ -39,7 +39,7 @@ int main(int argc, char ** argv){
     const FReal ZCenter = BoxWidth;
 
     // Output file please let .temp extension
-    const char defaultFilename[] = "testLoaderFMA.fma";
+    const char defaultFilename[] = "../Data/test20k.fma";
 
     const char* Output;
 

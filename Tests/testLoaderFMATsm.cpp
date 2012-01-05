@@ -24,6 +24,9 @@
 #include "../Src/Files/FFmaTsmLoader.hpp"
 
 
+#include "../Src/Utils/FParameters.hpp"
+
+
 class ParticleTsm : public FFmaParticle, public FExtendParticleType {
 };
 
@@ -43,7 +46,7 @@ int main(int argc, char ** argv ){
 
     // Use testLoaderCreate.exe to create this file
     FTic counter;
-    const char* const defaultFilename = "testLoaderFMA.tsm.fma";
+    const char* const defaultFilename = "../Data/test20k.tsm.fma";
     const char* filename;
 
     if(argc == 1){
@@ -64,7 +67,8 @@ int main(int argc, char ** argv ){
     }
     {
         // otree
-        OctreeClass tree(10, 3,loader.getBoxWidth(),loader.getCenterOfBox());
+        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 5), FParameters::getValue(argc,argv,"-sh", 3),
+                         loader.getBoxWidth(),loader.getCenterOfBox());
 
         // -----------------------------------------------------
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;

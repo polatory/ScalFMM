@@ -326,9 +326,9 @@ int main(int argc, char ** argv){
 
     FMpi app( argc, argv);
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    char defaultFilename[] = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+    char defaultFilename[] = "../Data/test20k.bin.fma";
     char* filename;
     FTic counter;
 

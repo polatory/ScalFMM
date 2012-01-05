@@ -16,7 +16,6 @@ tmp/
 *~
 *TAGS
 *#*#
-*.bin.*
 
 #ignore latex temporary files
 *.out

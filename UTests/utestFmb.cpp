@@ -31,7 +31,7 @@ class TestFmb : public FUTester<TestFmb> {
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
 
-        FFmaBinLoader<ParticleClass> loader("../UTests/data/fmb.bin.fma");
+        FFmaBinLoader<ParticleClass> loader("../Data/utestFmb.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             return;
@@ -54,7 +54,7 @@ class TestFmb : public FUTester<TestFmb> {
         //FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../UTests/data/fmb.data", testTree);
 
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../UTests/data/fmb.data", goodTree);
+        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", goodTree);
 
         Print("Check the particles...");
 
@@ -67,12 +67,12 @@ class TestFmb : public FUTester<TestFmb> {
 
             do{
                 if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                    ///assert(false);
+                    assert(false);
                     break;
                 }
 
                 if(testOctreeIterator.getCurrentListSrc()->getSize() != goodOctreeIterator.getCurrentListSrc()->getSize()){
-                    ///assert(false);
+                    assert(false);
                     break;
                 }
 
@@ -89,12 +89,12 @@ class TestFmb : public FUTester<TestFmb> {
 
                 if(!testOctreeIterator.moveRight()){
                     if(goodOctreeIterator.moveRight()){
-                        ///assert(false);
+                        assert(false);
                     }
                     break;
                 }
                 if(!goodOctreeIterator.moveRight()){
-                    ///assert(false);
+                    assert(false);
                     break;
                 }
 
@@ -111,7 +111,7 @@ class TestFmb : public FUTester<TestFmb> {
             for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
                 do{
                     if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                        ///assert(false);
+                        assert(false);
                         break;
                     }
 
@@ -123,12 +123,12 @@ class TestFmb : public FUTester<TestFmb> {
 
                     if(!testOctreeIterator.moveRight()){
                         if(goodOctreeIterator.moveRight()){
-                            ///assert(false);
+                            assert(false);
                         }
                         break;
                     }
                     if(!goodOctreeIterator.moveRight()){
-                        ///assert(false);
+                        assert(false);
                         break;
                     }
 

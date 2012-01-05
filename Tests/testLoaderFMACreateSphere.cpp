@@ -12,6 +12,8 @@
 #include "../Src/Utils/FGlobal.hpp"
 #include "../Src/Utils/FMath.hpp"
 
+#include "../Src/Utils/FParameters.hpp"
+
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreateSphere.cpp -O2 -o testLoaderCreateSphere.exe
 
@@ -27,7 +29,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
 
     // Nb of particles
-    const long NbParticles = 2000000;
+    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
     const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
@@ -37,7 +39,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0;
     // Output file please let .temp extension
-    const char defaultFilename[] = "Sphere.fma";
+    const char defaultFilename[] = "../Data/testSphere20k.fma";
 
     const char* Output;
 

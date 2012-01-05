@@ -101,7 +101,7 @@ int main(int argc, char ** argv){
     const int NbLevels = 6;
     const int SizeSubLevels = 2;
     FTic counter;
-    const char* const defaultFilename = "../Data/testH.txt";
+    const char* const defaultFilename = "../Data/testMortonIndex.txt";
     const char* filename;
 
     if(argc == 1){

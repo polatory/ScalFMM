@@ -48,10 +48,10 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const char* const defaultFilename = "testLoaderFMA.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+    const char* const defaultFilename = "../Data/test20k.fma";
     const char* filename;
 
     if(argc == 1){

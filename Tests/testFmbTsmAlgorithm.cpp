@@ -45,10 +45,10 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const char* const defaultFilename = "testLoaderFMA.tor.fma"; //../../Data/ "testLoaderFMA.fma" "testFMAlgorithm.fma" Sphere.fma
+    const char* const defaultFilename = "../Data/test20k.tsm.fma";
     const char* filename;
 
     if(argc == 1){

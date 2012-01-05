@@ -35,7 +35,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char defaultFilename[] = "testLoaderFMA.fma";
+    const char defaultFilename[] = "../Data/test20k.bin.fma";
 
     const char* Output;
 

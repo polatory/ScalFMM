@@ -44,11 +44,9 @@ int main(int argc, char ** argv){
     std::cout << ">> how to use the basic loader.\n";
     //////////////////////////////////////////////////////////////
 
-    // we store all particles to be able to dealloc
-    FVector<FBasicParticle*> particles;
     // Use testLoaderCreate.exe to create this file
     FTic counter;
-    const char* const defaultFilename = "../../Data/testLoader.basic.temp";
+    const char* const defaultFilename = "../Data/test20k.basic";
     const char* filename;
 
     if(argc == 1){
@@ -70,7 +68,7 @@ int main(int argc, char ** argv){
 
     {
         // otree
-        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 9), FParameters::getValue(argc,argv,"-sh", 3),
+        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 5), FParameters::getValue(argc,argv,"-sh", 3),
                          loader.getBoxWidth(), loader.getCenterOfBox());
 
         // -----------------------------------------------------

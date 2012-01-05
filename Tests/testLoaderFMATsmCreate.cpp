@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files in the FMA format
 // g++ testLoaderFMATsmCreate.cpp -o testLoaderFMATsmCreate.exe
@@ -23,7 +24,7 @@ int main(int argc, char ** argv){
     std::cout << ">> [x] [y] [z] [physical value] [1 if target 0 if source]...\n";
     //////////////////////////////////////////////////////////////
     // Nb of particles
-    const long NbParticles = 200000;
+    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
     const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
@@ -34,7 +35,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char defaultFilename[] = "testLoaderFMA.tsm.fma";
+    const char defaultFilename[] = "../Data/test20k.tsm.fma";
 
     const char* Output;
 
