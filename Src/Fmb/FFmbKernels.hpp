@@ -741,7 +741,7 @@ public:
 
             for(int n = 0 ; n <= FMB_Info_P ; ++n ){
                 // l<0 // (-1)^l
-                FReal pow_of_minus_1_for_l = ( n % 2 ? -1 : 1);
+                FReal pow_of_minus_1_for_l = static_cast<FReal>( n % 2 ? -1.0 : 1.0);
 
                 // O_n^l : here points on the source multipole expansion term of degree n and order |l|
                 const FComplexe* p_src_exp_term = multipole_exp_src + expansion_Redirection_array_for_j[n]+n;
@@ -780,7 +780,7 @@ public:
 
                     for( int j=n ; j <= FMB_Info_P ; ++j ){
                         // (-1)^k
-                        FReal pow_of_minus_1_for_k = ( FMath::Max(0,n-j+l) %2 ? -1 : 1 );
+                        FReal pow_of_minus_1_for_k = static_cast<FReal>( FMath::Max(0,n-j+l) %2 ? -1.0 : 1.0 );
                         // M_j^k
                         FComplexe *p_target_exp_term = multipole_exp_target + expansion_Redirection_array_for_j[j] + FMath::Max(0,n-j+l);
                         // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
@@ -1029,7 +1029,7 @@ public:
 
                         //printf("2\n");
                         // (-1)^l
-                        FReal pow_of_minus_1_for_l = ((l%2) ? -1 : 1);
+                        FReal pow_of_minus_1_for_l = static_cast<FReal>((l%2) ? -1.0 : 1.0);
                         for (; l>0 && l>=j-n+k; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, --p_src_exp_term, ++p_Inner_term){ /* l>0 && l-k<=0 */
                             p_target_exp_term->incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
                                                         ((p_src_exp_term->getReal() * p_Inner_term->getReal()) +

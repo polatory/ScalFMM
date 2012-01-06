@@ -6,9 +6,17 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
+# Project Infos
+project(scalfmm)
+
+# Active language
+# -----------------------
+ENABLE_LANGUAGE(CXX )
+
+
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" OFF )
-OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" ON )
+OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
@@ -21,8 +29,6 @@ if( SCALFMM_USE_MPI )
   SET(CMAKE_CXX_COMPILER mpicxx)
 endif()
 
-# Project Infos
-project(scalfmm CXX)
 
 # Test if openmp is here
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)
