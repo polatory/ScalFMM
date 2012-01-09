@@ -40,7 +40,7 @@ class FFmbKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerCla
 protected:
 
     // _GRAVITATIONAL_
-    static const int FMB_Info_eps_soft_square = 1;
+    static const int FMB_Info_eps_soft_square = 0;//1;
 
     // Can be false or not in not blas kernels
     static const int FMB_Info_up_to_P_in_M2L = true;
@@ -1294,7 +1294,7 @@ public:
 
             iterTarget.data().incForces( force_vector_tmp_x, force_vector_tmp_y, force_vector_tmp_z );
 
-            iterTarget.data().setPotential(expansion_Evaluate_local_with_Y_already_computed(local_exp));
+            iterTarget.data().incPotential(expansion_Evaluate_local_with_Y_already_computed(local_exp));
 
             /*printf("[END] fx = %e \t fy = %e \t fz = %e \n\n",
                    iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());*/
@@ -1372,10 +1372,6 @@ public:
                 iterSameBox.gotoNext();
             }
 
-            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.data()->getPosition().getX(),iterTarget.data()->getPosition().getY(),iterTarget.data()->getPosition().getZ());
-            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
-            //printf("\t potential = %e \n",iterTarget.data()->getPotential());
-
             iterTarget.data() = target;
 
             iterTarget.gotoNext();
@@ -1386,14 +1382,16 @@ public:
 
     void DIRECT_COMPUTATION_MUTUAL_SOFT(ParticleClass& target, ParticleClass& source){
 
-        FReal dx = target.getPosition().getX() - source.getPosition().getX();
-        FReal dy = target.getPosition().getY() - source.getPosition().getY();
-        FReal dz = target.getPosition().getZ() - source.getPosition().getZ();
+        FReal dx = -(target.getPosition().getX() - source.getPosition().getX());
+        FReal dy = -(target.getPosition().getY() - source.getPosition().getY());
+        FReal dz = -(target.getPosition().getZ() - source.getPosition().getZ());
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz + FReal(FMB_Info_eps_soft_square));
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
-        inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
+
         inv_square_distance *= inv_distance;
+        inv_square_distance *= target.getPhysicalValue() * source.getPhysicalValue();
+
 
         dx *= inv_square_distance;
         dy *= inv_square_distance;
@@ -1404,15 +1402,14 @@ public:
                 dy,
                 dz
                 );
-        target.incPotential( inv_distance );
+        target.incPotential( inv_distance  * source.getPhysicalValue() );
 
         source.incForces(
                 (-dx),
                 (-dy),
                 (-dz)
                 );
-        source.incPotential( inv_distance );
-
+        source.incPotential( inv_distance * target.getPhysicalValue() );
 
     }
 
@@ -1454,10 +1451,6 @@ public:
                 iterSameBox.gotoNext();
             }
 
-            //printf("x = %e \t y = %e \t z = %e \n",iterTarget.data()->getPosition().getX(),iterTarget.data()->getPosition().getY(),iterTarget.data()->getPosition().getZ());
-            //printf("\t P2P fx = %e \t fy = %e \t fz = %e \n",iterTarget.data()->getForces().getX(),iterTarget.data()->getForces().getY(),iterTarget.data()->getForces().getZ());
-            //printf("\t potential = %e \n",iterTarget.data()->getPotential());
-
             iterTarget.data() = target;
 
             iterTarget.gotoNext();
@@ -1474,6 +1467,7 @@ public:
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz + FReal(FMB_Info_eps_soft_square));
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
+
         inv_distance *= target.getPhysicalValue() * source.getPhysicalValue();
         inv_square_distance *= inv_distance;
 

@@ -39,7 +39,7 @@ int main(int argc, char ** argv){
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -100,6 +100,9 @@ int main(int argc, char ** argv){
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     { // get sum forces&potential
+
+        FILE* fout = fopen("./res.temp.txt", "w");
+
         FReal potential = 0;
         F3DPosition forces;
         typename OctreeClass::Iterator octreeIterator(&tree);
@@ -110,11 +113,11 @@ int main(int argc, char ** argv){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();
 
-                //printf("x = %e y = %e z = %e \n",iter.data()->getPosition().getX(),iter.data()->getPosition().getY(),iter.data()->getPosition().getZ());
-                //printf("\t fx = %e fy = %e fz = %e \n",iter.data()->getForces().getX(),iter.data()->getForces().getY(),iter.data()->getForces().getZ());
-
-                //printf("\t\t Sum Forces ( %e , %e , %e)\n",
-                //forces.getX(),forces.getY(),forces.getZ());
+                fprintf(fout, "*** pos= (%f, %f, %f)\tv= %f\t\t\t\t\t\t\tforce= (%f, %f, %f)\t\t\t\tpotential energy=\n%f\n",
+                        iter.data().getPosition().getX(),iter.data().getPosition().getY(),iter.data().getPosition().getZ(),
+                        iter.data().getPhysicalValue(),
+                        iter.data().getForces().getX(),iter.data().getForces().getY(),iter.data().getForces().getZ(),
+                        iter.data().getPotential());
 
                 iter.gotoNext();
             }
@@ -122,6 +125,8 @@ int main(int argc, char ** argv){
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Potential = " << potential << std::endl;
+
+        fclose(fout);
     }
 
     // -----------------------------------------------------
