@@ -202,6 +202,11 @@ public:
                 return (*iter)->target;
             }
 
+            /** Set the data */
+            void setData(const T& inData){
+                (*iter)->target = inData;
+            }
+
             /**
             * To know if an iterator is at the end of the list
             * @return true if the current iterator can gotoNext and access to value, else false

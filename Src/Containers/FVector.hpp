@@ -204,7 +204,6 @@ public:
         return this->array;
     }
 
-
     /** This class is a basic iterator
       * <code>
       *  typename FVector<int>::ConstBasicIterator iter(myVector);<br>
@@ -246,6 +245,11 @@ public:
         /** Get current data */
         const T& data() const{
             return this->vector->array[this->index];
+        }
+
+        /** Set the data */
+        void setData(const T& inData){
+            this->vector->array[this->index] = inData;
         }
 
         /** Remove current data */
