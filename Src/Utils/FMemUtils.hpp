@@ -46,6 +46,12 @@ namespace FMemUtils {
         }
     }
 
-};
+    template <class TypeClass>
+    void copyall(TypeClass*const dest, const TypeClass*const source, const int nbElements){
+        for(int idx = 0 ; idx < nbElements ; ++idx){
+            dest[idx] = source[idx];
+        }
+    }
+}
 
 #endif // FMEMUTILS_HPP

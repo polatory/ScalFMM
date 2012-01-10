@@ -48,8 +48,15 @@ class FHarmonic {
     FReal*     sphereHarmoInnerCoef;
     FReal*     sphereHarmoOuterCoef;
 
+    void init(){
+        harmonic = new FComplexe[expSize];
+        cosSin   = new FComplexe[2 * devP + 1];
+        legendre = new FReal[expSize];
 
-    void sphericalHarmonicInitialize(){
+        thetaDerivatedResult = new FComplexe[expSize];
+        sphereHarmoInnerCoef = new FReal[int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)];
+        sphereHarmoOuterCoef = new FReal[devP + 1];
+
         FReal factOuter = 1.0;
         for(int idxP = 0 ; idxP <= devP; factOuter *= FReal(++idxP) ){
             sphereHarmoOuterCoef[idxP] = factOuter;
@@ -111,21 +118,23 @@ class FHarmonic {
         }
     }
 
+    FHarmonic& operator=(const FHarmonic&){ return *this;}
+
 public:
     explicit FHarmonic(const int inDevP)
         : devP(inDevP),expSize(int(((inDevP)+1) * ((inDevP)+2) * 0.5)),
           harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
           sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0) {
 
-        harmonic = new FComplexe[expSize];
-        cosSin   = new FComplexe[2 * devP + 1];
-        legendre = new FReal[expSize];
+        init();
+    }
 
-        thetaDerivatedResult = new FComplexe[expSize];
-        sphereHarmoInnerCoef = new FReal[expSize];
-        sphereHarmoOuterCoef = new FReal[devP + 1];
+    FHarmonic(const FHarmonic& other)
+        : devP(other.devP),expSize(int(((other.devP)+1) * ((other.devP)+2) * 0.5)),
+          harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
+          sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0) {
 
-        sphericalHarmonicInitialize();
+        init();
     }
 
     ~FHarmonic(){
@@ -137,11 +146,15 @@ public:
         delete[] sphereHarmoOuterCoef;
     }
 
-    FComplexe* data(){
+    int getExpSize() const{
+        return expSize;
+    }
+
+    FComplexe* result(){
         return harmonic;
     }
 
-    const FComplexe* data() const {
+    const FComplexe* result() const {
         return harmonic;
     }
 
@@ -152,6 +165,23 @@ public:
     const FComplexe& result(const int index) const{
         return harmonic[index];
     }
+
+    FComplexe* resultThetaDerivated(){
+        return thetaDerivatedResult;
+    }
+
+    const FComplexe* resultThetaDerivated() const {
+        return thetaDerivatedResult;
+    }
+
+    FComplexe& resultThetaDerivated(const int index){
+        return thetaDerivatedResult[index];
+    }
+
+    const FComplexe& resultThetaDerivated(const int index) const{
+        return thetaDerivatedResult[index];
+    }
+
 
     void computeInner(const FSpherical& inSphere){
         computeCosSin(inSphere.getPhi());
