@@ -20,28 +20,33 @@
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
 class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
-    int devP;
-    int treeHeight;
-    FHarmonic harmonic;
+    int devP;           //< The P
+    int devM2lP;        //< A secondary P
+    int treeHeight;     //< The height of the tree
+    FHarmonic harmonic; //< The harmonic computation class
 
-    FComplexe* preL2LTransitions;
-    FComplexe* preM2MTransitions;
+    FComplexe* preL2LTransitions; //< The pre-computation for the L2L based on the level
+    FComplexe* preM2MTransitions; //< The pre-computation for the M2M based on the level
 
-    FComplexe* preM2LTransitions;
+    FComplexe* preM2LTransitions; //< The pre-computation for the M2L based on the level and the 189 possibilities
 
-    int* preExpRedirJ;
-
+    /** To access te preL2L/preM2M right vector */
     int indexTransition(const int level, const int child){
         return level * 8 * harmonic.getExpSize() + child * harmonic.getExpSize();
     }
 
-    void init(){
+    /** To access te preM2L right vector */
+    int indexM2LTransition(const int idxLevel,const int idxX,const int idxY,const int idxZ){
+        return (idxLevel * 7 * 7 * 7 * devM2lP) + (((((idxX+3) * 7) + (idxY+3)) * 7 ) + (idxZ+3)) * devM2lP;
+    }
+
+    /** Alloc and init pre-vectors*/
+    void allocAndInit(const FReal boxWidth){
         preL2LTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
         preM2MTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
 
-        FReal treeWidthAtLevel = this->treeWidthAtRoot/2;
-
-        for(int idxLevel = 0 ; idxLevel < this->TreeHeight - 1 ; ++idxLevel ){
+        FReal treeWidthAtLevel = boxWidth/2;
+        for(int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel ){
             const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
@@ -56,7 +61,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                         );
 
                 harmonic.computeInner(FSpherical(M2MVector));
-                copyall<FComplexe>(&preM2MTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                FMemUtils::copyall<FComplexe>(&preM2MTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
 
                 const F3DPosition L2LVector (
                         (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
@@ -65,26 +70,38 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                         );
 
                 harmonic.computeInner(FSpherical(L2LVector));
-                copyall<FComplexe>(&preL2LTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                FMemUtils::copyall<FComplexe>(&preL2LTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
            }
         }
 
-        preM2LTransitions = new FComplexe[treeHeight * (7 * 7 * 7) * ];
-
-        preExpRedirJ = new int[2 * devP + 1];
-        for( int h = 0; h <= (2 * devP) ; ++h ){
-            preExpRedirJ[h] = static_cast<int>( h * ( h + 1 ) * 0.5 );
+        // M2L transfer, there is a maximum of 3 neighbors in each direction,
+        // so 6 in each dimension
+        treeWidthAtLevel = boxWidth/2;
+        preM2LTransitions = new FComplexe[treeHeight * (7 * 7 * 7) * devM2lP];
+        for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel ){
+            for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
+                for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
+                    for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
+                        if(idxX || idxY || idxZ){
+                            const F3DPosition relativePos( FReal(idxX) * treeWidthAtLevel , FReal(idxY) * treeWidthAtLevel , FReal(idxZ) * treeWidthAtLevel );
+                            harmonic.computeOuter(FSpherical(relativePos));
+                            FMemUtils::copyall<FComplexe>(&preM2LTransitions[indexM2LTransition(idxLevel,idxX,idxY,idxZ)], harmonic.result(), harmonic.getExpSize());
+                        }
+                    }
+                }
+            }
+            treeWidthAtLevel /= 2;
         }
     }
 
 
 public:
     /** Kernel constructor */
-    FElecForcesKernels(const int inDevP, const int inTreeHeight)
-        : devP(inDevP), treeHeight(inTreeHeight), harmonic(inDevP),
-          preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0), preExpRedirJ(0) {
+    FElecForcesKernels(const int inDevP, const int inTreeHeight, const FReal boxWidth)
+        : devP(inDevP), devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), treeHeight(inTreeHeight), harmonic(inDevP),
+          preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0) {
 
-        init();
+        allocAndInit(boxWidth);
     }
 
     /** Default destructor */
@@ -92,11 +109,10 @@ public:
         delete[] preL2LTransitions;
         delete[] preM2MTransitions;
         delete[] preM2LTransitions;
-        delete[] preExpRedirJ;
     }
 
     /** P2M with a cell and all its particles */
-    void P2M(CellClass* const inPole, const ContainerClass* const ) {
+    void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
         FComplexe* const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
         const F3DPosition polePosition = inPole->getPosition();
@@ -115,7 +131,7 @@ public:
         // iter on each child and process M2M
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             if(inChild[idxChild]){
-                multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), preM2MTransitions[indexTransition(inLevel,idxChild)]);
+                multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitions[indexTransition(inLevel,idxChild)]);
             }
         }
     }
@@ -123,14 +139,14 @@ public:
     /** M2L with a cell and all the existing neighbors */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
              const int size, const int inLevel) {
-        const FTreeCoordinate coordCenterHalphSizeDim(pole->getCoordinate(), halphSize1Dim);
+        const FTreeCoordinate& coordCenter = pole->getCoordinate();
         // For all neighbors compute M2L
         for(int idxSize = 0 ; idxSize < size ; ++idxSize){
             const FTreeCoordinate& coordNeighbors = distantNeighbors[idxSize]->getCoordinate();
-            const FComplexe* const transitionVector = preM2LTransitions[inLevel]
-                                                  [(coordCenterHalphSizeDim.getX() - coordNeighbors.getX())]
-                                                  [(coordCenterHalphSizeDim.getY() - coordNeighbors.getY())]
-                                                  [(coordCenterHalphSizeDim.getZ() - coordNeighbors.getZ())];
+            const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
+                                                  (coordNeighbors.getX() - coordCenter.getX()),
+                                                  (coordNeighbors.getY() - coordCenter.getY()),
+                                                  (coordNeighbors.getZ() - coordCenter.getZ()))];
 
             multipoleToLocal(pole->getLocal(), distantNeighbors[idxSize]->getMultipole(), transitionVector);
         }
@@ -141,7 +157,7 @@ public:
         // iter on each child and process L2L
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             if(child[idxChild]){
-                localToLocal(child[idxChild]->getLocal(), pole->getLocal(), preL2LTransitions[indexTransition(inLevel,idxChild)]);
+                localToLocal(child[idxChild]->getLocal(), pole->getLocal(), &preL2LTransitions[indexTransition(inLevel,idxChild)]);
             }
         }
     }
@@ -181,7 +197,7 @@ public:
                 typename ContainerClass::ConstBasicIterator iterSameBox(*sources);
                 while( iterSameBox.hasNotFinished() ){
                     //(&iterSameBox.data() != &iterTarget.data())
-                    directInteraction(target, iterSameBox.data());
+                    directInteraction(&target, iterSameBox.data());
                     iterSameBox.gotoNext();
                 }
                 // Set data and progress
@@ -195,10 +211,11 @@ public:
                 // For all particles in current leaf
                 typename ContainerClass::BasicIterator iterTarget(*targets);
                 while( iterTarget.hasNotFinished() ){
+                    ParticleClass target( iterTarget.data() );
                     // For all the particles in the other leaf
                     typename ContainerClass::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){
-                        directInteraction(target, iterSource.data());
+                        directInteraction(&target, iterSource.data());
                         iterSource.gotoNext();
                     }
                     // Set data and progress
@@ -227,7 +244,7 @@ public:
                 ParticleClass target( iterTarget.data() );
 
                 // For all particles after the current one
-                typename ContainerClass::ConstBasicIterator iterSameBox = iterTarget;
+                typename ContainerClass::BasicIterator iterSameBox = iterTarget;
                 iterSameBox.gotoNext();
                 while( iterSameBox.hasNotFinished() ){
                     directInteractionMutual(&target, &iterSameBox.data());
@@ -247,7 +264,7 @@ public:
                     while( iterTarget.hasNotFinished() ){
                         ParticleClass target( iterTarget.data() );
                         // For all the particles in the other leaf
-                        typename ContainerClass::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
                         while( iterSource.hasNotFinished() ){
                             directInteractionMutual(&target, &iterSource.data());
                             iterSource.gotoNext();
@@ -282,9 +299,25 @@ public:
 private:
 
     /** P2M computation
-      */
+    * expansion_P2M_add
+    * Multipole expansion with m charges q_i in Q_i=(rho_i, alpha_i, beta_i)
+    *whose relative coordinates according to *p_center are:
+    *Q_i - *p_center = (rho'_i, alpha'_i, beta'_i);
+    *
+    *For j=0..P, k=-j..j, we have:
+    *
+    *M_j^k = (-1)^j { sum{i=1..m} q_i Inner_j^k(rho'_i, alpha'_i, beta'_i) }
+    *
+    *However the extern loop is over the bodies (i=1..m) in our code and as an
+    *intern loop we have: j=0..P, k=-j..j
+    *
+    *and the potential is then given by:
+    *
+    * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
+    *
+    */
     void particleToMultiPole(FComplexe*const cellMultiPole, const F3DPosition& inPolePosition ,
-                             const CellClass& particle){
+                             const ParticleClass& particle){
         harmonic.computeInner( FSpherical(particle.getPosition() - inPolePosition) );
 
         FReal minus_one_pow_j = 1.0;//(-1)^j
@@ -292,7 +325,7 @@ private:
         int p_exp_term = 0; // p_Y_term
 
         for(int jIdx = 0 ; jIdx <= devP ; ++jIdx){
-            for(int kIdx = 0 ; kIdx <= jIdx ; ++kIdx, ++p_Y_term, ++p_exp_term){
+            for(int kIdx = 0 ; kIdx <= jIdx ; ++kIdx, ++p_exp_term){
                 harmonic.result(p_exp_term).mulRealAndImag( valueParticle * minus_one_pow_j );
                 cellMultiPole[p_exp_term] += harmonic.result(p_exp_term);
             }
@@ -301,25 +334,42 @@ private:
         }
     }
 
+    /* M2M
+    *We compute the translation of multipole_exp_src from *p_center_of_exp_src to
+    *p_center_of_exp_target, and add the result to multipole_exp_target.
+    *
+    * O_n^l (with n=0..P, l=-n..n) being the former multipole expansion terms
+    * (whose center is *p_center_of_multipole_exp_src) we have for the new multipole
+    * expansion terms (whose center is *p_center_of_multipole_exp_target):
 
-    void multipoleToMultipole(FComplexe* const multipole_exp_target,
-                              const FComplexe* const multipole_exp_src, const FComplexe* const M2M_transfer){
+    * M_j^k = sum{n=0..j}
+    * sum{l=-n..n, |k-l|<=j-n}
+    * O_n^l Inner_{j-n}^{k-l}(rho, alpha, beta)
+    *
+    * where (rho, alpha, beta) are the spherical coordinates of the vector :
+    * p_center_of_multipole_exp_target - *p_center_of_multipole_exp_src
+    *
+    * Warning: if j-n < |k-l| we do nothing.
+     */
+    void multipoleToMultipole(FComplexe* const FRestrict multipole_exp_target,
+                              const FComplexe* const FRestrict multipole_exp_src,
+                              const FComplexe* const FRestrict M2M_transfer){
 
         for(int n = 0 ; n <= FMB_Info_P ; ++n ){
             // l<0 // (-1)^l
             FReal pow_of_minus_1_for_l = static_cast<FReal>( n % 2 ? -1.0 : 1.0);
 
             // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-            const FComplexe* p_src_exp_term = multipole_exp_src + preExpRedirJ[n]+n;
+            const FComplexe* p_src_exp_term = multipole_exp_src + harmonic.getPreExpRedirJ(n) + n;
 
             int l = -n;
             for(; l<0 ; ++l, --p_src_exp_term, pow_of_minus_1_for_l = -pow_of_minus_1_for_l){
 
                 for(int j = n ; j<= FMB_Info_P ; ++j ){
                     // M_j^k
-                    FComplexe *p_target_exp_term = multipole_exp_target + preExpRedirJ[j];
+                    FComplexe *p_target_exp_term = multipole_exp_target + harmonic.getPreExpRedirJ(j);
                     // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
-                    const FComplexe *p_Inner_term= M2M_transfer + preExpRedirJ[j-n]-l /* k==0 */;
+                    const FComplexe *p_Inner_term= M2M_transfer + harmonic.getPreExpRedirJ(j-n)-l /* k==0 */;
 
                     // since n-j+l<0
                     for(int k=0 ; k <= (j-n+l) ; ++k, ++p_target_exp_term, ++p_Inner_term){ // l<0 && k>=0 => k-l>0
@@ -341,9 +391,9 @@ private:
                     // (-1)^k
                     FReal pow_of_minus_1_for_k = static_cast<FReal>( FMath::Max(0,n-j+l) %2 ? -1.0 : 1.0 );
                     // M_j^k
-                    FComplexe *p_target_exp_term = multipole_exp_target + preExpRedirJ[j] + FMath::Max(0,n-j+l);
+                    FComplexe *p_target_exp_term = multipole_exp_target + harmonic.getPreExpRedirJ(j) + FMath::Max(0,n-j+l);
                     // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
-                    const FComplexe *p_Inner_term = M2M_transfer + preExpRedirJ[j-n] + l - FMath::Max(0,n-j+l);// -(k-l)
+                    const FComplexe *p_Inner_term = M2M_transfer + harmonic.getPreExpRedirJ(j-n) + l - FMath::Max(0,n-j+l);// -(k-l)
 
                     int k = FMath::Max(0,n-j+l);
                     for(; k <= (j-n+l) && (k-l) < 0 ; ++k, ++p_target_exp_term, --p_Inner_term, pow_of_minus_1_for_k = -pow_of_minus_1_for_k){ /* l>=0 && k-l<0 */
@@ -370,9 +420,25 @@ private:
 
 
     /** M2L
+    *We compute the conversion of multipole_exp_src in *p_center_of_exp_src to
+    *a local expansion in *p_center_of_exp_target, and add the result to local_exp_target.
+    *
+    *O_n^l (with n=0..P, l=-n..n) being the former multipole expansion terms
+    *(whose center is *p_center_of_multipole_exp_src) we have for the new local
+    *expansion terms (whose center is *p_center_of_local_exp_target):
+    *
+    *L_j^k = sum{n=0..+}
+    *sum{l=-n..n}
+    *O_n^l Outer_{j+n}^{-k-l}(rho, alpha, beta)
+    *
+    *where (rho, alpha, beta) are the spherical coordinates of the vector :
+    *p_center_of_local_exp_src - *p_center_of_multipole_exp_target
+    *
+    *Remark: here we have always j+n >= |-k-l|
+      *
       */
-    void multipoleToLocal(FComplexe*const local_exp, const FComplexe* const multipole_exp_src,
-                          const FComplexe* const M2L_transfer){
+    void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
+                          const FComplexe* const FRestrict M2L_transfer){
         FComplexe* p_target_exp_term = local_exp;
 
         // L_j^k
@@ -393,9 +459,9 @@ private:
                 for (int n = 0 ; n <= stop_for_n ; ++n, pow_of_minus_1_for_n = -pow_of_minus_1_for_n){
 
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-                    const FComplexe *p_src_exp_term = multipole_exp_src + preExpRedirJ[n] + n;
+                    const FComplexe *p_src_exp_term = multipole_exp_src + harmonic.getPreExpRedirJ(n) + n;
                     // Outer_{j+n}^{-k-l} : here points on the M2L transfer function/expansion term of degree j+n and order |-k-l|
-                    const FComplexe *p_Outer_term = M2L_transfer + preExpRedirJ[n+j] + k+n;
+                    const FComplexe *p_Outer_term = M2L_transfer + harmonic.getPreExpRedirJ(n+j) + k+n;
                     FReal pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
                     // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
                     int l=n;
@@ -432,6 +498,21 @@ private:
 
 
     /** L2L
+      *We compute the shift of local_exp_src from *p_center_of_exp_src to
+      *p_center_of_exp_target, and set the result to local_exp_target.
+      *
+      *O_n^l (with n=0..P, l=-n..n) being the former local expansion terms
+      *(whose center is *p_center_of_exp_src) we have for the new local
+      *expansion terms (whose center is *p_center_of_exp_target):
+      *
+      *L_j^k = sum{n=j..P}
+      *sum{l=-n..n}
+      *O_n^l Inner_{n-j}^{l-k}(rho, alpha, beta)
+      *
+      *where (rho, alpha, beta) are the spherical coordinates of the vector :
+      *p_center_of_exp_target - *p_center_of_exp_src
+      *
+      *Warning: if |l-k| > n-j, we do nothing.
       */
     void localToLocal(FComplexe* const FRestrict local_exp_target, const FComplexe* const FRestrict local_exp_src,
                       const FComplexe* const FRestrict L2L_tranfer){
@@ -443,11 +524,11 @@ private:
             for (int k=0 ; k <= j ; ++k, pow_of_minus_1_for_k = -pow_of_minus_1_for_k, ++p_target_exp_term){
                 for (int n=j; n<=FMB_Info_P;++n){
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-                    const FComplexe* p_src_exp_term = local_exp_src + preExpRedirJ[n] + n-j+k;
-                    //printf("preExpRedirJ[n] + n-j+k %d\n", preExpRedirJ[n] + n-j+k);
+                    const FComplexe* p_src_exp_term = local_exp_src + harmonic.getPreExpRedirJ(n) + n-j+k;
+
                     int l = n-j+k;
                     // Inner_{n-j}^{l-k} : here points on the L2L transfer function/expansion term of degree n-j and order |l-k|
-                    const FComplexe* p_Inner_term = L2L_tranfer + preExpRedirJ[n-j] + l-k;
+                    const FComplexe* p_Inner_term = L2L_tranfer + harmonic.getPreExpRedirJ(n-j) + l-k;
 
                     for ( ; l-k>0;  --l, --p_src_exp_term, --p_Inner_term){ /* l>0 && l-k>0 */
                         p_target_exp_term->incReal( (p_src_exp_term->getReal() * p_Inner_term->getReal()) -
@@ -568,7 +649,7 @@ private:
         }
         //spherical_position_Set_r
         //FReal rh = spherical.r;
-        if (spherical.r < 0){
+        if (spherical.getR() < 0){
             //rh = -spherical.r;
             //spherical_position_Set_ph(p, M_PI - spherical_position_Get_th(p));
             ph = FMath::Fmod(FMath::FPi - th, 2*FMath::FPi);
@@ -615,7 +696,25 @@ private:
 
         particle->incForces( force_vector_tmp_x, force_vector_tmp_y, force_vector_tmp_z );
 
-        particle->incPotential(expansion_Evaluate_local_with_Y_already_computed(local_exp));
+
+        FReal result = 0.0;
+        p_Y_term = harmonic.result() + 1;;
+        const FComplexe* local_exp_iter = local_exp;
+        for(int j = 0 ; j<= FMB_Info_P ; ++j){
+            // k=0
+            (*p_Y_term) *= (*local_exp_iter);
+            result += p_Y_term->getReal();
+            ++p_Y_term;
+            ++local_exp_iter;
+
+            // k>0
+            for (int k=1; k<=j ;++k, ++p_Y_term, ++local_exp_iter){
+                (*p_Y_term) *= (*local_exp_iter);
+                result += 2 * p_Y_term->getReal();
+            }
+        }
+
+        particle->incPotential(result);
     }
 
 
@@ -641,8 +740,8 @@ private:
         target->incForces( dx, dy, dz);
         target->incPotential( inv_distance  * source->getPhysicalValue() );
 
-        source.incForces( (-dx), (-dy), (-dz));
-        source.incPotential( inv_distance * target->getPhysicalValue() );
+        source->incForces( (-dx), (-dy), (-dz));
+        source->incPotential( inv_distance * target->getPhysicalValue() );
     }
 
     /** P2P NO mutual interaction

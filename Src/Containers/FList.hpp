@@ -203,7 +203,7 @@ public:
             }
 
             /** Set the data */
-            void setData(const T& inData){
+            void setData(const Object& inData){
                 (*iter)->target = inData;
             }
 
