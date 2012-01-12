@@ -93,38 +93,39 @@ class FHarmonic {
 
     /** Compute legendre */
     void computeLegendre(const FReal inCosTheta, const FReal inSinTheta){
-        int idxCurrent = 0;
-        legendre[idxCurrent++] = 1.0; // P_0^0(cosTheta) = 1
+        const FReal invSinTheta = -inSinTheta;
 
-        legendre[idxCurrent++] = inCosTheta; // P_1^{0} using (3)
+        legendre[0] = 1.0;        // P_0,0(cosTheta) = 1
+        legendre[1] = inCosTheta; // P_1,0(cosTheta) = cosTheta
+        legendre[2] = invSinTheta;// P_1,1(cosTheta) = -sinTheta
 
-        // Compute P_1^1 using (2 bis) and store it into results_array
-        const FReal invSinTheta = -inSinTheta; // somx2 => -sinTheta
-        legendre[idxCurrent++] = invSinTheta;
-
-        // l>1:
-        int idxCurrent1m = 1; //pointer on P_{l-1}^m P_1^0
-        int idxCurrent2m = 0; //pointer on P_{l-2}^m P_0^0
+        int idxCurrentLM  = 3; //current pointer on P_l,m
+        int idxCurrentL1M = 1; //pointer on P_{l-1},m => P_1,0
+        int idxCurrentL2M = 0; //pointer on P_{l-2},m => P_0,0
         FReal fact = 3.0;
 
-        // Remark: p_results_array_l_minus_1_m and p_results_array_l_minus_2_m
-        // just need to be incremented at each iteration.
         for(int idxl = 2; idxl <= devP ; ++idxl ){
-            for( int idxm = 0; idxm <= idxl - 2 ; ++idxm , ++idxCurrent , ++idxCurrent1m , ++idxCurrent2m ){
-                // Compute P_l^m, l >= m+2, using (1) and store it into results_array:
-                legendre[idxCurrent] = (inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrent1m] - FReal( idxl + idxm - 1 )
-                                          * legendre[idxCurrent2m] ) / FReal( idxl - idxm );
+            // m from 0 to l - 2
+            for( int idxm = 0; idxm <= idxl - 2 ; ++idxm ){
+                //         cosTheta x (2 x l - 1) x P_l-1_m - (l + m - 1) x P_l-2_m
+                // P_l_m = --------------------------------------------------------
+                //                               l - m
+                legendre[idxCurrentLM] = (inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrentL1M]
+                                          - FReal( idxl + idxm - 1 ) * legendre[idxCurrentL2M] )
+                                          / FReal( idxl - idxm );
+                // progress
+                ++idxCurrentLM;
+                ++idxCurrentL1M;
+                ++idxCurrentL2M;
             }
-            // p_results_array_l_minus_1_m now points on P_{l-1}^{l-1}
 
-            // Compute P_l^{l-1} using (3) and store it into ptrResults:
-            legendre[idxCurrent++] = inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrent1m];
-
-            // Compute P_l^l using (2 bis) and store it into results_array:
-            legendre[idxCurrent++] = fact * invSinTheta * legendre[idxCurrent1m];
+            // Compute P_l,{l-1}
+            legendre[idxCurrentLM++] = inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrentL1M];
+            // Compute P_l,l
+            legendre[idxCurrentLM++] = fact * invSinTheta * legendre[idxCurrentL1M];
 
             fact += FReal(2.0);
-            ++idxCurrent1m;
+            ++idxCurrentL1M;
         }
     }
 
