@@ -318,18 +318,21 @@ private:
     */
     void particleToMultiPole(FComplexe*const cellMultiPole, const F3DPosition& inPolePosition ,
                              const ParticleClass& particle){
+        // Inner of Qi - Z0 => harmonic.result
         harmonic.computeInner( FSpherical(particle.getPosition() - inPolePosition) );
 
-        FReal minus_one_pow_j = 1.0;//(-1)^j
-        const FReal valueParticle = particle.getPhysicalValue();
-        int p_exp_term = 0; // p_Y_term
+        FReal minus_one_pow_j = 1.0;    // (-1)^j => be in turn 1 and -1
+        const FReal qParticle = particle.getPhysicalValue(); // q in the formula
+        int index_j_k = 0; // p_exp_term & p_Y_term
 
-        for(int jIdx = 0 ; jIdx <= devP ; ++jIdx){
-            for(int kIdx = 0 ; kIdx <= jIdx ; ++kIdx, ++p_exp_term){
-                harmonic.result(p_exp_term).mulRealAndImag( valueParticle * minus_one_pow_j );
-                cellMultiPole[p_exp_term] += harmonic.result(p_exp_term);
+        // J from 0 to P
+        for(int j = 0 ; j <= devP ; ++j){
+            // k from 0 to J
+            for(int k = 0 ; k <= j ; ++k, ++index_j_k){
+                harmonic.result(index_j_k).mulRealAndImag( qParticle * minus_one_pow_j );
+                cellMultiPole[index_j_k] += harmonic.result(index_j_k);
             }
-
+            // (-1)^J => -1 becomes 1 or 1 becomes -1
             minus_one_pow_j = -minus_one_pow_j;
         }
     }
@@ -353,67 +356,85 @@ private:
      */
     void multipoleToMultipole(FComplexe* const FRestrict multipole_exp_target,
                               const FComplexe* const FRestrict multipole_exp_src,
-                              const FComplexe* const FRestrict M2M_transfer){
+                              const FComplexe* const FRestrict M2M_Inner_transfer){
 
-        for(int n = 0 ; n <= FMB_Info_P ; ++n ){
+        // n from 0 to P
+        for(int n = 0 ; n <= devP ; ++n ){
             // l<0 // (-1)^l
-            FReal pow_of_minus_1_for_l = static_cast<FReal>( n % 2 ? -1.0 : 1.0);
+            FReal pow_of_minus_1_for_l = ( n & 1 ? -1.0 : 1.0);
 
             // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-            const FComplexe* p_src_exp_term = multipole_exp_src + harmonic.getPreExpRedirJ(n) + n;
+            const int index_n = harmonic.getPreExpRedirJ(n);
 
-            int l = -n;
-            for(; l<0 ; ++l, --p_src_exp_term, pow_of_minus_1_for_l = -pow_of_minus_1_for_l){
+            // l from -n to <0
+            for(int l = -n ; l < 0 ; ++l){
+                const FComplexe M_n__n_l = multipole_exp_src[index_n + n + l];
 
-                for(int j = n ; j<= FMB_Info_P ; ++j ){
+                // j from n to P
+                for(int j = n ; j <= devP ; ++j ){
                     // M_j^k
-                    FComplexe *p_target_exp_term = multipole_exp_target + harmonic.getPreExpRedirJ(j);
+                    const int index_j = harmonic.getPreExpRedirJ(j);
                     // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
-                    const FComplexe *p_Inner_term= M2M_transfer + harmonic.getPreExpRedirJ(j-n)-l /* k==0 */;
+                    const int index_j_n = harmonic.getPreExpRedirJ(j-n); /* k==0 */
 
                     // since n-j+l<0
-                    for(int k=0 ; k <= (j-n+l) ; ++k, ++p_target_exp_term, ++p_Inner_term){ // l<0 && k>=0 => k-l>0
-                        p_target_exp_term->incReal( pow_of_minus_1_for_l *
-                                                    ((p_src_exp_term->getReal() * p_Inner_term->getReal()) +
-                                                     (p_src_exp_term->getImag() * p_Inner_term->getImag())));
-                        p_target_exp_term->incImag( pow_of_minus_1_for_l *
-                                                    ((p_src_exp_term->getReal() * p_Inner_term->getImag()) -
-                                                     (p_src_exp_term->getImag() * p_Inner_term->getReal())));
+                    for(int k = 0 ; k <= (j-n+l) ; ++k ){ // l<0 && k>=0 => k-l>0
+                        const FComplexe I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
+
+                        multipole_exp_target[index_j + k].incReal( pow_of_minus_1_for_l *
+                                                    ((M_n__n_l.getReal() * I_j_n__k_l.getReal()) +
+                                                     (M_n__n_l.getImag() * I_j_n__k_l.getImag())));
+                        multipole_exp_target[index_j + k].incImag( pow_of_minus_1_for_l *
+                                                    ((M_n__n_l.getReal() * I_j_n__k_l.getImag()) -
+                                                     (M_n__n_l.getImag() * I_j_n__k_l.getReal())));
 
                      } // for k
                 } // for j
+
+                pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
             } // for l
 
-            // l>=0
-            for(; l <= n ; ++l, ++p_src_exp_term, pow_of_minus_1_for_l = -pow_of_minus_1_for_l){
+            // l from 0 to n
+            for(int l = 0 ; l <= n ; ++l){
+                const FComplexe M_n__n_l = multipole_exp_src[index_n + l];
 
-                for( int j=n ; j <= FMB_Info_P ; ++j ){
+                // j from n to P
+                for( int j = n ; j <= devP ; ++j ){
+                    const int first_k = FMath::Max(0,n-j+l);
                     // (-1)^k
-                    FReal pow_of_minus_1_for_k = static_cast<FReal>( FMath::Max(0,n-j+l) %2 ? -1.0 : 1.0 );
+                    FReal pow_of_minus_1_for_k = static_cast<FReal>( first_k&1 ? -1.0 : 1.0 );
                     // M_j^k
-                    FComplexe *p_target_exp_term = multipole_exp_target + harmonic.getPreExpRedirJ(j) + FMath::Max(0,n-j+l);
+                    const int index_j = harmonic.getPreExpRedirJ(j);
                     // Inner_{j-n}^{k-l} : here points on the M2M transfer function/expansion term of degree n-j and order |k-l|
-                    const FComplexe *p_Inner_term = M2M_transfer + harmonic.getPreExpRedirJ(j-n) + l - FMath::Max(0,n-j+l);// -(k-l)
+                    const int index_j_n = harmonic.getPreExpRedirJ(j-n);
 
-                    int k = FMath::Max(0,n-j+l);
-                    for(; k <= (j-n+l) && (k-l) < 0 ; ++k, ++p_target_exp_term, --p_Inner_term, pow_of_minus_1_for_k = -pow_of_minus_1_for_k){ /* l>=0 && k-l<0 */
-                        p_target_exp_term->incReal( pow_of_minus_1_for_k * pow_of_minus_1_for_l *
-                                                    ((p_src_exp_term->getReal() * p_Inner_term->getReal()) +
-                                                     (p_src_exp_term->getImag() * p_Inner_term->getImag())));
-                        p_target_exp_term->incImag(pow_of_minus_1_for_k * pow_of_minus_1_for_l *
-                                                   ((p_src_exp_term->getImag() * p_Inner_term->getReal()) -
-                                                    (p_src_exp_term->getReal() * p_Inner_term->getImag())));
+                    int k = first_k;
+                    for(; k <= (j-n+l) && k < l ; ++k){ /* l>=0 && k-l<0 */
+                        const FComplexe I_j_n__l_k = M2M_Inner_transfer[index_j_n + l - k];
+
+                        multipole_exp_target[index_j + k].incReal( pow_of_minus_1_for_k * pow_of_minus_1_for_l *
+                                                    ((M_n__n_l.getReal() * I_j_n__l_k.getReal()) +
+                                                     (M_n__n_l.getImag() * I_j_n__l_k.getImag())));
+                        multipole_exp_target[index_j + k].incImag(pow_of_minus_1_for_k * pow_of_minus_1_for_l *
+                                                   ((M_n__n_l.getImag() * I_j_n__l_k.getReal()) -
+                                                    (M_n__n_l.getReal() * I_j_n__l_k.getImag())));
+
+                        pow_of_minus_1_for_k = -pow_of_minus_1_for_k;
                     } // for k
 
-                    for(; k <= (j - n + l) ; ++k, ++p_target_exp_term, ++p_Inner_term){ // l>=0 && k-l>=0
-                        p_target_exp_term->incReal(
-                                (p_src_exp_term->getReal() * p_Inner_term->getReal()) -
-                                (p_src_exp_term->getImag() * p_Inner_term->getImag()));
-                        p_target_exp_term->incImag(
-                                (p_src_exp_term->getImag() * p_Inner_term->getReal()) +
-                                (p_src_exp_term->getReal() * p_Inner_term->getImag()));
+                    for(/* k = l */; k <= (j - n + l) ; ++k){ // l>=0 && k-l>=0
+                        const FComplexe I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
+
+                        multipole_exp_target[index_j + k].incReal(
+                                (M_n__n_l.getReal() * I_j_n__k_l.getReal()) -
+                                (M_n__n_l.getImag() * I_j_n__k_l.getImag()));
+                        multipole_exp_target[index_j + k].incImag(
+                                (M_n__n_l.getImag() * I_j_n__k_l.getReal()) +
+                                (M_n__n_l.getReal() * I_j_n__k_l.getImag()));
                     } // for k
                 } // for j
+
+                pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
             } // for l
         } // for n
     }
@@ -438,61 +459,84 @@ private:
       *
       */
     void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
-                          const FComplexe* const FRestrict M2L_transfer){
-        FComplexe* p_target_exp_term = local_exp;
+                          const FComplexe* const FRestrict M2L_Outer_transfer){
+        int index_j_k = 0;
 
         // L_j^k
-        int start_for_j = 0;
-
-        //    HPMSTART(51, "M2L computation (loops)");
-        for (int j = start_for_j ; j <= FMB_Info_P ; ++j){
-
-            int stop_for_n = devP;
-            //stop_for_n = FMB_Info_P - j;
-
+        // HPMSTART(51, "M2L computation (loops)");
+        // j from 0 to P
+        for (int j = 0 ; j <= devP ; ++j){
             // (-1)^k
             FReal pow_of_minus_1_for_k = 1.0;
-            for (int k = 0 ; k <= j ; ++k, pow_of_minus_1_for_k = -pow_of_minus_1_for_k, ++p_target_exp_term){
-
+            //k from 0 to j
+            for (int k = 0 ; k <= j ; ++k, ++index_j_k){
                 // (-1)^n
                 FReal pow_of_minus_1_for_n = 1.0;
-                for (int n = 0 ; n <= stop_for_n ; ++n, pow_of_minus_1_for_n = -pow_of_minus_1_for_n){
 
+                // work with a local variable
+                FComplexe L_j_k = local_exp[index_j_k];
+                // n from 0 to P
+                for (int n = 0 ; n <= devP /*or devP-j*/ ; ++n){
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-                    const FComplexe *p_src_exp_term = multipole_exp_src + harmonic.getPreExpRedirJ(n) + n;
+                    const int index_n = harmonic.getPreExpRedirJ(n);
+
                     // Outer_{j+n}^{-k-l} : here points on the M2L transfer function/expansion term of degree j+n and order |-k-l|
-                    const FComplexe *p_Outer_term = M2L_transfer + harmonic.getPreExpRedirJ(n+j) + k+n;
+                    const int index_n_j = harmonic.getPreExpRedirJ(n+j);
+
                     FReal pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
+
                     // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
-                    int l=n;
-                    for ( ; l>0 ; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, --p_src_exp_term, --p_Outer_term){ // we have -k-l<0 and l>0
-                        p_target_exp_term->incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getReal() * p_Outer_term->getReal()) +
-                                                     (p_src_exp_term->getImag() * p_Outer_term->getImag())));
-                        p_target_exp_term->incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getImag() * p_Outer_term->getReal()) -
-                                                     (p_src_exp_term->getReal() * p_Outer_term->getImag())));
+                    int l = n;
+                    for(/* l = n */ ; l > 0 ; --l){ // we have -k-l<0 and l>0
+                        const FComplexe M_n_l = multipole_exp_src[index_n + l];
+                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
+
+                        L_j_k.incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
+                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
+                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
+                        L_j_k.incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
+                                                    ((M_n_l.getImag() * O_n_j__k_l.getReal()) -
+                                                     (M_n_l.getReal() * O_n_j__k_l.getImag())));
+
+                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
 
-                    for (; l>=-n && -k-l<0 ; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, ++p_src_exp_term, --p_Outer_term){ // we have -k-l<0 and l<=0
-                        p_target_exp_term->incReal( pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getReal() * p_Outer_term->getReal()) -
-                                                     (p_src_exp_term->getImag() * p_Outer_term->getImag())));
-                        p_target_exp_term->decImag(  pow_of_minus_1_for_k *
-                                                     ((p_src_exp_term->getImag() * p_Outer_term->getReal()) +
-                                                      (p_src_exp_term->getReal() * p_Outer_term->getImag())));
+                    for(/* l = 0 */; l >= -n &&  (-k-l) < 0 ; --l){ // we have -k-l<0 and l<=0
+                        const FComplexe M_n_l = multipole_exp_src[index_n - l];
+                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
+
+                        L_j_k.incReal( pow_of_minus_1_for_k *
+                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) -
+                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
+                        L_j_k.decImag(  pow_of_minus_1_for_k *
+                                                     ((M_n_l.getImag() * O_n_j__k_l.getReal()) +
+                                                      (M_n_l.getReal() * O_n_j__k_l.getImag())));
+
+                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
 
-                    for (; l>=-n; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, ++p_src_exp_term, ++p_Outer_term){ // we have -k-l>=0 and l<=0
-                        p_target_exp_term->incReal( pow_of_minus_1_for_l *
-                                                    ((p_src_exp_term->getReal() * p_Outer_term->getReal()) +
-                                                     (p_src_exp_term->getImag() * p_Outer_term->getImag())));
-                        p_target_exp_term->incImag( pow_of_minus_1_for_l *
-                                                    ((p_src_exp_term->getReal() * p_Outer_term->getImag()) -
-                                                     (p_src_exp_term->getImag() * p_Outer_term->getReal())));
+                    for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
+                        const FComplexe M_n_l = multipole_exp_src[index_n - l];
+                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k - l + k];
+
+                        L_j_k.incReal( pow_of_minus_1_for_l *
+                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
+                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
+                        L_j_k.incImag( pow_of_minus_1_for_l *
+                                                    ((M_n_l.getReal() * O_n_j__k_l.getImag()) -
+                                                     (M_n_l.getImag() * O_n_j__k_l.getReal())));
+
+                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
-                }
-            }
+
+                    pow_of_minus_1_for_n = -pow_of_minus_1_for_n;
+                }//n
+
+                // put in the local vector
+                local_exp[index_j_k] = L_j_k;
+
+                pow_of_minus_1_for_k = -pow_of_minus_1_for_k;
+            }//k
         }
     }
 
@@ -517,55 +561,76 @@ private:
     void localToLocal(FComplexe* const FRestrict local_exp_target, const FComplexe* const FRestrict local_exp_src,
                       const FComplexe* const FRestrict L2L_tranfer){
         // L_j^k
-        FComplexe* p_target_exp_term = local_exp_target;
-        for (int j=0 ; j<= FMB_Info_P ; ++j){
+        int index_j_k = 0;
+
+        for (int j = 0 ; j <= devP ; ++j ){
             // (-1)^k
             FReal pow_of_minus_1_for_k = 1.0;
-            for (int k=0 ; k <= j ; ++k, pow_of_minus_1_for_k = -pow_of_minus_1_for_k, ++p_target_exp_term){
-                for (int n=j; n<=FMB_Info_P;++n){
+
+            for (int k = 0 ; k <= j ; ++k, ++index_j_k ){
+                FComplexe L_j_k = local_exp_target[index_j_k];
+
+                for (int n=j; n <= devP;++n){
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-                    const FComplexe* p_src_exp_term = local_exp_src + harmonic.getPreExpRedirJ(n) + n-j+k;
+                    const int index_n = harmonic.getPreExpRedirJ(n);
 
-                    int l = n-j+k;
+                    int l = n - j + k;
                     // Inner_{n-j}^{l-k} : here points on the L2L transfer function/expansion term of degree n-j and order |l-k|
-                    const FComplexe* p_Inner_term = L2L_tranfer + harmonic.getPreExpRedirJ(n-j) + l-k;
+                    const int index_n_j = harmonic.getPreExpRedirJ(n-j);
 
-                    for ( ; l-k>0;  --l, --p_src_exp_term, --p_Inner_term){ /* l>0 && l-k>0 */
-                        p_target_exp_term->incReal( (p_src_exp_term->getReal() * p_Inner_term->getReal()) -
-                                                    (p_src_exp_term->getImag() * p_Inner_term->getImag()));
-                        p_target_exp_term->incImag( (p_src_exp_term->getImag() * p_Inner_term->getReal()) +
-                                                    (p_src_exp_term->getReal() * p_Inner_term->getImag()));
+                    for(/*l = n - j + k*/ ; l-k > 0 ;  --l){ /* l>0 && l-k>0 */
+                        const FComplexe L_j_l = local_exp_src[index_n + l];
+                        const FComplexe I_l_j__l_k = L2L_tranfer[index_n_j  + l - k];
+
+                        L_j_k.incReal( (L_j_l.getReal() * I_l_j__l_k.getReal()) -
+                                                    (L_j_l.getImag() * I_l_j__l_k.getImag()));
+                        L_j_k.incImag( (L_j_l.getImag() * I_l_j__l_k.getReal()) +
+                                                    (L_j_l.getReal() * I_l_j__l_k.getImag()));
                     }
 
                     // (-1)^l
-                    FReal pow_of_minus_1_for_l = static_cast<FReal>((l%2) ? -1.0 : 1.0);
-                    for (; l>0 && l>=j-n+k; --l, pow_of_minus_1_for_l = -pow_of_minus_1_for_l, --p_src_exp_term, ++p_Inner_term){ /* l>0 && l-k<=0 */
-                        p_target_exp_term->incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getReal() * p_Inner_term->getReal()) +
-                                                     (p_src_exp_term->getImag() * p_Inner_term->getImag())));
-                        p_target_exp_term->incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getImag() * p_Inner_term->getReal()) -
-                                                     (p_src_exp_term->getReal() * p_Inner_term->getImag())));
+                    FReal pow_of_minus_1_for_l = ((l&1) ? FReal(-1.0) : FReal(1.0));
+                    for(/*l = k*/; l>0 && l>=j-n+k; --l){ /* l>0 && l-k<=0 */
+                        const FComplexe L_j_l = local_exp_src[index_n + l];
+                        const FComplexe I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
+
+                        L_j_k.incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
+                                                    ((L_j_l.getReal() * I_l_j__l_k.getReal()) +
+                                                     (L_j_l.getImag() * I_l_j__l_k.getImag())));
+                        L_j_k.incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
+                                                    ((L_j_l.getImag() * I_l_j__l_k.getReal()) -
+                                                     (L_j_l.getReal() * I_l_j__l_k.getImag())));
+
+                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                      }
 
                     // l<=0 && l-k<=0
-                    for (; l>=j-n+k; --l, ++p_src_exp_term, ++p_Inner_term){
-                        p_target_exp_term->incReal( pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getReal() * p_Inner_term->getReal()) -
-                                                     (p_src_exp_term->getImag() * p_Inner_term->getImag())));
-                        p_target_exp_term->decImag( pow_of_minus_1_for_k *
-                                                    ((p_src_exp_term->getImag() * p_Inner_term->getReal()) +
-                                                     (p_src_exp_term->getReal() * p_Inner_term->getImag())));
+                    for(/*l = 0 ou l = j-n+k-1*/; l>=j-n+k; --l){
+                        const FComplexe L_j_l = local_exp_src[index_n - l];
+                        const FComplexe I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
+
+                        L_j_k.incReal( pow_of_minus_1_for_k *
+                                                    ((L_j_l.getReal() * I_l_j__l_k.getReal()) -
+                                                     (L_j_l.getImag() * I_l_j__l_k.getImag())));
+                        L_j_k.decImag( pow_of_minus_1_for_k *
+                                                    ((L_j_l.getImag() * I_l_j__l_k.getReal()) +
+                                                     (L_j_l.getReal() * I_l_j__l_k.getImag())));
                     }
-                }
-            }
-        }
+                }//n
+
+                local_exp_target[index_j_k] = L_j_k;
+
+                pow_of_minus_1_for_k = -pow_of_minus_1_for_k;
+            }//k
+        }//j
     }
 
     /** L2P
       */
     void localToParticle(ParticleClass*const particle, const F3DPosition& local_position,
                          const FComplexe*const local_exp){
+        //--------------- Forces ----------------//
+
         FReal force_vector_in_local_base_x = 0;
         FReal force_vector_in_local_base_y = 0;
         FReal force_vector_in_local_base_z = 0;
@@ -573,51 +638,42 @@ private:
         const FSpherical spherical(particle->getPosition() - local_position);
         harmonic.computeInnerTheta( spherical );
 
-        // The maximum degree used here will be P.
-        const FComplexe* p_Y_term = harmonic.result() + 1;
-        const FComplexe* p_Y_theta_derivated_term = harmonic.resultThetaDerivated() + 1;
-        const FComplexe* p_local_exp_term = local_exp + 1;
+        int index_j_k = 1;
 
         for (int j = 1 ; j <= devP ; ++j ){
-            FReal exp_term_aux_real = 0.0;
-            FReal exp_term_aux_imag = 0.0;
-
-            // k=0:
-            // F_r:
-            exp_term_aux_real = ( (p_Y_term->getReal() * p_local_exp_term->getReal()) - (p_Y_term->getImag() * p_local_exp_term->getImag()) );
-            exp_term_aux_imag = ( (p_Y_term->getReal() * p_local_exp_term->getImag()) + (p_Y_term->getImag() * p_local_exp_term->getReal()) );
-
-            force_vector_in_local_base_x = ( force_vector_in_local_base_x  + FReal(j) * exp_term_aux_real );
-            // F_phi: k=0 => nothing to do for F_phi
-            // F_theta:
-            exp_term_aux_real = ( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getReal()) - (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getImag()) );
-            exp_term_aux_imag = ( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getImag()) + (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getReal()) );
-
-            force_vector_in_local_base_y = ( force_vector_in_local_base_y + exp_term_aux_real );
-
-            ++p_local_exp_term;
-            ++p_Y_term;
-            ++p_Y_theta_derivated_term;
-
+            {
+                // k=0:
+                // F_r:
+                const FReal exp_term_aux_real = ( (harmonic.result(index_j_k).getReal() * local_exp[index_j_k].getReal()) - (harmonic.result(index_j_k).getImag() * local_exp[index_j_k].getImag()) );
+                //const FReal exp_term_aux_imag = ( (harmonic.result(index_j_k).getReal() * local_exp[index_j_k].getImag()) + harmonic.result(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
+                force_vector_in_local_base_x = ( force_vector_in_local_base_x  + FReal(j) * exp_term_aux_real );
+            }
+            {
+                // F_phi: k=0 => nothing to do for F_phi
+                // F_theta:
+                const FReal exp_term_aux_real = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getReal()) - (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getImag()) );
+                //const FReal exp_term_aux_imag = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getImag()) + (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
+                force_vector_in_local_base_y = ( force_vector_in_local_base_y + exp_term_aux_real );
+            }
+            ++index_j_k;
 
             // k>0:
-            for (int k=1; k<=j ;++k, ++p_local_exp_term, ++p_Y_term, ++p_Y_theta_derivated_term){
-                // F_r:
-
-                exp_term_aux_real = ( (p_Y_term->getReal() * p_local_exp_term->getReal()) - (p_Y_term->getImag() * p_local_exp_term->getImag()) );
-                exp_term_aux_imag = ( (p_Y_term->getReal() * p_local_exp_term->getImag()) + (p_Y_term->getImag() * p_local_exp_term->getReal()) );
-
-                force_vector_in_local_base_x = (force_vector_in_local_base_x  + FReal(2 * j) * exp_term_aux_real );
-                // F_phi:
-                force_vector_in_local_base_z = ( force_vector_in_local_base_z - FReal(2 * k) * exp_term_aux_imag);
-                // F_theta:
-
-                exp_term_aux_real = ( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getReal()) - (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getImag()) );
-                exp_term_aux_imag = ( (p_Y_theta_derivated_term->getReal() * p_local_exp_term->getImag()) + (p_Y_theta_derivated_term->getImag() * p_local_exp_term->getReal()) );
-
-                force_vector_in_local_base_y = (force_vector_in_local_base_y + FReal(2.0) * exp_term_aux_real );
-
-           }
+            for (int k=1; k<=j ;++k, ++index_j_k){
+                {
+                    // F_r:
+                    const FReal exp_term_aux_real = ( (harmonic.result(index_j_k).getReal() * local_exp[index_j_k].getReal()) - (harmonic.result(index_j_k).getImag() * local_exp[index_j_k].getImag()) );
+                    const FReal exp_term_aux_imag = ( (harmonic.result(index_j_k).getReal() * local_exp[index_j_k].getImag()) + (harmonic.result(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
+                    force_vector_in_local_base_x = (force_vector_in_local_base_x  + FReal(2 * j) * exp_term_aux_real );
+                    // F_phi:
+                    force_vector_in_local_base_z = ( force_vector_in_local_base_z - FReal(2 * k) * exp_term_aux_imag);
+                }
+                {
+                    // F_theta:
+                    const FReal exp_term_aux_real = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getReal()) - (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getImag()) );
+                    //const FReal exp_term_aux_imag = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getImag()) + (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
+                    force_vector_in_local_base_y = (force_vector_in_local_base_y + FReal(2.0) * exp_term_aux_real );
+                }
+            }
 
         }
         // We want: - gradient(POTENTIAL_SIGN potential).
@@ -696,25 +752,27 @@ private:
 
         particle->incForces( force_vector_tmp_x, force_vector_tmp_y, force_vector_tmp_z );
 
+        //--------------- Potential ----------------//
 
+        // TODO !! check here!!!!
         FReal result = 0.0;
-        p_Y_term = harmonic.result() + 1;;
-        const FComplexe* local_exp_iter = local_exp;
-        for(int j = 0 ; j<= FMB_Info_P ; ++j){
+        index_j_k = 0;
+
+        for(int j = 0 ; j<= devP ; ++j){
             // k=0
-            (*p_Y_term) *= (*local_exp_iter);
-            result += p_Y_term->getReal();
-            ++p_Y_term;
-            ++local_exp_iter;
+            harmonic.result(index_j_k) *= local_exp[index_j_k];
+            result += harmonic.result(index_j_k).getReal();
+            ++index_j_k;
 
             // k>0
-            for (int k=1; k<=j ;++k, ++p_Y_term, ++local_exp_iter){
-                (*p_Y_term) *= (*local_exp_iter);
-                result += 2 * p_Y_term->getReal();
+            for (int k = 1 ; k <= j ; ++k, ++index_j_k){
+                harmonic.result(index_j_k) *= local_exp[index_j_k];
+                result += 2 * harmonic.result(index_j_k).getReal();
             }
         }
 
         particle->incPotential(result);
+
     }
 
 
