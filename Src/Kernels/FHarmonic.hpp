@@ -52,33 +52,38 @@ class FHarmonic {
     /** Allocate and init */
     void allocAndInit(){
         harmonic = new FComplexe[expSize];
-        cosSin   = new FComplexe[2 * devP + 1];
+        cosSin   = new FComplexe[devP + 1];
         legendre = new FReal[expSize];
-
         thetaDerivatedResult = new FComplexe[expSize];
-        sphereHarmoInnerCoef = new FReal[int(((devP*2)+1) * ((devP*2)+2) * 0.5)];
-        sphereHarmoOuterCoef = new FReal[devP + 1];
 
         // Pre compute coef
+        sphereHarmoOuterCoef = new FReal[devP + 1];
         FReal factOuter = 1.0;
-        for(int idxP = 0 ; idxP <= devP; factOuter *= FReal(++idxP) ){
+        for(int idxP = 0 ; idxP <= devP; ++idxP ){
             sphereHarmoOuterCoef[idxP] = factOuter;
+            factOuter *= FReal(idxP);
         }
 
         // Pre compute coef
-        FReal* currentInner = sphereHarmoInnerCoef;
+        sphereHarmoInnerCoef = new FReal[expSize];
+        int index_l_m = 0;
         FReal factInner = 1.0;
-        FReal powN1idxP = 1.0;
-        for(int idxP = 0 ; idxP <= this->devP ; factInner *= FReal(++idxP), powN1idxP = -powN1idxP){
-            for(int idxMP = 0, fact_l_m = int(factInner); idxMP <= idxP ; fact_l_m *= idxP+(++idxMP), ++currentInner){
-                *currentInner = powN1idxP / FReal(fact_l_m);
+        FReal minus_1_pow_l = 1.0;
+        for(int l = 0 ; l <= devP ; ++l){
+            FReal fact_l_m = factInner;
+            for(int m = 0 ; m <= l ; ++m){
+                sphereHarmoInnerCoef[index_l_m] = minus_1_pow_l / fact_l_m;
+                fact_l_m *= FReal(l + m);
+                ++index_l_m;
             }
+            minus_1_pow_l = -minus_1_pow_l;
+            factInner *= FReal(l);
         }
 
         // Smart redirection
         preExpRedirJ = new int[2 * devP + 1];
-        for( int h = 0; h <= (2 * devP) ; ++h ){
-            preExpRedirJ[h] = static_cast<int>( h * ( h + 1 ) * 0.5 );
+        for( int idxP = 0; idxP <= (2 * devP) ; ++idxP ){
+            preExpRedirJ[idxP] = static_cast<int>( idxP * ( idxP + 1 ) * 0.5 );
         }
     }
 
