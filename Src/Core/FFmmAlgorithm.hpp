@@ -222,7 +222,7 @@ private:
         // for each leafs
         do{
             FDEBUG(computationCounterL2P.tic());
-            ///kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+            kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
             FDEBUG(computationCounterL2P.tac());
             // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);

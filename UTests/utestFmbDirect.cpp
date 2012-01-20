@@ -7,6 +7,10 @@
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
+#include "../Src/Kernels/FComputeCell.hpp"
+
+#include "../Src/Kernels/FElecForcesKernels.hpp"
+
 #include "../Src/Files/FFmaBinLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
 
@@ -32,10 +36,13 @@ public:
 
 class TestFmbDirect : public FUTester<TestFmbDirect> {
     typedef IndexedParticle         ParticleClass;
-    typedef FmbCell                 CellClass;
+    //typedef FmbCell            CellClass;
+    typedef FComputeCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
-    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
@@ -43,9 +50,6 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
 
     void TestDirect(){
-        const int NbLevels      = 4;
-        const int SizeSubLevels = 2;
-
         FFmaBinLoader<ParticleClass> loader("../Data/utestFmbDirect.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
@@ -54,6 +58,10 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         Print("Number of particles:");
         Print(loader.getNumberOfParticles());
 
+        const int NbLevels      = 4;
+        const int SizeSubLevels = 2;
+        const int DevP = 5;
+        FComputeCell::Init(DevP);
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
 
@@ -66,7 +74,8 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
 
         Print("Fmm...");
-        KernelClass kernels(NbLevels,loader.getBoxWidth());
+        //KernelClass kernels(NbLevels,loader.getBoxWidth());
+        KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
         FmmClass algo(&tree,&kernels);
         algo.execute();
 
@@ -74,7 +83,8 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         Print("Direct...");
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                kernels.DIRECT_COMPUTATION_MUTUAL_SOFT(particles[idxTarget], particles[idxOther]);
+                //kernels.DIRECT_COMPUTATION_MUTUAL_SOFT(particles[idxTarget], particles[idxOther]);
+                kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
             }
         }
 
@@ -90,22 +100,25 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
                 typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
-                    const FReal currentPotentialDiff = FMath::Abs(particles[leafIter.data().getIndex()].getPotential() - leafIter.data().getPotential());
+                    const ParticleClass& currentParticle = leafIter.data();//TODO delete
+                    const ParticleClass& other = particles[leafIter.data().getIndex()];//TODO delete
+
+                    const FReal currentPotentialDiff = FMath::Abs(other.getPotential() - leafIter.data().getPotential());
                     if( potentialDiff < currentPotentialDiff ){
                         potentialDiff = currentPotentialDiff;
                     }
 
-                    const FReal currentFx = FMath::Abs(particles[leafIter.data().getIndex()].getPosition().getX() - leafIter.data().getPosition().getX());
+                    const FReal currentFx = FMath::Abs(other.getForces().getX() - leafIter.data().getForces().getX());
                     if( fx < currentFx ){
                         fx = currentFx;
                     }
 
-                    const FReal currentFy = FMath::Abs(particles[leafIter.data().getIndex()].getPosition().getY() - leafIter.data().getPosition().getY());
+                    const FReal currentFy = FMath::Abs(other.getForces().getY() - leafIter.data().getForces().getY());
                     if( fy < currentFy ){
                         fy = currentFy;
                     }
 
-                    const FReal currentFz = FMath::Abs(particles[leafIter.data().getIndex()].getPosition().getZ() - leafIter.data().getPosition().getZ());
+                    const FReal currentFz = FMath::Abs(other.getForces().getZ() - leafIter.data().getForces().getZ());
                     if( fz < currentFz ){
                         fz = currentFz;
                     }

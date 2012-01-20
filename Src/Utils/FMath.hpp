@@ -2,7 +2,9 @@
 #define FMATH_HPP
 // [--License--]
 
-#include <math.h>
+#include <cmath>
+#include <climits>
+
 #include "FGlobal.hpp"
 
 /**
@@ -120,6 +122,21 @@ struct FMath{
     }
     static double Fmod(const double inValue1,const double inValue2){
         return fmod(inValue1,inValue2);
+    }
+
+    /** To know if a variable is nan, based on the C++0x */
+    template <class TestClass>
+    static bool IsNan(const TestClass& value){
+        //volatile const TestClass* const pvalue = &value;
+        //return (*pvalue) != value;
+        return std::isnan(value);
+    }
+
+    /** To know if a variable is not inf, based on the C++0x */
+    template <class TestClass>
+    static bool IsFinite(const TestClass& value){
+        // return !(value <= std::numeric_limits<T>::min()) && !(std::numeric_limits<T>::max() <= value);
+        return std::isfinite(value);
     }
 };
 

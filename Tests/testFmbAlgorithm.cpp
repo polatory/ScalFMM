@@ -20,8 +20,6 @@
 #include "../Src/Files/FFmaLoader.hpp"
 
 
-#include "../Src/Kernels/FElecForcesKernels.hpp"
-
 // With openmp : g++ testFmbAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbAlgorithm.exe
 // icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
 
@@ -40,8 +38,7 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
-    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
@@ -96,8 +93,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    //KernelClass kernels(NbLevels,loader.getBoxWidth());
-    KernelClass kernels(6,NbLevels,loader.getBoxWidth());
+    KernelClass kernels(NbLevels,loader.getBoxWidth());
     FmmClass algo(&tree,&kernels);
     algo.execute();
 

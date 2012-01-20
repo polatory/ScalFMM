@@ -36,6 +36,7 @@ public:
 
 
 class FHarmonic {
+public: //TODO delete
     const int devP;     //< P
     const int expSize;  //< Exponen Size
 
@@ -61,7 +62,7 @@ class FHarmonic {
         FReal factOuter = 1.0;
         for(int idxP = 0 ; idxP <= devP; ++idxP ){
             sphereHarmoOuterCoef[idxP] = factOuter;
-            factOuter *= FReal(idxP);
+            factOuter *= FReal(idxP+1);
         }
 
         // Pre compute coef
@@ -73,11 +74,12 @@ class FHarmonic {
             FReal fact_l_m = factInner;
             for(int m = 0 ; m <= l ; ++m){
                 sphereHarmoInnerCoef[index_l_m] = minus_1_pow_l / fact_l_m;
-                fact_l_m *= FReal(l + m);
+
+                fact_l_m *= FReal(l + m + 1);
                 ++index_l_m;
             }
             minus_1_pow_l = -minus_1_pow_l;
-            factInner *= FReal(l);
+            factInner *= FReal(l+1);
         }
 
         // Smart redirection
@@ -248,7 +250,7 @@ public:
 
         for(int l = 0 ; l <= devP ; ++l){
             for(int m = 0 ; m <= l ; ++m){
-                const FReal magnitude = this->sphereHarmoOuterCoef[l-m] * invR_pow_l1 * legendre[index_l_m];
+                const FReal magnitude = sphereHarmoOuterCoef[l-m] * invR_pow_l1 * legendre[index_l_m];
                 harmonic[index_l_m].setReal( magnitude * cosSin[m].getReal() );
                 harmonic[index_l_m].setImag( magnitude * cosSin[m].getImag() );
 

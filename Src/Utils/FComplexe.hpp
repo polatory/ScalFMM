@@ -137,6 +137,11 @@ public:
         this->imag = (tempReal * other.imag) + (this->imag * other.real);
         return *this;
     }
+
+    /** Test if a complex is not a number */
+    bool isNan() const {
+        return FMath::IsNan(imag) || FMath::IsNan(real);
+    }
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */

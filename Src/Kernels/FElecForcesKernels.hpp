@@ -517,7 +517,7 @@ private:
 
                     for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
                         const FComplexe M_n_l = multipole_exp_src[index_n - l];
-                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k - l + k];
+                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + (k - l)];
 
                         L_j_k.incReal( pow_of_minus_1_for_l *
                                                     ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
@@ -638,9 +638,9 @@ private:
         const FSpherical spherical(particle->getPosition() - local_position);
         harmonic.computeInnerTheta( spherical );
 
-        int index_j_k = 1;
+        int index_j_k = 0;
 
-        for (int j = 1 ; j <= devP ; ++j ){
+        for (int j = 0 ; j <= devP ; ++j ){
             {
                 // k=0:
                 // F_r:
@@ -754,7 +754,6 @@ private:
 
         //--------------- Potential ----------------//
 
-        // TODO !! check here!!!!
         FReal result = 0.0;
         index_j_k = 0;
 
@@ -771,11 +770,11 @@ private:
             }
         }
 
-        particle->incPotential(result);
+        particle->incPotential(result * physicalValue);
 
     }
 
-
+public:
     /** P2P mutual interaction
       * F = q * q' / r²
       */
@@ -796,7 +795,7 @@ private:
         dz *= inv_square_distance;
 
         target->incForces( dx, dy, dz);
-        target->incPotential( inv_distance  * source->getPhysicalValue() );
+        target->incPotential( inv_distance * source->getPhysicalValue() );
 
         source->incForces( (-dx), (-dy), (-dz));
         source->incPotential( inv_distance * target->getPhysicalValue() );
