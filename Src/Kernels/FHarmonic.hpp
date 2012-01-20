@@ -84,10 +84,10 @@ class FHarmonic {
 
     /** Compute cos/sin from phi */
     void computeCosSin(const FReal inPhi, const FReal piArray[4]){
-        for(int idxl = 0 ; idxl <= devP ; ++idxl){
-            const FReal angle = FReal(idxl) * inPhi + piArray[idxl & 0x3];
-            cosSin[idxl].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
-            cosSin[idxl].setImag( FMath::Sin(angle) );
+        for(int l = 0 ; l <= devP ; ++l){
+            const FReal angle = FReal(l) * inPhi + piArray[l & 0x3];
+            cosSin[l].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
+            cosSin[l].setImag( FMath::Sin(angle) );
         }
     }
 
@@ -104,15 +104,15 @@ class FHarmonic {
         int idxCurrentL2M = 0; //pointer on P_{l-2},m => P_0,0
         FReal fact = 3.0;
 
-        for(int idxl = 2; idxl <= devP ; ++idxl ){
+        for(int l = 2; l <= devP ; ++l ){
             // m from 0 to l - 2
-            for( int idxm = 0; idxm <= idxl - 2 ; ++idxm ){
+            for( int m = 0; m <= l - 2 ; ++m ){
                 //         cosTheta x (2 x l - 1) x P_l-1_m - (l + m - 1) x P_l-2_m
                 // P_l_m = --------------------------------------------------------
                 //                               l - m
-                legendre[idxCurrentLM] = (inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrentL1M]
-                                          - FReal( idxl + idxm - 1 ) * legendre[idxCurrentL2M] )
-                                          / FReal( idxl - idxm );
+                legendre[idxCurrentLM] = (inCosTheta * FReal( 2 * l - 1 ) * legendre[idxCurrentL1M]
+                                          - FReal( l + m - 1 ) * legendre[idxCurrentL2M] )
+                                          / FReal( l - m );
                 // progress
                 ++idxCurrentLM;
                 ++idxCurrentL1M;
@@ -120,7 +120,7 @@ class FHarmonic {
             }
 
             // Compute P_l,{l-1}
-            legendre[idxCurrentLM++] = inCosTheta * FReal( 2 * idxl - 1 ) * legendre[idxCurrentL1M];
+            legendre[idxCurrentLM++] = inCosTheta * FReal( 2 * l - 1 ) * legendre[idxCurrentL1M];
             // Compute P_l,l
             legendre[idxCurrentLM++] = fact * invSinTheta * legendre[idxCurrentL1M];
 
@@ -211,20 +211,22 @@ public:
         const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
         computeCosSin(inSphere.getPhi(), PiArrayInner);
 
-        // p_associated_Legendre_function_Array
+        // fill legendre array
         computeLegendre(inSphere.getCosTheta(), inSphere.getSinTheta());
 
-        FComplexe* currentResult = harmonic;
-        int idxLegendre = 0;//ptr_associated_Legendre_function_Array
-        int idxSphereHarmoCoef = 0;
-        FReal idxRl = 1.0 ;
+        int index_l_m = 0;
+        FReal r_pow_l = 1.0 ;
 
-        for(int idxl = 0; idxl <= devP ; ++idxl, idxRl *= inSphere.getR()){
-            for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxSphereHarmoCoef, ++idxLegendre){
-                const FReal magnitude = sphereHarmoInnerCoef[idxSphereHarmoCoef] * idxRl * legendre[idxLegendre];
-                currentResult->setReal( magnitude * cosSin[idxm].getReal() );
-                currentResult->setImag( magnitude * cosSin[idxm].getImag() );
+        for(int l = 0; l <= devP ; ++l){
+            for(int m = 0 ; m <= l ; ++m){
+                const FReal magnitude = sphereHarmoInnerCoef[index_l_m] * r_pow_l * legendre[index_l_m];
+                harmonic[index_l_m].setReal( magnitude * cosSin[m].getReal() );
+                harmonic[index_l_m].setImag( magnitude * cosSin[m].getImag() );
+
+                ++index_l_m;
             }
+
+            r_pow_l *= inSphere.getR();
         }
     }
 
@@ -232,20 +234,23 @@ public:
         const FReal PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
         computeCosSin(inSphere.getPhi(), PiArrayOuter);
 
-        // p_associated_Legendre_function_Array
+        // fill legendre array
         computeLegendre(inSphere.getCosTheta(), inSphere.getSinTheta());
 
-        int idxLegendre = 0;
-        FComplexe* currentResult = harmonic;
         const FReal invR = 1/inSphere.getR();
-        FReal idxRl1 = invR;
+        int index_l_m = 0;
+        FReal invR_pow_l1 = invR;
 
-        for(int idxl = 0 ; idxl <= devP ; ++idxl, idxRl1 *= invR){
-            for(int idxm = 0 ; idxm <= idxl ; ++idxm, ++currentResult, ++idxLegendre){
-                const FReal magnitude = this->sphereHarmoOuterCoef[idxl-idxm] * idxRl1 * legendre[idxLegendre];
-                currentResult->setReal( magnitude * cosSin[idxm].getReal() );
-                currentResult->setImag( magnitude * cosSin[idxm].getImag() );
+        for(int l = 0 ; l <= devP ; ++l){
+            for(int m = 0 ; m <= l ; ++m){
+                const FReal magnitude = this->sphereHarmoOuterCoef[l-m] * invR_pow_l1 * legendre[index_l_m];
+                harmonic[index_l_m].setReal( magnitude * cosSin[m].getReal() );
+                harmonic[index_l_m].setImag( magnitude * cosSin[m].getImag() );
+
+                ++index_l_m;
             }
+
+            invR_pow_l1 *= invR;
         }
     }
 
@@ -283,51 +288,46 @@ public:
         const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
         computeCosSin(inSphere.getPhi(),PiArrayInner);
 
-        // p_associated_Legendre_function_Array
+        // fill legendre array
         computeLegendre(inSphere.getCosTheta(), inSphere.getSinTheta());
 
-        FComplexe *p_term = harmonic;
-        FComplexe *p_theta_derivated_term = thetaDerivatedResult;
-        FReal *p_spherical_harmonic_Inner_coefficients_array = sphereHarmoInnerCoef;
-        FReal *ptr_associated_Legendre_function_Array = legendre;
-        FReal *start_ptr_associated_Legendre_function_Array = ptr_associated_Legendre_function_Array;
-
+        int index_l_m = 0;
         // r^l
-        FReal r_l = 1.0;
-        for (int l = 0 ; l <= FMB_Info_P ; ++l, r_l *= inSphere.getR()){
+        FReal r_pow_l = 1.0;
+
+        for (int l = 0 ; l <= devP ; ++l){
             FReal magnitude;
             // m<l:
             int m = 0;
-            for(; m < l ; ++m, ++p_term, ++p_theta_derivated_term, ++p_spherical_harmonic_Inner_coefficients_array, ++ptr_associated_Legendre_function_Array){
-                magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (*ptr_associated_Legendre_function_Array);
+            for(; m < l ; ++m){
+                magnitude = sphereHarmoInnerCoef[index_l_m] * r_pow_l * legendre[index_l_m];
 
                 // Computation of Inner_l^m(r, theta, phi):
-                p_term->setReal( magnitude * cosSin[m].getReal());
-                p_term->setImag( magnitude * cosSin[m].getImag());
+                harmonic[index_l_m].setReal( magnitude * cosSin[m].getReal());
+                harmonic[index_l_m].setImag( magnitude * cosSin[m].getImag());
 
                 // Computation of {\partial Inner_l^m(r, theta, phi)}/{\partial theta}:
-                magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * ((FReal(l)*inSphere.getCosTheta()*(*ptr_associated_Legendre_function_Array)
-                                                                                       - FReal(l+m)*(*(start_ptr_associated_Legendre_function_Array + getPreExpRedirJ(l-1) + m) )) / inSphere.getSinTheta());
-                p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
-                p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
+                magnitude = sphereHarmoInnerCoef[index_l_m] * r_pow_l * ((FReal(l)*inSphere.getCosTheta()*legendre[index_l_m]
+                                                                                       - FReal(l+m)*(legendre[getPreExpRedirJ(l-1) + m])) / inSphere.getSinTheta());
+                thetaDerivatedResult[index_l_m].setReal(magnitude * cosSin[m].getReal());
+                thetaDerivatedResult[index_l_m].setImag(magnitude * cosSin[m].getImag());
 
+                ++index_l_m;
             }
 
             // m=l:
             // Computation of Inner_m^m(r, theta, phi):
-            magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * r_l * (*ptr_associated_Legendre_function_Array);
-            p_term->setReal(magnitude * cosSin[m].getReal());
-            p_term->setImag(magnitude * cosSin[m].getImag());
+            magnitude = sphereHarmoInnerCoef[index_l_m] * r_pow_l * legendre[index_l_m];
+            harmonic[index_l_m].setReal(magnitude * cosSin[m].getReal());
+            harmonic[index_l_m].setImag(magnitude * cosSin[m].getImag());
 
             // Computation of {\partial Inner_m^m(r, theta, phi)}/{\partial theta}:
-            magnitude = (*p_spherical_harmonic_Inner_coefficients_array) * FReal(r_l) * (FReal(m) * inSphere.getCosTheta() * (*ptr_associated_Legendre_function_Array) / inSphere.getSinTheta());
-            p_theta_derivated_term->setReal(magnitude * cosSin[m].getReal());
-            p_theta_derivated_term->setImag(magnitude * cosSin[m].getImag());
+            magnitude = sphereHarmoInnerCoef[index_l_m] * r_pow_l * (FReal(m) * inSphere.getCosTheta() * legendre[index_l_m] / inSphere.getSinTheta());
+            thetaDerivatedResult[index_l_m].setReal(magnitude * cosSin[m].getReal());
+            thetaDerivatedResult[index_l_m].setImag(magnitude * cosSin[m].getImag());
 
-            ++p_term;
-            ++p_theta_derivated_term;
-            ++p_spherical_harmonic_Inner_coefficients_array;
-            ++ptr_associated_Legendre_function_Array;
+            r_pow_l *= inSphere.getR();
+            ++index_l_m;
         }
     }
 
