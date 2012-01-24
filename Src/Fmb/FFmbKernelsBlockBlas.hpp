@@ -36,7 +36,7 @@
 * Needs cell to extend {FExtendFmbCell}
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FFmbKernelsBlockBlas : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+class FFmbKernelsBlockBlas {
 protected:
     // _GRAVITATIONAL_
     static const int FMB_Info_eps_soft_square = 1;

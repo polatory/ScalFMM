@@ -36,7 +36,7 @@ static const int FMB_Info_P = 12;
 * Needs cell to extend {FExtendFmbCell}
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FFmbKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+class FFmbKernels {
 protected:
 
     // _GRAVITATIONAL_
