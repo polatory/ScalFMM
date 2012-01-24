@@ -43,7 +43,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
     }
 
     void bigSize(){
-        const long Size = 100000000;
+        const long Size = 10000000;//100000000;
         long long* const array = new long long[Size];
 
         for(long idx = 0 ; idx < Size ; ++idx){
