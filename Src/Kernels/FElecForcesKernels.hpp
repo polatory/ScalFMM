@@ -444,7 +444,7 @@ private:
         // n from 0 to P
         for(int n = 0 ; n <= devP ; ++n ){
             // l<0 // (-1)^l
-            FReal pow_of_minus_1_for_l = ( n & 1 ? -1.0 : 1.0);
+            FReal pow_of_minus_1_for_l = ( n & 1 ? FReal(-1.0) : FReal(1.0) );
 
             // O_n^l : here points on the source multipole expansion term of degree n and order |l|
             const int index_n = harmonic.getPreExpRedirJ(n);

@@ -294,7 +294,7 @@ private:
                     if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
                         child[idxChild]->serializeUp(&sendBuffer[idxBuff]);
                         idxBuff += CellClass::SerializedSizeUp;
-                        state |= char(0x1 << idxChild);
+                        state |= char(0x1 << char(idxChild));
                     }
                 }
                 sendBuffer[0] = state;
