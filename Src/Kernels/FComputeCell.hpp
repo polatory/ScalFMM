@@ -28,6 +28,14 @@ public:
         ExpP = int((DevP+1) * (DevP+2) * 0.5);
     }
 
+    static int GetP(){
+        return DevP;
+    }
+
+    static int GetExp(){
+        return ExpP;
+    }
+
 
     /** Default constructor */
     FComputeCell()

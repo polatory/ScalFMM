@@ -4,6 +4,9 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
+#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FElecForcesKernels.hpp"
+
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
@@ -16,10 +19,12 @@
 
 
 typedef FmbParticle             ParticleClass;
-typedef FmbCell                 CellClass;
+typedef FComputeCell            CellClass;
 typedef FVector<ParticleClass>  ContainerClass;
 
-typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+//typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
@@ -30,6 +35,8 @@ class TestFmb : public FUTester<TestFmb> {
     void TestTree(){
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
+        const int DevP = 12;
+        FComputeCell::Init(DevP);
 
         FFmaBinLoader<ParticleClass> loader("../Data/utestFmb.bin.fma");
         if(!loader.isOpen()){
@@ -47,11 +54,11 @@ class TestFmb : public FUTester<TestFmb> {
         }
 
 
-        KernelClass kernels(NbLevels,loader.getBoxWidth());
+        KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
         FmmClass algo(&testTree,&kernels);
         algo.execute();
 
-        //FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../UTests/data/fmb.data", testTree);
+        FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../UTests/data/fmb.data", testTree);
 
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", goodTree);
@@ -116,10 +123,10 @@ class TestFmb : public FUTester<TestFmb> {
                     }
 
                     assert( memcmp(testOctreeIterator.getCurrentCell()->getLocal(),
-                                   goodOctreeIterator.getCurrentCell()->getLocal(),CellClass::MultipoleSize * sizeof(FComplexe)) == 0);
+                                   goodOctreeIterator.getCurrentCell()->getLocal(), CellClass::GetExp() * sizeof(FComplexe)) == 0);
 
                     assert( memcmp(testOctreeIterator.getCurrentCell()->getMultipole(),
-                                   goodOctreeIterator.getCurrentCell()->getMultipole(),CellClass::MultipoleSize * sizeof(FComplexe)) == 0);
+                                   goodOctreeIterator.getCurrentCell()->getMultipole(),CellClass::GetExp() * sizeof(FComplexe)) == 0);
 
                     if(!testOctreeIterator.moveRight()){
                         if(goodOctreeIterator.moveRight()){

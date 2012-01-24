@@ -22,7 +22,7 @@
   */
 
 
-class IndexedParticle : public FmbParticle{
+class IndexedParticle : public FmbParticle {
     int index;
 public:
     IndexedParticle(): index(-1){}

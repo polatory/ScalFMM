@@ -81,7 +81,7 @@ public:
 #else
         timeval t;
         gettimeofday(&t, NULL);
-        return (t.tv_sec) + (t.tv_usec/1000000.0);
+        return double(t.tv_sec) + (double(t.tv_usec)/1000000.0);
 #endif
     }
 };
