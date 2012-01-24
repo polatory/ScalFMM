@@ -976,22 +976,40 @@ public:
                     if( idxX || idxY || idxZ ){
                         FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
 
-                        if( other.getX() < 0 ) other.setX( other.getX() + limite );
-                        else if( limite <= other.getX() ) other.setX( other.getX() - limite );
-                        if( other.getY() < 0 ) other.setY( other.getY() + limite );
-                        else if( limite <= other.getY() ) other.setY( other.getY() - limite );
-                        if( other.getZ() < 0 ) other.setZ( other.getZ() + limite );
-                        else if( limite <= other.getZ() ) other.setZ( other.getZ() - limite );
+                        // To give the orientation of the neighbors
+                        FTreeCoordinate offset;
+
+                        if( other.getX() < 0 ){
+                            other.setX( other.getX() + limite );
+                            offset.setX(-1);
+                        }
+                        else if( limite <= other.getX() ){
+                            other.setX( other.getX() - limite );
+                            offset.setX(1);
+                        }
+                        if( other.getY() < 0 ){
+                            other.setY( other.getY() + limite );
+                            offset.setY(-1);
+                        }
+                        else if( limite <= other.getY() ){
+                            other.setY( other.getY() - limite );
+                            offset.setY(1);
+                        }
+                        if( other.getZ() < 0 ){
+                            other.setZ( other.getZ() + limite );
+                            offset.setZ(-1);
+                        }
+                        else if( limite <= other.getZ() ){
+                            other.setZ( other.getZ() - limite );
+                            offset.setZ(1);
+                        }
 
                         const MortonIndex mortonOther = other.getMortonIndex(inLevel);
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
                         if(leaf){
-                            inNeighborsPosition[idxNeighbors].setPosition( idxX,
-                                                                          idxY,
-                                                                          idxZ);
-
+                            inNeighborsPosition[idxNeighbors] = offset;
                             inNeighbors[idxNeighbors++] = leaf;
                         }
                     }
