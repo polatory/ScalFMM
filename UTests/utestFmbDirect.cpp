@@ -1,6 +1,4 @@
 // [--License--]
-
-
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
@@ -18,6 +16,10 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
+
+/*
+  In this test we compare the fmm results and the direct results.
+  */
 
 
 class IndexedParticle : public FmbParticle{
@@ -60,7 +62,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
-        const int DevP = 5;
+        const int DevP = 12;
         FComputeCell::Init(DevP);
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
@@ -100,25 +102,24 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
                 typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
-                    const ParticleClass& currentParticle = leafIter.data();//TODO delete
-                    const ParticleClass& other = particles[leafIter.data().getIndex()];//TODO delete
+                    const ParticleClass& other = particles[leafIter.data().getIndex()];
 
-                    const FReal currentPotentialDiff = FMath::Abs(other.getPotential() - leafIter.data().getPotential());
+                    const FReal currentPotentialDiff = FMath::RelativeDiff(other.getPotential(),leafIter.data().getPotential());
                     if( potentialDiff < currentPotentialDiff ){
                         potentialDiff = currentPotentialDiff;
                     }
 
-                    const FReal currentFx = FMath::Abs(other.getForces().getX() - leafIter.data().getForces().getX());
+                    const FReal currentFx = FMath::RelativeDiff(other.getForces().getX() , leafIter.data().getForces().getX());
                     if( fx < currentFx ){
                         fx = currentFx;
                     }
 
-                    const FReal currentFy = FMath::Abs(other.getForces().getY() - leafIter.data().getForces().getY());
+                    const FReal currentFy = FMath::RelativeDiff(other.getForces().getY() , leafIter.data().getForces().getY());
                     if( fy < currentFy ){
                         fy = currentFy;
                     }
 
-                    const FReal currentFz = FMath::Abs(other.getForces().getZ() - leafIter.data().getForces().getZ());
+                    const FReal currentFz = FMath::RelativeDiff(other.getForces().getZ() , leafIter.data().getForces().getZ());
                     if( fz < currentFz ){
                         fz = currentFz;
                     }
@@ -139,19 +140,18 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         Print("Fz diff is = ");
         Print(fz);
 
-        assert(potentialDiff < 0.001);
-        assert(fx < 0.001);
-        assert(fy < 0.001);
-        assert(fz < 0.001);
+        const FReal MaximumDiff = FReal(0.5);
+        assert(potentialDiff < MaximumDiff);
+        assert(fx < MaximumDiff);
+        assert(fy < MaximumDiff);
+        assert(fz < MaximumDiff);
     }
-
 
     // set test
     void SetTests(){
         AddTest(&TestFmbDirect::TestDirect,"Test Simu and with direct");
     }
 };
-
 
 
 // You must do this

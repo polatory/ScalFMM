@@ -1,42 +1,15 @@
 #ifndef FHARMONIC_HPP
 #define FHARMONIC_HPP
 
+#include "../Utils/FGlobal.hpp"
 #include "../Utils/FComplexe.hpp"
-
-/** Todo move this class outside when kernels will be developed */
-class FSpherical {
-    FReal r, cosTheta, sinTheta, phi;
-
-public:
-    explicit FSpherical(const F3DPosition& inVector){
-        const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
-        this->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
-        this->phi = FMath::Atan2(inVector.getY(),inVector.getX());
-        this->cosTheta = inVector.getZ() / r;
-        this->sinTheta = FMath::Sqrt(x2y2) / r;
-    }
-
-    FReal getR() const{
-        return r;
-    }
-
-    FReal getCosTheta() const{
-        return cosTheta;
-    }
-
-    FReal getSinTheta() const{
-        return sinTheta;
-    }
-
-    FReal getPhi() const{
-        return phi;
-    }
-};
+#include "../Utils/FSpherical.hpp"
 
 
-
+/** This class compute the spherical harmonic.
+  * It computes the inner, outter, and legendre.
+  */
 class FHarmonic {
-public: //TODO delete
     const int devP;     //< P
     const int expSize;  //< Exponen Size
 
@@ -120,6 +93,8 @@ public: //TODO delete
                 legendre[idxCurrentLM] = (inCosTheta * FReal( 2 * l - 1 ) * legendre[idxCurrentL1M]
                                           - FReal( l + m - 1 ) * legendre[idxCurrentL2M] )
                                           / FReal( l - m );
+
+
                 // progress
                 ++idxCurrentLM;
                 ++idxCurrentL1M;
@@ -128,6 +103,7 @@ public: //TODO delete
 
             // Compute P_l,{l-1}
             legendre[idxCurrentLM++] = inCosTheta * FReal( 2 * l - 1 ) * legendre[idxCurrentL1M];
+
             // Compute P_l,l
             legendre[idxCurrentLM++] = fact * invSinTheta * legendre[idxCurrentL1M];
 

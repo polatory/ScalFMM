@@ -409,7 +409,7 @@ protected:
         for(int idxm = 0 , idxmMod4 = 0; idxm <= FMB_Info_P ; ++idxm, ++idxmMod4){
             if(idxmMod4 == 4) idxmMod4 = 0;
             const FReal angle = FReal(idxm) *inSphere.phi + PiArrayInner[idxmMod4];
-            cosSin[idxm].setReal(FMath::Sin(angle + FMath::FPiDiv2));
+            cosSin[idxm].setReal(FReal(FMath::Sin(angle + FMath::FPiDiv2)));
             cosSin[idxm].setImag(FMath::Sin(angle));
 
             //printf("l=%d \t inSphere.phi=%e \t this->PiArrayOuter[idxlMod4]=%e \t angle=%e \t FMath::Sin(angle + FMath::FPiDiv2)=%e \t FMath::Sin(angle)=%e\n",

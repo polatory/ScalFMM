@@ -76,7 +76,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
 
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
-        treeWidthAtLevel = boxWidth/2;
+        treeWidthAtLevel = boxWidth;
         preM2LTransitions = new FComplexe[treeHeight * (7 * 7 * 7) * devM2lP];
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel ){
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
@@ -144,9 +144,9 @@ public:
         for(int idxSize = 0 ; idxSize < size ; ++idxSize){
             const FTreeCoordinate& coordNeighbors = distantNeighbors[idxSize]->getCoordinate();
             const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
-                                                  (coordNeighbors.getX() - coordCenter.getX()),
-                                                  (coordNeighbors.getY() - coordCenter.getY()),
-                                                  (coordNeighbors.getZ() - coordCenter.getZ()))];
+                                                  (coordCenter.getX() - coordNeighbors.getX()),
+                                                  (coordCenter.getY() - coordNeighbors.getY()),
+                                                  (coordCenter.getZ() - coordNeighbors.getZ()))];
 
             multipoleToLocal(pole->getLocal(), distantNeighbors[idxSize]->getMultipole(), transitionVector);
         }
@@ -318,6 +318,7 @@ private:
     */
     void particleToMultiPole(FComplexe*const cellMultiPole, const F3DPosition& inPolePosition ,
                              const ParticleClass& particle){
+
         // Inner of Qi - Z0 => harmonic.result
         harmonic.computeInner( FSpherical(particle.getPosition() - inPolePosition) );
 
@@ -331,6 +332,7 @@ private:
             for(int k = 0 ; k <= j ; ++k, ++index_j_k){
                 harmonic.result(index_j_k).mulRealAndImag( qParticle * minus_one_pow_j );
                 cellMultiPole[index_j_k] += harmonic.result(index_j_k);
+
             }
             // (-1)^J => -1 becomes 1 or 1 becomes -1
             minus_one_pow_j = -minus_one_pow_j;
@@ -368,7 +370,7 @@ private:
 
             // l from -n to <0
             for(int l = -n ; l < 0 ; ++l){
-                const FComplexe M_n__n_l = multipole_exp_src[index_n + n + l];
+                const FComplexe M_n__n_l = multipole_exp_src[index_n -l];
 
                 // j from n to P
                 for(int j = n ; j <= devP ; ++j ){
@@ -431,6 +433,7 @@ private:
                         multipole_exp_target[index_j + k].incImag(
                                 (M_n__n_l.getImag() * I_j_n__k_l.getReal()) +
                                 (M_n__n_l.getReal() * I_j_n__k_l.getImag()));
+
                     } // for k
                 } // for j
 
@@ -476,7 +479,7 @@ private:
                 // work with a local variable
                 FComplexe L_j_k = local_exp[index_j_k];
                 // n from 0 to P
-                for (int n = 0 ; n <= devP /*or devP-j*/ ; ++n){
+                for (int n = 0 ; n <= /*devP or*/ devP-j ; ++n){
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
                     const int index_n = harmonic.getPreExpRedirJ(n);
 
@@ -517,7 +520,7 @@ private:
 
                     for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
                         const FComplexe M_n_l = multipole_exp_src[index_n - l];
-                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + (k - l)];
+                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j - (k + l)];
 
                         L_j_k.incReal( pow_of_minus_1_for_l *
                                                     ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
@@ -586,6 +589,7 @@ private:
                                                     (L_j_l.getImag() * I_l_j__l_k.getImag()));
                         L_j_k.incImag( (L_j_l.getImag() * I_l_j__l_k.getReal()) +
                                                     (L_j_l.getReal() * I_l_j__l_k.getImag()));
+
                     }
 
                     // (-1)^l
@@ -615,6 +619,7 @@ private:
                         L_j_k.decImag( pow_of_minus_1_for_k *
                                                     ((L_j_l.getImag() * I_l_j__l_k.getReal()) +
                                                      (L_j_l.getReal() * I_l_j__l_k.getImag())));
+
                     }
                 }//n
 
@@ -638,9 +643,9 @@ private:
         const FSpherical spherical(particle->getPosition() - local_position);
         harmonic.computeInnerTheta( spherical );
 
-        int index_j_k = 0;
+        int index_j_k = 1;
 
-        for (int j = 0 ; j <= devP ; ++j ){
+        for (int j = 1 ; j <= devP ; ++j ){
             {
                 // k=0:
                 // F_r:
@@ -655,6 +660,7 @@ private:
                 //const FReal exp_term_aux_imag = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getImag()) + (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
                 force_vector_in_local_base_y = ( force_vector_in_local_base_y + exp_term_aux_real );
             }
+
             ++index_j_k;
 
             // k>0:
@@ -673,14 +679,16 @@ private:
                     //const FReal exp_term_aux_imag = ( (harmonic.resultThetaDerivated(index_j_k).getReal() * local_exp[index_j_k].getImag()) + (harmonic.resultThetaDerivated(index_j_k).getImag() * local_exp[index_j_k].getReal()) );
                     force_vector_in_local_base_y = (force_vector_in_local_base_y + FReal(2.0) * exp_term_aux_real );
                 }
+
             }
 
         }
         // We want: - gradient(POTENTIAL_SIGN potential).
         // The -(- 1.0) computing is not the most efficient programming ...
-        force_vector_in_local_base_x = ( force_vector_in_local_base_x  * FReal(-1.0) / spherical.getR());
-        force_vector_in_local_base_y = ( force_vector_in_local_base_y * FReal(-1.0) / spherical.getR());
-        force_vector_in_local_base_z = ( force_vector_in_local_base_z * FReal(-1.0) / (spherical.getR() * spherical.getSinTheta()));
+        const FReal signe = 1.0;
+        force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
+        force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
+        force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
 
         /////////////////////////////////////////////////////////////////////
 
@@ -761,7 +769,8 @@ private:
             // k=0
             harmonic.result(index_j_k) *= local_exp[index_j_k];
             result += harmonic.result(index_j_k).getReal();
-            ++index_j_k;
+
+            ++index_j_k;            
 
             // k>0
             for (int k = 1 ; k <= j ; ++k, ++index_j_k){
@@ -770,7 +779,7 @@ private:
             }
         }
 
-        particle->incPotential(result * physicalValue);
+        particle->incPotential(result /* * physicalValue*/);
 
     }
 

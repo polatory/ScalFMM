@@ -9,7 +9,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class 
+* @class
 * Please read the license
 *
 * Propose basic math functions or indirections to std math.
@@ -138,9 +138,18 @@ struct FMath{
         // return !(value <= std::numeric_limits<T>::min()) && !(std::numeric_limits<T>::max() <= value);
         return std::isfinite(value);
     }
+
+    /** Compute a relative difference between two values */
+    template <class ValueClass>
+    static ValueClass RelativeDiff(const ValueClass& value1, const ValueClass& value2){
+        if(Abs(value1) > Abs(value2)){
+            return Abs((value2 - value1) / value1);
+        }
+        else{
+            return Abs((value2 - value1) / value2);
+        }
+    }
 };
 
 
 #endif //FMATH_HPP
-
-// [--END--]
