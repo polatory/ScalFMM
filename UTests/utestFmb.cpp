@@ -58,7 +58,7 @@ class TestFmb : public FUTester<TestFmb> {
         FmmClass algo(&testTree,&kernels);
         algo.execute();
 
-        FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../UTests/data/fmb.data", testTree);
+        //FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", testTree);
 
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", goodTree);
