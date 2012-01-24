@@ -20,9 +20,11 @@
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
 class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
-    int devP;           //< The P
-    int devM2lP;        //< A secondary P
-    int treeHeight;     //< The height of the tree
+    const int devP;           //< The P
+    const int devM2lP;        //< A secondary P
+    const FReal boxWidth;     //< the box width at leaf level
+    const int treeHeight;     //< The height of the tree
+
     FHarmonic harmonic; //< The harmonic computation class
 
     FComplexe* preL2LTransitions; //< The pre-computation for the L2L based on the level
@@ -41,7 +43,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
     }
 
     /** Alloc and init pre-vectors*/
-    void allocAndInit(const FReal boxWidth){
+    void allocAndInit(){
         preL2LTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
         preM2MTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
 
@@ -97,11 +99,21 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
 
 public:
     /** Kernel constructor */
-    FElecForcesKernels(const int inDevP, const int inTreeHeight, const FReal boxWidth)
-        : devP(inDevP), devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), treeHeight(inTreeHeight), harmonic(inDevP),
+    FElecForcesKernels(const int inDevP, const int inTreeHeight, const FReal inBoxWidth)
+        : devP(inDevP), devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), boxWidth(inBoxWidth),
+          treeHeight(inTreeHeight), harmonic(inDevP),
           preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0) {
 
-        allocAndInit(boxWidth);
+        allocAndInit();
+    }
+
+    /** Copy constructor */
+    FElecForcesKernels(const FElecForcesKernels& other)
+        : devP(other.devP), devM2lP(other.devM2lP), boxWidth(other.boxWidth),
+          treeHeight(other.boxWidth), harmonic(other.devP),
+          preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0) {
+
+        allocAndInit();
     }
 
     /** Default destructor */
@@ -141,14 +153,14 @@ public:
              const int size, const int inLevel) {
         const FTreeCoordinate& coordCenter = pole->getCoordinate();
         // For all neighbors compute M2L
-        for(int idxSize = 0 ; idxSize < size ; ++idxSize){
-            const FTreeCoordinate& coordNeighbors = distantNeighbors[idxSize]->getCoordinate();
+        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
+            const FTreeCoordinate& coordNeighbors = distantNeighbors[idxNeigh]->getCoordinate();
             const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
                                                   (coordCenter.getX() - coordNeighbors.getX()),
                                                   (coordCenter.getY() - coordNeighbors.getY()),
                                                   (coordCenter.getZ() - coordNeighbors.getZ()))];
 
-            multipoleToLocal(pole->getLocal(), distantNeighbors[idxSize]->getMultipole(), transitionVector);
+            multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
         }
     }
 
@@ -283,14 +295,83 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict , const CellClass* [189], FTreeCoordinate [189], const int , const int ) {
+    void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
+             const FTreeCoordinate neighborsRelativePositions[189],
+             const int size, const int inLevel) {
+        // For all neighbors compute M2L
+        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
+            const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
+                                                        neighborsRelativePositions[idxNeigh].getX(),
+                                                        neighborsRelativePositions[idxNeigh].getY(),
+                                                        neighborsRelativePositions[idxNeigh].getZ())];
+
+            multipoleToLocal(local->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
+        }
     }
 
 
     /** After Downward */
-    void P2P(const MortonIndex ,
-             ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-             ContainerClass* const [26], const FTreeCoordinate [26], const int ) {
+    void P2P(const MortonIndex inCurrentIndex,
+             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
+             ContainerClass* const directNeighbors[26], const FTreeCoordinate neighborsRelativeOffset[26], const int size) {
+
+        { // Compute interaction in this leaf
+            typename ContainerClass::BasicIterator iterTarget(*targets);
+            while( iterTarget.hasNotFinished() ){
+                // We copy the target particle to work with a particle in the heap
+                ParticleClass target( iterTarget.data() );
+
+                // For all particles after the current one
+                typename ContainerClass::BasicIterator iterSameBox = iterTarget;
+                iterSameBox.gotoNext();
+                while( iterSameBox.hasNotFinished() ){
+                    directInteractionMutual(&target, &iterSameBox.data());
+                    iterSameBox.gotoNext();
+                }
+                // Set data and progress
+                iterTarget.setData(target);
+                iterTarget.gotoNext();
+            }
+        }
+        { // Compute interactions with other leaves
+            // For all the neigbors leaves
+            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
+                // This box is not a real neighbor
+                if(neighborsRelativeOffset[idxDirectNeighbors].getX() || neighborsRelativeOffset[idxDirectNeighbors].getY()
+                        || neighborsRelativeOffset[idxDirectNeighbors].getZ() ){
+                    typename ContainerClass::BasicIterator iterTarget(*targets);
+                    while( iterTarget.hasNotFinished() ){
+                        ParticleClass target( iterTarget.data() );
+                        // For all the particles in the other leaf
+                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                        while( iterSource.hasNotFinished() ){
+                            directInteractionOffset(&target, iterSource.data(), neighborsRelativeOffset[idxDirectNeighbors]);
+                            iterSource.gotoNext();
+                        }
+                        // Set data and progress
+                        iterTarget.setData(target);
+                        iterTarget.gotoNext();
+                    }
+                }
+                // This is a real neighbor, we do as usual
+                else if(inCurrentIndex < neighborsRelativeOffset[idxDirectNeighbors].getMortonIndex(treeHeight) ){
+                    // For all particles in current leaf
+                    typename ContainerClass::BasicIterator iterTarget(*targets);
+                    while( iterTarget.hasNotFinished() ){
+                        ParticleClass target( iterTarget.data() );
+                        // For all the particles in the other leaf
+                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                        while( iterSource.hasNotFinished() ){
+                            directInteractionMutual(&target, &iterSource.data());
+                            iterSource.gotoNext();
+                        }
+                        // Set data and progress
+                        iterTarget.setData(target);
+                        iterTarget.gotoNext();
+                    }
+                }
+            }
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -818,6 +899,29 @@ public:
         FReal dx = -(target->getPosition().getX() - source.getPosition().getX());
         FReal dy = -(target->getPosition().getY() - source.getPosition().getY());
         FReal dz = -(target->getPosition().getZ() - source.getPosition().getZ());
+
+        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+        FReal inv_distance = FMath::Sqrt(inv_square_distance);
+
+        inv_square_distance *= inv_distance;
+        inv_square_distance *= target->getPhysicalValue() * source.getPhysicalValue();
+
+        dx *= inv_square_distance;
+        dy *= inv_square_distance;
+        dz *= inv_square_distance;
+
+        target->incForces( dx, dy, dz);
+        target->incPotential( inv_distance  * source.getPhysicalValue() );
+    }
+
+    /** P2P NO mutual interaction with an offset
+      * F = q * q' / r²
+      */
+    void directInteractionOffset(ParticleClass*const FRestrict target, const ParticleClass& source, const FTreeCoordinate& offset){
+
+        FReal dx = -(target->getPosition().getX() - source.getPosition().getX()) + FReal(offset.getX()) * boxWidth;
+        FReal dy = -(target->getPosition().getY() - source.getPosition().getY()) + FReal(offset.getY()) * boxWidth;
+        FReal dz = -(target->getPosition().getZ() - source.getPosition().getZ()) + FReal(offset.getZ()) * boxWidth;
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
