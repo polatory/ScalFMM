@@ -66,7 +66,7 @@ public:
 // My kernel actually does nothing except showing how to retreive data from an
 // array from the indexes vector giving by the leaf in the P2M
 template< class ParticleClass, class CellClass, class ContainerClass>
-class MyKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+class MyKernel /*: public FAbstractKernels<ParticleClass,CellClass,ContainerClass> */{
     FBasicParticle*const realParticles;
 public:
     MyKernel(FBasicParticle*const inRealParticles): realParticles(inRealParticles) {

@@ -18,11 +18,10 @@
 
 #include "../Src/Components/FTestParticle.hpp"
 #include "../Src/Components/FTestCell.hpp"
-#include "../Src/Components/FTestKernels.hpp"
+#include "../Src/Components/FTestPeriodicKernels.hpp"
 
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
-#include "../Src/Components/FBasicKernels.hpp"
 
 // Compile by : g++ testFmmAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithm.exe
 
@@ -30,44 +29,6 @@
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
   */
-
-
-
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FTestPeriodicKernels : public FTestKernels<ParticleClass,CellClass,ContainerClass> {
-public:
-
-    /** Before Downward */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189], FTreeCoordinate [189], const int size, const int ) {
-        // The pole is impacted by what represent other poles
-        for(int idx = 0 ; idx < size ; ++idx){
-            pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
-        }
-    }
-
-
-    /** After Downward */
-    void P2P(const MortonIndex ,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             ContainerClass* const directNeighborsParticles[26], const FTreeCoordinate [26], const int size) {
-
-        // Each particles targeted is impacted by the particles sources
-        long long int inc = sources->getSize();
-        if(targets == sources){
-            inc -= 1;
-        }
-        for(int idx = 0 ; idx < size ; ++idx){
-            inc += directNeighborsParticles[idx]->getSize();
-        }
-
-        typename ContainerClass::BasicIterator iter(*targets);
-        while( iter.hasNotFinished() ){
-            iter.data().setDataDown(iter.data().getDataDown() + inc);
-            iter.gotoNext();
-        }
-
-    }
-};
 
 
 // Simply create particles and try the kernels

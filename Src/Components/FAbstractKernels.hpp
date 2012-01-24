@@ -92,6 +92,39 @@ public:
     virtual void P2P(const MortonIndex inCurrentLeafIndex,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              ContainerClass* const directNeighborsParticles[26], const MortonIndex inNeighborsIndex[26], const int size) = 0;
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Periodic methods
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+        * M2L
+        * Multipole to local
+        * @param local the element to fill using distant neighbors
+        * @param distantNeighbors is an array containing fathers's direct neighbors's child - direct neigbors
+        * @param neighborsRelativePositions the relative position of the neighbors (can be -2,-2,-2)
+        * @param size the number of neighbors
+        * @param inLevel the current level of the computation
+        */
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
+                     const FTreeCoordinate neighborsRelativePositions[189], const int size, const int level) = 0;
+
+
+    /**
+        * P2P
+        * Particles to particles
+        * @param inCurrentLeafIndex the leaf index
+        * @param targets current boxe targets particles
+        * @param sources current boxe sources particles
+        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
+        * @param neighborsRelativePositions the relative position of neighbors
+        * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
+        */
+    virtual void P2P(const MortonIndex inCurrentLeafIndex,
+                    ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                    ContainerClass* const directNeighborsParticles[26], const FTreeCoordinate neighborsRelativeOffset[26],
+                    const int size) = 0;
 };
 
 

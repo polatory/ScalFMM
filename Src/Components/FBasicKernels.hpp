@@ -65,7 +65,7 @@ public:
 
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict , const CellClass* [189], FTreeCoordinate [189], const int , const int ) {
+    void M2L(CellClass* const FRestrict , const CellClass* [189], const FTreeCoordinate [189], const int , const int ) {
     }
 
 
