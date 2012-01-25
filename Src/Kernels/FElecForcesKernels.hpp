@@ -126,7 +126,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                             );
 
                     harmonic.computeInner(FSpherical(M2MVector));
-                    FMemUtils::copyall<FComplexe>(&preM2MTransitionsPre[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                    FMemUtils::copyall<FComplexe>(&preM2MTransitionsPer[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
 
                     const F3DPosition L2LVector (
                             (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
@@ -135,7 +135,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                             );
 
                     harmonic.computeInner(FSpherical(L2LVector));
-                    FMemUtils::copyall<FComplexe>(&preL2LTransitionsPre[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                    FMemUtils::copyall<FComplexe>(&preL2LTransitionsPer[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
                }
             }
 
@@ -150,7 +150,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                             if(idxX || idxY || idxZ){
                                 const F3DPosition relativePos( FReal(idxX) * treeWidthAtLevel , FReal(idxY) * treeWidthAtLevel , FReal(idxZ) * treeWidthAtLevel );
                                 harmonic.computeOuter(FSpherical(relativePos));
-                                FMemUtils::copyall<FComplexe>(&preM2LTransitionsPre[indexM2LTransition(-1-idxLevel,idxX,idxY,idxZ)], harmonic.result(), harmonic.getExpSize());
+                                FMemUtils::copyall<FComplexe>(&preM2LTransitionsPer[indexM2LTransition(-1-idxLevel,idxX,idxY,idxZ)], harmonic.result(), harmonic.getExpSize());
                             }
                         }
                     }
@@ -213,7 +213,7 @@ public:
     void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
         FComplexe* const multipole_exp_target = inPole->getMultipole();
         // iter on each child and process M2M
-        if( level >= 0){
+        if( inLevel >= 0){
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                 if(inChild[idxChild]){
                     multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitions[indexTransition(inLevel,idxChild)]);
