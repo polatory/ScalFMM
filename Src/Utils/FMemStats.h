@@ -80,6 +80,14 @@ public:
     float getCurrentAllocatedMB() const{
         return float(getCurrentAllocated()) / 1024 / 1024;
     }
+
+    bool isUsed() const {
+#ifdef SCALFMM_USE_MEM_STATS
+        return true;
+#else
+        return false;
+#endif
+    }
 };
 
 
