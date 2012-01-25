@@ -66,7 +66,7 @@ int main(int , char ** ){
             std::cout << "Itering on particles ..." << std::endl;
             counterTime.tic();
 
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             for(int idxLevel = NbLevels - 1 ; idxLevel >= 1 ; --idxLevel ){
                 int counter = 0;
@@ -86,10 +86,10 @@ int main(int , char ** ){
             std::cout << "Itering on particles fast ..." << std::endl;
             counterTime.tic();
 
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
-            typename OctreeClass::Iterator avoidGoLeft(octreeIterator);
+            OctreeClass::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
                 do{
