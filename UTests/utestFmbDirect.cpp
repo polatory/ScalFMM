@@ -147,6 +147,14 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         assert(fz < MaximumDiff);
     }
 
+    void After() {
+        if( FMemStats::controler.isUsed() ){
+            std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+            std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+            std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
+        }
+    }
+
     // set test
     void SetTests(){
         AddTest(&TestFmbDirect::TestDirect,"Test Simu and with direct");
