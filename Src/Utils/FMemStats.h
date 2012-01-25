@@ -1,6 +1,7 @@
 #ifndef FMEMSTATS_H
 #define FMEMSTATS_H
 
+#include "FGlobal.hpp"
 
 #include <stdlib.h>
 #include <cstring>
@@ -8,7 +9,7 @@
 #ifdef SCALFMM_USE_MEM_STATS
 #include <new>
 #include <stdexcept>
-#warning use meme stats
+#warning You are using meme stats
     void* operator new(std::size_t n) throw(std::bad_alloc);
     void* operator new(size_t n, std::nothrow_t const&) throw();
     void* operator new[](size_t n) throw(std::bad_alloc);
