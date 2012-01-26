@@ -82,7 +82,7 @@ public:
     * Default destructor, simply close the file
     */
     virtual ~FFmaBinLoader(){
-        fclose(file);
+        if(file) fclose(file);
     }
 
     /**

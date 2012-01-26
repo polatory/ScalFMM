@@ -205,7 +205,7 @@ public:
         for( int indexLevel = this->subOctreeHeight - 1 ; indexLevel >= 0 ; --indexLevel ){
             for( int indexCells = mostLeft ; indexCells <= mostRight ; ++indexCells ){
                 if(this->cells[indexLevel][indexCells]){
-                    //delete this->cells[indexLevel][indexCells];
+                    delete this->cells[indexLevel][indexCells];
                 }
             }
 

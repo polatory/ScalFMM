@@ -1,6 +1,4 @@
 // [--License--]
-
-
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
@@ -16,6 +14,11 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
+
+
+/*
+  This test compare a previous FMM result with a simulation.
+  */
 
 
 typedef FmbParticle             ParticleClass;
@@ -38,12 +41,15 @@ class TestFmb : public FUTester<TestFmb> {
         const int DevP = 12;
         FComputeCell::Init(DevP);
 
+        // Load the particles file
         FFmaBinLoader<ParticleClass> loader("../Data/utestFmb.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
+            assert(false);
             return;
         }
 
+        // Create octree
         OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         {
             ParticleClass particleToFill;
@@ -53,18 +59,20 @@ class TestFmb : public FUTester<TestFmb> {
             }
         }
 
-
+        // Run simulation
         KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
         FmmClass algo(&testTree,&kernels);
         algo.execute();
 
-        //FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", testTree);
+        // If needed save the result
+        FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", testTree);
 
+        // Load previous result
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", goodTree);
 
+        // Compare the two simulations
         Print("Check the particles...");
-
         { // Check that each particle has been summed with all other
             typename OctreeClass::Iterator testOctreeIterator(&testTree);
             typename OctreeClass::Iterator goodOctreeIterator(&goodTree);

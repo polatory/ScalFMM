@@ -195,7 +195,7 @@ public:
             int maxParticlesInLeaf = 0;
             file.read((char*)&maxParticlesInLeaf, sizeof(int));
 
-            ParticleClass* const particles = new ParticleClass[maxParticlesInLeaf];
+            ParticleClass* const particles = reinterpret_cast<ParticleClass*>(new char[maxParticlesInLeaf * sizeof(ParticleClass)]);
 
             for(int idxLeaf = 0 ; idxLeaf < nbLeaf ; ++idxLeaf){
                 int particlesInLeaf = 0;
@@ -206,7 +206,7 @@ public:
                 }
             }
 
-            //delete[] particles;
+            delete[] reinterpret_cast<char*>(particles);
         }
 
         // Start from leal level - 1

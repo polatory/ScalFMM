@@ -52,9 +52,11 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
 
     void TestDirect(){
-        FFmaBinLoader<ParticleClass> loader("../Data/utestFmbDirect.bin.fma");
+        // Load particles
+        FFmaBinLoader<ParticleClass> loader("../../Data/utestFmbDirect.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
+            assert(false);
             return;
         }
         Print("Number of particles:");
@@ -64,9 +66,9 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         const int SizeSubLevels = 2;
         const int DevP = 12;
         FComputeCell::Init(DevP);
+
+        // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-
-
         ParticleClass* const particles = new ParticleClass[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(particles[idxPart]);
@@ -75,13 +77,14 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         }
 
 
+        // Run FMM
         Print("Fmm...");
         //KernelClass kernels(NbLevels,loader.getBoxWidth());
         KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
         FmmClass algo(&tree,&kernels);
         algo.execute();
 
-
+        // Run direct computation
         Print("Direct...");
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
@@ -90,10 +93,10 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
             }
         }
 
+        // Compare
         Print("Compute Diff...");
         FReal potentialDiff = 0;
         FReal fx = 0, fy = 0, fz = 0;
-
         { // Check that each particle has been summed with all other
             typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();

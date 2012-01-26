@@ -79,7 +79,7 @@ public:
     * Default destructor, simply close the file
     */
     virtual ~FHLoader(){
-        fclose(file);
+        if(file) fclose(file);
     }
 
     /**
