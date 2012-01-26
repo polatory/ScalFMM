@@ -45,6 +45,8 @@ class FList {
         }
 
 public:
+        typedef Object ValueType; /**< data type of data in FVector */
+
         /** Constructor (of an empty list) */
         FList() : root(0) , size(0) {
         }
