@@ -42,7 +42,7 @@ int main(int argc, char ** argv){
 
     const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbPart           = FParameters::getValue(argc,argv,"-nb", 20000);
+    const int NbPart            = FParameters::getValue(argc,argv,"-nb", 20000);
     const FReal FRandMax        = FReal(RAND_MAX);
 
 
@@ -69,9 +69,9 @@ int main(int argc, char ** argv){
         FTestParticle particles[NbPart];
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particles[idxPart].setPosition(
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)),
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)),
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)));            
+                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
+                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
+                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))));
         }
 
         FMpiTreeBuilder<ParticleClass>::ArrayToTree(app.global(), particles, NbPart, F3DPosition(BoxCenter,BoxCenter,BoxCenter), BoxWidth, tree);

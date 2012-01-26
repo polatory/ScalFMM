@@ -15,9 +15,9 @@
 */
 class FTreeCoordinate{
 private:
-    long x;	//< x box-th position
-    long y;	//< y box-th position
-    long z;	//< z box-th position
+    int x;	//< x box-th position
+    int y;	//< y box-th position
+    int z;	//< z box-th position
 
 public:	
     /** Default constructor (position = {0,0,0})*/
@@ -30,7 +30,7 @@ public:
         * @param inY the y
         * @param inZ the z
         */
-    explicit FTreeCoordinate(const long inX,const long inY,const long inZ)
+    explicit FTreeCoordinate(const int inX,const int inY,const int inZ)
         : x(inX), y(inY), z(inZ){
     }
 
@@ -67,7 +67,7 @@ public:
         * @param inY the new y
         * @param inZ the new z
 	*/
-    void setPosition(const long inX,const long inY,const long inZ){
+    void setPosition(const int inX,const int inY,const int inZ){
         this->x = inX;
         this->y = inY;
         this->z = inZ;
@@ -77,7 +77,7 @@ public:
 	* X Getter
 	* @return this->x
 	*/
-    long getX() const{
+    int getX() const{
         return this->x;
     }
 
@@ -85,7 +85,7 @@ public:
 	* Y Getter
 	* @return this->y
 	*/
-    long getY() const{
+    int getY() const{
         return this->y;
     }
 
@@ -93,7 +93,7 @@ public:
 	* Z Getter
 	* @return this->z
 	*/
-    long getZ() const{
+    int getZ() const{
         return this->z;
     }
 
@@ -101,7 +101,7 @@ public:
 	* X Setter, simply change x position
 	* @param the new x
 	*/
-    void setX(const long inX){
+    void setX(const int inX){
         this->x = inX;
     }
 
@@ -109,7 +109,7 @@ public:
 	* Y Setter, simply change y position
 	* @param the new y
 	*/
-    void setY(const long inY){
+    void setY(const int inY){
         this->y = inY;
     }
 
@@ -117,7 +117,7 @@ public:
 	* Z Setter, simply change z position
 	* @param the new z
 	*/
-    void setZ(const long inZ){
+    void setZ(const int inZ){
         this->z = inZ;
     }
 
@@ -163,11 +163,11 @@ public:
         this->z = 0;
 
         for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
-            z |= long(inIndex & mask);
+            z |= int(inIndex & mask);
             inIndex >>= 1;
-            y |= long(inIndex & mask);
+            y |= int(inIndex & mask);
             inIndex >>= 1;
-            x |= long(inIndex & mask);
+            x |= int(inIndex & mask);
 
             mask <<= 1;
         }

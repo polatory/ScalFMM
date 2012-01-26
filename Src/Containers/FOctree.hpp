@@ -75,10 +75,10 @@ class FOctree : protected FAssertable {
         * @param inRelativePosition a position from the corner of the box
         * @return the box num at the leaf level that contains inRelativePosition
         */
-    long getTreeCoordinate(const FReal inRelativePosition) const {
+    int getTreeCoordinate(const FReal inRelativePosition) const {
         FDEBUG( fassert(inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box", __LINE__, __FILE__) );
         const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-        const long index = long(FMath::dfloor(indexFReal));
+        const int index = int(FMath::dfloor(indexFReal));
         if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * FReal(index) ) ){
             return index - 1;
         }
@@ -203,14 +203,14 @@ public:
     class Iterator : protected FAssertable {
         SubOctreeTypes current; //< Current suboctree
 
-        long currentLocalIndex; //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
+        int currentLocalIndex; //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
         int currentLocalLevel;  //< Current level in the current suboctree
 
         /**
               * To know what is the left limit on the current level on the current subtree
               * @retrun suboctree.left_limit >> 3 * diff(leaf_index, current_index).
               */
-        static long TransposeIndex(const long indexInLeafLevel, const int distanceFromLeafLevel) {
+        static int TransposeIndex(const int indexInLeafLevel, const int distanceFromLeafLevel) {
             return indexInLeafLevel >> (3 * distanceFromLeafLevel);
         }
 
@@ -368,8 +368,8 @@ public:
         bool moveRight(){
             //  Function variables
             SubOctreeTypes workingTree = this->current;    // To cover parent other sub octre
-            long workingLevel = this->currentLocalLevel;        // To know where we are
-            long workingIndex = this->currentLocalIndex;        // To know where we are
+            int workingLevel = this->currentLocalLevel;        // To know where we are
+            int workingIndex = this->currentLocalIndex;        // To know where we are
 
             // -- First we have to go in a tree where we can move on the right --
             // Number of time we go into parent subtree
@@ -396,7 +396,7 @@ public:
                     // While we are not on a allocated cell
                     while( true ){
                         // Test element on the right (test brothers)
-                        const long rightLimite = (workingIndex | 7) + 1;
+                        const int rightLimite = (workingIndex | 7) + 1;
                         while( workingIndex < rightLimite && !workingTree.tree->cellsAt(workingLevel)[workingIndex]){
                             ++workingIndex;
                         }
@@ -417,7 +417,7 @@ public:
                 while( workingLevel != objectiveLevel ){
                     ++workingLevel;
                     workingIndex <<= 3;
-                    const long rightLimite = (workingIndex | 7); // not + 1 because if the 7th first are null it must be the 8th!
+                    const int rightLimite = (workingIndex | 7); // not + 1 because if the 7th first are null it must be the 8th!
                     while( workingIndex < rightLimite && !workingTree.tree->cellsAt(workingLevel)[workingIndex]){
                         ++workingIndex;
                     }
@@ -654,19 +654,19 @@ public:
         FTreeCoordinate center;
         center.setPositionFromMorton(inIndex, inLevel);
 
-        const long limite = FMath::pow(2,inLevel);
+        const int limite = FMath::pow(2,inLevel);
 
         int idxNeighbors = 0;
 
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-            if(!FMath::Between(center.getX() + idxX,0l,limite)) continue;
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(center.getX() + idxX,0,limite)) continue;
 
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                if(!FMath::Between(center.getY() + idxY,0l,limite)) continue;
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(center.getY() + idxY,0,limite)) continue;
 
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                    if(!FMath::Between(center.getZ() + idxZ,0l,limite)) continue;
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(center.getZ() + idxZ,0,limite)) continue;
 
                     // if we are not on the current cell
                     if( !(!idxX && !idxY && !idxZ) ){
@@ -738,18 +738,18 @@ public:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const long limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow(2,inLevel-1);
 
         int idxNeighbors = 0;
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-            if(!FMath::Between(parentCell.getX() + idxX,0l,limite)) continue;
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(parentCell.getX() + idxX,0,limite)) continue;
 
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                if(!FMath::Between(parentCell.getY() + idxY,0l,limite)) continue;
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(parentCell.getY() + idxY,0,limite)) continue;
 
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                    if(!FMath::Between(parentCell.getZ() + idxZ,0l,limite)) continue;
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
 
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
@@ -808,14 +808,14 @@ public:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const long limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow(2,inLevel-1);
 
 
         int idxNeighbors = 0;
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
 
@@ -918,19 +918,19 @@ public:
         FTreeCoordinate center;
         center.setPositionFromMorton(inIndex, inLevel);
 
-        const long limite = FMath::pow(2,inLevel);
+        const int limite = FMath::pow(2,inLevel);
 
         int idxNeighbors = 0;
 
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-            if(!FMath::Between(center.getX() + idxX,0l,limite)) continue;
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(center.getX() + idxX,0,limite)) continue;
 
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                if(!FMath::Between(center.getY() + idxY,0l,limite)) continue;
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(center.getY() + idxY,0,limite)) continue;
 
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                    if(!FMath::Between(center.getZ() + idxZ,0l,limite)) continue;
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(center.getZ() + idxZ,0,limite)) continue;
 
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
@@ -961,16 +961,16 @@ public:
         FTreeCoordinate center;
         center.setPositionFromMorton(inIndex, inLevel);
 
-        const long limite = FMath::pow(2,inLevel);
+        const int limite = FMath::pow(2,inLevel);
 
         int idxNeighbors = 0;
 
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
 
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
 
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
 
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){

@@ -37,9 +37,9 @@ int main(int , char ** ){
     const FReal FRandMax = FReal(RAND_MAX);
     FTic counter;
 
-    srand ( time(NULL) );
+    srand( static_cast<unsigned int>(time(NULL)) );
 
-    OctreeClass tree(10, 3,1.0,F3DPosition(0.5,0.5,0.5));
+    OctreeClass tree(10, 3, 1.0, F3DPosition(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;

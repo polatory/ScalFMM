@@ -166,8 +166,8 @@ public:
             }
 
             // We get the min/max indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( myIntervals, sizeof(Interval) * OctreeHeight, MPI_BYTE,
-                                      workingIntervalsPerLevel, sizeof(Interval) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
+                                      workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
         }
 
         // run;
@@ -654,7 +654,7 @@ private:
                             toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
                         }
 
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * sizeof(CellToSend) , MPI_BYTE ,
+                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * int(sizeof(CellToSend)) , MPI_BYTE ,
                                              idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
 
@@ -662,7 +662,7 @@ private:
                     if(toReceiveFromProcAtLevel){
                         recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
 
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * sizeof(CellToSend), MPI_BYTE,
+                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * int(sizeof(CellToSend)), MPI_BYTE,
                                             idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
                 }
@@ -1002,7 +1002,7 @@ private:
             }
 
             // Box limite
-            const long limite = 1 << (this->OctreeHeight - 1);
+            const int limite = 1 << (this->OctreeHeight - 1);
             // pointer to send
             typename OctreeClass::Iterator* toSend[nbProcess];
             memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess );
@@ -1075,7 +1075,7 @@ private:
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
                     recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
 
-                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*int(sizeof(ParticleClass)), MPI_BYTE,
                                         idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
@@ -1092,7 +1092,7 @@ private:
                         currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
                     }
 
-                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc], sizeof(ParticleClass) * partsToSend[idxProc] , MPI_BYTE ,
+                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc], int(sizeof(ParticleClass)) * partsToSend[idxProc] , MPI_BYTE ,
                                          idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }
@@ -1256,7 +1256,7 @@ private:
             //MortonIndex neighborsIndex[26];
             int previous = 0;
             // Box limite
-            const long limite = 1 << (this->OctreeHeight - 1);
+            const int limite = 1 << (this->OctreeHeight - 1);
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
@@ -1323,22 +1323,22 @@ private:
     }
 
 
-    int getNeighborsIndexes(const MortonIndex centerIndex, const long limite, MortonIndex indexes[26]) const{
+    int getNeighborsIndexes(const MortonIndex centerIndex, const int limite, MortonIndex indexes[26]) const{
         FTreeCoordinate relativePositions[26];
         return getNeighborsIndexes(centerIndex, limite, indexes, relativePositions);
     }
 
-    int getNeighborsIndexes(const MortonIndex centerIndex, const long limite, MortonIndex indexes[26], FTreeCoordinate inRelativePositions[26]) const{
+    int getNeighborsIndexes(const MortonIndex centerIndex, const int limite, MortonIndex indexes[26], FTreeCoordinate inRelativePositions[26]) const{
         FTreeCoordinate center;
         center.setPositionFromMorton(centerIndex, OctreeHeight - 1);
 
         int idxNeig = 0;
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
 
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
 
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
@@ -1374,13 +1374,13 @@ private:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const long limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow(2,inLevel-1);
 
         int idxNeighbors = 0;
         // We test all cells around
-        for(long idxX = -1 ; idxX <= 1 ; ++idxX){
-            for(long idxY = -1 ; idxY <= 1 ; ++idxY){
-                for(long idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
 

@@ -100,7 +100,7 @@ int main(int argc, char ** argv){
 
             FReal averageParticles = 0;
             {
-                long nbLeafs = 0;
+                int nbLeafs = 0;
                 typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
@@ -115,7 +115,7 @@ int main(int argc, char ** argv){
 
             FReal varianceParticles = 0;
             {
-                long nbLeafs = 0;
+                int nbLeafs = 0;
                 typename OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
@@ -132,17 +132,17 @@ int main(int argc, char ** argv){
             FReal averageReduction = 0;
             typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
-            long previousCells = 0;
+            int previousCells = 0;
 
             do{
                 ++previousCells;
             } while(octreeIterator.moveRight());
 
-            for(long idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
+            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
                 octreeIterator.moveUp();
                 octreeIterator.gotoLeft();
 
-                long nbCells = 0;
+                int nbCells = 0;
                 do{
                     ++nbCells;
                 } while(octreeIterator.moveRight());
@@ -154,7 +154,7 @@ int main(int argc, char ** argv){
 
         {
             FReal averageNeighbors = 0;
-            long nbLeafs = 0;
+            int nbLeafs = 0;
             typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
@@ -171,21 +171,21 @@ int main(int argc, char ** argv){
             typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
-            long fullNbCells = 0;
-            long fullNbLeafs = 0;
-            long fullNbChild = 0;
-            long fullM2LCalculus = 0;
+            int fullNbCells = 0;
+            int fullNbLeafs = 0;
+            int fullNbChild = 0;
+            int fullM2LCalculus = 0;
 
-            long nbCellsAtLevel[NbLevels - 3];
-            long nbChildAtLevel[NbLevels - 3];
-            long M2LCalculusAtLevel[NbLevels - 3];
+            int nbCellsAtLevel[NbLevels - 3];
+            int nbChildAtLevel[NbLevels - 3];
+            int M2LCalculusAtLevel[NbLevels - 3];
 
             // Get data
             do{
                 ++fullNbLeafs;
             } while(octreeIterator.moveRight());
 
-            for(long idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel){
+            for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel){
                 octreeIterator.moveUp();
                 octreeIterator.gotoLeft();
 
@@ -225,7 +225,7 @@ int main(int argc, char ** argv){
             // compute by scoring level by level
             double averageChildByLevel = 0;
             double averageM2LByLevel = 0;
-            for(long idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
+            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
                 const int idxArray = idxLevel - 2;
                 averageChildByLevel += nbChildAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
                 averageM2LByLevel += M2LCalculusAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
@@ -238,7 +238,7 @@ int main(int argc, char ** argv){
             // doing a variance for theses data
             double varianceChildByLevel = 0;
             double varianceM2LByLevel = 0;
-            for(long idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
+            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
                 const int idxArray = idxLevel - 2;
 
                 const double averageAtLevel = nbChildAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);

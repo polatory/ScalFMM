@@ -70,11 +70,11 @@ int main(int argc, char ** argv){
 
     const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbPartPerBoxesPerProc   = FParameters::getValue(argc,argv,"-nb", 1);
+    const int NbPartPerBoxesPerProc   = FParameters::getValue(argc,argv,"-nb", 1);
 
     FMpi app(argc, argv);
 
-    const long NbPartPerBoxes = NbPartPerBoxesPerProc * app.global().processCount();
+    const int NbPartPerBoxes = NbPartPerBoxesPerProc * app.global().processCount();
 
     FTic counter;
 
@@ -95,9 +95,9 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    long NbPart = 0;
+    int NbPart = 0;
     {
-        const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
+        const int NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
 

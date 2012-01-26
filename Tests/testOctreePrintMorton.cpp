@@ -50,7 +50,7 @@ int main(int , char ** ){
 
     int treeLevel = 10;
     F3DPosition centerOfBox(0.5,0.5,0.5);
-    double rootBoxWidth = 1;
+    FReal rootBoxWidth = 1;
 
     std::cout << "Welcome in the morton index test." << std::endl;
 
@@ -124,11 +124,11 @@ int main(int , char ** ){
                     sscanf(buffer,"%d",&requiredlevel);
                 }
 
-                double boxWidthAtThisLevel = rootBoxWidth;
-                for(int idx = 0 ; idx < requiredlevel ; ++idx) boxWidthAtThisLevel /= 2.0;
+                FReal boxWidthAtThisLevel = rootBoxWidth;
+                for(int idx = 0 ; idx < requiredlevel ; ++idx) boxWidthAtThisLevel /= FReal(2.0);
                 std::cout << "    At level "<< requiredlevel << " boxes width is " << boxWidthAtThisLevel << "\n";
 
-                float x,y,z;
+                FReal x,y,z;
                 do{
                     std::cout << "    Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
@@ -136,9 +136,9 @@ int main(int , char ** ){
 
                 FTreeCoordinate host;
                 // position has to be relative to corner not center
-                host.setX( long(FMath::dfloor(( x - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
-                host.setY( long(FMath::dfloor(( y - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
-                host.setZ( long(FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setX( int(FMath::dfloor(( x - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setY( int(FMath::dfloor(( y - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setZ( int(FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
 
                 const MortonIndex index = host.getMortonIndex(requiredlevel);
                 std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToBinary(index,requiredlevel) << "d\n\n";
@@ -220,7 +220,7 @@ int main(int , char ** ){
                     sscanf(buffer,"%d",&treeLevel);
                 }
 
-                float x,y,z;
+                FReal x,y,z;
                 do{
                     std::cout << "    Center of boxe Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
@@ -230,7 +230,7 @@ int main(int , char ** ){
                 std::cout << "    boxe width (default is = " << rootBoxWidth << ") : ";
                 std::cin.getline( buffer , sizeof(buffer));
                 if( buffer[0] != '\0' ){
-                    sscanf(buffer,"%lf",&rootBoxWidth);
+                    sscanf(buffer,"%e",&rootBoxWidth);
                 }
 
                 std::cout << "\n";
@@ -258,12 +258,12 @@ int main(int , char ** ){
 
                 std::cout << "    This position is in the boxe x = "<< coord.getX() << " y = " << coord.getY() << " z = " << coord.getZ() << "\n";
 
-                double boxWidthAtThisLevel = rootBoxWidth;
-                for(int idx = 0 ; idx < requiredlevel ; ++idx) boxWidthAtThisLevel /= 2.0;
+                FReal boxWidthAtThisLevel = rootBoxWidth;
+                for(int idx = 0 ; idx < requiredlevel ; ++idx) boxWidthAtThisLevel /= FReal(2.0);
                 std::cout << "    This center of this boxe is"
-                        << " x = " << (coord.getX()*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/2 - rootBoxWidth/2
-                        << " y = " << (coord.getY()*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/2 - rootBoxWidth/2
-                        << " z = " << (coord.getZ()*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/2 - rootBoxWidth/2 << "\n\n";
+                        << " x = " << (FReal(coord.getX())*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/FReal(2.0) - rootBoxWidth/FReal(2.0)
+                        << " y = " << (FReal(coord.getY())*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/FReal(2.0) - rootBoxWidth/FReal(2.0)
+                        << " z = " << (FReal(coord.getZ())*boxWidthAtThisLevel) + centerOfBox.getX() + boxWidthAtThisLevel/FReal(2.0) - rootBoxWidth/FReal(2.0) << "\n\n";
             }
             break;
         default:

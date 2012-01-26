@@ -42,7 +42,7 @@ public:
     }
 
     /** To set the position from 3 FReals */
-    void setCoordinate(const long inX, const long inY, const long inZ) {
+    void setCoordinate(const int inX, const int inY, const int inZ) {
         this->coordinate.setX(inX);
         this->coordinate.setY(inY);
         this->coordinate.setZ(inZ);

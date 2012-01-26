@@ -135,7 +135,7 @@ public:
             // send
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && allcounter[idxProc * comm.processCount() + comm.processId()]){
-                    FMpi::MpiAssert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], allcounter[idxProc * comm.processCount() + comm.processId()] * sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], allcounter[idxProc * comm.processCount() + comm.processId()] * int(sizeof(ParticleClass)), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                     hasToRecvFrom += 1;
                 }
@@ -146,7 +146,7 @@ public:
             // recv
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && toMove[idxProc].getSize()){
-                    FMpi::MpiAssert( MPI_Isend(toMove[idxProc].data(), toMove[idxProc].getSize() * sizeof(ParticleClass), MPI_BYTE,
+                    FMpi::MpiAssert( MPI_Isend(toMove[idxProc].data(), toMove[idxProc].getSize() * int(sizeof(ParticleClass)), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                 }
             }

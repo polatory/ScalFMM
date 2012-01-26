@@ -44,7 +44,7 @@ protected:
     FReal boxWidth;              //< the box width read from file
     FSize nbParticles;             //< the number of particles read from file
 
-    int removeWarning;
+    size_t removeWarning;
 
 public:
     /**

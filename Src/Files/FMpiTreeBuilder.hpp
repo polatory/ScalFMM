@@ -26,9 +26,9 @@ private:
     /** This method has been tacken from the octree
       * it computes a tree coordinate (x or y or z) from real position
       */
-    static long getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
+    static int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
             const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-            const long index = long(FMath::dfloor(indexFReal));
+            const int index = int(FMath::dfloor(indexFReal));
             if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * FReal(index) ) ){
                     return index - 1;
             }
@@ -66,7 +66,7 @@ private:
         FTreeCoordinate host;
 
         const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / FReal(1 << (TreeHeight - 1) );
-        for(long idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(realParticlesIndexed[idxPart].particle);
             host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
             host.setY( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
@@ -101,7 +101,7 @@ private:
 
         const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
 
-        for(long idxPart = 0 ; idxPart < size ; ++idxPart){
+        for(int idxPart = 0 ; idxPart < size ; ++idxPart){
             realParticlesIndexed[idxPart].particle = array[idxPart];
             host.setX( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
             host.setY( getTreeCoordinate( realParticlesIndexed[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
@@ -171,7 +171,7 @@ private:
                     sendBuffer = new IndexedParticle[particlesToSend];
                     memcpy(sendBuffer, &workingArray[idxPart + 1], particlesToSend * sizeof(IndexedParticle));
 
-                    MPI_Isend( sendBuffer, particlesToSend * sizeof(IndexedParticle), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
+                    MPI_Isend( sendBuffer, particlesToSend * int(sizeof(IndexedParticle)), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
                 }
                 else{
                     MPI_Isend( 0, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
@@ -186,7 +186,7 @@ private:
                 MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                 if(sendByOther){
-                    sendByOther /= sizeof(IndexedParticle);
+                    sendByOther /= int(sizeof(IndexedParticle));
 
                     const IndexedParticle* const reallocOutputArray = workingArray;
                     const FSize reallocOutputSize = workingSize;
@@ -196,7 +196,7 @@ private:
                     FMemUtils::memcpy(&workingArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Recv(workingArray, sizeof(IndexedParticle) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(workingArray, int(sizeof(IndexedParticle)) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 }
                 else{
                     MPI_Recv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);

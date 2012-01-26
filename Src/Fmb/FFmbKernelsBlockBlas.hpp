@@ -125,7 +125,7 @@ protected:
 
     static const int FF_MATRIX_ROW_DIM = FMB_Info_exp_size;
     static const int FF_MATRIX_COLUMN_DIM = FMB_Info_nexp_size;
-    static const int FF_MATRIX_SIZE = long(FF_MATRIX_ROW_DIM) * long(FF_MATRIX_COLUMN_DIM);
+    static const int FF_MATRIX_SIZE = int(FF_MATRIX_ROW_DIM) * int(FF_MATRIX_COLUMN_DIM);
 
     //////////////////////////////////////////////////////////////////
     // Allocation
@@ -227,7 +227,7 @@ protected:
             this->transitionM2M[idxLevel] = new FComplexe*[8];
             this->transitionL2L[idxLevel] = new FComplexe*[8];
 
-            for(long idxChild = 0; idxChild < 8; ++idxChild){
+            for(int idxChild = 0; idxChild < 8; ++idxChild){
                 this->transitionM2M[idxLevel][idxChild] = new FComplexe[FMB_Info_exp_size];
                 this->transitionL2L[idxLevel][idxChild] = new FComplexe[FMB_Info_exp_size];
             }
@@ -238,13 +238,13 @@ protected:
         for(int idxLevel = 0; idxLevel < TreeHeight; ++idxLevel){
             //this->transferM2L[idxLevel] = new FComplexe***[this->size1Dim];
 
-            for(long idxD1 = 0 ; idxD1 < this->size1Dim; ++idxD1){
+            for(int idxD1 = 0 ; idxD1 < this->size1Dim; ++idxD1){
                 //this->transferM2L[idxLevel][idxD1] = new FComplexe**[this->size1Dim];
 
-                for(long idxD2 = 0; idxD2 < this->size1Dim; ++idxD2){
+                for(int idxD2 = 0; idxD2 < this->size1Dim; ++idxD2){
                     //this->transferM2L[idxLevel][idxD1][idxD2] = new FComplexe*[this->size1Dim];
 
-                    for(long idxD3 = 0; idxD3 < this->size1Dim; ++idxD3){
+                    for(int idxD3 = 0; idxD3 < this->size1Dim; ++idxD3){
                         const int x = idxD1 - this->halphSize1Dim;
                         const int y = idxD2 - this->halphSize1Dim;
                         const int z = idxD3 - this->halphSize1Dim;
@@ -280,8 +280,8 @@ protected:
     // transfer_M2L_free
     void transferDeallocate(){
         // M2M L2L
-        /*for(long idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel){
-            for(long idxChild = 0; idxChild < 8; ++idxChild){
+        /*for(int idxLevel = 0 ; idxLevel < TreeHeight ; ++idxLevel){
+            for(int idxChild = 0; idxChild < 8; ++idxChild){
                 delete [] this->transitionM2M[idxLevel][idxChild];
                 delete [] this->transitionL2L[idxLevel][idxChild];
             }
@@ -292,9 +292,9 @@ protected:
         delete [] this->transitionL2L;*/
         // M2L
         for(int idxLevel = 0 ; idxLevel < TreeHeight; ++idxLevel){
-            for(long idxD1 = 0 ; idxD1 < this->size1Dim ; ++idxD1){
-                for(long idxD2 = 0 ; idxD2 < this->size1Dim ; ++idxD2){
-                    for(long idxD3 = 0 ; idxD3 < this->size1Dim; ++idxD3){
+            for(int idxD1 = 0 ; idxD1 < this->size1Dim ; ++idxD1){
+                for(int idxD2 = 0 ; idxD2 < this->size1Dim ; ++idxD2){
+                    for(int idxD3 = 0 ; idxD3 < this->size1Dim; ++idxD3){
                         ff_block_matrix_Free(this->transferM2L[idxLevel][idxD1][idxD2][idxD3]);
                     }
                     //delete [] this->transferM2L[idxLevel][idxD1][idxD2];

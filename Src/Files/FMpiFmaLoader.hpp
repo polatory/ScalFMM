@@ -119,7 +119,7 @@ public:
         }
         else {
             FILE* file(fopen(filename, "rb"));
-            int removeWarning(0);
+            size_t removeWarning(0);
             // test if open
             if(file != NULL) {
                 int sizeOfElement(0);
