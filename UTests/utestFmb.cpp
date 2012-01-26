@@ -21,8 +21,50 @@
   */
 
 
-typedef FmbParticle             ParticleClass;
-typedef FComputeCell            CellClass;
+class FmbParticleSerial : public FmbParticle, public FTreeIO::FAbstractSerial {
+public:
+    void write(std::ofstream*const stream) const{
+        save(stream, getPosition().getX());
+        save(stream, getPosition().getY());
+        save(stream, getPosition().getZ());
+        save(stream, getForces().getX());
+        save(stream, getForces().getY());
+        save(stream, getForces().getZ());
+        save(stream, getPotential());
+        save(stream, getPhysicalValue());
+    }
+
+    void read(std::ifstream*const stream) {
+        const FReal posX = restore<FReal>(stream);
+        const FReal posY = restore<FReal>(stream);
+        const FReal posZ = restore<FReal>(stream);
+        setPosition(posX, posY, posZ);
+
+        const FReal forceX = restore<FReal>(stream);
+        const FReal forceY = restore<FReal>(stream);
+        const FReal forceZ = restore<FReal>(stream);
+        setForces(forceX, forceY, forceZ);
+
+        setPotential(restore<FReal>(stream));
+        setPhysicalValue(restore<FReal>(stream));
+    }
+};
+
+class ComputeCellSerial : public FComputeCell, public FTreeIO::FAbstractSerial {
+public:
+    void write(std::ofstream*const stream) const{
+        saveArray(stream, FComputeCell::getMultipole(), FComputeCell::ExpP);
+        saveArray(stream, FComputeCell::getLocal(), FComputeCell::ExpP);
+    }
+
+    void read(std::ifstream*const stream){
+        restoreArray(stream, FComputeCell::getMultipole(), FComputeCell::ExpP);
+        restoreArray(stream, FComputeCell::getLocal(), FComputeCell::ExpP);
+    }
+};
+
+typedef FmbParticleSerial       ParticleClass;
+typedef ComputeCellSerial             CellClass;
 typedef FVector<ParticleClass>  ContainerClass;
 
 //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
@@ -36,13 +78,18 @@ typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, Ker
 class TestFmb : public FUTester<TestFmb> {
 
     void TestTree(){
+        // Warning in make test the exec dir it Build/UTests
+        const char* const DataFile = "../../Data/utestFmb.data";
+        const char* const ParticleFile = "../../Data/utestFmb.bin.fma";
+
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
         const int DevP = 12;
+
         FComputeCell::Init(DevP);
 
         // Load the particles file
-        FFmaBinLoader<ParticleClass> loader("../Data/utestFmb.bin.fma");
+        FFmaBinLoader<ParticleClass> loader(ParticleFile);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             assert(false);
@@ -65,11 +112,11 @@ class TestFmb : public FUTester<TestFmb> {
         algo.execute();
 
         // If needed save the result
-        FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", testTree);
+        // FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Serializer<CellClass, ParticleClass> >(DataFile, testTree);
 
         // Load previous result
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("../Data/utestFmb.data", goodTree);
+        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Serializer<CellClass, ParticleClass> >(DataFile, goodTree);
 
         // Compare the two simulations
         Print("Check the particles...");

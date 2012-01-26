@@ -17,6 +17,37 @@
   */
 class FTreeIO{
 public:
+    class FAbstractSerial {
+    protected:
+        template <class TypeClass>
+        void save(std::ofstream*const stream, const TypeClass& value) const{
+            stream->write((const char*)&value, sizeof(TypeClass));
+        }
+
+        template <class TypeClass>
+        TypeClass restore(std::ifstream*const stream) const{
+            TypeClass value;
+            stream->read((char*)&value, sizeof(TypeClass));
+            return value;
+        }
+
+        template <class TypeClass>
+        void saveArray(std::ofstream*const stream, const TypeClass*const values, const int size) const{
+            stream->write((const char*)values, sizeof(TypeClass) * size);
+        }
+
+        template <class TypeClass>
+        void restoreArray(std::ifstream*const stream, TypeClass*const values, const int size) const{
+            stream->read((char*)values, sizeof(TypeClass) * size);
+        }
+
+    public:
+
+        virtual void read(std::ifstream*const stream) = 0;
+        virtual void write(std::ofstream*const stream) const = 0;
+    };
+
+
     /** The serializer class call a method on the particles or cells
       * So they have to implement the write/read method
       */
@@ -28,16 +59,17 @@ public:
         }
         static void PutParticles(std::ofstream*const stream, const ParticleClass* const particles, const int nbParticles) {
             for( int idxParticle = 0 ; idxParticle < nbParticles ; ++idxParticle){
-                particles[idxParticle]->write(stream);
+                particles[idxParticle].write(stream);
             }
         }
 
         static void GetCell(std::ifstream*const stream, CellClass* const cell){
             cell->read(stream);
         }
-        static void GetParticles(std::ifstream*const stream, const ParticleClass* const particles, const int nbParticles){
+
+        static void GetParticles(std::ifstream*const stream, ParticleClass* const particles, const int nbParticles){
             for( int idxParticle = 0 ; idxParticle < nbParticles ; ++idxParticle){
-                particles[idxParticle]->read(stream);
+                particles[idxParticle].read(stream);
             }
         }
     };
@@ -57,7 +89,7 @@ public:
         static void GetCell(std::ifstream*const stream, CellClass* const cell){
             stream->read((char*)cell, sizeof(CellClass));
         }
-        static void GetParticles(std::ifstream*const stream, const ParticleClass* const particles, const int nbParticles){
+        static void GetParticles(std::ifstream*const stream, ParticleClass* const particles, const int nbParticles){
             stream->read((char*)particles, nbParticles * sizeof(ParticleClass));
         }
     };
@@ -195,7 +227,7 @@ public:
             int maxParticlesInLeaf = 0;
             file.read((char*)&maxParticlesInLeaf, sizeof(int));
 
-            ParticleClass* const particles = reinterpret_cast<ParticleClass*>(new char[maxParticlesInLeaf * sizeof(ParticleClass)]);
+            ParticleClass* const particles = new ParticleClass[maxParticlesInLeaf];
 
             for(int idxLeaf = 0 ; idxLeaf < nbLeaf ; ++idxLeaf){
                 int particlesInLeaf = 0;
@@ -206,7 +238,7 @@ public:
                 }
             }
 
-            delete[] reinterpret_cast<char*>(particles);
+            delete[] particles;
         }
 
         // Start from leal level - 1

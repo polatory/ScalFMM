@@ -52,6 +52,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
 
     void TestDirect(){
+        // Warning in make test the exec dir it Build/UTests
         // Load particles
         FFmaBinLoader<ParticleClass> loader("../../Data/utestFmbDirect.bin.fma");
         if(!loader.isOpen()){
