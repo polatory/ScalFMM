@@ -29,6 +29,8 @@ protected:
     static const int SizeOfT = sizeof(T);   /**< size of the object*/
 
 public:
+	typedef T value_type; /**< data type of data in FVector */
+
     /**
     *@brief constructor
     */
