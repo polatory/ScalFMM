@@ -11,6 +11,7 @@
 #include "../Utils/FComplexe.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FTrace.hpp"
+#include "../Utils/FNoCopyable.hpp"
 
 #include <iostream>
 
@@ -36,7 +37,7 @@ static const int FMB_Info_P = 12;
 * Needs cell to extend {FExtendFmbCell}
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FFmbKernels {
+class FFmbKernels : public FNoAssignement {
 protected:
 
     // _GRAVITATIONAL_
@@ -622,8 +623,6 @@ protected:
         precomputeM2L();
     }
 
-    /** Forbiden copy operator */
-    FFmbKernels& operator=(const FFmbKernels&){ return *this; }
 
 public:
     FFmbKernels(const int inTreeHeight, const FReal inTreeWidth) :

@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "FGlobal.hpp"
+#include "FNoCopyable.hpp"
 #include "FMath.hpp"
 
 
@@ -184,16 +185,13 @@ public:
     /** This class is used to put all the usual method
       * related mpi comm
       */
-    class FComm {
+    class FComm : public FNoCopyable {
         int rank;   //< rank related to the comm
         int nbProc; //< nb proc in this group
 
         MPI_Comm communicator;  //< current mpi communicator
         MPI_Group group;        //< current mpi group
 
-        // Forbid copy
-        FComm(const FComm&){}
-        FComm& operator=(const FComm&){return *this;}
 
         // reset : get rank and nb proc from mpi
         void reset(){

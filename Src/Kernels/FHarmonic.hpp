@@ -4,12 +4,13 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FComplexe.hpp"
 #include "../Utils/FSpherical.hpp"
+#include "../Utils/FNoCopyable.hpp"
 
 
 /** This class compute the spherical harmonic.
   * It computes the inner, outter, and legendre.
   */
-class FHarmonic {
+class FHarmonic : public FNoAssignement {
     const int devP;     //< P
     const int expSize;  //< Exponen Size
 
@@ -111,9 +112,6 @@ class FHarmonic {
             ++idxCurrentL1M;
         }
     }
-
-    /** Forbid copy operator */
-    FHarmonic& operator=(const FHarmonic&){ return *this;}
 
 public:
     /////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@
 // [--License--]
 
 #include "FGlobal.hpp"
+#include "FNoCopyable.hpp"
 
 #ifndef SCALFMM_USE_DEBUG
 
@@ -29,7 +30,7 @@
 * FDEBUG( FDebug::Controller << "I want to debug " << toto << "\n"; )
 * </code>
 */
-class FDebug{
+class FDebug : public FNoCopyable {
 private:
 	std::ostream* stream;	//< Standart c++ ostream
 
@@ -51,22 +52,6 @@ private:
                 flush();
                 if(this->stream != &std::cout) delete(this->stream);
 	}
-
-	/**
-	* Copy constructor forbiden
-	* @param other the source class to copy
-	*/
-        FDebug(const FDebug& ){}
-
-	/**
-	* Copy constructor forbiden
-	* @param other the source class to copy
-	* @return this a reference to the current class
-	*/
-        FDebug& operator=(const FDebug& ){
-            return *this;
-        }
-
 
 public:
 	static FDebug Controller; 	//< Singleton

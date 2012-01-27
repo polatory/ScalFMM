@@ -3,14 +3,15 @@
 // [--License--]
 
 #include "FSubOctree.hpp"
+#include "FTreeCoordinate.hpp"
 
 #include "../Utils/FDebug.hpp"
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
 #include "../Utils/FMath.hpp"
-#include "FTreeCoordinate.hpp"
-
+#include "../Utils/FNoCopyable.hpp"
 #include "../Utils/FAssertable.hpp"
+
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -30,10 +31,10 @@
  * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
  */
 template< class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
-class FOctree : protected FAssertable {
+class FOctree : protected FAssertable, public FNoCopyable {
     FReal*const boxWidthAtLevel;		//< to store the width of each boxs at all levels
 
-    const int height;		//< tree height
+    const int height;                   //< tree height
     const int subHeight;		//< tree height
     const int leafIndex;		//< index of leaf int array
 
@@ -44,15 +45,6 @@ class FOctree : protected FAssertable {
 
     const FReal boxWidth;          //< the space system width
 
-
-    /** Forbiden copy operator */
-    FOctree& operator=(const FOctree&) {
-        return *this;
-    }
-
-    /** Forbiden copy constructor */
-    FOctree(const FOctree&) {
-    }
 
     /**
         * Get morton index from a position for the leaf leavel
