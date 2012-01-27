@@ -3,8 +3,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 
 #include <cmath>
@@ -15,7 +15,6 @@
 #include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files to load with basic loader
-// g++ testLoaderCreateSphere.cpp -O2 -o testLoaderCreateSphere.exe
 
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////

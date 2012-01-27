@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../Src/Utils/FParameters.hpp"
 #include "../Src/Utils/FTic.hpp"
@@ -26,7 +26,7 @@
 
 #include "../Src/Components/FBasicKernels.hpp"
 
-// Compile by : g++ testFmmDemonstration.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmDemonstration.exe
+#include "../Src/Files/FRandomLoader.hpp"
 
 // My cell is actually a basic cell => minimum of data
 class MyCell : public FBasicCell {
@@ -124,16 +124,13 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart = FParameters::getValue(argc,argv,"-pn", 20L);
-    const FReal FRandMax = FReal(RAND_MAX);
-
     FTic counter;
 
-    srand ( 1 );
-
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    OctreeClass tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    FRandomLoader<ParticleClass> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
+    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     FBasicParticle*const realsParticles = new FBasicParticle[NbPart];
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -145,12 +142,14 @@ int main(int argc, char ** argv){
 
     {
         ParticleClass particleToFill;
-        for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particleToFill.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            // get a random position
+            loader.fillParticle(particleToFill);
+            // put the index inside
             particleToFill.setIndex(idxPart);
-
+            // insert in the tree
             tree.insert(particleToFill);
-
+            // copy in the array
             realsParticles[idxPart].setPosition(particleToFill.getPosition());
         }
     }

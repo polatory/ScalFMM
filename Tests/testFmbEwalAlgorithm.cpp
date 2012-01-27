@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FParameters.hpp"
@@ -19,8 +19,12 @@
 
 #include "../Src/Files/FEwalLoader.hpp"
 
+/** Ewal particle is used in the gadget program
+  * here we try to make the same simulation
+  */
 class EwalParticle : public FmbParticle {
 public:
+    // Type of particle
     enum Type{
         OW,
         HW,
@@ -28,10 +32,11 @@ public:
     };
 
 private:
-    Type type;
-    int index;
+    Type type; //< current type
+    int index; //< current index in array
 
 public:
+    // Basic constructor
     EwalParticle() : type(Undefined), index(-1) {
     }
 
@@ -128,6 +133,7 @@ int main(int argc, char ** argv){
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
+    // -----------------------------------------------------
     {
         typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();

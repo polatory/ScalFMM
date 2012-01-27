@@ -8,9 +8,14 @@
 * This class is currently in its minimum version
 */
 class FSpherical {
-    FReal r, cosTheta, sinTheta, phi;
+    // The attributes of a sphere
+    FReal r;
+    FReal cosTheta;
+    FReal sinTheta;
+    FReal phi;
 
 public:
+    /** From now, we just need a constructor based on a 3D position */
     explicit FSpherical(const F3DPosition& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
         this->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
@@ -19,18 +24,22 @@ public:
         this->sinTheta = FMath::Sqrt(x2y2) / r;
     }
 
+    /** Get the rayon */
     FReal getR() const{
         return r;
     }
 
+    /** Get the cos theta = z / r */
     FReal getCosTheta() const{
         return cosTheta;
     }
 
+    /** Get the sin theta = sqrt(x2y2) / r */
     FReal getSinTheta() const{
         return sinTheta;
     }
 
+    /** Get the phi = atan2(y,x) */
     FReal getPhi() const{
         return phi;
     }

@@ -3,15 +3,14 @@
 #include <iostream>
 #include <fstream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 
 #include "../Src/Utils/FGlobal.hpp"
 #include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files in the FMA format
-// g++ testLoaderFMACreate.cpp -o testLoaderFMACreate.exe
 
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////

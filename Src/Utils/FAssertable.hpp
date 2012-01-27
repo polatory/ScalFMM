@@ -2,7 +2,7 @@
 #define FASSERTABLE_HPP
 // [--License--]
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <sstream>
 #include <iostream>
 

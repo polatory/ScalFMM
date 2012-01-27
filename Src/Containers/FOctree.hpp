@@ -105,6 +105,18 @@ public:
         }
     }
 
+    /** Use a loader to be filled
+      * @param the loader to fill the current tree
+      */
+    template <class LoaderClass>
+    void fillWithLoader(LoaderClass& loader){
+        ParticleClass particleToFill;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(particleToFill);
+            insert(particleToFill);
+        }
+    }
+
     /** Desctructor */
     virtual ~FOctree() {
         delete [] boxWidthAtLevel;

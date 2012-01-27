@@ -20,7 +20,7 @@
   This test compare a previous FMM result with a simulation.
   */
 
-
+/** The result of a previous simulation has been saved and will be oponed */
 class FmbParticleSerial : public FmbParticle, public FTreeIO::FAbstractSerial {
 public:
     void write(std::ofstream*const stream) const{
@@ -50,6 +50,7 @@ public:
     }
 };
 
+/** The result of a previous simulation has been saved and will be oponed */
 class ComputeCellSerial : public FComputeCell, public FTreeIO::FAbstractSerial {
 public:
     void write(std::ofstream*const stream) const{

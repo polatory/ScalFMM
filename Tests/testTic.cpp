@@ -1,12 +1,11 @@
 #include <iostream>
 #include "../Src/Utils/FTic.hpp"
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 
 /**
 * Here we show an example of using FTic
-* g++ testTic.cpp -o testTic.exe
 */
 
 int main(){

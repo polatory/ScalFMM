@@ -1,9 +1,10 @@
 #ifndef FBLAS_HPP
 #define FBLAS_HPP
 
-// This file interfaces the blas function
+// This file interfaces the blas functions
 // to enable a generic use.
-//
+// If no blas has been enabled in the cmake,
+// the function will be empty
 
 ///////////////////////////////////////////////////////
 // Manage Blas Version

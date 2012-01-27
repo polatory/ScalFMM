@@ -1,9 +1,8 @@
 // [--License--]
 
 #include <iostream>
+#include <cstdio>
 
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "../Src/Utils/FParameters.hpp"
 #include "../Src/Utils/FTic.hpp"
@@ -23,16 +22,14 @@
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithmTask.hpp"
 
-
 #include "../Src/Components/FBasicKernels.hpp"
 
-// Compile by : g++ testFmmAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithm.exe
+#include "../Src/Files/FRandomLoader.hpp"
 
-/** This program show an example of use of
-  * the fmm basic algo
+
+/** This program show an example of use of the fmm basic algo
   * it also check that each particles is impacted each other particles
   */
-
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -46,6 +43,7 @@ int main(int argc, char ** argv){
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -53,16 +51,13 @@ int main(int argc, char ** argv){
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
-    const FReal FRandMax    = FReal(RAND_MAX);
-
     FTic counter;
 
-    srand ( 1 ); // volontary set seed to constant
-
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    OctreeClass tree(NbLevels, SizeSubLevels, 1.0, F3DPosition(0.5,0.5,0.5));
+    FRandomLoader<ParticleClass> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
+    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -71,13 +66,7 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    {
-        FTestParticle particleToFill;
-        for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particleToFill.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
-            tree.insert(particleToFill);
-        }
-    }
+    tree.fillWithLoader(loader);
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -88,10 +77,8 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    // FTestKernels FBasicKernels
-    KernelClass kernels;
-    //FFmmAlgorithm FFmmAlgorithmThread
-    FmmClass algo(&tree,&kernels);
+    KernelClass kernels;            // FTestKernels FBasicKernels
+    FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
     algo.execute();
 
     counter.tac();

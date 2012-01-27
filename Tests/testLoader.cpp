@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 
 #include "../Src/Utils/FTic.hpp"
@@ -22,12 +22,8 @@
 
 #include "../Src/Files/FBasicLoader.hpp"
 
-// Compile by : g++ testLoader.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -O2 -o testLoader.exe
-
-
 /**
   * In this file we show an example of FBasicLoader use
-* Démarrage de /home/berenger/Dropbox/Personnel/FMB++/FMB++-build-desktop/FMB++...
 * Inserting 2000000 particles ...
 * Done  (5.77996).
 * Deleting particles ...

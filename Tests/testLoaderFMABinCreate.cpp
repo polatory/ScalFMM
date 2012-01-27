@@ -4,14 +4,13 @@
 #include <fstream>
 
 #include <cstdio>
-#include <stdlib.h>
+#include <cstdlib>
 #include <time.h>
 
 #include "../Src/Utils/FGlobal.hpp"
 #include "../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files in the FMA format
-// g++ testLoaderFMACreate.cpp -o testLoaderFMACreate.exe
 
 int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
@@ -78,10 +77,6 @@ int main(int argc, char ** argv){
         data[0] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + XCenter - BoxWidth;
         data[1] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + YCenter - BoxWidth;
         data[2] = ((FReal(rand())/FRandMax) * BoxWidth * 2) + ZCenter - BoxWidth;
-
-        /*data[0] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + XCenter - BoxWidth;
-        data[1] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + YCenter - BoxWidth;
-        data[2] = ((FReal(idx)/NbParticles) * BoxWidth * 2) + ZCenter - BoxWidth;*/
 
         fwrite(&data, sizeof(FReal), 4, myfile);
     }

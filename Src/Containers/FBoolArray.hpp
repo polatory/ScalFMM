@@ -9,6 +9,8 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FBoolArray
 * Please read the license
+*
+* A bool array is a dynamique allocated array that used 1 bit per value.
 */
 class FBoolArray{
     /** Size of a unsigned long */

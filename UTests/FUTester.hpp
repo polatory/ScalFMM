@@ -5,7 +5,7 @@
 #include <iostream>
 #include <list>
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 
 
 #define TestClass(X)\

@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 
 #include "../Src/Utils/FTic.hpp"
@@ -26,13 +26,14 @@
 
 #include "../Src/Utils/FParameters.hpp"
 
+/**
+  * In this file we show an example of FFmaLoader use
+  */
 
 class ParticleTsm : public FFmaParticle, public FExtendParticleType {
 };
 
-/**
-  * In this file we show an example of FFmaLoader use
-  */
+
 
 int main(int argc, char ** argv ){
     typedef FVector<ParticleTsm>      ContainerClass;

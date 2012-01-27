@@ -7,9 +7,14 @@
 #include <cstring>
 #include <climits>
 
+
+/** The memory utils class proposes some methods
+  * to copy/set memory with an size bigger than size_t
+  */
 namespace FMemUtils {
     static const FSize MaxSize_t = UINT_MAX; //std::numeric_limits<std::size_t>::max();
 
+    /** memcpy */
     static void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memcpy(dest, source, size_t(nbBytes));
@@ -29,6 +34,7 @@ namespace FMemUtils {
         }
     }
 
+    /** memset */
     static void* memset(void* const dest, const int val, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memset(dest, val, size_t(nbBytes));
@@ -46,6 +52,7 @@ namespace FMemUtils {
         }
     }
 
+    /** copy all value from one vector to the other */
     template <class TypeClass>
     void copyall(TypeClass*const dest, const TypeClass*const source, const int nbElements){
         for(int idx = 0 ; idx < nbElements ; ++idx){

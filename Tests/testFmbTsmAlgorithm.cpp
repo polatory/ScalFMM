@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FParameters.hpp"
@@ -19,9 +19,6 @@
 #include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Files/FFmaTsmLoader.hpp"
-
-// With openmp : g++ testFmbTsmAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmbTsmAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbTsmAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbTsmAlgorithm.exe
 
 /** This program show an example of use of
   * the fmm basic algo

@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 #include <string>
 
@@ -11,8 +11,6 @@
 #include "../Src/Containers/FTreeCoordinate.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
 #include "../Src/Utils/FMath.hpp"
-
-// Compile by : g++ testOctreePrintMorton.cpp -O2 -o testOctreePrintMorton.exe
 
 /**
 * In this file we show the morton indexed for each boxes

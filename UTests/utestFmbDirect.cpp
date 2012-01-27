@@ -21,7 +21,7 @@
   In this test we compare the fmm results and the direct results.
   */
 
-
+/** We need to know the position of the particle in the array */
 class IndexedParticle : public FmbParticle {
     int index;
 public:

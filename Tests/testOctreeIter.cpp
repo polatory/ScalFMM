@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <time.h>
 
 
@@ -18,8 +18,6 @@
 #include "../Src/Components/FBasicCell.hpp"
 
 #include "../Src/Utils/FTic.hpp"
-
-// Compile by : g++ testOctreeIter.cpp ../Src/Utils/FAssertable.cpp -O2 -o testOctreeIter.exe
 
 /**
 * In this file we show how to use octree with iteration

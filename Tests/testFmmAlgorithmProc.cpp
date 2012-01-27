@@ -29,15 +29,11 @@
 #include "../Src/Components/FBasicKernels.hpp"
 
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
 
-#include <stdio.h>
-#include <stdlib.h>
 
-
-// Compile by : g++ testFmmAlgorithmProc.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmProc.exe
-
-/** This program show an example of use of
-  * the fmm threaded + mpi algo
+/** This program show an example of use of the fmm threaded + mpi algo
   * it also check that each particles is impacted each other particles
   */
 
@@ -366,11 +362,7 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }    
     else{
-        ParticleClass partToInsert;
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(partToInsert);
-            realTree.insert(partToInsert);
-        }
+        realTree.fillWithLoader(loader);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -380,11 +372,7 @@ int main(int argc, char ** argv){
     OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     {
         FFmaBinLoader<ParticleClass> loaderSeq(filename);
-        ParticleClass partToInsert;
-        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-            loaderSeq.fillParticle(partToInsert);
-            treeValide.insert(partToInsert);
-        }
+        treeValide.fillWithLoader(loaderSeq);
     }
 
     //////////////////////////////////////////////////////////////////////////////////

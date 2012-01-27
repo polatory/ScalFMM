@@ -26,10 +26,12 @@ public:
     virtual ~FTestParticle(){
     }
 
+    /** Get the down data */
     long long int getDataDown() const {
         return this->dataDown;
     }
 
+    /** Set down data */
     void setDataDown(const long long int inData){
         this->dataDown = inData;
     }

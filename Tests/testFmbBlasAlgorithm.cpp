@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FParameters.hpp"
@@ -24,12 +24,6 @@
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 
-// With openmp : g++ testFmbBlasAlgorithm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -lcblas -O2 -o testFmbBlasAlgorithm.exe
-// icpc -openmp -openmp-lib=compat testFmbAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbAlgorithm.exe
-
-// icpc -openmp -openmp-lib=compat  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core testFmbBlasAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp -O2 -o testFmbBlasAlgorithm.exe
-
-// g++ testFmbBlasAlgorithm.cpp ../Src/Utils/FAssertable.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -lmkl_ia32 -O2 -o testFmbBlasAlgorithm.exe
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that eachh particles is little or longer

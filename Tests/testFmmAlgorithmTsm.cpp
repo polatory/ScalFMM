@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../Src/Utils/FTic.hpp"
 
@@ -27,7 +27,7 @@
 
 #include "../Src/Components/FBasicKernels.hpp"
 
-// Compile by : g++ testFmmAlgorithmTsm.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -lgomp -fopenmp -O2 -o testFmmAlgorithmTsm.exe
+#include "../Src/Files/FRandomLoader.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -58,32 +58,22 @@ int main(int argc, char ** argv){
 
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbPart = 2000000;//2000000
-    const FReal FRandMax = FReal(RAND_MAX);
+    const long NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
     FTic counter;
 
-    srand ( 1 ); // volontary set seed to constant
-
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    OctreeClassTyped tree(NbLevels, SizeSubLevels,1.0,F3DPosition(0.5,0.5,0.5));
+    FRandomLoaderTsm<ParticleClassTyped> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
+    OctreeClassTyped tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
     std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
-    {
-        ParticleClassTyped particle;
-        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
-            if(rand() > RAND_MAX/2) particle.setAsTarget();
-            else particle.setAsSource();
 
-            tree.insert(particle);
-        }
-    }
+    tree.fillWithLoader(loader);
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;

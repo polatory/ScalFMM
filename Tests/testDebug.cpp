@@ -2,8 +2,6 @@
 
 #include "../Src/Utils/FDebug.hpp"
 
-// Compile by : g++ testDebug.cpp ../Src/Utils/FDebug.cpp -o testDebug.exe
-
 /**
 * In this file we show how to use the debug module.
 * Warning, in FGlobal.hpp (included in FDebug.hpp) SCALFMM_USE_DEBUG might be undefined.
