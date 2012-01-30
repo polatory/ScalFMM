@@ -80,6 +80,15 @@ namespace FParameters{
         return StrToOther(argv[position+1],defaultValue);
     }
 
+    /** Get a str from argv
+      */
+    const char* getStr(const int argc, const char* const * const argv, const char* const inName, const char* const inDefault, const bool caseSensible = false){
+        const int position = findParameter(argc,argv,inName,caseSensible);
+        if(position == -1 || position == argc - 1){
+            return inDefault;
+        }
+        return argv[position+1];
+    }
 }
 
 
