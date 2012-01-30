@@ -17,143 +17,139 @@
  */
 template< class Object >
 class FList {
-        /** A list node */
-        struct Node {
-                Object target;	//< Object of the node
-                Node* next;	//< Next node
-        };
+    /** A list node */
+    struct Node {
+        Object target;	//< Object of the node
+        Node* next;	//< Next node
+    };
 
-        Node* root; //< Root node, NULL if size is 0
-        int size;		 //< Elements in the list
+    Node* root; //< Root node, NULL if size is 0
+    int size;   //< Elements in the list
 
-        /**
+    /**
         * Copy a list into current object
         * The current list has to be empty when this function is called
         */
-        void copy(const FList& other){
-                const Node* FRestrict  otherRoot = other.root;
-                Node * FRestrict * myRoot = &this->root;
-                while(otherRoot){
-                        (*myRoot) = new Node;
-                        (*myRoot)->target = otherRoot->target;
+    void copy(const FList& other){
+        // on iterator on the current list, another for the original list
+        const Node* FRestrict  otherRoot = other.root;
+        Node * FRestrict * myRoot = &this->root;
+        // create, copy and progress
+        while(otherRoot){
+            (*myRoot) = new Node;
+            (*myRoot)->target = otherRoot->target;
 
-                        myRoot = &(*myRoot)->next;
-                        otherRoot = otherRoot->next;
-                }
-                *myRoot = 0;
-                this->size = other.size;
+            myRoot = &(*myRoot)->next;
+            otherRoot = otherRoot->next;
         }
+        // End with null
+        *myRoot = 0;
+        this->size = other.size;
+    }
 
 public:
-        typedef Object ValueType; /**< data type of data in FVector */
+    typedef Object ValueType; /**< data type of data in FVector */
 
-        /** Constructor (of an empty list) */
-        FList() : root(0) , size(0) {
-        }
+    /** Constructor (of an empty list) */
+    FList() : root(0) , size(0) {
+    }
 
-        /** Desctructor */
-        virtual ~FList(){
-                clear();
-        }
+    /** Desctructor */
+    virtual ~FList(){
+        clear();
+    }
 
-        /**
+    /**
         * Copy operator
         * This will clear the current list before copying
         * @param other the source list
         * @return the current list as a reference
         */
-        FList& operator=(const FList& other){
-            if(this != &other){
-                clear();
-                copy(other);
-            }
-            return *this;
+    FList& operator=(const FList& other){
+        if(this != &other){
+            clear();
+            copy(other);
         }
+        return *this;
+    }
 
-        /**
+    /**
         * Copy constructor
         * @param other the source/original list
         */
-        FList(const FList& other): root(0) , size(0)  {
-                copy(other);
-        }
+    FList(const FList& other): root(0) , size(0)  {
+        copy(other);
+    }
 
-        /**
+    /**
         * To clear the list
         * Size is 0 after calling this function
         */
-        void clear(){
-                while(this->root){
-                        Node*const FRestrict next = this->root->next;
-                        delete this->root;
-                        this->root = next;
-                }
-                this->size = 0;
+    void clear(){
+        while(this->root){
+            Node*const FRestrict next = this->root->next;
+            delete this->root;
+            this->root = next;
         }
+        this->size = 0;
+    }
 
-        /**
+    /**
         * Push an element in the head of the list
         * @param inObject the object to insert
         */
-        void push(const Object& inObject){
-                Node* newNode   = new Node;
-                newNode->target = inObject;
-                newNode->next 	= this->root;
+    void push(const Object& inObject){
+        Node* newNode   = new Node;
+        newNode->target = inObject;
+        newNode->next 	= this->root;
 
-                this->root 	= newNode;
-                ++this->size;
-        }
+        this->root 	= newNode;
+        ++this->size;
+    }
 
 
-        /**
+    /**
         * To get head value (last pushed value)
-        * if size == 0 then defaultValue is returned
         * the list is unchanged after this function
         * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
         * @return first value if exists or defaultValue otherwise
+        * FList does not check that size != 0
         */
-        Object& head(Object& defaultValue = Object()){
-            if(this->size) return this->root->target;
-            else return defaultValue;
-        }
+    Object& head(/*Object& defaultValue = Object()*/){
+        return this->root->target;
+    }
 
-        /**
-        * To get head value as const
-        * if size == 0 then defaultValue is return
-        * the list is unchanged after this function
-        * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
-        * @return first value if exists or defaultValue otherwise
-        */
-        const Object& head(const Object& defaultValue = Object()) const {
-            if(this->size) return this->root->target;
-            else return defaultValue;
-        }
+    /**
+    * To get head value as const
+    * the list is unchanged after this function
+    * @param defaultValue as the returned value in case size == 0, equal Object() if no param as passed
+    * @return first value if exists or defaultValue otherwise
+    * FList does not check that size != 0
+    */
+    const Object& head(/*const Object& defaultValue = Object()*/) const {
+        return this->root->target;
+    }
 
-        /**
-        * To get the head value and remove it from the list
-        * @return first value
-        * @warning you must check the list's size before calling this function!
-        */
-        Object pop(){
-            --this->size;
-            Node*const FRestrict newNode   = this->root;
-            this->root                     = this->root->next;
+    /**
+    * To remove the head value from the list
+    * @warning you must check the list's size before calling this function!
+    */
+    void pop(){
+        --this->size;
+        Node*const FRestrict headNode  = this->root;
+        this->root                     = this->root->next;
+        delete headNode;
+    }
 
-            Object value    = newNode->target;
-            delete newNode;
-
-            return value;
-        }
-
-        /**
+    /**
         * To get the number of elements in the list
         * @return size
         */
-        int getSize() const{
-                return this->size;
-        }
+    int getSize() const{
+        return this->size;
+    }
 
-        /**
+    /**
           * This iterator allow accessing list's elements
           * If you change the target list pointed by an iterator
           * you cannot used the iterator any more.
@@ -167,69 +163,69 @@ public:
           * } <br>
           * </code>
           */
-        class BasicIterator {
-        private:
-            Node** iter; //< current node on the list
+    class BasicIterator {
+    private:
+        Node** iter; //< current node on the list
 
-        public:
-            /**
-              * Constructor needs the target list
-              * @param the list to iterate on
-              */
-            BasicIterator(FList& list) : iter(&list.root) {
+    public:
+        /**
+          * Constructor needs the target list
+          * @param the list to iterate on
+          */
+        explicit BasicIterator(FList& list) : iter(&list.root) {
+        }
+
+        /** To gotoNext on the list */
+        void gotoNext(){
+            if( hasNotFinished() ){
+                // TODO bug! printf("%s %p to %p\n",((*iter) != 0?"Not null":"Null"), *iter, &((*iter)->next));
+                iter = &((*iter)->next);
+                if( (*iter)->next ) Prefetch_Write( (*iter)->next->next);
             }
+        }
 
-            /** To gotoNext on the list */
-            void gotoNext(){
-                if( hasNotFinished() ){
-                    // TODO bug! printf("%s %p to %p\n",((*iter) != 0?"Not null":"Null"), *iter, &((*iter)->next));
-                    iter = &((*iter)->next);
-                    if( (*iter)->next ) Prefetch_Write( (*iter)->next->next);
-                }
-            }
-
-            /**
+        /**
             * Current pointed value
             * current iterator must be valide (hasNotFinished()) to use this function
             */
-            Object& data(){
-                return (*iter)->target;
-            }
+        Object& data(){
+            return (*iter)->target;
+        }
 
-            /**
+        /**
             * Current pointed value
             * current iterator must be valide (hasNotFinished()) to use this function
             */
-            const Object& data() const{
-                return (*iter)->target;
-            }
+        const Object& data() const{
+            return (*iter)->target;
+        }
 
-            /** Set the data */
-            void setData(const Object& inData){
-                (*iter)->target = inData;
-            }
+        /** Set the data */
+        void setData(const Object& inData){
+            (*iter)->target = inData;
+        }
 
-            /**
+        /**
             * To know if an iterator is at the end of the list
             * @return true if the current iterator can gotoNext and access to value, else false
             */
-            bool hasNotFinished() const{
-                return (*iter) != 0;
-            }
+        bool hasNotFinished() const{
+            return (*iter) != 0;
+        }
 
-            /** Remove an element
+        /** Remove an element
               */
-            void remove() {
-                if( hasNotFinished() ){
-                    Node* temp = (*iter)->next;
-                    delete (*iter);
-                    (*iter) = temp;
-                }
+        void remove() {
+            if( hasNotFinished() ){
+                Node* temp = (*iter)->next;
+                delete (*iter);
+                (*iter) = temp;
             }
+        }
 
-        };
+    };
 
-        /**
+    /**
           * This iterator allow accessing list's elements
           * If you change the target list pointed by an iterator
           * you cannot used the iterator any more.
@@ -243,50 +239,50 @@ public:
           * } <br>
           * </code>
           */
-        class ConstBasicIterator {
-        private:
-            const Node* iter; //< current node on the list
+    class ConstBasicIterator {
+    private:
+        const Node* iter; //< current node on the list
 
-        public:
-            /**
+    public:
+        /**
               * Constructor needs the target list
               * @param the list to iterate on
               */
-            ConstBasicIterator(const FList& list) : iter(list.root){
-            }
+        explicit ConstBasicIterator(const FList& list) : iter(list.root){
+        }
 
-            /** to gotoNext on the list */
-            void gotoNext(){
-                if(this->iter){
-                    this->iter = this->iter->next;
-                    if(this->iter) Prefetch_Read(this->iter->next);
-                }
+        /** to gotoNext on the list */
+        void gotoNext(){
+            if(this->iter){
+                this->iter = this->iter->next;
+                if(this->iter) Prefetch_Read(this->iter->next);
             }
+        }
 
-            /**
+        /**
             * Current pointed value
             * current iterator must be valide (hasNotFinished()) to use this function
             */
-            Object data(){
-                return this->iter->target;
-            }
+        Object data(){
+            return this->iter->target;
+        }
 
-            /**
+        /**
             * Current pointed value
             * current iterator must be valide (hasNotFinished()) to use this function
             */
-            const Object& data() const{
-                return this->iter->target;
-            }
+        const Object& data() const{
+            return this->iter->target;
+        }
 
-            /**
+        /**
             * To know if an iterator is at the end of the list
             * @return true if the current iterator can gotoNext and access to value, else false
             */
-            bool hasNotFinished() const{
-                return iter;
-            }
-        };
+        bool hasNotFinished() const{
+            return iter;
+        }
+    };
 
 };
 

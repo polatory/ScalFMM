@@ -34,7 +34,8 @@ public:
     /**
     *@brief constructor
     */
-    FVector() : array(reinterpret_cast< T* >( new char[SizeOfT*DefaultSize] )), capacity(DefaultSize), index(0) {
+    FVector() : array(0), capacity(DefaultSize), index(0) {
+        array = reinterpret_cast< T* >( new char[SizeOfT*DefaultSize] );
     }
 
     /**
@@ -42,16 +43,17 @@ public:
     *@param inSize the buffer size
     *@param inPointOfStart the point of start [0;1]
     */
-    FVector(const int inSize): array(reinterpret_cast< T* >( new char[SizeOfT*inSize]))
-        , capacity(inSize), index(0) {
+    FVector(const int inSize): array(0), capacity(inSize), index(0) {
+        array = reinterpret_cast< T* >( new char[SizeOfT*inSize]);
     }
 
     /**
      * Copy constructor
      * @param other original vector
      */
-    FVector(const FVector& other): array(reinterpret_cast< T* >( new char[SizeOfT*other.capacity]))
-        , capacity(other.capacity), index(other.index) {
+    FVector(const FVector& other): array(0), capacity(other.capacity), index(other.index) {
+        array = reinterpret_cast< T* >( new char[SizeOfT*other.capacity]);
+        // Copy each element
         for(int idx = 0 ; idx < other.index ; ++idx){
             new((void*)&this->array[idx]) T;
             this->array[idx] = other.array[idx];
@@ -65,20 +67,22 @@ public:
       * copying data.
       */
     FVector& operator=(const FVector& other){
-        clear();
-        if(other.getSize() > this->capacity){
-            delete [] reinterpret_cast< char* >(this->array);
+        if(&other != this){
+            // clear current element
+            clear();
+            // alloc bigger if needed
+            if(other.getSize() > this->capacity){
+                delete [] reinterpret_cast< char* >(this->array);
+                this->capacity = int(other.getSize() * 1.5);
+                array = reinterpret_cast< T* >( new char[SizeOfT*this->capacity]);
+            }
 
-            this->capacity = int(other.getSize() * 1.5);
-            array = reinterpret_cast< T* >( new char[SizeOfT*this->capacity]);
+            this->index = other.index;
+            for(int idx = 0 ; idx < other.index ; ++idx){
+                new((void*)&this->array[idx]) T;
+                this->array[idx] = other.array[idx];
+            }
         }
-        this->index = other.index;
-
-        for(int idx = 0 ; idx < other.index ; ++idx){
-            new((void*)&this->array[idx]) T;
-            this->array[idx] = other.array[idx];
-        }
-
         return *this;
     }
 
@@ -103,18 +107,19 @@ public:
     *@brief set the buffer capacity
     *@param inthis->capacity to change the capacity
     * Warning : the memocy is duplicated using memcpy
+    * if size == 10 and setCapactity(5), then it will
+    * set the capacity to 10.
     */
     void setCapacity(int inCapacity){
         if( inCapacity != this->capacity ){
-
+            // if the capacity is not enought
             if( inCapacity < this->index){
                 inCapacity = this->index;
             }
 
+            // Copy elements
             T* const buffer = reinterpret_cast< T* >( new char[SizeOfT*inCapacity]);
-
-            memcpy(buffer,this->array,SizeOfT*this->index);
-
+            memcpy( buffer, this->array, SizeOfT*this->index);
             delete [] reinterpret_cast< char* >(this->array);
             this->array = buffer;
 
@@ -125,7 +130,7 @@ public:
 
     /**
     * @return end->data
-    * This function return the last insted data
+    * This function return the last inserted data
     */
     const T& head() const {
         return this->array[this->index - 1];
@@ -150,6 +155,7 @@ public:
 
     /**
     *@return The number of element added into the vector
+    * this is not the capcity
     */
     int getSize() const{
         return this->index;
@@ -157,6 +163,7 @@ public:
 
     /**
     *@brief pop the first value
+    * Warning, FVector do not check that there is an element before poping
     */
     void pop(){
         (&this->array[--this->index])->~T();
@@ -166,16 +173,18 @@ public:
     *@param inValue the new value
     */
     void push( const T & inValue ){
+        // if needed, increase the vector
         if( this->index == this->capacity ){
             setCapacity(int(this->capacity * 1.5));
         }
+        // add the new element
         new((void*)&this->array[this->index]) T;
         this->array[this->index] = inValue;
         ++this->index;
     }
 
     /**
-    *@brief get a const reference of a given value
+    *@brief get a reference of a given value
     *@param inPosition the query position
     *@return the value
     */
@@ -225,7 +234,7 @@ public:
         virtual ~BasicIterator(){}
 
         /** Constructor need a vector */
-        BasicIterator(FVector<T>& inVector) : vector(&inVector), index(0){}
+        explicit BasicIterator(FVector<T>& inVector) : vector(&inVector), index(0){}
 
         /** Go to next vector element */
         void gotoNext(){
@@ -254,7 +263,9 @@ public:
             this->vector->array[this->index] = inData;
         }
 
-        /** Remove current data */
+        /** Remove current data
+          * It will move all the data after to their previous position
+          */
         void remove(){
             if( hasNotFinished() ){
                 for(int idxMove = this->index + 1; idxMove < this->vector->index ; ++idxMove){
@@ -273,14 +284,14 @@ public:
     class ConstBasicIterator{
     protected:
         const FVector* const vector;  /**< the vector to work on*/
-        int index;              /**< the current node*/
+        int index;                    /**< the current node*/
 
     public:
         /** Empty destructor */
         virtual ~ConstBasicIterator(){}
 
         /** Constructor need a vector */
-        ConstBasicIterator(const FVector<T>& inVector) : vector(&inVector), index(0){}
+        explicit ConstBasicIterator(const FVector<T>& inVector) : vector(&inVector), index(0){}
 
         /** Go to next vector element */
         void gotoNext(){
