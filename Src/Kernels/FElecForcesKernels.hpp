@@ -1039,6 +1039,29 @@ public:
         target->incForces( dx, dy, dz);
         target->incPotential( inv_distance  * source.getPhysicalValue() );
     }
+
+    /** Update a velocity of a particle
+      *
+      */
+    void computeVelocity(ParticleClass*const FRestrict target, const FReal DT){
+        const FReal physicalValue = target->getPhysicalValue();
+        // Coef = 1/m * time/2
+        const FReal coef = (FReal(1.0)/physicalValue) * (DT/FReal(2.0));
+
+        // velocity = velocity + forces * coef
+        F3DPosition forces_coef(target->getForces());
+        forces_coef *= coef;
+        target->incVelocity(forces_coef);
+    }
+
+    /** Update a position of a particle
+      *
+      */
+    void updatePosition(ParticleClass*const FRestrict target, const FReal DT){
+        F3DPosition velocity_dt( target->getVelocity() );
+        velocity_dt *= DT;
+        target->incPosition( velocity_dt );
+    }
 };
 
 
