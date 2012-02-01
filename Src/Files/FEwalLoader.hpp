@@ -122,8 +122,8 @@ public:
         file >> fx >> fy >> fz;
 
         inParticle.setPosition(x,y,z);
-        //inParticle.setForces(fx,fy,fz);
-        inParticle.setForces(vx,vy,vz);
+        inParticle.setForces(fx,fy,fz);
+        //inParticle.setForces(vx,vy,vz);
         inParticle.setIndex(index-1);
 
         if( strncmp(type, "OW", 2) == 0){

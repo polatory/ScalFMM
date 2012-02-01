@@ -23,12 +23,10 @@ OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 
-
 # MPI option has to be set before project
 if( SCALFMM_USE_MPI )
-  SET(CMAKE_CXX_COMPILER mpicxx)
+	SET(CMAKE_CXX_COMPILER mpicxx)
 endif()
-
 
 # Test if openmp is here
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)

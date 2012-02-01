@@ -98,9 +98,6 @@ int main(int argc, char ** argv){
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     { // get sum forces&potential
-
-        FILE* fout = fopen("./res.temp.txt", "w");
-
         FReal potential = 0;
         F3DPosition forces;
         typename OctreeClass::Iterator octreeIterator(&tree);
@@ -111,20 +108,12 @@ int main(int argc, char ** argv){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();
 
-                fprintf(fout, "*** pos= (%f, %f, %f)\tv= %f\t\t\t\t\t\t\tforce= (%f, %f, %f)\t\t\t\tpotential energy=\n%f\n",
-                        iter.data().getPosition().getX(),iter.data().getPosition().getY(),iter.data().getPosition().getZ(),
-                        iter.data().getPhysicalValue(),
-                        iter.data().getForces().getX(),iter.data().getForces().getY(),iter.data().getForces().getZ(),
-                        iter.data().getPotential());
-
                 iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Potential = " << potential << std::endl;
-
-        fclose(fout);
     }
 
     // -----------------------------------------------------

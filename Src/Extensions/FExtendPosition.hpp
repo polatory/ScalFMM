@@ -48,6 +48,18 @@ public:
         this->position.setZ(inZ);
     }
 
+    /** Set Position */
+    void incPosition(const F3DPosition& inPosition) {
+        this->position += inPosition;
+    }
+
+    /** Set Position with 3 FReals */
+    void incPosition(const FReal inPx, const FReal inPy, const FReal inPz) {
+        this->position.incX(inPx);
+        this->position.incY(inPy);
+        this->position.incZ(inPz);
+    }
+
 };
 
 
