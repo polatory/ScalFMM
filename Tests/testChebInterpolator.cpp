@@ -14,7 +14,7 @@
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Chebyshev/dof.h"
+
 #include "../Src/Chebyshev/FChebParticle.hpp"
 #include "../Src/Chebyshev/FChebLeaf.hpp"
 
