@@ -38,7 +38,7 @@ class FOctree : protected FAssertable, public FNoCopyable {
     const int subHeight;		//< tree height
     const int leafIndex;		//< index of leaf int array
 
-    FSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass> root;   //< root suboctree
+    FAbstractSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
 
     const F3DPosition boxCenter;	//< the space system center
     const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
@@ -87,8 +87,16 @@ public:
             const FReal inBoxWidth, const F3DPosition& inBoxCenter)
         : boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
-          root(0, 0, this->subHeight, 1), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
+          root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
     {
+        // Does we only need one suboctree?
+        if(subHeight >= height){
+            root = new FSubOctreeWithLeafs< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
+        }
+        else{
+            root = new FSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
+        }
+
         FReal tempWidth = this->boxWidth;
         // pre compute box width for each level
         for(int indexLevel = 0; indexLevel < this->height; ++indexLevel ){
@@ -144,14 +152,14 @@ public:
     void insert(const ParticleClass& inParticle){
         const FTreeCoordinate host = getCoordinateFromPosition( inParticle.getPosition() );
         const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
-        root.insert( particleIndex, host, inParticle, this->height, this->boxWidthAtLevel);
+        root->insert( particleIndex, host, inParticle, this->height, this->boxWidthAtLevel);
     }
 
     /** Remove a leaf from its morton index
           * @param the index of the leaf to remove
           */
     void removeLeaf(const MortonIndex indexToRemove ){
-        root.removeLeaf( indexToRemove , this->height);
+        root->removeLeaf( indexToRemove , this->height);
     }
 
     /**
@@ -229,10 +237,10 @@ public:
         explicit Iterator(FOctree* const inTarget)
             : currentLocalIndex(0) , currentLocalLevel(0) {
             fassert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
-            fassert(inTarget->root.getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
+            fassert(inTarget->root->getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
 
             // Start by the root
-            this->current.tree = &inTarget->root;
+            this->current.tree = inTarget->root;
             // On the left limit
             this->currentLocalIndex = TransposeIndex(this->current.tree->getLeftLeafIndex(), (this->current.tree->getSubOctreeHeight() - this->currentLocalLevel - 1) );
         }
@@ -701,7 +709,7 @@ public:
           */
     CellClass** getCellPt(const MortonIndex inIndex, const int inLevel) const{
         SubOctreeTypesConst workingTree;
-        workingTree.tree = &this->root;
+        workingTree.tree = this->root;
 
         const MortonIndex treeMiddleMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
 
@@ -884,7 +892,7 @@ public:
           */
     ContainerClass* getLeafSrc(const MortonIndex inIndex){
         SubOctreeTypes workingTree;
-        workingTree.tree = &this->root;
+        workingTree.tree = this->root;
         const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
 
         // Find the suboctree a the correct level
