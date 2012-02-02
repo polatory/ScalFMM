@@ -43,7 +43,7 @@ public:
     }
 
     /** return false if the tree is empty after processing */
-    bool rearrange(const FMpi::FComm& comm){
+    bool rearrange(const FMpi::FComm& comm, const bool isPeriodic = false){
         // interval of each procs
         Interval*const intervals = new Interval[comm.processCount()];
         memset(intervals, 0, sizeof(Interval) * comm.processCount());
@@ -77,6 +77,11 @@ public:
         FVector<ParticleClass>*const toMove = new FVector<ParticleClass>[comm.processCount()];
 
         { // iterate on the leafs and found particle to remove or to send
+            // For periodic
+            const FReal boxWidth = tree->getBoxWidth();
+            const F3DPosition min(tree->getBoxCenter(),-boxWidth/2);
+            const F3DPosition max(tree->getBoxCenter(),boxWidth/2);
+
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
@@ -84,6 +89,28 @@ public:
 
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 while( iter.hasNotFinished() ){
+                    if(isPeriodic){
+                        F3DPosition partPos = iter.data().getPosition();
+                        while(partPos.getX() < min.getX()){
+                            partPos.incX(boxWidth);
+                        }
+                        while(partPos.getX() > max.getX()){
+                            partPos.incX(-boxWidth);
+                        }
+                        while(partPos.getY() < min.getY()){
+                            partPos.incY(boxWidth);
+                        }
+                        while(partPos.getY() > max.getY()){
+                            partPos.incY(-boxWidth);
+                        }
+                        while(partPos.getZ() < min.getZ()){
+                            partPos.incZ(boxWidth);
+                        }
+                        while(partPos.getZ() > max.getZ()){
+                            partPos.incZ(-boxWidth);
+                        }
+                        iter.data().setPosition(partPos);
+                    }
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(iter.data().getPosition());
                     // is this particle need to be changed from its leaf
                     if(particuleIndex != currentIndex){
