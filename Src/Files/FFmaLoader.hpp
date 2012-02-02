@@ -56,7 +56,7 @@ public:
             FReal x,y,z;
             this->file >> this->nbParticles >> this->boxWidth >> x >> y >> z;
             this->centerOfBox.setPosition(x,y,z);
-            this->boxWidth *= 2;
+            //this->boxWidth *= 2;
         }
         else {
              this->boxWidth = 0;
