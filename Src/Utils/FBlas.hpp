@@ -24,31 +24,19 @@
     // GEMV
     ///////////////////////////////////////////////////////
 
-    template <typename T>
     void cblas_gemv(const CBLAS_ORDER order ,
-                       const CBLAS_TRANSPOSE TransA , const int M , const int N ,
-                       const void *alpha , const void *A , const int lda ,
-                       const void *X , const int incX , const void *beta ,
-                       void *Y , const int incY){
-        T t;
-        t.you_cannot_use_this_function_with_this_type();
-    }
-
-    template <>
-    void cblas_gemv<double>(const CBLAS_ORDER order ,
             const CBLAS_TRANSPOSE TransA , const int M , const int N ,
-            const void *alpha , const void *A , const int lda ,
-            const void *X , const int incX , const void *beta ,
-            void *Y , const int incY){
+            const double *alpha , const double *A , const int lda ,
+            const double *X , const int incX , const double *beta ,
+            double *Y , const int incY){
         cblas_zgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
     }
 
-    template <>
-    void cblas_gemv<float>(const CBLAS_ORDER order ,
+    void cblas_gemv(const CBLAS_ORDER order ,
             const CBLAS_TRANSPOSE TransA , const int M , const int N ,
-            const void *alpha , const void *A , const int lda ,
-            const void *X , const int incX , const void *beta ,
-            void *Y , const int incY){
+            const float *alpha , const float *A , const int lda ,
+            const float *X , const int incX , const float *beta ,
+            float *Y , const int incY){
         cblas_cgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
     }
 
@@ -57,22 +45,13 @@
     // Dotu
     ///////////////////////////////////////////////////////
 
-    template <typename T>
-    void cblas_dotu_sub( const int N , const void *X , const int incX ,
-                         const void *Y , const int incY , void *dotu){
-        T t;
-        t.you_cannot_use_this_function_with_this_type();
-    }
-
-    template <>
-    void cblas_dotu_sub<double>(const int N , const void *X , const int incX ,
-                            const void *Y , const int incY , void *dotu){
+    void cblas_dotu_sub(const int N , const double *X , const int incX ,
+                            const double *Y , const int incY , double *dotu){
         cblas_zdotu_sub(N,X,incX,Y,incY,dotu);
     }
 
-    template <>
-    void cblas_dotu_sub<float>(const int N , const void *X , const int incX ,
-                           const void *Y , const int incY , void *dotu){
+    void cblas_dotu_sub(const int N , const float *X , const int incX ,
+                           const float *Y , const int incY , float *dotu){
         cblas_cdotu_sub(N,X,incX,Y,incY,dotu);
     }
 
