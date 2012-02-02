@@ -89,11 +89,12 @@ public:
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
           root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
     {
+        fassert(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
-        if(subHeight >= height){
+        if(subHeight == height - 1){
             root = new FSubOctreeWithLeafs< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
         }
-        else{
+        else {// if(subHeight < height - 1)
             root = new FSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
         }
 
