@@ -176,7 +176,7 @@ public:
     /** Copy constructor */
     FElecForcesKernels(const FElecForcesKernels& other)
         : devP(other.devP), devM2lP(other.devM2lP), boxWidth(other.boxWidth),
-          treeHeight(other.boxWidth), periodicLevels(other.periodicLevels), harmonic(other.devP),
+          treeHeight(other.treeHeight), periodicLevels(other.periodicLevels), harmonic(other.devP),
           preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0),
           preL2LTransitionsPer(0), preM2MTransitionsPer(0), preM2LTransitionsPer(0) {
 
