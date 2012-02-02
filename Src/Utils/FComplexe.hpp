@@ -12,41 +12,44 @@
 * Propose basic complexe class.
 * Do not modify the attributes of this class.
 * It can be passed to blas fonction and has to be
-* 2 x real size only.
+* 2 x complex[0] size only.
 */
 class FComplexe {
-    FReal real;    //< Real
-    FReal imag;    //< Imaginary
+    FReal complex[2];    //< Real & Imaginary
 
 public:
-    /** Default Constructor (set real&imaginary to 0) */
-    FComplexe() : real(0),imag(0){
+    /** Default Constructor (set complex[0]&imaginary to 0) */
+    FComplexe() {
+        complex[0] = 0;
+        complex[1] = 0;
     }
 
     /** Constructor with values
       * @param inImag the imaginary
-      * @param inReal the real
+      * @param inReal the complex[0]
       */
-    explicit FComplexe(const FReal inImag, const FReal inReal)
-        : real(inReal),imag(inImag){
+    explicit FComplexe(const FReal inImag, const FReal inReal) {
+        complex[0] = inReal;
+        complex[1] = inImag;
     }
 
     /** Copy constructor */
-    FComplexe(const FComplexe& other)
-        : real(other.real), imag(other.imag){
+    FComplexe(const FComplexe& other){
+        complex[0] = other.complex[0];
+        complex[1] = other.complex[1];
     }
 
     /** Copy operator */
     FComplexe& operator=(const FComplexe& other){
-        this->imag = other.imag;
-        this->real = other.real;
+        this->complex[1] = other.complex[1];
+        this->complex[0] = other.complex[0];
         return *this;
     }
 
     /** Equality operator */
     bool operator==(const FComplexe& other){
-        return FMath::LookEqual(this->imag,other.imag)
-                       && FMath::LookEqual(this->real,other.real);
+        return FMath::LookEqual(this->complex[1],other.complex[1])
+                       && FMath::LookEqual(this->complex[0],other.complex[0]);
     }
 
     /** Different equal */
@@ -56,91 +59,97 @@ public:
 
     /** Get imaginary */
     FReal getImag() const{
-        return this->imag;
+        return this->complex[1];
     }
 
-    /** Get real */
+    /** Get complex[0] */
     FReal getReal() const{
-        return this->real;
+        return this->complex[0];
     }
 
     /** Set Imaginary */
     void setImag(const FReal inImag) {
-        this->imag = inImag;
+        this->complex[1] = inImag;
     }
 
     /** Set Real */
     void setReal(const FReal inReal) {
-        this->real = inReal;
+        this->complex[0] = inReal;
+    }
+
+    /** Set Real and imaginary */
+    void setRealImag(const FReal inReal, const FReal inImag) {
+        this->complex[0] = inReal;
+        this->complex[1] = inImag;
     }
 
     /**
      * Operator +=
-     * in real with other real, same for imag
+     * in complex[0] with other complex[0], same for complex[1]
      * @param other the complexe to use data
      */
     FComplexe& operator+=(const FComplexe& other){
-        this->real += other.real;
-        this->imag += other.imag;
+        this->complex[0] += other.complex[0];
+        this->complex[1] += other.complex[1];
         return *this;
     }   
 
-    /** Inc real and imaginary by values
-      * @param inIncReal to inc the real
-      * @param inIncImag to inc the imag
+    /** Inc complex[0] and imaginary by values
+      * @param inIncReal to inc the complex[0]
+      * @param inIncImag to inc the complex[1]
       */
     void inc(const FReal inIncReal, const FReal inIncImag){
-        this->real += inIncReal;
-        this->imag += inIncImag;
+        this->complex[0] += inIncReal;
+        this->complex[1] += inIncImag;
     }
 
-    /** Inc real by FReal
-      * @param inIncReal to inc the real
+    /** Inc complex[0] by FReal
+      * @param inIncReal to inc the complex[0]
       */
     void incReal(const FReal inIncReal){
-        this->real += inIncReal;
+        this->complex[0] += inIncReal;
     }
 
     /** Inc imaginary by FReal
-      * @param inIncImag to inc the imag
+      * @param inIncImag to inc the complex[1]
       */
     void incImag(const FReal inIncImag){
-        this->imag += inIncImag;
+        this->complex[1] += inIncImag;
     }
 
-    /** Dec real by FReal
-      * @param inDecReal to dec the real
+    /** Dec complex[0] by FReal
+      * @param inDecReal to dec the complex[0]
       */
     void decReal(const FReal inIncReal){
-        this->real -= inIncReal;
+        this->complex[0] -= inIncReal;
     }
 
     /** Dec imaginary by FReal
-      * @param inDecImag to dec the imag
+      * @param inDecImag to dec the complex[1]
       */
     void decImag(const FReal inIncImag){
-        this->imag -= inIncImag;
+        this->complex[1] -= inIncImag;
     }
 
-    /** Mul real and imaginary by a FReal
+    /** Mul complex[0] and imaginary by a FReal
       * @param inValue the coef to mul data
       */
     void mulRealAndImag(const FReal inValue){
-        this->imag *= inValue;
-        this->real *= inValue;
+        this->complex[1] *= inValue;
+        this->complex[0] *= inValue;
     }
 
     /** Mul a complexe by another "c*=c2" */
     FComplexe& operator*=(const FComplexe& other){
-        const FReal tempReal = this->real;
-        this->real = (tempReal * other.real) - (this->imag * other.imag);
-        this->imag = (tempReal * other.imag) + (this->imag * other.real);
+        const FReal tempReal = this->complex[0];
+        this->complex[0] = (tempReal * other.complex[0]) - (this->complex[1] * other.complex[1]);
+        this->complex[1] = (tempReal * other.complex[1]) + (this->complex[1] * other.complex[0]);
         return *this;
     }
 
     /** Test if a complex is not a number */
     bool isNan() const {
-        return FMath::IsNan(imag) || FMath::IsNan(real);
+        return FMath::IsNan(complex[1]) || FMath::IsNan(complex[0]);
     }
 };
 
