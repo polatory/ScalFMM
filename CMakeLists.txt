@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
@@ -12,7 +12,6 @@ project(scalfmm)
 # Active language
 # -----------------------
 ENABLE_LANGUAGE(CXX )
-
 
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" OFF )
@@ -62,7 +61,7 @@ if( SCALFMM_USE_CBLAS )
      SET(CBLAS_LIBRARIES "-L$ENV{MKLROOT}/lib  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
   else() 
       FIND_PACKAGE(BLAS)
-      SET(CBLAS_LIBRARIES "-lcblas")
+      SET(BLAS_LIBRARIES "-lcblas")
   endif()
 endif()
 

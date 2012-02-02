@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
@@ -23,6 +23,12 @@ add_library(
 	scalfmm
 	STATIC
 	${source_lib_files}
+)
+
+# Add blas library (even if it is set to off)
+target_link_libraries(
+	scalfmm
+	${BLAS_LIBRARIES}
 )
 
 # Adding the entire project dir as an include dir
