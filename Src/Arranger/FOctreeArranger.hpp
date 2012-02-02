@@ -30,7 +30,6 @@ public:
         const F3DPosition min(tree->getBoxCenter(),-boxWidth/2);
         const F3DPosition max(tree->getBoxCenter(),boxWidth/2);
 
-
         { // iterate on the leafs and found particle to remove
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();

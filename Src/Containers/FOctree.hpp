@@ -87,7 +87,7 @@ public:
             const FReal inBoxWidth, const F3DPosition& inBoxCenter)
         : boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
-          root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter - (inBoxWidth/2)), boxWidth(inBoxWidth)
+          root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
     {
         fassert(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
