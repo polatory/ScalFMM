@@ -2,6 +2,7 @@
 #define FSPHERICAL_HPP
 
 #include "FGlobal.hpp"
+#include "FMath.hpp"
 #include "F3DPosition.hpp"
 
 /** This class is a Spherical position
@@ -20,8 +21,14 @@ public:
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
         this->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
         this->phi = FMath::Atan2(inVector.getY(),inVector.getX());
-        this->cosTheta = inVector.getZ() / r;
-        this->sinTheta = FMath::Sqrt(x2y2) / r;
+        if( r < FMath::Epsilon ){ // if r == 0 we cannot divide!
+            this->cosTheta = FReal(1);
+            this->sinTheta = FReal(1);
+        }
+        else {
+            this->cosTheta = inVector.getZ() / r;
+            this->sinTheta = FMath::Sqrt(x2y2) / r;
+        }
     }
 
     /** Get the rayon */

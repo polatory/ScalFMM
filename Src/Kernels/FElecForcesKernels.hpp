@@ -111,7 +111,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
             preM2MTransitionsPer = new FComplexe[periodicLevels * 8 * harmonic.getExpSize()];
 
             FReal treeWidthAtLevel = boxWidth;
-            for(int idxLevel = -1 ; idxLevel <= -periodicLevels ; --idxLevel ){
+            for(int idxLevel = -1 ; idxLevel >= -periodicLevels ; --idxLevel ){
                 const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
                 treeWidthAtLevel *= 2;
 
@@ -143,7 +143,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
             // so 6 in each dimension
             treeWidthAtLevel = boxWidth*2;
             preM2LTransitionsPer = new FComplexe[periodicLevels * (7 * 7 * 7) * devM2lP];
-            for(int idxLevel = -1 ; idxLevel <= -periodicLevels ; --idxLevel ){
+            for(int idxLevel = -1 ; idxLevel >= -periodicLevels ; --idxLevel ){
                 for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                     for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                         for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
@@ -870,10 +870,11 @@ private:
         // We want: - gradient(POTENTIAL_SIGN potential).
         // The -(- 1.0) computing is not the most efficient programming ...
         const FReal signe = 1.0;
-        force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
-        force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
-        force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
-
+        if( FMath::Epsilon < spherical.getR()){
+            force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
+            force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
+            force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
+        }
         /////////////////////////////////////////////////////////////////////
 
         //spherical_position_Set_ph
