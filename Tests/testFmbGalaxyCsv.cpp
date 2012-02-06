@@ -76,7 +76,7 @@ int main(int argc, char ** argv){
 
     FComputeCell::Init(DevP);
 
-    GalaxyLoader<ParticleClass> loader("../Data/galaxy.fma.tmp");
+    GalaxyLoader<ParticleClass> loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
 
     // -----------------------------------------------------
 

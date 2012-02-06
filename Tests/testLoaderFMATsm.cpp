@@ -47,18 +47,8 @@ int main(int argc, char ** argv ){
 
     // Use testLoaderCreate.exe to create this file
     FTic counter;
-    const char* const defaultFilename = "../Data/test20k.tsm.fma";
-    const char* filename;
-
-    if(argc == 1){
-        std::cout << "You have to give a .tos.fma file in argument.\n";
-        std::cout << "The program will try a default file : " << defaultFilename << "\n";
-        filename = defaultFilename;
-    }
-    else{
-        filename = argv[1];
-        std::cout << "Opening : " << filename << "\n";
-    }
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.tsm.fma");
+    std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
     FFmaTsmLoader<ParticleTsm> loader(filename);

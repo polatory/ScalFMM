@@ -38,19 +38,8 @@ int main(int argc, char ** argv){
     const FReal ZCenter = BoxWidth;
 
     // Output file please let .temp extension
-    const char defaultFilename[] = "../Data/test20k.fma";
-
-    const char* Output;
-
-    if(argc == 1){
-        std::cout << "You have to give a filename in argument.\n";
-        std::cout << "The program will create one with a default name : " << defaultFilename << "\n";
-        Output = defaultFilename;
-    }
-    else{
-        Output = argv[1];
-        std::cout << "Creating : " << Output << "\n";
-    }
+    const char* const Output = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+    std::cout << "Creating : " << Output << "\n";
 
     // Create file
     std::ofstream myfile;

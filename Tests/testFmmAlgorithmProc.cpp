@@ -324,19 +324,10 @@ int main(int argc, char ** argv){
 
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    char defaultFilename[] = "../Data/test20k.bin.fma";
-    char* filename;
     FTic counter;
 
-    if(argc == 1){
-        std::cout << "You have to give a .fma file in argument.\n";
-        std::cout << "The program will try a default file : " << defaultFilename << "\n";
-        filename = defaultFilename;
-    }
-    else{
-        filename = argv[1];
-        std::cout << "Opening : " << filename << "\n";
-    }
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma");
+    std::cout << "Opening : " << filename << "\n";
 
     FMpiFmaLoader<ParticleClass> loader(filename,app.global());
     if(!loader.isOpen()){

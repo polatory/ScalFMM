@@ -26,6 +26,7 @@
 
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Files/FHLoader.hpp"
 
@@ -98,21 +99,11 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to know the box used.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = 6;
-    const int SizeSubLevels = 2;
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const char* const defaultFilename = "../Data/testMortonIndex.txt";
-    const char* filename;
-
-    if(argc == 1){
-        std::cout << "You have to give a .fma file in argument.\n";
-        std::cout << "The program will try a default file : " << defaultFilename << "\n";
-        filename = defaultFilename;
-    }
-    else{
-        filename = argv[1];
-        std::cout << "Opening : " << filename << "\n";
-    }
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/testMortonIndex.txt");
+    std::cout << "Opening : " << filename << "\n";
 
     FHLoader<Particle> loader(filename);
     if(!loader.isOpen() ){
