@@ -20,7 +20,7 @@
 #include "../Utils/FGlobal.hpp"
 
 // To get memcpy
-#include <string.h>
+#include <cstring>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)

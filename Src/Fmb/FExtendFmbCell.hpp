@@ -17,7 +17,7 @@
 #define FEXTENDFMBCELL_HPP
 
 
-#include <string.h>
+#include <cstring>
 
 #include "../Utils/FComplexe.hpp"
 

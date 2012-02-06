@@ -19,6 +19,7 @@
 
 // To get memcpy
 #include <cstring>
+#include <iostream>
 #include "FGlobal.hpp"
 
 /**
@@ -259,20 +260,18 @@ public:
         return F3DPosition(inPosition.x + inOther.x, inPosition.y + inOther.y, inPosition.z + inOther.z);
     }
 
-	/**
-	 * Operator stream F3DPosition to std::ostream
-	 * This can be used to simply write out a position
-	 * @param[in,out] output where to write the position
-	 * @param[in] inPosition the position to write out
-	 * @return the output for multiple << operators
-	 */
-	friend std::ostream& operator<<(std::ostream& output, const F3DPosition& inPosition)
-	{
-    output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
-    return output;  // for multiple << operators.
-	}
+    /**
+     * Operator stream F3DPosition to std::ostream
+     * This can be used to simply write out a position
+     * @param[in,out] output where to write the position
+     * @param[in] inPosition the position to write out
+     * @return the output for multiple << operators
+     */
+    friend std::ostream& operator<<(std::ostream& output, const F3DPosition& inPosition){
+        output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
+        return output;  // for multiple << operators.
+    }
 };
-
 
 
 
