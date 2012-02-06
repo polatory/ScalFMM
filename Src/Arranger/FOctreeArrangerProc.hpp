@@ -94,19 +94,19 @@ public:
                         while(partPos.getX() < min.getX()){
                             partPos.incX(boxWidth);
                         }
-                        while(partPos.getX() > max.getX()){
+                        while(partPos.getX() >= max.getX()){
                             partPos.incX(-boxWidth);
                         }
                         while(partPos.getY() < min.getY()){
                             partPos.incY(boxWidth);
                         }
-                        while(partPos.getY() > max.getY()){
+                        while(partPos.getY() >= max.getY()){
                             partPos.incY(-boxWidth);
                         }
                         while(partPos.getZ() < min.getZ()){
                             partPos.incZ(boxWidth);
                         }
-                        while(partPos.getZ() > max.getZ()){
+                        while(partPos.getZ() >= max.getZ()){
                             partPos.incZ(-boxWidth);
                         }
                         iter.data().setPosition(partPos);
