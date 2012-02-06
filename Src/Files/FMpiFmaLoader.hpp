@@ -126,7 +126,6 @@ public:
                 removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
                 FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
                     FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
-                        printf("%d sizeofelement\n",sizeOfElement);
                 FDEBUG(})
                 removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
 
