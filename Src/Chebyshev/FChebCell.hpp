@@ -1,6 +1,6 @@
 #ifndef FCHEBCELL_HPP
 #define FCHEBCELL_HPP
-// [--License--]
+
 
 #include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
@@ -45,4 +45,4 @@ public:
 
 #endif //FCHEBCELL_HPP
 
-// [--END--]
+

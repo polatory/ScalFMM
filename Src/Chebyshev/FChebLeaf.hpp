@@ -1,6 +1,6 @@
 #ifndef FCHEBLEAF_HPP
 #define FCHEBLEAF_HPP
-// [--License--]
+
 
 #include "../Utils/FNoCopyable.hpp"
 #include "../Containers/FVector.hpp"
@@ -54,4 +54,4 @@ public:
 
 #endif //FSIMPLELEAF_HPP
 
-// [--END--]
+
