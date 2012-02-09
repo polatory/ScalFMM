@@ -97,10 +97,10 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& comm, OctreeClass* const inTree, KernelClass* const inKernels, const int inPeriodicLimit = 5)
-            : tree(inTree) , kernels(0), periodicLimit(inPeriodicLimit), numberOfLeafs(0),
-            MaxThreads(omp_get_max_threads()), nbProcess(comm.processCount()), idProcess(comm.processId()),
-            OctreeHeight(tree->getHeight()),intervals(new Interval[comm.processCount()]),
-            workingIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]) {
+        : tree(inTree) , kernels(0), periodicLimit(inPeriodicLimit), numberOfLeafs(0),
+          MaxThreads(omp_get_max_threads()), nbProcess(comm.processCount()), idProcess(comm.processId()),
+          OctreeHeight(tree->getHeight()),intervals(new Interval[comm.processCount()]),
+          workingIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -177,13 +177,15 @@ public:
 
             // We get the min/max indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
-                                      workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+                                            workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
         }
 
         // run;
         bottomPass();
 
         upwardPass();
+
+        transferPass();
 
         downardPass();
 
@@ -218,10 +220,10 @@ private:
         } while(octreeIterator.moveRight());
 
         FDEBUG(FTic computationCounter);
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-            #pragma omp for nowait
+#pragma omp for nowait
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
             }
@@ -331,12 +333,12 @@ private:
                 }
 
                 if(firstProcThatSend < nbProcess &&
-                      (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+                        (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
 
                     endProcThatSend = firstProcThatSend;
 
                     while( endProcThatSend < nbProcess &&
-                             (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+                           (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
                         ++endProcThatSend;
                     }
 
@@ -356,11 +358,11 @@ private:
 
             // Compute
             FDEBUG(computationCounter.tic());
-            #pragma omp parallel
+#pragma omp parallel
             {
                 const int endIndex = (hasToReceive?numberOfCells-1:numberOfCells);
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-                #pragma omp for
+#pragma omp for
                 for( int idxCell = cellsToSend + 1 ; idxCell < endIndex ; ++idxCell){
                     myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -498,377 +500,198 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
     /** M2L L2L */
-    void downardPass(){
+    void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        { // first M2L
-            FTRACE( FTrace::FRegion regionM2LTrace("M2L", __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-            FDEBUG(FTic computationCounter);
-            FDEBUG(FTic sendCounter);
-            FDEBUG(FTic receiveCounter);
-            FDEBUG(FTic prepareCounter);
-            FDEBUG(FTic gatherCounter);
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
+        FDEBUG(FTic sendCounter);
+        FDEBUG(FTic receiveCounter);
+        FDEBUG(FTic prepareCounter);
+        FDEBUG(FTic gatherCounter);
 
-            //////////////////////////////////////////////////////////////////
-            // First know what to send to who
-            //////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////
+        // First know what to send to who
+        //////////////////////////////////////////////////////////////////
 
-            // pointer to send
-            typename OctreeClass::Iterator* toSend[nbProcess * OctreeHeight];
-            memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess * OctreeHeight );
-            int sizeToSend[nbProcess * OctreeHeight];
-            memset(sizeToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
-            // index
-            int indexToSend[nbProcess * OctreeHeight];
-            memset(indexToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
+        // pointer to send
+        typename OctreeClass::Iterator* toSend[nbProcess * OctreeHeight];
+        memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess * OctreeHeight );
+        int sizeToSend[nbProcess * OctreeHeight];
+        memset(sizeToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
+        // index
+        int indexToSend[nbProcess * OctreeHeight];
+        memset(indexToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
 
-            // To know if a leaf has been already sent to a proc
-            bool alreadySent[nbProcess];
+        // To know if a leaf has been already sent to a proc
+        bool alreadySent[nbProcess];
 
-            FBoolArray* leafsNeedOther[OctreeHeight];
-            memset(leafsNeedOther, 0, sizeof(FBoolArray) * OctreeHeight);
+        FBoolArray* leafsNeedOther[OctreeHeight];
+        memset(leafsNeedOther, 0, sizeof(FBoolArray) * OctreeHeight);
 
-            {
-                FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-                FDEBUG(prepareCounter.tic());
+        {
+            FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
+            FDEBUG(prepareCounter.tic());
 
-                typename OctreeClass::Iterator octreeIterator(tree);
-                typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-                // for each levels
-                for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
-                        avoidGotoLeftIterator.moveDown();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        continue;
-                    }
-
-                    int numberOfCells = 0;
-
-                    // Some cells at this level are not for us
-                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
-                        octreeIterator.moveRight();
-                    }
-
-                    // for each cells copy into array
-                    do{
-                        iterArray[numberOfCells] = octreeIterator;
-                        ++numberOfCells;
-                    } while(octreeIterator.moveRight());
+            typename OctreeClass::Iterator octreeIterator(tree);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+            // for each levels
+            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                if(idProcess != 0
+                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
-                    leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
+                    continue;
+                }
+
+                int numberOfCells = 0;
+
+                // Some cells at this level are not for us
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                    octreeIterator.moveRight();
+                }
+
+                // for each cells copy into array
+                do{
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
+                } while(octreeIterator.moveRight());
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
+
+                leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
 
 
-                    // Which cell potentialy needs other data and in the same time
-                    // are potentialy needed by other
-                    MortonIndex neighborsIndexes[189];
-                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        // Find the M2L neigbors of a cell
-                        const int counter = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,neighborsIndexes);
+                // Which cell potentialy needs other data and in the same time
+                // are potentialy needed by other
+                MortonIndex neighborsIndexes[189];
+                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                    // Find the M2L neigbors of a cell
+                    const int counter = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,neighborsIndexes);
 
-                        memset(alreadySent, false, sizeof(bool) * nbProcess);
-                        bool needOther = false;
-                        // Test each negibors to know which one do not belong to us
-                        for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-                            if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
-                                    || getWorkingInterval(idxLevel , idProcess).max < neighborsIndexes[idxNeigh]){
-                                int procToReceive = idProcess;
-                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
-                                    --procToReceive;
-                                }
-                                while( procToReceive != nbProcess -1 && getWorkingInterval(idxLevel , procToReceive).max < neighborsIndexes[idxNeigh]){
-                                    ++procToReceive;
-                                }
+                    memset(alreadySent, false, sizeof(bool) * nbProcess);
+                    bool needOther = false;
+                    // Test each negibors to know which one do not belong to us
+                    for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
+                        if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
+                                || getWorkingInterval(idxLevel , idProcess).max < neighborsIndexes[idxNeigh]){
+                            int procToReceive = idProcess;
+                            while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
+                                --procToReceive;
+                            }
+                            while( procToReceive != nbProcess -1 && getWorkingInterval(idxLevel , procToReceive).max < neighborsIndexes[idxNeigh]){
+                                ++procToReceive;
+                            }
 
-                                // Maybe already sent to that proc?
-                                if( !alreadySent[procToReceive]
+                            // Maybe already sent to that proc?
+                            if( !alreadySent[procToReceive]
                                     && getWorkingInterval(idxLevel , procToReceive).min <= neighborsIndexes[idxNeigh]
                                     && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).max){
 
-                                    alreadySent[procToReceive] = true;
+                                alreadySent[procToReceive] = true;
 
-                                    needOther = true;
+                                needOther = true;
 
-                                    if(indexToSend[idxLevel * nbProcess + procToReceive] ==  sizeToSend[idxLevel * nbProcess + procToReceive]){
-                                        const int previousSize = sizeToSend[idxLevel * nbProcess + procToReceive];
-                                        sizeToSend[idxLevel * nbProcess + procToReceive] = FMath::Max(int(10*sizeof(typename OctreeClass::Iterator)), int(sizeToSend[idxLevel * nbProcess + procToReceive] * 1.5));
-                                        typename OctreeClass::Iterator* temp = toSend[idxLevel * nbProcess + procToReceive];
-                                        toSend[idxLevel * nbProcess + procToReceive] = reinterpret_cast<typename OctreeClass::Iterator*>(new char[sizeof(typename OctreeClass::Iterator) * sizeToSend[idxLevel * nbProcess + procToReceive]]);
-                                        memcpy(toSend[idxLevel * nbProcess + procToReceive], temp, previousSize * sizeof(typename OctreeClass::Iterator));
-                                        delete[] reinterpret_cast<char*>(temp);
-                                    }
-
-                                    toSend[idxLevel * nbProcess + procToReceive][indexToSend[idxLevel * nbProcess + procToReceive]++] = iterArray[idxCell];
+                                if(indexToSend[idxLevel * nbProcess + procToReceive] ==  sizeToSend[idxLevel * nbProcess + procToReceive]){
+                                    const int previousSize = sizeToSend[idxLevel * nbProcess + procToReceive];
+                                    sizeToSend[idxLevel * nbProcess + procToReceive] = FMath::Max(int(10*sizeof(typename OctreeClass::Iterator)), int(sizeToSend[idxLevel * nbProcess + procToReceive] * 1.5));
+                                    typename OctreeClass::Iterator* temp = toSend[idxLevel * nbProcess + procToReceive];
+                                    toSend[idxLevel * nbProcess + procToReceive] = reinterpret_cast<typename OctreeClass::Iterator*>(new char[sizeof(typename OctreeClass::Iterator) * sizeToSend[idxLevel * nbProcess + procToReceive]]);
+                                    memcpy(toSend[idxLevel * nbProcess + procToReceive], temp, previousSize * sizeof(typename OctreeClass::Iterator));
+                                    delete[] reinterpret_cast<char*>(temp);
                                 }
-                            }
-                        }
-                        if(needOther){
-                            leafsNeedOther[idxLevel]->set(idxCell,true);
-                        }
-                    }
 
-                }
-                FDEBUG(prepareCounter.tac());
-
-            }
-
-            //////////////////////////////////////////////////////////////////
-            // Gather this information
-            //////////////////////////////////////////////////////////////////
-
-            FDEBUG(gatherCounter.tic());
-            // All process say to each others
-            // what the will send to who
-            int globalReceiveMap[nbProcess * nbProcess * OctreeHeight];
-            memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
-            FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
-            FDEBUG(gatherCounter.tac());
-
-
-            //////////////////////////////////////////////////////////////////
-            // Send and receive for real
-            //////////////////////////////////////////////////////////////////
-
-            FDEBUG(sendCounter.tic());
-            // Then they can send and receive (because they know what they will receive)
-            // To send in asynchrone way
-            MPI_Request requests[2 * nbProcess * OctreeHeight];
-            MPI_Status status[2 * nbProcess * OctreeHeight];
-            int iterRequest = 0;
-
-            struct CellToSend{
-                MortonIndex index;
-                char data[CellClass::SerializedSizeUp];
-            };
-
-            CellToSend* sendBuffer[nbProcess * OctreeHeight];
-            memset(sendBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
-
-            CellToSend* recvBuffer[nbProcess * OctreeHeight];
-            memset(recvBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
-
-
-            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                    const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
-                    if(toSendAtProcAtLevel != 0){
-                        sendBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toSendAtProcAtLevel];
-
-                        for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
-                            sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].index = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
-                            toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
-                        }
-
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * int(sizeof(CellToSend)) , MPI_BYTE ,
-                                             idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
-                    }
-
-                    const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-                    if(toReceiveFromProcAtLevel){
-                        recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
-
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * int(sizeof(CellToSend)), MPI_BYTE,
-                                            idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
-                    }
-                }
-            }
-            FDEBUG(sendCounter.tac());
-
-            //////////////////////////////////////////////////////////////////
-            // Do M2L
-            //////////////////////////////////////////////////////////////////
-
-            {
-                FTRACE( FTrace::FRegion regionTrace("Compute", __FUNCTION__ , __FILE__ , __LINE__) );
-                typename OctreeClass::Iterator octreeIterator(tree);
-                typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-                // Now we can compute all the data
-                // for each levels
-                for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
-
-                        avoidGotoLeftIterator.moveDown();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        continue;
-                    }
-
-                    int numberOfCells = 0;
-                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
-                        octreeIterator.moveRight();
-                    }
-                    // for each cells
-                    do{
-                        iterArray[numberOfCells] = octreeIterator;
-                        ++numberOfCells;
-                    } while(octreeIterator.moveRight());
-                    avoidGotoLeftIterator.moveDown();
-                    octreeIterator = avoidGotoLeftIterator;
-
-                    FDEBUG(computationCounter.tic());
-                    #pragma omp parallel
-                    {
-                        KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                        const CellClass* neighbors[189];
-                        FTreeCoordinate relativePosition[189];
-
-                        #pragma omp for  schedule(dynamic) nowait
-                        for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                            const int counter = tree->getDistantNeighbors(neighbors, relativePosition, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
-
-                            if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
-                        }
-                    }
-                    FDEBUG(computationCounter.tac());
-                }
-            }
-
-            //////////////////////////////////////////////////////////////////
-            // Wait received data and compute
-            //////////////////////////////////////////////////////////////////
-
-            // Wait to receive every things (and send every things)
-            MPI_Waitall(iterRequest, requests, status);
-
-            {
-                FTRACE( FTrace::FRegion regionTrace("Compute Received data", __FUNCTION__ , __FILE__ , __LINE__) );
-                FDEBUG(receiveCounter.tic());
-                typename OctreeClass::Iterator octreeIterator(tree);
-                typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-                // compute the second time
-                // for each levels
-                for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
-
-                        avoidGotoLeftIterator.moveDown();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        continue;
-                    }
-
-                    // put the received data into a temporary tree
-                    FLightOctree tempTree;
-                    for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                        const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-                        const CellToSend* const cells = recvBuffer[idxLevel * nbProcess + idxProc];
-                        for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                            tempTree.insertCell(cells[idxCell].index, cells[idxCell].data, idxLevel);
-                        }
-                    }
-
-                    // take cells from our octree only if they are
-                    // linked to received data
-                    int numberOfCells = 0;
-                    int realCellId = 0;
-
-                    while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
-                        octreeIterator.moveRight();
-                    }
-                    // for each cells
-                    do{
-                        // copy cells that need data from others
-                        if(leafsNeedOther[idxLevel]->get(realCellId++)){
-                            iterArray[numberOfCells++] = octreeIterator;
-                        }
-                    } while(octreeIterator.moveRight());
-                    avoidGotoLeftIterator.moveDown();
-                    octreeIterator = avoidGotoLeftIterator;
-
-                    delete leafsNeedOther[idxLevel];
-                    leafsNeedOther[idxLevel] = 0;
-
-                    // Compute this cells
-                    FDEBUG(computationCounter.tic());
-                    #pragma omp parallel
-                    {
-                        KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                        MortonIndex neighborsIndex[189];
-                        FTreeCoordinate relativePosition[189];
-                        const CellClass* neighbors[189];
-                        CellClass neighborsData[189];
-
-                        #pragma omp for  schedule(dynamic) nowait
-                        for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                            // compute indexes
-                            const int counterNeighbors = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel,
-                                                                             neighborsIndex, relativePosition);
-                            int counter = 0;
-                            // does we receive this index from someone?
-                            for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                                const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
-                                if(cellFromOtherProc){
-                                    relativePosition[counter] = relativePosition[idxNeig];
-                                    neighborsData[counter].deserializeUp(cellFromOtherProc);
-
-                                    neighbors[counter] = &neighborsData[counter];
-                                    ++counter;
-                                }
-                            }
-
-                            // need to compute
-                            if(counter){
-                                myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
+                                toSend[idxLevel * nbProcess + procToReceive][indexToSend[idxLevel * nbProcess + procToReceive]++] = iterArray[idxCell];
                             }
                         }
                     }
-                    FDEBUG(computationCounter.tac());
+                    if(needOther){
+                        leafsNeedOther[idxLevel]->set(idxCell,true);
+                    }
                 }
-                FDEBUG(receiveCounter.tac());
-            }
 
-            for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
-                delete[] sendBuffer[idxComm];
-                delete[] recvBuffer[idxComm];
-                delete[] reinterpret_cast<char*>( toSend[idxComm] );
             }
+            FDEBUG(prepareCounter.tac());
 
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         }
 
         //////////////////////////////////////////////////////////////////
-        // ---------------- L2L ---------------
+        // Gather this information
         //////////////////////////////////////////////////////////////////
 
-        { // second L2L
-            FTRACE( FTrace::FRegion regionTrace("L2L", __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-            FDEBUG(FTic computationCounter);
-            FDEBUG(FTic prepareCounter);
-            FDEBUG(FTic waitCounter);
+        FDEBUG(gatherCounter.tic());
+        // All process say to each others
+        // what the will send to who
+        int globalReceiveMap[nbProcess * nbProcess * OctreeHeight];
+        memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
+        FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+        FDEBUG(gatherCounter.tac());
 
-            // Start from leal level - 1
+
+        //////////////////////////////////////////////////////////////////
+        // Send and receive for real
+        //////////////////////////////////////////////////////////////////
+
+        FDEBUG(sendCounter.tic());
+        // Then they can send and receive (because they know what they will receive)
+        // To send in asynchrone way
+        MPI_Request requests[2 * nbProcess * OctreeHeight];
+        MPI_Status status[2 * nbProcess * OctreeHeight];
+        int iterRequest = 0;
+
+        struct CellToSend{
+            MortonIndex index;
+            char data[CellClass::SerializedSizeUp];
+        };
+
+        CellToSend* sendBuffer[nbProcess * OctreeHeight];
+        memset(sendBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
+
+        CellToSend* recvBuffer[nbProcess * OctreeHeight];
+        memset(recvBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
+
+
+        for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
+                if(toSendAtProcAtLevel != 0){
+                    sendBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toSendAtProcAtLevel];
+
+                    for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
+                        sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].index = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
+                        toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
+                    }
+
+                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * int(sizeof(CellToSend)) , MPI_BYTE ,
+                                                idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                }
+
+                const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
+                if(toReceiveFromProcAtLevel){
+                    recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
+
+                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * int(sizeof(CellToSend)), MPI_BYTE,
+                                               idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                }
+            }
+        }
+        FDEBUG(sendCounter.tac());
+
+        //////////////////////////////////////////////////////////////////
+        // Do M2L
+        //////////////////////////////////////////////////////////////////
+
+        {
+            FTRACE( FTrace::FRegion regionTrace("Compute", __FUNCTION__ , __FILE__ , __LINE__) );
             typename OctreeClass::Iterator octreeIterator(tree);
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-            MPI_Request requests[nbProcess];
-            MPI_Status status[nbProcess];
-
-            const int heightMinusOne = OctreeHeight - 1;
-
-            char sendBuffer[CellClass::SerializedSizeDown];
-            char recvBuffer[CellClass::SerializedSizeDown];
-
-            // Periodic
-            FMpi::MpiAssert( MPI_Bcast( &root, sizeof(CellClass), MPI_BYTE, 0, MPI_COMM_WORLD ), __LINE__ );
-            kernels[0]->L2L(&root, octreeIterator.getCurrentBox(), 0);
-
-            // for each levels exepted leaf level
-            for(int idxLevel = 1 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            // Now we can compute all the data
+            // for each levels
+            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 if(idProcess != 0
-                        && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
+                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
 
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -876,93 +699,269 @@ private:
                     continue;
                 }
 
-                // copy cells to work with
                 int numberOfCells = 0;
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                    octreeIterator.moveRight();
+                }
                 // for each cells
                 do{
-                    iterArray[numberOfCells++] = octreeIterator;
+                    iterArray[numberOfCells] = octreeIterator;
+                    ++numberOfCells;
                 } while(octreeIterator.moveRight());
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                int firstCellWork = -1;
-                while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).min){
-                    ++firstCellWork;
-                }
-
-                bool needToRecv = false;
-                int iterRequests = 0;
-
-                FDEBUG(prepareCounter.tic());
-
-                // do we need to receive one or zeros cell
-                if(idProcess != 0
-                        && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
-                    needToRecv = true;
-
-                    MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
-                }
-
-
-                if(idProcess != nbProcess - 1){
-                    int firstProcThatRecv = idProcess + 1;
-                    while( firstProcThatRecv < nbProcess &&
-                            getWorkingInterval((idxLevel + 1) , firstProcThatRecv).max <= getWorkingInterval((idxLevel+1) , idProcess).max){
-                        ++firstProcThatRecv;
-                    }
-
-                    int endProcThatRecv = firstProcThatRecv;
-                    while( endProcThatRecv < nbProcess &&
-                            (getWorkingInterval((idxLevel + 1) , endProcThatRecv).min >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).max >> 3) ){
-                        ++endProcThatRecv;
-                    }
-
-                    if(firstProcThatRecv != endProcThatRecv){
-                        iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
-                        for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-
-                            MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
-                        }
-                    }
-                }
-                FDEBUG(prepareCounter.tac());
-
                 FDEBUG(computationCounter.tic());
-                #pragma omp parallel
+#pragma omp parallel
                 {
-                    KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-                    #pragma omp for
-                    for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
-                        myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
+                    const CellClass* neighbors[189];
+                    FTreeCoordinate relativePosition[189];
+
+#pragma omp for  schedule(dynamic) nowait
+                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                        const int counter = tree->getDistantNeighbors(neighbors, relativePosition, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+
+                        if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
                     }
                 }
                 FDEBUG(computationCounter.tac());
+            }
+        }
 
-                // are we sending or receiving?
-                if(iterRequests){
-                    // process
-                    FDEBUG(waitCounter.tic());
-                    MPI_Waitall( iterRequests, requests, status);
-                    FDEBUG(waitCounter.tac());
+        //////////////////////////////////////////////////////////////////
+        // Wait received data and compute
+        //////////////////////////////////////////////////////////////////
 
-                    if(needToRecv){
-                        // Need to compute
-                        FDEBUG(computationCounter.tic());
-                        iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
-                        kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
-                        FDEBUG(computationCounter.tac());
+        // Wait to receive every things (and send every things)
+        MPI_Waitall(iterRequest, requests, status);
+
+        {
+            FTRACE( FTrace::FRegion regionTrace("Compute Received data", __FUNCTION__ , __FILE__ , __LINE__) );
+            FDEBUG(receiveCounter.tic());
+            typename OctreeClass::Iterator octreeIterator(tree);
+            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+            // compute the second time
+            // for each levels
+            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                if(idProcess != 0
+                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+
+                    avoidGotoLeftIterator.moveDown();
+                    octreeIterator = avoidGotoLeftIterator;
+
+                    continue;
+                }
+
+                // put the received data into a temporary tree
+                FLightOctree tempTree;
+                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                    const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
+                    const CellToSend* const cells = recvBuffer[idxLevel * nbProcess + idxProc];
+                    for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
+                        tempTree.insertCell(cells[idxCell].index, cells[idxCell].data, idxLevel);
+                    }
+                }
+
+                // take cells from our octree only if they are
+                // linked to received data
+                int numberOfCells = 0;
+                int realCellId = 0;
+
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                    octreeIterator.moveRight();
+                }
+                // for each cells
+                do{
+                    // copy cells that need data from others
+                    if(leafsNeedOther[idxLevel]->get(realCellId++)){
+                        iterArray[numberOfCells++] = octreeIterator;
+                    }
+                } while(octreeIterator.moveRight());
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
+
+                delete leafsNeedOther[idxLevel];
+                leafsNeedOther[idxLevel] = 0;
+
+                // Compute this cells
+                FDEBUG(computationCounter.tic());
+#pragma omp parallel
+                {
+                    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
+                    MortonIndex neighborsIndex[189];
+                    FTreeCoordinate relativePosition[189];
+                    const CellClass* neighbors[189];
+                    CellClass neighborsData[189];
+
+#pragma omp for  schedule(dynamic) nowait
+                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                        // compute indexes
+                        const int counterNeighbors = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel,
+                                                                         neighborsIndex, relativePosition);
+                        int counter = 0;
+                        // does we receive this index from someone?
+                        for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
+                            const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
+                            if(cellFromOtherProc){
+                                relativePosition[counter] = relativePosition[idxNeig];
+                                neighborsData[counter].deserializeUp(cellFromOtherProc);
+
+                                neighbors[counter] = &neighborsData[counter];
+                                ++counter;
+                            }
+                        }
+
+                        // need to compute
+                        if(counter){
+                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
+                        }
+                    }
+                }
+                FDEBUG(computationCounter.tac());
+            }
+            FDEBUG(receiveCounter.tac());
+        }
+
+        for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
+            delete[] sendBuffer[idxComm];
+            delete[] recvBuffer[idxComm];
+            delete[] reinterpret_cast<char*>( toSend[idxComm] );
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+    }
+
+    //////////////////////////////////////////////////////////////////
+    // ---------------- L2L ---------------
+    //////////////////////////////////////////////////////////////////
+
+    void downardPass(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
+        FDEBUG(FTic prepareCounter);
+        FDEBUG(FTic waitCounter);
+
+        // Start from leal level - 1
+        typename OctreeClass::Iterator octreeIterator(tree);
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+        MPI_Request requests[nbProcess];
+        MPI_Status status[nbProcess];
+
+        const int heightMinusOne = OctreeHeight - 1;
+
+        char sendBuffer[CellClass::SerializedSizeDown];
+        char recvBuffer[CellClass::SerializedSizeDown];
+
+        // Periodic
+        FMpi::MpiAssert( MPI_Bcast( &root, sizeof(CellClass), MPI_BYTE, 0, MPI_COMM_WORLD ), __LINE__ );
+        kernels[0]->L2L(&root, octreeIterator.getCurrentBox(), 0);
+
+        // for each levels exepted leaf level
+        for(int idxLevel = 1 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            if(idProcess != 0
+                    && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
+
+                avoidGotoLeftIterator.moveDown();
+                octreeIterator = avoidGotoLeftIterator;
+
+                continue;
+            }
+
+            // copy cells to work with
+            int numberOfCells = 0;
+            // for each cells
+            do{
+                iterArray[numberOfCells++] = octreeIterator;
+            } while(octreeIterator.moveRight());
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
+
+            int firstCellWork = -1;
+            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).min){
+                ++firstCellWork;
+            }
+
+            bool needToRecv = false;
+            int iterRequests = 0;
+
+            FDEBUG(prepareCounter.tic());
+
+            // do we need to receive one or zeros cell
+            if(idProcess != 0
+                    && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
+                needToRecv = true;
+
+                MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+            }
+
+
+            if(idProcess != nbProcess - 1){
+                int firstProcThatRecv = idProcess + 1;
+                while( firstProcThatRecv < nbProcess &&
+                       getWorkingInterval((idxLevel + 1) , firstProcThatRecv).max <= getWorkingInterval((idxLevel+1) , idProcess).max){
+                    ++firstProcThatRecv;
+                }
+
+                int endProcThatRecv = firstProcThatRecv;
+                while( endProcThatRecv < nbProcess &&
+                       (getWorkingInterval((idxLevel + 1) , endProcThatRecv).min >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).max >> 3) ){
+                    ++endProcThatRecv;
+                }
+
+                if(firstProcThatRecv != endProcThatRecv){
+                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
+                    for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
+
+                        MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
                 }
             }
+            FDEBUG(prepareCounter.tac());
 
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-            FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+            FDEBUG(computationCounter.tic());
+#pragma omp parallel
+            {
+                KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
+#pragma omp for
+                for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
+                    myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                }
+            }
+            FDEBUG(computationCounter.tac());
+
+            // are we sending or receiving?
+            if(iterRequests){
+                // process
+                FDEBUG(waitCounter.tic());
+                MPI_Waitall( iterRequests, requests, status);
+                FDEBUG(waitCounter.tac());
+
+                if(needToRecv){
+                    // Need to compute
+                    FDEBUG(computationCounter.tic());
+                    iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
+                    kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
+                    FDEBUG(computationCounter.tac());
+                }
+            }
         }
 
-
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
     }
+
+
 
     /////////////////////////////////////////////////////////////////////////////
     // Direct
@@ -1086,7 +1085,7 @@ private:
                     recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
 
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*int(sizeof(ParticleClass)), MPI_BYTE,
-                                        idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                               idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
             nbMessagesToRecv = iterRequest;
@@ -1103,7 +1102,7 @@ private:
                     }
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc], int(sizeof(ParticleClass)) * partsToSend[idxProc] , MPI_BYTE ,
-                                         idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                                idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }
             }
@@ -1190,7 +1189,7 @@ private:
 
         FDEBUG(FTic computationCounter);
 
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
@@ -1201,7 +1200,7 @@ private:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-                #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     if(!leafsNeedOtherShaped.get(idxLeafs)){
                         LeafData& currentIter = leafsDataArray[idxLeafs];
@@ -1258,7 +1257,7 @@ private:
         FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( computation2Counter.tic() );
 
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
@@ -1271,7 +1270,7 @@ private:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-                #pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     // Maybe need also data from other?
                     if(leafsNeedOtherShaped.get(idxLeafs)){
@@ -1412,8 +1411,8 @@ private:
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
                             const FTreeCoordinate potentialNeighbor((otherParent.getX()<<1) | (idxCousin>>2 & 1),
-                                                                   (otherParent.getY()<<1) | (idxCousin>>1 & 1),
-                                                                   (otherParent.getZ()<<1) | (idxCousin&1));
+                                                                    (otherParent.getY()<<1) | (idxCousin>>1 & 1),
+                                                                    (otherParent.getZ()<<1) | (idxCousin&1));
                             const FTreeCoordinate relativePosition(potentialNeighbor.getX() - workingCell.getX(),
                                                                    potentialNeighbor.getY() - workingCell.getY(),
                                                                    potentialNeighbor.getZ() - workingCell.getZ());
