@@ -21,7 +21,7 @@
 
 #include "../Src/Kernels/FComputeCell.hpp"
 
-#include "../Src/Kernels/FElecForcesKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
 
 #include "../Src/Files/FFmaBinLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
@@ -57,7 +57,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
     typedef FVector<ParticleClass>  ContainerClass;
 
     //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
-    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;

@@ -28,7 +28,7 @@
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
 #include "../Src/Kernels/FComputeCell.hpp"
-#include "../Src/Kernels/FElecForcesKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Files/FEwalLoader.hpp"
@@ -80,7 +80,7 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >   KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
 
     typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

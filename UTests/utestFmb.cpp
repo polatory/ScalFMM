@@ -17,7 +17,7 @@
 #include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Kernels/FComputeCell.hpp"
-#include "../Src/Kernels/FElecForcesKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
@@ -83,7 +83,7 @@ typedef ComputeCellSerial             CellClass;
 typedef FVector<ParticleClass>  ContainerClass;
 
 //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
-typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;

@@ -28,7 +28,7 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Src/Kernels/FElecForcesKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
 #include "../Src/Kernels/FComputeCell.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
@@ -78,7 +78,7 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >   KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
 
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////

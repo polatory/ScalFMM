@@ -20,11 +20,15 @@
 
 #include "../Src/Kernels/FComputeCell.hpp"
 
-#include "../Src/Kernels/FElecForcesKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
 
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
 #include "FUTester.hpp"
+
+#include "../Src/Components/FTestCell.hpp"
+#include "../Src/Components/FTestPeriodicKernels.hpp"
+#include "../Src/Components/FTestParticle.hpp"
 
 /*
   In this test we compare the fmm results and the direct results.
@@ -42,20 +46,21 @@ public:
     }
 };
 
+/** The class to run the test */
 class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
-    typedef IndexedParticle         ParticleClass;
-    typedef FComputeCell            CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
-
-    typedef FElecForcesKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
-
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-
-    typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-
+    /** The test */
     void TestDirect(){
+        typedef IndexedParticle         ParticleClass;
+        typedef FComputeCell            CellClass;
+        typedef FVector<ParticleClass>  ContainerClass;
+
+        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
+
+        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+        typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
         const int NbLevels      = 2;
         const int SizeSubLevels = 1;
         const int DevP = 12;
@@ -84,6 +89,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
                         particleToFill.setPhysicalValue(FReal(0.01) /*+ FReal(idxX) * FReal(0.01) + FReal(idxY) * FReal(0.07) + FReal(idxZ) * FReal(0.013)*/);
                         particleToFill.setIndex(idxPart++);
                         tree.insert(particleToFill);
+                        idxX = idxY = idxZ =  NbSmallBoxesPerSide;//todo delete
                     }
                 }
             }
@@ -118,6 +124,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
                                                                FReal(idxY)*SmallBoxWidth + SmallBoxWidthDiv2 + yoffset + FReal(0.001),
                                                                FReal(idxZ)*SmallBoxWidth + SmallBoxWidthDiv2 + zoffset + FReal(0.001)   );
                                     partBox[idxPart].setPhysicalValue(FReal(0.01) /*+ FReal(idxX) * FReal(0.01) + FReal(idxY) * FReal(0.07) + FReal(idxZ) * FReal(0.013)*/);
+                                    idxX = idxY = idxZ =  NbSmallBoxesPerSide;//todo delete
                                     ++idxPart;
                                 }
                             }
@@ -128,11 +135,16 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         }
 
         Print("Direct...");
-        for(int idxTarget = 0 ; idxTarget < directNbPart ; ++idxTarget){
+        for(int idxTarget = 0 ; idxTarget < directNbPart ; idxTarget += 8){
+            for(int idxOther = idxTarget + 8 ; idxOther < directNbPart ; idxOther += 8){
+                kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
+            }
+        }//todo exchange
+        /*for(int idxTarget = 0 ; idxTarget < directNbPart ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < directNbPart ; ++idxOther){
                 kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
             }
-        }
+        }*/
 
         // Compare
         Print("Compute Diff...");
@@ -206,6 +218,76 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         assert(fz < MaximumDiff);
     }
 
+
+    /** The test */
+    void TestDirectSum(){
+        typedef FTestParticle         TestParticleClass;
+        typedef FTestCell             TestCellClass;
+        typedef FVector<TestParticleClass>  TestContainerClass;
+
+        typedef FTestPeriodicKernels<TestParticleClass, TestCellClass, TestContainerClass >          TestKernelClass;
+
+        typedef FSimpleLeaf<TestParticleClass, TestContainerClass >                     TestLeafClass;
+        typedef FOctree<TestParticleClass, TestCellClass, TestContainerClass , TestLeafClass >  TestOctreeClass;
+
+        typedef FFmmAlgorithmPeriodic<TestOctreeClass, TestParticleClass, TestCellClass, TestContainerClass, TestKernelClass, TestLeafClass > TestFmmClass;
+
+        const int NbLevels      = 2;
+        const int SizeSubLevels = 1;
+        const int PeriodicDeep = 2;
+
+        const FReal BoxWidth = 1;
+        const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
+        const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
+        const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
+
+        const int NbPart = NbSmallBoxesPerSide * NbSmallBoxesPerSide * NbSmallBoxesPerSide;
+
+        // Create octree
+        TestOctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, F3DPosition(0.5,0.5,0.5));
+        {
+            for(int idxX = 0 ; idxX < NbSmallBoxesPerSide ; ++idxX){
+                for(int idxY = 0 ; idxY < NbSmallBoxesPerSide ; ++idxY){
+                    for(int idxZ = 0 ; idxZ < NbSmallBoxesPerSide ; ++idxZ){
+                        TestParticleClass particleToFill;
+                        particleToFill.setPosition(FReal(idxX)*SmallBoxWidth + SmallBoxWidthDiv2 + FReal(0.001),
+                                                   FReal(idxY)*SmallBoxWidth + SmallBoxWidthDiv2 + FReal(0.001),
+                                                   FReal(idxZ)*SmallBoxWidth + SmallBoxWidthDiv2 + FReal(0.001));
+                        tree.insert(particleToFill);
+                    }
+                }
+            }
+        }
+
+        // Run FMM
+        Print("Fmm...");
+        TestKernelClass kernels;
+        TestFmmClass algo(&tree,&kernels,PeriodicDeep);
+        algo.execute();
+
+        // Compare
+        Print("Check down data...");
+        { // Check that each particle has been summed with all other
+            const int NbBoxPerPeriodicSide = 6 * PeriodicDeep;
+            const int directNbPart = NbPart * NbBoxPerPeriodicSide * NbBoxPerPeriodicSide * NbBoxPerPeriodicSide;
+
+            typename TestOctreeClass::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+
+            do{
+                typename TestContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+
+                while( leafIter.hasNotFinished() ){
+                    assert(leafIter.data().getDataDown() == directNbPart - 1);// todo delete
+
+
+                    leafIter.gotoNext();
+                }
+            } while(octreeIterator.moveRight());
+        }
+    }
+
+    /** After check the memory if needed */
     void After() {
         if( FMemStats::controler.isUsed() ){
             std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
@@ -215,8 +297,9 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
     }
 
     // set test
-    void SetTests(){
-        AddTest(&TestFmbDirectPeriodic::TestDirect,"Test Simu and with direct comapre to fmm periodic");
+    void SetTests(){        
+        AddTest(&TestFmbDirectPeriodic::TestDirectSum,"Test Simu and with direct compare to Test fmm periodic");
+        AddTest(&TestFmbDirectPeriodic::TestDirect,"Test Simu and with direct compare to real fmm periodic");
     }
 };
 
