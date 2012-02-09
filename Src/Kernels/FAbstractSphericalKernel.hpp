@@ -1,20 +1,15 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#ifndef FELECBASICKERNELS_HPP
-#define FELECBASICKERNELS_HPP
+#ifndef FABSTRACTSPHERICALKERNEL_HPP
+#define FABSTRACTSPHERICALKERNEL_HPP
 
 #include "../Components/FAbstractKernels.hpp"
 
@@ -28,50 +23,36 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @brief
-* Please read the license
-*
+* This is the abstract spherical harmonic kernel
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
-    const int devP;           //< The P
-    const int devM2lP;        //< A secondary P
-    const FReal boxWidth;     //< the box width at leaf level
-    const int treeHeight;     //< The height of the tree
+class FAbstractSphericalKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+protected:
+    const int   devP;           //< The P
+    const FReal boxWidth;       //< the box width at leaf level
+    const int   treeHeight;     //< The height of the tree
 
     const int periodicLevels; //< The number of levels above 1 used for periodicity
 
     FHarmonic harmonic; //< The harmonic computation class
 
     // For normal computation
-    FComplexe* preL2LTransitions; //< The pre-computation for the L2L based on the level
-    FComplexe* preM2MTransitions; //< The pre-computation for the M2M based on the level
+    FComplexe** preL2LTransitions; //< The pre-computation for the L2L based on the level
+    FComplexe** preM2MTransitions; //< The pre-computation for the M2M based on the level
 
-    FComplexe* preM2LTransitions; //< The pre-computation for the M2L based on the level and the 189 possibilities
-
-    // For harmonic computation
-    FComplexe* preL2LTransitionsPer; //< The pre-computation for the L2L based on the level
-    FComplexe* preM2MTransitionsPer; //< The pre-computation for the M2M based on the level
-
-    FComplexe* preM2LTransitionsPer; //< The pre-computation for the M2L based on the level and the 189 possibilities
-
-    /** To access te preL2L/preM2M right vector */
-    int indexTransition(const int level, const int child){
-        return level * 8 * harmonic.getExpSize() + child * harmonic.getExpSize();
-    }
-
-    /** To access te preM2L right vector */
-    int indexM2LTransition(const int idxLevel,const int idxX,const int idxY,const int idxZ){
-        return (idxLevel * 7 * 7 * 7 * devM2lP) + (((((idxX+3) * 7) + (idxY+3)) * 7 ) + (idxZ+3)) * devM2lP;
-    }
 
     /** Alloc and init pre-vectors*/
     void allocAndInit(){
-        preL2LTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
-        preM2MTransitions = new FComplexe[treeHeight * 8 * harmonic.getExpSize()];
+        preL2LTransitions = new FComplexe*[treeHeight + periodicLevels];
+        memset(preL2LTransitions, 0, (treeHeight + periodicLevels) * sizeof(FComplexe*));
+        preM2MTransitions = new FComplexe*[treeHeight + periodicLevels];
+        memset(preM2MTransitions, 0, (treeHeight + periodicLevels) * sizeof(FComplexe*));
 
-        FReal treeWidthAtLevel = boxWidth/2;
-        for(int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel ){
+        FReal treeWidthAtLevel = (boxWidth * FReal(1 << periodicLevels))/2;
+        for(int idxLevel = -periodicLevels ; idxLevel < treeHeight - 1 ; ++idxLevel ){
+            preL2LTransitions[idxLevel + periodicLevels] = new FComplexe[ 8 * harmonic.getExpSize()];
+            preM2MTransitions[idxLevel + periodicLevels] = new FComplexe[ 8 * harmonic.getExpSize()];
+
             const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
@@ -86,7 +67,7 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                         );
 
                 harmonic.computeInner(FSpherical(M2MVector));
-                FMemUtils::copyall<FComplexe>(&preM2MTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                FMemUtils::copyall<FComplexe>(&preM2MTransitions[idxLevel + periodicLevels][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
 
                 const F3DPosition L2LVector (
                         (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
@@ -95,123 +76,42 @@ class FElecForcesKernels : public FAbstractKernels<ParticleClass,CellClass,Conta
                         );
 
                 harmonic.computeInner(FSpherical(L2LVector));
-                FMemUtils::copyall<FComplexe>(&preL2LTransitions[indexTransition(idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
+                FMemUtils::copyall<FComplexe>(&preL2LTransitions[idxLevel + periodicLevels][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
            }
-        }
-
-        // M2L transfer, there is a maximum of 3 neighbors in each direction,
-        // so 6 in each dimension
-        treeWidthAtLevel = boxWidth;
-        preM2LTransitions = new FComplexe[treeHeight * (7 * 7 * 7) * devM2lP];
-        for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel ){
-            for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
-                for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
-                    for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
-                        if(idxX || idxY || idxZ){
-                            const F3DPosition relativePos( FReal(idxX) * treeWidthAtLevel , FReal(idxY) * treeWidthAtLevel , FReal(idxZ) * treeWidthAtLevel );
-                            harmonic.computeOuter(FSpherical(relativePos));
-                            FMemUtils::copyall<FComplexe>(&preM2LTransitions[indexM2LTransition(idxLevel,idxX,idxY,idxZ)], harmonic.result(), harmonic.getExpSize());
-                        }
-                    }
-                }
-            }
-            treeWidthAtLevel /= 2;
-        }
-    }
-
-    void allocAndInitPer(){
-        if( periodicLevels ){
-            preL2LTransitionsPer = new FComplexe[periodicLevels * 8 * harmonic.getExpSize()];
-            preM2MTransitionsPer = new FComplexe[periodicLevels * 8 * harmonic.getExpSize()];
-
-            FReal treeWidthAtLevel = boxWidth;
-            for(int idxLevel = -1 ; idxLevel >= -periodicLevels ; --idxLevel ){
-                const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
-                treeWidthAtLevel *= 2;
-
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild ){
-                    FTreeCoordinate childBox;
-                    childBox.setPositionFromMorton(idxChild,1);
-
-                    const F3DPosition M2MVector (
-                            father.getX() - (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))),
-                            father.getY() - (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))),
-                            father.getZ() - (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2)))
-                            );
-
-                    harmonic.computeInner(FSpherical(M2MVector));
-                    FMemUtils::copyall<FComplexe>(&preM2MTransitionsPer[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
-
-                    const F3DPosition L2LVector (
-                            (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
-                            (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))) - father.getY(),
-                            (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2))) - father.getZ()
-                            );
-
-                    harmonic.computeInner(FSpherical(L2LVector));
-                    FMemUtils::copyall<FComplexe>(&preL2LTransitionsPer[indexTransition(-1-idxLevel,idxChild)], harmonic.result(), harmonic.getExpSize());
-               }
-            }
-
-            // M2L transfer, there is a maximum of 3 neighbors in each direction,
-            // so 6 in each dimension
-            treeWidthAtLevel = boxWidth*2;
-            preM2LTransitionsPer = new FComplexe[periodicLevels * (7 * 7 * 7) * devM2lP];
-            for(int idxLevel = -1 ; idxLevel >= -periodicLevels ; --idxLevel ){
-                for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
-                    for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
-                        for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
-                            if(idxX || idxY || idxZ){
-                                const F3DPosition relativePos( FReal(idxX) * treeWidthAtLevel , FReal(idxY) * treeWidthAtLevel , FReal(idxZ) * treeWidthAtLevel );
-                                harmonic.computeOuter(FSpherical(relativePos));
-                                FMemUtils::copyall<FComplexe>(&preM2LTransitionsPer[indexM2LTransition(-1-idxLevel,idxX,idxY,idxZ)], harmonic.result(), harmonic.getExpSize());
-                            }
-                        }
-                    }
-                }
-                treeWidthAtLevel *= 2;
-            }
         }
     }
 
 
 public:
     /** Kernel constructor */
-    FElecForcesKernels(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const int inPeriodicLevel = 0)
-        : devP(inDevP), devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), boxWidth(inBoxWidth),
+    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const int inPeriodicLevel = 0)
+        : devP(inDevP), boxWidth(inBoxWidth),
           treeHeight(inTreeHeight), periodicLevels(inPeriodicLevel), harmonic(inDevP),
-          preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0),
-          preL2LTransitionsPer(0), preM2MTransitionsPer(0), preM2LTransitionsPer(0) {
+          preL2LTransitions(0), preM2MTransitions(0) {
 
         allocAndInit();
-        allocAndInitPer();
     }
 
     /** Copy constructor */
-    FElecForcesKernels(const FElecForcesKernels& other)
-        : devP(other.devP), devM2lP(other.devM2lP), boxWidth(other.boxWidth),
+    FAbstractSphericalKernel(const FAbstractSphericalKernel& other)
+        : devP(other.devP), boxWidth(other.boxWidth),
           treeHeight(other.treeHeight), periodicLevels(other.periodicLevels), harmonic(other.devP),
-          preL2LTransitions(0), preM2MTransitions(0), preM2LTransitions(0),
-          preL2LTransitionsPer(0), preM2MTransitionsPer(0), preM2LTransitionsPer(0) {
+          preL2LTransitions(0), preM2MTransitions(0) {
 
         allocAndInit();
-        allocAndInitPer();
     }
 
     /** Default destructor */
-    ~FElecForcesKernels(){
+    virtual ~FAbstractSphericalKernel(){
+        FMemUtils::DeleteAll(preL2LTransitions, treeHeight + periodicLevels);
         delete[] preL2LTransitions;
+        FMemUtils::DeleteAll(preM2MTransitions, treeHeight + periodicLevels);
         delete[] preM2MTransitions;
-        delete[] preM2LTransitions;
-
-        delete[] preL2LTransitionsPer;
-        delete[] preM2MTransitionsPer;
-        delete[] preM2LTransitionsPer;
     }
 
     /** P2M with a cell and all its particles */
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
-        FComplexe* const cellMultiPole = inPole->getMultipole();
+        FComplexe* FRestrict const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
         const F3DPosition polePosition = inPole->getPosition();
         // For all particles in the leaf box
@@ -225,68 +125,27 @@ public:
 
     /** M2M with a cell and all its child */
     void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
-        FComplexe* const multipole_exp_target = inPole->getMultipole();
+        FComplexe* FRestrict const multipole_exp_target = inPole->getMultipole();
         // iter on each child and process M2M
-        if( inLevel >= 0){
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if(inChild[idxChild]){
-                    multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitions[indexTransition(inLevel,idxChild)]);
-                }
-            }
-        }
-        else{
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if(inChild[idxChild]){
-                    multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitionsPer[indexTransition(-1-inLevel,idxChild)]);
-                }
+        const FComplexe* FRestrict const preM2MTransitionsAtLevel = preM2MTransitions[inLevel + periodicLevels];
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            if(inChild[idxChild]){
+                multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitionsAtLevel[idxChild * harmonic.getExpSize()]);
             }
         }
     }
 
     /** M2L with a cell and all the existing neighbors */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
-             const int size, const int inLevel) {
-        const FTreeCoordinate& coordCenter = pole->getCoordinate();
-        // For all neighbors compute M2L
-        if( inLevel >= 0){
-            for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-                const FTreeCoordinate& coordNeighbors = distantNeighbors[idxNeigh]->getCoordinate();
-                const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
-                                                      (coordCenter.getX() - coordNeighbors.getX()),
-                                                      (coordCenter.getY() - coordNeighbors.getY()),
-                                                      (coordCenter.getZ() - coordNeighbors.getZ()))];
-
-                multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-            }
-        }
-        else {
-            for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-                const FTreeCoordinate& coordNeighbors = distantNeighbors[idxNeigh]->getCoordinate();
-                const FComplexe* const transitionVector = &preM2LTransitionsPer[indexM2LTransition(-1-inLevel,
-                                                      (coordCenter.getX() - coordNeighbors.getX()),
-                                                      (coordCenter.getY() - coordNeighbors.getY()),
-                                                      (coordCenter.getZ() - coordNeighbors.getZ()))];
-
-                multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-            }
-        }
-    }
+    virtual void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
+             const int size, const int inLevel) = 0;
 
     /** L2L with a cell and all its child */
     void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
         // iter on each child and process L2L
-        if( inLevel >= 0){
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if(child[idxChild]){
-                    localToLocal(child[idxChild]->getLocal(), pole->getLocal(), &preL2LTransitions[indexTransition(inLevel,idxChild)]);
-                }
-            }
-        }
-        else{
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if(child[idxChild]){
-                    localToLocal(child[idxChild]->getLocal(), pole->getLocal(), &preL2LTransitionsPer[indexTransition(-1-inLevel,idxChild)]);
-                }
+        const FComplexe* FRestrict const preL2LTransitionsAtLevel = preL2LTransitions[inLevel + periodicLevels];
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            if(child[idxChild]){
+                localToLocal(child[idxChild]->getLocal(), pole->getLocal(), &preL2LTransitionsAtLevel[idxChild * harmonic.getExpSize()]);
             }
         }
     }
@@ -412,19 +271,9 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
              const FTreeCoordinate neighborsRelativePositions[189],
-             const int size, const int inLevel) {
-        // For all neighbors compute M2L
-        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-            const FComplexe* const transitionVector = &preM2LTransitions[indexM2LTransition(inLevel,
-                                                        neighborsRelativePositions[idxNeigh].getX(),
-                                                        neighborsRelativePositions[idxNeigh].getY(),
-                                                        neighborsRelativePositions[idxNeigh].getZ())];
-
-            multipoleToLocal(local->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-        }
-    }
+             const int size, const int inLevel) = 0;
 
 
     /** After Downward */
@@ -514,7 +363,7 @@ private:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void particleToMultiPole(FComplexe*const cellMultiPole, const F3DPosition& inPolePosition ,
+    void particleToMultiPole(FComplexe* const cellMultiPole, const F3DPosition& inPolePosition ,
                              const ParticleClass& particle){
 
         // Inner of Qi - Z0 => harmonic.result
@@ -530,7 +379,6 @@ private:
             for(int k = 0 ; k <= j ; ++k, ++index_j_k){
                 harmonic.result(index_j_k).mulRealAndImag( qParticle * minus_one_pow_j );
                 cellMultiPole[index_j_k] += harmonic.result(index_j_k);
-
             }
             // (-1)^J => -1 becomes 1 or 1 becomes -1
             minus_one_pow_j = -minus_one_pow_j;
@@ -638,107 +486,6 @@ private:
                 pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
             } // for l
         } // for n
-    }
-
-
-    /** M2L
-    *We compute the conversion of multipole_exp_src in *p_center_of_exp_src to
-    *a local expansion in *p_center_of_exp_target, and add the result to local_exp_target.
-    *
-    *O_n^l (with n=0..P, l=-n..n) being the former multipole expansion terms
-    *(whose center is *p_center_of_multipole_exp_src) we have for the new local
-    *expansion terms (whose center is *p_center_of_local_exp_target):
-    *
-    *L_j^k = sum{n=0..+}
-    *sum{l=-n..n}
-    *O_n^l Outer_{j+n}^{-k-l}(rho, alpha, beta)
-    *
-    *where (rho, alpha, beta) are the spherical coordinates of the vector :
-    *p_center_of_local_exp_src - *p_center_of_multipole_exp_target
-    *
-    *Remark: here we have always j+n >= |-k-l|
-      *
-      */
-    void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
-                          const FComplexe* const FRestrict M2L_Outer_transfer){
-        int index_j_k = 0;
-
-        // L_j^k
-        // HPMSTART(51, "M2L computation (loops)");
-        // j from 0 to P
-        for (int j = 0 ; j <= devP ; ++j){
-            // (-1)^k
-            FReal pow_of_minus_1_for_k = 1.0;
-            //k from 0 to j
-            for (int k = 0 ; k <= j ; ++k, ++index_j_k){
-                // (-1)^n
-                FReal pow_of_minus_1_for_n = 1.0;
-
-                // work with a local variable
-                FComplexe L_j_k = local_exp[index_j_k];
-                // n from 0 to P
-                for (int n = 0 ; n <= /*devP or*/ devP-j ; ++n){
-                    // O_n^l : here points on the source multipole expansion term of degree n and order |l|
-                    const int index_n = harmonic.getPreExpRedirJ(n);
-
-                    // Outer_{j+n}^{-k-l} : here points on the M2L transfer function/expansion term of degree j+n and order |-k-l|
-                    const int index_n_j = harmonic.getPreExpRedirJ(n+j);
-
-                    FReal pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
-
-                    // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
-                    int l = n;
-                    for(/* l = n */ ; l > 0 ; --l){ // we have -k-l<0 and l>0
-                        const FComplexe M_n_l = multipole_exp_src[index_n + l];
-                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
-
-                        L_j_k.incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
-                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
-                        L_j_k.incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
-                                                    ((M_n_l.getImag() * O_n_j__k_l.getReal()) -
-                                                     (M_n_l.getReal() * O_n_j__k_l.getImag())));
-
-                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
-                    }
-
-                    for(/* l = 0 */; l >= -n &&  (-k-l) < 0 ; --l){ // we have -k-l<0 and l<=0
-                        const FComplexe M_n_l = multipole_exp_src[index_n - l];
-                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
-
-                        L_j_k.incReal( pow_of_minus_1_for_k *
-                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) -
-                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
-                        L_j_k.decImag(  pow_of_minus_1_for_k *
-                                                     ((M_n_l.getImag() * O_n_j__k_l.getReal()) +
-                                                      (M_n_l.getReal() * O_n_j__k_l.getImag())));
-
-                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
-                    }
-
-                    for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
-                        const FComplexe M_n_l = multipole_exp_src[index_n - l];
-                        const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j - (k + l)];
-
-                        L_j_k.incReal( pow_of_minus_1_for_l *
-                                                    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
-                                                     (M_n_l.getImag() * O_n_j__k_l.getImag())));
-                        L_j_k.incImag( pow_of_minus_1_for_l *
-                                                    ((M_n_l.getReal() * O_n_j__k_l.getImag()) -
-                                                     (M_n_l.getImag() * O_n_j__k_l.getReal())));
-
-                        pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
-                    }
-
-                    pow_of_minus_1_for_n = -pow_of_minus_1_for_n;
-                }//n
-
-                // put in the local vector
-                local_exp[index_j_k] = L_j_k;
-
-                pow_of_minus_1_for_k = -pow_of_minus_1_for_k;
-            }//k
-        }
     }
 
 
@@ -1080,6 +827,6 @@ public:
 };
 
 
-#endif //FELECBASICKERNELS_HPP
+#endif //FABSTRACTSPHERICALKERNEL_HPP
 
 

@@ -1,17 +1,12 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
 #include <iostream>
@@ -30,7 +25,7 @@
 
 #include "../Src/Kernels/FSphericalKernel.hpp"
 #include "../Src/Kernels/FSphericalCell.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
 
 #include "../Src/Extensions/FExtendVelocity.hpp"
 
@@ -38,8 +33,9 @@
 #include "../Src/Files/FFmaLoader.hpp"
 #include "../Src/Arranger/FOctreeArranger.hpp"
 
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-class FmbVeloParticle : public FmbParticle, public FExtendVelocity {
+class FmmVeloParticle : public FSphericalParticle, public FExtendVelocity {
 };
 
 template <class ParticleClass>
@@ -72,8 +68,8 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbVeloParticle         ParticleClass;
-    typedef FSphericalCell            CellClass;
+    typedef FmmVeloParticle         ParticleClass;
+    typedef FSphericalCell          CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;

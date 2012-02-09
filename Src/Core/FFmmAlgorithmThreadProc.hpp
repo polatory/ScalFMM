@@ -1,17 +1,12 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 #ifndef FFMMALGORITHMTHREADPROC_HPP
 #define FFMMALGORITHMTHREADPROC_HPP
@@ -570,15 +565,12 @@ private:
             MPI_Status status[2 * nbProcess * OctreeHeight];
             int iterRequest = 0;
 
-            struct CellToSend{
-                MortonIndex index;
-                char data[CellClass::SerializedSizeUp];
-            };
+            const int SizeOfCellToSend = sizeof(MortonIndex) + CellClass::SerializedSizeUp;
 
-            CellToSend* sendBuffer[nbProcess * OctreeHeight];
+            char* sendBuffer[nbProcess * OctreeHeight];
             memset(sendBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
 
-            CellToSend* recvBuffer[nbProcess * OctreeHeight];
+            char* recvBuffer[nbProcess * OctreeHeight];
             memset(recvBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
 
 
@@ -586,22 +578,23 @@ private:
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                     if(toSendAtProcAtLevel != 0){
-                        sendBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toSendAtProcAtLevel];
+                        sendBuffer[idxLevel * nbProcess + idxProc] = new char[toSendAtProcAtLevel * SizeOfCellToSend];
 
                         for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
-                            sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].index = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
-                            toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf].data);
+                            const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
+                            memcpy(&sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf * SizeOfCellToSend],&cellIndex, sizeof(MortonIndex));
+                            toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(&sendBuffer[idxLevel * nbProcess + idxProc][idxLeaf * SizeOfCellToSend] + sizeof(MortonIndex));
                         }
 
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * int(sizeof(CellToSend)) , MPI_BYTE ,
+                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc], toSendAtProcAtLevel * SizeOfCellToSend , MPI_BYTE ,
                                              idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
 
                     const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                     if(toReceiveFromProcAtLevel){
-                        recvBuffer[idxLevel * nbProcess + idxProc] = new CellToSend[toReceiveFromProcAtLevel];
+                        recvBuffer[idxLevel * nbProcess + idxProc] = new char[toReceiveFromProcAtLevel * SizeOfCellToSend];
 
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * int(sizeof(CellToSend)), MPI_BYTE,
+                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc], toReceiveFromProcAtLevel * SizeOfCellToSend, MPI_BYTE,
                                             idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                     }
                 }
@@ -686,9 +679,12 @@ private:
                     FLightOctree tempTree;
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                         const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-                        const CellToSend* const cells = recvBuffer[idxLevel * nbProcess + idxProc];
+                        const char* const cells = recvBuffer[idxLevel * nbProcess + idxProc];
                         for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                            tempTree.insertCell(cells[idxCell].index, cells[idxCell].data, idxLevel);
+                            MortonIndex cellIndex = 0;
+                            memcpy(&cellIndex, &cells[idxCell * SizeOfCellToSend], sizeof(MortonIndex));
+                            const char* const cellData = &cells[idxCell * SizeOfCellToSend] + sizeof(MortonIndex);
+                            tempTree.insertCell(cellIndex, cellData, idxLevel);
                         }
                     }
 

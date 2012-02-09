@@ -1,17 +1,12 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 #ifndef FHARMONIC_HPP
 #define FHARMONIC_HPP
@@ -28,6 +23,7 @@
 class FHarmonic : public FNoAssignement {
     const int devP;     //< P
     const int expSize;  //< Exponen Size
+    const int nExpSize; //<
 
     FComplexe* harmonic;//< Harmonic Result
     FComplexe* cosSin;  //< Cos/Sin precomputed values
@@ -135,6 +131,7 @@ public:
 
     explicit FHarmonic(const int inDevP)
         : devP(inDevP),expSize(int(((inDevP)+1) * ((inDevP)+2) * 0.5)),
+          nExpSize((inDevP + 1) * (inDevP + 1)),
           harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
           sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0), preExpRedirJ(0)  {
 
@@ -142,7 +139,7 @@ public:
     }
 
     FHarmonic(const FHarmonic& other)
-        : devP(other.devP),expSize(int(((other.devP)+1) * ((other.devP)+2) * 0.5)),
+        : devP(other.devP),expSize(other.expSize), nExpSize(other.expSize),
           harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
           sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0), preExpRedirJ(0)  {
 
@@ -161,6 +158,10 @@ public:
 
     int getExpSize() const{
         return expSize;
+    }
+
+    int getNExpSize() const{
+        return nExpSize;
     }
 
     FComplexe* result(){

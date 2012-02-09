@@ -1,17 +1,12 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
 #include <iostream>
@@ -30,11 +25,10 @@
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Fmb/FFmbKernelsBlockBlas.hpp"
-#include "../Src/Fmb/FFmbKernelsBlas.hpp"
-#include "../Src/Fmb/FFmbKernels.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalBlasKernel.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 
@@ -47,19 +41,19 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbParticle             ParticleClass;
-    typedef FmbCell                 CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef FSphericalParticle             ParticleClass;
+    typedef FSphericalCell                 CellClass;
+    typedef FVector<ParticleClass>         ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FFmbKernelsBlockBlas<ParticleClass, CellClass, ContainerClass > KernelClass;
+    typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
-
+    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
@@ -74,7 +68,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-
+    CellClass::Init(DevP);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -99,7 +93,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(NbLevels,loader.getBoxWidth());
+    KernelClass kernels(DevP, NbLevels, loader.getBoxWidth());
 
     FmmClass algo(&tree,&kernels);
     algo.execute();

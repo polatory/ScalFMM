@@ -1,30 +1,24 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FMpi.hpp"
-#include "../Src/Utils/FAbstractSendable.hpp"
 #include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Fmb/FExtendFmbCell.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
-#include "../Src/Fmb/FFmbKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
@@ -53,11 +47,11 @@
 // to test equality between good and potentialy bad solution
 ///////////////////////////////////////////////////////
 /** To compare data */
-bool isEqualPole(const FmbSendableCell& me, const FmbSendableCell& other, FReal*const cumul){
+bool isEqualPole(const FSphericalCell& me, const FSphericalCell& other, FReal*const cumul){
     //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
     //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
     *cumul = 0.0;
-    for(int idx = 0; idx < FExtendFmbCell::MultipoleSize; ++idx){
+    for(int idx = 0; idx < FSphericalCell::GetPoleSize(); ++idx){
         *cumul += FMath::Abs( me.getMultipole()[idx].getImag() - other.getMultipole()[idx].getImag() );
         *cumul += FMath::Abs( me.getMultipole()[idx].getReal() - other.getMultipole()[idx].getReal() );
     }
@@ -66,11 +60,11 @@ bool isEqualPole(const FmbSendableCell& me, const FmbSendableCell& other, FReal*
 }
 
 /** To compare data */
-bool isEqualLocal(const FmbSendableCell& me, const FmbSendableCell& other, FReal*const cumul){
+bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other, FReal*const cumul){
     //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
     //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
     *cumul = 0.0;
-    for(int idx = 0; idx < FExtendFmbCell::MultipoleSize; ++idx){
+    for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
         *cumul += FMath::Abs( me.getLocal()[idx].getImag() - other.getLocal()[idx].getImag() );
         *cumul += FMath::Abs( me.getLocal()[idx].getReal() - other.getLocal()[idx].getReal() );
     }
@@ -103,10 +97,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 }
                 else{
                     FReal cumul;
-                    if( !octreeIterator.getCurrentCell()->isEqualPole(*octreeIteratorValide.getCurrentCell(),&cumul) ){
+                    if( !isEqualPole(*octreeIterator.getCurrentCell(),*octreeIteratorValide.getCurrentCell(),&cumul) ){
                         std::cout << "Pole Data are different." << " Cumul " << cumul << std::endl;
                     }
-                    if( !octreeIterator.getCurrentCell()->isEqualLocal(*octreeIteratorValide.getCurrentCell(),&cumul) ){
+                    if( !isEqualLocal(*octreeIterator.getCurrentCell(),*octreeIteratorValide.getCurrentCell(),&cumul) ){
                         std::cout << "Local Data are different." << " Cumul " << cumul << std::endl;
                     }
                 }
@@ -175,13 +169,13 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbParticle             ParticleClass;
-    typedef FmbSendableCell                 CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef FSphericalParticle             ParticleClass;
+    typedef FSendableSphericalCell         CellClass;
+    typedef FVector<ParticleClass>         ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
@@ -191,6 +185,7 @@ int main(int argc, char ** argv){
 
     FMpi app( argc, argv);
 
+    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
@@ -205,7 +200,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-
+    CellClass::Init(DevP);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -244,7 +239,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(NbLevels,loader.getBoxWidth());
+    KernelClass kernels(DevP, NbLevels,loader.getBoxWidth());
     FmmClass algo(app.global(),&tree,&kernels);
     algo.execute();
 

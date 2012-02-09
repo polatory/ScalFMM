@@ -1,17 +1,12 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
 #include <iostream>
@@ -25,9 +20,9 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Fmb/FExtendFmbCell.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
-#include "../Src/Fmb/FFmbKernels.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmTsm.hpp"
@@ -47,23 +42,23 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbParticle             ParticleClass;
-    typedef FmbCell                 CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef FSphericalParticle             ParticleClass;
+    typedef FSphericalCell                 CellClass;
+    typedef FVector<ParticleClass>         ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                      LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-    typedef FmbTypedParticle             ParticleClassTyped;
-    typedef FmbTypedCell                 CellClassTyped;
+    typedef FTypedSphericalParticle             ParticleClassTyped;
+    typedef FTypedSphericalCell                 CellClassTyped;
     typedef FVector<ParticleClassTyped>  ContainerClassTyped;
 
     typedef FTypedLeaf<ParticleClassTyped, ContainerClassTyped >                      LeafClassTyped;
     typedef FOctree<ParticleClassTyped, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
-    typedef FFmbKernels<ParticleClassTyped, CellClassTyped, ContainerClassTyped >          KernelClassTyped;
+    typedef FSphericalKernel<ParticleClassTyped, CellClassTyped, ContainerClassTyped >          KernelClassTyped;
 
     typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
 
@@ -71,7 +66,7 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
     std::cout << ">> It compares the results between Tms and no Tms (except P2P & L2P).\n";
     //////////////////////////////////////////////////////////////
-
+    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
@@ -82,6 +77,8 @@ int main(int argc, char ** argv){
 
 
     // -----------------------------------------------------
+    CellClass::Init(DevP);
+
     OctreeClass tree(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
     OctreeClassTyped treeTyped(NbLevels, SizeSubLevels,BoxWidth,CenterOfBox);
 
@@ -123,8 +120,8 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(NbLevels,BoxWidth);
-    KernelClassTyped kernelsTyped(NbLevels,BoxWidth);
+    KernelClass kernels(DevP, NbLevels, BoxWidth);
+    KernelClassTyped kernelsTyped(DevP, NbLevels, BoxWidth);
 
     FmmClass algo(&tree,&kernels);
     FmmClassTyped algoTyped(&treeTyped,&kernelsTyped);
@@ -153,7 +150,7 @@ int main(int argc, char ** argv){
             do{
                 bool poleDiff = false;
                 bool localDiff = false;
-                for(int idxValues = 0 ; idxValues < FExtendFmbCell::MultipoleSize && !(poleDiff && localDiff); ++idxValues){
+                for(int idxValues = 0 ; idxValues < FSphericalCell::GetPoleSize() && !(poleDiff && localDiff); ++idxValues){
                     const FComplexe pole = octreeIterator.getCurrentCell()->getMultipole()[idxValues];
                     const FComplexe poleTyped = octreeIteratorTyped.getCurrentCell()->getMultipole()[idxValues];
                     if(!FMath::LookEqual(pole.getImag(),poleTyped.getImag()) || !FMath::LookEqual(pole.getReal(),poleTyped.getReal())){
@@ -161,6 +158,8 @@ int main(int argc, char ** argv){
                         printf("Pole diff imag( %.15e , %.15e ) real( %.15e , %.15e)\n",
                                pole.getImag(),poleTyped.getImag(),pole.getReal(),poleTyped.getReal());
                     }
+                }
+                for(int idxValues = 0 ; idxValues < FSphericalCell::GetPoleSize() && !(poleDiff && localDiff); ++idxValues){
                     const FComplexe local = octreeIterator.getCurrentCell()->getLocal()[idxValues];
                     const FComplexe localTyped = octreeIteratorTyped.getCurrentCell()->getLocal()[idxValues];
                     if(!FMath::LookEqual(local.getImag(),localTyped.getImag()) || !FMath::LookEqual(local.getReal(),localTyped.getReal())){

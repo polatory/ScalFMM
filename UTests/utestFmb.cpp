@@ -1,26 +1,20 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Kernels/FSphericalKernel.hpp"
-
-#include "../Src/Fmb/FFmbKernels.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Files/FFmaBinLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
@@ -35,7 +29,7 @@
   */
 
 /** The result of a previous simulation has been saved and will be oponed */
-class FmbParticleSerial : public FmbParticle, public FTreeIO::FAbstractSerial {
+class ParticleSerial : public FSphericalParticle, public FTreeIO::FAbstractSerial {
 public:
     void write(std::ofstream*const stream) const{
         save(stream, getPosition().getX());
@@ -68,21 +62,20 @@ public:
 class ComputeCellSerial : public FSphericalCell, public FTreeIO::FAbstractSerial {
 public:
     void write(std::ofstream*const stream) const{
-        saveArray(stream, FSphericalCell::getMultipole(), FSphericalCell::ExpP);
-        saveArray(stream, FSphericalCell::getLocal(), FSphericalCell::ExpP);
+        saveArray(stream, FSphericalCell::getMultipole(), FSphericalCell::GetPoleSize());
+        saveArray(stream, FSphericalCell::getLocal(), FSphericalCell::GetLocalSize());
     }
 
     void read(std::ifstream*const stream){
-        restoreArray(stream, FSphericalCell::getMultipole(), FSphericalCell::ExpP);
-        restoreArray(stream, FSphericalCell::getLocal(), FSphericalCell::ExpP);
+        restoreArray(stream, FSphericalCell::getMultipole(), FSphericalCell::GetPoleSize());
+        restoreArray(stream, FSphericalCell::getLocal(), FSphericalCell::GetLocalSize());
     }
 };
 
-typedef FmbParticleSerial       ParticleClass;
+typedef ParticleSerial       ParticleClass;
 typedef ComputeCellSerial             CellClass;
 typedef FVector<ParticleClass>  ContainerClass;
 
-//typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
@@ -193,10 +186,10 @@ class TestFmb : public FUTester<TestFmb> {
                     }
 
                     assert( memcmp(testOctreeIterator.getCurrentCell()->getLocal(),
-                                   goodOctreeIterator.getCurrentCell()->getLocal(), CellClass::GetExp() * sizeof(FComplexe)) == 0);
+                                   goodOctreeIterator.getCurrentCell()->getLocal(), CellClass::GetLocalSize() * sizeof(FComplexe)) == 0);
 
                     assert( memcmp(testOctreeIterator.getCurrentCell()->getMultipole(),
-                                   goodOctreeIterator.getCurrentCell()->getMultipole(),CellClass::GetExp() * sizeof(FComplexe)) == 0);
+                                   goodOctreeIterator.getCurrentCell()->getMultipole(),CellClass::GetPoleSize() * sizeof(FComplexe)) == 0);
 
                     if(!testOctreeIterator.moveRight()){
                         if(goodOctreeIterator.moveRight()){

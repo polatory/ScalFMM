@@ -8,11 +8,20 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#include "FMath.hpp"
+#ifndef FSPHERICALPARTICLE_HPP
+#define FSPHERICALPARTICLE_HPP
 
-// Constant values
-const FReal FMath::FPi = FReal(M_PI);
-const FReal FMath::FPiDiv2 = FReal(M_PI_2);
-const FReal FMath::Epsilon = FReal(0.00000000000000000001);
+#include "../Extensions/FExtendForces.hpp"
+#include "../Extensions/FExtendPotential.hpp"
+#include "../Extensions/FExtendParticleType.hpp"
+#include "../Components/FFmaParticle.hpp"
 
+class FSphericalParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
+public:
+};
 
+class FTypedSphericalParticle : public FSphericalParticle, public FExtendParticleType {
+public:
+};
+
+#endif // FSPHERICALPARTICLE_HPP
