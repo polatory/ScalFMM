@@ -16,6 +16,7 @@
 #include <time.h>
 
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -33,7 +34,7 @@
 * In this file we show how to use octree
 */
 
-int main(int , char ** ){    
+int main(int argc, char ** argv){
     typedef FVector<FBasicParticle>      ContainerClass;
     typedef FSimpleLeaf<FBasicParticle, ContainerClass >                     LeafClass;
     typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -42,7 +43,7 @@ int main(int , char ** ){
     std::cout << ">> It is only interesting to wath the code to understand\n";
     std::cout << ">> how to use the Octree\n";
     //////////////////////////////////////////////////////////////
-    const long NbPart = 2000000;
+    const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
     FTic counter;
 
     FRandomLoader<FBasicParticle> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
