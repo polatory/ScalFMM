@@ -71,11 +71,8 @@ int main(int argc, char ** argv){
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
 
-        FBasicParticle part;
-        for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
-            loader.fillParticle(part);
-            tree.insert(part);
-        }
+        loader.fillTree(tree);
+
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 

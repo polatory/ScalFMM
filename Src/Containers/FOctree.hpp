@@ -141,13 +141,35 @@ public:
         return this->boxCenter;
     }
 
+    /** Count the number of cells per level,
+      * it will iter on the tree to do that!
+      */
+    void getNbCellsPerLevel(int inNbCells[]){
+        Iterator octreeIterator(this);
+        octreeIterator.gotoBottomLeft();
+
+        Iterator avoidGoLeft(octreeIterator);
+
+        for(int idxLevel = height - 1 ; idxLevel > 0; --idxLevel ){
+            int counter = 0;
+            do{
+                ++counter;
+            } while(octreeIterator.moveRight());
+            avoidGoLeft.moveUp();
+            octreeIterator = avoidGoLeft;
+            inNbCells[idxLevel] = counter;
+        }
+
+        inNbCells[0] = 0;
+    }
+
     /**
- * Insert a particle on the tree
- * algorithm is :
- * Compute morton index for the particle
- * ask node to insert this particle
- * @param inParticle the particle to insert (must inherite from FAbstractParticle)
- */
+     * Insert a particle on the tree
+     * algorithm is :
+     * Compute morton index for the particle
+     * ask node to insert this particle
+     * @param inParticle the particle to insert (must inherite from FAbstractParticle)
+     */
     void insert(const ParticleClass& inParticle){
         const FTreeCoordinate host = getCoordinateFromPosition( inParticle.getPosition() );
         const MortonIndex particleIndex = host.getMortonIndex(leafIndex);

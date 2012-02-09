@@ -21,8 +21,8 @@
     #ifndef POSIX
         #warning Posix used withoug being explicitly defined
     #endif
-    #if defined(__i386__) || defined(__pentium__) || defined(__pentiumpro__) || defined(__i586__) || defined(__i686__) || defined(__k6__) || defined(__k7__) || defined(__x86_64__)
-        #define FSPECIAL_TIMER
+    #if defined(SCALFMM_USE_SPECIAL_TIMER) && ( defined(__i386__) || defined(__pentium__) || defined(__pentiumpro__) || defined(__i586__) || defined(__i686__) || defined(__k6__) || defined(__k7__) || defined(__x86_64__))
+        #define SCALFMM_SPECIAL_TIMER
     #endif
     #include <sys/time.h>
     #include <unistd.h>
@@ -95,11 +95,11 @@ public:
 #ifdef WINDOWS
         return static_cast<double>(GetTickCount())/1000.0;
 #else // We are in linux/posix
-#ifndef FSPECIAL_TIMER
+#ifndef SCALFMM_SPECIAL_TIMER
         timeval t;
         gettimeofday(&t, NULL);
         return double(t.tv_sec) + (double(t.tv_usec)/1000000.0);
-#else //FSPECIAL_TIMER is defined
+#else //SCALFMM_SPECIAL_TIMER is defined
         typedef union u_tick {
           uint64_t tick;
           struct {
@@ -115,7 +115,7 @@ public:
 #endif
     }
 
-#ifdef FSPECIAL_TIMER
+#ifdef SCALFMM_SPECIAL_TIMER
     static const double Scale;
 #endif
 };

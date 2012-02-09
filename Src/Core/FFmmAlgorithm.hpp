@@ -48,7 +48,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels)
-                      : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
+        : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
@@ -70,6 +70,8 @@ public:
         bottomPass();
 
         upwardPass();
+
+        transferPass();
 
         downardPass();
 
@@ -143,69 +145,73 @@ private:
     }
 
     /////////////////////////////////////////////////////////////////////////////
+    // Transfer
+    /////////////////////////////////////////////////////////////////////////////
+
+    /** M2L */
+    void transferPass(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter);
+
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.moveDown();
+
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+        const CellClass* neighbors[189];
+
+        // for each levels
+        for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            // for each cells
+            do{
+                const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                FDEBUG(computationCounter.tic());
+                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                FDEBUG(computationCounter.tac());
+            } while(octreeIterator.moveRight());
+
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
+        }
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
     // Downward
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2L L2L */
+    /** L2L */
     void downardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic computationCounter );
 
-        { // first M2L
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-            FDEBUG(FTic computationCounter);
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.moveDown();
 
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.moveDown();
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        const int heightMinusOne = OctreeHeight - 1;
+        // for each levels exepted leaf level
+        for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            // for each cells
+            do{
+                FDEBUG(computationCounter.tic());
+                kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
+                FDEBUG(computationCounter.tac());
+            } while(octreeIterator.moveRight());
 
-            const CellClass* neighbors[189];
-
-            // for each levels
-            for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                // for each cells
-                do{
-                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
-                    FDEBUG(computationCounter.tic());
-                    if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
-                    FDEBUG(computationCounter.tac());
-                } while(octreeIterator.moveRight());
-
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-            }
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
         }
 
-        { // second L2L            
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-            FDEBUG(FTic computationCounter );
-
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.moveDown();
-
-            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-            const int heightMinusOne = OctreeHeight - 1;
-            // for each levels exepted leaf level
-            for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-                // for each cells
-                do{
-                    FDEBUG(computationCounter.tic());
-                    kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
-                    FDEBUG(computationCounter.tac());
-                } while(octreeIterator.moveRight());
-
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-            }
-
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        }
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
 
 
     }

@@ -50,8 +50,8 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmTask(OctreeClass* const inTree, KernelClass* const inKernels)
-                      : tree(inTree) , kernels(0),
-                        MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()) {
+        : tree(inTree) , kernels(0),
+          MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(inKernels, "kernels cannot be null", __LINE__, __FILE__);
@@ -83,6 +83,8 @@ public:
 
         upwardPass();
 
+        transferPass();
+
         downardPass();
 
         directPass();         
@@ -99,11 +101,11 @@ private:
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
 
@@ -112,14 +114,14 @@ private:
                 do{
                     // We need the current cell that represent the leaf
                     // and the list of particles
-                    #pragma omp task
+#pragma omp task
                     {
                         myThreadkernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
                     }
 
                 } while(octreeIterator.moveRight());
 
-                #pragma omp taskwait
+#pragma omp taskwait
             }
         }
 
@@ -136,11 +138,11 @@ private:
         FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 // Start from leal level - 1
                 typename OctreeClass::Iterator octreeIterator(tree);
@@ -155,7 +157,7 @@ private:
                     do{
                         // We need the current cell and the child
                         // child is an array (of 8 child) that may be null
-                        #pragma omp task
+#pragma omp task
                         {
                             myThreadkernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                         }
@@ -164,7 +166,7 @@ private:
                     avoidGotoLeftIterator.moveUp();
                     octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-                    #pragma omp taskwait
+#pragma omp taskwait
                 }
             }
         }
@@ -174,92 +176,94 @@ private:
     }
 
     /////////////////////////////////////////////////////////////////////////////
-    // Downward
+    // Transfer
     /////////////////////////////////////////////////////////////////////////////
 
     /** M2L L2L */
-    void downardPass(){
+    void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        { // first M2L
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-            #pragma omp parallel
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+#pragma omp parallel
+        {
+            KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
+            const CellClass* neighbors[189];
+
+#pragma omp single nowait
             {
-                KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
-                const CellClass* neighbors[189];
+                typename OctreeClass::Iterator octreeIterator(tree);
+                octreeIterator.moveDown();
 
-                #pragma omp single nowait
-                {
-                    typename OctreeClass::Iterator octreeIterator(tree);
-                    octreeIterator.moveDown();
-
-                    typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+                typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
 
-                    // for each levels
-                    for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                        // for each cells
-                        do{
-                            const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
-                            if(counter){
-                                #pragma omp task
-                                {
-                                    myThreadkernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
-                                }
-                            }
-                        } while(octreeIterator.moveRight());
-
-                        avoidGotoLeftIterator.moveDown();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        #pragma omp taskwait
-                    }
-                }
-            }
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        }
-
-        { // second L2L            
-            FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-            FDEBUG(FTic counterTime);
-
-            #pragma omp parallel
-            {
-                KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
-
-                #pragma omp single nowait
-                {
-                    typename OctreeClass::Iterator octreeIterator(tree);
-                    octreeIterator.moveDown();
-
-                    typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-                    const int heightMinusOne = OctreeHeight - 1;
-                    // for each levels exepted leaf level
-                    for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-                        // for each cells
-                        do{
-                            #pragma omp task
+                // for each levels
+                for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    // for each cells
+                    do{
+                        const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                        if(counter){
+#pragma omp task
                             {
-                                myThreadkernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
+                                myThreadkernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                             }
+                        }
+                    } while(octreeIterator.moveRight());
 
-                        } while(octreeIterator.moveRight());
+                    avoidGotoLeftIterator.moveDown();
+                    octreeIterator = avoidGotoLeftIterator;
 
-                        avoidGotoLeftIterator.moveDown();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        #pragma omp taskwait
-                    }
+#pragma omp taskwait
                 }
             }
+        }
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
 
-            FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    /////////////////////////////////////////////////////////////////////////////
+    // Downward
+    /////////////////////////////////////////////////////////////////////////////
+
+    void downardPass(){ // second L2L
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+
+#pragma omp parallel
+        {
+            KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
+
+#pragma omp single nowait
+            {
+                typename OctreeClass::Iterator octreeIterator(tree);
+                octreeIterator.moveDown();
+
+                typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+                const int heightMinusOne = OctreeHeight - 1;
+                // for each levels exepted leaf level
+                for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+                    // for each cells
+                    do{
+#pragma omp task
+                        {
+                            myThreadkernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
+                        }
+
+                    } while(octreeIterator.moveRight());
+
+                    avoidGotoLeftIterator.moveDown();
+                    octreeIterator = avoidGotoLeftIterator;
+
+#pragma omp taskwait
+                }
+            }
         }
 
-
+        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
+
 
     /////////////////////////////////////////////////////////////////////////////
     // Direct
@@ -273,14 +277,14 @@ private:
 
         const int heightMinusOne = OctreeHeight - 1;
 
-        #pragma omp parallel
+#pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
             MortonIndex neighborsIndex[26];
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 const int SizeShape = 3*3*3;
                 FVector<typename OctreeClass::Iterator> shapes[SizeShape];
@@ -290,7 +294,7 @@ private:
 
                 // for each leafs
                 do{
-                    #pragma omp task
+#pragma omp task
                     {
                         myThreadkernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
                     }
@@ -299,7 +303,7 @@ private:
                     const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
 
                     if( shapePosition == 0){
-                        #pragma omp task
+#pragma omp task
                         {
                             // need the current particles and neighbors particles
                             const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
@@ -312,20 +316,20 @@ private:
 
                 } while(octreeIterator.moveRight());
 
-                #pragma omp taskwait
+#pragma omp taskwait
 
                 for( int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
                     int iterLeaf = shapes[idxShape].getSize();
                     while( iterLeaf-- ){
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-                        #pragma omp task
+#pragma omp task
                         {
                             const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, toWork.getCurrentGlobalIndex(),heightMinusOne);
                             myThreadkernels->P2P(toWork.getCurrentGlobalIndex(),toWork.getCurrentListTargets(), toWork.getCurrentListSrc() , neighbors, neighborsIndex, counter);
                         }
                     }
 
-                    #pragma omp taskwait
+#pragma omp taskwait
                 }
             }
         }

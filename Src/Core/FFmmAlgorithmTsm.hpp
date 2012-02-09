@@ -71,12 +71,15 @@ public:
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         bottomPass();
+
         upwardPass();
+
+        transferPass();
 
         downardPass();
 
         directPass();
-         
+
     }
 
     /** P2M */
@@ -109,7 +112,7 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
-         
+
     }
 
     /** M2M */
@@ -162,100 +165,102 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
-         
+
     }
 
-    /** M2L L2L */
-    void downardPass(){
+    /** M2L */
+    void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
         FDEBUG( counterTime.tic() );
         FDEBUG( double totalComputation = 0 );
 
-        { // first M2L
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.moveDown();
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.moveDown();
 
-            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-            const CellClass* neighbors[189];
+        const CellClass* neighbors[189];
 
-            // for each levels
-            for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                // for each cells
-                do{
-                    FDEBUG(computationCounter.tic());
-                    CellClass* const currentCell = octreeIterator.getCurrentCell();
-                    if(currentCell->hasTargetsChild()){
-                        const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
-                        int offsetTargetNeighbors = 0;
-                        for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
-                            if(neighbors[idxRealNeighbors]->hasSrcChild()){
-                                if(idxRealNeighbors != offsetTargetNeighbors){
-                                    neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
-                                }
-                            }
-                            else{
-                                --offsetTargetNeighbors;
+        // for each levels
+        for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            // for each cells
+            do{
+                FDEBUG(computationCounter.tic());
+                CellClass* const currentCell = octreeIterator.getCurrentCell();
+                if(currentCell->hasTargetsChild()){
+                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
+                    int offsetTargetNeighbors = 0;
+                    for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
+                        if(neighbors[idxRealNeighbors]->hasSrcChild()){
+                            if(idxRealNeighbors != offsetTargetNeighbors){
+                                neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
                             }
                         }
-                        if(offsetTargetNeighbors){
-                            kernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
+                        else{
+                            --offsetTargetNeighbors;
                         }
                     }
-                    FDEBUG(computationCounter.tac());
-                    FDEBUG(totalComputation += computationCounter.elapsed());
-                } while(octreeIterator.moveRight());
+                    if(offsetTargetNeighbors){
+                        kernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
+                    }
+                }
+                FDEBUG(computationCounter.tac());
+                FDEBUG(totalComputation += computationCounter.elapsed());
+            } while(octreeIterator.moveRight());
 
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-            }
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
         }
+
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+    }
 
+    /** L2L */
+    void downardPass(){
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
         FDEBUG( counterTime.tic() );
-        FDEBUG( totalComputation = 0 );
-        { // second L2L
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.moveDown();
+        FDEBUG( double totalComputation = 0 );
 
-            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.moveDown();
 
-            const int heightMinusOne = OctreeHeight - 1;
-            // for each levels exepted leaf level
-            for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-                // for each cells
-                do{
-                    FDEBUG(computationCounter.tic());
-                    CellClass* potentialChild[8];
-                    CellClass** const realChild = octreeIterator.getCurrentChild();
-                    CellClass* const currentCell = octreeIterator.getCurrentCell();
-                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                            potentialChild[idxChild] = realChild[idxChild];
-                        }
-                        else{
-                            potentialChild[idxChild] = 0;
-                        }
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+        const int heightMinusOne = OctreeHeight - 1;
+        // for each levels exepted leaf level
+        for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            // for each cells
+            do{
+                FDEBUG(computationCounter.tic());
+                CellClass* potentialChild[8];
+                CellClass** const realChild = octreeIterator.getCurrentChild();
+                CellClass* const currentCell = octreeIterator.getCurrentCell();
+                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                    if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                        potentialChild[idxChild] = realChild[idxChild];
                     }
-                    kernels->L2L( currentCell , potentialChild, idxLevel);
-                    FDEBUG(computationCounter.tac());
-                    FDEBUG(totalComputation += computationCounter.elapsed());
-                } while(octreeIterator.moveRight());
+                    else{
+                        potentialChild[idxChild] = 0;
+                    }
+                }
+                kernels->L2L( currentCell , potentialChild, idxLevel);
+                FDEBUG(computationCounter.tac());
+                FDEBUG(totalComputation += computationCounter.elapsed());
+            } while(octreeIterator.moveRight());
 
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-            }
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
         }
 
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
-         
     }
+
+
 
     /** P2P */
     void directPass(){
@@ -284,7 +289,7 @@ public:
         FDEBUG( counterTime.tac() );
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << totalComputation << " s\n" );
-         
+
     }
 
 };

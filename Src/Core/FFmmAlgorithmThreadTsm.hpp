@@ -96,7 +96,10 @@ public:
         fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
         bottomPass();
+
         upwardPass();
+
+        transferPass();
 
         downardPass();
 
@@ -208,11 +211,10 @@ public:
 
     }
 
-    /** M2L L2L */
-    void downardPass(){
+    /** M2L */
+    void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        { // first M2L
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
@@ -266,7 +268,10 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-        { // second L2L
+        /* L2L */
+        void downardPass(){
+            FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+
             FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
             FDEBUG(FTic counterTime);
             FDEBUG(FTic computationCounter);
@@ -314,8 +319,6 @@ public:
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
-
-    }
 
     /** P2P */
     void directPass(){
