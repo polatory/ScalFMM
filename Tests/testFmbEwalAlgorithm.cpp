@@ -27,7 +27,7 @@
 
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
-#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Kernels/FSphericalKernel.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
@@ -75,7 +75,7 @@ public:
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef EwalParticle            ParticleClass;
-    typedef FComputeCell            CellClass;
+    typedef FSphericalCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;

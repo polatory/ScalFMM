@@ -29,7 +29,7 @@
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../Src/Kernels/FSphericalKernel.hpp"
-#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Extensions/FExtendVelocity.hpp"
@@ -73,7 +73,7 @@ public:
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef FmbVeloParticle         ParticleClass;
-    typedef FComputeCell            CellClass;
+    typedef FSphericalCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
@@ -90,7 +90,7 @@ int main(int argc, char ** argv){
     const FReal DT          = FParameters::getValue(argc,argv,"-dt", FReal(0.1));
     const int DevP          = FParameters::getValue(argc,argv,"-p", 5);
 
-    FComputeCell::Init(DevP);
+    FSphericalCell::Init(DevP);
 
     GalaxyLoader<ParticleClass> loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
 

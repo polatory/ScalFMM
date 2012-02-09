@@ -18,7 +18,7 @@
 
 #include "../Src/Fmb/FFmbComponents.hpp"
 
-#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 
 #include "../Src/Kernels/FSphericalKernel.hpp"
 
@@ -51,7 +51,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
     /** The test */
     void TestDirect(){
         typedef IndexedParticle         ParticleClass;
-        typedef FComputeCell            CellClass;
+        typedef FSphericalCell            CellClass;
         typedef FVector<ParticleClass>  ContainerClass;
 
         typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
@@ -73,7 +73,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
 
         const int NbPart = NbSmallBoxesPerSide * NbSmallBoxesPerSide * NbSmallBoxesPerSide;
 
-        FComputeCell::Init(DevP);
+        FSphericalCell::Init(DevP);
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, F3DPosition(0.5,0.5,0.5));

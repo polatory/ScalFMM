@@ -16,7 +16,7 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Kernels/FSphericalKernel.hpp"
 
 #include "../Src/Fmb/FFmbKernels.hpp"
@@ -65,16 +65,16 @@ public:
 };
 
 /** The result of a previous simulation has been saved and will be oponed */
-class ComputeCellSerial : public FComputeCell, public FTreeIO::FAbstractSerial {
+class ComputeCellSerial : public FSphericalCell, public FTreeIO::FAbstractSerial {
 public:
     void write(std::ofstream*const stream) const{
-        saveArray(stream, FComputeCell::getMultipole(), FComputeCell::ExpP);
-        saveArray(stream, FComputeCell::getLocal(), FComputeCell::ExpP);
+        saveArray(stream, FSphericalCell::getMultipole(), FSphericalCell::ExpP);
+        saveArray(stream, FSphericalCell::getLocal(), FSphericalCell::ExpP);
     }
 
     void read(std::ifstream*const stream){
-        restoreArray(stream, FComputeCell::getMultipole(), FComputeCell::ExpP);
-        restoreArray(stream, FComputeCell::getLocal(), FComputeCell::ExpP);
+        restoreArray(stream, FSphericalCell::getMultipole(), FSphericalCell::ExpP);
+        restoreArray(stream, FSphericalCell::getLocal(), FSphericalCell::ExpP);
     }
 };
 
@@ -101,7 +101,7 @@ class TestFmb : public FUTester<TestFmb> {
         const int SizeSubLevels = 3;
         const int DevP = 12;
 
-        FComputeCell::Init(DevP);
+        FSphericalCell::Init(DevP);
 
         // Load the particles file
         FFmaBinLoader<ParticleClass> loader(ParticleFile);

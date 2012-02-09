@@ -19,7 +19,7 @@
 #include "../Src/Fmb/FFmbKernels.hpp"
 #include "../Src/Fmb/FFmbComponents.hpp"
 
-#include "../Src/Kernels/FComputeCell.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 
 #include "../Src/Kernels/FSphericalKernel.hpp"
 
@@ -53,7 +53,7 @@ public:
 class TestFmbDirect : public FUTester<TestFmbDirect> {
     typedef IndexedParticle         ParticleClass;
     //typedef FmbCell            CellClass;
-    typedef FComputeCell            CellClass;
+    typedef FSphericalCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     //typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
@@ -80,7 +80,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
         const int DevP = 12;
-        FComputeCell::Init(DevP);
+        FSphericalCell::Init(DevP);
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
