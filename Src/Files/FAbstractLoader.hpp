@@ -33,39 +33,51 @@ class F3DPosition;
 template <class ParticleClass>
 class FAbstractLoader {
 public:	
-	/** Default destructor */
-	virtual ~FAbstractLoader(){
-	}
+    /** Default destructor */
+    virtual ~FAbstractLoader(){
+    }
 
-        /**
+    /**
         * Get the number of particles for this simulation
         * @return number of particles that the loader can fill
         */
-        virtual FSize getNumberOfParticles() const = 0;
+    virtual FSize getNumberOfParticles() const = 0;
 
-        /**
+    /**
         * Get the center of the simulation box
         * @return box center needed by the octree
         */
-        virtual F3DPosition getCenterOfBox() const = 0;
+    virtual F3DPosition getCenterOfBox() const = 0;
 
-        /**
+    /**
         * Get the simulation box width
         * @return box width needed by the octree
         */
-        virtual FReal getBoxWidth() const = 0;
+    virtual FReal getBoxWidth() const = 0;
 
-        /**
+    /**
         * To know if the loader is valide (file opened, etc.)
         * @return true if file is open
         */
-        virtual bool isOpen() const = 0;
+    virtual bool isOpen() const = 0;
 
-        /**
+    /**
         * Fill the next particle
         * @param inParticle the particle to fill
         */
-        virtual void fillParticle(ParticleClass& inParticle) = 0;
+    virtual void fillParticle(ParticleClass& inParticle) = 0;
+
+    /** Fill a tree with all the particle of the current loader
+      * @param tree the tree to fill
+      */
+    template <class OctreeClass>
+    void fillTree(OctreeClass& tree){
+        ParticleClass particleToFill;
+        for(int idxPart = 0 ; idxPart < getNumberOfParticles() ; ++idxPart){
+            fillParticle(particleToFill);
+            tree.insert(particleToFill);
+        }
+    }
 };
 
 

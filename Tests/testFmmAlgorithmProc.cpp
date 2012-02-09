@@ -362,7 +362,7 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }    
     else{
-        realTree.fillWithLoader(loader);
+        loader.fillTree(realTree);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -372,7 +372,7 @@ int main(int argc, char ** argv){
     OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     {
         FFmaBinLoader<ParticleClass> loaderSeq(filename);
-        treeValide.fillWithLoader(loaderSeq);
+        loaderSeq.fillTree(treeValide);
     }
 
     //////////////////////////////////////////////////////////////////////////////////

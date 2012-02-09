@@ -79,11 +79,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
 
-    FFmaParticle particle;
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(particle);
-        tree.insert(particle);
-    }
+    loader.fillTree(tree);
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;

@@ -52,7 +52,7 @@ int main(int , char ** ){
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
     counter.tic();
 
-    tree.fillWithLoader(loader);
+    loader.fillTree(tree);
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
