@@ -120,8 +120,8 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(DevP, NbLevels, BoxWidth);
-    KernelClassTyped kernelsTyped(DevP, NbLevels, BoxWidth);
+    KernelClass kernels(DevP, NbLevels, BoxWidth, CenterOfBox);
+    KernelClassTyped kernelsTyped(DevP, NbLevels, BoxWidth, CenterOfBox);
 
     FmmClass algo(&tree,&kernels);
     FmmClassTyped algoTyped(&treeTyped,&kernelsTyped);

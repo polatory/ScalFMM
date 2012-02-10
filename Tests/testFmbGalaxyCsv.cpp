@@ -111,7 +111,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    KernelClass kernels( DevP, NbLevels, loader.getBoxWidth());
+    KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
     FOctreeArranger<OctreeClass, ContainerClass, ParticleClass> arranger(&tree);
     MassSaver<OctreeClass, ContainerClass, ParticleClass> saver("./out/test%d.csv");

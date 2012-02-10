@@ -38,7 +38,7 @@
  *
  * Particles and cells has to respect the Abstract class definition.
  * Particle must extend {FExtendPosition}
- * Cell must extend extend {FExtendPosition,FExtendMortonIndex}
+ * Cell must extend extend {FTreeCoordinate,FExtendMortonIndex}
  */
 template< class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
 class FOctree : protected FAssertable, public FNoCopyable {
@@ -173,7 +173,7 @@ public:
     void insert(const ParticleClass& inParticle){
         const FTreeCoordinate host = getCoordinateFromPosition( inParticle.getPosition() );
         const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
-        root->insert( particleIndex, host, inParticle, this->height, this->boxWidthAtLevel);
+        root->insert( particleIndex, host, inParticle, this->height);
     }
 
     /** Remove a leaf from its morton index
@@ -762,7 +762,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getDistantNeighbors(const CellClass* inNeighbors[189],
+    int getDistantNeighbors(const CellClass* inNeighbors[343],
                             const FTreeCoordinate& workingCell,
                             const int inLevel) const{
 

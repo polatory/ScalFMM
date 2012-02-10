@@ -65,7 +65,7 @@ int main(int argc, char ** argv){
         const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
         const long DevP         = FParameters::getValue(argc,argv,"-p", 5);
         const FReal FRandMax    = FReal(RAND_MAX);
-
+        const F3DPosition centerOfBox = F3DPosition(0.5,0.5,0.5);
         FTic counter;
 
         srand ( 1 ); // volontary set seed to constant
@@ -75,7 +75,7 @@ int main(int argc, char ** argv){
 
         CellClass::Init(DevP);
         const FReal boxWidth = 1.0;
-        OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, F3DPosition(0.5,0.5,0.5));
+        OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, centerOfBox);
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +103,7 @@ int main(int argc, char ** argv){
 
         // FTestKernels FBasicKernels
         //KernelClass kernels;
-        KernelClass kernels(DevP, NbLevels,boxWidth);
+        KernelClass kernels(DevP, NbLevels,boxWidth, centerOfBox);
         FmmClass algo(&tree,&kernels);
         algo.execute();
 

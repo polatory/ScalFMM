@@ -94,8 +94,6 @@ class TestFmb : public FUTester<TestFmb> {
         const int SizeSubLevels = 3;
         const int DevP = 12;
 
-        FSphericalCell::Init(DevP);
-
         // Load the particles file
         FFmaBinLoader<ParticleClass> loader(ParticleFile);
         if(!loader.isOpen()){
@@ -105,17 +103,12 @@ class TestFmb : public FUTester<TestFmb> {
         }
 
         // Create octree
+        FSphericalCell::Init(DevP);
         OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        {
-            ParticleClass particleToFill;
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                loader.fillParticle(particleToFill);
-                testTree.insert(particleToFill);
-            }
-        }
+        loader.fillTree(testTree);
 
         // Run simulation
-        KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
+        KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algo(&testTree,&kernels);
         algo.execute();
 

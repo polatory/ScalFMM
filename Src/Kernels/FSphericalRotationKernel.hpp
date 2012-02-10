@@ -385,8 +385,8 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const int inPeriodicLevel = 0)
-        : Parent(inDevP, inTreeHeight, inBoxWidth, inPeriodicLevel),
+    FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
+        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
           devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), preM2LTransitions(0), rotation_Info(inDevP) {
         allocAndInit();
     }

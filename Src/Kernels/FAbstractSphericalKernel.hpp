@@ -32,7 +32,11 @@ protected:
     const FReal boxWidth;       //< the box width at leaf level
     const int   treeHeight;     //< The height of the tree
 
-    const int periodicLevels; //< The number of levels above 1 used for periodicity
+    const int periodicLevels;   //< The number of levels above 1 used for periodicity
+
+    const FReal widthAtLeafLevel;       //< the width of a box at leaf level
+    const FReal widthAtLeafLevelDiv2;   //< the width of a box at leaf level divided by 2
+    const F3DPosition boxCorner;        //< the corner of the box system
 
     FHarmonic harmonic; //< The harmonic computation class
 
@@ -81,21 +85,42 @@ protected:
         }
     }
 
+    /** Get a leaf real position from its tree coordinate */
+    F3DPosition getLeafCenter(const FTreeCoordinate coordinate) const {
+        return F3DPosition(
+                    FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                    FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                    FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
+    }
+
 
 public:
     /** Kernel constructor */
-    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const int inPeriodicLevel = 0)
-        : devP(inDevP), boxWidth(inBoxWidth),
-          treeHeight(inTreeHeight), periodicLevels(inPeriodicLevel), harmonic(inDevP),
-          preL2LTransitions(0), preM2MTransitions(0) {
+    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
+        : devP(inDevP),
+          boxWidth(inBoxWidth),
+          treeHeight(inTreeHeight),
+          periodicLevels(inPeriodicLevel),
+          widthAtLeafLevel(inBoxWidth/FReal(1 << inTreeHeight)),
+          widthAtLeafLevelDiv2(widthAtLeafLevel/2),
+          boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2)),
+          harmonic(inDevP),
+          preL2LTransitions(0),
+          preM2MTransitions(0) {
 
         allocAndInit();
     }
 
     /** Copy constructor */
     FAbstractSphericalKernel(const FAbstractSphericalKernel& other)
-        : devP(other.devP), boxWidth(other.boxWidth),
-          treeHeight(other.treeHeight), periodicLevels(other.periodicLevels), harmonic(other.devP),
+        : devP(other.devP),
+          boxWidth(other.boxWidth),
+          treeHeight(other.treeHeight),
+          periodicLevels(other.periodicLevels),
+          widthAtLeafLevel(other.widthAtLeafLevel),
+          widthAtLeafLevelDiv2(other.widthAtLeafLevelDiv2),
+          boxCorner(other.boxCorner),
+          harmonic(other.devP),
           preL2LTransitions(0), preM2MTransitions(0) {
 
         allocAndInit();
@@ -113,7 +138,7 @@ public:
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
         FComplexe* FRestrict const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
-        const F3DPosition polePosition = inPole->getPosition();
+        const F3DPosition polePosition = getLeafCenter(inPole->getCoordinate());
         // For all particles in the leaf box
         typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
         while( iterParticle.hasNotFinished()){
@@ -154,7 +179,7 @@ public:
     void L2P(const CellClass* const local, ContainerClass* const particles){
         const FComplexe* const cellLocal = local->getLocal();
         // Copying the position is faster than using cell position
-        const F3DPosition localPosition = local->getPosition();
+        const F3DPosition localPosition = getLeafCenter(local->getCoordinate());
         // For all particles in the leaf box
         typename ContainerClass::BasicIterator iterTarget(*particles);
         while( iterTarget.hasNotFinished() ){

@@ -27,7 +27,7 @@
 * By using this extension it will implement the FAbstractCell without
 * inheriting from it.
 */
-class FBasicCell : public FExtendPosition, public FExtendMortonIndex, public FExtendCoordinate {
+class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate {
 public:
     /** Default destructor */
     virtual ~FBasicCell(){

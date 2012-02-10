@@ -64,13 +64,14 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
+        const F3DPosition CenterOfBox = F3DPosition(0.5,0.5,0.5);
 
         const int NbPart = NbSmallBoxesPerSide * NbSmallBoxesPerSide * NbSmallBoxesPerSide;
 
         FSphericalCell::Init(DevP);
 
         // Create octree
-        OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, F3DPosition(0.5,0.5,0.5));
+        OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, CenterOfBox);
         {
             int idxPart = 0;
             for(int idxX = 0 ; idxX < NbSmallBoxesPerSide ; ++idxX){
@@ -91,7 +92,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
 
         // Run FMM
         Print("Fmm...");
-        KernelClass kernels( DevP, NbLevels, BoxWidth, PeriodicDeep);
+        KernelClass kernels( DevP, NbLevels, BoxWidth, CenterOfBox, PeriodicDeep);
         FmmClass algo(&tree,&kernels,PeriodicDeep);
         algo.execute();
 
@@ -234,11 +235,12 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
+        const F3DPosition CenterOfBox = F3DPosition(0.5,0.5,0.5);
 
         const int NbPart = NbSmallBoxesPerSide * NbSmallBoxesPerSide * NbSmallBoxesPerSide;
 
         // Create octree
-        TestOctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, F3DPosition(0.5,0.5,0.5));
+        TestOctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, CenterOfBox);
         {
             for(int idxX = 0 ; idxX < NbSmallBoxesPerSide ; ++idxX){
                 for(int idxY = 0 ; idxY < NbSmallBoxesPerSide ; ++idxY){

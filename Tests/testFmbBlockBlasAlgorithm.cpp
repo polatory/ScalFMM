@@ -193,7 +193,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(DevP, NbLevels, loader.getBoxWidth());
+    KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     FmmClass algo(&tree,&kernels);
     algo.execute();

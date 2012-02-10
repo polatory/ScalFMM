@@ -89,7 +89,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         // Run FMM
         Print("Fmm...");
         //KernelClass kernels(NbLevels,loader.getBoxWidth());
-        KernelClass kernels(DevP,NbLevels,loader.getBoxWidth());
+        KernelClass kernels(DevP,NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algo(&tree,&kernels);
         algo.execute();
 
