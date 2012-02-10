@@ -102,20 +102,6 @@ public:
         }
     }
 
-    /** Before Downward */
-    void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
-             const FTreeCoordinate neighborsRelativePositions[189],
-             const int size, const int inLevel) {
-        // For all neighbors compute M2L
-        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-            const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels]
-                                                        [indexM2LTransition(neighborsRelativePositions[idxNeigh].getX(),
-                                                                            neighborsRelativePositions[idxNeigh].getY(),
-                                                                            neighborsRelativePositions[idxNeigh].getZ())];
-
-            multipoleToLocal(local->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-        }
-    }
 
 
     /** M2L
