@@ -1304,7 +1304,7 @@ private:
                             // Test if it is a direct neighbor
                             if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                 // add to neighbors
-                                inNeighborsPosition[idxNeighbors] = (( (xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3;
+                                inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
                             }
                         }

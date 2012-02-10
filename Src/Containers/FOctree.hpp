@@ -805,7 +805,7 @@ public:
                                     // Test if it is a direct neighbor
                                     if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                         // add to neighbors
-                                        inNeighbors[ ((xdiff * 7) + ydiff) * 7 + zdiff] = cells[idxCousin];
+                                        inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
                                         ++idxNeighbors;
                                     }
                                 }
@@ -886,7 +886,7 @@ public:
                                         // Test if it is a direct neighbor
                                         if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                             // add to neighbors
-                                            inNeighbors[((xdiff * 7) + ydiff) * 7 + zdiff] = cells[idxCousin];
+                                            inNeighbors[((((xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3] = cells[idxCousin];
                                             ++idxNeighbors;
                                         }
                                     }

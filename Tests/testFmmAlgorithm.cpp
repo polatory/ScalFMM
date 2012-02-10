@@ -51,7 +51,7 @@ int main(int argc, char ** argv){
     typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
-    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";

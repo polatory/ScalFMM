@@ -59,7 +59,9 @@ public:
 
         // The pole is impacted by what represent other poles
         for(int idx = 0 ; idx < 343 ; ++idx){
-            if(distantNeighbors[idx]) pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
+            if(distantNeighbors[idx]){
+                pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
+            }
         }
     }
 

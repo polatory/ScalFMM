@@ -716,7 +716,7 @@ private:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    const CellClass* neighbors[189];
+                    const CellClass* neighbors[343];
 
                     #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
@@ -1412,7 +1412,7 @@ private:
                             // Test if it is a direct neighbor
                             if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                 // add to neighbors
-                                inNeighborsPosition[idxNeighbors] = (( (xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3;
+                                inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOtherParent << 3) | idxCousin;
                             }
                         }

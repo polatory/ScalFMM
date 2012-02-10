@@ -125,7 +125,7 @@ public:
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if( distantNeighbors[idxNeigh] ){
-                const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh];
+                const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh * FF_MATRIX_SIZE];
                 multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
             }
         }
