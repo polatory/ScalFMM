@@ -25,14 +25,12 @@
 #include "../Src/Extensions/FExtendPotential.hpp"
 
 #include "../Src/Components/FBasicCell.hpp"
-#include "../Src/Fmb/FExtendFmbCell.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Fmb/FFmbKernels.hpp"
 
 #include "../Src/Utils/FMath.hpp"
 

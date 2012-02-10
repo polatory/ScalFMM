@@ -28,8 +28,10 @@
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
 
-#include "../Src/Fmb/FFmbKernels.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
@@ -43,15 +45,15 @@ int main(int argc, char ** argv){
     {
         //typedef FTestParticle               ParticleClass;
         //typedef FTestCell                   CellClass;
-        typedef FmbParticle             ParticleClass;
-        typedef FmbCell                 CellClass;
+        typedef FSphericalParticle             ParticleClass;
+        typedef FSphericalCell                 CellClass;
 
         typedef FVector<ParticleClass>      ContainerClass;
 
         typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
         typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
         //typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
-        typedef FFmbKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
         typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
         ///////////////////////What we do/////////////////////////////
@@ -61,6 +63,7 @@ int main(int argc, char ** argv){
         const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);
         const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
         const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
+        const long DevP         = FParameters::getValue(argc,argv,"-p", 5);
         const FReal FRandMax    = FReal(RAND_MAX);
 
         FTic counter;
@@ -70,6 +73,7 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
 
+        CellClass::Init(DevP);
         const FReal boxWidth = 1.0;
         OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, F3DPosition(0.5,0.5,0.5));
 
@@ -99,7 +103,7 @@ int main(int argc, char ** argv){
 
         // FTestKernels FBasicKernels
         //KernelClass kernels;
-        KernelClass kernels(NbLevels,boxWidth);
+        KernelClass kernels(DevP, NbLevels,boxWidth);
         FmmClass algo(&tree,&kernels);
         algo.execute();
 

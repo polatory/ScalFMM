@@ -20,18 +20,18 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Fmb/FFmbKernels.hpp"
-#include "../Src/Fmb/FFmbComponents.hpp"
 
 #include "../Src/Files/FFmaLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
 
-
+#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmbParticle             ParticleClass;
-    typedef FmbCell                 CellClass;
+    typedef FSphericalParticle             ParticleClass;
+    typedef FSphericalCell                 CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
