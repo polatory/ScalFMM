@@ -331,7 +331,7 @@ private:
             startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + this->shapeLeaf[idxShape-1];
         }
 
-#pragma omp parallel
+        #pragma omp parallel
         {
 
             const float step = float(this->leafsNumber) / float(omp_get_num_threads());
@@ -365,27 +365,26 @@ private:
                 octreeIterator.moveRight();
             }
 
-#pragma omp barrier
+            #pragma omp barrier
 
             FDEBUG(if(!omp_get_thread_num()) computationCounter.tic());
 
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            MortonIndex neighborsIndex[26];
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = this->shapeLeaf[idxShape] + previous;
 
-#pragma omp for schedule(dynamic)
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);
                     // need the current particles and neighbors particles
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                    const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
-                    myThreadkernels.P2P(currentIter.index, currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+                    const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                    myThreadkernels.P2P(currentIter.index, currentIter.targets, currentIter.sources , neighbors, counter);
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
 

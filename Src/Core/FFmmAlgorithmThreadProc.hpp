@@ -728,12 +728,15 @@ private:
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                            const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
-                            if(cellFromOtherProc){
-                                neighborsData[counter].deserializeUp(cellFromOtherProc);
-                                neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
-                                neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
-                                ++counter;
+                            if(neighborsIndex[idxNeig] < getWorkingInterval(idxLevel , idProcess).min
+                                    || getWorkingInterval(idxLevel , idProcess).max < neighborsIndex[idxNeig]){
+                                const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
+                                if(cellFromOtherProc){
+                                    neighborsData[counter].deserializeUp(cellFromOtherProc);
+                                    neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
+                                    neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
+                                    ++counter;
+                                }
                             }
                         }
                         // need to compute
@@ -1111,26 +1114,25 @@ private:
 
         FDEBUG(FTic computationCounter);
 
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            MortonIndex neighborsIndex[26];
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-#pragma omp for schedule(dynamic)
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     if(!leafsNeedOtherShaped.get(idxLeafs)){
                         LeafData& currentIter = leafsDataArray[idxLeafs];
                         myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                         // need the current particles and neighbors particles
-                        const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
-                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, counter);
                     }
                 }
 
@@ -1184,7 +1186,6 @@ private:
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            MortonIndex neighborsIndex[26];
             int previous = 0;
             // Box limite
             const int limite = 1 << (this->OctreeHeight - 1);
@@ -1192,7 +1193,7 @@ private:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-#pragma omp for schedule(dynamic)
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     // Maybe need also data from other?
                     if(leafsNeedOtherShaped.get(idxLeafs)){
@@ -1200,7 +1201,7 @@ private:
                         myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                         // need the current particles and neighbors particles
-                        int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
+                        int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
 
                         // Take possible data
                         MortonIndex indexesNeighbors[26];
@@ -1211,13 +1212,12 @@ private:
                                 ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                                 if(hypotheticNeighbor){
                                     neighbors[counter] = hypotheticNeighbor;
-                                    neighborsIndex[counter] = indexesNeighbors[idxNeigh];
                                     ++counter;
                                 }
                             }
                         }
 
-                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsIndex, counter);
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, counter);
                     }
                 }
 
@@ -1277,7 +1277,7 @@ private:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const int limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow2(inLevel-1);
 
         int idxNeighbors = 0;
         // We test all cells around

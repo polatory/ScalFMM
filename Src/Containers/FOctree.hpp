@@ -687,7 +687,7 @@ public:
         FTreeCoordinate center;
         center.setPositionFromMorton(inIndex, inLevel);
 
-        const int limite = FMath::pow(2,inLevel);
+        const int limite = FMath::pow2(inLevel);
 
         int idxNeighbors = 0;
 
@@ -773,7 +773,7 @@ public:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const int limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow2(inLevel-1);
 
         int idxNeighbors = 0;
         // We test all cells around
@@ -838,7 +838,7 @@ public:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const int limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow2(inLevel-1);
 
         // This is not on a border we can use normal interaction list method
         if( !(parentCell.getX() == 0 || parentCell.getY() == 0 || parentCell.getZ() == 0 ||
@@ -933,22 +933,9 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getLeafsNeighbors(ContainerClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel){
-        MortonIndex inNeighborsIndex[26];
-        return getLeafsNeighborsWithIndex(inNeighbors, inNeighborsIndex, inIndex, inLevel);
-    }
-
-    /** This function fill an array with the neighbors of a cell
-          * @param inNeighbors the array to store the elements
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
-    int getLeafsNeighborsWithIndex(ContainerClass* inNeighbors[26], MortonIndex inNeighborsIndex[26], const MortonIndex inIndex, const int inLevel){
-        FTreeCoordinate center;
-        center.setPositionFromMorton(inIndex, inLevel);
-
-        const int limite = FMath::pow(2,inLevel);
+    int getLeafsNeighbors(ContainerClass* inNeighbors[26], const FTreeCoordinate& center, const int inLevel){
+        memset( inNeighbors, 0 , 26 * sizeof(ContainerClass*));
+        const int limite = FMath::pow2(inLevel);
 
         int idxNeighbors = 0;
 
@@ -970,8 +957,8 @@ public:
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
                         if(leaf){
-                            inNeighborsIndex[idxNeighbors] = mortonOther;
-                            inNeighbors[idxNeighbors++] = leaf;
+                            inNeighbors[(((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1] = leaf;
+                            ++idxNeighbors;
                         }
                     }
                 }
@@ -987,11 +974,9 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getLeafsNeighborsWithIndex(ContainerClass* inNeighbors[26], FTreeCoordinate inNeighborsPosition[26], const MortonIndex inIndex, const int inLevel){
-        FTreeCoordinate center;
-        center.setPositionFromMorton(inIndex, inLevel);
-
-        const int limite = FMath::pow(2,inLevel);
+    int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[26], const FTreeCoordinate& center, const int inLevel){
+        memset(inNeighbors , 0 , 26 * sizeof(ContainerClass*));
+        const int limite = FMath::pow2(inLevel);
 
         int idxNeighbors = 0;
 
@@ -1039,8 +1024,8 @@ public:
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
                         if(leaf){
-                            inNeighborsPosition[idxNeighbors] = offset;
-                            inNeighbors[idxNeighbors++] = leaf;
+                            inNeighbors[(((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1] = leaf;
+                            ++idxNeighbors;
                         }
                     }
                 }

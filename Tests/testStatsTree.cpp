@@ -153,7 +153,7 @@ int main(int argc, char ** argv){
             do{
                 ContainerClass* neighbors[26];
                 // need the current particles and neighbors particles
-                averageNeighbors += FReal(tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalIndex(),NbLevels-1));
+                averageNeighbors += FReal(tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),NbLevels-1));
                 ++nbLeafs;
             } while(octreeIterator.moveRight());
             std::cout << "[STAT] Average neighbors for each leafs = " << (averageNeighbors/FReal(nbLeafs)) << std::endl;

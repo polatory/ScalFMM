@@ -27,7 +27,7 @@
 
 #include "../Src/Components/FTestParticle.hpp"
 #include "../Src/Components/FTestCell.hpp"
-#include "../Src/Components/FTestPeriodicKernels.hpp"
+#include "../Src/Components/FTestKernels.hpp"
 
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
@@ -45,7 +45,7 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FTestPeriodicKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
 
     typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
     ///////////////////////What we do/////////////////////////////

@@ -80,6 +80,11 @@ struct FMath{
         return result;
     }
 
+    /** To get pow of 2 */
+    static int pow2(const int power){
+        return (1 << power);
+    }
+
     /** To know if a value is between two others */
     template <class NumType>
     static bool Between(const NumType inValue, const NumType inMin, const NumType inMax){

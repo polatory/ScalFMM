@@ -114,7 +114,7 @@ public:
     /** After Downward */
     void P2P(const MortonIndex ,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             ContainerClass* const directNeighborsParticles[26], const MortonIndex [26], const int size) {
+             ContainerClass* const directNeighborsParticles[26], const int size) {
 
         // Each particles targeted is impacted by the particles sources
         long long int inc = sources->getSize();

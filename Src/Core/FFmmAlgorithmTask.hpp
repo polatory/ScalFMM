@@ -282,7 +282,6 @@ private:
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            MortonIndex neighborsIndex[26];
 
 #pragma omp single nowait
             {
@@ -306,8 +305,8 @@ private:
 #pragma omp task
                         {
                             // need the current particles and neighbors particles
-                            const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
-                            myThreadkernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsIndex, counter);
+                            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
+                            myThreadkernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
                         }
                     }
                     else{
@@ -324,8 +323,8 @@ private:
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
 #pragma omp task
                         {
-                            const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, toWork.getCurrentGlobalIndex(),heightMinusOne);
-                            myThreadkernels->P2P(toWork.getCurrentGlobalIndex(),toWork.getCurrentListTargets(), toWork.getCurrentListSrc() , neighbors, neighborsIndex, counter);
+                            const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
+                            myThreadkernels->P2P(toWork.getCurrentGlobalIndex(),toWork.getCurrentListTargets(), toWork.getCurrentListSrc() , neighbors, counter);
                         }
                     }
 

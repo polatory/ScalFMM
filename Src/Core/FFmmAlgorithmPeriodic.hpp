@@ -232,16 +232,15 @@ private:
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
         ContainerClass* neighbors[26];
-        FTreeCoordinate neighborsPosition[26];
         // for each leafs
         do{
             FDEBUG(computationCounterL2P.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
             FDEBUG(computationCounterL2P.tac());
             // need the current particles and neighbors particles
-            const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsPosition, octreeIterator.getCurrentGlobalIndex(),heightMinusOne);
+            const int counter = tree->getPeriodicLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
             FDEBUG(computationCounterP2P.tic());
-            kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsPosition, counter);
+            kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
             FDEBUG(computationCounterP2P.tac());
         } while(octreeIterator.moveRight());
 

@@ -801,12 +801,15 @@ private:
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                            const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
-                            if(cellFromOtherProc){
-                                neighborsData[counter].deserializeUp(cellFromOtherProc);
-                                neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
-                                neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
-                                ++counter;
+                            if(neighborsIndex[idxNeig] < getWorkingInterval(idxLevel , idProcess).min
+                                    || getWorkingInterval(idxLevel , idProcess).max < neighborsIndex[idxNeig]){
+                                const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
+                                if(cellFromOtherProc){
+                                    neighborsData[counter].deserializeUp(cellFromOtherProc);
+                                    neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
+                                    neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
+                                    ++counter;
+                                }
                             }
                         }
 
@@ -1036,9 +1039,9 @@ private:
                 memset(alreadySent, 0, sizeof(int) * nbProcess);
                 bool needOther = false;
 
-                const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalIndex(), limite, indexesNeighbors);
+                getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors);
 
-                for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
+                for(int idxNeigh = 0 ; idxNeigh < 26 ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
                         needOther = true;
 
@@ -1188,26 +1191,25 @@ private:
 
         FDEBUG(FTic computationCounter);
 
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            FTreeCoordinate neighborsPosition[26];
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-#pragma omp for schedule(dynamic)
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     if(!leafsNeedOtherShaped.get(idxLeafs)){
                         LeafData& currentIter = leafsDataArray[idxLeafs];
                         myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                         // need the current particles and neighbors particles
-                        const int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsPosition, currentIter.index, LeafIndex);
-                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsPosition, counter);
+                        const int counter = tree->getPeriodicLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, counter);
                     }
                 }
 
@@ -1256,12 +1258,13 @@ private:
         FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( computation2Counter.tic() );
 
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[26];
-            //MortonIndex neighborsIndex[26];
+            MortonIndex indexesNeighbors[26];
+
             int previous = 0;
             // Box limite
             const int limite = 1 << (this->OctreeHeight - 1);
@@ -1269,7 +1272,7 @@ private:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-#pragma omp for schedule(dynamic)
+                #pragma omp for schedule(dynamic)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     // Maybe need also data from other?
                     if(leafsNeedOtherShaped.get(idxLeafs)){
@@ -1277,33 +1280,30 @@ private:
                         myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                         // need the current particles and neighbors particles
-                        // int counter = tree->getLeafsNeighborsWithIndex(neighbors, neighborsIndex, currentIter.index, LeafIndex);
+                        // int counter = tree->getLeafsNeighbors(neighbors, neighborsIndex, currentIter.index, LeafIndex);
                         int counter = 0;
+                        memset(neighbors, 0, 26 * sizeof(ContainerClass*));
                         // Take possible data
-                        MortonIndex indexesNeighbors[26];
-                        FTreeCoordinate neighborsPosition[26];
-                        const int neighCount = getNeighborsIndexes(currentIter.index, limite, indexesNeighbors, neighborsPosition);
+                        getNeighborsIndexes(currentIter.cell->getCoordinate(), limite, indexesNeighbors);
 
-                        for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
+                        for(int idxNeigh = 0 ; idxNeigh < 26 ; ++idxNeigh){
                             if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
                                 ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                                 if(hypotheticNeighbor){
-                                    neighbors[counter] = hypotheticNeighbor;
-                                    neighborsPosition[counter] = neighborsPosition[idxNeigh];
+                                    neighbors[idxNeigh] = hypotheticNeighbor;
                                     ++counter;
                                 }
                             }
                             else{
                                 ContainerClass*const hypotheticNeighbor = tree->getLeafSrc(indexesNeighbors[idxNeigh]);
                                 if(hypotheticNeighbor){
-                                    neighbors[counter] = hypotheticNeighbor;
-                                    neighborsPosition[counter] = neighborsPosition[idxNeigh];
+                                    neighbors[idxNeigh] = hypotheticNeighbor;
                                     ++counter;
                                 }
                             }
                         }
 
-                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, neighborsPosition, counter);
+                        myThreadkernels.P2P( currentIter.index,currentIter.targets, currentIter.sources , neighbors, counter);
                     }
                 }
 
@@ -1331,15 +1331,8 @@ private:
     }
 
 
-    int getNeighborsIndexes(const MortonIndex centerIndex, const int limite, MortonIndex indexes[26]) const{
-        FTreeCoordinate relativePositions[26];
-        return getNeighborsIndexes(centerIndex, limite, indexes, relativePositions);
-    }
 
-    int getNeighborsIndexes(const MortonIndex centerIndex, const int limite, MortonIndex indexes[26], FTreeCoordinate inRelativePositions[26]) const{
-        FTreeCoordinate center;
-        center.setPositionFromMorton(centerIndex, OctreeHeight - 1);
-
+    void getNeighborsIndexes(const FTreeCoordinate& center, const int limite, MortonIndex indexes[26]) const{
         int idxNeig = 0;
         // We test all cells around
         for(int idxX = -1 ; idxX <= 1 ; ++idxX){
@@ -1358,16 +1351,12 @@ private:
                         if( other.getZ() < 0 ) other.setZ( other.getZ() + limite );
                         else if( limite <= other.getZ() ) other.setZ( other.getZ() - limite );
 
-                        inRelativePositions[idxNeig].setPosition( idxX,
-                                                                  idxY,
-                                                                  idxZ);
-                        indexes[idxNeig++] = other.getMortonIndex(this->OctreeHeight - 1);
-
+                        indexes[idxNeig] = other.getMortonIndex(this->OctreeHeight - 1);
                     }
+                    ++idxNeig;
                 }
             }
         }
-        return idxNeig;
     }
 
 
@@ -1378,7 +1367,7 @@ private:
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const int limite = FMath::pow(2,inLevel-1);
+        const int limite = FMath::pow2(inLevel-1);
 
         int idxNeighbors = 0;
         // We test all cells around

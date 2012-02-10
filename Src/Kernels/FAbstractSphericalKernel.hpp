@@ -249,7 +249,7 @@ public:
       */
     void P2P(const MortonIndex inCurrentIndex,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-             ContainerClass* const directNeighbors[26], const MortonIndex inNeighborsIndex[26], const int size){
+             ContainerClass* const directNeighbors[26], const int size){
         { // Compute interaction in this leaf
             typename ContainerClass::BasicIterator iterTarget(*targets);
             while( iterTarget.hasNotFinished() ){
@@ -271,7 +271,7 @@ public:
         { // Compute interactions with other leaves
             // For all the neigbors leaves
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                if(inCurrentIndex < inNeighborsIndex[idxDirectNeighbors] ){
+                if(inCurrentIndex < 0 /*inNeighborsIndex[idxDirectNeighbors] TODO */ ){
                     // For all particles in current leaf
                     typename ContainerClass::BasicIterator iterTarget(*targets);
                     while( iterTarget.hasNotFinished() ){
@@ -297,8 +297,8 @@ public:
 
 
     /** After Downward */
-    void P2P(const MortonIndex inCurrentIndex,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
+    /*void P2P(const MortonIndex inCurrentIndex,
+             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,//sources
              ContainerClass* const directNeighbors[26], const FTreeCoordinate neighborsRelativeOffset[26], const int size) {
 
         { // Compute interaction in this leaf
@@ -358,7 +358,7 @@ public:
                 }
             }
         }
-    }
+    }*/
 
     ///////////////////////////////////////////////////////////////////////////////
     //                                  Computation

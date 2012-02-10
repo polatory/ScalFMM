@@ -21,7 +21,7 @@
 #include "FUTester.hpp"
 
 #include "../Src/Components/FTestCell.hpp"
-#include "../Src/Components/FTestPeriodicKernels.hpp"
+#include "../Src/Components/FTestKernels.hpp"
 #include "../Src/Components/FTestParticle.hpp"
 
 /*
@@ -220,7 +220,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         typedef FTestCell             TestCellClass;
         typedef FVector<TestParticleClass>  TestContainerClass;
 
-        typedef FTestPeriodicKernels<TestParticleClass, TestCellClass, TestContainerClass >          TestKernelClass;
+        typedef FTestKernels<TestParticleClass, TestCellClass, TestContainerClass >          TestKernelClass;
 
         typedef FSimpleLeaf<TestParticleClass, TestContainerClass >                     TestLeafClass;
         typedef FOctree<TestParticleClass, TestCellClass, TestContainerClass , TestLeafClass >  TestOctreeClass;

@@ -67,18 +67,10 @@ public:
     /** Do nothing */
     virtual void P2P(const MortonIndex ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [26], const MortonIndex [26], const int ){
+                     ContainerClass* const [26], const int ){
 
     }
 
-    // ------------------- Periodic  --------------------
-
-
-    /** After Downward */
-    void P2P(const MortonIndex ,
-             ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-             ContainerClass* const [26], const FTreeCoordinate [26], const int ) {
-    }
 };
 
 
