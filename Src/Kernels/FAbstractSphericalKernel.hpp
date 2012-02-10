@@ -101,13 +101,13 @@ public:
           boxWidth(inBoxWidth),
           treeHeight(inTreeHeight),
           periodicLevels(inPeriodicLevel),
-          widthAtLeafLevel(inBoxWidth/FReal(1 << inTreeHeight)),
+          widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
           widthAtLeafLevelDiv2(widthAtLeafLevel/2),
           boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2)),
           harmonic(inDevP),
           preL2LTransitions(0),
           preM2MTransitions(0) {
-
+        std::cout << "widthAtLeafLevel  " << widthAtLeafLevel << "\n";
         allocAndInit();
     }
 
