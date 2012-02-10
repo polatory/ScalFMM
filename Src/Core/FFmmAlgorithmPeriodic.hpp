@@ -162,16 +162,15 @@ private:
         typename OctreeClass::Iterator octreeIterator(tree);
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[189];
-        FTreeCoordinate relativePosition[189];
+        const CellClass* neighbors[343];
 
         // for each levels
         for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
             // for each cells
             do{
-                const int counter = tree->getDistantNeighbors(neighbors, relativePosition, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                const int counter = tree->getPeriodicInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
                 FDEBUG(computationCounter.tic());
-                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, relativePosition, counter, idxLevel);
+                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                 FDEBUG(computationCounter.tac());
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveDown();
@@ -285,28 +284,26 @@ private:
         {
             // We say that we are in the child index 0
             // So we can compute one time the relative indexes
-            FTreeCoordinate relativePosition[189];
-            {
-                int counterPosition = 0;
-                for(int idxX = -2 ; idxX <= 3 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 3 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
-                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                relativePosition[counterPosition++].setPosition( idxX, idxY, idxZ);
-                            }
+            const CellClass* neighbors[343];
+            memset(neighbors, 0, sizeof(CellClass*) * 343);
+            for(int idxX = -2 ; idxX <= 3 ; ++idxX){
+                for(int idxY = -2 ; idxY <= 3 ; ++idxY){
+                    for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
+                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = reinterpret_cast<const CellClass*>(~0);
                         }
                     }
                 }
             }
-
-            const CellClass* neighbors[189];
             const int counter = 189;
 
             for(int idxLevel = 0 ; idxLevel < periodicLimit ; ++idxLevel ){
-                for(int idxNeigh = 0 ; idxNeigh < 189 ; ++idxNeigh){
-                    neighbors[idxNeigh] = &upperCells[idxLevel];
+                for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+                    if(neighbors[idxNeigh]){
+                        neighbors[idxNeigh] = &upperCells[idxLevel];
+                    }
                 }
-                kernels->M2L( &upperCells[idxLevel] , neighbors, relativePosition, counter, -idxLevel);
+                kernels->M2L( &upperCells[idxLevel] , neighbors, counter, -idxLevel);
             }
 
         }

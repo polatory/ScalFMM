@@ -161,13 +161,13 @@ private:
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[189];
+        const CellClass* neighbors[343];
 
         // for each levels
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
             // for each cells
             do{
-                const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
                 FDEBUG(computationCounter.tic());
                 if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                 FDEBUG(computationCounter.tac());

@@ -238,26 +238,26 @@ public:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    const CellClass* neighbors[189];
+                    const CellClass* neighbors[343];
 
                     #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getDistantNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
-                            int offsetTargetNeighbors = 0;
-                            for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
-                                if(neighbors[idxRealNeighbors]->hasSrcChild()){
-                                    if(idxRealNeighbors != offsetTargetNeighbors){
-                                        neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
+                            const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+                            if( counter ){
+                                int counterWithSrc = 0;
+                                for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){
+                                    if(neighbors[idxRealNeighbors] && neighbors[idxRealNeighbors]->hasSrcChild()){
+                                        ++counterWithSrc;
+                                    }
+                                    else{
+                                        neighbors[idxRealNeighbors] = 0;
                                     }
                                 }
-                                else{
-                                    --offsetTargetNeighbors;
+                                if(counterWithSrc){
+                                    myThreadkernels->M2L( currentCell , neighbors, counterWithSrc, idxLevel);
                                 }
-                            }
-                            if(offsetTargetNeighbors){
-                                myThreadkernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
                             }
                         }
                     }

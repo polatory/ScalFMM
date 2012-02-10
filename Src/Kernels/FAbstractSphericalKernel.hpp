@@ -161,7 +161,7 @@ public:
     }
 
     /** M2L with a cell and all the existing neighbors */
-    virtual void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
+    virtual void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
              const int size, const int inLevel) = 0;
 
     /** L2L with a cell and all its child */
@@ -294,11 +294,6 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
     //                                  Periodic
     ///////////////////////////////////////////////////////////////////////////////
-
-    /** Before Downward */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
-             const FTreeCoordinate neighborsRelativePositions[189],
-             const int size, const int inLevel) = 0;
 
 
     /** After Downward */

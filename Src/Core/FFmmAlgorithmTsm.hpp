@@ -180,7 +180,7 @@ public:
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[189];
+        const CellClass* neighbors[343];
 
         // for each levels
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -189,20 +189,20 @@ public:
                 FDEBUG(computationCounter.tic());
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
                 if(currentCell->hasTargetsChild()){
-                    const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
-                    int offsetTargetNeighbors = 0;
-                    for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors, ++offsetTargetNeighbors){
-                        if(neighbors[idxRealNeighbors]->hasSrcChild()){
-                            if(idxRealNeighbors != offsetTargetNeighbors){
-                                neighbors[offsetTargetNeighbors] = neighbors[idxRealNeighbors];
+                    const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
+                    if( counter ){
+                        int counterWithSrc = 0;
+                        for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){
+                            if(neighbors[idxRealNeighbors] && neighbors[idxRealNeighbors]->hasSrcChild()){
+                                ++counterWithSrc;
+                            }
+                            else{
+                                neighbors[idxRealNeighbors] = 0;
                             }
                         }
-                        else{
-                            --offsetTargetNeighbors;
+                        if(counterWithSrc){
+                            kernels->M2L( currentCell , neighbors, counterWithSrc, idxLevel);
                         }
-                    }
-                    if(offsetTargetNeighbors){
-                        kernels->M2L( currentCell , neighbors, offsetTargetNeighbors, idxLevel);
                     }
                 }
                 FDEBUG(computationCounter.tac());

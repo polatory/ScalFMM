@@ -56,7 +56,7 @@ public:
         * @param size the number of neighbors
         * @param inLevel the current level of the computation
         */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[343],
                      const int size, const int inLevel) = 0;
 
     /**
@@ -107,19 +107,6 @@ public:
     //////////////////////////////////////////////////////////////////////////////
     // Periodic methods
     //////////////////////////////////////////////////////////////////////////////
-
-    /**
-        * M2L
-        * Multipole to local
-        * @param local the element to fill using distant neighbors
-        * @param distantNeighbors is an array containing fathers's direct neighbors's child - direct neigbors
-        * @param neighborsRelativePositions the relative position of the neighbors (can be -2,-2,-2)
-        * @param size the number of neighbors
-        * @param inLevel the current level of the computation
-        */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
-                     const FTreeCoordinate neighborsRelativePositions[189], const int size, const int level) = 0;
-
 
     /**
         * P2P

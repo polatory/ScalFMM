@@ -188,7 +188,7 @@ private:
 #pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
-            const CellClass* neighbors[189];
+            const CellClass* neighbors[343];
 
 #pragma omp single nowait
             {
@@ -202,7 +202,7 @@ private:
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     // for each cells
                     do{
-                        const int counter = tree->getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                        const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
                         if(counter){
 #pragma omp task
                             {

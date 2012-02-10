@@ -196,7 +196,7 @@ int main(int argc, char ** argv){
 
                     const FBasicCell* neighbors[189];
 
-                    M2LCalculusAtLevel[idxArray] += tree.getDistantNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
+                    M2LCalculusAtLevel[idxArray] += tree.getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
 
                 } while(octreeIterator.moveRight());
 

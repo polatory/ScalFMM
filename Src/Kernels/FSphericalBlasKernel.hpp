@@ -120,33 +120,14 @@ public:
     }
 
     /** M2L with a cell and all the existing neighbors */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189],
-             const int size, const int inLevel) {
-        const FTreeCoordinate& coordCenter = pole->getCoordinate();
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
+             const int /*size*/, const int inLevel) {
         // For all neighbors compute M2L
-        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-            const FTreeCoordinate& coordNeighbors = distantNeighbors[idxNeigh]->getCoordinate();
-            const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels]
-                                                        [indexM2LTransition((coordCenter.getX() - coordNeighbors.getX()),
-                                                                                            (coordCenter.getY() - coordNeighbors.getY()),
-                                                                                            (coordCenter.getZ() - coordNeighbors.getZ()))];
-
-            multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-        }
-    }
-
-    /** Before Downward */
-    void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[189],
-             const FTreeCoordinate neighborsRelativePositions[189],
-             const int size, const int inLevel) {
-        // For all neighbors compute M2L
-        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
-            const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels]
-                                                                        [indexM2LTransition(neighborsRelativePositions[idxNeigh].getX(),
-                                                                                            neighborsRelativePositions[idxNeigh].getY(),
-                                                                                            neighborsRelativePositions[idxNeigh].getZ())];
-
-            multipoleToLocal(local->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
+        for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+            if( distantNeighbors[idxNeigh] ){
+                const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh];
+                multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
+            }
         }
     }
 

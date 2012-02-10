@@ -490,10 +490,11 @@ private:
 
                 // Which cell potentialy needs other data and in the same time
                 // are potentialy needed by other
+                int neighborsPosition[189];
                 MortonIndex neighborsIndexes[189];
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // Find the M2L neigbors of a cell
-                    const int counter = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,neighborsIndexes);
+                    const int counter = getInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndexes, neighborsPosition);
 
                     memset(alreadySent, false, sizeof(bool) * nbProcess);
                     bool needOther = false;
@@ -635,14 +636,14 @@ private:
                 octreeIterator = avoidGotoLeftIterator;
 
                 FDEBUG(computationCounter.tic());
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    const CellClass* neighbors[189];
+                    const CellClass* neighbors[343];
 
-#pragma omp for  schedule(dynamic) nowait
+                    #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        const int counter = tree->getDistantNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+                        const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel);
                         if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                     }
                 }
@@ -711,17 +712,18 @@ private:
 
                 // Compute this cells
                 FDEBUG(computationCounter.tic());
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[189];
-                    const CellClass* neighbors[189];
                     CellClass neighborsData[189];
+                    int neighborsPosition[189];
+                    const CellClass* neighbors[343];
 
-#pragma omp for  schedule(dynamic) nowait
+                    #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
-                        const int counterNeighbors = getDistantNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex);
+                        const int counterNeighbors = getInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition);
 
                         int counter = 0;
                         // does we receive this index from someone?
@@ -729,13 +731,15 @@ private:
                             const void* const cellFromOtherProc = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
                             if(cellFromOtherProc){
                                 neighborsData[counter].deserializeUp(cellFromOtherProc);
-                                neighbors[counter] = &neighborsData[counter];
+                                neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
+                                neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
                                 ++counter;
                             }
                         }
                         // need to compute
                         if(counter){
                             myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                            memset(neighbors, 0, 343 * sizeof(CellClass*));
                         }
                     }
                 }
@@ -1266,7 +1270,7 @@ private:
         return idxNeig;
     }
 
-    int getDistantNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189]) const{
+    int getInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -1288,19 +1292,19 @@ private:
 
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
-                        const FTreeCoordinate other(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel-1);
+                        const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                        const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
-                            const FTreeCoordinate potentialNeighbor((other.getX()<<1) | (idxCousin>>2 & 1),
-                                                                    (other.getY()<<1) | (idxCousin>>1 & 1),
-                                                                    (other.getZ()<<1) | (idxCousin&1));
+                            const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
+                            const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
+                            const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
+
                             // Test if it is a direct neighbor
-                            if(FMath::Abs(workingCell.getX() - potentialNeighbor.getX()) > 1 ||
-                                    FMath::Abs(workingCell.getY() - potentialNeighbor.getY()) > 1 ||
-                                    FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
+                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                 // add to neighbors
+                                inNeighborsPosition[idxNeighbors] = (( (xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
                             }
                         }

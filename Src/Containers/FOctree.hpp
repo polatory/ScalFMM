@@ -762,9 +762,11 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getDistantNeighbors(const CellClass* inNeighbors[343],
+    int getInteractionNeighbors(const CellClass* inNeighbors[343],
                             const FTreeCoordinate& workingCell,
                             const int inLevel) const{
+        // reset
+        memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -786,7 +788,6 @@ public:
 
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
-
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
                         const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
                         // Get child
@@ -797,18 +798,14 @@ public:
                             // For each child
                             for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
                                 if(cells[idxCousin]){
-                                    //FTreeCoordinate potentialNeighbor;
-                                    //potentialNeighbor.setPositionFromMorton(mortonOtherParent | idxCousin, inLevel);
-                                    const FTreeCoordinate potentialNeighbor((otherParent.getX()<<1) | (idxCousin>>2 & 1),
-                                                                            (otherParent.getY()<<1) | (idxCousin>>1 & 1),
-                                                                            (otherParent.getZ()<<1) | (idxCousin&1));
+                                    const int xdiff  = workingCell.getX() - ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1));
+                                    const int ydiff  = workingCell.getY() - ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1));
+                                    const int zdiff  = workingCell.getZ() - ((otherParent.getZ()<<1) | (idxCousin&1));
 
                                     // Test if it is a direct neighbor
-                                    if(FMath::Abs(workingCell.getX() - potentialNeighbor.getX()) > 1 ||
-                                            FMath::Abs(workingCell.getY() - potentialNeighbor.getY()) > 1 ||
-                                            FMath::Abs(workingCell.getZ() - potentialNeighbor.getZ()) > 1){
+                                    if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                         // add to neighbors
-                                        inNeighbors[idxNeighbors] = cells[idxCousin];
+                                        inNeighbors[ ((xdiff * 7) + ydiff) * 7 + zdiff] = cells[idxCousin];
                                         ++idxNeighbors;
                                     }
                                 }
@@ -832,7 +829,7 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getDistantNeighbors(const CellClass* inNeighbors[189], FTreeCoordinate inRelativePosition[189],
+    int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[343],
                             const FTreeCoordinate& workingCell,
                             const int inLevel) const{
 
@@ -843,55 +840,55 @@ public:
         // Limite at parent level number of box (split by 2 by level)
         const int limite = FMath::pow(2,inLevel-1);
 
+        // This is not on a border we can use normal interaction list method
+        if( !(parentCell.getX() == 0 || parentCell.getY() == 0 || parentCell.getZ() == 0 ||
+              parentCell.getX() == limite - 1 || parentCell.getY() == limite - 1 || parentCell.getZ() == limite - 1 ) ) {
+            return getInteractionNeighbors( inNeighbors, workingCell, inLevel);
+        }
+        else{
+            // reset
+            memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
-        int idxNeighbors = 0;
-        // We test all cells around
-        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
-            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
-                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-                    // if we are not on the current cell
-                    if( idxX || idxY || idxZ ){
+            int idxNeighbors = 0;
+            // We test all cells around
+            for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+                for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                    for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                        // if we are not on the current cell
+                        if( idxX || idxY || idxZ ){
 
-                        const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        FTreeCoordinate otherParentInBox(otherParent);
-                        // periodic
-                        if( otherParentInBox.getX() < 0 ) otherParentInBox.setX( otherParentInBox.getX() + limite );
-                        else if( limite <= otherParentInBox.getX() ) otherParentInBox.setX( otherParentInBox.getX() - limite );
+                            const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                            FTreeCoordinate otherParentInBox(otherParent);
+                            // periodic
+                            if( otherParentInBox.getX() < 0 ) otherParentInBox.setX( otherParentInBox.getX() + limite );
+                            else if( limite <= otherParentInBox.getX() ) otherParentInBox.setX( otherParentInBox.getX() - limite );
 
-                        if( otherParentInBox.getY() < 0 ) otherParentInBox.setY( otherParentInBox.getY() + limite );
-                        else if( limite <= otherParentInBox.getY() ) otherParentInBox.setY( otherParentInBox.getY() - limite );
+                            if( otherParentInBox.getY() < 0 ) otherParentInBox.setY( otherParentInBox.getY() + limite );
+                            else if( limite <= otherParentInBox.getY() ) otherParentInBox.setY( otherParentInBox.getY() - limite );
 
-                        if( otherParentInBox.getZ() < 0 ) otherParentInBox.setZ( otherParentInBox.getZ() + limite );
-                        else if( limite <= otherParentInBox.getZ() ) otherParentInBox.setZ( otherParentInBox.getZ() - limite );
+                            if( otherParentInBox.getZ() < 0 ) otherParentInBox.setZ( otherParentInBox.getZ() + limite );
+                            else if( limite <= otherParentInBox.getZ() ) otherParentInBox.setZ( otherParentInBox.getZ() - limite );
 
 
-                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
-                        // Get child
-                        CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
+                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
+                            // Get child
+                            CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
-                        // If there is one or more child
-                        if(cells){
-                            // For each child
-                            for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
-                                if(cells[idxCousin]){
-                                    //FTreeCoordinate potentialNeighbor;
-                                    //potentialNeighbor.setPositionFromMorton(mortonOtherParent | idxCousin, inLevel);
-                                    const FTreeCoordinate potentialNeighbor((otherParent.getX()<<1) | (idxCousin>>2 & 1),
-                                                                            (otherParent.getY()<<1) | (idxCousin>>1 & 1),
-                                                                            (otherParent.getZ()<<1) | (idxCousin&1));
+                            // If there is one or more child
+                            if(cells){
+                                // For each child
+                                for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
+                                    if(cells[idxCousin]){
+                                        const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
+                                        const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
+                                        const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1))         - workingCell.getZ();
 
-                                    const FTreeCoordinate relativePosition(potentialNeighbor.getX() - workingCell.getX(),
-                                                                           potentialNeighbor.getY() - workingCell.getY(),
-                                                                           potentialNeighbor.getZ() - workingCell.getZ());
-
-                                    // Test if it is a direct neighbor
-                                    if(FMath::Abs(relativePosition.getX()) > 1 ||
-                                            FMath::Abs(relativePosition.getY()) > 1 ||
-                                            FMath::Abs(relativePosition.getZ()) > 1){
-                                        // add to neighbors
-                                        inNeighbors[idxNeighbors] = cells[idxCousin];
-                                        inRelativePosition[idxNeighbors] = relativePosition;
-                                        ++idxNeighbors;
+                                        // Test if it is a direct neighbor
+                                        if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                                            // add to neighbors
+                                            inNeighbors[((xdiff * 7) + ydiff) * 7 + zdiff] = cells[idxCousin];
+                                            ++idxNeighbors;
+                                        }
                                     }
                                 }
                             }
@@ -899,9 +896,9 @@ public:
                     }
                 }
             }
-        }
 
-        return idxNeighbors;
+            return idxNeighbors;
+        }
     }
 
 

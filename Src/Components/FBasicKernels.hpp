@@ -74,11 +74,6 @@ public:
     // ------------------- Periodic  --------------------
 
 
-    /** Before Downward */
-    void M2L(CellClass* const FRestrict , const CellClass* [189], const FTreeCoordinate [189], const int , const int ) {
-    }
-
-
     /** After Downward */
     void P2P(const MortonIndex ,
              ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,

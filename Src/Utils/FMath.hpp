@@ -13,7 +13,7 @@
 
 
 #include <cmath>
-#include <climits>
+#include <limits>
 
 #include "FGlobal.hpp"
 
@@ -50,10 +50,10 @@ struct FMath{
     /** To know if 2 values seems to be equal */
     template <class NumType>
     static bool LookEqual(const NumType inV1, const NumType inV2){
-        const FReal relTol = FReal(0.00001);
-                const FReal absTol = FReal(0.00001);
-                return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));
-        //return Abs(inV1 - inV2) <= ((Abs(inV1) < Abs(inV2) ? Abs(inV2) : Abs(inV1)) * 0.00001);
+        //const FReal relTol = FReal(0.00001);
+        //const FReal absTol = FReal(0.00001);
+        //return (Abs(inV1 - inV2) <= Max(absTol, relTol * Max(Abs(inV1), Abs(inV2))));
+        return Abs(inV1 - inV2) < std::numeric_limits<NumType>::epsilon();
     }
 
     /** To get floor of a FReal */

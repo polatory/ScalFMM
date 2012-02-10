@@ -44,7 +44,7 @@ public:
     }
 
     /** During upward */
-    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int ) {
+    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int /*level*/) {
 
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
@@ -55,16 +55,16 @@ public:
     }
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189], const int size, const int ) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343], const int /*size*/, const int /*level*/) {
 
         // The pole is impacted by what represent other poles
-        for(int idx = 0 ; idx < size ; ++idx){
-            pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
+        for(int idx = 0 ; idx < 343 ; ++idx){
+            if(distantNeighbors[idx]) pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
         }
     }
 
     /** During Downward */
-    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int) {
+    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int /*level*/) {
 
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){

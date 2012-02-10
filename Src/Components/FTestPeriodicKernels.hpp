@@ -20,14 +20,6 @@ template< class ParticleClass, class CellClass, class ContainerClass>
 class FTestPeriodicKernels : public FTestKernels<ParticleClass,CellClass,ContainerClass> {
 public:
 
-    /** Before Downward */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[189], const FTreeCoordinate [189], const int size, const int ) {
-        // The pole is impacted by what represent other poles
-        for(int idx = 0 ; idx < size ; ++idx){
-            pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
-        }
-    }
-
 
     /** After Downward */
     void P2P(const MortonIndex ,
