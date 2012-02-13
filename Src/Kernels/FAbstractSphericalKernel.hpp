@@ -199,6 +199,32 @@ public:
       */
     void P2P(const FTreeCoordinate& inLeafPosition,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                  ContainerClass* const directNeighborsParticles[27], const int size){
+
+        if( targets == sources ){
+            P2PNoTsm(inLeafPosition, targets, directNeighborsParticles, size);
+        }
+        else{
+            P2PTsm(inLeafPosition, targets, sources, directNeighborsParticles, size);
+        }
+    }
+
+private:
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //                                  P2P possibilities
+    ///////////////////////////////////////////////////////////////////////////////
+
+    /** This P2P has to be used when target != sources
+      * It will proceed an direct interation no mutual
+      *
+      * It takes all the target particles from the current leaf,
+      * then it computes the sources/targets interaction in this leaf,
+      * then it computes the sources/targets inteactions between this leaf and the
+      * neighbors.
+      */
+    void P2PTsm(const FTreeCoordinate& inLeafPosition,
+                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27], const int ){
 
         { // Compute interaction in this leaf
@@ -249,7 +275,7 @@ public:
       * then it computes the  inteactions between this leaf and the
       * neighbors.
       */
-    void P2P(const FTreeCoordinate& inLeafPosition,
+    void P2PNoTsm(const FTreeCoordinate& inLeafPosition,
              ContainerClass* const FRestrict targets,
              ContainerClass* const directNeighborsParticles[27], const int ){
         { // Compute interaction in this leaf
@@ -297,7 +323,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
     //                                  Computation
     ///////////////////////////////////////////////////////////////////////////////
-private:
+
 
     /** P2M computation
     * expansion_P2M_add

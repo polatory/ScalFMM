@@ -81,22 +81,11 @@ public:
     /**
         * P2P
         * Particles to particles
+        * @param inLeafPosition tree coordinate of the leaf
         * @param targets current boxe targets particles
+        * @param sources current boxe sources particles (can be == to targets)
         * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
-        * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
-        */
-    virtual void P2P(const FTreeCoordinate& inLeafPosition,
-             ContainerClass* const FRestrict targets,
-             ContainerClass* const directNeighborsParticles[27], const int size) = 0;
-
-    /**
-        * P2P
-        * Particles to particles
-        * @param inLeafPosition
-        * @param targets current boxe targets particles
-        * @param sources current boxe sources particles
-        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
-        * @param size the number of direct neighbors (the size of the array directNeighborsParticles)
+        * @param size the number of direct neighbors
         */
     virtual void P2P(const FTreeCoordinate& inLeafPosition,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,

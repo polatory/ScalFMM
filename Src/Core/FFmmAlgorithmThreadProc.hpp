@@ -1133,7 +1133,8 @@ private:
 
                         // need the current particles and neighbors particles
                         const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                        myThreadkernels.P2P( currentIter.cell->getCoordinate(),currentIter.targets, neighbors, counter);
+                        myThreadkernels.P2P( currentIter.cell->getCoordinate(),currentIter.targets,
+                                             currentIter.sources, neighbors, counter);
                     }
                 }
 
@@ -1221,7 +1222,8 @@ private:
                             }
                         }
 
-                        myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets, neighbors, counter);
+                        myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets,
+                                             currentIter.sources, neighbors, counter);
                     }
                 }
 

@@ -89,28 +89,6 @@ public:
 
     }
 
-    /** After Downward */
-    void P2P(const FTreeCoordinate& ,
-                 ContainerClass* const FRestrict targets,
-                 ContainerClass* const directNeighborsParticles[27], const int ){
-
-        // Each particles targeted is impacted by the particles sources
-        long long int inc = targets->getSize() - 1;
-
-        for(int idx = 0 ; idx < 27 ; ++idx){
-            if( directNeighborsParticles[idx] ){
-                inc += directNeighborsParticles[idx]->getSize();
-            }
-        }
-
-        typename ContainerClass::BasicIterator iter(*targets);
-        while( iter.hasNotFinished() ){
-            iter.data().setDataDown(iter.data().getDataDown() + inc);
-            iter.gotoNext();
-        }
-
-    }
-
 
     /** After Downward */
     void P2P(const FTreeCoordinate& ,

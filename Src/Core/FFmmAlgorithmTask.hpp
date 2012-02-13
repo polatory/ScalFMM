@@ -324,7 +324,8 @@ private:
                         #pragma omp task
                         {
                             const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
-                            myThreadkernels->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(), neighbors, counter);
+                            myThreadkernels->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
+                                                 toWork.getCurrentListSrc(), neighbors, counter);
                         }
                     }
 

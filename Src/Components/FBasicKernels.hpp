@@ -58,12 +58,6 @@ public:
 
     }
 
-    /** Do nothing */
-    virtual void P2P(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ) {
-
-    }
 
     /** Do nothing */
     virtual void P2P(const FTreeCoordinate& ,

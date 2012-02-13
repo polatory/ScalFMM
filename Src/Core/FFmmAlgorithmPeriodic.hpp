@@ -240,7 +240,8 @@ private:
             // need the current particles and neighbors particles
             const int counter = tree->getPeriodicLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
             FDEBUG(computationCounterP2P.tic());
-            kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(), neighbors, counter);
+            kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
+                         octreeIterator.getCurrentListSrc(), neighbors, counter);
             FDEBUG(computationCounterP2P.tac());
         } while(octreeIterator.moveRight());
 

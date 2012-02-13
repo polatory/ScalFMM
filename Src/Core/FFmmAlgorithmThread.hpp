@@ -384,7 +384,8 @@ private:
                     // need the current particles and neighbors particles
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tic());
                     const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                    myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets, neighbors, counter);
+                    myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
+                                        currentIter.sources, neighbors, counter);
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
 
