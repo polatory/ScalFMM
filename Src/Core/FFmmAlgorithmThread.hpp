@@ -281,10 +281,10 @@ private:
             octreeIterator = avoidGotoLeftIterator;
 
             FDEBUG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for nowait
+                #pragma omp for nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }

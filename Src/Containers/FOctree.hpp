@@ -798,9 +798,9 @@ public:
                             // For each child
                             for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
                                 if(cells[idxCousin]){
-                                    const int xdiff  = workingCell.getX() - ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1));
-                                    const int ydiff  = workingCell.getY() - ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1));
-                                    const int zdiff  = workingCell.getZ() - ((otherParent.getZ()<<1) | (idxCousin&1));
+                                    const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
+                                    const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
+                                    const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
 
                                     // Test if it is a direct neighbor
                                     if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
