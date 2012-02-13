@@ -59,15 +59,16 @@ public:
     }
 
     /** Do nothing */
-    virtual void P2P(ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     const ContainerClass* const [26], const int ) {
+    virtual void P2P(const FTreeCoordinate& ,
+                     ContainerClass* const FRestrict ,
+                     ContainerClass* const [27], const int ) {
 
     }
 
     /** Do nothing */
-    virtual void P2P(const MortonIndex ,
+    virtual void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [26], const int ){
+                     ContainerClass* const [27], const int ){
 
     }
 

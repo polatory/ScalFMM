@@ -371,7 +371,7 @@ private:
 
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[26];
+            ContainerClass* neighbors[27];
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
@@ -384,7 +384,7 @@ private:
                     // need the current particles and neighbors particles
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tic());
                     const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                    myThreadkernels.P2P(currentIter.index, currentIter.targets, currentIter.sources , neighbors, counter);
+                    myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets, neighbors, counter);
                     FDEBUG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
 

@@ -90,16 +90,17 @@ public:
     }
 
     /** After Downward */
-    void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             const ContainerClass* const directNeighborsParticles[26], const int size) {
+    void P2P(const FTreeCoordinate& ,
+                 ContainerClass* const FRestrict targets,
+                 ContainerClass* const directNeighborsParticles[27], const int ){
 
         // Each particles targeted is impacted by the particles sources
-        long long int inc = sources->getSize();
-        if(targets == sources){
-            inc -= 1;
-        }
-        for(int idx = 0 ; idx < size ; ++idx){
-            inc += directNeighborsParticles[idx]->getSize();
+        long long int inc = targets->getSize() - 1;
+
+        for(int idx = 0 ; idx < 27 ; ++idx){
+            if( directNeighborsParticles[idx] ){
+                inc += directNeighborsParticles[idx]->getSize();
+            }
         }
 
         typename ContainerClass::BasicIterator iter(*targets);
@@ -112,17 +113,19 @@ public:
 
 
     /** After Downward */
-    void P2P(const MortonIndex ,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             ContainerClass* const directNeighborsParticles[26], const int size) {
+    void P2P(const FTreeCoordinate& ,
+                 ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                 ContainerClass* const directNeighborsParticles[27], const int ){
 
         // Each particles targeted is impacted by the particles sources
         long long int inc = sources->getSize();
         if(targets == sources){
             inc -= 1;
         }
-        for(int idx = 0 ; idx < size ; ++idx){
-            inc += directNeighborsParticles[idx]->getSize();
+        for(int idx = 0 ; idx < 27 ; ++idx){
+            if( directNeighborsParticles[idx] ){
+                inc += directNeighborsParticles[idx]->getSize();
+            }
         }
 
         typename ContainerClass::BasicIterator iter(*targets);

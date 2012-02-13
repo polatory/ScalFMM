@@ -151,7 +151,7 @@ int main(int argc, char ** argv){
             octreeIterator.gotoBottomLeft();
 
             do{
-                ContainerClass* neighbors[26];
+                ContainerClass* neighbors[27];
                 // need the current particles and neighbors particles
                 averageNeighbors += FReal(tree.getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),NbLevels-1));
                 ++nbLeafs;

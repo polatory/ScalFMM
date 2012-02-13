@@ -277,13 +277,13 @@ private:
 
         const int heightMinusOne = OctreeHeight - 1;
 
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[26];
+            ContainerClass* neighbors[27];
 
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 const int SizeShape = 3*3*3;
                 FVector<typename OctreeClass::Iterator> shapes[SizeShape];
@@ -293,7 +293,7 @@ private:
 
                 // for each leafs
                 do{
-#pragma omp task
+                    #pragma omp task
                     {
                         myThreadkernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
                     }
@@ -302,7 +302,7 @@ private:
                     const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
 
                     if( shapePosition == 0){
-#pragma omp task
+                        #pragma omp task
                         {
                             // need the current particles and neighbors particles
                             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
@@ -315,20 +315,20 @@ private:
 
                 } while(octreeIterator.moveRight());
 
-#pragma omp taskwait
+                #pragma omp taskwait
 
                 for( int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
                     int iterLeaf = shapes[idxShape].getSize();
                     while( iterLeaf-- ){
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-#pragma omp task
+                        #pragma omp task
                         {
                             const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
-                            myThreadkernels->P2P(toWork.getCurrentGlobalIndex(),toWork.getCurrentListTargets(), toWork.getCurrentListSrc() , neighbors, counter);
+                            myThreadkernels->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(), neighbors, counter);
                         }
                     }
 
-#pragma omp taskwait
+                    #pragma omp taskwait
                 }
             }
         }

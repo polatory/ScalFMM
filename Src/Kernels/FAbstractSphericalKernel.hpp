@@ -197,8 +197,9 @@ public:
       * then it computes the sources/targets inteactions between this leaf and the
       * neighbors.
       */
-    void P2P(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             const ContainerClass* const directNeighbors[26], const int size) {
+    void P2P(const FTreeCoordinate& inLeafPosition,
+                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                  ContainerClass* const directNeighborsParticles[27], const int ){
 
         { // Compute interaction in this leaf
             typename ContainerClass::BasicIterator iterTarget(*targets);
@@ -209,7 +210,6 @@ public:
                 // For all the source particles in the same leaf
                 typename ContainerClass::ConstBasicIterator iterSameBox(*sources);
                 while( iterSameBox.hasNotFinished() ){
-                    //(&iterSameBox.data() != &iterTarget.data())
                     directInteraction(&target, iterSameBox.data());
                     iterSameBox.gotoNext();
                 }
@@ -220,20 +220,22 @@ public:
         }
         { // Compute interactions with other leaves
             // For all the neigbors leaves
-            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                // For all particles in current leaf
-                typename ContainerClass::BasicIterator iterTarget(*targets);
-                while( iterTarget.hasNotFinished() ){
-                    ParticleClass target( iterTarget.data() );
-                    // For all the particles in the other leaf
-                    typename ContainerClass::ConstBasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                    while( iterSource.hasNotFinished() ){
-                        directInteraction(&target, iterSource.data());
-                        iterSource.gotoNext();
+            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
+                if( directNeighborsParticles[idxDirectNeighbors] ){
+                    // For all particles in current leaf
+                    typename ContainerClass::BasicIterator iterTarget(*targets);
+                    while( iterTarget.hasNotFinished() ){
+                        ParticleClass target( iterTarget.data() );
+                        // For all the particles in the other leaf
+                        typename ContainerClass::ConstBasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
+                        while( iterSource.hasNotFinished() ){
+                            directInteraction(&target, iterSource.data());
+                            iterSource.gotoNext();
+                        }
+                        // Set data and progress
+                        iterTarget.setData(target);
+                        iterTarget.gotoNext();
                     }
-                    // Set data and progress
-                    iterTarget.setData(target);
-                    iterTarget.gotoNext();
                 }
             }
         }
@@ -247,9 +249,9 @@ public:
       * then it computes the  inteactions between this leaf and the
       * neighbors.
       */
-    void P2P(const MortonIndex inCurrentIndex,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-             ContainerClass* const directNeighbors[26], const int size){
+    void P2P(const FTreeCoordinate& inLeafPosition,
+             ContainerClass* const FRestrict targets,
+             ContainerClass* const directNeighborsParticles[27], const int ){
         { // Compute interaction in this leaf
             typename ContainerClass::BasicIterator iterTarget(*targets);
             while( iterTarget.hasNotFinished() ){
@@ -270,14 +272,14 @@ public:
         }
         { // Compute interactions with other leaves
             // For all the neigbors leaves
-            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                if(inCurrentIndex < 0 /*inNeighborsIndex[idxDirectNeighbors] TODO */ ){
+            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors <= 13 ; ++idxDirectNeighbors){
+                if( directNeighborsParticles[idxDirectNeighbors] ){
                     // For all particles in current leaf
                     typename ContainerClass::BasicIterator iterTarget(*targets);
                     while( iterTarget.hasNotFinished() ){
                         ParticleClass target( iterTarget.data() );
                         // For all the particles in the other leaf
-                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
+                        typename ContainerClass::BasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
                         while( iterSource.hasNotFinished() ){
                             directInteractionMutual(&target, &iterSource.data());
                             iterSource.gotoNext();
@@ -291,74 +293,6 @@ public:
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //                                  Periodic
-    ///////////////////////////////////////////////////////////////////////////////
-
-
-    /** After Downward */
-    /*void P2P(const MortonIndex inCurrentIndex,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,//sources
-             ContainerClass* const directNeighbors[26], const FTreeCoordinate neighborsRelativeOffset[26], const int size) {
-
-        { // Compute interaction in this leaf
-            typename ContainerClass::BasicIterator iterTarget(*targets);
-            while( iterTarget.hasNotFinished() ){
-                // We copy the target particle to work with a particle in the heap
-                ParticleClass target( iterTarget.data() );
-
-                // For all particles after the current one
-                typename ContainerClass::BasicIterator iterSameBox = iterTarget;
-                iterSameBox.gotoNext();
-                while( iterSameBox.hasNotFinished() ){
-                    directInteractionMutual(&target, &iterSameBox.data());
-                    iterSameBox.gotoNext();
-                }
-                // Set data and progress
-                iterTarget.setData(target);
-                iterTarget.gotoNext();
-            }
-        }
-        { // Compute interactions with other leaves
-            // For all the neigbors leaves
-            for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < size ; ++idxDirectNeighbors){
-                // This box is not a real neighbor
-                if(neighborsRelativeOffset[idxDirectNeighbors].getX() || neighborsRelativeOffset[idxDirectNeighbors].getY()
-                        || neighborsRelativeOffset[idxDirectNeighbors].getZ() ){
-                    typename ContainerClass::BasicIterator iterTarget(*targets);
-                    while( iterTarget.hasNotFinished() ){
-                        ParticleClass target( iterTarget.data() );
-                        // For all the particles in the other leaf
-                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                        while( iterSource.hasNotFinished() ){
-                            directInteractionOffset(&target, iterSource.data(), neighborsRelativeOffset[idxDirectNeighbors]);
-                            iterSource.gotoNext();
-                        }
-                        // Set data and progress
-                        iterTarget.setData(target);
-                        iterTarget.gotoNext();
-                    }
-                }
-                // This is a real neighbor, we do as usual
-                else if(inCurrentIndex < neighborsRelativeOffset[idxDirectNeighbors].getMortonIndex(treeHeight) ){
-                    // For all particles in current leaf
-                    typename ContainerClass::BasicIterator iterTarget(*targets);
-                    while( iterTarget.hasNotFinished() ){
-                        ParticleClass target( iterTarget.data() );
-                        // For all the particles in the other leaf
-                        typename ContainerClass::BasicIterator iterSource(*directNeighbors[idxDirectNeighbors]);
-                        while( iterSource.hasNotFinished() ){
-                            directInteractionMutual(&target, &iterSource.data());
-                            iterSource.gotoNext();
-                        }
-                        // Set data and progress
-                        iterTarget.setData(target);
-                        iterTarget.gotoNext();
-                    }
-                }
-            }
-        }
-    }*/
 
     ///////////////////////////////////////////////////////////////////////////////
     //                                  Computation

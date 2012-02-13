@@ -933,8 +933,8 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getLeafsNeighbors(ContainerClass* inNeighbors[26], const FTreeCoordinate& center, const int inLevel){
-        memset( inNeighbors, 0 , 26 * sizeof(ContainerClass*));
+    int getLeafsNeighbors(ContainerClass* inNeighbors[27], const FTreeCoordinate& center, const int inLevel){
+        memset( inNeighbors, 0 , 27 * sizeof(ContainerClass*));
         const int limite = FMath::pow2(inLevel);
 
         int idxNeighbors = 0;
@@ -974,8 +974,8 @@ public:
           * @param inLevel the level of the element
           * @return the number of neighbors
           */
-    int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[26], const FTreeCoordinate& center, const int inLevel){
-        memset(inNeighbors , 0 , 26 * sizeof(ContainerClass*));
+    int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[27], const FTreeCoordinate& center, const int inLevel){
+        memset(inNeighbors , 0 , 27 * sizeof(ContainerClass*));
         const int limite = FMath::pow2(inLevel);
 
         int idxNeighbors = 0;

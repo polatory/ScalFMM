@@ -75,7 +75,7 @@ public:
 // My kernel actually does nothing except showing how to retreive data from an
 // array from the indexes vector giving by the leaf in the P2M
 template< class ParticleClass, class CellClass, class ContainerClass>
-class MyKernel /*: public FAbstractKernels<ParticleClass,CellClass,ContainerClass> */{
+class MyKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass>{
     FBasicParticle*const realParticles;
 public:
     MyKernel(FBasicParticle*const inRealParticles): realParticles(inRealParticles) {
@@ -101,13 +101,16 @@ public:
     void L2P(const CellClass* const , ContainerClass* const ){
     }
 
-    void P2P(ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     const ContainerClass* const [26], const int ) {
+    void P2P(const FTreeCoordinate& ,
+                     ContainerClass* const FRestrict ,
+                     ContainerClass* const [27], const int ) {
+
     }
 
-    void P2P(const MortonIndex ,
+    void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [26], const int ){
+                     ContainerClass* const [27], const int ){
+
     }
 };
 

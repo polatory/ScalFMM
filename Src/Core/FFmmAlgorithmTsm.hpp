@@ -274,14 +274,15 @@ public:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        ContainerClass* neighbors[26];
+        ContainerClass* neighbors[27];
         // for each leafs
         do{
             FDEBUG(computationCounter.tic());
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
             // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-            kernels->P2P( octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
+            kernels->P2P( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+                          octreeIterator.getCurrentListSrc() , neighbors, counter);
             FDEBUG(computationCounter.tac());
             FDEBUG(totalComputation += computationCounter.elapsed());
         } while(octreeIterator.moveRight());

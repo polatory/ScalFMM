@@ -343,14 +343,15 @@ public:
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[26];
+            ContainerClass* neighbors[27];
 
             #pragma omp for schedule(dynamic)
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particles and neighbors particles
                 const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
-                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentListTargets(), iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter);
+                myThreadkernels->P2P( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
+                                      iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter);
             }
         }
         FDEBUG(computationCounter.tac());
