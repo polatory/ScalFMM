@@ -489,6 +489,7 @@ private:
                         typename ContainerClass::BasicIterator iterTarget(*targets);
                         while( iterTarget.hasNotFinished() ){
                             ParticleClass target( iterTarget.data() );
+
                             // For all the particles in the other leaf
                             typename ContainerClass::BasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
                             while( iterSource.hasNotFinished() ){
@@ -916,8 +917,7 @@ public:
       * F = q * q' / r²
       */
     void directInteractionMutual(ParticleClass*const FRestrict target, ParticleClass*const FRestrict source){
-//TODO std::cout << "P2P Mutual between " << target->getPosition() << " and " << source->getPosition() << std::endl;//TODO delete
-//TODO std::cout << target << " / " << source << std::endl;
+
         FReal dx = -(target->getPosition().getX() - source->getPosition().getX());
         FReal dy = -(target->getPosition().getY() - source->getPosition().getY());
         FReal dz = -(target->getPosition().getZ() - source->getPosition().getZ());
@@ -937,14 +937,14 @@ public:
 
         source->incForces( (-dx), (-dy), (-dz));
         source->incPotential( inv_distance * target->getPhysicalValue() );
+
     }
 
     /** P2P NO mutual interaction
       * F = q * q' / r²
       */
     void directInteraction(ParticleClass*const FRestrict target, const ParticleClass& source){
-//TODO std::cout << "P2P between " << target->getPosition() << " and " << source.getPosition() << std::endl;//TODO delete
-//TODO std::cout << target << " / " << &source << std::endl;
+
         FReal dx = -(target->getPosition().getX() - source.getPosition().getX());
         FReal dy = -(target->getPosition().getY() - source.getPosition().getY());
         FReal dz = -(target->getPosition().getZ() - source.getPosition().getZ());
@@ -961,6 +961,7 @@ public:
 
         target->incForces( dx, dy, dz);
         target->incPotential( inv_distance  * source.getPhysicalValue() );
+
     }
 
 

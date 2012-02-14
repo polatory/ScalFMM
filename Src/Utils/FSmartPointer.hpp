@@ -1,10 +1,17 @@
 #ifndef FSMARTPOINTER_HPP
 #define FSMARTPOINTER_HPP
 
+
+enum FSmartPointerType{
+    FSmartArrayMemory,
+    FSmartPointerMemory
+};
+
 /** This class is a basic smart pointer class
-  *
+  * Use as FSmartPointer<int> array = new int[5];
+  * FSmartPointer<int, PointerMemory> pt = new int;
   */
-template <class ClassType>
+template <class ClassType, FSmartPointerType MemoryType = FSmartArrayMemory>
 class FSmartPointer {
     ClassType* pointer; //< The pointer to the memory area
     int* counter;       //< Reference counter
@@ -63,7 +70,8 @@ public:
         if(counter){
             (*counter) = (*counter) - 1;
             if( (*counter) == 0 ){
-                delete[] pointer;
+                if(MemoryType == FSmartArrayMemory) delete[] pointer;
+                else if(MemoryType == FSmartPointerMemory) delete pointer;
             }
             pointer = 0;
             counter = 0;
