@@ -63,7 +63,7 @@ public:
         if(counter){
             (*counter) = (*counter) - 1;
             if( (*counter) == 0 ){
-                delete pointer;
+                delete[] pointer;
             }
             pointer = 0;
             counter = 0;
