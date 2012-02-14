@@ -340,7 +340,7 @@ protected:
 
     const int devM2lP;               //< A secondary P
 
-    RotationM2LTransfer** preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FSmartPointer<RotationM2LTransfer*> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
     RotationInfo rotation_Info;
 
     /** To access te pre computed M2L transfer vector */
@@ -353,7 +353,7 @@ protected:
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
         preM2LTransitions = new RotationM2LTransfer*[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions, 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
         // We start from the higher level
         FReal treeWidthAtLevel = Parent::boxWidth * FReal(1 << Parent::periodicLevels);
         for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
@@ -387,25 +387,30 @@ public:
       */
     FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
-          devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)), preM2LTransitions(0), rotation_Info(inDevP) {
+          devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
+          preM2LTransitions(0),
+          rotation_Info(inDevP) {
         allocAndInit();
     }
 
     /** Copy constructor */
     FSphericalRotationKernel(const FSphericalRotationKernel& other)
-        : Parent(other), devM2lP(other.devM2lP), preM2LTransitions(0), rotation_Info(other.devP) {
-        allocAndInit();
+        : Parent(other), devM2lP(other.devM2lP),
+          preM2LTransitions(other.preM2LTransitions),
+          rotation_Info(other.devP) {
+
     }
 
     /** Destructor */
     ~FSphericalRotationKernel(){
-        for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
-            for(int idx = 0 ; idx < 7*7*7 ; ++idx ){
-                preM2LTransitions[idxLevel + Parent::periodicLevels][idx].~RotationM2LTransfer();
+        if( preM2LTransitions.isLast() ){
+            for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+                for(int idx = 0 ; idx < 7*7*7 ; ++idx ){
+                    preM2LTransitions[idxLevel + Parent::periodicLevels][idx].~RotationM2LTransfer();
+                }
+                delete[] reinterpret_cast<char*>(preM2LTransitions[idxLevel + Parent::periodicLevels]);
             }
-            delete[] reinterpret_cast<char*>(preM2LTransitions[idxLevel + Parent::periodicLevels]);
         }
-        delete[] preM2LTransitions;
     }
 
     /** M2L with a cell and all the existing neighbors */

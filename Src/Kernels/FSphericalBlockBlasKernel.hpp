@@ -29,8 +29,8 @@ protected:
     const int FF_MATRIX_COLUMN_DIM;  //< The blas matrix number of columns
     const int FF_MATRIX_SIZE;        //< The blas matrix size
 
-    FComplexe* temporaryMultiSource; //< To perform the M2L without allocating at each call
-    FComplexe** preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FComplexe* temporaryMultiSource;                //< To perform the M2L without allocating at each call
+    FSmartPointer<FComplexe*> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
 
     /** To access te precomputed M2L transfer matrixes */
     int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
@@ -39,7 +39,6 @@ protected:
 
     /** Alloc and init pre-vectors*/
     void allocAndInit(){
-        temporaryMultiSource = new FComplexe[FF_MATRIX_COLUMN_DIM];
 
         FHarmonic blasHarmonic(Parent::devP * 2);
 
@@ -47,7 +46,7 @@ protected:
         // so 6 in each dimension
         FReal treeWidthAtLevel = Parent::boxWidth * FReal( 1 << Parent::periodicLevels);
         preM2LTransitions = new FComplexe*[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions, 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
 
         for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
             preM2LTransitions[idxLevel + Parent::periodicLevels] = new FComplexe[(7 * 7 * 7) * FF_MATRIX_SIZE];
@@ -99,7 +98,8 @@ public:
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
-          temporaryMultiSource(0), preM2LTransitions(0){
+          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
+          preM2LTransitions(0){
         allocAndInit();
     }
 
@@ -108,15 +108,17 @@ public:
         : Parent(other),
           FF_MATRIX_ROW_DIM(other.FF_MATRIX_ROW_DIM), FF_MATRIX_COLUMN_DIM(other.FF_MATRIX_COLUMN_DIM),
           FF_MATRIX_SIZE(other.FF_MATRIX_SIZE),
-          temporaryMultiSource(0), preM2LTransitions(0) {
-        allocAndInit();
+          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
+          preM2LTransitions(other.preM2LTransitions) {
+
     }
 
     /** Destructor */
     ~FSphericalBlockBlasKernel(){
         delete[] temporaryMultiSource;
-        FMemUtils::DeleteAll(preM2LTransitions, Parent::treeHeight + Parent::periodicLevels);
-        delete[] preM2LTransitions;
+        if(preM2LTransitions.isLast()){
+            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight + Parent::periodicLevels);
+        }
     }
 
     /** M2L with a cell and all the existing neighbors */
