@@ -11,26 +11,41 @@
 #ifndef FABSTRACTSENDABLE_HPP
 #define FABSTRACTSENDABLE_HPP
 
-
+class FBufferReader;
+class FBufferWriter;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractSendable
 * Please read the license
+*
+* To make your cells are usable in the mpi fmm,
+* they must provide this interface
 */
 class FAbstractSendable {
 protected:
     /** Empty Destructor */
     virtual ~FAbstractSendable(){}
 
-    //static const int SerializedSizeUp = sizeof(?);
-    virtual void serializeUp(void* const buffer) const  = 0;
-    virtual void deserializeUp(const void* const buffer) = 0;
+    ///////////////////////////////////////////////
+    // For Upward pass
+    ///////////////////////////////////////////////
 
-    //static const int SerializedSizeDown = sizeof(?);
-    virtual void serializeDown(void* const buffer) const = 0;
-    virtual void deserializeDown(const void* const buffer) = 0;
+    /** Save your data */
+    virtual void serializeUp(FBufferWriter&) const  = 0;
+    /** Retrieve your data */
+    virtual void deserializeUp(FBufferReader&) = 0;
+
+    ///////////////////////////////////////////////
+    // For Downward pass
+    ///////////////////////////////////////////////
+
+    /** Save your data */
+    virtual void serializeDown(FBufferWriter&) const = 0;
+    /** Retrieve your data */
+    virtual void deserializeDown(FBufferReader&) = 0;
 };
+
 
 #endif //FABSTRACTSENDABLE_HPP
 

@@ -18,43 +18,18 @@
 */
 class FLightOctree {
     // The node class
-    class Node {
-        Node* next[8];      // Child
-        const void* data;   // Data in this cell
-    public:
-        Node(){
+    struct Node {
+        Node* next[8];   // Child
+        int proc;        // Cell
+        int position;
+
+        Node() : proc(-1), position(-1) {
             memset(next, 0, sizeof(Node*)*8);
         }
 
         virtual ~Node(){
             for(int idxNext = 0 ; idxNext < 8 ; ++idxNext){
                 delete next[idxNext];
-            }
-        }
-
-        void insert(const MortonIndex& index, const void* const cell, const int level){
-            if(level){
-                const int host = (index >> (3 * (level-1))) & 0x07;
-                if(!next[host]){
-                    next[host] = new Node();
-                }
-                next[host]->insert(index, cell, level - 1);
-            }
-            else{
-                data = cell;
-            }
-        }
-
-        const void* getCell(const MortonIndex& index, const int level) const {
-            if(level){
-                const int host = (index >> (3 * (level-1))) & 0x07;
-                if(next[host]){
-                    return next[host]->getCell(index, level - 1);
-                }
-                return 0;
-            }
-            else{
-                return data;
             }
         }
     };
@@ -65,13 +40,40 @@ class FLightOctree {
 public:
     FLightOctree(){
     }
+
     // Insert a cell
-    void insertCell(const MortonIndex& index, const void* const cell, const int level){
-        root.insert(index, cell, level);
+    void insertCell(const MortonIndex& index, int level, const int inProc, const int inPosition){
+        Node* iter = &root;
+
+        while(level){
+            const int host = (index >> (3 * (level-1))) & 0x07;
+            if(!iter->next[host]){
+                iter->next[host] = new Node();
+            }
+            iter = iter->next[host];
+            level -= 1;
+        }
+
+        iter->proc = inProc;
+        iter->position = inPosition;
     }
     // Retreive a cell
-    const void* getCell(const MortonIndex& index, const int level) const{
-        return root.getCell(index, level);
+    void getCell(const MortonIndex& index, int level, int* const inProc, int* const inPosition) const{
+        const Node* iter = &root;
+
+        while(level){
+            const int host = (index >> (3 * (level-1))) & 0x07;
+            if(!iter->next[host]){
+                *inProc = -1;
+                *inPosition = -1;
+                return;
+            }
+            iter = iter->next[host];
+            level -= 1;
+        }
+
+        *inProc = iter->proc;
+        *inPosition = iter->position;
     }
 };
 

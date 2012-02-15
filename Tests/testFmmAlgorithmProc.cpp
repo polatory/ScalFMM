@@ -27,6 +27,8 @@
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
 #include "../Src/Extensions/FExtendPhysicalValue.hpp"
+#include "../Src/Extensions/FExtendFullySerializable.hpp"
+
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
@@ -281,26 +283,25 @@ void print(OctreeClass* const valideTree){
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FExtendPhysicalValue}
   */
-class TestParticle : public FTestParticle, public FExtendPhysicalValue {
+class TestParticle : public FExtendFullySerializable<TestParticle>, public FTestParticle, public FExtendPhysicalValue {
 };
 
 
 class TestCell : public FTestCell , public FAbstractSendable {
 public:
-    static const int SerializedSizeUp = sizeof(long long int);
-    void serializeUp(void* const buffer) const {
-        *(long long int*)buffer = this->dataUp;
+
+    void serializeUp(FBufferWriter& buffer) const {
+        buffer << this->dataUp;
     }
-    void deserializeUp(const void* const buffer){
-        this->dataUp = *(long long int*)buffer;
+    void deserializeUp(FBufferReader& buffer){
+        buffer >> this->dataUp;
     }
 
-    static const int SerializedSizeDown = sizeof(long long int);
-    void serializeDown(void* const buffer) const {
-        *(long long int*)buffer = this->dataDown;
+    void serializeDown(FBufferWriter& buffer) const {
+        buffer << this->dataDown;
     }
-    void deserializeDown(const void* const buffer){
-        this->dataDown = *(long long int*)buffer;
+    void deserializeDown(FBufferReader& buffer){
+        buffer >> this->dataDown;
     }
 };
 

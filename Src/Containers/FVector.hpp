@@ -14,6 +14,7 @@
 
 #include "../Utils/FGlobal.hpp"
 
+#include <cstring>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -195,6 +196,22 @@ public:
     }
 
     /**
+    * Add one value multiple time
+    * @param inValue the new value
+    * @param inRepeat the number of time the value is inserted
+    */
+    void set( const ObjectType & inValue, const int inRepeat){
+        // if needed, increase the vector
+        if( capacity < index + inRepeat ){
+            setCapacity(int((index + inRepeat) * 1.5));
+        }
+        // add the new element
+        for( int idx = 0 ; idx < inRepeat ; ++idx){
+            new((void*)&array[index++]) ObjectType(inValue);
+        }
+    }
+
+    /**
     *@brief Get a reference of a given value
     *@param inPosition the query position
     *@return the value
@@ -224,6 +241,35 @@ public:
       */
     const ObjectType* data() const{
         return array;
+    }
+
+    /** To take values from C array but copy with = operator
+      * @param inArray the array to copie values
+      * @param inSize the size of the array
+      */
+    void extractValues(const ObjectType*const inArray, const int inSize){
+        // Check available memory
+        if(capacity < index + inSize){
+            setCapacity( int((index + inSize) * 1.5) );
+        }
+        // Copy values
+        for(int idx = 0 ; idx < inSize ; ++idx){
+            new((void*)&array[index++]) ObjectType(inArray[idx]);
+        }
+    }
+
+    /** To take values from C array but copy with memcpy
+      * @param inArray the array to copie values
+      * @param inSize the size of the array
+      */
+    void memocopy(const ObjectType*const inArray, const int inSize){
+        // Check available memory
+        if(capacity < index + inSize){
+            setCapacity( int((index + inSize) * 1.5) );
+        }
+        // Copy values
+        memcpy(&array[index], inArray, inSize * sizeof(ObjectType));
+        index += inSize;
     }
 
     /** This class is a basic iterator

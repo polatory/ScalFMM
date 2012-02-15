@@ -16,7 +16,13 @@
 #include "../Extensions/FExtendParticleType.hpp"
 #include "../Components/FFmaParticle.hpp"
 
+#include "../Extensions/FExtendFullySerializable.hpp"
+
 class FSphericalParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
+public:
+};
+
+class FSendableSphericalParticle : public FExtendFullySerializable<FSendableSphericalParticle>, public FSphericalParticle {
 public:
 };
 

@@ -15,8 +15,13 @@
 #include "../Utils/FAbstractSendable.hpp"
 #include "../Utils/FComplexe.hpp"
 #include "../Utils/FMemUtils.hpp"
+
 #include "../Extensions/FExtendCellType.hpp"
+
 #include "../Components/FBasicCell.hpp"
+
+#include "../Containers/FBufferWriter.hpp"
+#include "../Containers/FBufferReader.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -119,39 +124,28 @@ public:
 */
 class FSendableSphericalCell : public FSphericalCell , public FAbstractSendable {
 public:
-    static int SerializedSizeDown;
-    static int SerializedSizeUp;
-
     static void Init(const int inDevP){
         FSphericalCell::Init(inDevP);
-        SerializedSizeDown = PoleSize * sizeof(FComplexe) + sizeof(FBasicCell);
-        SerializedSizeUp = LocalSize * sizeof(FComplexe) + sizeof(FBasicCell);
     }
 
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable
     ///////////////////////////////////////////////////////
-    void serializeUp(void* const buffer) const {
-        memcpy(buffer, (FBasicCell*)this, sizeof(FBasicCell));
-        memcpy((char*)(buffer) + sizeof(FBasicCell), multipole_exp, sizeof(FComplexe)*PoleSize );
+    void serializeUp(FBufferWriter& buffer) const{
+        buffer.write(multipole_exp, PoleSize);
     }
-    void deserializeUp(const void* const buffer){
-        memcpy((FBasicCell*)this, buffer, sizeof(FBasicCell));
-        memcpy(multipole_exp, (char*)(buffer) + sizeof(FBasicCell), sizeof(FComplexe)*PoleSize );
+    void deserializeUp(FBufferReader& buffer){
+        buffer.fillArray(multipole_exp, PoleSize);
     }
 
-    void serializeDown(void* const buffer) const {
-        memcpy(buffer, (FBasicCell*)this, sizeof(FBasicCell));
-        memcpy((char*)(buffer) + sizeof(FBasicCell), local_exp, sizeof(FComplexe)*LocalSize );
+    void serializeDown(FBufferWriter& buffer) const{
+        buffer.write(local_exp, LocalSize);
     }
-    void deserializeDown(const void* const buffer){
-        memcpy((FBasicCell*)this, buffer, sizeof(FBasicCell));
-        memcpy(local_exp, (char*)(buffer) + sizeof(FBasicCell), sizeof(FComplexe)*LocalSize );
+    void deserializeDown(FBufferReader& buffer){
+        buffer.fillArray(local_exp, LocalSize);
     }
 };
 
-int FSendableSphericalCell::SerializedSizeDown(-1);
-int FSendableSphericalCell::SerializedSizeUp(-1);
 
 #endif //FSPHERICALCELL_HPP
 

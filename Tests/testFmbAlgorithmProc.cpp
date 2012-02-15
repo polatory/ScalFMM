@@ -169,7 +169,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
+    typedef FSendableSphericalParticle     ParticleClass;
     typedef FSendableSphericalCell         CellClass;
     typedef FVector<ParticleClass>         ContainerClass;
 
