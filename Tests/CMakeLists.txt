@@ -47,5 +47,7 @@ foreach(exec ${source_tests_files})
 	target_link_libraries(
 		${execname}
 		${fmb_lib}
+		${BLAS_LIBRARIES}
+		${LAPACK_LIBRARIES}
 	)
 endforeach(exec)

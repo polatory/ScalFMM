@@ -6,6 +6,8 @@
 #include "./FChebTensor.hpp"
 #include "./FChebRoots.hpp"
 
+#include "../Utils/FBlas.hpp"
+
 
 
 /**
@@ -15,8 +17,9 @@
 
 /**
  * @class FChebInterpolator
+ *
  * The class @p FChebInterpolator defines the anterpolation (M2M) and
- * interpolation (L2L) operations.
+ * interpolation (L2L) concerning operations.
  */
 template <int ORDER>
 class FChebInterpolator : FNoCopyable
@@ -28,12 +31,43 @@ class FChebInterpolator : FNoCopyable
 
   FReal T_of_roots[ORDER][ORDER];
 	unsigned int node_ids[nnodes][3];
-  
+	FReal* ChildParentInterpolator[8];
+
+	/**
+	 * Initialize the child - parent - interpolator, it is basically the matrix
+	 * S which is precomputed and reused for all M2M and L2L operations, ie for
+	 * all non leaf inter/anterpolations.
+	 */
+	void initChildParentInterpolator()
+	{
+		F3DPosition ParentRoots[nnodes], ChildRoots[nnodes];
+		const FReal ParentWidth(2.);
+		const F3DPosition ParentCenter(0., 0., 0.);
+		FChebTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
+
+		F3DPosition ChildCenter;
+		const FReal ChildWidth(1.);
+		
+		// loop: child cells
+		for (unsigned int child=0; child<8; ++child) {
+
+			// allocate memory
+			ChildParentInterpolator[child] = new FReal [nnodes * nnodes];
+
+			// set child info
+			FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter);
+			FChebTensor<ORDER>::setRoots(ChildCenter, ChildWidth, ChildRoots);
+
+			// assemble child - parent - interpolator
+			assembleInterpolator(nnodes, ChildRoots, ChildParentInterpolator[child]);
+		}
+	}
+
 
 
 public:
 	/**
-	 * Constructor: It initializes the Chebyshev polynomials at the Chebyshev
+	 * Constructor: Initialize the Chebyshev polynomials at the Chebyshev
 	 * roots/interpolation point
 	 */
 	explicit FChebInterpolator()
@@ -45,8 +79,63 @@ public:
 
 		// initialize root node ids
 		TensorType::setNodeIds(node_ids);
+
+		// initialize interpolation operator for non M2M and L2L (non leaf
+		// operations)
+		this -> initChildParentInterpolator();
 	}
 
+	
+	/**
+	 * Destructor: Delete dynamically allocated memory for M2M and L2L operator
+	 */
+	~FChebInterpolator()
+	{
+		for (unsigned int child=0; child<8; ++child)
+			delete [] ChildParentInterpolator[child];
+	}
+
+
+	/**
+	 * Assembles the interpolator \f$S_\ell\f$ of size \f$N\times
+	 * \ell^3\f$. Here local points is meant as points whose global coordinates
+	 * have already been mapped to the reference interval [-1,1].
+	 *
+	 * @param[in] NumberOfLocalPoints
+	 * @param[in] LocalPoints
+	 * @param[out] Interpolator
+	 */
+	void assembleInterpolator(const unsigned int NumberOfLocalPoints,
+														const F3DPosition *const LocalPoints,
+														FReal *const Interpolator) const
+	{
+		// values of chebyshev polynomials of source particle: T_o(x_i)
+		FReal T_of_x[ORDER][3];
+
+		// loop: local points (mapped in [-1,1])
+		for (unsigned int m=0; m<NumberOfLocalPoints; ++m) {
+			// evaluate chebyshev polynomials at local points
+			for (unsigned int o=1; o<ORDER; ++o) {
+				T_of_x[o][0] = BasisType::T(o, LocalPoints[m].getX());
+				T_of_x[o][1] = BasisType::T(o, LocalPoints[m].getY());
+				T_of_x[o][2] = BasisType::T(o, LocalPoints[m].getZ());
+			}
+			
+			// assemble interpolator
+			for (unsigned int n=0; n<nnodes; ++n) {
+				Interpolator[n*nnodes + m] = FReal(1.);
+				for (unsigned int d=0; d<3; ++d) {
+					const unsigned int j = node_ids[n][d];
+					FReal S_d = FReal(1.) / ORDER;
+					for (unsigned int o=1; o<ORDER; ++o)
+						S_d += FReal(2.) / ORDER * T_of_x[o][d] * T_of_roots[o][j];
+					Interpolator[n*nnodes + m] *= S_d;
+				}
+			}
+			
+		}
+		
+	}
 
 	
 	/**
@@ -54,20 +143,31 @@ public:
 	 * the transposed interpolation.
 	 */
 	template <class ContainerClass>
-	void anterpolate(const F3DPosition& center,
-									 const FReal width,
-									 FReal *const multipoleExpansion,
-									 const ContainerClass *const sourceParticles) const
+	void applyP2M(const F3DPosition& center,
+								const FReal width,
+								FReal *const multipoleExpansion,
+								const ContainerClass *const sourceParticles) const
 	{
+		// setup global to local mapping
 		const map_glob_loc map(center, width);
 		F3DPosition localPosition;
 		FReal T_of_x[ORDER][3];
 
+//		std::cout << "ClusterCenter = " << center
+//							<< ", width = " << width << std::endl;
+
+		// set all multipole expansions to zero
+		for (unsigned int n=0; n<nnodes; ++n) multipoleExpansion[n] = FReal(0.);
+
+		// loop: source particles
 		typename ContainerClass::ConstBasicIterator iter(*sourceParticles);
 		while(iter.hasNotFinished()){
 
 			// map global position to [-1,1]
 			map(iter.data().getPosition(), localPosition);
+
+//			std::cout << "\tParticlePosition = " << iter.data().getPosition()
+//								<< ", local Position = " << localPosition	<< std::endl;
 			
 			// get source value
 			const FReal sourceValue = iter.data().getPhysicalValue();
@@ -81,6 +181,7 @@ public:
 
 			// anterpolate
 			for (unsigned int n=0; n<nnodes; ++n) {
+				//multipoleExpansion[n] = FReal(0.);
 				FReal S = FReal(1.);
 				for (unsigned int d=0; d<3; ++d) {
 					const unsigned int j = node_ids[n][d];
@@ -93,7 +194,7 @@ public:
 			}
 			
 			iter.gotoNext();
-		}
+		} // end loop: source particles
 	}
 
 
@@ -102,11 +203,12 @@ public:
 	 * The interpolation corresponds to the L2L and L2P operation.
 	 */
 	template <class ContainerClass>
-	void interpolate(const F3DPosition& center,
-									 const FReal width,
-									 const FReal *const localExpansion,
-									 ContainerClass *const localParticles) const
+	void applyL2P(const F3DPosition& center,
+								const FReal width,
+								const FReal *const localExpansion,
+								ContainerClass *const localParticles) const
 	{
+		// setup local to global mapping
 		const map_glob_loc map(center, width);
 		F3DPosition localPosition;
 		FReal T_of_x[ORDER][3];
@@ -118,7 +220,7 @@ public:
 			map(iter.data().getPosition(), localPosition);
 			
 			// get target value
-			FReal targetValue = iter.data().getPhysicalValue();
+			FReal targetValue = iter.data().getPotential();
 
 			// evaluate chebyshev polynomials of source particle: T_o(x_i)
       for (unsigned int o=1; o<ORDER; ++o) {
@@ -140,92 +242,32 @@ public:
 				targetValue += S * localExpansion[n];
 			}
 
-			iter.data().setPhysicalValue(targetValue);
+			iter.data().setPotential(targetValue);
 
 			iter.gotoNext();
 		}
 	}
 
+	
+	void applyM2M(const unsigned int ChildIndex,
+								const FReal *const ChildExpansion,
+								FReal *const ParentExpansion) const
+	{
+		FBlas::gemtva(nnodes, nnodes, FReal(1.),
+									ChildParentInterpolator[ChildIndex],
+									const_cast<FReal *const>(ChildExpansion), ParentExpansion);
+	}
+
+	void applyL2L(const unsigned int ChildIndex,
+								const FReal *const ParentExpansion,
+								FReal *const ChildExpansion) const
+	{
+		FBlas::gemva(nnodes, nnodes, FReal(1.),
+								 ChildParentInterpolator[ChildIndex],
+								 const_cast<FReal *const>(ParentExpansion), ChildExpansion);
+	}
+	
 };
-
-
-
-
-
-
-
-
-
-///**
-// * Interpolation operator setter of (N)on (L)eaf clusters. Since the grid is
-// * regular, all non leaf clusters of the same level have identical
-// * interpolation operators. Hence, memory for the interpolation operator S is
-// * only allocated here but not freed.
-// */
-//template <typename cluster_type,
-//          typename clusterbasis_type>
-//class IOsetterNL
-//  : public std::unary_function<cluster_type, void>
-//{
-//  enum {dim    = cluster_type::dim,
-//        nboxes = cluster_type::nboxes,
-//        order  = clusterbasis_type::order,
-//        nnodes = clusterbasis_type::nnodes};
-//
-//  typedef typename clusterbasis_type::value_type value_type;
-//  typedef typename PointTraits<dim>::point_type  point_type;
-//
-//  typedef Chebyshev< order>  basis_type;
-//  typedef Tensor<dim,order> tensor_type; 
-//
-//  boost::shared_array<value_type> S;
-//
-//  std::vector<clusterbasis_type>& basis;
-//  
-//public:
-//  explicit IOsetterNL(std::vector<clusterbasis_type>& _basis,
-//                      const double  ext,
-//                      const double cext)
-//    : S(new value_type [nboxes*nnodes * nnodes]), basis(_basis)
-//  {
-//    // some factors
-//    const double frac       = cext / ext;
-//    const double radius     = 1. - frac;
-//    const double cextension = 2. * frac; 
-//
-//    // setup interpolation nodes of child clusters
-//    point_type x [nboxes*nnodes];
-//    for (unsigned int b=0; b<nboxes; ++b) {
-//      point_type center;
-//      for (unsigned int d=0; d<dim; ++d)
-//        center[d] = radius * DimTraits<dim>::child_pos[b][d];
-//      const map_loc_glob<dim> map(center, cextension);
-//      
-//      for (unsigned int n=0; n<nnodes; ++n)
-//        for (unsigned int d=0; d<dim; ++d)
-//          x[b*nnodes + n][d]
-//            = map(d, basis_type::nodes[tensor_type::node_ids[n][d]]);
-//    }
-//
-//    // compute S
-//    FChebInterpolator<dim,order,value_type> cmp;
-//    value_type S_[nnodes];
-//    for (unsigned int b=0; b<nboxes; ++b)
-//      for (unsigned int i=0; i<nnodes; ++i) {
-//        cmp(x[b*nnodes + i], S_);
-//        HYENA_ASSERT(check_nan(nnodes, S_));
-//        for (unsigned int j=0; j<nnodes; ++j)
-//          S[b * nnodes*nnodes + j*nnodes + i] = S_[j];
-//      }
-//  }
-//  
-//  void operator()(cluster_type *const cl) const
-//  {
-//    HYENA_ASSERT(!cl->level->isleaf());
-//    basis.at(cl->cidx).assign(S);
-//  }
-//
-//};
 
 
 

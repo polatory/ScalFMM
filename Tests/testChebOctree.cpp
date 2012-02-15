@@ -39,18 +39,20 @@ int main(int, char **){
 	std::cout << ">> and how to use the Octree\n";
 	//////////////////////////////////////////////////////////////
 	
-	const long NbPart = 200000;
+	const long NbPart = 100000;
 	const FReal FRandMax = FReal(RAND_MAX);
 	FTic counter;
 	
 	srand( static_cast<unsigned int>(time(NULL)) );
 	
-	OctreeClass tree(10, 3, 1.0, F3DPosition(0.5,0.5,0.5));
+	const FReal BoxWidth = 1.;
+	const F3DPosition BoxCenter(.5, .5, .5);
+	const unsigned int TreeHeight = 10;
+	OctreeClass tree(TreeHeight, 3, BoxWidth, BoxCenter);
 
 	// -----------------------------------------------------
 	std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
 	counter.tic();
-	
 	{
 		FChebParticle particle;
 		for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
@@ -58,10 +60,40 @@ int main(int, char **){
 			tree.insert(particle);
 		}
 	}
-	
 	counter.tac();
 	std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
 	// -----------------------------------------------------
+
+
+	
+	// Check if particles are strictly within its containing leaf cells
+	{
+		const FReal BoxWidthLeaf = BoxWidth / FReal(FMath::pow(2, TreeHeight-1));
+		OctreeClass::Iterator octreeIterator(&tree);
+		octreeIterator.gotoBottomLeft();
+		do{
+			const CellClass *const LeafCell = octreeIterator.getCurrentCell();
+
+			const F3DPosition Origin(BoxCenter - BoxWidth / FReal(2.));
+			const F3DPosition LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
+																			 Origin.getY() + (FReal(LeafCell->getCoordinate().getY()) + FReal(.5)) * BoxWidthLeaf,
+																			 Origin.getZ() + (FReal(LeafCell->getCoordinate().getZ()) + FReal(.5)) * BoxWidthLeaf);
+
+			const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
+			ContainerClass::ConstBasicIterator particleIterator(*Particles);
+			while(particleIterator.hasNotFinished()) {
+				const F3DPosition distance(LeafCellCenter-particleIterator.data().getPosition());
+				if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
+						std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
+						std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
+					std::cout << "Particle (center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << ") is out of cell. STOP"
+										<< std::endl;
+					//exit(-1);
+				}
+				particleIterator.gotoNext();
+			}
+		} while(octreeIterator.moveRight());
+	}
 
 	return 0;
 }

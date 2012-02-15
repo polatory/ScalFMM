@@ -3,6 +3,9 @@
 
 #include <cmath>
 #include <limits>
+#include <cassert>
+
+#include "../Utils/FNoCopyable.hpp"
 
 
 /**
@@ -40,6 +43,7 @@ struct FChebRoots : FNoCopyable
    */
 	const static FReal T(const unsigned int n, FReal x)
 	{
+		//std::cout << x << std::endl;
     assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
 		if (std::fabs(x)>1.) {
 			x = (x > FReal( 1.) ? FReal( 1.) : x);

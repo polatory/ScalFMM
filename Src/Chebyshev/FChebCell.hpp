@@ -2,7 +2,6 @@
 #define FCHEBCELL_HPP
 
 
-#include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
 #include "../Extensions/FExtendCoordinate.hpp"
 
@@ -16,12 +15,11 @@
 * This class defines a cell used in the Chebyshev based FMM.
 */
 template <int ORDER>
-class FChebCell : public FExtendPosition,
-									public FExtendMortonIndex,
+class FChebCell : public FExtendMortonIndex,
 									public FExtendCoordinate
 {
-	FReal multipole_exp[TensorTraits<ORDER>::nnodes]; //< Multipole expansion
-	FReal     local_exp[TensorTraits<ORDER>::nnodes]; //< Local expansion
+	FReal multipole_exp[TensorTraits<ORDER>::nnodes * 2]; //< Multipole expansion
+	FReal     local_exp[TensorTraits<ORDER>::nnodes * 2]; //< Local expansion
 	
 public:
 	~FChebCell() {}

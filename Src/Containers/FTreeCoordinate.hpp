@@ -198,6 +198,19 @@ public:
     bool operator!=(const FTreeCoordinate& other) const{
         return x != other.x || y != other.y || z != other.z;
     }
+
+    /**
+     * Operator stream FTreeCoordinate to std::ostream
+     * This can be used to simply write out a tree coordinate
+     * @param[in,out] output where to write the coordinate
+     * @param[in] inCoordinate the coordinate to write out
+     * @return the output for multiple << operators
+     */
+    friend std::ostream& operator<<(std::ostream& output, const FTreeCoordinate& inCoordinate){
+        output << "(" <<  inCoordinate.getX() << ", " << inCoordinate.getY() << ", " << inCoordinate.getZ() <<")";
+        return output;  // for multiple << operators.
+    }
+
 };
 
 

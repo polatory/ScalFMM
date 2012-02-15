@@ -79,6 +79,29 @@ public:
 			map(localPosition, rootPositions[n]);
 		}
 	}
+
+	/**
+	 * Set the relative child (width = 1) center according to the Morton index.
+	 *
+	 * @param[in] ChildIndex index of child according to Morton index
+	 * @param[out] center
+	 */
+	static
+	void setRelativeChildCenter(const unsigned int ChildIndex,
+															F3DPosition& ChildCenter)
+	{
+		const int RelativeChildPositions[][3] = { {-1, -1, -1},
+																							{-1, -1,  1},
+																							{-1,  1, -1},
+																							{-1,  1,  1},
+																							{ 1, -1, -1},
+																							{ 1, -1,  1},
+																							{ 1,  1, -1},
+																							{ 1,  1,  1} };
+		ChildCenter.setX(FReal(RelativeChildPositions[ChildIndex][0]) / FReal(2.));
+		ChildCenter.setY(FReal(RelativeChildPositions[ChildIndex][1]) / FReal(2.));
+		ChildCenter.setZ(FReal(RelativeChildPositions[ChildIndex][2]) / FReal(2.));
+	}
 };
 
 
