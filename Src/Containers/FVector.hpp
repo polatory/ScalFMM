@@ -14,8 +14,6 @@
 
 #include "../Utils/FGlobal.hpp"
 
-// To get memcpy
-#include <cstring>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -25,72 +23,75 @@
  * This class is a vector container.
  * It is a very basic vector to enable strong performance.
  *
- * Please refere to unit test fvectorUTest.cpp to know more.
+ * Please refere to unit test utestFVector.cpp to know more.
  */
-template<class T>
+template<class ObjectType>
 class FVector {
 protected:
-    T* array;        /**< memory area*/
-
-    int capacity;    /**< memory capacity*/
-    int index;       /**< index in array  */
-
     static const int DefaultSize = 10;      /**< Default size */
-    static const int SizeOfT = sizeof(T);   /**< size of the object*/
+
+    ObjectType* array;        /**< memory area*/
+
+    int capacity;             /**< memory capacity, the size of array */
+    int index;                /**< index in array, the current position to insert */
 
 public:
-    typedef T ValueType; /**< data type of data in FVector */
+    typedef ObjectType ValueType; /**< data type of data in FVector */
 
     /**
-    *@brief constructor
+    * @brief Constructor
+    * Create a vector with a default size capacity
     */
     FVector() : array(0), capacity(DefaultSize), index(0) {
-        array = reinterpret_cast< T* >( new char[SizeOfT*DefaultSize] );
+        array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * DefaultSize] );
     }
 
     /**
-    *@brief constructor
-    *@param inSize the buffer size
-    *@param inPointOfStart the point of start [0;1]
+    * @brief Constructor
+    * @param inCapacity the memory to allocate
     */
-    FVector(const int inSize): array(0), capacity(inSize), index(0) {
-        array = reinterpret_cast< T* >( new char[SizeOfT*inSize]);
+    explicit FVector(const int inCapacity): array(0), capacity(inCapacity), index(0) {
+        if( inCapacity ){
+            array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * inCapacity]);
+        }
     }
 
     /**
      * Copy constructor
      * @param other original vector
+     * object must have an copy constructor
      */
     FVector(const FVector& other): array(0), capacity(other.capacity), index(other.index) {
-        array = reinterpret_cast< T* >( new char[SizeOfT*other.capacity]);
-        // Copy each element
-        for(int idx = 0 ; idx < other.index ; ++idx){
-            new((void*)&this->array[idx]) T;
-            this->array[idx] = other.array[idx];
+        if( other.capacity ){
+            array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * other.capacity]);
+            // Copy each element
+            for(int idx = 0 ; idx < other.index ; ++idx){
+                new((void*)&array[idx]) ObjectType(other.array[idx]);
+            }
         }
     }
 
     /** Copy operator
       * @param other the original vector
       * @return this after copying data
-      * Objects of the current vector are deleted before
-      * copying data.
+      * Objects of the current vector are deleted then
+      * objects from other are copied using copy constructor.
+      * The capacity is not copied.
       */
     FVector& operator=(const FVector& other){
         if(&other != this){
             // clear current element
             clear();
             // alloc bigger if needed
-            if(other.getSize() > this->capacity){
-                delete [] reinterpret_cast< char* >(this->array);
-                this->capacity = int(other.getSize() * 1.5);
-                array = reinterpret_cast< T* >( new char[SizeOfT*this->capacity]);
+            if(capacity < other.getSize()){
+                delete [] reinterpret_cast< char* >(array);
+                capacity = int(other.getSize() * 1.5);
+                array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * capacity]);
             }
 
-            this->index = other.index;
+            index = other.index;
             for(int idx = 0 ; idx < other.index ; ++idx){
-                new((void*)&this->array[idx]) T;
-                this->array[idx] = other.array[idx];
+                new((void*)&array[idx]) ObjectType(other.array[idx]);
             }
         }
         return *this;
@@ -101,128 +102,128 @@ public:
     */
     virtual ~FVector(){
         clear();
-        delete [] reinterpret_cast< char* >(this->array);
+        delete [] reinterpret_cast< char* >(array);
     }
 
     /**
-    * @brief get the buffer capacity
+    * @brief Get the buffer capacity
     * @return the buffer capacity
     * The capacity is the current memory size allocated.
     */
     int getCapacity() const{
-        return this->capacity;
+        return capacity;
     }
 
     /**
-    *@brief set the buffer capacity
-    *@param inthis->capacity to change the capacity
-    * Warning : the memocy is duplicated using memcpy
-    * if size == 10 and setCapactity(5), then it will
-    * set the capacity to 10.
+    *@brief Set the buffer capacity
+    *@param incapacity to change the capacity
+    * If capacity given is lower than size elements after capacity are removed
     */
-    void setCapacity(int inCapacity){
-        if( inCapacity != this->capacity ){
-            // if the capacity is not enought
-            if( inCapacity < this->index){
-                inCapacity = this->index;
+    void setCapacity(const int inCapacity) {
+        if( inCapacity != capacity ){
+            while(inCapacity < index){
+                (&array[--index])->~ObjectType();
             }
 
             // Copy elements
-            T* const buffer = reinterpret_cast< T* >( new char[SizeOfT*inCapacity]);
-            memcpy( buffer, this->array, SizeOfT*this->index);
-            delete [] reinterpret_cast< char* >(this->array);
-            this->array = buffer;
+            ObjectType* const nextArray = reinterpret_cast< ObjectType* >( inCapacity ? new char[sizeof(ObjectType) * inCapacity] : 0);
+            for(int idx = 0 ; idx < index ; ++idx){
+                new((void*)&nextArray[idx]) ObjectType(array[idx]);
+                (&array[idx])->~ObjectType();
+            }
+            delete [] reinterpret_cast< char* >(array);
 
-            this->capacity = inCapacity;
+            array    = nextArray;
+            capacity = inCapacity;
         }
     }
 
 
     /**
-    * @return end->data
-    * This function return the last inserted data
+    * @return Last inserted object
+    * This function return the data at the last position
     */
-    const T& head() const {
-        return this->array[this->index - 1];
+    const ObjectType& head() const {
+        return array[index - 1];
     }
 
     /**
-    *@return end->data
-    * This function return the last insted data
+    * @return Last inserted object
+    * This function return the data at the last position
     */
-    T& head() {
-        return this->array[this->index - 1];
+    ObjectType& head() {
+        return array[index - 1];
     }
 
     /**
-    *@brief delete all, then size = 0 but capacity is unchanged
+    * @brief Delete all, then size = 0 but capacity is unchanged
     */
-    void clear(){
-        while(this->index > 0){
-            (&this->array[--this->index])->~T();
+    void clear() {
+        while(0 < index){
+            (&array[--index])->~ObjectType();
         }
     }
 
     /**
-    *@return The number of element added into the vector
-    * this is not the capcity
+    * @return The number of element added into the vector
+    * This is not the capcity
     */
     int getSize() const{
-        return this->index;
+        return index;
     }
 
     /**
-    *@brief pop the first value
+    * @brief pop the first value
     * Warning, FVector do not check that there is an element before poping
+    * The capacity is unchanged
     */
     void pop(){
-        (&this->array[--this->index])->~T();
+        (&array[--index])->~ObjectType();
     }
 
     /**
-    *@param inValue the new value
+    * Add a value at the end, resize the capacity if needed
+    * @param inValue the new value
     */
-    void push( const T & inValue ){
+    void push( const ObjectType & inValue ){
         // if needed, increase the vector
-        if( this->index == this->capacity ){
-            setCapacity(int(this->capacity * 1.5));
+        if( index == capacity ){
+            setCapacity(int((capacity+1) * 1.5));
         }
         // add the new element
-        new((void*)&this->array[this->index]) T;
-        this->array[this->index] = inValue;
-        ++this->index;
+        new((void*)&array[index++]) ObjectType(inValue);
     }
 
     /**
-    *@brief get a reference of a given value
+    *@brief Get a reference of a given value
     *@param inPosition the query position
     *@return the value
     */
-    T& operator[](const int inPosition ){
-            return this->array[inPosition];
+    ObjectType& operator[](const int inPosition ) {
+            return array[inPosition];
     }
 
     /**
-    *@brief get a const reference of a given value
-    *@param inPosition the query position
-    *@return the value
+    * @brief Get a const reference of a given value
+    * @param inPosition the query position
+    * @return the value
     */
-    const T& operator[](const int inPosition ) const{
-            return this->array[inPosition];
+    const ObjectType& operator[](const int inPosition ) const {
+            return array[inPosition];
     }
 
-    /** To get the entire array
+    /** To get the entire array memory
       * @return the array allocated by the vector
       */
-    T* data(){
-        return this->array;
+    ObjectType* data(){
+        return array;
     }
 
-    /** To get the entire array
+    /** To get the entire array memory
       * @return the array allocated by the vector
       */
-    const T* data() const{
-        return this->array;
+    const ObjectType* data() const{
+        return array;
     }
 
     /** This class is a basic iterator
@@ -234,7 +235,7 @@ public:
       *  } <br>
       * </code>
       */
-    class BasicIterator{
+    class BasicIterator {
     protected:
         FVector* const vector;  /**< the vector to work on*/
         int index;              /**< the current node*/
@@ -244,33 +245,33 @@ public:
         virtual ~BasicIterator(){}
 
         /** Constructor need a vector */
-        explicit BasicIterator(FVector<T>& inVector) : vector(&inVector), index(0){}
+        explicit BasicIterator(FVector<ObjectType>& inVector) : vector(&inVector), index(0){}
 
         /** Go to next vector element */
-        void gotoNext(){
-            ++this->index;
+        void gotoNext() {
+            ++index;
         }
 
         /** is it over
           * @return true if we are over the vector
           */
-        bool hasNotFinished() const{
-            return this->index < this->vector->index;
+        bool hasNotFinished() const {
+            return index < vector->index;
         }
 
         /** Get current data */
-        T& data(){
-            return this->vector->array[this->index];
+        ObjectType& data(){
+            return vector->array[index];
         }
 
         /** Get current data */
-        const T& data() const{
-            return this->vector->array[this->index];
+        const ObjectType& data() const{
+            return vector->array[index];
         }
 
         /** Set the data */
-        void setData(const T& inData){
-            this->vector->array[this->index] = inData;
+        void setData(const ObjectType& inData){
+            vector->array[index] = inData;
         }
 
         /** Remove current data
@@ -278,10 +279,10 @@ public:
           */
         void remove(){
             if( hasNotFinished() ){
-                for(int idxMove = this->index + 1; idxMove < this->vector->index ; ++idxMove){
+                for(int idxMove = index + 1; idxMove < vector->index ; ++idxMove){
                     vector->array[idxMove - 1] = vector->array[idxMove];
                 }
-                this->vector->index -= 1;
+                vector->index -= 1;
             }
         }
 
@@ -291,7 +292,7 @@ public:
     /** This class is a basic const iterator
       * it uses a const vector to work on
       */
-    class ConstBasicIterator{
+    class ConstBasicIterator {
     protected:
         const FVector* const vector;  /**< the vector to work on*/
         int index;                    /**< the current node*/
@@ -301,23 +302,23 @@ public:
         virtual ~ConstBasicIterator(){}
 
         /** Constructor need a vector */
-        explicit ConstBasicIterator(const FVector<T>& inVector) : vector(&inVector), index(0){}
+        explicit ConstBasicIterator(const FVector<ObjectType>& inVector) : vector(&inVector), index(0){}
 
         /** Go to next vector element */
         void gotoNext(){
-            ++this->index;
+            ++index;
         }
 
         /** is it over
           * @return true if we are over the vector
           */
         bool hasNotFinished() const{
-            return this->index < this->vector->index;
+            return index < vector->index;
         }
 
         /** Get current data */
-        const T& data() const{
-            return this->vector->array[this->index];
+        const ObjectType& data() const{
+            return vector->array[index];
         }
 
     };
