@@ -107,7 +107,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
         FReal potentialDiff = 0;
         FReal fx = 0, fy = 0, fz = 0;
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{

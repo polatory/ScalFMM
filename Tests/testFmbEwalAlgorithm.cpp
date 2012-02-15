@@ -142,7 +142,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     {
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());

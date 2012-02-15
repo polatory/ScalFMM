@@ -119,7 +119,7 @@ int main(int argc, char ** argv){
     for(int idx = 0; idx < 100 ; ++idx){
         algo.execute();
         { // update velocity and position
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             do{
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());

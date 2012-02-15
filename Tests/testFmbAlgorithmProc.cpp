@@ -80,10 +80,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
     std::cout << "Check Result\n";
     {
         const int OctreeHeight = valideTree->getHeight();
-        typename OctreeClass::Iterator octreeIterator(badTree);
+        OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
+        OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         for(int level = OctreeHeight - 1 ; level >= 1 ; --level){
@@ -116,10 +116,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
     }
     {
         // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator(badTree);
+        OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
+        OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
@@ -252,7 +252,7 @@ int main(int argc, char ** argv){
         FReal potential = 0;
         F3DPosition forces;
 
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
@@ -300,7 +300,7 @@ int main(int argc, char ** argv){
         FReal potentialValide = 0;
         F3DPosition forcesValide;
 
-        typename OctreeClass::Iterator octreeIteratorValide(&treeValide);
+        OctreeClass::Iterator octreeIteratorValide(&treeValide);
         octreeIteratorValide.gotoBottomLeft();
 
         do{

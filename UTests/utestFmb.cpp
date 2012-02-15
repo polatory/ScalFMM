@@ -122,8 +122,8 @@ class TestFmb : public FUTester<TestFmb> {
         // Compare the two simulations
         Print("Check the particles...");
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator testOctreeIterator(&testTree);
-            typename OctreeClass::Iterator goodOctreeIterator(&goodTree);
+            OctreeClass::Iterator testOctreeIterator(&testTree);
+            OctreeClass::Iterator goodOctreeIterator(&goodTree);
 
             testOctreeIterator.gotoBottomLeft();
             goodOctreeIterator.gotoBottomLeft();
@@ -165,8 +165,8 @@ class TestFmb : public FUTester<TestFmb> {
         }
         Print("Check the leaves...");
         { // Ceck if there is number of NbPart summed at level 1
-            typename OctreeClass::Iterator testOctreeIterator(&testTree);
-            typename OctreeClass::Iterator goodOctreeIterator(&goodTree);
+            OctreeClass::Iterator testOctreeIterator(&testTree);
+            OctreeClass::Iterator goodOctreeIterator(&goodTree);
 
             testOctreeIterator.gotoBottomLeft();
             goodOctreeIterator.gotoBottomLeft();

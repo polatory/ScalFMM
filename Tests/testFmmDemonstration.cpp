@@ -175,7 +175,7 @@ int main(int argc, char ** argv){
     std::cout << "Which particles are in wich leafs ..." << std::endl;
     counter.tic();
 
-    typename OctreeClass::Iterator octreeIterator(&tree);
+    OctreeClass::Iterator octreeIterator(&tree);
     octreeIterator.gotoBottomLeft();
     do{
         typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());

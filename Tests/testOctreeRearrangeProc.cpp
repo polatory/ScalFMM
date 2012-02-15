@@ -94,7 +94,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     { // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
         do{
@@ -136,7 +136,7 @@ int main(int argc, char ** argv){
     { // Check that each particle has been put into the right leaf
         long counterPart = 0;
 
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
         MortonIndex interval[2] = {0,0};
@@ -181,8 +181,8 @@ int main(int argc, char ** argv){
     }
 
     { // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator(&tree);
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         const int heightMinusOne = NbLevels - 1;
         for(int idxLevel = 1 ; idxLevel < heightMinusOne ; ++idxLevel ){

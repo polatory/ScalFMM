@@ -138,7 +138,7 @@ int main(int argc, char ** argv){
 
     std::cout << "Start checking ..." << std::endl;
     {
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
         typename OctreeClassTyped::Iterator octreeIteratorTyped(&treeTyped);

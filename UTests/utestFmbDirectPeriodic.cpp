@@ -142,7 +142,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         FReal potentialDiff = 0;
         FReal fx = 0, fy = 0, fz = 0;
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
@@ -309,7 +309,7 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
         { // Check that each particle has been summed with all other
             ParticleClass*const partBox = 0;//&particles[boxStartIdx];
 
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{

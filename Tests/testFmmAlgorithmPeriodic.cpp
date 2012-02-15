@@ -126,7 +126,7 @@ int main(int argc, char ** argv){
     { // Check that each particle has been summed with all other
         long long int counterNbPart = 0;
 
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             // on each leaf we should have the same number of particles
@@ -147,7 +147,7 @@ int main(int argc, char ** argv){
     { // Ceck if there is number of NbPart summed at level 1
         long long particlesPerBox = NbPartPerBoxes;
 
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         for(int idxLevel = NbLevels - 1 ; idxLevel >= 1 ; --idxLevel ){
             do{
@@ -187,7 +187,7 @@ int main(int argc, char ** argv){
         {
             long long int particlesPerBox = NbPartPerBoxes * FMath::pow(8,NbLevels-2);
 
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             for(int idxLevel = 1 ; idxLevel < NbLevels ; ++idxLevel ){
                 counterL2L = particlesPerBox * 189 + counterL2L;
                 do{
@@ -206,7 +206,7 @@ int main(int argc, char ** argv){
         }
     }
     { // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());

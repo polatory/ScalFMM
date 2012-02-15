@@ -151,7 +151,7 @@ int main(int argc, char ** argv){
 
         // -----------------------------------------------------
 
-        typename OctreeClass::Iterator octreeIterator(&tree);
+        OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         idx = 0;
         do{

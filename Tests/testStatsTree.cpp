@@ -93,7 +93,7 @@ int main(int argc, char ** argv){
             FReal averageParticles = 0;
             {
                 int nbLeafs = 0;
-                typename OctreeClass::Iterator octreeIterator(&tree);
+                OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     averageParticles += FReal(octreeIterator.getCurrentListTargets()->getSize());
@@ -108,7 +108,7 @@ int main(int argc, char ** argv){
             FReal varianceParticles = 0;
             {
                 int nbLeafs = 0;
-                typename OctreeClass::Iterator octreeIterator(&tree);
+                OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
                     varianceParticles += (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize())) - (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize()));
@@ -122,7 +122,7 @@ int main(int argc, char ** argv){
 
         {
             FReal averageReduction = 0;
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             int previousCells = 0;
 
@@ -147,7 +147,7 @@ int main(int argc, char ** argv){
         {
             FReal averageNeighbors = 0;
             int nbLeafs = 0;
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
@@ -160,7 +160,7 @@ int main(int argc, char ** argv){
         }
 
         {
-            typename OctreeClass::Iterator octreeIterator(&tree);
+            OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             int fullNbCells = 0;
