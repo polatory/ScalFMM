@@ -11,6 +11,8 @@
 #ifndef FEXTENDPARTICLETYPE_HPP
 #define FEXTENDPARTICLETYPE_HPP
 
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 
 /**
@@ -82,6 +84,14 @@ public:
         this->type = Source;
     }
 
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << type;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> type;
+    }
 };
 
 

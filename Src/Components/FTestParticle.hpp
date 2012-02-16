@@ -45,6 +45,15 @@ public:
     void setDataDown(const long long int inData){
         this->dataDown = inData;
     }
+
+    void save(FBufferWriter& buffer) const{
+        FBasicParticle::save(buffer);
+        buffer << dataDown;
+    }
+    void restore(FBufferReader& buffer){
+        FBasicParticle::restore(buffer);
+        buffer >> dataDown;
+    }
 };
 
 

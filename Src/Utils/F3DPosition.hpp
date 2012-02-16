@@ -15,7 +15,10 @@
 // To get memcpy
 #include <cstring>
 #include <iostream>
+
 #include "FGlobal.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -265,6 +268,15 @@ public:
     friend std::ostream& operator<<(std::ostream& output, const F3DPosition& inPosition){
         output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
         return output;  // for multiple << operators.
+    }
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << x << y << z;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> x >> y >> z;
     }
 };
 

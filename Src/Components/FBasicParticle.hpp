@@ -27,8 +27,11 @@
 */
 class FBasicParticle : public FExtendPosition{
 public:
-    /** Default destructor */
-    virtual ~FBasicParticle(){
+    void save(FBufferWriter& buffer) const{
+        FExtendPosition::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FExtendPosition::restore(buffer);
     }
 };
 

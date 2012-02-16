@@ -15,6 +15,8 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -63,6 +65,15 @@ public:
     /** set the velocity from 3 variables */
     void setVelocity(const FReal inVx, const FReal inVy, const FReal inVz) {
         this->velocity.setPosition(inVx , inVy, inVz);
+    }
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << velocity;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> velocity;
     }
 };
 

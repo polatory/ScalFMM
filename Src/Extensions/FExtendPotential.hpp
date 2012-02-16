@@ -13,6 +13,8 @@
 
 
 #include "../Utils/FGlobal.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -55,6 +57,14 @@ public:
         this->potential += inPotential;
     }
 
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << potential;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> potential;
+    }
 };
 
 

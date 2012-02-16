@@ -50,6 +50,29 @@ public:
     void setDataDown(const long long int inData){
         this->dataDown = inData;
     }
+
+    void save(FBufferWriter& buffer) const{
+        FBasicCell::save(buffer);
+        buffer << dataDown << dataUp;
+    }
+    void restore(FBufferReader& buffer){
+        FBasicCell::restore(buffer);
+        buffer >> dataDown >> dataUp;
+    }
+
+    void serializeUp(FBufferWriter& buffer) const {
+        buffer << this->dataUp;
+    }
+    void deserializeUp(FBufferReader& buffer){
+        buffer >> this->dataUp;
+    }
+
+    void serializeDown(FBufferWriter& buffer) const {
+        buffer << this->dataDown;
+    }
+    void deserializeDown(FBufferReader& buffer){
+        buffer >> this->dataDown;
+    }
 };
 
 

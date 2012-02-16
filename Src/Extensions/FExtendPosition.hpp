@@ -14,6 +14,8 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -70,6 +72,14 @@ public:
         this->position.incZ(inPz);
     }
 
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        position.save(buffer);
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        position.restore(buffer);
+    }
 };
 
 

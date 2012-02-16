@@ -28,10 +28,13 @@
 #include "../Src/Kernels/FSphericalParticle.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
+
+
+
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
-    typedef FSphericalCell                 CellClass;
+    typedef FSerializableSphericalParticle             ParticleClass;
+    typedef FSerializableSphericalCell                 CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
@@ -72,13 +75,13 @@ int main(int argc, char ** argv){
 
     std::cout << "Save tree ..." << std::endl;
 
-    FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("/tmp/tree.data", tree);
+    FTreeIO::Save<OctreeClass, CellClass, ParticleClass >("/tmp/tree.data", tree);
 
     // -----------------------------------------------------
 
     std::cout << "Load tree ..." << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Copier<CellClass, ParticleClass> >("/tmp/tree.data", tree);
+    FTreeIO::Load<OctreeClass, CellClass, ParticleClass >("/tmp/tree.data", tree);
 
     return 0;
 }

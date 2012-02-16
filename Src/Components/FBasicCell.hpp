@@ -32,6 +32,15 @@ public:
     /** Default destructor */
     virtual ~FBasicCell(){
     }
+
+    void save(FBufferWriter& buffer) const{
+        FExtendMortonIndex::save(buffer);
+        FExtendCoordinate::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FExtendMortonIndex::restore(buffer);
+        FExtendCoordinate::restore(buffer);
+    }
 };
 
 

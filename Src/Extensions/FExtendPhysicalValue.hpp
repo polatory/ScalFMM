@@ -13,6 +13,8 @@
 
 
 #include "../Utils/FGlobal.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -48,6 +50,15 @@ public:
     /** To set the physicalValue */
     void setPhysicalValue(const FReal inphysicalValue) {
         this->physicalValue = inphysicalValue;
+    }
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << physicalValue;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> physicalValue;
     }
 
 };

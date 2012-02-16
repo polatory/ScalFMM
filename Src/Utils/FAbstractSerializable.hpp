@@ -16,9 +16,6 @@ class FBufferWriter;
 */
 class FAbstractSerializable {
 protected:
-    /** Empty Destructor */
-    virtual ~FAbstractSerializable(){}
-
     virtual void save(FBufferWriter&) const  = 0;
     virtual void restore(FBufferReader&) = 0;
 };

@@ -11,7 +11,8 @@
 #ifndef FEXTENDCELLTYPE_HPP
 #define FEXTENDCELLTYPE_HPP
 
-
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -66,6 +67,16 @@ public:
     /** To set cell as targets container */
     void setTargetsChildTrue() {
         this->type |= ContainsTargets;
+    }
+
+public:
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << type;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> type;
     }
 };
 

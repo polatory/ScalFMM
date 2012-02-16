@@ -16,18 +16,38 @@
 #include "../Extensions/FExtendParticleType.hpp"
 #include "../Components/FFmaParticle.hpp"
 
-#include "../Extensions/FExtendFullySerializable.hpp"
+#include "../Utils/FAbstractSerializable.hpp"
 
 class FSphericalParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
 public:
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        FExtendForces::save(buffer);
+        FFmaParticle::save(buffer);
+        FExtendPotential::save(buffer);
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        FExtendForces::restore(buffer);
+        FFmaParticle::restore(buffer);
+        FExtendPotential::restore(buffer);
+    }
 };
 
-class FSendableSphericalParticle : public FExtendFullySerializable<FSendableSphericalParticle>, public FSphericalParticle {
-public:
-};
 
 class FTypedSphericalParticle : public FSphericalParticle, public FExtendParticleType {
 public:
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        FSphericalParticle::save(buffer);
+        FExtendParticleType::save(buffer);
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        FSphericalParticle::restore(buffer);
+        FExtendParticleType::restore(buffer);
+    }
 };
 
 #endif // FSPHERICALPARTICLE_HPP

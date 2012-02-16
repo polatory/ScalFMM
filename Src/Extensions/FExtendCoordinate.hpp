@@ -14,6 +14,8 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -58,6 +60,15 @@ public:
         this->coordinate.setZ(inZ);
     }
 
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        coordinate.save(buffer);
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        coordinate.restore(buffer);
+    }
 };
 
 

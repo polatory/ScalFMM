@@ -12,6 +12,7 @@
 #define FSPHERICALCELL_HPP
 
 
+#include "../Utils/FAbstractSerializable.hpp"
 #include "../Utils/FAbstractSendable.hpp"
 #include "../Utils/FComplexe.hpp"
 #include "../Utils/FMemUtils.hpp"
@@ -104,29 +105,6 @@ public:
     FComplexe* getLocal() {
         return local_exp;
     }
-};
-
-int FSphericalCell::DevP(-1);
-int FSphericalCell::LocalSize(-1);
-int FSphericalCell::PoleSize(-1);
-
-
-/**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-*/
-class FTypedSphericalCell : public FSphericalCell, public FExtendCellType {
-public:
-};
-
-
-/**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-*/
-class FSendableSphericalCell : public FSphericalCell , public FAbstractSendable {
-public:
-    static void Init(const int inDevP){
-        FSphericalCell::Init(inDevP);
-    }
 
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable
@@ -144,7 +122,42 @@ public:
     void deserializeDown(FBufferReader& buffer){
         buffer.fillArray(local_exp, LocalSize);
     }
+
+    ///////////////////////////////////////////////////////
+    // to extend Serializable
+    ///////////////////////////////////////////////////////
+    void save(FBufferWriter& buffer) const{
+        FBasicCell::save(buffer);
+        buffer.write(multipole_exp, PoleSize);
+        buffer.write(multipole_exp, PoleSize);
+    }
+    void restore(FBufferReader& buffer){
+        FBasicCell::restore(buffer);
+        buffer.fillArray(multipole_exp, PoleSize);
+        buffer.fillArray(multipole_exp, PoleSize);
+    }
 };
+
+int FSphericalCell::DevP(-1);
+int FSphericalCell::LocalSize(-1);
+int FSphericalCell::PoleSize(-1);
+
+
+/**
+* @author Berenger Bramas (berenger.bramas@inria.fr)
+*/
+class FTypedSphericalCell : public FSphericalCell, public FExtendCellType {
+public:
+    void save(FBufferWriter& buffer) const{
+        FSphericalCell::save(buffer);
+        FExtendCellType::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FSphericalCell::restore(buffer);
+        FExtendCellType::restore(buffer);
+    }
+};
+
 
 
 #endif //FSPHERICALCELL_HPP

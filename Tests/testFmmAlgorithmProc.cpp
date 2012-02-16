@@ -283,34 +283,27 @@ void print(OctreeClass* const valideTree){
 /** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FExtendPhysicalValue}
   */
-class TestParticle : public FExtendFullySerializable<TestParticle>, public FTestParticle, public FExtendPhysicalValue {
-};
-
-
-class TestCell : public FTestCell , public FAbstractSendable {
+class TestParticle : public FTestParticle, public FExtendPhysicalValue {
 public:
-
-    void serializeUp(FBufferWriter& buffer) const {
-        buffer << this->dataUp;
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        FTestParticle::save(buffer);
+        FExtendPhysicalValue::save(buffer);
     }
-    void deserializeUp(FBufferReader& buffer){
-        buffer >> this->dataUp;
-    }
-
-    void serializeDown(FBufferWriter& buffer) const {
-        buffer << this->dataDown;
-    }
-    void deserializeDown(FBufferReader& buffer){
-        buffer >> this->dataDown;
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        FTestParticle::restore(buffer);
+        FExtendPhysicalValue::restore(buffer);
     }
 };
+
 
 /////////////////////////////////////////////////////////////////////
 // Define the classes to use
 /////////////////////////////////////////////////////////////////////
 
 typedef TestParticle               ParticleClass;
-typedef TestCell                   CellClass;
+typedef FTestCell                  CellClass;
 typedef FVector<ParticleClass>     ContainerClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;

@@ -13,6 +13,9 @@
 
 
 #include "../Utils/FGlobal.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -211,6 +214,15 @@ public:
         return output;  // for multiple << operators.
     }
 
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << x << y << z;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> x >> y >> z;
+    }
 };
 
 

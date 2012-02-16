@@ -30,7 +30,7 @@
 #include <mkl_cblas.h>
 #else
 #include <cblas.h>
-#include <clapack.h>
+//#include <clapack.h>
 #endif
 #else
     enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};

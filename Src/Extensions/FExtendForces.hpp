@@ -14,6 +14,8 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/F3DPosition.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -62,6 +64,15 @@ public:
     /** set the forces from 3 variables */
     void setForces(const FReal inFx, const FReal inFy, const FReal inFz) {
         this->forces.setPosition(inFx , inFy, inFz);
+    }
+
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        forces.save(buffer);
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        forces.restore(buffer);
     }
 };
 

@@ -25,8 +25,13 @@
 */
 class FFmaParticle : public FBasicParticle, public FExtendPhysicalValue {
 public:
-    /** Default destructor */
-    virtual ~FFmaParticle(){
+    void save(FBufferWriter& buffer) const{
+        FBasicParticle::save(buffer);
+        FExtendPhysicalValue::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FBasicParticle::restore(buffer);
+        FExtendPhysicalValue::restore(buffer);
     }
 };
 

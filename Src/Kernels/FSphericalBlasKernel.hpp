@@ -183,13 +183,12 @@ public:
         // Get a computable vector
         preExpNExp(temporaryMultiSource);
 
-        FReal alpha_and_beta[2] = {1.0, 0.0};
+        //FReal alpha_and_beta[2] = {1.0, 0.0};
 
-        cblas_gemv<FReal>(CblasColMajor, CblasTrans,
-                          FF_MATRIX_COLUMN_DIM, FF_MATRIX_ROW_DIM,
-                          alpha_and_beta, M2L_Outer_transfer,
-                          FF_MATRIX_COLUMN_DIM, temporaryMultiSource, 1,
-                          alpha_and_beta, local_exp, 1);
+        //CblasTrans
+        FBlas::gemtv(     FF_MATRIX_COLUMN_DIM,FF_MATRIX_ROW_DIM,
+                          FReal(1.0), M2L_Outer_transfer,
+                          temporaryMultiSource, local_exp);
     }
 };
 

@@ -14,6 +14,10 @@
 #include <iostream>
 #include <fstream>
 
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
+
+
 /** This class proposes static methods to save and load
   * a tree.
   * It used binary format (so FReal must be the same!)
@@ -27,87 +31,11 @@
   */
 class FTreeIO{
 public:
-    class FAbstractSerial {
-    protected:
-        template <class TypeClass>
-        void save(std::ofstream*const stream, const TypeClass& value) const{
-            stream->write((const char*)&value, sizeof(TypeClass));
-        }
-
-        template <class TypeClass>
-        TypeClass restore(std::ifstream*const stream) const{
-            TypeClass value;
-            stream->read((char*)&value, sizeof(TypeClass));
-            return value;
-        }
-
-        template <class TypeClass>
-        void saveArray(std::ofstream*const stream, const TypeClass*const values, const int size) const{
-            stream->write((const char*)values, sizeof(TypeClass) * size);
-        }
-
-        template <class TypeClass>
-        void restoreArray(std::ifstream*const stream, TypeClass*const values, const int size) const{
-            stream->read((char*)values, sizeof(TypeClass) * size);
-        }
-
-    public:
-
-        virtual void read(std::ifstream*const stream) = 0;
-        virtual void write(std::ofstream*const stream) const = 0;
-    };
-
-
-    /** The serializer class call a method on the particles or cells
-      * So they have to implement the write/read method
-      */
-    template <class CellClass, class ParticleClass>
-    class Serializer {
-    public:
-        static void PutCell(std::ofstream*const stream, const CellClass*const cell) {
-            cell->write(stream);
-        }
-        static void PutParticles(std::ofstream*const stream, const ParticleClass* const particles, const int nbParticles) {
-            for( int idxParticle = 0 ; idxParticle < nbParticles ; ++idxParticle){
-                particles[idxParticle].write(stream);
-            }
-        }
-
-        static void GetCell(std::ifstream*const stream, CellClass* const cell){
-            cell->read(stream);
-        }
-
-        static void GetParticles(std::ifstream*const stream, ParticleClass* const particles, const int nbParticles){
-            for( int idxParticle = 0 ; idxParticle < nbParticles ; ++idxParticle){
-                particles[idxParticle].read(stream);
-            }
-        }
-    };
-
-    /** The copier method simple copy in memory using memcpy
-      */
-    template <class CellClass, class ParticleClass>
-    class Copier {
-    public:
-        static void PutCell(std::ofstream*const stream, const CellClass* const cell) {
-            stream->write((const char*)cell, sizeof(CellClass));
-        }
-        static void PutParticles(std::ofstream*const stream, const ParticleClass* const particles, const int nbParticles) {
-            stream->write((const char*)particles, nbParticles * sizeof(ParticleClass));
-        }
-
-        static void GetCell(std::ifstream*const stream, CellClass* const cell){
-            stream->read((char*)cell, sizeof(CellClass));
-        }
-        static void GetParticles(std::ifstream*const stream, ParticleClass* const particles, const int nbParticles){
-            stream->read((char*)particles, nbParticles * sizeof(ParticleClass));
-        }
-    };
-
     /** To save in memory */
     template <class OctreeClass, class CellClass, class ParticleClass, class ClassProptotype >
     static bool Save(const char filename[], OctreeClass& tree){
         std::ofstream file(filename, std::ofstream::binary | std::ofstream::out );
+        FBufferWriter buffer;
 
         if(!file.good()){
             return false;
@@ -130,11 +58,9 @@ public:
         {
             typename OctreeClass::Iterator octreeIterator(&tree);
 
-            int maxParticlesInLeaf = 0;
             int nbLeaf = 0;
             const std::ofstream::pos_type posNbLeaf = file.tellp();
             file.write((const char*)&nbLeaf,sizeof(int));
-            file.write((const char*)&maxParticlesInLeaf,sizeof(int));
 
             octreeIterator.gotoBottomLeft();
             const bool useTargetSource = (octreeIterator.getCurrentListSrc() != octreeIterator.getCurrentListTargets());
@@ -142,27 +68,50 @@ public:
                 do{
                     const int nbParticlesInLeaf = (octreeIterator.getCurrentListSrc()->getSize() + octreeIterator.getCurrentListTargets()->getSize());
                     file.write((const char*)&nbParticlesInLeaf,sizeof(int));
-                    ClassProptotype::PutParticles( &file, octreeIterator.getCurrentListSrc()->data(), octreeIterator.getCurrentListSrc()->getSize());
-                    ClassProptotype::PutParticles( &file, octreeIterator.getCurrentListTargets()->data(), octreeIterator.getCurrentListTargets()->getSize());
+
+                    buffer.reset();
+                    typename ContainerClass::BasicIterator iterSrc(*octreeIterator.getCurrentListSrc());
+                    while( iterSrc.hasNotFinished() ){
+                        iterSrc.data().save(buffer);
+                        iterSrc.gotoNext();
+                    }
+
+                    typename ContainerClass::BasicIterator iterTarget(*octreeIterator.getCurrentListTargets());
+                    while( iterTarget.hasNotFinished() ){
+                        iterTarget.data().save(buffer);
+                        iterTarget.gotoNext();
+                    }
+
+                    const int sizeOfLeaf = buffer.getSize();
+                    file.write((const char*) &sizeOfLeaf, sizeof(int));
+                    file.write(buffer.data(), buffer.getSize());
 
                     ++nbLeaf;
-                    if( maxParticlesInLeaf < nbParticlesInLeaf) maxParticlesInLeaf = nbParticlesInLeaf;
                 } while(octreeIterator.moveRight());
             }
             else{
                 do{
                     const int nbParticlesInLeaf = octreeIterator.getCurrentListSrc()->getSize();
                     file.write((const char*)&nbParticlesInLeaf,sizeof(int));
-                    ClassProptotype::PutParticles( &file, octreeIterator.getCurrentListSrc()->data(), octreeIterator.getCurrentListSrc()->getSize());
+
+                    buffer.reset();
+                    typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListSrc());
+                    while( iter.hasNotFinished() ){
+                        iter.data().save(buffer);
+                        iter.gotoNext();
+                    }
+
+                    const int sizeOfLeaf= buffer.getSize();
+                    file.write((const char*) &sizeOfLeaf, sizeof(int));
+                    file.write(buffer.data(), buffer.getSize());
+
                     ++nbLeaf;
-                    if( maxParticlesInLeaf < nbParticlesInLeaf) maxParticlesInLeaf = nbParticlesInLeaf;
                 } while(octreeIterator.moveRight());
             }
 
             const std::ofstream::pos_type currentPos = file.tellp();
             file.seekp(posNbLeaf);
             file.write((const char*)&nbLeaf,sizeof(int));
-            file.write((const char*)&maxParticlesInLeaf,sizeof(int));
             file.seekp(currentPos);
         }
 
@@ -180,8 +129,14 @@ public:
 
             do{
                 const MortonIndex mindex = octreeIterator.getCurrentGlobalIndex();
-                file.write((const char*)&mindex,sizeof(MortonIndex));;
-                ClassProptotype::PutCell( &file, octreeIterator.getCurrentCell());
+                file.write((const char*)&mindex,sizeof(MortonIndex));
+
+                buffer.reset();
+                octreeIterator.getCurrentCell()->save(buffer);
+                const int sizeOfCell = buffer.getSize();
+                file.write((const char*) &sizeOfCell, sizeof(int));
+                file.write(buffer.data(), buffer.getSize());
+
                 ++nbCells;
             } while(octreeIterator.moveRight());
 
@@ -206,6 +161,7 @@ public:
     template <class OctreeClass, class CellClass, class ParticleClass, class ClassProptotype >
     static bool Load(const char filename[], OctreeClass& tree){
         std::ifstream file(filename, std::ifstream::binary | std::ifstream::in );
+        FBufferReader buffer;
 
         if(!file.good()){
             return false;
@@ -234,21 +190,24 @@ public:
         {
             int nbLeaf = 0;
             file.read((char*)&nbLeaf, sizeof(int));
-            int maxParticlesInLeaf = 0;
-            file.read((char*)&maxParticlesInLeaf, sizeof(int));
 
-            ParticleClass* const particles = new ParticleClass[maxParticlesInLeaf];
+            ParticleClass particle;
 
             for(int idxLeaf = 0 ; idxLeaf < nbLeaf ; ++idxLeaf){
                 int particlesInLeaf = 0;
                 file.read((char*)&particlesInLeaf, sizeof(int));
-                ClassProptotype::GetParticles(&file, particles, particlesInLeaf);
+
+                int sizeOfLeaf = 0;
+                file.read((char*)&sizeOfLeaf, sizeof(int));
+
+                buffer.reserve(sizeOfLeaf);
+                file.read((char*)buffer.data(), sizeOfLeaf);
+
                 for(int idxParticle = 0 ; idxParticle < particlesInLeaf ; ++idxParticle){
-                    tree.insert(particles[idxParticle]);
+                    particle.restore(buffer);
+                    tree.insert(particle);
                 }
             }
-
-            delete[] particles;
         }
 
         // Start from leal level - 1
@@ -270,7 +229,14 @@ public:
                     return false;
                 }
 
-                ClassProptotype::GetCell(&file,octreeIterator.getCurrentCell());
+                int sizeOfCell = 0;
+                file.read((char*)&sizeOfCell, sizeof(int));
+
+                buffer.reserve(sizeOfCell);
+                file.read((char*)buffer.data(), sizeOfCell);
+
+                octreeIterator.getCurrentCell()->restore(buffer);
+
                 --nbCells;
             } while(octreeIterator.moveRight());
 

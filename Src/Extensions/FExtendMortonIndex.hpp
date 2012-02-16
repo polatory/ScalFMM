@@ -14,6 +14,8 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
+#include "../Containers/FBufferReader.hpp"
+#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -51,6 +53,14 @@ public:
         this->mortonIndex = inMortonIndex;
     }
 
+    /** Save current object */
+    void save(FBufferWriter& buffer) const {
+        buffer << mortonIndex;
+    }
+    /** Retrieve current object */
+    void restore(FBufferReader& buffer) {
+        buffer >> mortonIndex;
+    }
 };
 
 
