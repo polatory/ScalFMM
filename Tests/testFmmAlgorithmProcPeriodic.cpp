@@ -41,30 +41,11 @@
   * it also check that each particles is impacted each other particles
   */
 
-class TestCell : public FTestCell , public FAbstractSendable {
-public:
-    static const int SerializedSizeUp = sizeof(long long int);
-    void serializeUp(void* const buffer) const {
-        *(long long int*)buffer = this->dataUp;
-    }
-    void deserializeUp(const void* const buffer){
-        this->dataUp = *(long long int*)buffer;
-    }
-
-    static const int SerializedSizeDown = sizeof(long long int);
-    void serializeDown(void* const buffer) const {
-        *(long long int*)buffer = this->dataDown;
-    }
-    void deserializeDown(const void* const buffer){
-        this->dataDown = *(long long int*)buffer;
-    }
-};
-
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef FTestParticle               ParticleClass;
-    typedef TestCell                    CellClass;
+    typedef FTestCell                   CellClass;
     typedef FVector<ParticleClass>      ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;

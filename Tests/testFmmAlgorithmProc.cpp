@@ -27,7 +27,6 @@
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
 #include "../Src/Extensions/FExtendPhysicalValue.hpp"
-#include "../Src/Extensions/FExtendFullySerializable.hpp"
 
 
 #include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
