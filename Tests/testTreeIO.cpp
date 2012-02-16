@@ -33,9 +33,9 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSerializableSphericalParticle             ParticleClass;
-    typedef FSerializableSphericalCell                 CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef FSphericalParticle             ParticleClass;
+    typedef FSphericalCell                 CellClass;
+    typedef FVector<ParticleClass>         ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -57,7 +57,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-
+    CellClass::Init(5);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -75,13 +75,13 @@ int main(int argc, char ** argv){
 
     std::cout << "Save tree ..." << std::endl;
 
-    FTreeIO::Save<OctreeClass, CellClass, ParticleClass >("/tmp/tree.data", tree);
+    FTreeIO::Save<OctreeClass, CellClass, ParticleClass, ContainerClass >("/tmp/tree.data", tree);
 
     // -----------------------------------------------------
 
     std::cout << "Load tree ..." << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, ParticleClass >("/tmp/tree.data", tree);
+    FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >("/tmp/tree.data", tree);
 
     return 0;
 }

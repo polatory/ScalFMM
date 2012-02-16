@@ -68,7 +68,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-    CellClass::Init(DevP);
+    CellClass::Init(DevP, true);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------

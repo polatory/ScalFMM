@@ -32,7 +32,7 @@
 class FTreeIO{
 public:
     /** To save in memory */
-    template <class OctreeClass, class CellClass, class ParticleClass, class ClassProptotype >
+    template <class OctreeClass, class CellClass, class ParticleClass , class ContainerClass >
     static bool Save(const char filename[], OctreeClass& tree){
         std::ofstream file(filename, std::ofstream::binary | std::ofstream::out );
         FBufferWriter buffer;
@@ -101,7 +101,7 @@ public:
                         iter.gotoNext();
                     }
 
-                    const int sizeOfLeaf= buffer.getSize();
+                    const int sizeOfLeaf = buffer.getSize();
                     file.write((const char*) &sizeOfLeaf, sizeof(int));
                     file.write(buffer.data(), buffer.getSize());
 
@@ -158,7 +158,7 @@ public:
 
 
     /** To load from memory */
-    template <class OctreeClass, class CellClass, class ParticleClass, class ClassProptotype >
+    template <class OctreeClass, class CellClass, class ParticleClass , class ContainerClass  >
     static bool Load(const char filename[], OctreeClass& tree){
         std::ifstream file(filename, std::ifstream::binary | std::ifstream::in );
         FBufferReader buffer;

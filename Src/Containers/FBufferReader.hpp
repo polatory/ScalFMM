@@ -65,7 +65,7 @@ public:
 
     /** Reset and allocate nbBytes memory filled with 0 */
     void reserve(const int nbBytes){
-        buffer.clear();
+        reset();
         buffer.set( 0, nbBytes);
     }
 
@@ -79,7 +79,7 @@ public:
     template <class ClassType>
     ClassType getValue(){
         ClassType value = (*reinterpret_cast<ClassType*>(&buffer[index]));
-        index += sizeof(ClassType);
+        index += int(sizeof(ClassType));
         return value;
     }
 
@@ -87,14 +87,14 @@ public:
     template <class ClassType>
     void fillValue(ClassType* const inValue){
         (*inValue) = (*reinterpret_cast<ClassType*>(&buffer[index]));
-        index += sizeof(ClassType);
+        index += int(sizeof(ClassType));
     }
 
     /** Fill one/many value(s) with memcpy */
     template <class ClassType>
     void fillArray(ClassType* const inArray, const int inSize){
         memcpy( inArray, &buffer[index], sizeof(ClassType) * inSize);
-        index += sizeof(ClassType) * inSize;
+        index += int(sizeof(ClassType) * inSize);
     }
 
     /** Same as fillValue */

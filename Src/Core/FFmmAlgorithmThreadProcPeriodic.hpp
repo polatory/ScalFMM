@@ -438,7 +438,7 @@ private:
 
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc ){
                 if( getWorkingInterval(1, idxProc - 1).max < getWorkingInterval(1, idxProc).max ){
-                    MPI_Irecv(&recvBuffer[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc,
+                    MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc,
                               FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
                 }
             }
@@ -448,10 +448,10 @@ private:
             // retreive data and merge my child and the child from others
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc){
                 if( getWorkingInterval(1, idxProc - 1).max < getWorkingInterval(1, idxProc).max ){
-                    int state = int(recvBuffer[idxProc * recvBufferOffset]);
+                    recvBuffer.seek(idxProc * recvBufferOffset);
+                    int state = int(recvBuffer.getValue<char>());
 
                     int position = 0;
-                    int bufferIndex = 1;
                     while( state && position < 8){
                         while(!(state & 0x1)){
                             state >>= 1;
@@ -459,8 +459,7 @@ private:
                         }
                         fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
 
-                        recvBufferCells[position].deserializeUp(&recvBuffer[idxProc * recvBufferOffset + bufferIndex]);
-                        bufferIndex += CellClass::SerializedSizeUp;
+                        recvBufferCells[position].deserializeUp(recvBuffer);
 
                         currentChild[position] = (CellClass*) &recvBufferCells[position];
 
@@ -482,18 +481,18 @@ private:
                 CellClass** child = octreeIterator.getCurrentBox();
 
                 char state = 0;
-                int idxBuff = 1;
+                sendBuffer.write(state);
+
                 for(int idxChild = firstChild ; idxChild <= lastChild ; ++idxChild){
                     if( child[idxChild] ){
-                        child[idxChild]->serializeUp(&sendBuffer[idxBuff]);
-                        idxBuff += CellClass::SerializedSizeUp;
+                        child[idxChild]->serializeUp(sendBuffer);
                         state = char( state | (0x1 << idxChild));
 
                     }
                 }
-                sendBuffer[0] = state;
+                sendBuffer.writeAt(0,state);
 
-                MPI_Send(sendBuffer, idxBuff, MPI_BYTE, 0, FMpi::TagFmmM2M, MPI_COMM_WORLD);
+                MPI_Send(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, 0, FMpi::TagFmmM2M, MPI_COMM_WORLD);
             }
         }
 
@@ -879,7 +878,16 @@ private:
         FBufferReader recvBuffer(MaxSizePerCell);
 
         // Periodic
-        FMpi::MpiAssert( MPI_Bcast( &root, sizeof(CellClass), MPI_BYTE, 0, MPI_COMM_WORLD ), __LINE__ );
+        if( idProcess == 0){
+            root.serializeDown(sendBuffer);
+            FMpi::MpiAssert( MPI_Bcast( sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, 0, MPI_COMM_WORLD ), __LINE__ );
+            sendBuffer.reset();
+        }
+        else{
+            FMpi::MpiAssert( MPI_Bcast( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, 0, MPI_COMM_WORLD ), __LINE__ );
+            root.deserializeDown(recvBuffer);
+            recvBuffer.reset();
+        }
         kernels[0]->L2L(&root, octreeIterator.getCurrentBox(), 0);
 
         // for each levels exepted leaf level
@@ -917,7 +925,8 @@ private:
                     && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
                 needToRecv = true;
 
-                MPI_Irecv( recvBuffer, CellClass::SerializedSizeDown, MPI_BYTE, MPI_ANY_SOURCE, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                MPI_Irecv( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, MPI_ANY_SOURCE,
+                           FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
             }
 
 
@@ -937,18 +946,18 @@ private:
                 if(firstProcThatRecv != endProcThatRecv){
                     iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
                     for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-
-                        MPI_Isend(sendBuffer, CellClass::SerializedSizeDown, MPI_BYTE, idxProc, FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                        MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, idxProc,
+                                  FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
                 }
             }
             FDEBUG(prepareCounter.tac());
 
             FDEBUG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-#pragma omp for
+                #pragma omp for
                 for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
                     myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -970,6 +979,9 @@ private:
                     FDEBUG(computationCounter.tac());
                 }
             }
+
+            sendBuffer.reset();
+            recvBuffer.reset();
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -1004,10 +1016,10 @@ private:
         int iterRequest = 0;
         int nbMessagesToRecv = 0;
 
-        ParticleClass* sendBuffer[nbProcess];
+        FBufferWriter* sendBuffer[nbProcess];
         memset(sendBuffer, 0, sizeof(ParticleClass*) * nbProcess);
 
-        ParticleClass* recvBuffer[nbProcess];
+        FBufferReader* recvBuffer[nbProcess];
         memset(recvBuffer, 0, sizeof(ParticleClass*) * nbProcess);
 
         int globalReceiveMap[nbProcess * nbProcess];
@@ -1100,9 +1112,8 @@ private:
             // Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                    recvBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]]);
-
-                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc], globalReceiveMap[idxProc * nbProcess + idProcess]*int(sizeof(ParticleClass)), MPI_BYTE,
+                    recvBuffer[idxProc] = new FBufferReader(int(sizeof(ParticleClass)) * globalReceiveMap[idxProc * nbProcess + idProcess]);
+                    FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
                                                idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
             }
@@ -1110,16 +1121,16 @@ private:
             // Prepare send
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(indexToSend[idxProc] != 0){
-                    sendBuffer[idxProc] = reinterpret_cast<ParticleClass*>(new char[sizeof(ParticleClass) * partsToSend[idxProc]]);
+                    sendBuffer[idxProc] = new FBufferWriter(int(sizeof(ParticleClass)) * partsToSend[idxProc]);
 
-                    int currentIndex = 0;
                     for(int idxLeaf = 0 ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
-                        memcpy(&sendBuffer[idxProc][currentIndex], toSend[idxProc][idxLeaf].getCurrentListSrc()->data(),
-                               sizeof(ParticleClass) * toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize() );
-                        currentIndex += toSend[idxProc][idxLeaf].getCurrentListSrc()->getSize();
+                        typename ContainerClass::BasicIterator iterSource(*toSend[idxProc][idxLeaf].getCurrentListSrc());
+                        while( iterSource.hasNotFinished() ){
+                            iterSource.data().save(*sendBuffer[idxProc]);
+                        }
                     }
 
-                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc], int(sizeof(ParticleClass)) * partsToSend[idxProc] , MPI_BYTE ,
+                    FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
                                                 idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
 
                 }
@@ -1260,10 +1271,13 @@ private:
             for(int idxRcv = 0 ; idxRcv < countMessages ; ++idxRcv){
                 if( indexMessage[idxRcv] < nbMessagesToRecv ){
                     const int idxProc = status[idxRcv].MPI_SOURCE;
+                    ParticleClass tempoParticle;
                     for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
-                        otherP2Ptree.insert(recvBuffer[idxProc][idxPart]);
+                        tempoParticle.restore(*recvBuffer[idxProc]);
+                        otherP2Ptree.insert(tempoParticle);
                     }
-                    delete [] reinterpret_cast<char*>(recvBuffer[idxProc]);
+                    delete recvBuffer[idxProc];
+                    recvBuffer[idxProc] = 0;
                 }
             }
         }

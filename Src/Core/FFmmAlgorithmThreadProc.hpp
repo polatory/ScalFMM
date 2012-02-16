@@ -1026,7 +1026,7 @@ private:
             // Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                    recvBuffer[idxProc] = new FBufferReader(sizeof(ParticleClass) * globalReceiveMap[idxProc * nbProcess + idProcess]);
+                    recvBuffer[idxProc] = new FBufferReader(int(sizeof(ParticleClass)) * globalReceiveMap[idxProc * nbProcess + idProcess]);
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
                                                idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
                 }
@@ -1035,7 +1035,7 @@ private:
             // Prepare send
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(indexToSend[idxProc] != 0){
-                    sendBuffer[idxProc] = new FBufferWriter(sizeof(ParticleClass) * partsToSend[idxProc]);
+                    sendBuffer[idxProc] = new FBufferWriter(int(sizeof(ParticleClass)) * partsToSend[idxProc]);
 
                     for(int idxLeaf = 0 ; idxLeaf < indexToSend[idxProc] ; ++idxLeaf){
                         typename ContainerClass::BasicIterator iterSource(*toSend[idxProc][idxLeaf].getCurrentListSrc());

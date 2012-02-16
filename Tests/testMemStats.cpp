@@ -62,7 +62,7 @@ int main(int argc, char ** argv){
 
         const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);
         const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-        const long NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
+        const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
         const long DevP         = FParameters::getValue(argc,argv,"-p", 5);
         const FReal FRandMax    = FReal(RAND_MAX);
         const F3DPosition centerOfBox = F3DPosition(0.5,0.5,0.5);

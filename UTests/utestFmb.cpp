@@ -28,52 +28,9 @@
   This test compare a previous FMM result with a simulation.
   */
 
-/** The result of a previous simulation has been saved and will be oponed */
-class ParticleSerial : public FSphericalParticle, public FTreeIO::FAbstractSerial {
-public:
-    void write(std::ofstream*const stream) const{
-        save(stream, getPosition().getX());
-        save(stream, getPosition().getY());
-        save(stream, getPosition().getZ());
-        save(stream, getForces().getX());
-        save(stream, getForces().getY());
-        save(stream, getForces().getZ());
-        save(stream, getPotential());
-        save(stream, getPhysicalValue());
-    }
 
-    void read(std::ifstream*const stream) {
-        const FReal posX = restore<FReal>(stream);
-        const FReal posY = restore<FReal>(stream);
-        const FReal posZ = restore<FReal>(stream);
-        setPosition(posX, posY, posZ);
-
-        const FReal forceX = restore<FReal>(stream);
-        const FReal forceY = restore<FReal>(stream);
-        const FReal forceZ = restore<FReal>(stream);
-        setForces(forceX, forceY, forceZ);
-
-        setPotential(restore<FReal>(stream));
-        setPhysicalValue(restore<FReal>(stream));
-    }
-};
-
-/** The result of a previous simulation has been saved and will be oponed */
-class ComputeCellSerial : public FSphericalCell, public FTreeIO::FAbstractSerial {
-public:
-    void write(std::ofstream*const stream) const{
-        saveArray(stream, FSphericalCell::getMultipole(), FSphericalCell::GetPoleSize());
-        saveArray(stream, FSphericalCell::getLocal(), FSphericalCell::GetLocalSize());
-    }
-
-    void read(std::ifstream*const stream){
-        restoreArray(stream, FSphericalCell::getMultipole(), FSphericalCell::GetPoleSize());
-        restoreArray(stream, FSphericalCell::getLocal(), FSphericalCell::GetLocalSize());
-    }
-};
-
-typedef ParticleSerial       ParticleClass;
-typedef ComputeCellSerial             CellClass;
+typedef FSphericalParticle       ParticleClass;
+typedef FSphericalCell           CellClass;
 typedef FVector<ParticleClass>  ContainerClass;
 
 typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
@@ -113,11 +70,11 @@ class TestFmb : public FUTester<TestFmb> {
         algo.execute();
 
         // If needed save the result
-        // FTreeIO::Save<OctreeClass, CellClass, ParticleClass, FTreeIO::Serializer<CellClass, ParticleClass> >(DataFile, testTree);
+        // FTreeIO::Save<OctreeClass, CellClass, ParticleClass, ContainerClass >(DataFile, testTree);
 
         // Load previous result
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, FTreeIO::Serializer<CellClass, ParticleClass> >(DataFile, goodTree);
+        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >(DataFile, goodTree);
 
         // Compare the two simulations
         Print("Check the particles...");

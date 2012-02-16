@@ -70,7 +70,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const long NbPart = 200000;//2000000
+    const int NbPart = 200000;//2000000
     const double BoxWidth = 1.0;
     const F3DPosition CenterOfBox(0.5,0.5,0.5);
     const FReal FRandMax = FReal(RAND_MAX);
