@@ -444,7 +444,7 @@ private:
         //////////////////////////////////////////////////////////////////
 
         // pointer to send
-        typename OctreeClass::Iterator* toSend[nbProcess * OctreeHeight];
+        FVector<typename OctreeClass::Iterator> toSend[nbProcess * OctreeHeight];
         memset(toSend, 0, sizeof(typename OctreeClass::Iterator*) * nbProcess * OctreeHeight );
         int sizeToSend[nbProcess * OctreeHeight];
         memset(sizeToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
@@ -522,16 +522,8 @@ private:
 
                                 needOther = true;
 
-                                if(indexToSend[idxLevel * nbProcess + procToReceive] ==  sizeToSend[idxLevel * nbProcess + procToReceive]){
-                                    const int previousSize = sizeToSend[idxLevel * nbProcess + procToReceive];
-                                    sizeToSend[idxLevel * nbProcess + procToReceive] = FMath::Max(int(10*sizeof(typename OctreeClass::Iterator)), int(sizeToSend[idxLevel * nbProcess + procToReceive] * 1.5));
-                                    typename OctreeClass::Iterator* temp = toSend[idxLevel * nbProcess + procToReceive];
-                                    toSend[idxLevel * nbProcess + procToReceive] = reinterpret_cast<typename OctreeClass::Iterator*>(new char[sizeof(typename OctreeClass::Iterator) * sizeToSend[idxLevel * nbProcess + procToReceive]]);
-                                    memcpy(toSend[idxLevel * nbProcess + procToReceive], temp, previousSize * sizeof(typename OctreeClass::Iterator));
-                                    delete[] reinterpret_cast<char*>(temp);
-                                }
-
-                                toSend[idxLevel * nbProcess + procToReceive][indexToSend[idxLevel * nbProcess + procToReceive]++] = iterArray[idxCell];
+                                toSend[idxLevel * nbProcess + procToReceive].push(iterArray[idxCell]);
+                                ++indexToSend[idxLevel * nbProcess + procToReceive];
                             }
                         }
                     }
@@ -588,8 +580,8 @@ private:
                     for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
                         const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
                         sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
-                        const int positionToWriteSize = sendBuffer[idxLevel * nbProcess + idxProc]->getSize();
 
+                        const int positionToWriteSize = sendBuffer[idxLevel * nbProcess + idxProc]->getSize();
                         sendBuffer[idxLevel * nbProcess + idxProc]->FBufferWriter::write<int>(0);
 
                         toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
@@ -768,7 +760,6 @@ private:
         for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
             delete sendBuffer[idxComm];
             delete recvBuffer[idxComm];
-            delete[] reinterpret_cast<char*>( toSend[idxComm] );
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
