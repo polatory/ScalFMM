@@ -29,7 +29,7 @@
 * X Y Z // one particle by line
 * ....
 * <code>
-*    FHLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
+*    FHLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>

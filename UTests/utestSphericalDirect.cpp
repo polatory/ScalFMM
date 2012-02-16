@@ -45,7 +45,7 @@ public:
 };
 
 
-class TestFmbDirect : public FUTester<TestFmbDirect> {
+class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     typedef IndexedParticle         ParticleClass;
     typedef FSphericalCell            CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
@@ -62,7 +62,7 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
     void TestDirect(){
         // Warning in make test the exec dir it Build/UTests
         // Load particles
-        FFmaBinLoader<ParticleClass> loader("../../Data/utestFmbDirect.bin.fma");
+        FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             assert(false);
@@ -169,13 +169,13 @@ class TestFmbDirect : public FUTester<TestFmbDirect> {
 
     // set test
     void SetTests(){
-        AddTest(&TestFmbDirect::TestDirect,"Test Simu and with direct");
+        AddTest(&TestSphericalDirect::TestDirect,"Test Simu and with direct");
     }
 };
 
 
 // You must do this
-TestClass(TestFmbDirect)
+TestClass(TestSphericalDirect)
 
 
 

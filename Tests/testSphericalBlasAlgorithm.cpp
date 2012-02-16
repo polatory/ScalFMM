@@ -24,9 +24,10 @@
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Kernels/FSphericalBlockBlasKernel.hpp"
+#include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalBlasKernel.hpp"
+#include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Kernels/FSphericalParticle.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
@@ -38,102 +39,19 @@
   */
 
 
-class PointingSphericalCell : public FBasicCell {
-protected:
-    static int DevP;
-    static int LocalSize;
-    static int PoleSize;
-    static bool UseBlas;
-
-    FComplexe* multipole_exp; //< For multipole extenssion
-    FComplexe* local_exp;     //< For local extenssion
-
-public:
-    static void Init(const int inDevP, const bool inUseBlas = false){
-        DevP  = inDevP;
-        const int ExpP  = int((inDevP+1) * (inDevP+2) * 0.5);
-        const int NExpP = (inDevP+1) * (inDevP+1);
-
-        LocalSize = ExpP;
-        if(inUseBlas) {
-            PoleSize = NExpP;
-        }
-        else{
-            PoleSize = ExpP;
-        }
-    }
-
-    static int GetLocalSize(){
-        return LocalSize;
-    }
-
-    static int GetPoleSize(){
-        return PoleSize;
-    }
-
-    /** Default constructor */
-    PointingSphericalCell()
-        : multipole_exp(0), local_exp(0){
-        //multipole_exp = new FComplexe[PoleSize];
-        local_exp = new FComplexe[LocalSize];
-    }
-
-    /** Default destructor */
-    virtual ~PointingSphericalCell(){
-        //delete[] multipole_exp;
-        delete[] local_exp;
-    }
-
-    /** Copy constructor */
-    PointingSphericalCell& operator=(const PointingSphericalCell& other) {
-        FMemUtils::copyall(multipole_exp, other.multipole_exp, PoleSize);
-        FMemUtils::copyall(local_exp, other.local_exp, LocalSize);
-        return *this;
-    }
-
-    /** Set Multipole adresse */
-    const void setMultipole(FComplexe*const inMultipole){
-        multipole_exp = inMultipole;
-    }
-
-    /** Get Multipole */
-    const FComplexe* getMultipole() const {
-        return multipole_exp;
-    }
-    /** Get Local */
-    const FComplexe* getLocal() const {
-        return local_exp;
-    }
-
-    /** Get Multipole */
-    FComplexe* getMultipole() {
-        return multipole_exp;
-    }
-    /** Get Local */
-    FComplexe* getLocal() {
-        return local_exp;
-    }
-};
-
-int PointingSphericalCell::DevP(-1);
-int PointingSphericalCell::LocalSize(-1);
-int PointingSphericalCell::PoleSize(-1);
-
-
-
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef FSphericalParticle             ParticleClass;
-    typedef PointingSphericalCell                 CellClass;
+    typedef FSphericalCell                 CellClass;
     typedef FVector<ParticleClass>         ContainerClass;
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+    typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
+    std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
@@ -150,7 +68,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-    CellClass::Init(DevP);
+    CellClass::Init(DevP, true);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -164,30 +82,6 @@ int main(int argc, char ** argv){
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
-    // ---------------------------------------------
-
-    int cellsPerLevel[NbLevels];
-    tree.getNbCellsPerLevel(cellsPerLevel);
-    FComplexe* matrix[NbLevels];
-    memset(matrix, 0, sizeof(FComplexe*) * NbLevels);
-
-    {
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        OctreeClass::Iterator avoidGoLeft(octreeIterator);
-
-        for(int idxLevel = NbLevels - 1 ; idxLevel > 0; --idxLevel ){
-            matrix[idxLevel] = new FComplexe[CellClass::GetPoleSize() * cellsPerLevel[idxLevel]];
-            int poleIndex = 0;
-            do{
-                octreeIterator.getCurrentCell()->setMultipole(&matrix[idxLevel][poleIndex]);
-                poleIndex += CellClass::GetPoleSize();
-            } while(octreeIterator.moveRight());
-            avoidGoLeft.moveUp();
-            octreeIterator = avoidGoLeft;
-        }
-    }
-
     // -----------------------------------------------------
 
     std::cout << "Working on particles ..." << std::endl;
@@ -200,12 +94,6 @@ int main(int argc, char ** argv){
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
-
-    // ---------------------------------------------
-
-    FMemUtils::DeleteAll(matrix, NbLevels);
-
-    // ---------------------------------------------
 
     { // get sum forces&potential
         FReal potential = 0;

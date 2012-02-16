@@ -40,12 +40,12 @@ typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeCl
 
 typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-class TestFmb : public FUTester<TestFmb> {
+class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
     void TestTree(){
         // Warning in make test the exec dir it Build/UTests
-        const char* const DataFile = "../../Data/utestFmb.data";
-        const char* const ParticleFile = "../../Data/utestFmb.bin.fma";
+        const char* const DataFile = "../../Data/utestSpherical.data";
+        const char* const ParticleFile = "../../Data/utestSpherical.bin.fma";
 
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
@@ -167,14 +167,14 @@ class TestFmb : public FUTester<TestFmb> {
 
     // set test
     void SetTests(){
-        AddTest(&TestFmb::TestTree,"Test Simu and compare tree");
+        AddTest(&TestSphericalWithPrevious::TestTree,"Test Simu and compare tree");
     }
 };
 
 
 
 // You must do this
-TestClass(TestFmb)
+TestClass(TestSphericalWithPrevious)
 
 
 

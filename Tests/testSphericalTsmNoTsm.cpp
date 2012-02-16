@@ -63,7 +63,7 @@ int main(int argc, char ** argv){
     typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
 
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
+    std::cout << ">> This executable has to be used to test Spherical on a Tsm system.\n";
     std::cout << ">> It compares the results between Tms and no Tms (except P2P & L2P).\n";
     //////////////////////////////////////////////////////////////
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);

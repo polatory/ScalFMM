@@ -20,8 +20,7 @@ class F3DPosition;
 * @class FAbstractLoader
 * Please read the license
 *
-* This class defined the FMB usual loader. A loader is the component
-* that fills an octree.
+* A loader is the component that fills an octree.
 *
 * If you want to use a specific file format you then need to inherite from this loader
 * and implemente several methods.

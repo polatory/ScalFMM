@@ -49,7 +49,7 @@ int main(int argc, char ** argv){
 
     typedef FFmmAlgorithmTsm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test Fmb on a Tsm system.\n";
+    std::cout << ">> This executable has to be used to test Spherical on a Tsm system.\n";
     //////////////////////////////////////////////////////////////
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);

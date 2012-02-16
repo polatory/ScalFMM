@@ -180,7 +180,7 @@ int main(int argc, char ** argv){
     typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
+    std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
 
     FMpi app( argc, argv);

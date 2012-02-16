@@ -279,7 +279,7 @@ void print(OctreeClass* const valideTree){
 // Types
 /////////////////////////////////////////////////////////////////////
 
-/** Fmb class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
+/** class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
   * Because we use fma loader it needs {FExtendPhysicalValue}
   */
 class TestParticle : public FTestParticle, public FExtendPhysicalValue {

@@ -78,7 +78,7 @@ int main(int argc, char ** argv){
 
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
+    std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 6);

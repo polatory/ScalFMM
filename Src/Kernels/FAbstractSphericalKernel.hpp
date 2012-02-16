@@ -822,7 +822,6 @@ private:
         /////////////////////////////////////////////////////////////////////
 
         //spherical_position_Set_ph
-        //FMB_INLINE COORDINATES_T angle_Convert_in_MinusPi_Pi(COORDINATES_T a){
         FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
         if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
         if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::Epsilon;

@@ -23,18 +23,17 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-
 #include "../Src/Kernels/FSphericalKernel.hpp"
-#include "../Src/Kernels/FSphericalBlasKernel.hpp"
 #include "../Src/Kernels/FSphericalCell.hpp"
 #include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Files/FFmaScanfLoader.hpp"
+#include "../Src/Files/FFmaLoader.hpp"
+
 
 /** This program show an example of use of
   * the fmm basic algo
-  * it also check that eachh particles is little or longer
+  * it also check that each particles is little or longer
   * related that each other
   */
 
@@ -47,29 +46,29 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
+    std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaScanfLoader<ParticleClass> loader(filename);
+    FFmaLoader<ParticleClass> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
     }
 
     // -----------------------------------------------------
-    CellClass::Init(DevP, true);
-    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    CellClass::Init(DevP);
+    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -87,8 +86,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-
+    KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo(&tree,&kernels);
     algo.execute();
 
@@ -101,7 +99,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();
@@ -113,6 +111,9 @@ int main(int argc, char ** argv){
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Potential = " << potential << std::endl;
     }
+
+    // -----------------------------------------------------
+
 
     return 0;
 }

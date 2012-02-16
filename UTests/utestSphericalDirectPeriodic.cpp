@@ -41,7 +41,7 @@ public:
 };
 
 /** The class to run the test */
-class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
+class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic> {
     /** Here we test only the P2P */
     void TestPeriodicP2P(){
         typedef IndexedParticle         ParticleClass;
@@ -453,15 +453,15 @@ class TestFmbDirectPeriodic : public FUTester<TestFmbDirectPeriodic> {
 
     // set test
     void SetTests(){        
-        AddTest(&TestFmbDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
-        AddTest(&TestFmbDirectPeriodic::TestPeriodicP2P,"Test direct compare to real fmm periodic (P2P only)");
-        AddTest(&TestFmbDirectPeriodic::TestDirectHigh,"Test direct compare to real fmm periodic");
+        AddTest(&TestSphericalDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
+        AddTest(&TestSphericalDirectPeriodic::TestPeriodicP2P,"Test direct compare to real fmm periodic (P2P only)");
+        AddTest(&TestSphericalDirectPeriodic::TestDirectHigh,"Test direct compare to real fmm periodic");
     }
 };
 
 
 // You must do this
-TestClass(TestFmbDirectPeriodic)
+TestClass(TestSphericalDirectPeriodic)
 
 
 

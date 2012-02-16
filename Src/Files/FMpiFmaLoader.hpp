@@ -30,7 +30,7 @@
 * X Y Z // one particle by line
 * ....
 * <code>
-*    FMpiFmaLoader<FBasicParticle> loader("../FMB++/Tests/particles.basic.txt"); <br>
+*    FMpiFmaLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
 *        return 1; <br>
