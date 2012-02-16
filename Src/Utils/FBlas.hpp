@@ -24,72 +24,73 @@
 
 
 
-#ifdef SCALFMM_USE_CBLAS
-
-#ifdef  SCALFMM_USE_MKL_AS_BLAS
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
+//#ifdef SCALFMM_USE_CBLAS
+//
+//#ifdef  SCALFMM_USE_MKL_AS_BLAS
+//#include <mkl_cblas.h>
+//#else
+//#include <cblas.h>
 //#include <clapack.h>
-#endif
-#else
-    enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
-    enum CBLAS_TRANSPOSE {CblasNoTrans, CblasTrans, CblasConjTrans};
-#endif
-
-///////////////////////////////////////////////////////
-// GEMV
-///////////////////////////////////////////////////////
-
-void cblas_gemv(const CBLAS_ORDER order ,
-								const CBLAS_TRANSPOSE TransA , const int M , const int N ,
-								const double *alpha , const double *A , const int lda ,
-								const double *X , const int incX , const double *beta ,
-								double *Y , const int incY){
-	cblas_zgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
-}
-
-void cblas_gemv(const CBLAS_ORDER order ,
-								const CBLAS_TRANSPOSE TransA , const int M , const int N ,
-								const float *alpha , const float *A , const int lda ,
-								const float *X , const int incX , const float *beta ,
-								float *Y , const int incY){
-	cblas_cgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
-}
-
-
-///////////////////////////////////////////////////////
-// Dotu
-///////////////////////////////////////////////////////
-
-void cblas_dotu_sub(const int N , const double *X , const int incX ,
-										const double *Y , const int incY , double *dotu){
-	cblas_zdotu_sub(N,X,incX,Y,incY,dotu);
-}
-
-void cblas_dotu_sub(const int N , const float *X , const int incX ,
-										const float *Y , const int incY , float *dotu){
-	cblas_cdotu_sub(N,X,incX,Y,incY,dotu);
-}
-
+//#endif
+//#else
+//    enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
+//    enum CBLAS_TRANSPOSE {CblasNoTrans, CblasTrans, CblasConjTrans};
+//#endif
+//
+/////////////////////////////////////////////////////////
+//// GEMV
+/////////////////////////////////////////////////////////
+//
+//void cblas_gemv(const CBLAS_ORDER order ,
+//								const CBLAS_TRANSPOSE TransA , const int M , const int N ,
+//								const double *alpha , const double *A , const int lda ,
+//								const double *X , const int incX , const double *beta ,
+//								double *Y , const int incY){
+//	cblas_zgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
+//}
+//
+//void cblas_gemv(const CBLAS_ORDER order ,
+//								const CBLAS_TRANSPOSE TransA , const int M , const int N ,
+//								const float *alpha , const float *A , const int lda ,
+//								const float *X , const int incX , const float *beta ,
+//								float *Y , const int incY){
+//	cblas_cgemv(order,TransA,M,N,alpha,A,lda,X,incX,beta,Y,incY);
+//}
+//
+//
+/////////////////////////////////////////////////////////
+//// Dotu
+/////////////////////////////////////////////////////////
+//
+//void cblas_dotu_sub(const int N , const double *X , const int incX ,
+//										const double *Y , const int incY , double *dotu){
+//	cblas_zdotu_sub(N,X,incX,Y,incY,dotu);
+//}
+//
+//void cblas_dotu_sub(const int N , const float *X , const int incX ,
+//										const float *Y , const int incY , float *dotu){
+//	cblas_cdotu_sub(N,X,incX,Y,incY,dotu);
+//}
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-//enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
-//enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-//enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
-//enum CBLAS_DIAG {CblasNonUnit=131, CblasUnit=132};
-//enum CBLAS_SIDE {CblasLeft=141, CblasRight=142};
-
+// for real
 const double D_ZERO =  0.0;
 const double D_ONE  =  1.0;
 const double D_MONE = -1.0;
 const float  S_ZERO =  0.0;
 const float  S_ONE  =  1.0;
 const float  S_MONE = -1.0;
+// for complex
+const double Z_ZERO =  0.0;
+const double Z_ONE  =  1.0;
+const double Z_MONE = -1.0;
+const float  C_ZERO =  0.0;
+const float  C_ONE  =  1.0;
+const float  C_MONE = -1.0;
 
 //const double D_PREC = 1e-16;
 
@@ -128,6 +129,20 @@ extern "C"
 	void sgesvd_(const char*, const char*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*,
 							 float*, const unsigned*, float*, const unsigned*, int*);
+
+	// double complex //////////////////////////////////////////////////
+	void zgemv_(const char*, const unsigned*, const unsigned*, const double*,
+							const double*, const unsigned*, const double*, const unsigned*,
+							const double*, double*, const unsigned*);
+//	void zcopy_(const unsigned*, const double*, const unsigned*,
+//							double*, const unsigned*);
+
+	// single complex //////////////////////////////////////////////////
+	void cgemv_(const char*, const unsigned*, const unsigned*, const float*,
+							const float*, const unsigned*, const float*, const unsigned*,
+							const float*, float*, const unsigned*);
+//	void ccopy_(const unsigned*, const float*, const unsigned*,
+//							float*, const unsigned*);
 }
 
 
@@ -161,6 +176,10 @@ namespace FBlas {
 	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
 	inline void gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
+	inline void c_gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); }
+	inline void c_gemv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); }
 
 //	// y += d Ax
 //	inline void gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -172,6 +191,10 @@ namespace FBlas {
 	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
 	inline void gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
+	inline void c_gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	}
+	inline void c_gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE);	}
 
 //	// y = d A^T x
 //	inline void gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -183,6 +206,14 @@ namespace FBlas {
 	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
 	inline void gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
+	inline void c_gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); }
+	inline void c_gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); }
+	inline void c_gemhv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); } // hermitian transposed
+	inline void c_gemhv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); } // hermitian transposed
 
 //	// y += d A^T x
 //	inline void gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -194,6 +225,14 @@ namespace FBlas {
 	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
 	inline void gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
+	inline void c_gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	}
+	inline void c_gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE); }
+	inline void c_gemhva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
+	{	cgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	} // hermitian transposed
+	inline void c_gemhva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
+	{	zgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE);	} // hermitian transposed
 
 	// singular value decomposition
 	inline int gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT, unsigned nwk, double* wk)
@@ -237,7 +276,7 @@ namespace FBlas {
 //////////////////////////////////////////////////////////////////////
 
 
-#else
+//#else
 //enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
 //enum CBLAS_TRANSPOSE {CblasNoTrans, CblasTrans, CblasConjTrans};
 //
