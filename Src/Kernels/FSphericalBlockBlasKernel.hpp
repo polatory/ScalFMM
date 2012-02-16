@@ -186,12 +186,13 @@ public:
 
         //FReal alpha_and_beta[2] = {1.0, 0.0};
 
-        FBlas::gemtv(     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                          static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
-                          FReal(1.0),
-                          (FReal*)M2L_Outer_transfer,
-                          (FReal*)temporaryMultiSource,
-                          (FReal*)local_exp);
+        FBlas::c_gemtva(
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                    FReal(1.0),
+                    (FReal*)M2L_Outer_transfer,
+                    (FReal*)temporaryMultiSource,
+                    (FReal*)local_exp);
     }
 };
 
