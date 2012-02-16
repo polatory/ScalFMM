@@ -6,6 +6,12 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
+# MPI option has to be set before project
+OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
+if( SCALFMM_USE_MPI )
+	SET(CMAKE_CXX_COMPILER mpicxx)
+endif()
+
 # Project Infos
 project(scalfmm)
 
@@ -15,26 +21,17 @@ ENABLE_LANGUAGE(CXX )
 
 # Options
 OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
-OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 
-# MPI option has to be set before project
-if( SCALFMM_USE_MPI )
-	SET(CMAKE_CXX_COMPILER mpicxx)
-endif()
 
 # Test if openmp is here
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)
 find_package(OpenMP)
 # include(FindOpenMP)
-# if(OPENMP_FOUND)
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-# endif()
 
 # Debug
 MESSAGE( STATUS "SCALFMM_BUILD_DEBUG = ${SCALFMM_BUILD_DEBUG}" )
