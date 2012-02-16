@@ -26,6 +26,7 @@ struct FChebAbstractMatrixKernel : FNoCopyable
 struct FChebMatrixKernelR : FChebAbstractMatrixKernel
 {
 	enum {Identifier = ONE_OVER_R};
+	FChebMatrixKernelR() {}
 	FReal evaluate(const F3DPosition& x, const F3DPosition& y) const
 	{
 		const F3DPosition xy(x-y);
@@ -42,6 +43,7 @@ struct FChebMatrixKernelR : FChebAbstractMatrixKernel
 struct FChebMatrixKernelRR : FChebAbstractMatrixKernel
 {
 	enum {Identifier = ONE_OVER_R_SQUARED};
+	FChebMatrixKernelRR() {}
 	FReal evaluate(const F3DPosition& x, const F3DPosition& y) const
 	{
 		const F3DPosition xy(x-y);
