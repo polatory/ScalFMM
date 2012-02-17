@@ -38,7 +38,7 @@ class FChebInterpolator : FNoCopyable
 	 * S which is precomputed and reused for all M2M and L2L operations, ie for
 	 * all non leaf inter/anterpolations.
 	 */
-	void initChildParentInterpolator()
+	void initM2MandL2L()
 	{
 		F3DPosition ParentRoots[nnodes], ChildRoots[nnodes];
 		const FReal ParentWidth(2.);
@@ -82,7 +82,7 @@ public:
 
 		// initialize interpolation operator for non M2M and L2L (non leaf
 		// operations)
-		this -> initChildParentInterpolator();
+		this -> initM2MandL2L();
 	}
 
 	
@@ -139,8 +139,8 @@ public:
 
 	
 	/**
-	 * The anterpolation corresponds to the P2M and M2M operation. It is indeed
-	 * the transposed interpolation.
+	 * Particle to moment: application of \f$S_\ell(y,\bar y_n)\f$
+	 * (anterpolation, it is the transposed interpolation)
 	 */
 	template <class ContainerClass>
 	void applyP2M(const F3DPosition& center,
@@ -153,9 +153,6 @@ public:
 		F3DPosition localPosition;
 		FReal T_of_x[ORDER][3];
 
-//		std::cout << "ClusterCenter = " << center
-//							<< ", width = " << width << std::endl;
-
 		// set all multipole expansions to zero
 		for (unsigned int n=0; n<nnodes; ++n) multipoleExpansion[n] = FReal(0.);
 
@@ -165,9 +162,6 @@ public:
 
 			// map global position to [-1,1]
 			map(iter.data().getPosition(), localPosition);
-
-//			std::cout << "\tParticlePosition = " << iter.data().getPosition()
-//								<< ", local Position = " << localPosition	<< std::endl;
 			
 			// get source value
 			const FReal sourceValue = iter.data().getPhysicalValue();
@@ -200,7 +194,7 @@ public:
 
 	
 	/**
-	 * The interpolation corresponds to the L2L and L2P operation.
+	 * Local to particle operation: application of \f$S_\ell(x,\bar x_m)\f$ (interpolation)
 	 */
 	template <class ContainerClass>
 	void applyL2P(const F3DPosition& center,
@@ -244,6 +238,79 @@ public:
 
 			iter.data().setPotential(targetValue);
 
+			iter.gotoNext();
+		}
+	}
+
+
+	/**
+	 * Local to particle operation: application of \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
+	 */
+	template <class ContainerClass>
+	void applyL2PGradient(const F3DPosition& center,
+												const FReal width,
+												const FReal *const localExpansion,
+												ContainerClass *const localParticles) const
+	{
+		// setup local to global mapping
+		const map_glob_loc map(center, width);
+		F3DPosition Jacobian;
+		map.computeJacobian(Jacobian);
+		const FReal jacobian[3] = {Jacobian.getX(), Jacobian.getY(), Jacobian.getZ()}; 
+		F3DPosition localPosition;
+		FReal T_of_x[ORDER][3];
+		FReal U_of_x[ORDER][3];
+		
+		typename ContainerClass::BasicIterator iter(*localParticles);
+		while(iter.hasNotFinished()){
+			
+			// map global position to [-1,1]
+			map(iter.data().getPosition(), localPosition);
+			
+			// get target value
+			FReal forces[3] = {iter.data().getForces().getX(),
+												 iter.data().getForces().getY(),
+												 iter.data().getForces().getZ()};
+
+			// evaluate chebyshev polynomials of source particle
+      for (unsigned int o=1; o<ORDER; ++o) {
+				// T_o(x_i)
+        T_of_x[o][0] = BasisType::T(o, localPosition.getX());
+        T_of_x[o][1] = BasisType::T(o, localPosition.getY());
+        T_of_x[o][2] = BasisType::T(o, localPosition.getZ());
+				// T_o(x_i)
+        U_of_x[o][0] = BasisType::U(o, localPosition.getX());
+        U_of_x[o][1] = BasisType::U(o, localPosition.getY());
+        U_of_x[o][2] = BasisType::U(o, localPosition.getZ());
+			}
+
+			// apply P
+			for (unsigned int n=0; n<nnodes; ++n) {
+				for (unsigned int i=0; i<3; ++i) {
+					FReal P = FReal(1.);
+					for (unsigned int d=0; d<3; ++d) {
+						const unsigned int j = node_ids[n][d];
+						FReal P_d;
+						if (d==i) {
+							P_d = 0.;
+							for (unsigned int o=1; o<ORDER; ++o)
+								P_d += 2. / ORDER * U_of_x[o][d] * T_of_roots[o][j]	* jacobian[d];
+						} else {
+							P_d = 1. / ORDER;
+							for (unsigned int o=1; o<ORDER; ++o)
+								P_d += 2. / ORDER * T_of_x[o][d] * T_of_roots[o][j];
+						}
+						P *= P_d;
+					}
+					// the minus sign comes due to the \f$- \nabla_x K(x,y) = \nabla_y K(x,y) = \bar K(x,y)\f$ 
+					forces[i] -= P * localExpansion[n];
+				}
+			}
+			iter.data().setForces(forces[0] * iter.data().getPhysicalValue(),
+														forces[1] * iter.data().getPhysicalValue(),
+														forces[2] * iter.data().getPhysicalValue());
+
+			// increment iterator
 			iter.gotoNext();
 		}
 	}

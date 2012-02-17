@@ -7,6 +7,7 @@
 #include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendPhysicalValue.hpp"
 #include "../Extensions/FExtendPotential.hpp"
+#include "../Extensions/FExtendForces.hpp"
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -18,7 +19,8 @@
  */
 class FChebParticle : public FExtendPosition,
 											public FExtendPhysicalValue,
-											public FExtendPotential
+											public FExtendPotential,
+											public FExtendForces
 {
 public:
 	~FChebParticle() {}

@@ -197,12 +197,17 @@ public:
 		M2LHandler->applyU(LeafCell->getLocal() + nnodes,
 											 const_cast<CellClass *const>(LeafCell)->getLocal());
 
-		// 2) apply Sx
+		// 2.a) apply Sx
 		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 		Interpolator->applyL2P(LeafCellCenter,
 													 BoxWidthLeaf,
 													 LeafCell->getLocal(),
 													 TargetParticles);
+		// 2.b) apply Px (grad Sx)
+		Interpolator->applyL2PGradient(LeafCellCenter,
+																	 BoxWidthLeaf,
+																	 LeafCell->getLocal(),
+																	 TargetParticles);
 	}
 
 
@@ -216,15 +221,23 @@ public:
 		typename ContainerClass::BasicIterator iTargets(*TargetParticles);
 		while (iTargets.hasNotFinished()) {
 			ParticleClass& Target = iTargets.data();
+			const FReal wt = Target.getPhysicalValue();
 
 			{ // loop: source particles (target leaf cell == source leaf cell)
 				typename ContainerClass::ConstBasicIterator iSources(*SourceParticles);
 				while (iSources.hasNotFinished()) {
 					const ParticleClass& Source = iSources.data();
 					// only if target and source are not identical
-					if (&Target != &Source)
-						Target.incPotential(MatrixKernel->evaluate(Target.getPosition(), Source.getPosition())
-																* Source.getPhysicalValue());
+					if (&Target != &Source) {
+						const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+						const FReal ws = Source.getPhysicalValue();
+						// potential
+						Target.incPotential(one_over_r * ws);
+						F3DPosition force(Target.getPosition() - Source.getPosition());
+						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+						// force
+						Target.incForces(force.getX(), force.getY(), force.getZ());
+					}
 					// progress sources
 					iSources.gotoNext();
 				}
@@ -237,8 +250,14 @@ public:
 						while (iSources.hasNotFinished()) {
 							const ParticleClass& Source = iSources.data();
 							// target and source cannot be identical
-							Target.incPotential(MatrixKernel->evaluate(Target.getPosition(), Source.getPosition())
-																	* Source.getPhysicalValue());
+							const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+							const FReal ws = Source.getPhysicalValue();
+							// potential
+							Target.incPotential(one_over_r * ws);
+							F3DPosition force(Target.getPosition() - Source.getPosition());
+							force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+							// force
+							Target.incForces(force.getX(), force.getY(), force.getZ());
 							// progress sources
 							iSources.gotoNext();
 						}

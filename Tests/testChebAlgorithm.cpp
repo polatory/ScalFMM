@@ -74,7 +74,7 @@ const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const unsigned int ORDER = 3;
+	const unsigned int ORDER = 4;
 	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
 	const long NbPart                = FParameters::getValue(argc, argv, "-num", 100000);
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
@@ -91,16 +91,16 @@ int main(int argc, char* argv[])
 	typedef FChebParticle ParticleClass;
 	typedef FVector<FChebParticle> ContainerClass;
 	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
-	typedef FChebMatrixKernelRR MatrixKernelClass;
+	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
 	typedef FChebKernels<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
-
+	
 	
 	const F3DPosition BoxCenter(.5*Width, .5*Width, .5*Width);
 	OctreeClass tree(TreeHeight, SubTreeHeight, Width, BoxCenter);
@@ -135,8 +135,12 @@ int main(int argc, char* argv[])
 	
 	const ContainerClass *const Targets = iLeafs.getCurrentListTargets();
 	const unsigned int NumTargets = Targets->getSize();
+
 	FReal* Potential = new FReal [NumTargets];
-	FBlas::scal(NumTargets, FReal(0.), Potential);
+	FBlas::setzero(NumTargets, Potential);
+
+	FReal* Force = new FReal [NumTargets * 3];
+	FBlas::setzero(NumTargets * 3, Force);
 	
 	std::cout << "\nDirect computation of " << NumTargets << " target particles ..." << std::endl;
 	const MatrixKernelClass MatrixKernel;
@@ -145,12 +149,23 @@ int main(int argc, char* argv[])
 			unsigned int counter = 0;
 			ContainerClass::ConstBasicIterator iTarget(*Targets);
 			while(iTarget.hasNotFinished()) {
+				const FReal wt = iTarget.data().getPhysicalValue();
 				ContainerClass::ConstBasicIterator iSource(*Sources);
 				while(iSource.hasNotFinished()) {
-					if (&iTarget.data() != &iSource.data())
-						Potential[counter] += MatrixKernel.evaluate(iTarget.data().getPosition(),
-																												iSource.data().getPosition())
-							* iSource.data().getPhysicalValue();
+					if (&iTarget.data() != &iSource.data()) {
+						const FReal one_over_r = MatrixKernel.evaluate(iTarget.data().getPosition(),
+																													 iSource.data().getPosition());
+						const FReal ws = iSource.data().getPhysicalValue();
+						// potential
+						Potential[counter] += one_over_r * ws;
+						// force
+						F3DPosition force(iTarget.data().getPosition() - iSource.data().getPosition());
+						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+						// force
+						Force[counter*3 + 0] += force.getX();
+						Force[counter*3 + 1] += force.getY();
+						Force[counter*3 + 2] += force.getZ();
+					}
 					iSource.gotoNext();
 				}
 				counter++;
@@ -160,26 +175,37 @@ int main(int argc, char* argv[])
 
 	
 	FReal* ApproxPotential = new FReal [NumTargets];
+	FReal* ApproxForce     = new FReal [NumTargets * 3];
+
 	unsigned int counter = 0;
 	ContainerClass::ConstBasicIterator iTarget(*Targets);
 	while(iTarget.hasNotFinished()) {
-		ApproxPotential[counter] = iTarget.data().getPotential();
-		//std::cout << Potential[counter] << " - " << ApproxPotential[counter] << " = "
-		//					<< Potential[counter]-ApproxPotential[counter] << "\t rel error = "
-		//					<< (Potential[counter]-ApproxPotential[counter]) / Potential[counter]
-		//					<< std::endl;
+		ApproxPotential[counter]   = iTarget.data().getPotential();
+		ApproxForce[counter*3 + 0] = iTarget.data().getForces().getX();
+		ApproxForce[counter*3 + 1] = iTarget.data().getForces().getY();
+		ApproxForce[counter*3 + 2] = iTarget.data().getForces().getZ();
 		counter++;
 		iTarget.gotoNext();
 	}
-	
-	std::cout << "\nRelative L2 error  = " << computeL2norm( NumTargets, Potential, ApproxPotential)
+
+	std::cout << "\nPotential error:" << std::endl;
+	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets, Potential, ApproxPotential)
 						<< std::endl;
-	std::cout << "Relative Lmax error = "  << computeINFnorm(NumTargets, Potential, ApproxPotential)
-						<< "\n" << std::endl;
+	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets, Potential, ApproxPotential)
+						<< std::endl;
+
+	std::cout << "\nForce error:" << std::endl;
+	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets*3, Force, ApproxForce)
+						<< std::endl;
+	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets*3, Force, ApproxForce)
+						<< std::endl;
+	std::cout << std::endl;
 
 	// free memory
 	delete [] Potential;
 	delete [] ApproxPotential;
+	delete [] Force;
+	delete [] ApproxForce;
 	
 
 	/*

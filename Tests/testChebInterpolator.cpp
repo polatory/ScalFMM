@@ -49,6 +49,7 @@ const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 
 
 
+
 /**
 * In this file we show how to use octree
 */
@@ -73,15 +74,14 @@ int main(int, char **){
 
 	
 	// Leaf size
-	FReal width = 1.;
+	FReal width = 3.723;
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
 	F3DPosition cx(0., 0., 0.);
 	const long M = 10000;
 	std::cout << "Fill the leaf X of width " << width
-						<< " centered at cx=[" << cx.getX() << "," << cx.getY() << "," << cx.getZ()
-						<< "] with M=" << M << " target particles" << std::endl;
+						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
 	{
 		FChebParticle particle;
 		for(long i=0; i<M; ++i){
@@ -89,6 +89,7 @@ int main(int, char **){
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
 			particle.setPosition(x, y, z);
+			particle.setPhysicalValue(FReal(rand())/FRandMax);
 			X.push(particle);
 		}
 	}
@@ -96,11 +97,10 @@ int main(int, char **){
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
-	F3DPosition cy(2., 0., 0.);
+	F3DPosition cy(FReal(2.)*width, 0., 0.);
 	const long N = 10000;
-	std::cout << "Fill the leaf Y of width" << width
-						<< " centered at cy=[" << cy.getX() << "," << cy.getY() << "," << cy.getZ()
-						<< "] with N=" << N << " target particles" << std::endl;
+	std::cout << "Fill the leaf Y of width " << width
+						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
 	{
 		FChebParticle particle;
 		for(long i=0; i<N; ++i){
@@ -117,12 +117,13 @@ int main(int, char **){
 
 	////////////////////////////////////////////////////////////////////
 	// approximative computation
-	const unsigned int ORDER = 5;
+	const unsigned int ORDER = 8;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	typedef FChebInterpolator<ORDER> InterpolatorClass;
 	InterpolatorClass S;
 
-	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
+	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..."
+						<< std::endl;
 	time.tic();
 
 	// Anterpolate: W_n = \sum_j^N S(y_j,\bar y_n) * w_j
@@ -141,8 +142,12 @@ int main(int, char **){
 			F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
 	}
 
-	// Interpolate f_i = \sum_m^L S(x_i,\bar x_m) * F_m
+	// Interpolate p_i = \sum_m^L S(x_i,\bar x_m) * F_m
 	S.applyL2P(cx, width, F, X.getTargets());
+
+	// Interpolate f_i = \sum_m^L P(x_i,\bar x_m) * F_m
+	S.applyL2PGradient(cx, width, F, X.getTargets());
+
 
 	time.tac();
 	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
@@ -153,22 +158,44 @@ int main(int, char **){
 	std::cout << "Compute interactions directly ..." << std::endl;
 	time.tic();
 
-	FReal* approx_f = new FReal[M];
-	FReal*        f = new FReal[M];
-	for (unsigned int i=0; i<M; ++i) f[i] = FReal(0.);
-	ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
-	while(iterY.hasNotFinished()){
-		const F3DPosition& y = iterY.data().getPosition();
-		const FReal        w = iterY.data().getPhysicalValue();
+	FReal* approx_f = new FReal [M * 3];
+	FReal*        f = new FReal [M * 3];
+	FBlas::setzero(M*3, f);
+
+	FReal* approx_p = new FReal[M];
+	FReal*        p = new FReal[M];
+	FBlas::setzero(M, p);
+
+	{ // start direct computation
 		unsigned int counter = 0;
+		
 		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
 		while(iterX.hasNotFinished()){
 			const F3DPosition& x = iterX.data().getPosition();
-			f[counter++] += MatrixKernel.evaluate(x,y) * w;
+			const FReal       wx = iterX.data().getPhysicalValue();
+			
+			ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
+			while(iterY.hasNotFinished()){
+				const F3DPosition& y = iterY.data().getPosition();
+				const FReal       wy = iterY.data().getPhysicalValue();
+				const FReal one_over_r = MatrixKernel.evaluate(x, y);
+				// potential
+				p[counter] += one_over_r * wy;
+				// force
+				F3DPosition force(x - y);
+				force *= one_over_r*one_over_r*one_over_r;
+				f[counter*3 + 0] += force.getX() * wx * wy;
+				f[counter*3 + 1] += force.getY() * wx * wy;
+				f[counter*3 + 2] += force.getZ() * wx * wy;
+				iterY.gotoNext();
+			}
+			
+			counter++;
 			iterX.gotoNext();
 		}
-		iterY.gotoNext();
-	}
+	} // end direct computation
+
+
 	time.tac();
 	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
 
@@ -177,14 +204,28 @@ int main(int, char **){
 	ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
 	unsigned int counter = 0;
 	while(iterX.hasNotFinished()) {
-		approx_f[counter++] = iterX.data().getPotential();
+		approx_p[counter] = iterX.data().getPotential();
+		const F3DPosition& force = iterX.data().getForces();
+		approx_f[counter*3 + 0] = force.getX();
+		approx_f[counter*3 + 1] = force.getY();
+		approx_f[counter*3 + 2] = force.getZ();
+
+		counter++;
 		iterX.gotoNext();
 	}
 
-	std::cout << "\nRelative L2 error  = " << computeL2norm( M, f, approx_f) << std::endl;
-	std::cout << "Relative Lmax error = "  << computeINFnorm(M, f, approx_f) << "\n" << std::endl;
+	std::cout << "\nPotential error:" << std::endl;
+	std::cout << "Relative L2 error   = " << computeL2norm( M, p, approx_p) << std::endl;
+	std::cout << "Relative Lmax error = " << computeINFnorm(M, p, approx_p) << std::endl;
+
+	std::cout << "\nForce error:" << std::endl;
+	std::cout << "Relative L2 error   = " << computeL2norm( M*3, f, approx_f) << std::endl;
+	std::cout << "Relative Lmax error = " << computeINFnorm(M*3, f, approx_f) << std::endl;
+	std::cout << std::endl;
 
 	// free memory
+	delete [] approx_p;
+	delete [] p;
 	delete [] approx_f;
 	delete [] f;
 
