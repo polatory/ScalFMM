@@ -166,6 +166,12 @@ namespace FBlas {
 	inline void scal(const unsigned n, const float d, float* const x)
 	{	sscal_(&n, &d, x, &N_ONE); }
 
+	// set zero
+	inline void setzero(const unsigned n, double* const x)
+	{	dscal_(&n, &D_ZERO, x, &N_ONE); }
+	inline void setzero(const unsigned n, float* const x)
+	{	sscal_(&n, &S_ZERO, x, &N_ONE); }
+
 
 //	// y = d Ax
 //	inline void gemv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
