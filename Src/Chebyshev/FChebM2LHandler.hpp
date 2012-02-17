@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <typeinfo>
 
 #include "../Utils/FBlas.hpp"
 #include "../Utils/FTic.hpp"
@@ -52,8 +53,9 @@ class FChebM2LHandler : FNoCopyable
 
 	static const std::string getFileName(FReal epsilon)
 	{
+		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 		std::stringstream stream;
-		stream << "m2l_k"<< MatrixKernelClass::Identifier
+		stream << "m2l_k"<< MatrixKernelClass::Identifier << "_" << precision_type
 					 << "_o" << order << "_e" << epsilon << ".bin";
 		return stream.str();
 	}
@@ -82,8 +84,16 @@ public:
 		if (U||C||B) throw std::runtime_error("Compressed M2L operator already set");
 		rank = ComputeAndCompress(epsilon, U, C, B);
 		// write info
-		std::cout << "Compressed and set M2L operators in "
-							<< time.tacAndElapsed() << "sec."	<< std::endl;
+		std::cout << "Compressed and set M2L operators in "	<< time.tacAndElapsed() << "sec."	<< std::endl;
+	}
+
+	/**
+	 * Computes, compresses, writes to binary file, reads it and sets the matrices \f$Y, C_t, B\f$
+	 */
+	void ComputeAndCompressAndStoreInBinaryFileAndReadFromFileAndSet()
+	{
+		FChebM2LHandler<ORDER,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(epsilon);
+		this->ReadFromBinaryFileAndSet();
 	}
 
 	/**
@@ -94,10 +104,7 @@ public:
 	 * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
 	 * @param[out] B matrix of size \f$\ell^3\times r\f$
 	 */
-	static const unsigned int ComputeAndCompress(const FReal epsilon,
-																							 FReal* &U,
-																							 FReal* &C,
-																							 FReal* &B);
+	static const unsigned int ComputeAndCompress(const FReal epsilon, FReal* &U, FReal* &C, FReal* &B);
 
 	/**
 	 * Computes, compresses and stores the matrices \f$Y, C_t, B\f$ in a binary
@@ -321,8 +328,12 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 	std::ifstream stream(filename.c_str(),
 											 std::ios::in | std::ios::binary | std::ios::ate);
 	const std::ifstream::pos_type size = stream.tellg();
-	//std::cout << "Size of File = " << size << " bytes" << std::endl;
-	if (size<=0) throw std::runtime_error("File is empty");
+	if (size<=0) {
+		std::cout << "Info: The requested binary file " << filename
+							<< " does not yet exist. Compute it now ... " << std::endl;
+		this->ComputeAndCompressAndStoreInBinaryFileAndReadFromFileAndSet();
+		return;
+	} 
 	if (stream.good()) {
 		stream.seekg(0);
 		// 1) read number of interpolation points (int)
@@ -357,24 +368,54 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 //////////////////////////////////////////////////////////////////////
 
 
+// DANGEROUS FORMULA ?!?!
+//template <int ORDER>
+//unsigned int getRank(const FReal singular_values[], const double eps)
+//{
+//	enum {nnodes = TensorTraits<ORDER>::nnodes};
+//	FReal sum(0.);
+//	for (unsigned int i=0; i<nnodes; ++i)
+//		sum += singular_values[i] * singular_values[i];
+//	
+//	unsigned int k = 0;
+//	double sum_k = sum;
+//	while (sqrt(sum_k) > eps*sqrt(sum)) {
+//		sum_k -= singular_values[k] * singular_values[k];
+//		k++;
+//	}
+//	if (k>nnodes) throw std::runtime_error("rank cannot be larger than nnodes");
+//	return k;
+//}
 
-
+/**
+ * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_rV^\top\|_F \le
+ * \epsilon \|K\|_F\f$, ie., the truncation rank of the singular value
+ * decomposition. With the definition of the Frobenius norm \f$\|K\|_F =
+ * \left(\sum_{i=1}^N \sigma_i^2\right)^{\frac{1}{2}}\f$ the determination of
+ * the low-rank follows as \f$\|K-U\Sigma_rV^\top\|_F^2 = \sum_{i=k+1}^N
+ * \sigma_i^2 \le \epsilon^2 \sum_{i=1}^N \sigma_i^2 = \epsilon^2
+ * \|K\|_F^2\f$.
+ *
+ * @param[in] singular_values array of singular values ordered as \f$\sigma_1
+ * \ge \sigma_2 \ge \dots \ge \sigma_N\f$
+ * @param[in] eps accuracy \f$\epsilon\f$
+ */ 
 template <int ORDER>
 unsigned int getRank(const FReal singular_values[], const double eps)
 {
 	enum {nnodes = TensorTraits<ORDER>::nnodes};
-	FReal sum(0.);
-	for (unsigned int i=0; i<nnodes; ++i)
-		sum += singular_values[i] * singular_values[i];
-	
-	unsigned int k = 0;
-	double sum_k = sum;
-	while (sqrt(sum_k) > eps*sqrt(sum)) {
-		sum_k -= singular_values[k] * singular_values[k];
-		k++;
+
+	FReal nrm2(0.);
+	for (unsigned int k=0; k<nnodes; ++k)
+		nrm2 += singular_values[k] * singular_values[k];
+
+	FReal nrm2k(0.);
+	for (unsigned int k=nnodes; k>0; --k) {
+		nrm2k += singular_values[k-1] * singular_values[k-1];
+		if (nrm2k > eps*eps * nrm2)	return k;
 	}
-	if (k>nnodes) throw std::runtime_error("rank cannot be larger than nnodes");
-	return k;
+	throw std::runtime_error("rank cannot be larger than nnodes");
+	return -1;
 }
 
 
