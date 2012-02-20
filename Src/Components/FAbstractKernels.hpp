@@ -59,6 +59,14 @@ public:
     virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[343],
                      const int size, const int inLevel) = 0;
 
+
+    /** This method can be optionnaly inherited
+      * It is called at the end of each computation level during the M2L pass
+      * @param level the ending level
+      */
+    void finishedLevelM2L(const int /*level*/){
+    }
+
     /**
         * L2L
         * Local to local

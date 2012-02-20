@@ -15,6 +15,7 @@
 
 #include "../Utils/FMemUtils.hpp"
 #include "../Utils/FBlas.hpp"
+#include "../Containers/FVector.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -25,12 +26,26 @@ class FSphericalBlockBlasKernel : public FAbstractSphericalKernel<ParticleClass,
 protected:
     typedef FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> Parent;
 
+    /** A interaction properties */
+    struct ComputationPair {
+        FComplexe* FRestrict pole;
+        FComplexe* FRestrict local;
+        explicit ComputationPair(FComplexe* inPole = 0, FComplexe* inLocal = 0)
+            : pole(inPole), local(inLocal) {}
+    };
+
     const int FF_MATRIX_ROW_DIM;     //< The blas matrix number of rows
     const int FF_MATRIX_COLUMN_DIM;  //< The blas matrix number of columns
     const int FF_MATRIX_SIZE;        //< The blas matrix size
 
-    FComplexe* temporaryMultiSource;                //< To perform the M2L without allocating at each call
+    const int BlockSize;             //< The size of a block
+
+    FComplexe*const multipoleMatrix;                //< To copy all the multipole vectors
+    FComplexe*const localMatrix;                    //< To save all the local vectors result
     FSmartPointer<FComplexe*> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
+
+    FVector<ComputationPair> interactions[343];     //< All the current interaction
+
 
     /** To access te precomputed M2L transfer matrixes */
     int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
@@ -39,7 +54,6 @@ protected:
 
     /** Alloc and init pre-vectors*/
     void allocAndInit(){
-
         FHarmonic blasHarmonic(Parent::devP * 2);
 
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
@@ -94,11 +108,13 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
+    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inBlockSize = 100, const int inPeriodicLevel = 0)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
-          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
+          BlockSize(inBlockSize),
+          multipoleMatrix(new FComplexe[inBlockSize * FF_MATRIX_COLUMN_DIM]),
+          localMatrix(new FComplexe[inBlockSize * FF_MATRIX_ROW_DIM]),
           preM2LTransitions(0){
         allocAndInit();
     }
@@ -108,14 +124,17 @@ public:
         : Parent(other),
           FF_MATRIX_ROW_DIM(other.FF_MATRIX_ROW_DIM), FF_MATRIX_COLUMN_DIM(other.FF_MATRIX_COLUMN_DIM),
           FF_MATRIX_SIZE(other.FF_MATRIX_SIZE),
-          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
+          BlockSize(other.BlockSize),
+          multipoleMatrix(new FComplexe[other.BlockSize * FF_MATRIX_COLUMN_DIM]),
+          localMatrix(new FComplexe[other.BlockSize * FF_MATRIX_ROW_DIM]),
           preM2LTransitions(other.preM2LTransitions) {
 
     }
 
     /** Destructor */
     ~FSphericalBlockBlasKernel(){
-        delete[] temporaryMultiSource;
+        delete[] multipoleMatrix;
+        delete[] localMatrix;
         if(preM2LTransitions.isLast()){
             FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight + Parent::periodicLevels);
         }
@@ -127,12 +146,23 @@ public:
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if( distantNeighbors[idxNeigh] ){
-                const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh * FF_MATRIX_SIZE];
-                multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
+                interactions[idxNeigh].push(ComputationPair(distantNeighbors[idxNeigh]->getMultipole(), pole->getLocal()));
+
+                if( interactions[idxNeigh].getSize() == BlockSize){
+                    multipoleToLocal( idxNeigh, inLevel);
+                }
             }
         }
     }
 
+    /** Do we have some computation to do in the buffers */
+    void finishedLevelM2L(const int inLevel){
+        for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+            if( interactions[idxNeigh].getSize() ){
+                multipoleToLocal( idxNeigh, inLevel);
+            }
+        }
+    }
 
     /** preExpNExp
       * @param exp an exponent vector to create an computable vector
@@ -177,22 +207,29 @@ public:
     *Remark: here we have always j+n >= |-k-l|
     *
     */
-    void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
-                          const FComplexe* const FRestrict M2L_Outer_transfer){
-        // Copy original vector and compute exp2nexp
-        FMemUtils::copyall<FComplexe>(temporaryMultiSource, multipole_exp_src, CellClass::GetPoleSize());
-        // Get a computable vector
-        preExpNExp(temporaryMultiSource);
+    void multipoleToLocal(const int interactionIndex, const int inLevel){
+        for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
+            // Copy original vector and compute exp2nexp
+            FMemUtils::copyall<FComplexe>(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM],
+                                          interactions[interactionIndex][idxInter].pole, CellClass::GetPoleSize());
+            // Get a computable vector
+            preExpNExp(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM]);
+        }
 
-        //FReal alpha_and_beta[2] = {1.0, 0.0};
-
-        FBlas::c_gemtva(
+        FBlas::c_gemmtva(
                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                    static_cast<unsigned int>(interactions[interactionIndex].getSize()),
                     FReal(1.0),
-                    (FReal*)M2L_Outer_transfer,
-                    (FReal*)temporaryMultiSource,
-                    (FReal*)local_exp);
+                    (FReal*)&preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE],
+                    (FReal*)multipoleMatrix,
+                    (FReal*)localMatrix);
+
+        for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
+            FMemUtils::addall<FComplexe>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM], FF_MATRIX_ROW_DIM);
+        }
+
+        interactions[interactionIndex].clear();
     }
 };
 
