@@ -30,7 +30,7 @@
 * It used FTestCell and FTestParticle
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FTestKernels {
+class FTestKernels  : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
 public:
     /** Default destructor */
     virtual ~FTestKernels(){
