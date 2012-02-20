@@ -106,11 +106,16 @@ extern "C"
 	// blas 1
 	double ddot_(const unsigned*, const double*, const unsigned*, const double*, const unsigned*);
 	void dscal_(const unsigned*, const double*, const double*, const unsigned*);
+	void dcopy_(const unsigned*, const double*, const unsigned*, double*, const unsigned*);
+	void daxpy_(const unsigned*, const double*, const double*, const unsigned*, double*, const unsigned*);
 	// blas 2
 	void dgemv_(const char*, const unsigned*, const unsigned*, const double*,
 							const double*, const unsigned*, const double*, const unsigned*,
 							const double*, double*, const unsigned*);
-	void dcopy_(const unsigned*, const double*, const unsigned*, double*, const unsigned*);
+	// blas 3
+	void dgemm_(const char*, const char*, const unsigned*, const unsigned*,
+							const unsigned*, const double*, double*, const unsigned*,
+							double*, const unsigned*, const double*, double*,	const unsigned*);
 	// lapack
 	void dgesvd_(const char*, const char*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*,
@@ -120,30 +125,50 @@ extern "C"
 	// blas 1
 	float sdot_(const unsigned*, const float*, const unsigned*,	const float*, const unsigned*);
 	void sscal_(const unsigned*, const float*, const float*, const unsigned*);
+	void scopy_(const unsigned*, const float*, const unsigned*,	float*, const unsigned*);
+	void saxpy_(const unsigned*, const float*, const float*, const unsigned*, float*, const unsigned*);
 	// blas 2
 	void sgemv_(const char*, const unsigned*, const unsigned*, const float*,
 							const float*, const unsigned*, const float*, const unsigned*,
 							const float*, float*, const unsigned*);
-	void scopy_(const unsigned*, const float*, const unsigned*,	float*, const unsigned*);
-
+	// blas 3
+	void sgemm_(const char*, const char*, const unsigned*, const unsigned*,
+							const unsigned*, const float*, float*, const unsigned*,
+							float*, const unsigned*, const float*, float*, const unsigned*);
 	// lapack
 	void sgesvd_(const char*, const char*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*,
 							 float*, const unsigned*, float*, const unsigned*, int*);
 
 	// double complex //////////////////////////////////////////////////
+	// blas 1
+	void zscal_(const unsigned*, const double*, const double*, const unsigned*);
+	void zcopy_(const unsigned*, const double*, const unsigned*, double*, const unsigned*);
+	void zaxpy_(const unsigned*, const double*, const double*, const unsigned*, double*, const unsigned*);
+	// blas 2
 	void zgemv_(const char*, const unsigned*, const unsigned*, const double*,
 							const double*, const unsigned*, const double*, const unsigned*,
 							const double*, double*, const unsigned*);
-//	void zcopy_(const unsigned*, const double*, const unsigned*,
-//							double*, const unsigned*);
+	// blas 3
+	void zgemm_(const char*, const char*, const unsigned*, const unsigned*,
+							const unsigned*, const double*, double*, const unsigned*,
+							double*, const unsigned*, const double*, double*, const unsigned*);
+
 
 	// single complex //////////////////////////////////////////////////
+	// blas 1
+	void cscal_(const unsigned*, const float*, const float*, const unsigned*);
+	void ccopy_(const unsigned*, const float*, const unsigned*,	float*, const unsigned*);
+	void caxpy_(const unsigned*, const float*, const float*, const unsigned*, float*, const unsigned*);
+	// blas 2
 	void cgemv_(const char*, const unsigned*, const unsigned*, const float*,
 							const float*, const unsigned*, const float*, const unsigned*,
 							const float*, float*, const unsigned*);
-//	void ccopy_(const unsigned*, const float*, const unsigned*,
-//							float*, const unsigned*);
+	// blas 3
+	void cgemm_(const char*, const char*, const unsigned*, const unsigned*,
+							const unsigned*, const float*, float*, const unsigned*,
+							float*, const unsigned*, const float*, float*, const unsigned*);
+
 }
 
 
@@ -154,23 +179,61 @@ namespace FBlas {
 	{	dcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
 	inline void copy(const unsigned n, float* orig, float* dest)
 	{	scopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	inline void c_copy(const unsigned n, double* orig, double* dest)
+	{	zcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	inline void c_copy(const unsigned n, float* orig, float* dest)
+	{	ccopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+
 	// copy (different increment)
 	inline void copy(const unsigned n, double* orig, const unsigned inco, double* dest, const unsigned incd)
 	{	dcopy_(&n, orig, &inco, dest, &incd);	}
 	inline void copy(const unsigned n, float* orig, const unsigned inco, float* dest, const unsigned incd)
 	{	scopy_(&n, orig, &inco, dest, &incd);	}
+	inline void c_copy(const unsigned n, double* orig, const unsigned inco, double* dest, const unsigned incd)
+	{	zcopy_(&n, orig, &inco, dest, &incd);	}
+	inline void c_copy(const unsigned n, float* orig, const unsigned inco, float* dest, const unsigned incd)
+	{	ccopy_(&n, orig, &inco, dest, &incd);	}
 
 	// scale
 	inline void scal(const unsigned n, const double d, double* const x)
 	{	dscal_(&n, &d, x, &N_ONE); }
 	inline void scal(const unsigned n, const float d, float* const x)
 	{	sscal_(&n, &d, x, &N_ONE); }
+	inline void c_scal(const unsigned n, const double d, double* const x)
+	{	zscal_(&n, &d, x, &N_ONE); }
+	inline void c_scal(const unsigned n, const float d, float* const x)
+	{	cscal_(&n, &d, x, &N_ONE); }
 
 	// set zero
 	inline void setzero(const unsigned n, double* const x)
 	{	dscal_(&n, &D_ZERO, x, &N_ONE); }
 	inline void setzero(const unsigned n, float* const x)
 	{	sscal_(&n, &S_ZERO, x, &N_ONE); }
+	inline void c_setzero(const unsigned n, double* const x)
+	{	zscal_(&n, &Z_ZERO, x, &N_ONE); }
+	inline void c_setzero(const unsigned n, float* const x)
+	{	cscal_(&n, &C_ZERO, x, &N_ONE); }
+
+	// y += x
+	inline void add(const unsigned n, double* const x, double* const y)
+	{	daxpy_(&n, &D_ONE, x, &N_ONE, y, &N_ONE);	}
+	inline void add(const unsigned n, float* const x, float* const y)
+	{	saxpy_(&n, &S_ONE, x, &N_ONE, y, &N_ONE);	}
+	inline void c_add(const unsigned n, float* const x, float* const y)
+	{	caxpy_(&n, &C_ONE, x, &N_ONE, y, &N_ONE);	}
+	inline void c_add(const unsigned n, double* const x,double* const y)
+	{	zaxpy_(&n, &Z_ONE, x, &N_ONE, y, &N_ONE);	}
+
+	// y += d x
+	inline void axpy(const unsigned n, const double d, const double* const x, double* const y)
+	{	daxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+	inline void axpy(const unsigned n, const float d, const float* const x, float* const y)
+	{	saxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+	inline void c_axpy(const unsigned n, const float d, const float* const x, float* const y)
+	{	caxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+	inline void c_axpy(const unsigned n, const double d, const double* const x, double* const y)
+	{	zaxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+
 
 
 //	// y = d Ax
@@ -241,14 +304,91 @@ namespace FBlas {
 	inline void c_gemhva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
 	{	zgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE);	} // hermitian transposed
 
+
+
+
+	// C = d A B, A is m x p, B is p x n
+	inline void gemm(unsigned m, unsigned p, unsigned n, double d,
+									 double* A, unsigned ldA, double* B, unsigned ldB, double* C, unsigned ldC)
+	{	dgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ZERO, C, &ldC);	}
+	inline void gemm(unsigned m, unsigned p, unsigned n, float d,
+									 float* A, unsigned ldA, float* B, unsigned ldB, float* C, unsigned ldC)
+	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
+	inline void c_gemm(unsigned m, unsigned p, unsigned n, float d,
+										 float* A, unsigned ldA, float* B, unsigned ldB, float* C, unsigned ldC)
+	{	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
+	inline void c_gemm(unsigned m, unsigned p, unsigned n, double d,
+										 double* A, unsigned ldA, double* B, unsigned ldB, double* C, unsigned ldC)
+	{	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
+
+	// C += d A B, A is m x p, B is p x n
+	inline void gemma(unsigned m, unsigned p, unsigned n, double d,
+										double* A, unsigned ldA, double* B, unsigned ldB,	double* C, unsigned ldC)
+	{	dgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	inline void gemma(unsigned m, unsigned p, unsigned n, float d,
+										float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
+	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	inline void c_gemma(unsigned m, unsigned p, unsigned n, float d,
+											float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
+	{	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
+	inline void c_gemma(unsigned m, unsigned p, unsigned n, double d,
+											double* A, unsigned ldA, double* B, unsigned ldB,	double* C, unsigned ldC)
+	{	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
+
+	// C = d A^T B, A is m x p, B is m x n
+	inline void gemtm(unsigned m, unsigned p, unsigned n, double d,
+										double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
+	{	dgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &D_ZERO, C, &ldC);	}
+	inline void gemtm(unsigned m, unsigned p, unsigned n, float d,
+										float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
+	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
+	inline void c_gemtm(unsigned m, unsigned p, unsigned n, float d,
+											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
+	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
+	inline void c_gemtm(unsigned m, unsigned p, unsigned n, double d,
+											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
+	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
+	inline void c_gemhm(unsigned m, unsigned p, unsigned n, float d, // hermitialn transposed
+											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
+	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
+	inline void c_gemhm(unsigned m, unsigned p, unsigned n, double d, // hermitian transposed
+											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
+	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
+
+	// C += d A^T B, A is m x p, B is m x n
+	inline void gemtma(unsigned m, unsigned p, unsigned n, double d,
+										 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	dgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	inline void gemtma(unsigned m, unsigned p, unsigned n, float d,
+										 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	inline void c_gemtma(unsigned m, unsigned p, unsigned n, float d,
+											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
+	inline void c_gemtma(unsigned m, unsigned p, unsigned n, double d,
+											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
+	inline void c_gemhma(unsigned m, unsigned p, unsigned n, float d, // hermitian transposed
+											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
+	inline void c_gemhma(unsigned m, unsigned p, unsigned n, double d, // hermitian transposed
+											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
+
+
+
+
+
 	// singular value decomposition
-	inline int gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT, unsigned nwk, double* wk)
+	inline int gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT,
+									 unsigned nwk, double* wk)
 	{
 		int INF;
 		dgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
 		return INF;
 	}
-	inline int gesvd(unsigned m, unsigned n, float* A, float* S, float* VT, unsigned ldVT, unsigned nwk, float* wk)
+	inline int gesvd(unsigned m, unsigned n, float* A, float* S, float* VT, unsigned ldVT,
+									 unsigned nwk, float* wk)
 	{
 		int INF;
 		sgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
@@ -256,13 +396,15 @@ namespace FBlas {
 	}
 
   // singular value decomposition (SO)
-  inline int gesvdSO(unsigned m, unsigned n, double* A, double* S, double* U, unsigned ldU, unsigned nwk, double* wk)
+  inline int gesvdSO(unsigned m, unsigned n, double* A, double* S, double* U, unsigned ldU,
+										 unsigned nwk, double* wk)
   {
     int INF;
     dgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
     return INF;
   }
-  inline int gesvdSO(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU, unsigned nwk, float* wk)
+  inline int gesvdSO(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU,
+										 unsigned nwk, float* wk)
   {
     int INF;
     sgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
