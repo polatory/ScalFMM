@@ -25,7 +25,7 @@ public:
     }
 
     /** Constructor from the memory pointer */
-    FSmartPointer(ClassType* const inPointer) : pointer(0), counter(0) {
+    explicit FSmartPointer(ClassType* const inPointer) : pointer(0), counter(0) {
         assign(inPointer);
     }
 
@@ -52,9 +52,11 @@ public:
     /** Point to a new pointer, release if needed */
     void assign(ClassType* const inPointer){
         release();
-        pointer = inPointer;
-        counter = new int;
-        (*counter) = 1;
+        if( inPointer ){
+            pointer = inPointer;
+            counter = new int;
+            (*counter) = 1;
+        }
     }
 
     /** Point to a new pointer, release if needed */
@@ -62,16 +64,17 @@ public:
         release();
         pointer = inPointer.pointer;
         counter = inPointer.counter;
-        if(counter) (*counter) = (*counter) + 1;
+        if(counter) (*counter) += 1;
     }
 
     /** Dec counter and Release the memory last */
     void release(){
         if(counter){
-            (*counter) = (*counter) - 1;
+            (*counter) -= 1;
             if( (*counter) == 0 ){
                 if(MemoryType == FSmartArrayMemory) delete[] pointer;
                 else if(MemoryType == FSmartPointerMemory) delete pointer;
+                delete counter;
             }
             pointer = 0;
             counter = 0;

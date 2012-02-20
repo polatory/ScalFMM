@@ -119,6 +119,7 @@ public:
     /** Desctructor */
     virtual ~FOctree() {
         delete [] boxWidthAtLevel;
+        delete root;
     }
 
     /** To get the tree height */
