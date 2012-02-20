@@ -64,17 +64,17 @@ namespace FMemUtils {
 
     /** copy all value from one vector to the other */
     template <class TypeClass>
-    void copyall(TypeClass*const dest, const TypeClass*const source, const int nbElements){
-        for(int idx = 0 ; idx < nbElements ; ++idx){
-            dest[idx] = source[idx];
+    void copyall(TypeClass* dest, const TypeClass* source, int nbElements){
+        for(; 0 < nbElements ; --nbElements){
+            (*dest++) = (*source++);
         }
     }
 
     /** copy all value from one vector to the other */
     template <class TypeClass>
-    void addall(TypeClass*const dest, const TypeClass*const source, const int nbElements){
-        for(int idx = 0 ; idx < nbElements ; ++idx){
-            dest[idx] += source[idx];
+    void addall(TypeClass* dest, const TypeClass* source, int nbElements){
+        for(; 0 < nbElements ; --nbElements){
+            (*dest++) += (*source++);
         }
     }
 

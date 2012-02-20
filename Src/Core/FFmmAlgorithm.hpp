@@ -173,6 +173,10 @@ private:
                 FDEBUG(computationCounter.tac());
             } while(octreeIterator.moveRight());
 
+            FDEBUG(computationCounter.tic());
+            kernels->finishedLevelM2L(idxLevel);
+            FDEBUG(computationCounter.tac());
+
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
         }
