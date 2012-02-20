@@ -25,7 +25,7 @@ public:
     }
 
     /** Constructor from the memory pointer */
-    explicit FSmartPointer(ClassType* const inPointer) : pointer(0), counter(0) {
+    FSmartPointer(ClassType* const inPointer) : pointer(0), counter(0) {
         assign(inPointer);
     }
 
