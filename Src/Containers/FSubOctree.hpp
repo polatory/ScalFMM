@@ -183,15 +183,15 @@ public:
         this->cells = new CellClass**[this->subOctreeHeight];
         fassert(this->cells, "Allocation failled", __LINE__, __FILE__);
 
+        memset(this->cells, 0, sizeof(CellClass**) * subOctreeHeight);
+
         // We start at a sub-level - 8^1
         int cellsAtlevel = 8;
         for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
             this->cells[indexLevel] = new CellClass*[cellsAtlevel];
             fassert(this->cells[indexLevel], "Allocation failled", __LINE__, __FILE__);
 
-            for( int indexCells = 0 ; indexCells < cellsAtlevel ; ++indexCells ){
-                this->cells[indexLevel][indexCells] = 0;
-            }
+            memset(this->cells[indexLevel], 0, sizeof(CellClass*) * cellsAtlevel);
 
             cellsAtlevel <<= 3; // => * 8 >> 8^indexLevel
         }
@@ -329,6 +329,7 @@ public:
 template< class ParticleClass, class CellClass , class ContainerClass, class LeafClass>
 class FSubOctreeWithLeafs : public FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> {
 private:
+    typedef FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> Parent;
 
     LeafClass** leafs;            //< Leafs array
 
@@ -353,17 +354,14 @@ public:
         this->leafs = new LeafClass*[cellsAtLeafLevel];
         fassert(this->leafs, "Allocation failled", __LINE__, __FILE__);
 
-        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
-            this->leafs[indexLeaf] = 0;
-        }
+        memset(leafs, 0, sizeof(LeafClass*) * cellsAtLeafLevel);
     }
 
     /**
     * Destructor dealloc all leafs & the leaf array
     */
     virtual ~FSubOctreeWithLeafs(){
-        const int cellsAtLeafLevel = 1 << (3 * this->subOctreeHeight );
-        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+        for( int indexLeaf = Parent::leftLeafIndex ; indexLeaf <= Parent::rightLeafIndex ; ++indexLeaf ){
             if(this->leafs[indexLeaf]){
                 delete this->leafs[indexLeaf];
             }
@@ -376,12 +374,12 @@ public:
     */
     void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight){
         // Get the morton index for the leaf level
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = Parent::getLeafIndex(index,inTreeHeight);
         // is there already a leaf?
         if( !this->leafs[arrayIndex] ){
             this->leafs[arrayIndex] = new LeafClass();
 
-            FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::newLeafInserted( int(arrayIndex) , index, host);
+            Parent::newLeafInserted( int(arrayIndex) , index, host);
         }
         // add particle to leaf list
         this->leafs[arrayIndex]->push(inParticle);
@@ -392,13 +390,13 @@ public:
       */
     bool removeLeaf(const MortonIndex index, const int inTreeHeight) {
         // Get the morton index for the leaf level
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = Parent::getLeafIndex(index,inTreeHeight);
         if( this->leafs[arrayIndex] ){
             // remove container
             delete this->leafs[arrayIndex];
             this->leafs[arrayIndex] = 0;
 
-            return FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::removeCellsFromLeaf( int(arrayIndex) );
+            return Parent::removeCellsFromLeaf( int(arrayIndex) );
         }
         return false;
     }
@@ -462,7 +460,9 @@ public:
 template< class ParticleClass, class CellClass , class ContainerClass, class LeafClass>
 class FSubOctree : public FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> {
 private:
-    FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>** subleafs;    //< Last levels is composed of suboctree
+    typedef FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass> Parent;
+
+    Parent** subleafs;    //< Last levels is composed of suboctree
 
     /** Disable copy */
     FSubOctree(const FSubOctree&){}
@@ -481,20 +481,18 @@ public:
             FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, false) {
 
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
-        this->subleafs = new FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>*[cellsAtLeafLevel];
+
+        this->subleafs = new Parent*[cellsAtLeafLevel];
         fassert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
 
-        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
-            this->subleafs[indexLeaf] = 0;
-        }
+        memset(subleafs, 0, sizeof(Parent**) * cellsAtLeafLevel);
     }
 
     /**
     * Destructor dealloc all suboctrees leafs & leafs array
     */
     virtual ~FSubOctree(){
-        const int cellsAtLeafLevel = 1 << (3 * this->subOctreeHeight);
-        for( int indexLeaf = 0 ; indexLeaf < cellsAtLeafLevel ; ++indexLeaf ){
+        for( int indexLeaf = Parent::leftLeafIndex ; indexLeaf <= Parent::rightLeafIndex ; ++indexLeaf ){
             if(this->subleafs[indexLeaf]) delete this->subleafs[indexLeaf];
         }
         delete [] this->subleafs;
@@ -506,7 +504,7 @@ public:
     void insert(const MortonIndex index, const FTreeCoordinate& host, const ParticleClass& inParticle, const int inTreeHeight){
         // We need the morton index at the bottom level of this sub octree
         // so we remove the right side
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = Parent::getLeafIndex(index,inTreeHeight);
         // Is there already a leaf?
         if( !this->subleafs[arrayIndex] ){
             // We need to create leaf sub octree
@@ -528,7 +526,7 @@ public:
                         host.getZ() >> (inTreeHeight - nextSubOctreePosition ));
 
             // We need to inform parent class
-            FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::newLeafInserted( int(arrayIndex), index >> (3 * (inTreeHeight-nextSubOctreePosition) ), hostAtLevel);
+            Parent::newLeafInserted( int(arrayIndex), index >> (3 * (inTreeHeight-nextSubOctreePosition) ), hostAtLevel);
         }
         // Ask next suboctree to insert the particle
         this->subleafs[arrayIndex]->insert( index, host, inParticle, inTreeHeight);
@@ -539,13 +537,13 @@ public:
       */
     bool removeLeaf(const MortonIndex index, const int inTreeHeight) {
         // Get the morton index for the leaf level
-        const MortonIndex arrayIndex = FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::getLeafIndex(index,inTreeHeight);
+        const MortonIndex arrayIndex = Parent::getLeafIndex(index,inTreeHeight);
         if( this->subleafs[arrayIndex]->removeLeaf(index, inTreeHeight) ){
             // remove container
             delete this->subleafs[arrayIndex];
             this->subleafs[arrayIndex] = 0;
 
-            return FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>::removeCellsFromLeaf( int(arrayIndex) );
+            return Parent::removeCellsFromLeaf( int(arrayIndex) );
         }
         return false;
     }
