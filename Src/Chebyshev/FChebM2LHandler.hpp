@@ -24,16 +24,17 @@ unsigned int Compress(const FReal epsilon, FReal* &U,	FReal* &C, FReal* &B);
  * @class FChebM2LHandler
  * Please read the license
  *
- * This class precomputes and compresses the M2L operators for all \f$316\f$
- * (given by \f$7^3-3^3\f$ possible interacting cells in the far-field)
- * interactions for the Chebyshev interpolation approach. The class uses the
- * compression via a truncated SVD and represents the compressed M2L operator
- * as \f$K_t \sim U C_t B^\top\f$ with \f$t=1,\dots,316\f$. The truncation
- * rank is denoted by \f$r\f$ and is determined by the prescribed accuracy
- * \f$\varepsilon\f$. Hence, the originally \f$K_t\f$ of size
- * \f$\ell^3\times\ell^3\f$ times \f$316\f$ for all interactions is reduced to
- * only one \f$U\f$ and one \f$B\f$, each of size \f$\ell^3\times r\f$, and
- * \f$316\f$ \f$C_t\f$, each of size \f$r\times r\f$.
+ * This class precomputes and compresses the M2L operators
+ * \f$[K_1,\dots,K_{316}]\f$ for all (\f$7^3-3^3 = 316\f$ possible interacting
+ * cells in the far-field) interactions for the Chebyshev interpolation
+ * approach. The class uses the compression via a truncated SVD and represents
+ * the compressed M2L operator as \f$K_t \sim U C_t B^\top\f$ with
+ * \f$t=1,\dots,316\f$. The truncation rank is denoted by \f$r\f$ and is
+ * determined by the prescribed accuracy \f$\varepsilon\f$. Hence, the
+ * originally \f$K_t\f$ of size \f$\ell^3\times\ell^3\f$ times \f$316\f$ for
+ * all interactions is reduced to only one \f$U\f$ and one \f$B\f$, each of
+ * size \f$\ell^3\times r\f$, and \f$316\f$ \f$C_t\f$, each of size \f$r\times
+ * r\f$.
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
@@ -388,11 +389,11 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 //}
 
 /**
- * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_rV^\top\|_F \le
+ * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_kV^\top\|_F \le
  * \epsilon \|K\|_F\f$, ie., the truncation rank of the singular value
  * decomposition. With the definition of the Frobenius norm \f$\|K\|_F =
  * \left(\sum_{i=1}^N \sigma_i^2\right)^{\frac{1}{2}}\f$ the determination of
- * the low-rank follows as \f$\|K-U\Sigma_rV^\top\|_F^2 = \sum_{i=k+1}^N
+ * the low-rank follows as \f$\|K-U\Sigma_kV^\top\|_F^2 = \sum_{i=k+1}^N
  * \sigma_i^2 \le \epsilon^2 \sum_{i=1}^N \sigma_i^2 = \epsilon^2
  * \|K\|_F^2\f$.
  *
@@ -420,11 +421,10 @@ unsigned int getRank(const FReal singular_values[], const double eps)
 
 
 /**
- * Compresses \f$K_t\f$ stored as \f$[K_1,\dots,K_{316}]\f$ in
- * \f$C\f$. Attention: the matrices \f$U,B\f$ are not initialized, no memory
- * is allocated as input, as output they store the respective matrices. The
- * matrix \f$C\f$ stores \f$[K_1,\dots,K_{316}]\f$ as input and
- * \f$[C_1,\dots,C_{316}]\f$ as output.
+ * Compresses \f$[K_1,\dots,K_{316}]\f$ in \f$C\f$. Attention: the matrices
+ * \f$U,B\f$ are not initialized, no memory is allocated as input, as output
+ * they store the respective matrices. The matrix \f$C\f$ stores
+ * \f$[K_1,\dots,K_{316}]\f$ as input and \f$[C_1,\dots,C_{316}]\f$ as output.
  *
  * @param[in] epsilon accuracy
  * @param[out] U matrix of size \f$\ell^3\times r\f$
