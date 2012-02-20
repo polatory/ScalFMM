@@ -80,10 +80,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
     std::cout << "Check Result\n";
     {
         const int OctreeHeight = valideTree->getHeight();
-        OctreeClass::Iterator octreeIterator(badTree);
+        typename OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        OctreeClass::Iterator octreeIteratorValide(valideTree);
+        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         for(int level = OctreeHeight - 1 ; level >= 1 ; --level){
@@ -98,10 +98,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 else{
                     FReal cumul;
                     if( !isEqualPole(*octreeIterator.getCurrentCell(),*octreeIteratorValide.getCurrentCell(),&cumul) ){
-                        std::cout << "Pole Data are different." << " Cumul " << cumul << std::endl;
+                        std::cout << "Pole Data are different. Cumul " << cumul << " at level " << level << " index is " << octreeIterator.getCurrentGlobalIndex() << std::endl;
                     }
                     if( !isEqualLocal(*octreeIterator.getCurrentCell(),*octreeIteratorValide.getCurrentCell(),&cumul) ){
-                        std::cout << "Local Data are different." << " Cumul " << cumul << std::endl;
+                        std::cout << "Local Data are different. Cumul " << cumul << " at level " << level << " index is " << octreeIterator.getCurrentGlobalIndex() << std::endl;
                     }
                 }
 
@@ -116,10 +116,10 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
     }
     {
         // Check that each particle has been summed with all other
-        OctreeClass::Iterator octreeIterator(badTree);
+        typename OctreeClass::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
-        OctreeClass::Iterator octreeIteratorValide(valideTree);
+        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
         while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
@@ -189,7 +189,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma");
 
     std::cout << "Opening : " << filename << "\n";
 
@@ -304,7 +304,7 @@ int main(int argc, char ** argv){
         octreeIteratorValide.gotoBottomLeft();
 
         do{
-            typename ContainerClass::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+            ContainerClass::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
             while( iterValide.hasNotFinished()){
                 potentialValide += iterValide.data().getPotential() * iterValide.data().getPhysicalValue();
                 forcesValide += iterValide.data().getForces();

@@ -16,14 +16,14 @@
 * It is just a linked list with 8 pointers per node
 * it is used to store small data in an octree way.
 */
+template <class CellClass>
 class FLightOctree {
     // The node class
     struct Node {
         Node* next[8];   // Child
-        int proc;        // Cell
-        int position;
+        CellClass* cell; // Cell data
 
-        Node() : proc(-1), position(-1) {
+        Node() : cell(0) {
             memset(next, 0, sizeof(Node*)*8);
         }
 
@@ -31,6 +31,7 @@ class FLightOctree {
             for(int idxNext = 0 ; idxNext < 8 ; ++idxNext){
                 delete next[idxNext];
             }
+            delete cell;
         }
     };
 
@@ -42,7 +43,7 @@ public:
     }
 
     // Insert a cell
-    void insertCell(const MortonIndex& index, int level, const int inProc, const int inPosition){
+    void insertCell(const MortonIndex& index, int level, CellClass*const inCell){
         Node* iter = &root;
 
         while(level){
@@ -54,26 +55,22 @@ public:
             level -= 1;
         }
 
-        iter->proc = inProc;
-        iter->position = inPosition;
+        iter->cell = inCell;
     }
     // Retreive a cell
-    void getCell(const MortonIndex& index, int level, int* const inProc, int* const inPosition) const{
+    CellClass* getCell(const MortonIndex& index, int level) const{
         const Node* iter = &root;
 
         while(level){
             const int host = (index >> (3 * (level-1))) & 0x07;
             if(!iter->next[host]){
-                *inProc = -1;
-                *inPosition = -1;
-                return;
+                return 0;
             }
             iter = iter->next[host];
             level -= 1;
         }
 
-        *inProc = iter->proc;
-        *inPosition = iter->position;
+        return iter->cell;
     }
 };
 

@@ -345,7 +345,7 @@ public:
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[27];
 
-            #pragma omp for schedule(dynamic)
+            #pragma omp for schedule(dynamic) nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
                 // need the current particles and neighbors particles

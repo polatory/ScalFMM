@@ -152,7 +152,7 @@ public:
             // We get the min/max indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
 
-            Interval myIntervals[OctreeHeight];
+            Interval*const myIntervals = new Interval[OctreeHeight];
             myIntervals[OctreeHeight - 1] = myLastInterval;
             for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
                 myIntervals[idxLevel].min = myIntervals[idxLevel+1].min >> 3;
@@ -178,6 +178,7 @@ public:
             // We get the min/max indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+            delete[] myIntervals;
         }
 
         // run;
@@ -194,8 +195,6 @@ public:
         // delete array
         delete [] iterArray;
         iterArray = 0;
-
-
     }
 
 private:
@@ -446,21 +445,20 @@ private:
 
         // pointer to send
         FVector<typename OctreeClass::Iterator> toSend[nbProcess * OctreeHeight];
-        int sizeToSend[nbProcess * OctreeHeight];
-        memset(sizeToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
         // index
-        int indexToSend[nbProcess * OctreeHeight];
+        int*const indexToSend = new int[nbProcess * OctreeHeight];
         memset(indexToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
-
-        // To know if a leaf has been already sent to a proc
-        bool alreadySent[nbProcess];
-
-        FBoolArray* leafsNeedOther[OctreeHeight];
-        memset(leafsNeedOther, 0, sizeof(FBoolArray) * OctreeHeight);
+        // To know which one has need someone
+        FBoolArray** const leafsNeedOther = new FBoolArray*[OctreeHeight];
+        memset(leafsNeedOther, 0, sizeof(FBoolArray*) * OctreeHeight);
 
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG(prepareCounter.tic());
+            FDEBUG(prepareCounter.tic());            
+
+            // To know if a leaf has been already sent to a proc
+            bool*const alreadySent = new bool[nbProcess];
+            memset(alreadySent, 0, sizeof(bool) * nbProcess);
 
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
@@ -536,6 +534,7 @@ private:
             }
             FDEBUG(prepareCounter.tac());
 
+            delete[] alreadySent;
         }
 
         //////////////////////////////////////////////////////////////////
@@ -545,7 +544,7 @@ private:
         FDEBUG(gatherCounter.tic());
         // All process say to each others
         // what the will send to who
-        int globalReceiveMap[nbProcess * nbProcess * OctreeHeight];
+        int*const globalReceiveMap = new int[nbProcess * nbProcess * OctreeHeight];
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
         FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
         FDEBUG(gatherCounter.tac());
@@ -558,17 +557,17 @@ private:
         FDEBUG(sendCounter.tic());
         // Then they can send and receive (because they know what they will receive)
         // To send in asynchrone way
-        MPI_Request requests[2 * nbProcess * OctreeHeight];
-        MPI_Status status[2 * nbProcess * OctreeHeight];
+        MPI_Request*const requests = new MPI_Request[2 * nbProcess * OctreeHeight];
+        MPI_Status*const status = new MPI_Status[2 * nbProcess * OctreeHeight];
         int iterRequest = 0;
 
         const int SizeOfCellToSend = sizeof(MortonIndex) + sizeof(int) + MaxSizePerCell;
 
-        FBufferWriter* sendBuffer[nbProcess * OctreeHeight];
-        memset(sendBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
+        FBufferWriter**const sendBuffer = new FBufferWriter*[nbProcess * OctreeHeight];
+        memset(sendBuffer, 0, sizeof(FBufferWriter*) * nbProcess * OctreeHeight);
 
-        FBufferReader* recvBuffer[nbProcess * OctreeHeight];
-        memset(recvBuffer, 0, sizeof(CellClass*) * nbProcess * OctreeHeight);
+        FBufferReader**const recvBuffer = new FBufferReader*[nbProcess * OctreeHeight];
+        memset(recvBuffer, 0, sizeof(FBufferReader*) * nbProcess * OctreeHeight);
 
 
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -580,16 +579,7 @@ private:
                     for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
                         const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
                         sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
-
-                        const int positionToWriteSize = sendBuffer[idxLevel * nbProcess + idxProc]->getSize();
-                        sendBuffer[idxLevel * nbProcess + idxProc]->FBufferWriter::write<int>(0);
-
                         toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
-
-                        const int sizeOfThisCell = sendBuffer[idxLevel * nbProcess + idxProc]->getSize() - positionToWriteSize - sizeof(int);
-                        sendBuffer[idxLevel * nbProcess + idxProc]->FBufferWriter::writeAt<int>(positionToWriteSize , sizeOfThisCell);
-
-
                     }
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(), sendBuffer[idxLevel * nbProcess + idxProc]->getSize()
@@ -682,19 +672,18 @@ private:
                 }
 
                 // put the received data into a temporary tree
-                FLightOctree tempTree;
+                FLightOctree<CellClass> tempTree;
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
 
                     for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
                         const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FBufferReader::getValue<MortonIndex>();
-                        const int sizeData = recvBuffer[idxLevel * nbProcess + idxProc]->FBufferReader::getValue<int>();
-                        const int position = recvBuffer[idxLevel * nbProcess + idxProc]->tell();
 
+                        CellClass* const newCell = new CellClass;
+                        newCell->setMortonIndex(cellIndex);
+                        newCell->deserializeUp(*recvBuffer[idxLevel * nbProcess + idxProc]);
 
-                        tempTree.insertCell(cellIndex, idxLevel, idxProc, position);
-                        recvBuffer[idxLevel * nbProcess + idxProc]->seek(recvBuffer[idxLevel * nbProcess + idxProc]->tell() + sizeData);
-
+                        tempTree.insertCell(cellIndex, idxLevel, newCell);
                     }
                 }
 
@@ -726,11 +715,10 @@ private:
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[189];
-                    CellClass neighborsData[189];
                     int neighborsPosition[189];
                     const CellClass* neighbors[343];
 
-                    #pragma omp for  schedule(dynamic) nowait
+                    #pragma omp for schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
@@ -741,19 +729,12 @@ private:
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
                             if(neighborsIndex[idxNeig] < getWorkingInterval(idxLevel , idProcess).min
                                     || getWorkingInterval(idxLevel , idProcess).max < neighborsIndex[idxNeig]){
-                                int position = -1;
-                                int proc = -1;
-                                tempTree.getCell(neighborsIndex[idxNeig], idxLevel, &proc, &position);
 
-                                if(proc != -1){
-// TODO manage thread reading
-#pragma omp critical
-                                    {
-                                    recvBuffer[idxLevel * nbProcess + proc]->seek(position);
-                                    neighborsData[counter].deserializeUp(*recvBuffer[idxLevel * nbProcess + proc]);
-                                    }
-                                    neighborsData[counter].setMortonIndex(neighborsIndex[idxNeig]);
-                                    neighbors[ neighborsPosition[counter] ] = &neighborsData[counter];
+                                CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
+
+                                if(otherCell){
+                                    //otherCell->setMortonIndex(neighborsIndex[idxNeig]);
+                                    neighbors[ neighborsPosition[idxNeig] ] = otherCell;
                                     ++counter;
                                 }
                             }
@@ -773,6 +754,16 @@ private:
             delete sendBuffer[idxComm];
             delete recvBuffer[idxComm];
         }
+        for(int idxComm = 0 ; idxComm < OctreeHeight; ++idxComm){
+            delete leafsNeedOther[idxComm];
+        }
+        delete[] sendBuffer;
+        delete[] recvBuffer;
+        delete[] indexToSend;
+        delete[] leafsNeedOther;
+        delete[] globalReceiveMap;
+        delete[] requests;
+        delete[] status;
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -799,8 +790,8 @@ private:
         octreeIterator.moveDown();
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        MPI_Request requests[nbProcess];
-        MPI_Status status[nbProcess];
+        MPI_Request*const requests = new MPI_Request[nbProcess];
+        MPI_Status*const status = new MPI_Status[nbProcess];
 
         const int heightMinusOne = OctreeHeight - 1;
 
@@ -842,6 +833,7 @@ private:
                     && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
                 needToRecv = true;
 
+
                 MPI_Irecv( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, MPI_ANY_SOURCE,
                            FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
             }
@@ -861,13 +853,14 @@ private:
                 }
 
                 if(firstProcThatRecv != endProcThatRecv){
-                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
+                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);                   
 
                     for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
 
                         MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, idxProc,
                                   FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
                     }
+
                 }
             }
             FDEBUG(prepareCounter.tac());
@@ -905,6 +898,9 @@ private:
             recvBuffer.reserve(MaxSizePerCell);
         }
 
+        delete[] requests;
+        delete[] status;
+
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
@@ -936,13 +932,13 @@ private:
         int iterRequest = 0;
         int nbMessagesToRecv = 0;
 
-        FBufferWriter* sendBuffer[nbProcess];
-        memset(sendBuffer, 0, sizeof(ParticleClass*) * nbProcess);
+        FBufferWriter**const sendBuffer = new FBufferWriter*[nbProcess];
+        memset(sendBuffer, 0, sizeof(FBufferWriter*) * nbProcess);
 
-        FBufferReader* recvBuffer[nbProcess];
-        memset(recvBuffer, 0, sizeof(ParticleClass*) * nbProcess);
+        FBufferReader**const recvBuffer = new FBufferReader*[nbProcess];
+        memset(recvBuffer, 0, sizeof(FBufferReader*) * nbProcess);
 
-        int globalReceiveMap[nbProcess * nbProcess];
+        int*const globalReceiveMap = new int[nbProcess * nbProcess];
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
 
         FBoolArray leafsNeedOther(this->numberOfLeafs);
@@ -962,7 +958,7 @@ private:
             // Box limite
             const int limite = 1 << (this->OctreeHeight - 1);
             // pointer to send
-            FVector<typename OctreeClass::Iterator> toSend[nbProcess];
+            FVector<typename OctreeClass::Iterator>*const toSend = new FVector<typename OctreeClass::Iterator>[nbProcess];
 
             // index
             int partsToSend[nbProcess];
@@ -1044,6 +1040,7 @@ private:
                 }
             }
 
+            delete[] toSend;
         }
         FDEBUG(prepareCounter.tac());
 
@@ -1160,9 +1157,8 @@ private:
         // Create an octree with leaves from others
         OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
         int complete = 0;
+        int*const indexMessage = new int[nbProcess * 2];
         while( complete != iterRequest){
-
-            int indexMessage[nbProcess * 2];
             memset(indexMessage, 0, sizeof(int) * nbProcess * 2);
             int countMessages = 0;
             // Wait data
@@ -1185,6 +1181,7 @@ private:
                 }
             }
         }
+        delete[] indexMessage;
 
         //////////////////////////////////////////////////////////
         // Computation P2P that need others data
@@ -1243,9 +1240,10 @@ private:
         }
 
         for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            delete [] reinterpret_cast<char*>(sendBuffer[idxProc]);
+            delete sendBuffer[idxProc];
+            delete recvBuffer[idxProc];
         }
-
+        delete[] globalReceiveMap;
         delete[] leafsDataArray;
 
         FDEBUG(computation2Counter.tac());
