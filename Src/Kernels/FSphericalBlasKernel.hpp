@@ -72,7 +72,6 @@ protected:
                                             else{
                                                 (*fillTransfer) = blasHarmonic.result()[blasHarmonic.getPreExpRedirJ(M+N)+k];
                                             }
-
                                         }
                                     }
                                 }
@@ -122,7 +121,7 @@ public:
 
     /** M2L with a cell and all the existing neighbors */
     void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
-             const int /*size*/, const int inLevel) {
+             const int /*size*/, const int inLevel) {      
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if( distantNeighbors[idxNeigh] ){
@@ -191,13 +190,7 @@ public:
                     (FReal*)M2L_Outer_transfer,
                     (FReal*)temporaryMultiSource,
                     (FReal*)local_exp);
-        // TODO delete
-        static int count = 0;
-        if( FMath::IsNan(local_exp[CellClass::GetLocalSize()-1].getReal()) && count != -1){
-            std::cout << "count is " << count << std::endl;
-            count = -1;
-        }
-        if(count != -1) count++;
+
     }
 };
 

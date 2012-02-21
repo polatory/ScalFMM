@@ -202,7 +202,7 @@ public:
       */
     void P2P(const FTreeCoordinate& inLeafPosition,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-                  ContainerClass* const directNeighborsParticles[27], const int size){
+                  ContainerClass* const directNeighborsParticles[27], const int /*size*/){
 
         if( periodicLevels == 0 && targets == sources ){
             P2PNoTsm(targets, directNeighborsParticles);

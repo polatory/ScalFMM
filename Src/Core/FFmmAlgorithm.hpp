@@ -75,7 +75,7 @@ public:
 
         downardPass();
 
-        directPass();         
+        directPass();
     }
 
 private:
