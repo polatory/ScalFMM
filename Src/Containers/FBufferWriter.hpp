@@ -63,7 +63,7 @@ public:
     /** Write an array */
     template <class ClassType>
     void write(const ClassType* const objects, const int inSize){
-        buffer.memocopy(reinterpret_cast<const char*>(objects), sizeof(ClassType) * inSize);
+        buffer.memocopy(reinterpret_cast<const char*>(objects), int(sizeof(ClassType)) * inSize);
     }
 
     /** Equivalent to write */
