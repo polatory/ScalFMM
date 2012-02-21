@@ -183,8 +183,6 @@ public:
         // Get a computable vector
         preExpNExp(temporaryMultiSource);
 
-        //FReal alpha_and_beta[2] = {1.0, 0.0};
-
         //CblasTrans
         FBlas::c_gemtva(
                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
@@ -193,6 +191,13 @@ public:
                     (FReal*)M2L_Outer_transfer,
                     (FReal*)temporaryMultiSource,
                     (FReal*)local_exp);
+        // TODO delete
+        static int count = 0;
+        if( FMath::IsNan(local_exp[CellClass::GetLocalSize()-1].getReal()) && count != -1){
+            std::cout << "count is " << count << std::endl;
+            count = -1;
+        }
+        if(count != -1) count++;
     }
 };
 
