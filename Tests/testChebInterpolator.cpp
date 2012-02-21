@@ -79,7 +79,7 @@ int main(int, char **){
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
 	F3DPosition cx(0., 0., 0.);
-	const long M = 10000;
+	const unsigned long M = 10000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
 	{
@@ -98,7 +98,7 @@ int main(int, char **){
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
 	F3DPosition cy(FReal(2.)*width, 0., 0.);
-	const long N = 10000;
+	const unsigned long N = 10000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
 	{

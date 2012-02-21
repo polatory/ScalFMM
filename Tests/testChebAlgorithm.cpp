@@ -75,8 +75,8 @@ const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 int main(int argc, char* argv[])
 {
 	const unsigned int ORDER = 4;
-	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 100000);
+	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-4));
+	const long NbPart                = FParameters::getValue(argc, argv, "-num", 500000);
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
@@ -161,7 +161,6 @@ int main(int argc, char* argv[])
 						// force
 						F3DPosition force(iTarget.data().getPosition() - iSource.data().getPosition());
 						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-						// force
 						Force[counter*3 + 0] += force.getX();
 						Force[counter*3 + 1] += force.getY();
 						Force[counter*3 + 2] += force.getZ();

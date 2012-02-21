@@ -360,8 +360,27 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 						<< std::endl;
 }
 
-
-
+/*
+unsigned int ReadRankFromBinaryFile(const std::string& filename)
+{
+	// start reading process
+	std::ifstream stream(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+	const std::ifstream::pos_type size = stream.tellg();
+	if (size<=0) throw std::runtime_error("The requested binary file does not exist.");
+	unsigned int rank = -1;
+	if (stream.good()) {
+		stream.seekg(0);
+		// 1) read number of interpolation points (int)
+		int npts;
+		stream.read(reinterpret_cast<char*>(&npts), sizeof(int));
+		// 2) read low rank (int)
+		stream.read(reinterpret_cast<char*>(&rank), sizeof(int));
+		return rank;
+	}	else throw std::runtime_error("File could not be opened to read");
+	stream.close();
+	return rank;
+}
+*/
 
 
 //////////////////////////////////////////////////////////////////////
