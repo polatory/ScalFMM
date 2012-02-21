@@ -170,8 +170,8 @@ public:
         size_t sizeof_freal = 0;
         file.read((char*)&sizeof_freal, sizeof(size_t));
         if( sizeof_freal != sizeof(FReal)){
-            std::cerr << "Error Freal do not coincide with file type:\n";
-            std::cerr << "In file : " << sizeof_freal << " Real : " << sizeof(FReal) << "\n";
+            std::cerr << "[Loader] Error Freal do not coincide with file type:\n";
+            std::cerr << "[Loader] In file : " << sizeof_freal << " Real : " << sizeof(FReal) << "\n";
             return false;
         }
 
@@ -225,7 +225,7 @@ public:
                 MortonIndex mindex;
                 file.read((char*)&mindex, sizeof(MortonIndex));
                 if(mindex != octreeIterator.getCurrentGlobalIndex()){
-                    std::cerr << "Error indexes are different\n";
+                    std::cerr << "[Loader] Error indexes are different\n";
                     return false;
                 }
 
@@ -241,7 +241,7 @@ public:
             } while(octreeIterator.moveRight());
 
             if(nbCells != 0){
-                std::cerr << "Wrong number of cells at level " << idxLevel << "\n";
+                std::cerr << "[Loader] Wrong number of cells at level " << idxLevel << "\n";
                 return false;
             }
 

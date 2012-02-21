@@ -129,12 +129,12 @@ public:
     void save(FBufferWriter& buffer) const{
         FBasicCell::save(buffer);
         buffer.write(multipole_exp, PoleSize);
-        buffer.write(multipole_exp, PoleSize);
+        buffer.write(local_exp, LocalSize);
     }
     void restore(FBufferReader& buffer){
         FBasicCell::restore(buffer);
         buffer.fillArray(multipole_exp, PoleSize);
-        buffer.fillArray(multipole_exp, PoleSize);
+        buffer.fillArray(local_exp, LocalSize);
     }
 };
 
