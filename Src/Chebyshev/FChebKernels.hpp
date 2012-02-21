@@ -6,6 +6,8 @@
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FSmartPointer.hpp"
 
+#include "../Components/FAbstractKernels.hpp"
+
 #include "./FChebInterpolator.hpp"
 #include "./FChebM2LHandler.hpp"
 
@@ -27,12 +29,8 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template<class ParticleClass,
-				 class CellClass,
-				 class ContainerClass,
-				 class MatrixKernelClass,
-				 int ORDER>
-class FChebKernels
+template <class ParticleClass, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+class FChebKernels : public FAbstractKernels<ParticleClass, CellClass, ContainerClass>
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes};
 	typedef FChebInterpolator<ORDER> InterpolatorClass;
@@ -95,7 +93,7 @@ public:
 
 
 	void P2M(CellClass* const LeafCell,
-					 const ContainerClass* const SourceParticles) const
+					 const ContainerClass* const SourceParticles)
 	{
 		// 1) apply Sy
 		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
@@ -111,7 +109,7 @@ public:
 
 	void M2M(CellClass* const FRestrict ParentCell,
 					 const CellClass*const FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel) const
+					 const int TreeLevel)
 	{
 		// 1) apply Sy
 		FBlas::scal(nnodes*2, FReal(0.), ParentCell->getMultipole());
@@ -147,7 +145,7 @@ public:
 	void M2L(CellClass* const FRestrict TargetCell,
 					 const CellClass* SourceCells[343],
 					 const int NumSourceCells,
-					 const int TreeLevel) const
+					 const int TreeLevel)
 	{
 		FReal *const CompressedLocalExpansion = TargetCell->getLocal() + nnodes;
 		const FReal CellWidth(BoxWidth / FReal(FMath::pow(2, TreeLevel)));
@@ -177,7 +175,7 @@ public:
 
 	void L2L(const CellClass* const FRestrict ParentCell,
 					 CellClass* FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel) const
+					 const int TreeLevel)
 	{
 		// 1) apply U
 		M2LHandler->applyU(ParentCell->getLocal() + nnodes,
@@ -191,7 +189,7 @@ public:
 	}
 
 	void L2P(const CellClass* const LeafCell,
-					 ContainerClass* const TargetParticles) const
+					 ContainerClass* const TargetParticles)
 	{
 		// 1) apply U
 		M2LHandler->applyU(LeafCell->getLocal() + nnodes,
@@ -214,8 +212,8 @@ public:
 	void P2P(const FTreeCoordinate& LeafCellCoordinate,
 					 ContainerClass* const FRestrict TargetParticles,
 					 const ContainerClass* const FRestrict SourceParticles,
-					 const ContainerClass* const NeighborSourceParticles[27],
-					 const int ) const
+					 ContainerClass* const NeighborSourceParticles[27],
+					 const int )
 	{
 		// loop: target particles
 		typename ContainerClass::BasicIterator iTargets(*TargetParticles);
@@ -233,9 +231,9 @@ public:
 						const FReal ws = Source.getPhysicalValue();
 						// potential
 						Target.incPotential(one_over_r * ws);
+						// force
 						F3DPosition force(Target.getPosition() - Source.getPosition());
 						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-						// force
 						Target.incForces(force.getX(), force.getY(), force.getZ());
 					}
 					// progress sources
