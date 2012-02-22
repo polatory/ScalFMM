@@ -155,16 +155,6 @@ struct FMath{
         return std::isfinite(value);
     }
 
-    /** Compute a relative difference between two values */
-    template <class ValueClass>
-    static ValueClass RelativeDiff(const ValueClass& value1, const ValueClass& value2){
-        if(Abs(value1) > Abs(value2)){
-            return Abs((value2 - value1) / value1);
-        }
-        else{
-            return Abs((value2 - value1) / value2);
-        }
-    }
 };
 
 

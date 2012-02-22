@@ -97,7 +97,6 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         Print("Direct...");
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                //kernels.DIRECT_COMPUTATION_MUTUAL_SOFT(particles[idxTarget], particles[idxOther]);
                 kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
             }
         }
@@ -116,25 +115,13 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                 while( leafIter.hasNotFinished() ){
                     const ParticleClass& other = particles[leafIter.data().getIndex()];
 
-                    const FReal currentPotentialDiff = FMath::RelativeDiff(other.getPotential(),leafIter.data().getPotential());
-                    if( potentialDiff < currentPotentialDiff ){
-                        potentialDiff = currentPotentialDiff;
-                    }
+                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
 
-                    const FReal currentFx = FMath::RelativeDiff(other.getForces().getX() , leafIter.data().getForces().getX());
-                    if( fx < currentFx ){
-                        fx = currentFx;
-                    }
+                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
 
-                    const FReal currentFy = FMath::RelativeDiff(other.getForces().getY() , leafIter.data().getForces().getY());
-                    if( fy < currentFy ){
-                        fy = currentFy;
-                    }
+                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
 
-                    const FReal currentFz = FMath::RelativeDiff(other.getForces().getZ() , leafIter.data().getForces().getZ());
-                    if( fz < currentFz ){
-                        fz = currentFz;
-                    }
+                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
 
                     leafIter.gotoNext();
                 }

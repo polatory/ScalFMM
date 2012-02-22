@@ -48,7 +48,7 @@ protected:
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                     for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
                         if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                            const F3DPosition relativePos( FReal(idxX) * treeWidthAtLevel , FReal(idxY) * treeWidthAtLevel , FReal(idxZ) * treeWidthAtLevel );
+                            const F3DPosition relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
                             Parent::harmonic.computeOuter(FSpherical(relativePos));
                             FMemUtils::copyall<FComplexe>(&preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)], Parent::harmonic.result(), Parent::harmonic.getExpSize());
                         }

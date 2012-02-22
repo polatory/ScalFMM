@@ -163,25 +163,13 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                            other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());// todo delete
 
 
-                    const FReal currentPotentialDiff = FMath::RelativeDiff(other.getPotential(),leafIter.data().getPotential());
-                    if( potentialDiff < currentPotentialDiff ){
-                        potentialDiff = currentPotentialDiff;
-                    }
+                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
 
-                    const FReal currentFx = FMath::RelativeDiff(other.getForces().getX() , leafIter.data().getForces().getX());
-                    if( fx < currentFx ){
-                        fx = currentFx;
-                    }
+                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
 
-                    const FReal currentFy = FMath::RelativeDiff(other.getForces().getY() , leafIter.data().getForces().getY());
-                    if( fy < currentFy ){
-                        fy = currentFy;
-                    }
+                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
 
-                    const FReal currentFz = FMath::RelativeDiff(other.getForces().getZ() , leafIter.data().getForces().getZ());
-                    if( fz < currentFz ){
-                        fz = currentFz;
-                    }
+                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
 
                     leafIter.gotoNext();
                 }
@@ -328,25 +316,13 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                            other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());// todo delete
 
 
-                    const FReal currentPotentialDiff = FMath::RelativeDiff(other.getPotential(),leafIter.data().getPotential());
-                    if( potentialDiff < currentPotentialDiff ){
-                        potentialDiff = currentPotentialDiff;
-                    }
+                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
 
-                    const FReal currentFx = FMath::RelativeDiff(other.getForces().getX() , leafIter.data().getForces().getX());
-                    if( fx < currentFx ){
-                        fx = currentFx;
-                    }
+                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
 
-                    const FReal currentFy = FMath::RelativeDiff(other.getForces().getY() , leafIter.data().getForces().getY());
-                    if( fy < currentFy ){
-                        fy = currentFy;
-                    }
+                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
 
-                    const FReal currentFz = FMath::RelativeDiff(other.getForces().getZ() , leafIter.data().getForces().getZ());
-                    if( fz < currentFz ){
-                        fz = currentFz;
-                    }
+                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
 
                     leafIter.gotoNext();
                 }
