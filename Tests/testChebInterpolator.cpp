@@ -79,12 +79,12 @@ int main(int, char **){
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
 	F3DPosition cx(0., 0., 0.);
-	const unsigned long M = 10000;
+	const unsigned long M = 20000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
 	{
 		FChebParticle particle;
-		for(long i=0; i<M; ++i){
+		for(unsigned long i=0; i<M; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
@@ -98,12 +98,12 @@ int main(int, char **){
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
 	F3DPosition cy(FReal(2.)*width, 0., 0.);
-	const unsigned long N = 10000;
+	const unsigned long N = 20000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
 	{
 		FChebParticle particle;
-		for(long i=0; i<N; ++i){
+		for(unsigned long i=0; i<N; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
@@ -117,19 +117,22 @@ int main(int, char **){
 
 	////////////////////////////////////////////////////////////////////
 	// approximative computation
-	const unsigned int ORDER = 8;
+	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	typedef FChebInterpolator<ORDER> InterpolatorClass;
 	InterpolatorClass S;
 
-	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..."
-						<< std::endl;
-	time.tic();
+	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
 
+	std::cout << "\nP2M ... " << std::flush;
+	time.tic();
 	// Anterpolate: W_n = \sum_j^N S(y_j,\bar y_n) * w_j
 	FReal W[nnodes]; // multipole expansion
 	S.applyP2M(cy, width, W, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
+	std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
+	std::cout << "M2L ... " << std::flush;
+	time.tic();
 	// Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
 	F3DPosition rootsX[nnodes], rootsY[nnodes];
 	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
@@ -141,18 +144,21 @@ int main(int, char **){
 		for (unsigned int j=0; j<nnodes; ++j)
 			F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
 	}
+	std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
+	std::cout << "L2P (potential) ... " << std::flush;
+	time.tic();
 	// Interpolate p_i = \sum_m^L S(x_i,\bar x_m) * F_m
 	S.applyL2P(cx, width, F, X.getTargets());
+	std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
+	std::cout << "L2P (forces) ... " << std::flush;
+	time.tic();
 	// Interpolate f_i = \sum_m^L P(x_i,\bar x_m) * F_m
 	S.applyL2PGradient(cx, width, F, X.getTargets());
+	std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
-
-	time.tac();
-	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
-	// -----------------------------------------------------
-
+	
 	////////////////////////////////////////////////////////////////////
 	// direct computation
 	std::cout << "Compute interactions directly ..." << std::endl;
@@ -228,7 +234,7 @@ int main(int, char **){
 	delete [] p;
 	delete [] approx_f;
 	delete [] f;
-
+	
 
 	return 0;
 }
