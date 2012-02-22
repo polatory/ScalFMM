@@ -139,8 +139,8 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
         // Compare
         Print("Compute Diff...");
-        FReal potentialDiff = 0;
-        FReal fx = 0, fy = 0, fz = 0;
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
             OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
@@ -163,13 +163,13 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                            other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());// todo delete
 
 
-                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
+                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
 
-                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
+                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
 
-                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
+                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
 
-                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
+                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
 
                     leafIter.gotoNext();
                 }
@@ -180,19 +180,27 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         delete[] particles;
 
         Print("Potential diff is = ");
-        Print(potentialDiff);
+        Print(potentialDiff.getL2Norm());
+        Print(potentialDiff.getInfNorm());
         Print("Fx diff is = ");
-        Print(fx);
+        Print(fx.getL2Norm());
+        Print(fx.getInfNorm());
         Print("Fy diff is = ");
-        Print(fy);
+        Print(fy.getL2Norm());
+        Print(fy.getInfNorm());
         Print("Fz diff is = ");
-        Print(fz);
+        Print(fz.getL2Norm());
+        Print(fz.getInfNorm());
 
-        const FReal MaximumDiff = FReal(0.5);
-        assert(potentialDiff < MaximumDiff);
-        assert(fx < MaximumDiff);
-        assert(fy < MaximumDiff);
-        assert(fz < MaximumDiff);
+        const FReal MaximumDiff = FReal(0.0001);
+        assert(potentialDiff.getL2Norm() < MaximumDiff);
+        assert(potentialDiff.getInfNorm() < MaximumDiff);
+        assert(fx.getL2Norm()  < MaximumDiff);
+        assert(fx.getInfNorm() < MaximumDiff);
+        assert(fy.getL2Norm()  < MaximumDiff);
+        assert(fy.getInfNorm() < MaximumDiff);
+        assert(fz.getL2Norm()  < MaximumDiff);
+        assert(fz.getInfNorm() < MaximumDiff);
     }
 
     /** Test real Periodic FMM */
@@ -292,8 +300,8 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
         // Compare
         Print("Compute Diff...");
-        FReal potentialDiff = 0;
-        FReal fx = 0, fy = 0, fz = 0;
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
             ParticleClass*const partBox = 0;//&particles[boxStartIdx];
 
@@ -316,13 +324,13 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                            other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());// todo delete
 
 
-                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
+                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
 
-                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
+                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
 
-                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
+                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
 
-                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
+                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
 
                     leafIter.gotoNext();
                 }
@@ -333,19 +341,27 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         delete[] particles;
 
         Print("Potential diff is = ");
-        Print(potentialDiff);
+        Print(potentialDiff.getL2Norm());
+        Print(potentialDiff.getInfNorm());
         Print("Fx diff is = ");
-        Print(fx);
+        Print(fx.getL2Norm());
+        Print(fx.getInfNorm());
         Print("Fy diff is = ");
-        Print(fy);
+        Print(fy.getL2Norm());
+        Print(fy.getInfNorm());
         Print("Fz diff is = ");
-        Print(fz);
+        Print(fz.getL2Norm());
+        Print(fz.getInfNorm());
 
-        const FReal MaximumDiff = FReal(0.5);
-        assert(potentialDiff < MaximumDiff);
-        assert(fx < MaximumDiff);
-        assert(fy < MaximumDiff);
-        assert(fz < MaximumDiff);
+        const FReal MaximumDiff = FReal(0.0001);
+        assert(potentialDiff.getL2Norm() < MaximumDiff);
+        assert(potentialDiff.getInfNorm() < MaximumDiff);
+        assert(fx.getL2Norm()  < MaximumDiff);
+        assert(fx.getInfNorm() < MaximumDiff);
+        assert(fy.getL2Norm()  < MaximumDiff);
+        assert(fy.getInfNorm() < MaximumDiff);
+        assert(fz.getL2Norm()  < MaximumDiff);
+        assert(fz.getInfNorm() < MaximumDiff);
     }
 
 

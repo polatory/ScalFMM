@@ -155,6 +155,33 @@ struct FMath{
         return std::isfinite(value);
     }
 
+
+    /** A class to compute accuracy */
+    class FAccurater {
+        FReal l2Dot;
+        FReal l2Diff;
+        FReal max;
+        FReal maxDiff;
+    public:
+        FAccurater() : l2Dot(0), l2Diff(0), max(0), maxDiff(0) {
+        }
+        /** Add value to the current list */
+        void add(const FReal inGood, const FReal inBad){
+            l2Diff += (inBad - inGood) * (inBad - inGood);
+            l2Dot  += inGood * inGood;
+
+            max = Max(max , Abs(inGood));
+            maxDiff = Max(maxDiff, Abs(inGood-inBad));
+        }
+        /** Get the L2 norm */
+        FReal getL2Norm() const{
+            return Sqrt(l2Diff / l2Dot);
+        }
+        /** Get the inf norm */
+        FReal getInfNorm() const{
+            return maxDiff / max;
+        }
+    };
 };
 
 

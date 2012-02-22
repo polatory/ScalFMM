@@ -73,8 +73,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
-        const int DevP = 12;
-        FSphericalCell::Init(DevP);
+        const int DevP = 8;
+        FSphericalCell::Init(DevP, true);
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -103,8 +103,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         // Compare
         Print("Compute Diff...");
-        FReal potentialDiff = 0;
-        FReal fx = 0, fy = 0, fz = 0;
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
             OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
@@ -115,13 +115,13 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                 while( leafIter.hasNotFinished() ){
                     const ParticleClass& other = particles[leafIter.data().getIndex()];
 
-                    potentialDiff += (other.getPotential(),leafIter.data().getPotential())/other.getPotential();
+                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
 
-                    fx += FMath::Abs((other.getForces().getX()-leafIter.data().getForces().getX())/other.getForces().getX());
+                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
 
-                    fy += FMath::Abs((other.getForces().getY()-leafIter.data().getForces().getY())/other.getForces().getY());
+                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
 
-                    fz += FMath::Abs((other.getForces().getZ()-leafIter.data().getForces().getZ())/other.getForces().getZ());
+                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
 
                     leafIter.gotoNext();
                 }
@@ -131,19 +131,27 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         delete[] particles;
 
         Print("Potential diff is = ");
-        Print(potentialDiff);
+        Print(potentialDiff.getL2Norm());
+        Print(potentialDiff.getInfNorm());
         Print("Fx diff is = ");
-        Print(fx);
+        Print(fx.getL2Norm());
+        Print(fx.getInfNorm());
         Print("Fy diff is = ");
-        Print(fy);
+        Print(fy.getL2Norm());
+        Print(fy.getInfNorm());
         Print("Fz diff is = ");
-        Print(fz);
+        Print(fz.getL2Norm());
+        Print(fz.getInfNorm());
 
-        const FReal MaximumDiff = FReal(0.5);
-        assert(potentialDiff < MaximumDiff);
-        assert(fx < MaximumDiff);
-        assert(fy < MaximumDiff);
-        assert(fz < MaximumDiff);
+        const FReal MaximumDiff = FReal(0.0001);
+        assert(potentialDiff.getL2Norm() < MaximumDiff);
+        assert(potentialDiff.getInfNorm() < MaximumDiff);
+        assert(fx.getL2Norm()  < MaximumDiff);
+        assert(fx.getInfNorm() < MaximumDiff);
+        assert(fy.getL2Norm()  < MaximumDiff);
+        assert(fy.getInfNorm() < MaximumDiff);
+        assert(fz.getL2Norm()  < MaximumDiff);
+        assert(fz.getInfNorm() < MaximumDiff);
     }
 
     void After() {
