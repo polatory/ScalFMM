@@ -16,7 +16,9 @@
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/FSphericalKernel.hpp"
+#include "../Src/Kernels/FSphericalRotationKernel.hpp"
 #include "../Src/Kernels/FSphericalBlasKernel.hpp"
+#include "../Src/Kernels/FSphericalBlockBlasKernel.hpp"
 
 #include "../Src/Files/FFmaBinLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
@@ -27,7 +29,7 @@
 #include "FUTester.hpp"
 
 /*
-  In this test we compare the fmm results and the direct results.
+  In this test we compare the spherical fmm results and the direct results.
   */
 
 /** We need to know the position of the particle in the array */
@@ -44,22 +46,14 @@ public:
     }
 };
 
-
+/** the test class
+  *
+  */
 class TestSphericalDirect : public FUTester<TestSphericalDirect> {
-    typedef IndexedParticle         ParticleClass;
-    typedef FSphericalCell            CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
-
-    typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
-    //typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
-
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-
-    void TestDirect(){
+    /** The test method to factorize all the test based on different kernels */
+    template <class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+              class OctreeClass, class FmmClass>
+    void RunTest(const bool isBlasKernel){
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
@@ -73,8 +67,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
-        const int DevP = 8;
-        FSphericalCell::Init(DevP, true);
+        const int DevP = 9;
+        FSphericalCell::Init(DevP, isBlasKernel);
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -106,7 +100,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
-            OctreeClass::Iterator octreeIterator(&tree);
+            typename OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
@@ -130,6 +124,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         delete[] particles;
 
+        // Print for information
         Print("Potential diff is = ");
         Print(potentialDiff.getL2Norm());
         Print(potentialDiff.getInfNorm());
@@ -143,6 +138,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         Print(fz.getL2Norm());
         Print(fz.getInfNorm());
 
+        // Assert
         const FReal MaximumDiff = FReal(0.0001);
         assert(potentialDiff.getL2Norm() < MaximumDiff);
         assert(potentialDiff.getInfNorm() < MaximumDiff);
@@ -154,7 +150,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         assert(fz.getInfNorm() < MaximumDiff);
     }
 
-    void After() {
+    /** If memstas is running print the memory used */
+    void PostTest() {
         if( FMemStats::controler.isUsed() ){
             std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
             std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
@@ -162,9 +159,88 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         }
     }
 
-    // set test
+    ///////////////////////////////////////////////////////////
+    // The tests!
+    ///////////////////////////////////////////////////////////
+
+    /** Classic */
+    void TestSpherical(){
+        typedef IndexedParticle         ParticleClass;
+        typedef FSphericalCell            CellClass;
+        typedef FVector<ParticleClass>  ContainerClass;
+
+        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
+                OctreeClass, FmmClass>(false);
+    }
+
+    /** Rotation */
+    void TestRotation(){
+        typedef IndexedParticle         ParticleClass;
+        typedef FSphericalCell            CellClass;
+        typedef FVector<ParticleClass>  ContainerClass;
+
+        typedef FSphericalRotationKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
+                OctreeClass, FmmClass>(false);
+    }
+
+    /** Blas */
+    void TestSphericalBlas(){
+        typedef IndexedParticle         ParticleClass;
+        typedef FSphericalCell            CellClass;
+        typedef FVector<ParticleClass>  ContainerClass;
+
+        typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
+                OctreeClass, FmmClass>(true);
+    }
+
+    /** Block blas */
+    void TestSphericalBlockBlas(){
+        typedef IndexedParticle         ParticleClass;
+        typedef FSphericalCell            CellClass;
+        typedef FVector<ParticleClass>  ContainerClass;
+
+        typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
+                OctreeClass, FmmClass>(true);
+    }
+
+    ///////////////////////////////////////////////////////////
+    // Set the tests!
+    ///////////////////////////////////////////////////////////
+
+    /** set test */
     void SetTests(){
-        AddTest(&TestSphericalDirect::TestDirect,"Test Simu and with direct");
+        AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
+        AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
+        AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
+        AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
     }
 };
 

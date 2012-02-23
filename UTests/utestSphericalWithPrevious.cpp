@@ -24,8 +24,8 @@
 #include "FUTester.hpp"
 
 
-/*
-  This test compare a previous FMM result with a simulation.
+/**
+  * This test compare a previous FMM result with a previous simulation result.
   */
 
 
@@ -40,8 +40,9 @@ typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeCl
 
 typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+/** The test class */
 class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
-
+    /** the test */
     void TestTree(){
         // Warning in make test the exec dir it Build/UTests
         const char* const DataFile = "../../Data/utestSpherical.data";
@@ -49,7 +50,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
-        const int DevP = 12;
+        const int DevP = 9;
 
         // Load the particles file
         FFmaBinLoader<ParticleClass> loader(ParticleFile);
