@@ -9,6 +9,9 @@
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
 
 #include <iostream>
 

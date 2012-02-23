@@ -14,6 +14,10 @@
 // relatives à l'usage du LOGICIEL
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_BLAS
+// ================
+
 #include <iostream>
 
 #include <cstdio>

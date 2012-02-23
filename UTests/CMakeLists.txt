@@ -37,17 +37,41 @@ foreach(exec ${source_tests_files})
 		execname ${exec}
 		NAME_WE
 	)
-	add_executable(
-		${execname}
-		${exec}
-	)
-	target_link_libraries(
-		${execname}
-		${fmb_lib}
-	)
 
-	add_test(
-		${execname}
-		${CMAKE_CURRENT_BINARY_DIR}/${execname}
-	)
+	set(compile_exec "TRUE")	
+
+	# Test Blas dependency
+	file(STRINGS "${exec}" lines_blas REGEX "@FUSE_BLAS")
+	if(lines_blas)
+		if( NOT SCALFMM_USE_CBLAS )
+			MESSAGE( STATUS "This needs BLAS = ${exec}" )
+			set(compile_exec "FALSE")
+		endif()
+	endif()
+
+	# Test MPI dependency
+	file(STRINGS "${exec}" lines_mpi REGEX "@FUSE_MPI")
+	if(lines_mpi)
+		if( NOT SCALFMM_USE_MPI )
+			MESSAGE( STATUS "This needs MPI = ${exec}" )
+			set(compile_exec "FALSE")
+		endif()
+	endif()
+
+	# Dependency are OK
+	if( compile_exec )
+		add_executable(
+			${execname}
+			${exec}
+		)
+		target_link_libraries(
+			${execname}
+			${fmb_lib}
+		)
+
+		add_test(
+			${execname}
+			${CMAKE_CURRENT_BINARY_DIR}/${execname}
+		)
+	endif()
 endforeach(exec)

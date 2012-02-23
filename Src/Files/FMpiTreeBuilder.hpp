@@ -12,7 +12,7 @@
 #define FMPITREEBUILDER_H
 
 #include "../Utils/FMpi.hpp"
-#include "../Utils/FQuickSort.hpp"
+#include "../Utils/FQuickSortMpi.hpp"
 #include "../Utils/FBitonicSort.hpp"
 
 #include "../Utils/FMemUtils.hpp"
@@ -87,7 +87,7 @@ private:
 
         // sort particles
         if(type == QuickSort){
-            FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(), *outputArray, *outputSize,communicator);
+            FQuickSortMpi<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(), *outputArray, *outputSize,communicator);
             delete [] (realParticlesIndexed);
         }
         else {
@@ -122,7 +122,7 @@ private:
 
         // sort particles
         if(type == QuickSort){
-            FQuickSort<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, size, *outputArray, *outputSize,communicator);
+            FQuickSortMpi<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, size, *outputArray, *outputSize,communicator);
             delete [] (realParticlesIndexed);
         }
         else {

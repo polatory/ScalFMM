@@ -9,6 +9,10 @@
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
+
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FMpi.hpp"
 #include "../Src/Utils/FParameters.hpp"
