@@ -26,9 +26,9 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Kernels/FSphericalBlockBlasKernel.hpp"
-#include "../Src/Kernels/FSphericalParticle.hpp"
-#include "../Src/Kernels/FSphericalCell.hpp"
+#include "../Src/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "../Src/Spherical/FSphericalParticle.hpp"
+#include "../Src/Spherical/FSphericalCell.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 

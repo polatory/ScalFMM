@@ -25,9 +25,9 @@
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Kernels/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/FSphericalCell.hpp"
-#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Spherical/FSphericalRotationKernel.hpp"
+#include "../Src/Spherical/FSphericalCell.hpp"
+#include "../Src/Spherical/FSphericalParticle.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 

@@ -20,9 +20,9 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Kernels/FSphericalKernel.hpp"
-#include "../Src/Kernels/FSphericalCell.hpp"
-#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Spherical/FSphericalKernel.hpp"
+#include "../Src/Spherical/FSphericalCell.hpp"
+#include "../Src/Spherical/FSphericalParticle.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmTsm.hpp"

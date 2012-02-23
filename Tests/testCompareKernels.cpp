@@ -39,12 +39,12 @@
 
 // spherical kernel
 #include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/FSphericalKernel.hpp"
-#include "../Src/Kernels/FSphericalBlasKernel.hpp"
-#include "../Src/Kernels/FSphericalBlockBlasKernel.hpp"
-#include "../Src/Kernels/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/FSphericalCell.hpp"
-#include "../Src/Kernels/FSphericalParticle.hpp"
+#include "../Src/Spherical/FSphericalKernel.hpp"
+#include "../Src/Spherical/FSphericalBlasKernel.hpp"
+#include "../Src/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "../Src/Spherical/FSphericalRotationKernel.hpp"
+#include "../Src/Spherical/FSphericalCell.hpp"
+#include "../Src/Spherical/FSphericalParticle.hpp"
 
 
 /**
