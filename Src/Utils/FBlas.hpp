@@ -184,7 +184,7 @@ namespace FBlas {
 	inline void c_copy(const unsigned n, float* orig, float* dest)
 	{	ccopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
 
-	// copy (different increment)
+	// copy (variable increment)
 	inline void copy(const unsigned n, double* orig, const unsigned inco, double* dest, const unsigned incd)
 	{	dcopy_(&n, orig, &inco, dest, &incd);	}
 	inline void copy(const unsigned n, float* orig, const unsigned inco, float* dest, const unsigned incd)
@@ -203,6 +203,16 @@ namespace FBlas {
 	{	zscal_(&n, &d, x, &N_ONE); }
 	inline void c_scal(const unsigned n, const float d, float* const x)
 	{	cscal_(&n, &d, x, &N_ONE); }
+
+	// scale (variable increment)
+	inline void scal(const unsigned n, const double d, double* const x, const unsigned incd)
+	{	dscal_(&n, &d, x, &incd); }
+	inline void scal(const unsigned n, const float d, float* const x, const unsigned incd)
+	{	sscal_(&n, &d, x, &incd); }
+	inline void c_scal(const unsigned n, const double d, double* const x, const unsigned incd)
+	{	zscal_(&n, &d, x, &incd); }
+	inline void c_scal(const unsigned n, const float d, float* const x, const unsigned incd)
+	{	cscal_(&n, &d, x, &incd); }
 
 	// set zero
 	inline void setzero(const unsigned n, double* const x)
