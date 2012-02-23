@@ -49,7 +49,7 @@
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with
- * the FmbBlas kernel.
+ * the SphericalBlas kernel.
  */
 
 
