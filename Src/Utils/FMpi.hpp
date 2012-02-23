@@ -40,6 +40,7 @@ typedef int MPI_Group;
 typedef int MPI_File;
 typedef int MPI_Op;
 typedef int MPI_Info;
+typedef int MPI_File;
 
 MPI_Status* MPI_STATUSES_IGNORE = 0;
 MPI_Status* MPI_STATUS_IGNORE = 0;
@@ -59,7 +60,19 @@ enum{
     MPI_ANY_SOURCE,
     MPI_MODE_RDONLY,
     MPI_INFO_NULL,
+    MPI_MODE_WRONLY,
+    MPI_MODE_CREATE
+
 };
+
+int MPI_Barrier( MPI_Comm comm ){ return 0; }
+
+int MPI_File_write_at(MPI_File fh, MPI_Offset offset, void *buf,
+                  int count, MPI_Datatype datatype, MPI_Status *status){ return 0;}
+
+int MPI_File_set_view(MPI_File fh, MPI_Offset disp,
+                  MPI_Datatype etype, MPI_Datatype filetype,
+                  char *datarep, MPI_Info info){ return 0; }
 
 int MPI_Comm_rank( MPI_Comm comm, int *rank ){ return 0; }
 int MPI_Comm_size( MPI_Comm comm, int *size ){ return 0; }
