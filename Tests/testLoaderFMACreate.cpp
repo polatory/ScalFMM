@@ -36,7 +36,6 @@ int main(int argc, char ** argv){
     const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
 
     const FReal FRandMax = FReal(RAND_MAX);
-    const FReal f2 = 2;
 
     // Box width
     const FReal BoxWidth = FParameters::getValue(argc,argv,"-width", FReal(1.0/2.0));
@@ -66,11 +65,14 @@ int main(int argc, char ** argv){
     myfile << NbParticles << "\n";
     myfile << BoxWidth << "\t" << XCenter << "\t" << YCenter << "\t" << ZCenter;
 
+    const FReal Limite = FReal(0.00001);
+    const FReal LimitedBoxWidth = BoxWidth - Limite * 2;
+
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        const FReal px = ((FReal(rand())/FRandMax) * BoxWidth * f2) + XCenter - BoxWidth;
-        const FReal py = ((FReal(rand())/FRandMax) * BoxWidth * f2) + YCenter - BoxWidth;
-        const FReal pz = ((FReal(rand())/FRandMax) * BoxWidth * f2) + ZCenter - BoxWidth;
+        const FReal px = ((FReal(rand())/FRandMax) * LimitedBoxWidth * 2) + XCenter - BoxWidth + Limite;
+        const FReal py = ((FReal(rand())/FRandMax) * LimitedBoxWidth * 2) + YCenter - BoxWidth + Limite;
+        const FReal pz = ((FReal(rand())/FRandMax) * LimitedBoxWidth * 2) + ZCenter - BoxWidth + Limite;
 
         myfile << "\n" << px << "\t" << py << "\t" <<  pz << "\t" << (0.01);
     }
