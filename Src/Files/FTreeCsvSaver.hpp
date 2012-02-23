@@ -61,12 +61,22 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-            //const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
 
             while( iter.hasNotFinished() ){
                 file << iter.data().getPosition().getX() << "," << iter.data().getPosition().getY() << "," <<
                         iter.data().getPosition().getZ() << "," << getValue(&iter.data()) << "\n";
                 iter.gotoNext();
+            }
+
+            const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
+            if( isUsingTsm ){
+                typename ContainerClass::BasicIterator iterSources(*octreeIterator.getCurrentListSrc());
+
+                while( iterSources.hasNotFinished() ){
+                    file << iterSources.data().getPosition().getX() << "," << iterSources.data().getPosition().getY() << "," <<
+                            iterSources.data().getPosition().getZ() << "," << getValue(&iterSources.data()) << "\n";
+                    iterSources.gotoNext();
+                }
             }
         } while(octreeIterator.moveRight());
 
