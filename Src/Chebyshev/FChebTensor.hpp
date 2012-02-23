@@ -1,6 +1,7 @@
 #ifndef FCHEBTENSOR_HPP
 #define FCHEBTENSOR_HPP
 
+#include "../Utils/FMath.hpp"
 
 #include "./FChebRoots.hpp"
 #include "./FChebMapping.hpp"
@@ -56,6 +57,29 @@ public:
 			NodeIds[n][2] =  n/(ORDER  * ORDER);
 		}
 	}
+
+
+	/**
+	 * Sets the roots of the Chebyshev quadrature weights defined as \f$w_i =
+	 * \frac{\pi}{\ell}\sqrt{1-\bar x_i^2}\f$ with the Chebyshev roots \f$\bar
+	 * x\f$.
+	 *
+	 * @param weights[out] the root of the weights \f$\sqrt{w_i}\f$
+	 */
+	static
+	void setRootOfWeights(FReal weights[nnodes])
+	{
+		// weights in 1d
+		FReal weights_1d[ORDER];
+		for (unsigned int o=0; o<ORDER; ++o)
+			weights_1d[o] = FMath::FPi / ORDER * sqrt(FReal(1.) - BasisType::roots[o] * BasisType::roots[o]);
+		// weights in 3d (tensor structure)
+		unsigned int node_ids[nnodes][3];
+		setNodeIds(node_ids);
+		for (unsigned int n=0; n<nnodes; ++n) 
+			weights[n] = sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]);
+	}
+
 
 	/**
 	 * Sets the interpolation points in the cluster with @p center and @p width

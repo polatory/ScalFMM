@@ -16,7 +16,8 @@
 
 
 template <int ORDER>
-unsigned int Compress(const FReal epsilon, FReal* &U,	FReal* &C, FReal* &B);
+unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
+											FReal* &U,	FReal* &C, FReal* &B);
 
 
 /**
@@ -238,7 +239,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 		throw std::runtime_error("Number of interactions must correspond to 316");
 		
 	// svd compression of M2L
-	const unsigned int rank	= Compress<ORDER>(epsilon, _U, _C, _B);
+	const unsigned int rank	= Compress<ORDER>(epsilon, ninteractions, _U, _C, _B);
 	if (!(rank>0)) throw std::runtime_error("Low rank must be larger then 0!");
 
 	// allocate memory and store compressed M2L operators
@@ -452,12 +453,12 @@ unsigned int getRank(const FReal singular_values[], const double eps)
  * @param[out] B matrix of size \f$\ell^3\times r\f$
  */
 template <int ORDER>
-unsigned int Compress(const FReal epsilon, FReal* &U,	FReal* &C, FReal* &B)
+unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
+											FReal* &U,	FReal* &C, FReal* &B)
 {
 	// compile time constants
 	enum {order = ORDER,
-				nnodes = TensorTraits<ORDER>::nnodes,
-				ninteractions = 316}; // 7^3 - 3^3 (max num cells in far-field)
+				nnodes = TensorTraits<ORDER>::nnodes};
 
 	// init SVD
 	const unsigned int LWORK = 2 * (3*nnodes + ninteractions*nnodes);
