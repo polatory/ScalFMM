@@ -13,10 +13,13 @@
 
 #include "FGlobal.hpp"
 
-#ifdef  SCALFMM_USE_MKL_AS_CBLAS
+#ifdef  SCALFMM_USE_CBLAS
+#ifdef SCALFMM_USE_MKL_AS_BLAS
 #include <mkl_cblas.h>
 #else
+#error (I USE MKL)
 #include <cblas.h>
+#endif
 #endif
 
 namespace FCBlas {
