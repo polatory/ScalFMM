@@ -41,7 +41,11 @@ INCLUDE_DIRECTORIES(
 install( TARGETS scalfmm ARCHIVE DESTINATION lib )
 
 # Install header
-SET(my_include_dirs "." "Components" "Containers" "Core" "Extensions" "Files" "Fmb" "Utils")
+SET(my_include_dirs "."
+"Arranger"        "Core"           "Utils"
+"Chebyshev"       "Components"       "Extensions"  
+"Containers"       "Files"       "Spherical")
+
 FOREACH(my_dir ${my_include_dirs})	
 	file(GLOB 	 	 	 	
 	 	hpp_in_dir

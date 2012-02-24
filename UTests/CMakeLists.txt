@@ -16,8 +16,8 @@ if(OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-# Link with fmb lib
-set(fmb_lib scalfmm)
+# Link with scalfmm lib
+set(scalfmm_lib scalfmm)
 
 # Find all code files
 file(	
@@ -66,7 +66,7 @@ foreach(exec ${source_tests_files})
 		)
 		target_link_libraries(
 			${execname}
-			${fmb_lib}
+			${scalfmm_lib}
 		)
 
 		add_test(
