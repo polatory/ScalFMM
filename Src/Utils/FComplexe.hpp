@@ -168,6 +168,12 @@ public:
     bool isNan() const {
         return FMath::IsNan(complex[1]) || FMath::IsNan(complex[0]);
     }
+
+    /** Mul other and another and add the result to current complexe */
+    void addMul(const FComplexe& other, const FComplexe& another){
+        this->complex[0] += (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
+        this->complex[1] += (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
+    }
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */
