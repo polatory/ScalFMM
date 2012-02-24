@@ -14,7 +14,7 @@
 #include "FAbstractSphericalKernel.hpp"
 
 #include "../Utils/FMemUtils.hpp"
-#include "../Utils/FBlas.hpp"
+#include "../Utils/FCBlas.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -182,15 +182,34 @@ public:
         // Get a computable vector
         preExpNExp(temporaryMultiSource);
 
-        //CblasTrans
-        FBlas::c_gemtva(
+        /*FBlas::c_gemtva(
                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
                     FReal(1.0),
                     (FReal*)M2L_Outer_transfer,
                     (FReal*)temporaryMultiSource,
-                    (FReal*)local_exp);
+                    (FReal*)local_exp);*/
 
+        const FReal one = FReal(1.0);
+        FCBlas::Gemv(CblasColMajor,
+                    CblasTrans,
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                    &one,
+                    reinterpret_cast<const FReal*>(M2L_Outer_transfer),
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                    reinterpret_cast<const FReal*>(temporaryMultiSource),
+                    1,
+                    &one,
+                    reinterpret_cast<FReal*>(local_exp),
+                    1
+                    );
+
+        /*for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
+            for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
+                local_exp[idxRow].addMul(M2L_Outer_transfer[idxCol + idxRow * FF_MATRIX_COLUMN_DIM], temporaryMultiSource[idxCol]);
+            }
+        }*/
     }
 };
 

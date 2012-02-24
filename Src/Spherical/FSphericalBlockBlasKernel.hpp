@@ -14,7 +14,7 @@
 #include "FAbstractSphericalKernel.hpp"
 
 #include "../Utils/FMemUtils.hpp"
-#include "../Utils/FBlas.hpp"
+#include "../Utils/FCBlas.hpp"
 #include "../Containers/FVector.hpp"
 
 /**
@@ -108,7 +108,7 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inBlockSize = 1000, const int inPeriodicLevel = 0)
+    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inBlockSize = 90, const int inPeriodicLevel = 0)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
@@ -217,17 +217,48 @@ public:
             preExpNExp(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM]);
         }
 
-        FBlas::c_gemtm(
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+
+ /*       FBlas::c_gemtm(
                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
                     static_cast<unsigned int>(interactions[interactionIndex].getSize()),
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                     FReal(1.0),
+                    //(FReal*)tempoMatrix,
                     (FReal*)&preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE],
                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                     (FReal*)multipoleMatrix,
                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                     (FReal*)localMatrix,
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM));
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM));*/
+
+        const FReal one = FReal(1.0);
+        const FReal zeros = FReal(0.0);
+        FCBlas::Gemm(CblasColMajor,
+                     CblasTrans,
+                     CblasNoTrans,
+                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                     static_cast<unsigned int>(interactions[interactionIndex].getSize()),
+                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                     &one,
+                     reinterpret_cast<const FReal*>(&preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE]),
+                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                     reinterpret_cast<const FReal*>(multipoleMatrix),
+                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                     &zeros,
+                     reinterpret_cast<FReal*>(localMatrix),
+                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM));
+
+
+        /*const FComplexe*const M2LTransfer = &preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE];
+        for(int idxK = 0 ; idxK < interactions[interactionIndex].getSize() ; ++idxK){
+            for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
+                FComplexe compute;
+                for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
+                    compute.addMul(M2LTransfer[idxCol + idxRow * FF_MATRIX_COLUMN_DIM], multipoleMatrix[idxCol + idxK * FF_MATRIX_COLUMN_DIM]);
+                }
+                localMatrix[FF_MATRIX_ROW_DIM * idxK + idxRow] = compute;
+            }
+        }*/
 
         for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
             FMemUtils::addall<FComplexe>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM],  FF_MATRIX_ROW_DIM);
