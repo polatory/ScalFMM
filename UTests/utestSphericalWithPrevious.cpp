@@ -101,7 +101,10 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                 typename ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
 
                 while( goodIter.hasNotFinished() ){
-                    assert( memcmp(&goodIter.data(), &testIter.data(), sizeof(ParticleClass)) == 0);
+                    assert( FMath::LookEqual(goodIter.data().getPotential(), testIter.data().getPotential()) );
+                    assert( FMath::LookEqual(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
+                    assert( FMath::LookEqual(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
+                    assert( FMath::LookEqual(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
 
                     goodIter.gotoNext();
                     testIter.gotoNext();
@@ -136,11 +139,19 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                         break;
                     }
 
-                    assert( memcmp(testOctreeIterator.getCurrentCell()->getLocal(),
-                                   goodOctreeIterator.getCurrentCell()->getLocal(), CellClass::GetLocalSize() * sizeof(FComplexe)) == 0);
+                    for(int idxLocal = 0 ; idxLocal < CellClass::GetLocalSize() ; ++idxLocal){
+                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal(),
+                                         goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal());
+                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag(),
+                                         goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag());
+                    }
 
-                    assert( memcmp(testOctreeIterator.getCurrentCell()->getMultipole(),
-                                   goodOctreeIterator.getCurrentCell()->getMultipole(),CellClass::GetPoleSize() * sizeof(FComplexe)) == 0);
+                    for(int idxPole = 0 ; idxPole < CellClass::GetPoleSize() ; ++idxPole){
+                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal(),
+                                         goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal());
+                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag(),
+                                         goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag());
+                    }
 
                     if(!testOctreeIterator.moveRight()){
                         if(goodOctreeIterator.moveRight()){
