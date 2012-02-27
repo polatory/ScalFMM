@@ -47,7 +47,7 @@
 
 
 
-const FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
+FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
 {
 	FReal      dot = FReal(0.);
 	FReal diff_dot = FReal(0.);
@@ -61,7 +61,7 @@ const FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
 
 
 
-const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
+FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 {
 	FReal      max = FReal(0.);
 	FReal diff_max = FReal(0.);
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	const unsigned int ORDER = 7;
 	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-4));
 	const long NbPart                = FParameters::getValue(argc, argv, "-num", 100000);
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 6);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
 	const FReal Width = 10.;
@@ -110,7 +110,8 @@ int main(int argc, char* argv[])
 	OctreeClass tree(TreeHeight, SubTreeHeight, Width, BoxCenter);
 	
 	// -----------------------------------------------------
-	std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
+	std::cout << "Creating and inserting " << NbPart << " particles in a octree of height " << TreeHeight
+						<< " ..." << std::endl;
 	time.tic();
 	ParticleClass particle;
 	for(long i=0; i<NbPart; ++i) {

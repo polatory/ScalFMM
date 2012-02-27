@@ -41,7 +41,7 @@ struct FChebRoots : FNoCopyable
 	 * @param[in] x coordinate in [-1,1]
 	 * @return function value
    */
-	const static FReal T(const unsigned int n, FReal x)
+	static FReal T(const unsigned int n, FReal x)
 	{
 		//std::cout << x << std::endl;
     assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
@@ -64,7 +64,7 @@ struct FChebRoots : FNoCopyable
 	 * @param[in] x coordinate in [-1,1]
 	 * @return function value
    */
-  const static FReal U(const unsigned int n, FReal x)
+  static FReal U(const unsigned int n, FReal x)
   {
     assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
 		if (std::fabs(x)>1.) {

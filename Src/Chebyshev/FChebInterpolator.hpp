@@ -75,7 +75,7 @@ public:
 		// initialize chebyshev polynomials of root nodes: T_o(x_j)
     for (unsigned int o=1; o<ORDER; ++o)
       for (unsigned int j=0; j<ORDER; ++j)
-        T_of_roots[o][j] = FReal(BasisType::T(o, BasisType::roots[j]));
+        T_of_roots[o][j] = FReal(BasisType::T(o, FReal(BasisType::roots[j])));
 
 		// initialize root node ids
 		TensorType::setNodeIds(node_ids);
@@ -176,7 +176,7 @@ public:
 	{
 		FBlas::gemtva(nnodes, nnodes, FReal(1.),
 									ChildParentInterpolator[ChildIndex],
-									const_cast<FReal *const>(ChildExpansion), ParentExpansion);
+									const_cast<FReal*>(ChildExpansion), ParentExpansion);
 	}
 
 	void applyL2L(const unsigned int ChildIndex,
@@ -185,7 +185,7 @@ public:
 	{
 		FBlas::gemva(nnodes, nnodes, FReal(1.),
 								 ChildParentInterpolator[ChildIndex],
-								 const_cast<FReal *const>(ParentExpansion), ChildExpansion);
+								 const_cast<FReal*>(ParentExpansion), ChildExpansion);
 	}
 	
 };

@@ -36,7 +36,7 @@ public:
 	/**
 	 * @return Array containing source particles
 	 */
-	ContainerClass *const getSrc()
+	ContainerClass* getSrc()
 	{
 		return &particles;
 	}
@@ -44,7 +44,7 @@ public:
 	/**
 	 * @return Array containing target particles
 	 */
-	ContainerClass *const getTargets()
+	ContainerClass* getTargets()
 	{
 		return &particles;
 	}

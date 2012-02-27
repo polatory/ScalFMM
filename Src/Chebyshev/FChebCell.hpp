@@ -25,17 +25,17 @@ public:
 	~FChebCell() {}
 	
 	/** Get Multipole */
-	const FReal *const getMultipole() const
+	const FReal* getMultipole() const
 	{	return this->multipole_exp;	}
 	/** Get Local */
-	const FReal *const getLocal() const
+	const FReal* getLocal() const
 	{	return this->local_exp;	}
 	
 	/** Get Multipole */
-	FReal *const getMultipole()
+	FReal* getMultipole()
 	{	return this->multipole_exp;	}
 	/** Get Local */
-	FReal *const getLocal()
+	FReal* getLocal()
 	{	return this->local_exp;	}
 	
 };

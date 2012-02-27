@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
 	// constants
   const FReal epsilon     = FReal(atof(argv[1]));
-  const unsigned int order = 10;
+  const unsigned int order = 4;
 	
 	// number of interpolation points per cell
 	const unsigned int nnodes = TensorTraits<order>::nnodes;

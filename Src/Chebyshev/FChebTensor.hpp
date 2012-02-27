@@ -72,13 +72,13 @@ public:
 		// weights in 1d
 		FReal weights_1d[ORDER];
 		for (unsigned int o=0; o<ORDER; ++o)
-			weights_1d[o] = FMath::FPi / ORDER * sqrt(FReal(1.) - BasisType::roots[o] * BasisType::roots[o]);
+			weights_1d[o] = FMath::FPi/ORDER * FMath::Sqrt(FReal(1.)-FReal(BasisType::roots[o])*FReal(BasisType::roots[o]));
 		// weights in 3d (tensor structure)
 		unsigned int node_ids[nnodes][3];
 		setNodeIds(node_ids);
 		for (unsigned int n=0; n<nnodes; ++n) {
 			FReal weight = FReal(1.); // no weighting
-			weight *= sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]); // 1/2
+			weight *= FMath::Sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]); // 1/2
 			//weight *= weight; // 1
 			//weight *= weight; // 2
 			//weight *= weight; // 4

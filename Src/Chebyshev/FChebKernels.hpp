@@ -177,7 +177,7 @@ public:
 	{
 		// 1) apply U
 		M2LHandler->applyU(ParentCell->getLocal() + nnodes,
-											const_cast<CellClass *const>(ParentCell)->getLocal());
+											 const_cast<CellClass*>(ParentCell)->getLocal());
 		// 2) apply Sx
 		for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
 			if (ChildCells[ChildIndex])
@@ -191,8 +191,8 @@ public:
 	{
 		// 1) apply U
 		M2LHandler->applyU(LeafCell->getLocal() + nnodes,
-											 const_cast<CellClass *const>(LeafCell)->getLocal());
-
+											 const_cast<CellClass*>(LeafCell)->getLocal());
+		
 		// 2.a) apply Sx
 		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 		Interpolator->applyL2P(LeafCellCenter,

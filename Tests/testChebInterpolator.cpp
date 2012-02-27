@@ -41,7 +41,7 @@
 
 
 
-const FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
+FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
 {
 	FReal      dot = FReal(0.);
 	FReal diff_dot = FReal(0.);
@@ -55,7 +55,7 @@ const FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
 
 
 
-const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
+FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 {
 	FReal      max = FReal(0.);
 	FReal diff_max = FReal(0.);

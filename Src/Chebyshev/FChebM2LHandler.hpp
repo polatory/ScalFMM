@@ -65,7 +65,7 @@ class FChebM2LHandler : FNoCopyable
 	
 public:
 	FChebM2LHandler(const FReal _epsilon)
-		: MatrixKernel(), U(NULL), C(NULL), B(NULL), epsilon(_epsilon), rank(-1)
+		: MatrixKernel(), U(NULL), C(NULL), B(NULL), epsilon(_epsilon), rank(0)
 	{}
 
 	~FChebM2LHandler()
@@ -107,7 +107,7 @@ public:
 	 * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
 	 * @param[out] B matrix of size \f$\ell^3\times r\f$
 	 */
-	static const unsigned int ComputeAndCompress(const FReal epsilon, FReal* &U, FReal* &C, FReal* &B);
+	static unsigned int ComputeAndCompress(const FReal epsilon, FReal* &U, FReal* &C, FReal* &B);
 
 	/**
 	 * Computes, compresses and stores the matrices \f$Y, C_t, B\f$ in a binary
@@ -135,7 +135,7 @@ public:
 	 */
   void applyU(const FReal *const X, FReal *const x) const
   {
-    FBlas::gemva(nnodes, rank, 1., U, const_cast<FReal *const>(X), x);
+    FBlas::gemva(nnodes, rank, 1., U, const_cast<FReal*>(X), x);
   }
 
   /**
@@ -155,19 +155,19 @@ public:
 		const unsigned int idx
 			= (transfer[0]+3)*7*7 + (transfer[1]+3)*7 + (transfer[2]+3);
 		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal *const>(Y), X);
+    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
   }
   void applyC(const unsigned int idx, FReal CellWidth,
 							const FReal *const Y, FReal *const X) const
   {
 		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal *const>(Y), X);
+    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
   }
   void applyC(FReal CellWidth,
 							const FReal *const Y, FReal *const X) const
   {
 		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-    FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal *const>(Y), X);
+    FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal*>(Y), X);
   }
 
   /**
@@ -200,7 +200,7 @@ public:
 
 
 template <int ORDER, class MatrixKernelClass>
-const unsigned int
+unsigned int
 FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilon,
 																															FReal* &U,
 																															FReal* &C,
@@ -457,7 +457,7 @@ unsigned int getRank(const FReal singular_values[], const double eps)
 		if (nrm2k > eps*eps * nrm2)	return k;
 	}
 	throw std::runtime_error("rank cannot be larger than nnodes");
-	return -1;
+	return 0;
 }
 
 
