@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 
         // accuracy
         const unsigned int ORDER = 4;
-        const FReal epsilon = 1e-5;
+        const FReal epsilon = FReal(1e-5);
 
         unsigned int nt1 = 0;
         FReal* p1;  p1  = NULL;

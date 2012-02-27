@@ -47,7 +47,7 @@ class TestOctree : public FUTester<TestOctree> {
         for(int idxHeight = 2 ; idxHeight < 8 ; ++idxHeight){
 
             // Compute the number of leaves for a tree of this height
-            const long NbSmallBoxesPerSide = (1 << (idxHeight-1));
+            const int NbSmallBoxesPerSide = (1 << (idxHeight-1));
             const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
             const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
 
