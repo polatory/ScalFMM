@@ -86,7 +86,8 @@ public:
 		if (U||C||B) throw std::runtime_error("Compressed M2L operator already set");
 		rank = ComputeAndCompress(epsilon, U, C, B);
 		// write info
-		std::cout << "Compressed and set M2L operators in "	<< time.tacAndElapsed() << "sec."	<< std::endl;
+		std::cout << "Compressed and set M2L operators (" << rank << ") in "
+							<< time.tacAndElapsed() << "sec."	<< std::endl;
 	}
 
 	/**
@@ -205,6 +206,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 																															FReal* &C,
 																															FReal* &B)
 {
+	// allocate memory and store compressed M2L operators
+	if (U||C||B) throw std::runtime_error("Compressed M2L operators are already set");
+
 	// interpolation points of source (Y) and target (X) cell
 	F3DPosition X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
@@ -237,13 +241,23 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 	}
 	if (counter != ninteractions)
 		throw std::runtime_error("Number of interactions must correspond to 316");
-		
+
+
+	//////////////////////////////////////////////////////////		
+	FReal weights[nnodes];
+	FChebTensor<order>::setRootOfWeights(weights);
+	for (unsigned int i=0; i<316; ++i)
+		for (unsigned int n=0; n<nnodes; ++n) {
+			FBlas::scal(nnodes, weights[n], _C+i*nnodes*nnodes + n,  nnodes); // scale rows
+			FBlas::scal(nnodes, weights[n], _C+i*nnodes*nnodes + n * nnodes); // scale cols
+		}
+	//////////////////////////////////////////////////////////		
+
 	// svd compression of M2L
 	const unsigned int rank	= Compress<ORDER>(epsilon, ninteractions, _U, _C, _B);
 	if (!(rank>0)) throw std::runtime_error("Low rank must be larger then 0!");
 
-	// allocate memory and store compressed M2L operators
-	if (U||C||B) throw std::runtime_error("Compressed M2L operator already set");
+
 	// store U
 	U = new FReal [nnodes * rank];
 	FBlas::copy(rank*nnodes, _U, U);
@@ -262,12 +276,21 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					FBlas::copy(rank*rank, _C + counter*rank*rank, C + idx*rank*rank);
 					counter++;
-				} else FBlas::scal(rank*rank, FReal(0.), C + idx*rank*rank);
+				} else FBlas::setzero(rank*rank, C + idx*rank*rank);
 			}
 	if (counter != ninteractions)
 		throw std::runtime_error("Number of interactions must correspond to 316");
 	delete [] _C;
 		
+
+	//////////////////////////////////////////////////////////		
+	for (unsigned int n=0; n<nnodes; ++n) {
+		FBlas::scal(rank, FReal(1.) / weights[n], U+n, nnodes); // scale rows
+		FBlas::scal(rank, FReal(1.) / weights[n], B+n, nnodes); // scale rows
+	}
+	//////////////////////////////////////////////////////////		
+
+
 	// return low rank
 	return rank;
 }
@@ -312,8 +335,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFil
 	if (B != NULL) delete [] B;
 	if (C != NULL) delete [] C;
 	// write info
-	std::cout << "Compressed M2L operators (rank="<< rank
-						<< ") stored in binary file "	<< filename
+	std::cout << "Compressed M2L operators ("<< rank << ") stored in binary file "	<< filename
 						<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
 }
 
@@ -356,9 +378,8 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 	}	else throw std::runtime_error("File could not be opened to read");
 	stream.close();
 	// write info
-	std::cout << "Compressed M2L operators read from binary file "
-						<< filename << " in " << time.tacAndElapsed() << "sec."
-						<< std::endl;
+	std::cout << "Compressed M2L operators (" << rank << ") read from binary file "
+						<< filename << " in " << time.tacAndElapsed() << "sec."	<< std::endl;
 }
 
 /*
@@ -528,7 +549,6 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 
 	return k;
 }
-
 
 
 

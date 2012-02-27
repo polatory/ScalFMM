@@ -76,8 +76,14 @@ public:
 		// weights in 3d (tensor structure)
 		unsigned int node_ids[nnodes][3];
 		setNodeIds(node_ids);
-		for (unsigned int n=0; n<nnodes; ++n) 
-			weights[n] = sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]);
+		for (unsigned int n=0; n<nnodes; ++n) {
+			FReal weight = FReal(1.); // no weighting
+			weight *= sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]); // 1/2
+			//weight *= weight; // 1
+			//weight *= weight; // 2
+			//weight *= weight; // 4
+			weights[n] = weight;
+		}
 	}
 
 

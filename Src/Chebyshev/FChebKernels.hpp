@@ -85,11 +85,9 @@ public:
 			Epsilon(inEpsilon)
 	{
 		// read precomputed compressed m2l operators from binary file
-		M2LHandler->ReadFromBinaryFileAndSet();
+		//M2LHandler->ReadFromBinaryFileAndSet();
+		M2LHandler->ComputeAndCompressAndSet();
 	}
-
-//	/** Default destructor */
-//	~FChebKernels()	{}
 
 
 	void P2M(CellClass* const LeafCell,
