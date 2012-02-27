@@ -14,6 +14,10 @@
 // relatives à l'usage du LOGICIEL
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_BLAS
+// ================
+
 #include <iostream>
 
 #include <cstdio>
@@ -74,9 +78,9 @@ const FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const unsigned int ORDER = 4;
+	const unsigned int ORDER = 7;
 	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-4));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 500000);
+	const long NbPart                = FParameters::getValue(argc, argv, "-num", 100000);
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
