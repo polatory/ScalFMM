@@ -135,7 +135,7 @@ int main(int , char ** ){
                 for(int idx = 0 ; idx < requiredlevel ; ++idx) boxWidthAtThisLevel /= FReal(2.0);
                 std::cout << "    At level "<< requiredlevel << " boxes width is " << boxWidthAtThisLevel << "\n";
 
-                FReal x,y,z;
+                float x,y,z;
                 do{
                     std::cout << "    Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
@@ -143,9 +143,9 @@ int main(int , char ** ){
 
                 FTreeCoordinate host;
                 // position has to be relative to corner not center
-                host.setX( int(FMath::dfloor(( x - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
-                host.setY( int(FMath::dfloor(( y - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
-                host.setZ( int(FMath::dfloor(( z - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setX( int(FMath::dfloor(( FReal(x) - centerOfBox.getX() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setY( int(FMath::dfloor(( FReal(y) - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
+                host.setZ( int(FMath::dfloor(( FReal(z) - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
 
                 const MortonIndex index = host.getMortonIndex(requiredlevel);
                 std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToBinary(index,requiredlevel) << "d\n\n";
@@ -227,17 +227,19 @@ int main(int , char ** ){
                     sscanf(buffer,"%d",&treeLevel);
                 }
 
-                FReal x,y,z;
+                float x,y,z;
                 do{
                     std::cout << "    Center of boxe Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
                 }while(sscanf(buffer,"%f %f %f",&x,&y,&z) != 3);
-                centerOfBox = F3DPosition(x,y,z);
+                centerOfBox = F3DPosition(FReal(x),FReal(y),FReal(z));
 
                 std::cout << "    boxe width (default is = " << rootBoxWidth << ") : ";
                 std::cin.getline( buffer , sizeof(buffer));
                 if( buffer[0] != '\0' ){
-                    sscanf(buffer,"%e",&rootBoxWidth);
+                    float frootBoxWidth = 0;
+                    sscanf(buffer,"%f",&frootBoxWidth);
+                    rootBoxWidth = FReal(frootBoxWidth);
                 }
 
                 std::cout << "\n";
