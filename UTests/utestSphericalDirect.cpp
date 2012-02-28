@@ -8,9 +8,8 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-// ==== CMAKE =====
-// @FUSE_BLAS
-// ================
+
+#include "../Src/Utils/FGlobal.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -201,6 +200,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                 OctreeClass, FmmClass>(false);
     }
 
+#ifdef SCALFMM_USE_CBLAS
     /** Blas */
     void TestSphericalBlas(){
         typedef IndexedParticle         ParticleClass;
@@ -234,6 +234,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(true);
     }
+#endif
 
     ///////////////////////////////////////////////////////////
     // Set the tests!
@@ -243,8 +244,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void SetTests(){
         AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
         AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
+#ifdef SCALFMM_USE_CBLAS
         AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
         AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
+#endif
     }
 };
 
