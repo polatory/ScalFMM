@@ -42,37 +42,45 @@ protected:
 
     FComplexe*const multipoleMatrix;                //< To copy all the multipole vectors
     FComplexe*const localMatrix;                    //< To save all the local vectors result
-    FSmartPointer<FComplexe*> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FSmartPointer<FComplexe**> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
 
     FVector<ComputationPair> interactions[343];     //< All the current interaction
 
 
     /** To access te precomputed M2L transfer matrixes */
     int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
-        return (((((idxX+3) * 7) + (idxY+3)) * 7 ) + (idxZ+3)) * FF_MATRIX_SIZE;
+        return (( ( ((idxX+3) * 7) + (idxY+3))*7 ) + (idxZ+3));
     }
+
 
     /** Alloc and init pre-vectors*/
     void allocAndInit(){
         FHarmonic blasHarmonic(Parent::devP * 2);
 
+        // Matrix to fill and then transposed
+        FComplexe*const workMatrix = new FComplexe[FF_MATRIX_SIZE];
+
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
         FReal treeWidthAtLevel = Parent::boxWidth * FReal( 1 << Parent::periodicLevels);
-        preM2LTransitions = new FComplexe*[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
+        preM2LTransitions = new FComplexe**[Parent::treeHeight + Parent::periodicLevels];
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe**) * (Parent::treeHeight + Parent::periodicLevels));
 
         for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
-            preM2LTransitions[idxLevel + Parent::periodicLevels] = new FComplexe[(7 * 7 * 7) * FF_MATRIX_SIZE];
+            preM2LTransitions[idxLevel + Parent::periodicLevels] = new FComplexe*[(7 * 7 * 7)];
+            memset(preM2LTransitions[idxLevel + Parent::periodicLevels], 0, sizeof(FComplexe*) * (7*7*7));
 
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                     for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
                         if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            // Compute harmonic
                             const F3DPosition relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
                             blasHarmonic.computeOuter(FSpherical(relativePos));
 
-                            FComplexe* FRestrict fillTransfer = &preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)];
+                            // Reset Matrix
+                            FMemUtils::setall<FComplexe>(workMatrix, FComplexe(), FF_MATRIX_SIZE);
+                            FComplexe* FRestrict fillTransfer = workMatrix;
 
                             for(int M = 0 ; M <= Parent::devP ; ++M){
                                 for (int m = 0 ;  m <= M ; ++m){
@@ -92,12 +100,24 @@ protected:
                                     }
                                 }
                             }
+
+                            // Transpose and copy result
+                            FComplexe*const matrix = new FComplexe[FF_MATRIX_SIZE];
+                            for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
+                                for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
+                                    matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] = workMatrix[idxCol + idxRow * FF_MATRIX_COLUMN_DIM];
+                                }
+                            }
+                            preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)] = matrix;
                         }
                     }
                 }
             }
             treeWidthAtLevel /= 2;
         }
+
+        // Clean
+        delete[] workMatrix;
     }
 
 
@@ -136,6 +156,15 @@ public:
         delete[] multipoleMatrix;
         delete[] localMatrix;
         if(preM2LTransitions.isLast()){
+            for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+                for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
+                    for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
+                        for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
+                            delete[] preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)];
+                        }
+                    }
+                }
+            }
             FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight + Parent::periodicLevels);
         }
     }
@@ -217,31 +246,17 @@ public:
             preExpNExp(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM]);
         }
 
-
- /*       FBlas::c_gemtm(
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
-                    static_cast<unsigned int>(interactions[interactionIndex].getSize()),
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                    FReal(1.0),
-                    //(FReal*)tempoMatrix,
-                    (FReal*)&preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE],
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                    (FReal*)multipoleMatrix,
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                    (FReal*)localMatrix,
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM));*/
-
         const FReal one = FReal(1.0);
         const FReal zeros = FReal(0.0);
         FCBlas::Gemm(CblasColMajor,
-                     CblasTrans,
+                     CblasNoTrans,
                      CblasNoTrans,
                      static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
                      static_cast<unsigned int>(interactions[interactionIndex].getSize()),
                      static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                      &one,
-                     reinterpret_cast<const FReal*>(&preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE]),
-                     static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                     reinterpret_cast<const FReal*>(preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex]),
+                     static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
                      reinterpret_cast<const FReal*>(multipoleMatrix),
                      static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
                      &zeros,
@@ -249,16 +264,28 @@ public:
                      static_cast<unsigned int>(FF_MATRIX_ROW_DIM));
 
 
-        /*const FComplexe*const M2LTransfer = &preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex * FF_MATRIX_SIZE];
+        /*const FComplexe*const M2LTransfer = preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex];
         for(int idxK = 0 ; idxK < interactions[interactionIndex].getSize() ; ++idxK){
             for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
                 FComplexe compute;
                 for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
-                    compute.addMul(M2LTransfer[idxCol + idxRow * FF_MATRIX_COLUMN_DIM], multipoleMatrix[idxCol + idxK * FF_MATRIX_COLUMN_DIM]);
+                    compute.addMul(M2LTransfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], multipoleMatrix[idxCol + idxK * FF_MATRIX_COLUMN_DIM]);
                 }
                 localMatrix[FF_MATRIX_ROW_DIM * idxK + idxRow] = compute;
             }
         }*/
+
+        /*FBlas::c_gemm(
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                    static_cast<unsigned int>(interactions[interactionIndex].getSize()),
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                    FReal(1.0),
+                    reinterpret_cast<FReal*>(preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex]),
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
+                    reinterpret_cast<FReal*>(multipoleMatrix),
+                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
+                    reinterpret_cast<FReal*>(localMatrix),
+                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM));*/
 
         for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
             FMemUtils::addall<FComplexe>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM],  FF_MATRIX_ROW_DIM);
