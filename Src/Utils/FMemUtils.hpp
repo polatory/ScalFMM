@@ -78,6 +78,14 @@ namespace FMemUtils {
         }
     }
 
+    /** copy all value from one vector to the other */
+    template <class TypeClass>
+    void setall(TypeClass* dest, const TypeClass& source, int nbElements){
+        for(; 0 < nbElements ; --nbElements){
+            (*dest++) = source;
+        }
+    }
+
     /** Delete all */
     template <class TypeClass>
     void DeleteAll(TypeClass*const array[], const int size){
