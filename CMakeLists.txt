@@ -39,7 +39,7 @@ if( SCALFMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
 else()
-  ADD_DEFINITIONS(-O2)
+  SET(CMAKE_BUILD_TYPE Release)
 endif()
 
 # Trace
@@ -89,3 +89,12 @@ MESSAGE( STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
 
 # Build - doc
 add_subdirectory(Doc)
+
+# Add custom clean command
+if("${CMAKE_GENERATOR}" MATCHES "Make")
+	ADD_CUSTOM_TARGET(reset
+		COMMAND ${CMAKE_MAKE_PROGRAM} clean && rm -r !(.gitignore) && cmake ..
+		WORKING_DIRECTORY ${CMAKE_CURRENT_DIR}
+		COMMENT "Cleaning Build dir and CMake cache, then do cmake.."
+		)
+endif()
