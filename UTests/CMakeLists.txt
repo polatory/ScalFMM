@@ -16,6 +16,9 @@ if(OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+# Add CBLAS
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
+
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
 
@@ -43,7 +46,7 @@ foreach(exec ${source_tests_files})
 	# Test Blas dependency
 	file(STRINGS "${exec}" lines_blas REGEX "@FUSE_BLAS")
 	if(lines_blas)
-		if( NOT SCALFMM_USE_CBLAS )
+		if( NOT SCALFMM_USE_BLAS )
 			MESSAGE( STATUS "This needs BLAS = ${exec}" )
 			set(compile_exec "FALSE")
 		endif()
@@ -67,6 +70,8 @@ foreach(exec ${source_tests_files})
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
+			${BLAS_LIBRARIES}
+			${LAPACK_LIBRARIES}
 		)
 
 		add_test(
