@@ -20,7 +20,7 @@ project(scalfmm)
 ENABLE_LANGUAGE(CXX )
 
 # Options
-OPTION( SCALFMM_USE_CBLAS "Set to ON to build ScaFMM with BLAS" ON )
+OPTION( SCALFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" ON )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
 OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
@@ -52,7 +52,7 @@ if( SCALFMM_USE_TRACE )
 endif()
 
 # Blas option
-if( SCALFMM_USE_CBLAS )
+if( SCALFMM_USE_BLAS )
   OPTION( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( SCALFMM_USE_MKL_AS_BLAS )
      SET(BLAS_LIBRARIES "-L$ENV{MKLROOT}/lib  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
