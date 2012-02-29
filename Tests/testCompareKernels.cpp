@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
         //typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         //typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         //typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
-        typedef FSphericalRotationKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+        typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // open particle file
@@ -271,7 +271,7 @@ int main(int argc, char* argv[])
         if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
         // init cell class and oct-tree
-        CellClass::Init(DevP, false);
+        CellClass::Init(DevP, true);
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
         { // -----------------------------------------------------
