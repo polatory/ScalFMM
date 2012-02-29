@@ -14,7 +14,7 @@
 #include "FAbstractSphericalKernel.hpp"
 
 #include "../Utils/FMemUtils.hpp"
-#include "../Utils/FCBlas.hpp"
+#include "../Utils/FBlas.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -204,6 +204,11 @@ public:
     *
     *Remark: here we have always j+n >= |-k-l|
     *
+    * for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
+    *       for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
+    *           local_exp[idxRow].addMul(M2L_Outer_transfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], temporaryMultiSource[idxCol]);
+    *       }
+    *   }
     */
     void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
                           const FComplexe* const FRestrict M2L_Outer_transfer){
@@ -212,33 +217,15 @@ public:
         // Get a computable vector
         preExpNExp(temporaryMultiSource);
 
-        const FReal one = FReal(1.0);
-        FCBlas::Gemv(CblasColMajor,
-                    CblasNoTrans,
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                    &one,
-                    reinterpret_cast<const FReal*>(M2L_Outer_transfer),
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
-                    reinterpret_cast<const FReal*>(temporaryMultiSource),
-                    1,
-                    &one,
-                    reinterpret_cast<FReal*>(local_exp),
-                    1
-                    );
+        const FReal one[2] = {1.0 , 0.0};
 
-        /*for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
-            for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
-                local_exp[idxRow].addMul(M2L_Outer_transfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], temporaryMultiSource[idxCol]);
-            }
-        }*/
-        /*FBlas::c_gemtva(
-                    static_cast<unsigned int>(FF_MATRIX_COLUMN_DIM),
-                    static_cast<unsigned int>(FF_MATRIX_ROW_DIM),
-                    FReal(1.0),
-                    (FReal*)M2L_Outer_transfer,
-                    (FReal*)temporaryMultiSource,
-                    (FReal*)local_exp);*/
+        FBlas::c_gemva(
+                    FF_MATRIX_ROW_DIM,
+                    FF_MATRIX_COLUMN_DIM,
+                    one,
+                    FComplexe::ToFReal(M2L_Outer_transfer),
+                    FComplexe::ToFReal(temporaryMultiSource),
+                    FComplexe::ToFReal(local_exp));
     }
 };
 

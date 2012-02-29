@@ -27,12 +27,12 @@ const float  S_ZERO =  0.0;
 const float  S_ONE  =  1.0;
 const float  S_MONE = -1.0;
 // for complex
-const double Z_ZERO =  0.0;
-const double Z_ONE  =  1.0;
-const double Z_MONE = -1.0;
-const float  C_ZERO =  0.0;
-const float  C_ONE  =  1.0;
-const float  C_MONE = -1.0;
+const double Z_ZERO[2] =  {0.0,0.0};
+const double Z_ONE[2]  =  {1.0,0.0};
+const double Z_MONE[2] =  {-1.0,0.0};
+const float  C_ZERO[2] =  {0.0,0.0};
+const float  C_ONE[2]  =  {1.0,0.0};
+const float  C_MONE[2] =  {-1.0,0.0};
 
 //const double D_PREC = 1e-16;
 
@@ -161,9 +161,9 @@ namespace FBlas {
 	inline void setzero(const unsigned n, float* const x)
 	{	sscal_(&n, &S_ZERO, x, &N_ONE); }
 	inline void c_setzero(const unsigned n, double* const x)
-	{	zscal_(&n, &Z_ZERO, x, &N_ONE); }
+        {	zscal_(&n, Z_ZERO, x, &N_ONE); }
 	inline void c_setzero(const unsigned n, float* const x)
-	{	cscal_(&n, &C_ZERO, x, &N_ONE); }
+        {	cscal_(&n, C_ZERO, x, &N_ONE); }
 
 	// y += x
 	inline void add(const unsigned n, double* const x, double* const y)
@@ -171,19 +171,19 @@ namespace FBlas {
 	inline void add(const unsigned n, float* const x, float* const y)
 	{	saxpy_(&n, &S_ONE, x, &N_ONE, y, &N_ONE);	}
 	inline void c_add(const unsigned n, float* const x, float* const y)
-	{	caxpy_(&n, &C_ONE, x, &N_ONE, y, &N_ONE);	}
+        {	caxpy_(&n, C_ONE, x, &N_ONE, y, &N_ONE);	}
 	inline void c_add(const unsigned n, double* const x,double* const y)
-	{	zaxpy_(&n, &Z_ONE, x, &N_ONE, y, &N_ONE);	}
+        {	zaxpy_(&n, Z_ONE, x, &N_ONE, y, &N_ONE);	}
 
 	// y += d x
 	inline void axpy(const unsigned n, const double d, const double* const x, double* const y)
 	{	daxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
 	inline void axpy(const unsigned n, const float d, const float* const x, float* const y)
 	{	saxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
-	inline void c_axpy(const unsigned n, const float d, const float* const x, float* const y)
-	{	caxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
-	inline void c_axpy(const unsigned n, const double d, const double* const x, double* const y)
-	{	zaxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+        inline void c_axpy(const unsigned n, const float* d, const float* const x, float* const y)
+        {	caxpy_(&n, d, x, &N_ONE, y, &N_ONE);	}
+        inline void c_axpy(const unsigned n, const double* d, const double* const x, double* const y)
+        {	zaxpy_(&n, d, x, &N_ONE, y, &N_ONE);	}
 
 
 
@@ -197,10 +197,10 @@ namespace FBlas {
 	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
 	inline void gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
-	inline void c_gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); }
-	inline void c_gemv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); }
+        inline void c_gemv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
+        {	cgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); }
+        inline void c_gemv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
+        {	zgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); }
 
 //	// y += d Ax
 //	inline void gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -212,10 +212,10 @@ namespace FBlas {
 	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
 	inline void gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
-	inline void c_gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	}
-	inline void c_gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE);	}
+        inline void c_gemva(const unsigned m, const unsigned n, const float* d, const float* A, const float *x, float *y)
+        {	cgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	}
+        inline void c_gemva(const unsigned m, const unsigned n, const double* d, const double* A, const double *x, double *y)
+        {	zgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE);	}
 
 //	// y = d A^T x
 //	inline void gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -227,14 +227,14 @@ namespace FBlas {
 	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
 	inline void gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
-	inline void c_gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); }
-	inline void c_gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); }
-	inline void c_gemhv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &C_ZERO, y, &N_ONE); } // hermitian transposed
-	inline void c_gemhv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &Z_ZERO, y, &N_ONE); } // hermitian transposed
+        inline void c_gemtv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
+        {	cgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); }
+        inline void c_gemtv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
+        {	zgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); }
+        inline void c_gemhv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
+        {	cgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); } // hermitian transposed
+        inline void c_gemhv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
+        {	zgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); } // hermitian transposed
 
 //	// y += d A^T x
 //	inline void gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
@@ -246,14 +246,14 @@ namespace FBlas {
 	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
 	inline void gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
 	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
-	inline void c_gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	}
-	inline void c_gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE); }
-	inline void c_gemhva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &C_ONE, y, &N_ONE);	} // hermitian transposed
-	inline void c_gemhva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+7, &m, &n, &d, A, &m, x, &N_ONE, &Z_ONE, y, &N_ONE);	} // hermitian transposed
+        inline void c_gemtva(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
+        {	cgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	}
+        inline void c_gemtva(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
+        {	zgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE); }
+        inline void c_gemhva(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
+        {	cgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	} // hermitian transposed
+        inline void c_gemhva(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
+        {	zgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE);	} // hermitian transposed
 
 
 
@@ -265,12 +265,14 @@ namespace FBlas {
 	inline void gemm(unsigned m, unsigned p, unsigned n, float d,
 									 float* A, unsigned ldA, float* B, unsigned ldB, float* C, unsigned ldC)
 	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
-	inline void c_gemm(unsigned m, unsigned p, unsigned n, float d,
-										 float* A, unsigned ldA, float* B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
-	inline void c_gemm(unsigned m, unsigned p, unsigned n, double d,
-										 double* A, unsigned ldA, double* B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
+        inline void c_gemm(const unsigned m, const unsigned p, const unsigned n, const float* d,
+                                                                                 float* A, const unsigned ldA, float* B, const unsigned ldB, float* C, const unsigned ldC)
+        {
+            cgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+        inline void c_gemm(const unsigned m, const unsigned p, const unsigned n, const double* d,
+                                                                                 double* A, const unsigned ldA, double* B, const unsigned ldB, double* C, const unsigned ldC)
+        {
+            zgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
 
 	// C += d A B, A is m x p, B is p x n
 	inline void gemma(unsigned m, unsigned p, unsigned n, double d,
@@ -279,12 +281,12 @@ namespace FBlas {
 	inline void gemma(unsigned m, unsigned p, unsigned n, float d,
 										float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
 	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
-	inline void c_gemma(unsigned m, unsigned p, unsigned n, float d,
+        inline void c_gemma(unsigned m, unsigned p, unsigned n, float* d,
 											float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
-	inline void c_gemma(unsigned m, unsigned p, unsigned n, double d,
+        {	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+        inline void c_gemma(unsigned m, unsigned p, unsigned n, double* d,
 											double* A, unsigned ldA, double* B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
+        {	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
 
 	// C = d A^T B, A is m x p, B is m x n
 	inline void gemtm(unsigned m, unsigned p, unsigned n, double d,
@@ -293,18 +295,18 @@ namespace FBlas {
 	inline void gemtm(unsigned m, unsigned p, unsigned n, float d,
 										float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
 	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
-	inline void c_gemtm(unsigned m, unsigned p, unsigned n, float d,
+        inline void c_gemtm(unsigned m, unsigned p, unsigned n, float* d,
 											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
-	inline void c_gemtm(unsigned m, unsigned p, unsigned n, double d,
+        {	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+        inline void c_gemtm(unsigned m, unsigned p, unsigned n, double* d,
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
-	inline void c_gemhm(unsigned m, unsigned p, unsigned n, float d, // hermitialn transposed
+        {	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+        inline void c_gemhm(unsigned m, unsigned p, unsigned n, float* d, // hermitialn transposed
 											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ZERO, C, &ldC);	}
-	inline void c_gemhm(unsigned m, unsigned p, unsigned n, double d, // hermitian transposed
+        {	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+        inline void c_gemhm(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ZERO, C, &ldC);	}
+        {	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
 
 	// C += d A^T B, A is m x p, B is m x n
 	inline void gemtma(unsigned m, unsigned p, unsigned n, double d,
@@ -313,18 +315,18 @@ namespace FBlas {
 	inline void gemtma(unsigned m, unsigned p, unsigned n, float d,
 										 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
 	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
-	inline void c_gemtma(unsigned m, unsigned p, unsigned n, float d,
+        inline void c_gemtma(unsigned m, unsigned p, unsigned n, float* d,
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
-	inline void c_gemtma(unsigned m, unsigned p, unsigned n, double d,
+        {	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+        inline void c_gemtma(unsigned m, unsigned p, unsigned n, double* d,
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
-	inline void c_gemhma(unsigned m, unsigned p, unsigned n, float d, // hermitian transposed
+        {	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+        inline void c_gemhma(unsigned m, unsigned p, unsigned n, float* d, // hermitian transposed
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &C_ONE, C, &ldC); }
-	inline void c_gemhma(unsigned m, unsigned p, unsigned n, double d, // hermitian transposed
+        {	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+        inline void c_gemhma(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &Z_ONE, C, &ldC); }
+        {	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
 
 
 
