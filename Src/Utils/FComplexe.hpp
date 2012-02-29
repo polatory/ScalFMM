@@ -174,6 +174,16 @@ public:
         this->complex[0] += (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
         this->complex[1] += (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
     }
+
+    /** To cast to FReal */
+    static FReal* ToFReal(FComplexe*const array){
+        return reinterpret_cast<FReal*>(array);
+    }
+
+    /** To cast to FReal */
+    static const FReal* ToFReal(const FComplexe*const array){
+        return reinterpret_cast<const FReal*>(array);
+    }
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */
