@@ -40,6 +40,12 @@ typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeCl
 
 typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+/** To check if a value is correct */
+bool IsSimilar(const FReal good, const FReal other){
+    const FReal Epsilon = FReal(0.000001);
+    return (FMath::Abs(good-other)/FMath::Abs(good)) < Epsilon;
+}
+
 /** The test class */
 class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
     /** the test */
@@ -101,10 +107,10 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                 typename ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
 
                 while( goodIter.hasNotFinished() ){
-                    uassert( FMath::LookEqual(goodIter.data().getPotential(), testIter.data().getPotential()) );
-                    uassert( FMath::LookEqual(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
-                    uassert( FMath::LookEqual(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
-                    uassert( FMath::LookEqual(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
+                    uassert( IsSimilar(goodIter.data().getPotential(), testIter.data().getPotential()) );
+                    uassert( IsSimilar(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
+                    uassert( IsSimilar(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
+                    uassert( IsSimilar(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
 
                     goodIter.gotoNext();
                     testIter.gotoNext();
@@ -140,16 +146,16 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                     }
 
                     for(int idxLocal = 0 ; idxLocal < CellClass::GetLocalSize() ; ++idxLocal){
-                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal(),
+                        IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal(),
                                          goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal());
-                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag(),
+                        IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag(),
                                          goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag());
                     }
 
                     for(int idxPole = 0 ; idxPole < CellClass::GetPoleSize() ; ++idxPole){
-                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal(),
+                        IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal(),
                                          goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal());
-                        FMath::LookEqual(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag(),
+                        IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag(),
                                          goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag());
                     }
 
