@@ -11,14 +11,14 @@
 #ifndef FABSTRACTSPHERICALKERNEL_HPP
 #define FABSTRACTSPHERICALKERNEL_HPP
 
-#include "../Components/FAbstractKernels.hpp"
+#include "../../Components/FAbstractKernels.hpp"
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FTrace.hpp"
-#include "../Utils/FMemUtils.hpp"
-#include "../Utils/FSmartPointer.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FTrace.hpp"
+#include "../../Utils/FMemUtils.hpp"
+#include "../../Utils/FSmartPointer.hpp"
 
-#include "../Containers/FTreeCoordinate.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
 
 #include "FHarmonic.hpp"
 

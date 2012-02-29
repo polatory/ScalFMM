@@ -29,10 +29,10 @@
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Spherical/FSphericalKernel.hpp"
-#include "../Src/Spherical/FSphericalBlasKernel.hpp"
-#include "../Src/Spherical/FSphericalCell.hpp"
-#include "../Src/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
+#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 

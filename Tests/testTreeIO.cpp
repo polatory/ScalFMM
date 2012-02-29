@@ -24,8 +24,8 @@
 #include "../Src/Files/FFmaLoader.hpp"
 #include "../Src/Files/FTreeIO.hpp"
 
-#include "../Src/Spherical/FSphericalCell.hpp"
-#include "../Src/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 

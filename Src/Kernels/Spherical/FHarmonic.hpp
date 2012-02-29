@@ -11,10 +11,10 @@
 #ifndef FHARMONIC_HPP
 #define FHARMONIC_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FComplexe.hpp"
-#include "../Utils/FSpherical.hpp"
-#include "../Utils/FNoCopyable.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FSpherical.hpp"
+#include "../../Utils/FNoCopyable.hpp"
 
 
 /** This class compute the spherical harmonic.

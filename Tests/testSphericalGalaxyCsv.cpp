@@ -23,9 +23,9 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Src/Spherical/FSphericalKernel.hpp"
-#include "../Src/Spherical/FSphericalCell.hpp"
-#include "../Src/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../Src/Extensions/FExtendVelocity.hpp"
 

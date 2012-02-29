@@ -11,12 +11,12 @@
 #ifndef FSPHERICALPARTICLE_HPP
 #define FSPHERICALPARTICLE_HPP
 
-#include "../Extensions/FExtendForces.hpp"
-#include "../Extensions/FExtendPotential.hpp"
-#include "../Extensions/FExtendParticleType.hpp"
-#include "../Components/FFmaParticle.hpp"
+#include "../../Extensions/FExtendForces.hpp"
+#include "../../Extensions/FExtendPotential.hpp"
+#include "../../Extensions/FExtendParticleType.hpp"
+#include "../../Components/FFmaParticle.hpp"
 
-#include "../Utils/FAbstractSerializable.hpp"
+#include "../../Utils/FAbstractSerializable.hpp"
 
 class FSphericalParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
 public:

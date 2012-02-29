@@ -35,7 +35,7 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 class FmmVeloParticle : public FSphericalParticle, public FExtendVelocity {
 };

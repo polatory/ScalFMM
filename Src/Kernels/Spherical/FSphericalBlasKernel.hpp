@@ -8,44 +8,29 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#ifndef FSPHERICALBLOCKBLASKERNEL_HPP
-#define FSPHERICALBLOCKBLASKERNEL_HPP
+#ifndef FSPHERICALBLASKERNEL_HPP
+#define FSPHERICALBLASKERNEL_HPP
 
 #include "FAbstractSphericalKernel.hpp"
 
-#include "../Utils/FMemUtils.hpp"
-#include "../Utils/FBlas.hpp"
-#include "../Containers/FVector.hpp"
+#include "../../Utils/FMemUtils.hpp"
+#include "../../Utils/FBlas.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* This class is a spherical harmonic kernels using block blas
+* This class is a spherical harmonic kernels using blas
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
-class FSphericalBlockBlasKernel : public FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> {
+class FSphericalBlasKernel : public FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> {
 protected:
     typedef FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> Parent;
-
-    /** A interaction properties */
-    struct ComputationPair {
-        const FComplexe* FRestrict pole;
-        FComplexe* FRestrict local;
-        explicit ComputationPair(const FComplexe* const inPole = 0, FComplexe*const inLocal = 0)
-            : pole(inPole), local(inLocal) {}
-    };
 
     const int FF_MATRIX_ROW_DIM;     //< The blas matrix number of rows
     const int FF_MATRIX_COLUMN_DIM;  //< The blas matrix number of columns
     const int FF_MATRIX_SIZE;        //< The blas matrix size
 
-    const int BlockSize;             //< The size of a block
-
-    FComplexe*const multipoleMatrix;                //< To copy all the multipole vectors
-    FComplexe*const localMatrix;                    //< To save all the local vectors result
-    FSmartPointer<FComplexe**> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
-
-    FVector<ComputationPair> interactions[343];     //< All the current interaction
-
+    FComplexe* temporaryMultiSource;               //< To perform the M2L without allocating at each call
+    FSmartPointer<FComplexe**> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
 
     /** To access te precomputed M2L transfer matrixes */
     int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
@@ -128,33 +113,28 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inBlockSize = 90, const int inPeriodicLevel = 0)
+    FSphericalBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
-          BlockSize(inBlockSize),
-          multipoleMatrix(new FComplexe[inBlockSize * FF_MATRIX_COLUMN_DIM]),
-          localMatrix(new FComplexe[inBlockSize * FF_MATRIX_ROW_DIM]),
+          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
           preM2LTransitions(0){
         allocAndInit();
     }
 
     /** Copy constructor */
-    FSphericalBlockBlasKernel(const FSphericalBlockBlasKernel& other)
+    FSphericalBlasKernel(const FSphericalBlasKernel& other)
         : Parent(other),
           FF_MATRIX_ROW_DIM(other.FF_MATRIX_ROW_DIM), FF_MATRIX_COLUMN_DIM(other.FF_MATRIX_COLUMN_DIM),
           FF_MATRIX_SIZE(other.FF_MATRIX_SIZE),
-          BlockSize(other.BlockSize),
-          multipoleMatrix(new FComplexe[other.BlockSize * FF_MATRIX_COLUMN_DIM]),
-          localMatrix(new FComplexe[other.BlockSize * FF_MATRIX_ROW_DIM]),
+          temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
           preM2LTransitions(other.preM2LTransitions) {
 
     }
 
     /** Destructor */
-    ~FSphericalBlockBlasKernel(){
-        delete[] multipoleMatrix;
-        delete[] localMatrix;
+    ~FSphericalBlasKernel(){
+        delete[] temporaryMultiSource;
         if(preM2LTransitions.isLast()){
             for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
                 for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
@@ -175,23 +155,12 @@ public:
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if( distantNeighbors[idxNeigh] ){
-                interactions[idxNeigh].push(ComputationPair(distantNeighbors[idxNeigh]->getMultipole(), pole->getLocal()));
-
-                if( interactions[idxNeigh].getSize() == BlockSize){
-                    multipoleToLocal( idxNeigh, inLevel);
-                }
+                const FComplexe* const transitionVector = preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh];
+                multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
             }
         }
     }
 
-    /** Do we have some computation to do in the buffers */
-    void finishedLevelM2L(const int inLevel){
-        for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-            if( interactions[idxNeigh].getSize() ){
-                multipoleToLocal( idxNeigh, inLevel);
-            }
-        }
-    }
 
     /** preExpNExp
       * @param exp an exponent vector to create an computable vector
@@ -235,49 +204,29 @@ public:
     *
     *Remark: here we have always j+n >= |-k-l|
     *
-    * const FComplexe*const M2LTransfer = preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex];
-     *   for(int idxK = 0 ; idxK < interactions[interactionIndex].getSize() ; ++idxK){
-     *       for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
-     *           FComplexe compute;
-     *           for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
-     *               compute.addMul(M2LTransfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], multipoleMatrix[idxCol + idxK * FF_MATRIX_COLUMN_DIM]);
-     *           }
-     *           localMatrix[FF_MATRIX_ROW_DIM * idxK + idxRow] = compute;
-     *       }
-     *   }
+    * for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
+    *       for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
+    *           local_exp[idxRow].addMul(M2L_Outer_transfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], temporaryMultiSource[idxCol]);
+    *       }
+    *   }
     */
-    void multipoleToLocal(const int interactionIndex, const int inLevel){
-        for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
-            // Copy original vector and compute exp2nexp
-            FMemUtils::copyall<FComplexe>(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM],
-                                          interactions[interactionIndex][idxInter].pole, FF_MATRIX_COLUMN_DIM);
-
-            // Get a computable vector
-            preExpNExp(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM]);
-        }
+    void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
+                          const FComplexe* const FRestrict M2L_Outer_transfer){
+        // Copy original vector and compute exp2nexp
+        FMemUtils::copyall<FComplexe>(temporaryMultiSource, multipole_exp_src, CellClass::GetPoleSize());
+        // Get a computable vector
+        preExpNExp(temporaryMultiSource);
 
         const FReal one[2] = {1.0 , 0.0};
 
-        FBlas::c_gemm(
+        FBlas::c_gemva(
                     FF_MATRIX_ROW_DIM,
                     FF_MATRIX_COLUMN_DIM,
-                    interactions[interactionIndex].getSize(),
                     one,
-                    FComplexe::ToFReal(preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex]),
-                    FF_MATRIX_ROW_DIM,
-                    FComplexe::ToFReal(multipoleMatrix),
-                    FF_MATRIX_COLUMN_DIM,
-                    FComplexe::ToFReal(localMatrix),
-                    FF_MATRIX_ROW_DIM);
-
-        for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
-            FMemUtils::addall<FComplexe>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM],  FF_MATRIX_ROW_DIM);
-        }
-
-        interactions[interactionIndex].clear();
+                    FComplexe::ToFReal(M2L_Outer_transfer),
+                    FComplexe::ToFReal(temporaryMultiSource),
+                    FComplexe::ToFReal(local_exp));
     }
 };
 
-
-
-#endif // FSPHERICALBLOCKBLASKERNEL_HPP
+#endif // FSPHERICALBLASKERNEL_HPP

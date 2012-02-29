@@ -30,9 +30,9 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Spherical/FSphericalBlockBlasKernel.hpp"
-#include "../Src/Spherical/FSphericalParticle.hpp"
-#include "../Src/Spherical/FSphericalCell.hpp"
+#include "../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
 
 #include "../Src/Files/FFmaScanfLoader.hpp"
 

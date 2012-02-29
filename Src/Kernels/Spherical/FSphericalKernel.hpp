@@ -12,7 +12,7 @@
 #define FSPHERICALKERNEL_HPP
 
 #include "FAbstractSphericalKernel.hpp"
-#include "../Utils/FMemUtils.hpp"
+#include "../../Utils/FMemUtils.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
