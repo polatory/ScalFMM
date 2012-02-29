@@ -56,7 +56,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
         FFmaBinLoader<ParticleClass> loader(ParticleFile);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
-            assert(false);
+            uassert(false);
             return;
         }
 
@@ -88,12 +88,12 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
             do{
                 if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                    assert(false);
+                    uassert(false);
                     break;
                 }
 
                 if(testOctreeIterator.getCurrentListSrc()->getSize() != goodOctreeIterator.getCurrentListSrc()->getSize()){
-                    assert(false);
+                    uassert(false);
                     break;
                 }
 
@@ -101,10 +101,10 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                 typename ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
 
                 while( goodIter.hasNotFinished() ){
-                    assert( FMath::LookEqual(goodIter.data().getPotential(), testIter.data().getPotential()) );
-                    assert( FMath::LookEqual(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
-                    assert( FMath::LookEqual(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
-                    assert( FMath::LookEqual(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
+                    uassert( FMath::LookEqual(goodIter.data().getPotential(), testIter.data().getPotential()) );
+                    uassert( FMath::LookEqual(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
+                    uassert( FMath::LookEqual(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
+                    uassert( FMath::LookEqual(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
 
                     goodIter.gotoNext();
                     testIter.gotoNext();
@@ -113,12 +113,12 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
                 if(!testOctreeIterator.moveRight()){
                     if(goodOctreeIterator.moveRight()){
-                        assert(false);
+                        uassert(false);
                     }
                     break;
                 }
                 if(!goodOctreeIterator.moveRight()){
-                    assert(false);
+                    uassert(false);
                     break;
                 }
 
@@ -135,7 +135,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
             for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
                 do{
                     if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                        assert(false);
+                        uassert(false);
                         break;
                     }
 
@@ -155,12 +155,12 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
                     if(!testOctreeIterator.moveRight()){
                         if(goodOctreeIterator.moveRight()){
-                            assert(false);
+                            uassert(false);
                         }
                         break;
                     }
                     if(!goodOctreeIterator.moveRight()){
-                        assert(false);
+                        uassert(false);
                         break;
                     }
 

@@ -28,10 +28,10 @@ class TestBuffer : public FUTester<TestBuffer> {
                 writer << idxWrite << char(idxWrite) << double(idxWrite) << float(idxWrite);
             }
 
-            assert(writer.getSize() == (NbTest*BytesTested));
+            uassert(writer.getSize() == (NbTest*BytesTested));
 
             FBufferReader reader(writer.getSize());
-            assert(reader.getSize() == writer.getSize());
+            uassert(reader.getSize() == writer.getSize());
 
             memcpy(reader.data(), writer.data(), writer.getSize());
             for(int idxRead = 0 ; idxRead < NbTest ; ++idxRead){
@@ -41,28 +41,28 @@ class TestBuffer : public FUTester<TestBuffer> {
                 float floatval;
                 reader >> intval >> charval >> doubleval >> floatval;
 
-                assert(intval == idxRead);
-                assert(charval == char(idxRead));
-                assert(doubleval == double(idxRead));
-                assert(floatval == float(idxRead));
+                uassert(intval == idxRead);
+                uassert(charval == char(idxRead));
+                uassert(doubleval == double(idxRead));
+                uassert(floatval == float(idxRead));
 
-                assert(reader.tell() == (BytesTested * (idxRead+1)));
+                uassert(reader.tell() == (BytesTested * (idxRead+1)));
             }
 
-            assert(reader.tell() == reader.getSize());
+            uassert(reader.tell() == reader.getSize());
             reader.seek(0);
-            assert(reader.tell() == 0);
+            uassert(reader.tell() == 0);
 
             for(int idxRead = 0 ; idxRead < NbTest ; ++idxRead){
-                assert(reader.FBufferReader::getValue<int>() == idxRead);
-                assert(reader.FBufferReader::getValue<char>() == char(idxRead));
-                assert(reader.FBufferReader::getValue<double>() == double(idxRead));
-                assert(reader.FBufferReader::getValue<float>() == float(idxRead));
+                uassert(reader.FBufferReader::getValue<int>() == idxRead);
+                uassert(reader.FBufferReader::getValue<char>() == char(idxRead));
+                uassert(reader.FBufferReader::getValue<double>() == double(idxRead));
+                uassert(reader.FBufferReader::getValue<float>() == float(idxRead));
 
-                assert(reader.tell() == (BytesTested * (idxRead+1)));
+                uassert(reader.tell() == (BytesTested * (idxRead+1)));
             }
 
-            assert(reader.tell() == reader.getSize());
+            uassert(reader.tell() == reader.getSize());
         }
 
 
@@ -74,11 +74,11 @@ class TestBuffer : public FUTester<TestBuffer> {
             for(int idxWrite = 0 ; idxWrite < NbTest ; ++idxWrite){
                 const int position = writer.getSize();
 
-                assert(position == (NbTest * SizeOfInt * idxWrite) + (idxWrite * SizeOfInt));
+                uassert(position == (NbTest * SizeOfInt * idxWrite) + (idxWrite * SizeOfInt));
 
                 writer.FBufferWriter::write<int>(0);
 
-                assert(writer.getSize() == (NbTest * SizeOfInt * idxWrite) + (idxWrite * SizeOfInt) + SizeOfInt);
+                uassert(writer.getSize() == (NbTest * SizeOfInt * idxWrite) + (idxWrite * SizeOfInt) + SizeOfInt);
 
                 for(int count = 1 ; count <= NbTest ; ++count) writer << count;
                 writer.writeAt(position, idxWrite);
@@ -88,9 +88,9 @@ class TestBuffer : public FUTester<TestBuffer> {
             memcpy(reader.data(), writer.data(), writer.getSize());
 
             for(int idxWrite = 0 ; idxWrite < NbTest ; ++idxWrite){
-                assert(reader.FBufferReader::getValue<int>() == idxWrite);
+                uassert(reader.FBufferReader::getValue<int>() == idxWrite);
                 for(int count = 1 ; count <= NbTest ; ++count){
-                    assert(reader.FBufferReader::getValue<int>() == count);
+                    uassert(reader.FBufferReader::getValue<int>() == count);
                 }
             }
         }

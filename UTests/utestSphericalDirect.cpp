@@ -62,7 +62,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
-            assert(false);
+            uassert(false);
             return;
         }
         Print("Number of particles:");
@@ -143,14 +143,14 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         // Assert
         const FReal MaximumDiff = FReal(0.0001);
-        assert(potentialDiff.getL2Norm() < MaximumDiff);
-        assert(potentialDiff.getInfNorm() < MaximumDiff);
-        assert(fx.getL2Norm()  < MaximumDiff);
-        assert(fx.getInfNorm() < MaximumDiff);
-        assert(fy.getL2Norm()  < MaximumDiff);
-        assert(fy.getInfNorm() < MaximumDiff);
-        assert(fz.getL2Norm()  < MaximumDiff);
-        assert(fz.getInfNorm() < MaximumDiff);
+        uassert(potentialDiff.getL2Norm() < MaximumDiff);
+        uassert(potentialDiff.getInfNorm() < MaximumDiff);
+        uassert(fx.getL2Norm()  < MaximumDiff);
+        uassert(fx.getInfNorm() < MaximumDiff);
+        uassert(fy.getL2Norm()  < MaximumDiff);
+        uassert(fy.getInfNorm() < MaximumDiff);
+        uassert(fz.getL2Norm()  < MaximumDiff);
+        uassert(fz.getInfNorm() < MaximumDiff);
     }
 
     /** If memstas is running print the memory used */
@@ -200,7 +200,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                 OctreeClass, FmmClass>(false);
     }
 
-#ifdef SCALFMM_USE_CBLAS
+#ifdef SCALFMM_USE_BLAS
     /** Blas */
     void TestSphericalBlas(){
         typedef IndexedParticle         ParticleClass;
@@ -244,7 +244,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void SetTests(){
         AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
         AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
-#ifdef SCALFMM_USE_CBLAS
+#ifdef SCALFMM_USE_BLAS
         AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
         AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
 #endif

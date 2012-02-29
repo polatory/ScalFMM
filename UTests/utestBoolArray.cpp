@@ -24,14 +24,14 @@ class TestArray : public FUTester<TestArray> {
         void TestGetSet(){
                 FBoolArray array(500);
                 for(int idx = 0 ; idx < 500 ; ++idx){
-                    assert(!array.get(idx));
+                    uassert(!array.get(idx));
                 }
 
                 for(int idx = 0 ; idx < 500 ; ++idx){
                     array.set(idx, true);
-                    assert(array.get(idx));
+                    uassert(array.get(idx));
                     array.set(idx, false);
-                    assert(!array.get(idx));
+                    uassert(!array.get(idx));
                 }
 
                 for(int idx = 0 ; idx < 500 ; ++idx){
@@ -39,7 +39,7 @@ class TestArray : public FUTester<TestArray> {
                 }
                 array.setToZeros();
                 for(int idx = 0 ; idx < 500 ; ++idx){
-                    assert(!array.get(idx));
+                    uassert(!array.get(idx));
                 }
 	}
 
@@ -49,10 +49,10 @@ class TestArray : public FUTester<TestArray> {
                 for(int idx = 0 ; idx < 100 ; ++idx){
                     if(idx%3){
                         array.set(idx, true);
-                        assert(array.get(idx));
+                        uassert(array.get(idx));
                     }
                     else{
-                        assert(!array.get(idx));
+                        uassert(!array.get(idx));
                     }
                 }
         }
@@ -62,17 +62,17 @@ class TestArray : public FUTester<TestArray> {
                 FBoolArray array2(10);
 
 
-                assert(array1 == array2);
+                uassert(array1 == array2);
 
                 array1.set(1, true);
-                assert(array1 != array2);
+                uassert(array1 != array2);
 
                 array2.set(1, true);
-                assert(array1 == array2);
+                uassert(array1 == array2);
 
                 array1.set(5, true);
                 array2 = array1;
-                assert(array1 == array2);
+                uassert(array1 == array2);
         }
 		
 	// set test

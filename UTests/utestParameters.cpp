@@ -22,41 +22,41 @@
 /** this class test the list container */
 class TestParameters : public FUTester<TestParameters> {
         void Lower(){
-            assert(FParameters::toLower('A') == 'a');
-            assert(FParameters::toLower('Z') == 'z');
-            assert(FParameters::toLower('a') == 'a');
-            assert(FParameters::toLower('z') == 'z');
-            assert(FParameters::toLower('m') == 'm');
-            assert(FParameters::toLower(';') == ';');
+            uassert(FParameters::toLower('A') == 'a');
+            uassert(FParameters::toLower('Z') == 'z');
+            uassert(FParameters::toLower('a') == 'a');
+            uassert(FParameters::toLower('z') == 'z');
+            uassert(FParameters::toLower('m') == 'm');
+            uassert(FParameters::toLower(';') == ';');
         }
 
         void CharsEquals(){
-            assert(FParameters::areCharsEquals('a','A',false));
-            assert(FParameters::areCharsEquals('A','A',false));
-            assert(FParameters::areCharsEquals('A','a',false));
-            assert(FParameters::areCharsEquals('a','a',false));
-            assert(!FParameters::areCharsEquals('a','l',false));
-            assert(!FParameters::areCharsEquals('a','M',false));
-            assert(!FParameters::areCharsEquals('1',';',false));
+            uassert(FParameters::areCharsEquals('a','A',false));
+            uassert(FParameters::areCharsEquals('A','A',false));
+            uassert(FParameters::areCharsEquals('A','a',false));
+            uassert(FParameters::areCharsEquals('a','a',false));
+            uassert(!FParameters::areCharsEquals('a','l',false));
+            uassert(!FParameters::areCharsEquals('a','M',false));
+            uassert(!FParameters::areCharsEquals('1',';',false));
 
 
-            assert(!FParameters::areCharsEquals('a','A',true));
-            assert(FParameters::areCharsEquals('A','A',true));
-            assert(!FParameters::areCharsEquals('A','a',true));
-            assert(FParameters::areCharsEquals('a','a',true));
-            assert(FParameters::areCharsEquals(';',';',true));
+            uassert(!FParameters::areCharsEquals('a','A',true));
+            uassert(FParameters::areCharsEquals('A','A',true));
+            uassert(!FParameters::areCharsEquals('A','a',true));
+            uassert(FParameters::areCharsEquals('a','a',true));
+            uassert(FParameters::areCharsEquals(';',';',true));
         }
 
         void StrsEquals(){
-            assert(FParameters::areStrEquals("","",false));
-            assert(FParameters::areStrEquals("aa","Aa",false));
-            assert(!FParameters::areStrEquals("az","azz",false));
-            assert(FParameters::areStrEquals("aza","azA",false));
+            uassert(FParameters::areStrEquals("","",false));
+            uassert(FParameters::areStrEquals("aa","Aa",false));
+            uassert(!FParameters::areStrEquals("az","azz",false));
+            uassert(FParameters::areStrEquals("aza","azA",false));
 
-            assert(FParameters::areStrEquals("a","a",true));
-            assert(FParameters::areStrEquals("az","az",true));
-            assert(!FParameters::areStrEquals("aza","azA",true));
-            assert(!FParameters::areStrEquals("az","azA",true));
+            uassert(FParameters::areStrEquals("a","a",true));
+            uassert(FParameters::areStrEquals("az","az",true));
+            uassert(!FParameters::areStrEquals("aza","azA",true));
+            uassert(!FParameters::areStrEquals("az","azA",true));
         }
 
         void FindParameter(){
@@ -68,22 +68,22 @@ class TestParameters : public FUTester<TestParameters> {
             "tu.tU"
             };
 
-            assert(FParameters::findParameter(argc,argv,"tOto",false) == 0);
-            assert(FParameters::findParameter(argc,argv,"titi",false) == 1);
-            assert(FParameters::findParameter(argc,argv,"tAtA",false) == 2);
-            assert(FParameters::findParameter(argc,argv,"tu.tu",false) == 3);
+            uassert(FParameters::findParameter(argc,argv,"tOto",false) == 0);
+            uassert(FParameters::findParameter(argc,argv,"titi",false) == 1);
+            uassert(FParameters::findParameter(argc,argv,"tAtA",false) == 2);
+            uassert(FParameters::findParameter(argc,argv,"tu.tu",false) == 3);
 
             for(int idx = 0 ; idx < argc ; ++idx){
-                assert(FParameters::findParameter(argc,argv,argv[idx],true) == idx);
+                uassert(FParameters::findParameter(argc,argv,argv[idx],true) == idx);
             }
 
-            assert(FParameters::findParameter(argc,argv,"tu.tu",true) == -1);
-            assert(FParameters::findParameter(argc,argv,"TOTO",true) == -1);
+            uassert(FParameters::findParameter(argc,argv,"tu.tu",true) == -1);
+            uassert(FParameters::findParameter(argc,argv,"TOTO",true) == -1);
         }
 
         void StrToOther(){
-            assert(FParameters::StrToOther<int>("0") == 0);
-            assert(FParameters::StrToOther<int>("a",1) == 1);
+            uassert(FParameters::StrToOther<int>("0") == 0);
+            uassert(FParameters::StrToOther<int>("a",1) == 1);
         }
 
         // set test

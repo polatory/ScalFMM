@@ -193,14 +193,14 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         Print(fz.getInfNorm());
 
         const FReal MaximumDiff = FReal(0.0001);
-        assert(potentialDiff.getL2Norm() < MaximumDiff);
-        assert(potentialDiff.getInfNorm() < MaximumDiff);
-        assert(fx.getL2Norm()  < MaximumDiff);
-        assert(fx.getInfNorm() < MaximumDiff);
-        assert(fy.getL2Norm()  < MaximumDiff);
-        assert(fy.getInfNorm() < MaximumDiff);
-        assert(fz.getL2Norm()  < MaximumDiff);
-        assert(fz.getInfNorm() < MaximumDiff);
+        uassert(potentialDiff.getL2Norm() < MaximumDiff);
+        uassert(potentialDiff.getInfNorm() < MaximumDiff);
+        uassert(fx.getL2Norm()  < MaximumDiff);
+        uassert(fx.getInfNorm() < MaximumDiff);
+        uassert(fy.getL2Norm()  < MaximumDiff);
+        uassert(fy.getInfNorm() < MaximumDiff);
+        uassert(fz.getL2Norm()  < MaximumDiff);
+        uassert(fz.getInfNorm() < MaximumDiff);
     }
 
     /** Test real Periodic FMM */
@@ -354,14 +354,14 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         Print(fz.getInfNorm());
 
         const FReal MaximumDiff = FReal(0.0001);
-        assert(potentialDiff.getL2Norm() < MaximumDiff);
-        assert(potentialDiff.getInfNorm() < MaximumDiff);
-        assert(fx.getL2Norm()  < MaximumDiff);
-        assert(fx.getInfNorm() < MaximumDiff);
-        assert(fy.getL2Norm()  < MaximumDiff);
-        assert(fy.getInfNorm() < MaximumDiff);
-        assert(fz.getL2Norm()  < MaximumDiff);
-        assert(fz.getInfNorm() < MaximumDiff);
+        uassert(potentialDiff.getL2Norm() < MaximumDiff);
+        uassert(potentialDiff.getInfNorm() < MaximumDiff);
+        uassert(fx.getL2Norm()  < MaximumDiff);
+        uassert(fx.getInfNorm() < MaximumDiff);
+        uassert(fy.getL2Norm()  < MaximumDiff);
+        uassert(fy.getInfNorm() < MaximumDiff);
+        uassert(fz.getL2Norm()  < MaximumDiff);
+        uassert(fz.getInfNorm() < MaximumDiff);
     }
 
 
@@ -425,7 +425,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                 typename TestContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
-                    assert(leafIter.data().getDataDown() == directNbPart - 1);// todo delete
+                    uassert(leafIter.data().getDataDown() == directNbPart - 1);// todo delete
 
 
                     leafIter.gotoNext();

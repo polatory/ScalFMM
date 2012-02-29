@@ -28,7 +28,7 @@ public:
 	/**
 	 * @param particle The new particle to be added to the leaf
 	 */
-	void push(const FChebParticle& inParticle)
+        void push(const ParticleClass& inParticle)
 	{
 		particles.push(inParticle);
 	}

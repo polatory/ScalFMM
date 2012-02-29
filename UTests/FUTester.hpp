@@ -117,7 +117,7 @@ protected:
 	* @param result the test result
 	* if result is false test failled
 	*/
-        void assert(const bool result){
+        void uassert(const bool result){
 		++currentStep;
 		if(!result){
 			std::cout << ">> Step " << currentStep << " Failled\n";
@@ -133,7 +133,7 @@ protected:
 	*/
 	template <class T>
         void equal(const T& v1, const T& v2){
-                assert(v1 == v2);
+                uassert(v1 == v2);
 	}
 	
 	/**
@@ -144,7 +144,7 @@ protected:
 	*/
 	template <class T>
         void different(const T& v1, const T& v2){
-                assert(v1 != v2);
+                uassert(v1 != v2);
 	}
 	
 public :

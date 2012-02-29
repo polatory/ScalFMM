@@ -79,11 +79,11 @@ class TestOctree : public FUTester<TestOctree> {
                     MortonIndex currentIndex = 0;
                     do{
                         // Morton index must increase one by one
-                        assert( currentIndex == octreeIterator.getCurrentGlobalIndex());
+                        uassert( currentIndex == octreeIterator.getCurrentGlobalIndex());
                         ++currentIndex;
                     } while(octreeIterator.moveRight());
                     // Then number of cells must be divided by 8 at each level
-                    assert(currentIndex == nbCell);
+                    uassert(currentIndex == nbCell);
                     nbCell /= 8;
 
                     octreeIterator.moveUp();

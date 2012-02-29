@@ -55,14 +55,14 @@ class TestList : public FUTester<TestList> {
 		list.push(TestObject());
 		list.push(TestObject());
 		list.push(TestObject());
-		assert(list.getSize() == 3);
+                uassert(list.getSize() == 3);
 		
-		assert((TestObject::counter - TestObject::dealloced) == list.getSize());
+                uassert((TestObject::counter - TestObject::dealloced) == list.getSize());
 
 		list.clear();
-		assert(list.getSize() == 0);
+                uassert(list.getSize() == 0);
 
-		assert(TestObject::counter == TestObject::dealloced);
+                uassert(TestObject::counter == TestObject::dealloced);
 	}
 	
 	// test copy
@@ -73,9 +73,9 @@ class TestList : public FUTester<TestList> {
 		list.push(TestObject());
 
 		FList<TestObject> list2 = list;
-		assert(list.getSize() == list2.getSize());
+                uassert(list.getSize() == list2.getSize());
 		
-		assert((TestObject::counter - TestObject::dealloced) == (list.getSize() + list2.getSize()));
+                uassert((TestObject::counter - TestObject::dealloced) == (list.getSize() + list2.getSize()));
 	}
 
 	// test iter
@@ -83,7 +83,7 @@ class TestList : public FUTester<TestList> {
 		FList<TestObject> list;
 		{
                         FList<TestObject>::ConstBasicIterator iter(list);
-			assert(!iter.hasNotFinished());
+                        uassert(!iter.hasNotFinished());
 		}
 		{
 			list.push(TestObject());
@@ -91,7 +91,7 @@ class TestList : public FUTester<TestList> {
 			list.push(TestObject());
 
                         FList<TestObject>::ConstBasicIterator iter(list);
-			assert(iter.hasNotFinished());
+                        uassert(iter.hasNotFinished());
 
 			int counter = 0;
                         while(iter.hasNotFinished()){
@@ -99,8 +99,8 @@ class TestList : public FUTester<TestList> {
                             ++counter;
                         }
 
-			assert(!iter.hasNotFinished());
-			assert(counter == list.getSize());
+                        uassert(!iter.hasNotFinished());
+                        uassert(counter == list.getSize());
 		}
 	}
 		

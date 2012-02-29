@@ -54,14 +54,14 @@ class TestVector : public FUTester<TestVector> {
                 vector.push(TestObject());
                 vector.push(TestObject());
                 vector.push(TestObject());
-                assert(vector.getSize() == 3);
+                uassert(vector.getSize() == 3);
 		
-                assert((TestObject::counter - TestObject::dealloced) == vector.getSize());
+                uassert((TestObject::counter - TestObject::dealloced) == vector.getSize());
 
                 vector.clear();
-                assert(vector.getSize() == 0);
+                uassert(vector.getSize() == 0);
 
-		assert(TestObject::counter == TestObject::dealloced);
+                uassert(TestObject::counter == TestObject::dealloced);
 	}
 	
 	// test copy
@@ -73,14 +73,14 @@ class TestVector : public FUTester<TestVector> {
 
                 {
                     FVector<TestObject> vector2(vector);
-                    assert(vector.getSize() == vector2.getSize());
-                    assert((TestObject::counter - TestObject::dealloced) == (vector.getSize() + vector2.getSize()));
+                    uassert(vector.getSize() == vector2.getSize());
+                    uassert((TestObject::counter - TestObject::dealloced) == (vector.getSize() + vector2.getSize()));
                 }
                 {
                     FVector<TestObject> vector2(vector.getSize()/2);
                     vector2 = vector;
-                    assert(vector.getSize() == vector2.getSize());
-                    assert((TestObject::counter - TestObject::dealloced) == (vector.getSize() + vector2.getSize()));
+                    uassert(vector.getSize() == vector2.getSize());
+                    uassert((TestObject::counter - TestObject::dealloced) == (vector.getSize() + vector2.getSize()));
                 }
 	}
 
@@ -89,7 +89,7 @@ class TestVector : public FUTester<TestVector> {
                 FVector<TestObject> vector;
 		{
                         FVector<TestObject>::ConstBasicIterator iter(vector);
-			assert(!iter.hasNotFinished());
+                        uassert(!iter.hasNotFinished());
 		}
 		{
                         vector.push(TestObject());
@@ -97,12 +97,12 @@ class TestVector : public FUTester<TestVector> {
                         vector.push(TestObject());
 
                         FVector<TestObject>::ConstBasicIterator iter(vector);
-			assert(iter.hasNotFinished());
+                        uassert(iter.hasNotFinished());
 
 			int counter = 0;
 			while(iter.hasNotFinished()){ iter.gotoNext(); ++counter; }
-			assert(!iter.hasNotFinished());
-                        assert(counter == vector.getSize());
+                        uassert(!iter.hasNotFinished());
+                        uassert(counter == vector.getSize());
 		}
 	}
 
@@ -111,7 +111,7 @@ class TestVector : public FUTester<TestVector> {
                 FVector<TestObject> vector;
                 {
                         FVector<TestObject>::BasicIterator iter(vector);
-                        assert(!iter.hasNotFinished());
+                        uassert(!iter.hasNotFinished());
                 }
                 {
                         vector.push(TestObject());
@@ -119,16 +119,16 @@ class TestVector : public FUTester<TestVector> {
                         vector.push(TestObject());
 
                         FVector<TestObject>::BasicIterator iter(vector);
-                        assert(iter.hasNotFinished());
+                        uassert(iter.hasNotFinished());
 
                         iter.gotoNext();
                         iter.remove();
-                        assert(iter.hasNotFinished());
+                        uassert(iter.hasNotFinished());
 
                         iter.gotoNext();
-                        assert(!iter.hasNotFinished());
+                        uassert(!iter.hasNotFinished());
 
-                        assert(2 == vector.getSize());
+                        uassert(2 == vector.getSize());
                 }
         }
 		

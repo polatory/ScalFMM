@@ -19,9 +19,9 @@ class MyTest : public FUTester<MyTest> {
 	}
 
 	void TestOne(){
-		assert(true);
-                //or assert(false); make an error
-		assert(1 == 1);
+                uassert(true);
+                //or uassert(false); make an error
+                uassert(1 == 1);
 	}
 	
 	void TestTwo(){

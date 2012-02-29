@@ -44,7 +44,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
 
             FQuickSort<long long, long long, long>::QsOmp(array, Size);
 
-            assert(IsSorted(array,Size));
+            uassert(IsSorted(array,Size));
         }
 
         omp_set_num_threads(originalThreadsNumber);
@@ -60,7 +60,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
         }
 
         FQuickSort<long long, long long, long>::QsOmp(array, Size);
-        assert(IsSorted(array,Size));
+        uassert(IsSorted(array,Size));
 
         delete [] array;
     }
