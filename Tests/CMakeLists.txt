@@ -46,7 +46,7 @@ foreach(exec ${source_tests_files})
 	# Test Blas dependency
 	file(STRINGS "${exec}" lines_blas REGEX "@FUSE_BLAS")
 	if(lines_blas)
-		if( NOT SCALFMM_USE_CBLAS )
+		if( NOT SCALFMM_USE_BLAS )
 			MESSAGE( STATUS "This needs BLAS = ${exec}" )
 			set(compile_exec "FALSE")
 		endif()
