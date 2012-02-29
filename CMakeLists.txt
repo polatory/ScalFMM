@@ -93,7 +93,7 @@ add_subdirectory(Doc)
 # Add custom clean command
 if("${CMAKE_GENERATOR}" MATCHES "Make")
 	ADD_CUSTOM_TARGET(reset
-		COMMAND ${CMAKE_MAKE_PROGRAM} clean && rm -r !(.gitignore) && cmake ..
+		COMMAND ${CMAKE_MAKE_PROGRAM} clean && rm -r ./CMake* && cmake ..
 		WORKING_DIRECTORY ${CMAKE_CURRENT_DIR}
 		COMMENT "Cleaning Build dir and CMake cache, then do cmake.."
 		)
