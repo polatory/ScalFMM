@@ -59,10 +59,10 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
     std::cout << "Check Result\n";
     { // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator1(&tree1);
+        OctreeClass::Iterator octreeIterator1(&tree1);
         octreeIterator1.gotoBottomLeft();
 
-        typename OctreeClass::Iterator octreeIterator2(&tree2);
+        OctreeClass::Iterator octreeIterator2(&tree2);
         octreeIterator2.gotoBottomLeft();
 
         int nbLeaves = 0;
@@ -99,10 +99,10 @@ int main(int argc, char ** argv){
         std::cout << "There are " << nbLeaves << " leaves ...\n";
     }
     { // Ceck if there is number of NbPart summed at level 1
-        typename OctreeClass::Iterator octreeIterator1(&tree1);
+        OctreeClass::Iterator octreeIterator1(&tree1);
         octreeIterator1.gotoBottomLeft();
 
-        typename OctreeClass::Iterator octreeIterator2(&tree2);
+        OctreeClass::Iterator octreeIterator2(&tree2);
         octreeIterator2.gotoBottomLeft();
 
         for(int idxLevel = tree1.getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
