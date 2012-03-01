@@ -61,7 +61,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
     /** Classic */
     void TestChebyshev(){
-        const unsigned int ORDER = 4;
+        const unsigned int ORDER = 5;
          // typedefs
         typedef IndexedParticle ParticleClass;
         typedef FVector<ParticleClass> ContainerClass;
@@ -168,15 +168,17 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         Print(fz.getInfNorm());
 
         // Assert
-        const FReal MaximumDiff = FReal(1e-5);
-        uassert(potentialDiff.getL2Norm() < MaximumDiff);
-        uassert(potentialDiff.getInfNorm() < MaximumDiff);
-        uassert(fx.getL2Norm()  < MaximumDiff);
-        uassert(fx.getInfNorm() < MaximumDiff);
-        uassert(fy.getL2Norm()  < MaximumDiff);
-        uassert(fy.getInfNorm() < MaximumDiff);
-        uassert(fz.getL2Norm()  < MaximumDiff);
-        uassert(fz.getInfNorm() < MaximumDiff);
+        const FReal MaximumDiffPotential = FReal(1e-5);
+        const FReal MaximumDiffForces = FReal(1e-3);
+
+        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);
+        uassert(potentialDiff.getInfNorm() < MaximumDiffPotential);
+        uassert(fx.getL2Norm()  < MaximumDiffForces);
+        uassert(fx.getInfNorm() < MaximumDiffForces);
+        uassert(fy.getL2Norm()  < MaximumDiffForces);
+        uassert(fy.getInfNorm() < MaximumDiffForces);
+        uassert(fz.getL2Norm()  < MaximumDiffForces);
+        uassert(fz.getInfNorm() < MaximumDiffForces);
     }
 
     /** If memstas is running print the memory used */
