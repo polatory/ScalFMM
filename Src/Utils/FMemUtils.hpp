@@ -25,7 +25,7 @@ namespace FMemUtils {
     static const FSize MaxSize_t = UINT_MAX; //std::numeric_limits<std::size_t>::max();
 
     /** memcpy */
-    static void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
+    void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memcpy(dest, source, size_t(nbBytes));
         }
@@ -45,7 +45,7 @@ namespace FMemUtils {
     }
 
     /** memset */
-    static void* memset(void* const dest, const int val, const FSize nbBytes){
+    void* memset(void* const dest, const int val, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memset(dest, val, size_t(nbBytes));
         }
@@ -85,6 +85,14 @@ namespace FMemUtils {
             (*dest++) = source;
         }
     }
+	
+	  /** swap values from a and b*/
+	  template <class TypeClass>
+		void swap(TypeClass& a, TypeClass& b){
+			TypeClass c(a);
+			a=b;
+			b=c;
+		}
 
     /** Delete all */
     template <class TypeClass>

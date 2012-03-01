@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
 	// constants
   const FReal epsilon     = FReal(atof(argv[1]));
-  const unsigned int order = 4;
+  const unsigned int order = 9;
 	
 	// number of interpolation points per cell
 	const unsigned int nnodes = TensorTraits<order>::nnodes;
@@ -120,9 +120,9 @@ int main(int argc, char* argv[])
 	time.tic();
 	// compute 316 m2l operators
 	C1 = new FReal [nnodes*nnodes];
-	const unsigned int i = 2;
-	const unsigned int j = 0;
-	const unsigned int k = 0;
+	const unsigned int i = 3;
+	const unsigned int j = 3;
+	const unsigned int k = 3;
 	const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 	FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 	// evaluate m2l operator
