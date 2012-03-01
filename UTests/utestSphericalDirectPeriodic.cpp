@@ -146,7 +146,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
             octreeIterator.gotoBottomLeft();
 
             do{
-                typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
                     const ParticleClass& other = particles[((4 * (octreeIterator.getCurrentGlobalCoordinate().getX()+1)) +
@@ -309,7 +309,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
             octreeIterator.gotoBottomLeft();
 
             do{
-                typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
                     const ParticleClass& other = partBox[leafIter.data().getIndex()];
@@ -418,11 +418,11 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
             const int NbBoxPerPeriodicSide = 6 * PeriodicDeep;
             const int directNbPart = NbPart * NbBoxPerPeriodicSide * NbBoxPerPeriodicSide * NbBoxPerPeriodicSide;
 
-            typename TestOctreeClass::Iterator octreeIterator(&tree);
+            TestOctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
             do{
-                typename TestContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                TestContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                 while( leafIter.hasNotFinished() ){
                     uassert(leafIter.data().getDataDown() == directNbPart - 1);// todo delete

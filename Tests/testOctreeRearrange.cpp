@@ -93,7 +93,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             while( iter.hasNotFinished() ){
                 iter.data().setPosition(
@@ -134,7 +134,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             const MortonIndex leafIndex = octreeIterator.getCurrentGlobalIndex();
 

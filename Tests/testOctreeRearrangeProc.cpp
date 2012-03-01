@@ -102,7 +102,7 @@ int main(int argc, char ** argv){
         octreeIterator.gotoBottomLeft();
 
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             while( iter.hasNotFinished() ){
                 if(FReal(rand())/FRandMax > 0.5){
@@ -148,7 +148,7 @@ int main(int argc, char ** argv){
 
         do{
             const MortonIndex leafIndex = octreeIterator.getCurrentGlobalIndex();
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             while( iter.hasNotFinished() ){
                 const MortonIndex particleIndex = tree.getMortonFromPosition( iter.data().getPosition() );

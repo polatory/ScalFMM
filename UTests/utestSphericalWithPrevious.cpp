@@ -103,8 +103,8 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                     break;
                 }
 
-                typename ContainerClass::BasicIterator goodIter(*goodOctreeIterator.getCurrentListTargets());
-                typename ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
+                ContainerClass::BasicIterator goodIter(*goodOctreeIterator.getCurrentListTargets());
+                ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
 
                 while( goodIter.hasNotFinished() ){
                     uassert( IsSimilar(goodIter.data().getPotential(), testIter.data().getPotential()) );

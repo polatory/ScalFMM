@@ -159,7 +159,7 @@ int main(int argc, char ** argv){
             // std::cout << "Current Morton Index : " << currentIndex << " or in binary " << MortonToBinary(currentIndex,NbLevels-1) << std::endl;
             // std::cout << "Particles :" << std::endl;
 
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 iter.data().setMortonIndex(currentIndex);
                 //	  iter.data().mortonIndex()       = currentIndex ;
