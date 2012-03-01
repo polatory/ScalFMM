@@ -209,7 +209,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             const long long int sumParticles = octreeIterator.getCurrentCell()->getDataDown() + (26 * NbPartPerBoxes) + (NbPartPerBoxes - 1);
 

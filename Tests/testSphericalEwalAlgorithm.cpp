@@ -145,7 +145,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
                 std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
                 std::cout << "x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;

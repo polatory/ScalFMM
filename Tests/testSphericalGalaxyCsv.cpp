@@ -122,7 +122,7 @@ int main(int argc, char ** argv){
             OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             do{
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 while( iter.hasNotFinished() ){
                     kernels.computeVelocity(&iter.data(), DT);
                     kernels.updatePosition(&iter.data(), DT);

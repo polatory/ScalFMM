@@ -178,7 +178,7 @@ int main(int argc, char ** argv){
     OctreeClass::Iterator octreeIterator(&tree);
     octreeIterator.gotoBottomLeft();
     do{
-        typename ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+        ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
         const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
 
         while( iter.hasNotFinished() ){

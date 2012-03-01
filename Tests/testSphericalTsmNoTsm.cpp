@@ -141,7 +141,7 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
 
-        typename OctreeClassTyped::Iterator octreeIteratorTyped(&treeTyped);
+        OctreeClassTyped::Iterator octreeIteratorTyped(&treeTyped);
         octreeIteratorTyped.gotoBottomLeft();
 
         for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
