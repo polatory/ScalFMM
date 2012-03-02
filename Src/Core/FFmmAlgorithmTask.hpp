@@ -102,7 +102,7 @@ private:
         FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
-        #pragma omp parallel default(none)
+        #pragma omp parallel
         {
             #pragma omp single nowait
             {
