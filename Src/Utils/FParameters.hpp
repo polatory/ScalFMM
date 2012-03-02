@@ -20,6 +20,8 @@
   */
 
 namespace FParameters{
+    /** If it is not found */
+    const static int NotFound = -1;
     /**
     * This function gives a parameter in a standart type
     * @parameter inArg parameter position has to be strictly less than argc/userParemetersCount
@@ -73,7 +75,7 @@ namespace FParameters{
                 return idxArg;
             }
         }
-        return -1;
+        return NotFound;
     }
 
     /** To get a value like :
@@ -84,7 +86,7 @@ namespace FParameters{
     template <class VariableType>
     const VariableType getValue(const int argc, const char* const * const argv, const char* const inName, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
-        if(position == -1 || position == argc - 1){
+        if(position == NotFound || position == argc - 1){
             return defaultValue;
         }
         return StrToOther(argv[position+1],defaultValue);
@@ -94,7 +96,7 @@ namespace FParameters{
       */
     const char* getStr(const int argc, const char* const * const argv, const char* const inName, const char* const inDefault, const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
-        if(position == -1 || position == argc - 1){
+        if(position == NotFound || position == argc - 1){
             return inDefault;
         }
         return argv[position+1];

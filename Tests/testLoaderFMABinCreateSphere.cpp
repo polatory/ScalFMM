@@ -74,7 +74,7 @@ int main(int argc, char ** argv){
     FReal data[4];
     data[3] = FReal(0.1);
 
-    if( !FParameters::findParameter(argc,argv,"-double") ){
+    if( FParameters::findParameter(argc,argv,"-double") == FParameters::NotFound ){
         const FReal rayon = FReal(0.4);
         const FReal thresh = FReal(0.15);
         const FReal threshDiv2 = thresh/2;

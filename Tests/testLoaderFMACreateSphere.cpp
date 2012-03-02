@@ -64,7 +64,7 @@ int main(int argc, char ** argv){
     // System properties
     myfile << NbParticles << " " << BoxWidth << " " << XCenter << " " << YCenter << " " << ZCenter;
 
-    if( !FParameters::findParameter(argc,argv,"-double") ){
+    if( FParameters::findParameter(argc,argv,"-double") == FParameters::NotFound){
         const FReal rayon = FReal(0.4);
         const FReal thresh = FReal(0.15);
         const FReal threshDiv2 = thresh/2;

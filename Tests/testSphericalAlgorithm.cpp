@@ -48,10 +48,13 @@ int main(int argc, char ** argv){
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
-    // FFmmAlgorithmTask FFmmAlgorithm FFmmAlgorithmThread
-    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
+    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
+    std::cout << ">> You can pass -sequential or -task (thread by default).\n";
     //////////////////////////////////////////////////////////////
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
@@ -88,8 +91,18 @@ int main(int argc, char ** argv){
     counter.tic();
 
     KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-    FmmClass algo(&tree,&kernels);
-    algo.execute();
+    if( FParameters::findParameter(argc,argv,"-sequential") != FParameters::NotFound){
+        FmmClass algo(&tree,&kernels);
+        algo.execute();
+    }
+    else if( FParameters::findParameter(argc,argv,"-task") != FParameters::NotFound){
+        FmmClassTask algo(&tree,&kernels);
+        algo.execute();
+    }
+    else {
+        FmmClassThread algo(&tree,&kernels);
+        algo.execute();
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
