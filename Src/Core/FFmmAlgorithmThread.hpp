@@ -234,16 +234,20 @@ private:
             octreeIterator = avoidGotoLeftIterator;
 
             FDEBUG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const CellClass* neighbors[343];
 
-#pragma omp for  schedule(dynamic) nowait
+                #pragma omp for  schedule(dynamic) nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                     if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                 }
+
+                FDEBUG(computationCounter.tic());
+                myThreadkernels->finishedLevelM2L(idxLevel);
+                FDEBUG(computationCounter.tac());
             }
             FDEBUG(computationCounter.tac());
         }

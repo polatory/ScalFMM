@@ -185,12 +185,12 @@ private:
 
         FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass*const myThreadkernels = kernels[omp_get_thread_num()];
             const CellClass* neighbors[343];
 
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -204,7 +204,7 @@ private:
                     do{
                         const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
                         if(counter){
-#pragma omp task
+                            #pragma omp task
                             {
                                 myThreadkernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                             }
@@ -214,7 +214,16 @@ private:
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
-#pragma omp taskwait
+                    #pragma omp taskwait
+
+                    for( int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
+                        #pragma omp task
+                        {
+                            kernels[idxThread]->finishedLevelM2L(idxLevel);
+                        }
+                    }
+
+                    #pragma omp taskwait
                 }
             }
         }
@@ -306,7 +315,8 @@ private:
                         {
                             // need the current particles and neighbors particles
                             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
-                            myThreadkernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, counter);
+                            myThreadkernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
+                                                 octreeIterator.getCurrentListSrc() , neighbors, counter);
                         }
                     }
                     else{

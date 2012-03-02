@@ -22,6 +22,7 @@
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -47,8 +48,8 @@ int main(int argc, char ** argv){
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
-
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    // FFmmAlgorithmTask FFmmAlgorithm FFmmAlgorithmThread
+    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
