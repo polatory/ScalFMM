@@ -111,37 +111,12 @@ int main(int argc, char ** argv){
                 OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
-                    varianceParticles += (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize())) - (averageParticles - FReal(octreeIterator.getCurrentListTargets()->getSize()));
+                    varianceParticles += FReal(octreeIterator.getCurrentListTargets()->getSize() * octreeIterator.getCurrentListTargets()->getSize());
                     ++nbLeafs;
                 } while(octreeIterator.moveRight());
                 varianceParticles /= FReal(nbLeafs);
             }
-            std::cout << "[STAT] Variances of particles on leafs is = " << FMath::Sqrt(varianceParticles) << std::endl;
-        }
-
-
-        {
-            FReal averageReduction = 0;
-            OctreeClass::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-            int previousCells = 0;
-
-            do{
-                ++previousCells;
-            } while(octreeIterator.moveRight());
-
-            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
-                octreeIterator.moveUp();
-                octreeIterator.gotoLeft();
-
-                int nbCells = 0;
-                do{
-                    ++nbCells;
-                } while(octreeIterator.moveRight());
-                averageReduction += FReal(nbCells)/FReal(previousCells);
-                previousCells = nbCells;
-            }
-            std::cout << "[STAT] Average reduction by level = " << (averageReduction/FReal(NbLevels-2)) << std::endl;
+            std::cout << "[STAT] Variances of particles on leafs is = " << (varianceParticles - (averageParticles*averageParticles)) << std::endl;
         }
 
         {
@@ -160,88 +135,62 @@ int main(int argc, char ** argv){
         }
 
         {
+            long long int totalCells = 0;
+            long long int totalM2L = 0;
+            long long int totalM2ML2L = 0;
+
+            int nbCellsAtTop = 0;
+            int nbCellsAtBottom = 0;
+
             OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
 
-            int fullNbCells = 0;
-            int fullNbLeafs = 0;
-            int fullNbChild = 0;
-            int fullM2LCalculus = 0;
-
-            int nbCellsAtLevel[NbLevels - 3];
-            int nbChildAtLevel[NbLevels - 3];
-            int M2LCalculusAtLevel[NbLevels - 3];
-
-            // Get data
-            do{
-                ++fullNbLeafs;
-            } while(octreeIterator.moveRight());
-
             for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel){
-                octreeIterator.moveUp();
-                octreeIterator.gotoLeft();
 
-                const int idxArray = idxLevel - 2;
-                nbChildAtLevel[idxArray] = 0;
-                nbCellsAtLevel[idxArray] = 0;
-                M2LCalculusAtLevel[idxArray] = 0;
+                int nbCellsAtLevel = 0;
+                int nbChildAtLevel = 0;
+                int nbNeighborsAtLevel = 0;
 
                 do{
-                    ++nbCellsAtLevel[idxArray];
+                    ++nbCellsAtLevel;
 
-                    FBasicCell** child = octreeIterator.getCurrentChild();
-                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        if(child[idxChild]) ++nbChildAtLevel[idxArray];
+                    if( idxLevel != NbLevels - 1 ){
+                        FBasicCell** child = octreeIterator.getCurrentChild();
+                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                            if(child[idxChild]) ++nbChildAtLevel;
+                        }
                     }
 
                     const FBasicCell* neighbors[343];
-
-                    M2LCalculusAtLevel[idxArray] += tree.getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
+                    nbNeighborsAtLevel += tree.getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
 
                 } while(octreeIterator.moveRight());
 
-                fullNbCells += nbCellsAtLevel[idxArray];
-                fullNbChild += nbChildAtLevel[idxArray];
-                fullM2LCalculus += M2LCalculusAtLevel[idxArray];
+                octreeIterator.moveUp();
+                octreeIterator.gotoLeft();
+
+                std::cout << "[STAT] Level = " << idxLevel << "\n";
+                std::cout << "[STAT] >> Nb Cells = " << nbCellsAtLevel << "\n";
+                std::cout << "[STAT] >> Nb M2M/L2L interactions = " << nbChildAtLevel << "\n";
+                std::cout << "[STAT] >> Average M2M/L2L interactions = " << FReal(nbChildAtLevel)/FReal(nbCellsAtLevel) << "\n";
+                std::cout << "[STAT] >> Nb M2L interactions = " << nbNeighborsAtLevel << "\n";
+                std::cout << "[STAT] >> Average M2L interactions = " << FReal(nbNeighborsAtLevel)/FReal(nbCellsAtLevel) << "\n";
+
+                totalCells += (long long int)(nbCellsAtLevel);
+                totalM2L += (long long int)(nbNeighborsAtLevel);
+                totalM2ML2L += (long long int)(nbChildAtLevel);
+                nbCellsAtTop = nbCellsAtLevel;
+                if( idxLevel == NbLevels - 1 ) nbCellsAtBottom = nbCellsAtLevel;
             }
 
+            std::cout << "[STAT] For all the tree\n";
+            std::cout << "[STAT] >> Total Nb Cells = " << totalCells-nbCellsAtTop << "\n";
+            std::cout << "[STAT] >> Total Nb M2M/L2L interactions = " << totalM2ML2L << "\n";
+            std::cout << "[STAT] >> Total Average M2M/L2L interactions = " << FReal(totalM2ML2L-nbCellsAtTop)/FReal(totalCells-nbCellsAtBottom) << "\n";
+            std::cout << "[STAT] >> Total Nb M2L interactions per cell = " << totalM2L << "\n";
+            std::cout << "[STAT] >> Total Average M2L interactions per cell = " << FReal(totalM2L)/FReal(totalCells) << "\n";
 
-            // compute basic stats
-            {
-                const double averageChildPerCell = (fullNbChild/double(fullNbCells));
-                std::cout << "[STAT] Average number of children = " << averageChildPerCell << std::endl;
-
-                const double averageM2LCalculusPerCell = (fullM2LCalculus/double(fullNbCells));
-                std::cout << "[STAT] Average M2L operations = " << averageM2LCalculusPerCell << std::endl;
-            }
-            // compute by scoring level by level
-            double averageChildByLevel = 0;
-            double averageM2LByLevel = 0;
-            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
-                const int idxArray = idxLevel - 2;
-                averageChildByLevel += nbChildAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
-                averageM2LByLevel += M2LCalculusAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
-            }
-            averageChildByLevel /= NbLevels - 3;
-            averageM2LByLevel /= NbLevels - 3;
-            std::cout << "[STAT] Average of children per level = " << averageChildByLevel << std::endl;
-            std::cout << "[STAT] Average M2L per level = " << averageM2LByLevel << std::endl;
-
-            // doing a variance for theses data
-            double varianceChildByLevel = 0;
-            double varianceM2LByLevel = 0;
-            for(int idxLevel = NbLevels - 2 ; idxLevel > 1 ; --idxLevel){
-                const int idxArray = idxLevel - 2;
-
-                const double averageAtLevel = nbChildAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
-                varianceChildByLevel += (averageAtLevel - averageChildByLevel) * (averageAtLevel - averageChildByLevel);
-
-                const double averageAtLevelM2L = M2LCalculusAtLevel[idxArray]/double(nbCellsAtLevel[idxArray]);
-                varianceM2LByLevel += (averageAtLevelM2L - averageM2LByLevel) * (averageAtLevelM2L - averageM2LByLevel);
-            }
-            std::cout << "[STAT] Variance number of children per level = " << FMath::Sqrt(varianceChildByLevel/double(NbLevels - 3)) << std::endl;
-            std::cout << "[STAT] Variance M2L per level = " << FMath::Sqrt(varianceM2LByLevel/double(NbLevels - 3)) << std::endl;
-        }
+       }
     }
 
     // -----------------------------------------------------
