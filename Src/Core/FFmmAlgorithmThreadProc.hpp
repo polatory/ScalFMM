@@ -641,6 +641,8 @@ private:
                         const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel);
                         if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                     }
+
+                    myThreadkernels->finishedLevelM2L(idxLevel);
                 }
                 FDEBUG(computationCounter.tac());
             }
@@ -744,6 +746,8 @@ private:
                             myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);                            
                         }
                     }
+
+                    myThreadkernels->finishedLevelM2L(idxLevel);
                 }
                 FDEBUG(computationCounter.tac());
             }

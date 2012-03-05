@@ -149,6 +149,7 @@ private:
 
                 // for each levels
                 for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+                    FDEBUG(FTic counterTimeLevel);
                     // for each cells
                     do{
                         // We need the current cell and the child
@@ -163,6 +164,7 @@ private:
                     octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
                     #pragma omp taskwait
+                    FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
                 }
             }
         }
@@ -195,6 +197,7 @@ private:
 
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    FDEBUG(FTic counterTimeLevel);
                     // for each cells
                     do{
                         const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
@@ -219,6 +222,7 @@ private:
                     }
 
                     #pragma omp taskwait
+                    FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
                 }
             }
         }
@@ -246,6 +250,7 @@ private:
                 const int heightMinusOne = OctreeHeight - 1;
                 // for each levels exepted leaf level
                 for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+                    FDEBUG(FTic counterTimeLevel);
                     // for each cells
                     do{
                         #pragma omp task
@@ -259,6 +264,7 @@ private:
                     octreeIterator = avoidGotoLeftIterator;
 
                     #pragma omp taskwait
+                    FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
                 }
             }
         }

@@ -131,6 +131,7 @@ public:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             // for each cells
             do{
                 // We need the current cell and the child
@@ -160,6 +161,7 @@ public:
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( counterTime.tac() );
@@ -184,6 +186,7 @@ public:
 
         // for each levels
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             // for each cells
             do{
                 FDEBUG(computationCounter.tic());
@@ -209,8 +212,13 @@ public:
                 FDEBUG(totalComputation += computationCounter.elapsed());
             } while(octreeIterator.moveRight());
 
+            FDEBUG(computationCounter.tic());
+            kernels->finishedLevelM2L(idxLevel);
+            FDEBUG(computationCounter.tac());
+
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( counterTime.tac() );
@@ -232,6 +240,7 @@ public:
         const int heightMinusOne = OctreeHeight - 1;
         // for each levels exepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             // for each cells
             do{
                 FDEBUG(computationCounter.tic());
@@ -253,6 +262,7 @@ public:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( counterTime.tac() );

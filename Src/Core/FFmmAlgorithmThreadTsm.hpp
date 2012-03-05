@@ -167,6 +167,7 @@ public:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -203,6 +204,7 @@ public:
                 }
             }
             FDEBUG(computationCounter.tac());
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( counterTime.tac() );
@@ -225,6 +227,7 @@ public:
 
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                FDEBUG(FTic counterTimeLevel);
                 int numberOfCells = 0;
                 // for each cells
                 do{
@@ -261,8 +264,13 @@ public:
                             }
                         }
                     }
+
+                    FDEBUG(computationCounter.tic());
+                    myThreadkernels->finishedLevelM2L(idxLevel);
+                    FDEBUG(computationCounter.tac());
                 }
                 FDEBUG(computationCounter.tac());
+                FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
             }
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -284,6 +292,7 @@ public:
             const int heightMinusOne = OctreeHeight - 1;
             // for each levels exepted leaf level
             for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+                FDEBUG(FTic counterTimeLevel);
                 int numberOfCells = 0;
                 // for each cells
                 do{
@@ -314,6 +323,7 @@ public:
                     }
                 }
                 FDEBUG(computationCounter.tac());
+                FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
             }
             FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
             FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );

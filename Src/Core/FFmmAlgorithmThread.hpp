@@ -176,6 +176,7 @@ private:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -186,10 +187,10 @@ private:
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
             FDEBUG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for nowait
+                #pragma omp for nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
@@ -198,6 +199,7 @@ private:
             }
 
             FDEBUG(computationCounter.tac());
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
 
@@ -224,6 +226,7 @@ private:
 
         // for each levels
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -250,6 +253,7 @@ private:
                 FDEBUG(computationCounter.tac());
             }
             FDEBUG(computationCounter.tac());
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -275,6 +279,7 @@ private:
         const int heightMinusOne = OctreeHeight - 1;
         // for each levels exepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            FDEBUG(FTic counterTimeLevel);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -294,6 +299,7 @@ private:
                 }
             }
             FDEBUG(computationCounter.tac());
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
