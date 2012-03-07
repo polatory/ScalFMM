@@ -38,7 +38,7 @@
 #include "../Src/Files/FFmaScanfLoader.hpp"
 
 /** This program show an example of use of
-  * the fmm basic algo
+  * the fmm blas algo
   * it also check that eachh particles is little or longer
   * related that each other
   */
