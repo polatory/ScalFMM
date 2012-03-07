@@ -113,7 +113,7 @@ private:
                 do{
                     // We need the current cell that represent the leaf
                     // and the list of particles
-                    #pragma omp task default(none) firstprivate(octreeIterator)
+                    #pragma omp task firstprivate(octreeIterator)
                     {
                         kernels[omp_get_thread_num()]->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
                     }
@@ -154,7 +154,7 @@ private:
                     do{
                         // We need the current cell and the child
                         // child is an array (of 8 child) that may be null
-                        #pragma omp task default(none) firstprivate(octreeIterator) shared(idxLevel)
+                        #pragma omp task firstprivate(octreeIterator) shared(idxLevel)
                         {
                             kernels[omp_get_thread_num()]->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                         }
@@ -202,7 +202,7 @@ private:
                     do{
                         int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
                         if(counter){
-                            #pragma omp task default(none) firstprivate(octreeIterator, neighbors, counter) shared(idxLevel)
+                            #pragma omp task firstprivate(octreeIterator, neighbors, counter) shared(idxLevel)
                             {
                                 kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                             }
@@ -254,7 +254,7 @@ private:
                     FDEBUG(FTic counterTimeLevel);
                     // for each cells
                     do{
-                        #pragma omp task default(none) firstprivate(octreeIterator) shared(idxLevel)
+                        #pragma omp task firstprivate(octreeIterator) shared(idxLevel)
                         {
                             kernels[omp_get_thread_num()]->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                         }
@@ -316,7 +316,7 @@ private:
                     const int nbLeaf = shapes[idxShape].getSize();
                     for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-                        #pragma omp task default(none) firstprivate(neighbors, toWork)
+                        #pragma omp task firstprivate(neighbors, toWork)
                         {
                             kernels[omp_get_thread_num()]->L2P(toWork.getCurrentCell(), toWork.getCurrentListTargets());
                             const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
