@@ -41,7 +41,6 @@
   * the fmm blas algo
   * it also check that eachh particles is little or longer
   * related that each other
-  *
   */
 
 
