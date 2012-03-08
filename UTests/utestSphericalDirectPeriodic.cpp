@@ -445,9 +445,9 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
     // set test
     void SetTests(){        
-        AddTest(&TestSphericalDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
-        AddTest(&TestSphericalDirectPeriodic::TestPeriodicP2P,"Test direct compare to real fmm periodic (P2P only)");
-        AddTest(&TestSphericalDirectPeriodic::TestDirectHigh,"Test direct compare to real fmm periodic");
+        //AddTest(&TestSphericalDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
+        //AddTest(&TestSphericalDirectPeriodic::TestPeriodicP2P,"Test direct compare to real fmm periodic (P2P only)");
+        //AddTest(&TestSphericalDirectPeriodic::TestDirectHigh,"Test direct compare to real fmm periodic");
     }
 };
 
