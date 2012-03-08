@@ -42,7 +42,7 @@ typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, Ker
 
 /** To check if a value is correct */
 bool IsSimilar(const FReal good, const FReal other){
-    const FReal Epsilon = FReal(0.000001);
+    const FReal Epsilon = FReal(0.0001);
     return (FMath::Abs(good-other)/FMath::Abs(good)) < Epsilon;
 }
 
