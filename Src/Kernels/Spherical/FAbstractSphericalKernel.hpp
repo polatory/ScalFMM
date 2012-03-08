@@ -204,17 +204,44 @@ public:
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27], const int /*size*/){
 
-        if( periodicLevels == 0 && targets == sources ){
-            P2PNoTsm(targets, directNeighborsParticles);
+        if( periodicLevels == 0 ){
+            P2PNoPeriodic(targets, sources, directNeighborsParticles);
         }
-        else if(periodicLevels == 0 /* && targets != sources */) {
-            P2PTsm(targets, sources, directNeighborsParticles);
+        else {
+            P2PPeriodic(inLeafPosition, targets, sources, directNeighborsParticles);
         }
-        else if( targets == sources /* && periodicLevels != 0 */){
-            P2PNoTsmPeriodic(inLeafPosition, targets, directNeighborsParticles);
-        }
-        else { // if(periodicLevels != 0 && periodicLevels != 0 ) {
-            P2PTsmPeriodic(inLeafPosition, targets, sources, directNeighborsParticles);
+    }
+
+    /** This P2P has to be used when target != sources
+      * It will proceed an direct interation no mutual
+      *
+      * It takes all the target particles from the current leaf,
+      * then it computes the sources/targets interaction in this leaf,
+      * then it computes the sources/targets inteactions between this leaf and the
+      * neighbors.
+      */
+    void P2PRemote(const FTreeCoordinate& ,
+                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
+                  ContainerClass* const directNeighborsParticles[27], const int /*size*/){
+        // TODO manage for periodic
+        for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
+            if( directNeighborsParticles[idxDirectNeighbors] ){
+                // For all particles in current leaf
+                typename ContainerClass::BasicIterator iterTarget(*targets);
+                while( iterTarget.hasNotFinished() ){
+                    ParticleClass target( iterTarget.data() );
+                    // For all the particles in the other leaf
+                    typename ContainerClass::BasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
+                    while( iterSource.hasNotFinished() ){
+                        directInteraction(&target, iterSource.data());
+
+                        iterSource.gotoNext();
+                    }
+                    // Set data and progress
+                    iterTarget.setData(target);
+                    iterTarget.gotoNext();
+                }
+            }
         }
     }
 
@@ -232,27 +259,27 @@ private:
       * then it computes the sources/targets inteactions between this leaf and the
       * neighbors.
       */
-    void P2PTsm(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+    void P2PNoPeriodic(ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27]){
+        const bool isNotTsm = (targets != sources);
+        if( isNotTsm ) { // Compute interaction in this leaf
+            {
+                typename ContainerClass::BasicIterator iterTarget(*targets);
+                while( iterTarget.hasNotFinished() ){
+                    // We copy the target particle to work with a particle in the heap
+                    ParticleClass target( iterTarget.data() );
 
-        { // Compute interaction in this leaf
-            typename ContainerClass::BasicIterator iterTarget(*targets);
-            while( iterTarget.hasNotFinished() ){
-                // We copy the target particle to work with a particle in the heap
-                ParticleClass target( iterTarget.data() );
-
-                // For all the source particles in the same leaf
-                typename ContainerClass::ConstBasicIterator iterSameBox(*sources);
-                while( iterSameBox.hasNotFinished() ){
-                    directInteraction(&target, iterSameBox.data());
-                    iterSameBox.gotoNext();
+                    // For all the source particles in the same leaf
+                    typename ContainerClass::ConstBasicIterator iterSameBox(*sources);
+                    while( iterSameBox.hasNotFinished() ){
+                        directInteraction(&target, iterSameBox.data());
+                        iterSameBox.gotoNext();
+                    }
+                    // Set data and progress
+                    iterTarget.setData(target);
+                    iterTarget.gotoNext();
                 }
-                // Set data and progress
-                iterTarget.setData(target);
-                iterTarget.gotoNext();
             }
-        }
-        { // Compute interactions with other leaves
             // For all the neigbors leaves
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
                 if( directNeighborsParticles[idxDirectNeighbors] ){
@@ -273,37 +300,25 @@ private:
                 }
             }
         }
-    }
+        else { // Compute interaction in this leaf
+            {
+                typename ContainerClass::BasicIterator iterTarget(*targets);
+                while( iterTarget.hasNotFinished() ){
+                    // We copy the target particle to work with a particle in the heap
+                    ParticleClass target( iterTarget.data() );
 
-    /** This P2P has to be used when target == sources
-      * It will proceed a direct interation >> mutual
-      *
-      * It takes all the particles from the current leaf,
-      * then it computes the interactions in this leaf,
-      * then it computes the  inteactions between this leaf and the
-      * neighbors.
-      */
-    void P2PNoTsm(ContainerClass* const FRestrict targets,
-             ContainerClass* const directNeighborsParticles[27] ){
-        { // Compute interaction in this leaf
-            typename ContainerClass::BasicIterator iterTarget(*targets);
-            while( iterTarget.hasNotFinished() ){
-                // We copy the target particle to work with a particle in the heap
-                ParticleClass target( iterTarget.data() );
-
-                // For all particles after the current one
-                typename ContainerClass::BasicIterator iterSameBox = iterTarget;
-                iterSameBox.gotoNext();
-                while( iterSameBox.hasNotFinished() ){
-                    directInteractionMutual(&target, &iterSameBox.data());
+                    // For all particles after the current one
+                    typename ContainerClass::BasicIterator iterSameBox = iterTarget;
                     iterSameBox.gotoNext();
+                    while( iterSameBox.hasNotFinished() ){
+                        directInteractionMutual(&target, &iterSameBox.data());
+                        iterSameBox.gotoNext();
+                    }
+                    // Set data and progress
+                    iterTarget.setData(target);
+                    iterTarget.gotoNext();
                 }
-                // Set data and progress
-                iterTarget.setData(target);
-                iterTarget.gotoNext();
             }
-        }
-        { // Compute interactions with other leaves
             // For all the neigbors leaves
             for(int idxDirectNeighbors = 0 ; idxDirectNeighbors <= 13 ; ++idxDirectNeighbors){
                 if( directNeighborsParticles[idxDirectNeighbors] ){
@@ -315,7 +330,6 @@ private:
                         typename ContainerClass::BasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
                         while( iterSource.hasNotFinished() ){
                             directInteractionMutual(&target, &iterSource.data());
-
                             iterSource.gotoNext();
                         }
                         // Set data and progress
@@ -336,14 +350,15 @@ private:
       * then it computes the sources/targets inteactions between this leaf and the
       * neighbors.
       */
-    void P2PTsmPeriodic(const FTreeCoordinate& inLeafPosition,
+    void P2PPeriodic(const FTreeCoordinate& inLeafPosition,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27]){
         const int limite = FMath::pow2(treeHeight-1) - 1;
         if( inLeafPosition.getX() == 0 || inLeafPosition.getX() == limite ||
             inLeafPosition.getY() == 0 || inLeafPosition.getY() == limite ||
             inLeafPosition.getZ() == 0 || inLeafPosition.getZ() == limite){
-            { // Compute interaction in this leaf
+            const bool isNotTsm = (targets != sources);
+            if( isNotTsm ) { // Compute interaction in this leaf
                 typename ContainerClass::BasicIterator iterTarget(*targets);
                 while( iterTarget.hasNotFinished() ){
                     // We copy the target particle to work with a particle in the heap
@@ -360,9 +375,28 @@ private:
                     iterTarget.gotoNext();
                 }
             }
+            else { // Compute interaction in this leaf
+                typename ContainerClass::BasicIterator iterTarget(*targets);
+                while( iterTarget.hasNotFinished() ){
+                    // We copy the target particle to work with a particle in the heap
+                    ParticleClass target( iterTarget.data() );
+
+                    // For all particles after the current one
+                    typename ContainerClass::BasicIterator iterSameBox = iterTarget;
+                    iterSameBox.gotoNext();
+                    while( iterSameBox.hasNotFinished() ){
+                        directInteractionMutual(&target, &iterSameBox.data());
+                        iterSameBox.gotoNext();
+                    }
+                    // Set data and progress
+                    iterTarget.setData(target);
+                    iterTarget.gotoNext();
+                }
+            }
             { // Compute interactions with other leaves
+                const int EndLoop = ( targets != sources ? 27 : 14);
                 // For all the neigbors leaves
-                for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
+                for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < EndLoop ; ++idxDirectNeighbors){
                     if( directNeighborsParticles[idxDirectNeighbors] ){
                         const int zrelatif = (idxDirectNeighbors%3) - 1;
                         const int yrelatif = ((idxDirectNeighbors%(3*3))/3)-1;
@@ -405,7 +439,8 @@ private:
                                             sourcePart.getPosition().getZ() + zoffset
                                             );
 
-                                directInteraction(&target, sourcePart);
+                                if(isNotTsm) directInteraction(&target, sourcePart);
+                                else directInteractionMutual(&target, &sourcePart);;
 
                                 iterSource.gotoNext();
                             }
@@ -418,107 +453,7 @@ private:
             }
         }
         else{
-            P2PTsm(targets, sources, directNeighborsParticles);
-        }
-    }
-
-    /** This P2P has to be used when target == sources
-      * It will proceed a direct interation >> mutual
-      *
-      * It takes all the particles from the current leaf,
-      * then it computes the interactions in this leaf,
-      * then it computes the  inteactions between this leaf and the
-      * neighbors.
-      */
-    void P2PNoTsmPeriodic(const FTreeCoordinate& inLeafPosition,
-             ContainerClass* const FRestrict targets,
-             ContainerClass* const directNeighborsParticles[27]){
-        const int limite = FMath::pow2(treeHeight-1) - 1;
-        if( inLeafPosition.getX() == 0 || inLeafPosition.getX() == limite ||
-            inLeafPosition.getY() == 0 || inLeafPosition.getY() == limite ||
-            inLeafPosition.getZ() == 0 || inLeafPosition.getZ() == limite){
-            { // Compute interaction in this leaf
-                typename ContainerClass::BasicIterator iterTarget(*targets);
-                while( iterTarget.hasNotFinished() ){
-                    // We copy the target particle to work with a particle in the heap
-                    ParticleClass target( iterTarget.data() );
-
-                    // For all particles after the current one
-                    typename ContainerClass::BasicIterator iterSameBox = iterTarget;
-                    iterSameBox.gotoNext();
-                    while( iterSameBox.hasNotFinished() ){
-                        directInteractionMutual(&target, &iterSameBox.data());
-                        iterSameBox.gotoNext();
-                    }
-                    // Set data and progress
-                    iterTarget.setData(target);
-                    iterTarget.gotoNext();
-                }
-            }
-            { // Compute interactions with other leaves
-                // For all the neigbors leaves
-                for(int idxDirectNeighbors = 0 ; idxDirectNeighbors <= 13 ; ++idxDirectNeighbors){
-                    if( directNeighborsParticles[idxDirectNeighbors] ){
-                        const int zrelatif = (idxDirectNeighbors%3) - 1;
-                        const int yrelatif = ((idxDirectNeighbors%(3*3))/3)-1;
-                        const int xrelatif = (idxDirectNeighbors / (3*3))-1;
-
-                        FReal xoffset = 0;
-                        FReal yoffset = 0;
-                        FReal zoffset = 0;
-
-                        if( inLeafPosition.getX() == 0 && xrelatif == -1){
-                            xoffset = -boxWidth;
-                        }
-                        else if (inLeafPosition.getX() == limite && xrelatif == 1){
-                            xoffset = boxWidth;
-                        }
-                        if( inLeafPosition.getY() == 0 && yrelatif == -1){
-                            yoffset = -boxWidth;
-                        }
-                        else if (inLeafPosition.getY() == limite && yrelatif == 1){
-                            yoffset = boxWidth;
-                        }
-                        if( inLeafPosition.getZ() == 0 && zrelatif == -1){
-                            zoffset = -boxWidth;
-                        }
-                        else if (inLeafPosition.getZ() == limite && zrelatif == 1){
-                            zoffset = boxWidth;
-                        }
-                        // For all particles in current leaf
-                        typename ContainerClass::BasicIterator iterTarget(*targets);
-                        while( iterTarget.hasNotFinished() ){
-                            ParticleClass target( iterTarget.data() );
-
-                            // For all the particles in the other leaf
-                            typename ContainerClass::BasicIterator iterSource(*directNeighborsParticles[idxDirectNeighbors]);
-                            while( iterSource.hasNotFinished() ){
-                                iterSource.data().setPosition(
-                                            iterSource.data().getPosition().getX() + xoffset,
-                                            iterSource.data().getPosition().getY() + yoffset,
-                                            iterSource.data().getPosition().getZ() + zoffset
-                                            );
-
-                                directInteractionMutual(&target, &iterSource.data());
-
-                                iterSource.data().setPosition(
-                                            iterSource.data().getPosition().getX() - xoffset,
-                                            iterSource.data().getPosition().getY() - yoffset,
-                                            iterSource.data().getPosition().getZ() - zoffset
-                                            );
-
-                                iterSource.gotoNext();
-                            }
-                            // Set data and progress
-                            iterTarget.setData(target);
-                            iterTarget.gotoNext();
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            P2PNoTsm(targets, directNeighborsParticles);
+            P2PNoPeriodic(targets, sources, directNeighborsParticles);
         }
     }
 

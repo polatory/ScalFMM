@@ -16,6 +16,7 @@
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FMpi.hpp"
 #include "../Src/Utils/FParameters.hpp"
+#include "../Src/Utils/FMath.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -39,7 +40,7 @@
 #include <cstdlib>
 
 // Uncoment to validate the FMM
-//#define VALIDATE_FMM
+#define VALIDATE_FMM
 
 /** This program show an example of use of
   * the fmm basic algo it also check that eachh particles is little or longer
@@ -47,37 +48,37 @@
   */
 
 
+#ifdef VALIDATE_FMM
+
+static const FReal Epsilon = FReal(0.0005);
+
 ///////////////////////////////////////////////////////
 // to test equality between good and potentialy bad solution
 ///////////////////////////////////////////////////////
 /** To compare data */
-bool isEqualPole(const FSphericalCell& me, const FSphericalCell& other, FReal*const cumul){
-    //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
-    //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
-    *cumul = 0.0;
-    for(int idx = 0; idx < FSphericalCell::GetPoleSize(); ++idx){
-        *cumul += FMath::Abs( me.getMultipole()[idx].getImag() - other.getMultipole()[idx].getImag() );
-        *cumul += FMath::Abs( me.getMultipole()[idx].getReal() - other.getMultipole()[idx].getReal() );
+template <class CellClass>
+bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul){
+    FMath::FAccurater accurate;
+    for(int idx = 0; idx < CellClass::GetPoleSize(); ++idx){
+        accurate.add(me.getMultipole()[idx].getImag(),other.getMultipole()[idx].getImag());
+        accurate.add(me.getMultipole()[idx].getReal(),other.getMultipole()[idx].getReal());
     }
-
-    return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+    *cumul = accurate.getInfNorm()+ accurate.getL2Norm();
+    return accurate.getInfNorm() < Epsilon && accurate.getL2Norm() < Epsilon;//FMath::LookEqual(cumul,FReal(0.0));
 }
 
 /** To compare data */
 bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other, FReal*const cumul){
-    //return memcmp(multipole_exp, other.multipole_exp, sizeof(FComplexe)*MultipoleSize) == 0 &&
-    //        memcmp(local_exp, other.local_exp, sizeof(FComplexe)*MultipoleSize) == 0;
-    *cumul = 0.0;
+    FMath::FAccurater accurate;
     for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
-        *cumul += FMath::Abs( me.getLocal()[idx].getImag() - other.getLocal()[idx].getImag() );
-        *cumul += FMath::Abs( me.getLocal()[idx].getReal() - other.getLocal()[idx].getReal() );
+        accurate.add(me.getLocal()[idx].getImag(),other.getLocal()[idx].getImag());
+        accurate.add(me.getLocal()[idx].getReal(),other.getLocal()[idx].getReal());
     }
-
-    return *cumul < 0.0001;//FMath::LookEqual(cumul,FReal(0.0));
+    *cumul = accurate.getInfNorm()+ accurate.getL2Norm();
+    return accurate.getInfNorm() < Epsilon && accurate.getL2Norm() < Epsilon;//FMath::LookEqual(cumul,FReal(0.0));
 }
 
 
-#ifdef VALIDATE_FMM
 template<class OctreeClass, class ContainerClass>
 void ValidateFMMAlgoProc(OctreeClass* const badTree,
                          OctreeClass* const valideTree){
@@ -90,7 +91,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
         typename OctreeClass::Iterator octreeIteratorValide(valideTree);
         octreeIteratorValide.gotoBottomLeft();
 
-        for(int level = OctreeHeight - 1 ; level >= 1 ; --level){
+        for(int level = OctreeHeight - 1 ; level > 1 ; --level){
             while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
                 octreeIteratorValide.moveRight();
             }
@@ -131,10 +132,6 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
         }
 
         do {
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-            typename ContainerClass::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-
             if( octreeIterator.getCurrentListSrc()->getSize() != octreeIteratorValide.getCurrentListSrc()->getSize()){
                 std::cout << " Particules numbers is different " << std::endl;
             }
@@ -142,25 +139,44 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 std::cout << " Index are differents " << std::endl;
             }
 
-            while( iter.hasNotFinished() && iterValide.hasNotFinished() ){
-                // If a particles has been impacted by less than NbPart - 1 (the current particle)
-                // there is a problem
+            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-                if( !FMath::LookEqual(iterValide.data().getPotential() , iter.data().getPotential()) ){
-                    std::cout << " Potential error : " << iterValide.data().getPotential()  << " " << iter.data().getPotential() << "\n";
+            while( iter.hasNotFinished() ){
+
+                typename ContainerClass::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+                while( iterValide.hasNotFinished() ){
+                    if( FMath::LookEqual(iterValide.data().getPosition().getX(),iter.data().getPosition().getX()) &&
+                        FMath::LookEqual(iterValide.data().getPosition().getY(),iter.data().getPosition().getY()) &&
+                        FMath::LookEqual(iterValide.data().getPosition().getZ(),iter.data().getPosition().getZ()) ){
+                        break;
+                    }
+                    iterValide.gotoNext();
                 }
-                if( !FMath::LookEqual(iterValide.data().getForces().getX(),iter.data().getForces().getX())
-                        || !FMath::LookEqual(iterValide.data().getForces().getY(),iter.data().getForces().getY())
-                        || !FMath::LookEqual(iterValide.data().getForces().getZ(),iter.data().getForces().getZ()) ){
-                    /*std::cout << idx << " Forces error : " << (iterValide.data().getForces().getX() - iter.data().getForces().getX())
-                              << " " << (iterValide.data().getForces().getY() - iter.data().getForces().getY())
-                              << " " << (iterValide.data().getForces().getZ() - iter.data().getForces().getZ()) << "\n";*/
-                    std::cout << " Forces error : x " << iterValide.data().getForces().getX() << " " << iter.data().getForces().getX()
-                              << " y " << iterValide.data().getForces().getY()  << " " << iter.data().getForces().getY()
-                              << " z " << iterValide.data().getForces().getZ()  << " " << iter.data().getForces().getZ() << "\n";
+
+                if( iterValide.hasNotFinished() ){
+                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                    // there is a problem
+                    bool error = false;
+                    if( FMath::RelatifDiff(iterValide.data().getPotential() , iter.data().getPotential())  > Epsilon ){
+                        std::cout << " Potential error : " << iterValide.data().getPotential()  << " " << iter.data().getPotential() << "\n";
+                        error = true;
+                    }
+                    if( FMath::RelatifDiff(iterValide.data().getForces().getX(),iter.data().getForces().getX()) > Epsilon
+                            || FMath::RelatifDiff(iterValide.data().getForces().getY(),iter.data().getForces().getY()) > Epsilon
+                            || FMath::RelatifDiff(iterValide.data().getForces().getZ(),iter.data().getForces().getZ()) > Epsilon){
+                        std::cout << " Forces error : x " << iterValide.data().getForces().getX() << " " << iter.data().getForces().getX()
+                                  << " y " << iterValide.data().getForces().getY()  << " " << iter.data().getForces().getY()
+                                  << " z " << iterValide.data().getForces().getZ()  << " " << iter.data().getForces().getZ() << "\n";
+                        error = true;
+                    }
+                    if( error ){
+                        std::cout << "At position " << iterValide.data().getPosition() << " == " << iter.data().getPosition() << std::endl;
+                    }
+                }
+                else{
+                    std::cout << "Particle not found " << iter.data().getPosition() << std::endl;
                 }
                 iter.gotoNext();
-                iterValide.gotoNext();
             }
 
         } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());

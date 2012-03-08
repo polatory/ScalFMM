@@ -66,6 +66,13 @@ public:
 
     }
 
+    /** Do nothing */
+    virtual void P2PRemote(const FTreeCoordinate& ,
+                     ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
+                     ContainerClass* const [27], const int ){
+
+    }
+
 };
 
 

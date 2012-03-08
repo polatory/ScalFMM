@@ -99,6 +99,19 @@ public:
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
              ContainerClass* const directNeighborsParticles[27], const int size) = 0;
 
+    /**
+        * P2P
+        * Particles to particles
+        * @param inLeafPosition tree coordinate of the leaf
+        * @param targets current boxe targets particles
+        * @param sources current boxe sources particles (can be == to targets)
+        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
+        * @param size the number of direct neighbors
+        */
+    virtual void P2PRemote(const FTreeCoordinate& inLeafPosition,
+             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                           ContainerClass* const directNeighborsParticles[27], const int size) { std::cout << "Error, implement P2PRemote!" << std::endl; };
+
 };
 
 

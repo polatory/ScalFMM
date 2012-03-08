@@ -998,11 +998,15 @@ private:
     }
 
 
-
     /////////////////////////////////////////////////////////////////////////////
     // Direct
     /////////////////////////////////////////////////////////////////////////////
-
+    struct LeafData{
+        MortonIndex index;
+        CellClass* cell;
+        ContainerClass* targets;
+        ContainerClass* sources;
+    };
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
@@ -1033,6 +1037,7 @@ private:
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
 
         FBoolArray leafsNeedOther(this->numberOfLeafs);
+        int countNeedOther = 0;
 
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
@@ -1059,7 +1064,7 @@ private:
             int alreadySent[nbProcess];
 
             MortonIndex indexesNeighbors[26];
-            int uselessIndexInArray[26];
+            int uselessIndexArray[26];
 
             for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf){
                 FTreeCoordinate center;
@@ -1068,9 +1073,9 @@ private:
                 memset(alreadySent, 0, sizeof(int) * nbProcess);
                 bool needOther = false;
 
-                const int nbNeigh = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors, uselessIndexInArray);
+                const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors, uselessIndexArray);
 
-                for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
+                for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
                         needOther = true;
 
@@ -1095,6 +1100,7 @@ private:
 
                 if(needOther){
                     leafsNeedOther.set(idxLeaf,true);
+                    ++countNeedOther;
                 }
             }
 
@@ -1132,7 +1138,6 @@ private:
                 }
             }
 
-
             delete[] toSend;
         }
         FDEBUG(prepareCounter.tac());
@@ -1148,15 +1153,9 @@ private:
         int shapeLeaf[SizeShape];
         memset(shapeLeaf,0,SizeShape*sizeof(int));
 
-        struct LeafData{
-            MortonIndex index;
-            CellClass* cell;
-            ContainerClass* targets;
-            ContainerClass* sources;
-        };
         LeafData* const leafsDataArray = new LeafData[this->numberOfLeafs];
 
-        FBoolArray leafsNeedOtherShaped(this->numberOfLeafs);
+        FVector<LeafData> leafsNeedOtherData(countNeedOther);
 
         // split data
         {
@@ -1195,7 +1194,7 @@ private:
                 leafsDataArray[startPosAtShape[shapePosition]].cell = myLeafs[idxInArray].getCurrentCell();
                 leafsDataArray[startPosAtShape[shapePosition]].targets = myLeafs[idxInArray].getCurrentListTargets();
                 leafsDataArray[startPosAtShape[shapePosition]].sources = myLeafs[idxInArray].getCurrentListSrc();
-                if( leafsNeedOther.get(idxLeaf) ) leafsNeedOtherShaped.set(startPosAtShape[shapePosition], true);
+                if( leafsNeedOther.get(idxLeaf) ) leafsNeedOtherData.push(leafsDataArray[startPosAtShape[shapePosition]]);
 
                 ++startPosAtShape[shapePosition];
             }
@@ -1222,17 +1221,15 @@ private:
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
 
-                #pragma omp for schedule(dynamic)
+                #pragma omp for
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
-                    if(!leafsNeedOtherShaped.get(idxLeafs)){
-                        LeafData& currentIter = leafsDataArray[idxLeafs];
-                        myThreadkernels.L2P(currentIter.cell, currentIter.targets);
+                    LeafData& currentIter = leafsDataArray[idxLeafs];
+                    myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
-                        // need the current particles and neighbors particles
-                        const int counter = tree->getPeriodicLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                        myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets,
-                                             currentIter.sources, neighbors, counter);
-                    }
+                    // need the current particles and neighbors particles
+                    const int counter = tree->getPeriodicLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                    myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets,
+                                         currentIter.sources, neighbors, counter);
                 }
 
                 previous = endAtThisShape;
@@ -1288,56 +1285,37 @@ private:
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[27];
-            MortonIndex indexesNeighbors[26];
-            int indexInArray[26];
-
-            int previous = 0;
+            MortonIndex indexesNeighbors[27];
+            int indexArray[26];
             // Box limite
             const int limite = 1 << (this->OctreeHeight - 1);
+            const int nbLeafToProceed = leafsNeedOtherData.getSize();
 
-            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                const int endAtThisShape = shapeLeaf[idxShape] + previous;
+            #pragma omp for
+            for(int idxLeafs = 0 ; idxLeafs < nbLeafToProceed ; ++idxLeafs){
+                LeafData currentIter = leafsNeedOtherData[idxLeafs];
 
-                #pragma omp for schedule(dynamic)
-                for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
-                    // Maybe need also data from other?
-                    if(leafsNeedOtherShaped.get(idxLeafs)){
-                        LeafData& currentIter = leafsDataArray[idxLeafs];
-                        myThreadkernels.L2P(currentIter.cell, currentIter.targets);
+                // need the current particles and neighbors particles
+                int counter = 0;
+                memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
-                        memset( neighbors, 0, sizeof(ContainerClass*) * 27);
+                // Take possible data
+                const int nbNeigh = getNeighborsIndexes(currentIter.cell->getCoordinate(), limite, indexesNeighbors, indexArray);
 
-                        // need the current particles and neighbors particles
-                        // int counter = tree->getLeafsNeighbors(neighbors, neighborsIndex, currentIter.index, LeafIndex);
-                        int counter = 0;
-                        memset(neighbors, 0, 27 * sizeof(ContainerClass*));
-                        // Take possible data
-                        const int nbNeigh = getNeighborsIndexes(currentIter.cell->getCoordinate(), limite, indexesNeighbors, indexInArray);
-
-                        for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
-                            if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
-                                ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
-                                if(hypotheticNeighbor){
-                                    neighbors[ indexInArray[idxNeigh] ] = hypotheticNeighbor;
-                                    ++counter;
-                                }
-                            }
-                            else{
-                                ContainerClass*const hypotheticNeighbor = tree->getLeafSrc(indexesNeighbors[idxNeigh]);
-                                if(hypotheticNeighbor){
-                                    neighbors[ indexInArray[idxNeigh] ] = hypotheticNeighbor;
-                                    ++counter;
-                                }
-                            }
+                for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
+                    if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
+                        ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
+                        if(hypotheticNeighbor){
+                            neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
+                            ++counter;
                         }
-
-                        myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets,
-                                             currentIter.sources, neighbors, counter);
                     }
                 }
 
-                previous = endAtThisShape;
+                myThreadkernels.P2PRemote( currentIter.cell->getCoordinate(), currentIter.targets,
+                                     currentIter.sources, neighbors, counter);
             }
+
         }
 
         for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
