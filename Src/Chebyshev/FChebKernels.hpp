@@ -37,11 +37,11 @@ class FChebKernels : public FAbstractKernels<ParticleClass, CellClass, Container
 	typedef FChebM2LHandler<ORDER,MatrixKernelClass> M2LHandlerClass;
 
 	/// Needed for P2M, M2M, L2L and L2P operators
-	FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
+	const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
 	/// Needed for M2L operator
 	FSmartPointer<  M2LHandlerClass,FSmartPointerMemory> M2LHandler;
 	/// Needed for P2P operator
-	FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
+	const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
 	/// Height of the entire oct-tree
 	const unsigned int TreeHeight;
 	/// Corner of oct-tree box
