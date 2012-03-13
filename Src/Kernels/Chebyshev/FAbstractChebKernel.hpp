@@ -106,33 +106,23 @@ public:
 	
 	
 
-	void P2P(const FTreeCoordinate& LeafCellCoordinate,
+	void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
 					 ContainerClass* const FRestrict TargetParticles,
 					 const ContainerClass* const FRestrict SourceParticles,
 					 ContainerClass* const NeighborSourceParticles[27],
-					 const int )
+					 const int /* size */)
 	{
 		// loop: target particles
 		typename ContainerClass::BasicIterator iTargets(*TargetParticles);
 		while (iTargets.hasNotFinished()) {
 			ParticleClass& Target = iTargets.data();
-			const FReal wt = Target.getPhysicalValue();
 
 			{ // loop: source particles (target leaf cell == source leaf cell)
 				typename ContainerClass::ConstBasicIterator iSources(*SourceParticles);
 				while (iSources.hasNotFinished()) {
 					const ParticleClass& Source = iSources.data();
 					// only if target and source are not identical
-					if (&Target != &Source) {
-						const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
-						const FReal ws = Source.getPhysicalValue();
-						// potential
-						Target.incPotential(one_over_r * ws);
-						// force
-						F3DPosition force(Target.getPosition() - Source.getPosition());
-						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-						Target.incForces(force.getX(), force.getY(), force.getZ());
-					}
+					if (&Target != &Source)	this->directInteraction(Target, Source);
 					// progress sources
 					iSources.gotoNext();
 				}
@@ -145,14 +135,7 @@ public:
 						while (iSources.hasNotFinished()) {
 							const ParticleClass& Source = iSources.data();
 							// target and source cannot be identical
-							const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
-							const FReal ws = Source.getPhysicalValue();
-							// potential
-							Target.incPotential(one_over_r * ws);
-							F3DPosition force(Target.getPosition() - Source.getPosition());
-							force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-							// force
-							Target.incForces(force.getX(), force.getY(), force.getZ());
+							this->directInteraction(Target, Source);
 							// progress sources
 							iSources.gotoNext();
 						}
@@ -163,6 +146,22 @@ public:
 			// progress targets
 			iTargets.gotoNext();
 		}
+	}
+
+
+
+private:
+	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const
+	{
+		const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+		const FReal wt = Target.getPhysicalValue();
+		const FReal ws = Source.getPhysicalValue();
+		// potential
+		Target.incPotential(one_over_r * ws);
+		F3DPosition force(Target.getPosition() - Source.getPosition());
+		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+		// force
+		Target.incForces(force.getX(), force.getY(), force.getZ());
 	}
 
 };
