@@ -30,7 +30,7 @@
 #include "../Src/Chebyshev/FChebLeaf.hpp"
 #include "../Src/Chebyshev/FChebCell.hpp"
 #include "../Src/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Chebyshev/FChebKernels.hpp"
+#include "../Src/Chebyshev/FChebKernel.hpp"
 
 /*
   In this test we compare the spherical fmm results and the direct results.
@@ -69,7 +69,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebKernels<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
         // Warning in make test the exec dir it Build/UTests

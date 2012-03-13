@@ -39,7 +39,7 @@
 #include "../Src/Chebyshev/FChebLeaf.hpp"
 #include "../Src/Chebyshev/FChebCell.hpp"
 #include "../Src/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Chebyshev/FChebKernels.hpp"
+#include "../Src/Chebyshev/FChebKernel.hpp"
 
 // spherical kernel
 #include "../Src/Components/FSimpleLeaf.hpp"
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
         typedef FChebMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebKernels<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         //typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
