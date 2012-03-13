@@ -29,8 +29,8 @@
 
 #include "../Src/Utils/FTic.hpp"
 #include "../Src/Utils/FMath.hpp"
-#include "../Src/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Chebyshev/FChebM2LHandler.hpp"
+#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
 
 
 

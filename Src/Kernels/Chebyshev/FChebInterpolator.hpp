@@ -6,7 +6,7 @@
 #include "./FChebTensor.hpp"
 #include "./FChebRoots.hpp"
 
-#include "../Utils/FBlas.hpp"
+#include "../../Utils/FBlas.hpp"
 
 
 

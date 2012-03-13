@@ -28,9 +28,9 @@
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Chebyshev/FChebParticle.hpp"
-#include "../Src/Chebyshev/FChebCell.hpp"
-#include "../Src/Chebyshev/FChebLeaf.hpp"
+#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
+#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 
 
 /**

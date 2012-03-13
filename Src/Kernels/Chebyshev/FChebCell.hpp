@@ -2,8 +2,8 @@
 #define FCHEBCELL_HPP
 
 
-#include "../Extensions/FExtendMortonIndex.hpp"
-#include "../Extensions/FExtendCoordinate.hpp"
+#include "../../Extensions/FExtendMortonIndex.hpp"
+#include "../../Extensions/FExtendCoordinate.hpp"
 
 #include "./FChebTensor.hpp"
 

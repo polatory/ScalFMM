@@ -28,9 +28,9 @@
 
 #include "../Src/Utils/FTic.hpp"
 
-#include "../Src/Chebyshev/FChebTensor.hpp"
-#include "../Src/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Chebyshev/FChebSymmetries.hpp"
+#include "../Src/Kernels/Chebyshev/FChebTensor.hpp"
+#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
 
 
 

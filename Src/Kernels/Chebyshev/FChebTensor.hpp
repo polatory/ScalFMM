@@ -1,7 +1,7 @@
 #ifndef FCHEBTENSOR_HPP
 #define FCHEBTENSOR_HPP
 
-#include "../Utils/FMath.hpp"
+#include "../../Utils/FMath.hpp"
 
 #include "./FChebRoots.hpp"
 #include "./FChebMapping.hpp"

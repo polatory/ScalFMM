@@ -32,11 +32,11 @@
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Chebyshev/FChebParticle.hpp"
-#include "../Src/Chebyshev/FChebLeaf.hpp"
-#include "../Src/Chebyshev/FChebInterpolator.hpp"
-#include "../Src/Chebyshev/FChebM2LHandler.hpp"
-#include "../Src/Chebyshev/FChebMatrixKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
+#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+#include "../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
+#include "../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
+#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
 
 

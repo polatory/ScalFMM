@@ -2,9 +2,9 @@
 #define FCHEBMATRIXKERNEL_HPP
 // [--License--]
 
-#include "../Utils/F3DPosition.hpp"
-#include "../Utils/FNoCopyable.hpp"
-#include "../Utils/FMath.hpp"
+#include "../../Utils/F3DPosition.hpp"
+#include "../../Utils/FNoCopyable.hpp"
+#include "../../Utils/FMath.hpp"
 
 
 enum {ONE_OVER_R         = 1,

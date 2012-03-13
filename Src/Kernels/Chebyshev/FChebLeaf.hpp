@@ -2,8 +2,8 @@
 #define FCHEBLEAF_HPP
 
 
-#include "../Utils/FNoCopyable.hpp"
-#include "../Containers/FVector.hpp"
+#include "../../Utils/FNoCopyable.hpp"
+#include "../../Containers/FVector.hpp"
 
 class FChebParticle;
 

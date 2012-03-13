@@ -35,11 +35,11 @@
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 
 // chebyshev kernel
-#include "../Src/Chebyshev/FChebParticle.hpp"
-#include "../Src/Chebyshev/FChebLeaf.hpp"
-#include "../Src/Chebyshev/FChebCell.hpp"
-#include "../Src/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Chebyshev/FChebKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
+#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
 
 // spherical kernel
 #include "../Src/Components/FSimpleLeaf.hpp"

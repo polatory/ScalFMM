@@ -9,8 +9,8 @@
 #include <fstream>
 #include <typeinfo>
 
-#include "../Utils/FBlas.hpp"
-#include "../Utils/FTic.hpp"
+#include "../../Utils/FBlas.hpp"
+#include "../../Utils/FTic.hpp"
 
 #include "./FChebTensor.hpp"
 

@@ -4,10 +4,10 @@
 #include <stdexcept>
 #include <cassert>
 
-#include "../Extensions/FExtendPosition.hpp"
-#include "../Extensions/FExtendPhysicalValue.hpp"
-#include "../Extensions/FExtendPotential.hpp"
-#include "../Extensions/FExtendForces.hpp"
+#include "../../Extensions/FExtendPosition.hpp"
+#include "../../Extensions/FExtendPhysicalValue.hpp"
+#include "../../Extensions/FExtendPotential.hpp"
+#include "../../Extensions/FExtendForces.hpp"
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)

@@ -2,12 +2,11 @@
 #define FCHEBSYMKERNEL_HPP
 // [--License--]
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FTrace.hpp"
-#include "../Utils/FSmartPointer.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FTrace.hpp"
+#include "../../Utils/FSmartPointer.hpp"
 
 #include "./FAbstractChebKernel.hpp"
-
 #include "./FChebInterpolator.hpp"
 #include "./FChebSymmetries.hpp"
 

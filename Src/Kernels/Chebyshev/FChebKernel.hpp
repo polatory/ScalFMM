@@ -2,13 +2,11 @@
 #define FCHEBKERNEL_HPP
 // [--License--]
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FTrace.hpp"
-#include "../Utils/FSmartPointer.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FTrace.hpp"
+#include "../../Utils/FSmartPointer.hpp"
 
 #include "./FAbstractChebKernel.hpp"
-
-//#include "./FChebInterpolator.hpp"
 #include "./FChebM2LHandler.hpp"
 
 class FTreeCoordinate;
