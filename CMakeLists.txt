@@ -27,6 +27,8 @@ OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" OFF )
+OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
+
 
 
 # Test if openmp is here
@@ -41,6 +43,12 @@ if( SCALFMM_BUILD_DEBUG )
   ADD_DEFINITIONS(-O0)
 else()
   SET(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Attach source code to exec
+if( SCALFMM_ATTACHE_SOURCE )
+  MESSAGE( STATUS "Use -g in compiler flags" )
+  ADD_DEFINITIONS(-g)
 endif()
 
 # Trace
