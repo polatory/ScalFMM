@@ -99,8 +99,8 @@ class FChebSymmetries
 
 
 
-	const unsigned int getPermutationArrayAndIndex(const int i, const int j, const int k,
-																								 unsigned int permutation[nnodes]) const
+	unsigned int getPermutationArrayAndIndex(const int i, const int j, const int k,
+																					 unsigned int permutation[nnodes]) const
 	{
 		// find right quadrant index (if < 0 then 0, else 1)
 		const unsigned int qidx = getQuadIdx(i,j,k);
