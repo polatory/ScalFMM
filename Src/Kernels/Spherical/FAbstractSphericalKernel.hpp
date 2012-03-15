@@ -853,9 +853,9 @@ public:
       */
     void directInteractionMutual(ParticleClass*const FRestrict target, ParticleClass*const FRestrict source){
 
-        FReal dx = -(target->getPosition().getX() - source->getPosition().getX());
-        FReal dy = -(target->getPosition().getY() - source->getPosition().getY());
-        FReal dz = -(target->getPosition().getZ() - source->getPosition().getZ());
+        FReal dx = source->getPosition().getX() - target->getPosition().getX();
+        FReal dy = source->getPosition().getY() - target->getPosition().getY();
+        FReal dz = source->getPosition().getZ() - target->getPosition().getZ();
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
@@ -880,9 +880,9 @@ public:
       */
     void directInteraction(ParticleClass*const FRestrict target, const ParticleClass& source){
 
-        FReal dx = -(target->getPosition().getX() - source.getPosition().getX());
-        FReal dy = -(target->getPosition().getY() - source.getPosition().getY());
-        FReal dz = -(target->getPosition().getZ() - source.getPosition().getZ());
+        FReal dx = source.getPosition().getX() - target->getPosition().getX();
+        FReal dy = source.getPosition().getY() - target->getPosition().getY();
+        FReal dz = source.getPosition().getZ() - target->getPosition().getZ();
 
         FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
         FReal inv_distance = FMath::Sqrt(inv_square_distance);
