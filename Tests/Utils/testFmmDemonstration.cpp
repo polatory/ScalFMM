@@ -14,28 +14,28 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FParameters.hpp"
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Components/FTestParticle.hpp"
-#include "../Src/Components/FTestCell.hpp"
-#include "../Src/Components/FTestKernels.hpp"
+#include "../../Src/Components/FTestParticle.hpp"
+#include "../../Src/Components/FTestCell.hpp"
+#include "../../Src/Components/FTestKernels.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 
-#include "../Src/Components/FBasicKernels.hpp"
+#include "../../Src/Components/FBasicKernels.hpp"
 
-#include "../Src/Files/FRandomLoader.hpp"
+#include "../../Src/Files/FRandomLoader.hpp"
 
 // My cell is actually a basic cell => minimum of data
 class MyCell : public FBasicCell {

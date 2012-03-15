@@ -8,7 +8,7 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#include "../Src/Utils/FDebug.hpp"
+#include "../../Src/Utils/FDebug.hpp"
 
 /**
 * In this file we show how to use the debug module.

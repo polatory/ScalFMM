@@ -14,23 +14,23 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithmTask.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
-#include "../Src/Files/FFmaScanfLoader.hpp"
+#include "../../Src/Files/FFmaScanfLoader.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo

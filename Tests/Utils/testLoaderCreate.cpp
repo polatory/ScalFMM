@@ -16,8 +16,8 @@
 #include <cstdlib>
 #include <time.h>
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files to load with basic loader
 // g++ testLoaderCreate.cpp -o testLoaderCreate.exe

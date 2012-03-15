@@ -21,7 +21,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "../Src/Utils/FBlas.hpp"
+#include "../../Src/Utils/FBlas.hpp"
 
 FReal FRandom() { return (FReal(rand()) / FReal(RAND_MAX)); }
 

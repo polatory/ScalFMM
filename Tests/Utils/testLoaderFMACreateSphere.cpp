@@ -18,10 +18,10 @@
 
 #include <cmath>
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FMath.hpp"
 
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files to load with basic loader
 

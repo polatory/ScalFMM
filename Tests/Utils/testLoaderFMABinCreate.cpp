@@ -16,8 +16,8 @@
 #include <cstdlib>
 #include <time.h>
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
 // This file can generate basic particles files in the FMA format
 

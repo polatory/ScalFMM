@@ -19,24 +19,24 @@
 #include <vector>
 #include <algorithm>
 
-#include "../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FTic.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FBasicParticle.hpp"
+#include "../../Src/Components/FBasicParticle.hpp"
 
-#include "../Src/Components/FBasicCell.hpp"
+#include "../../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Files/FHLoader.hpp"
+#include "../../Src/Files/FHLoader.hpp"
 
 static const int PrintPrecision = 6;
 

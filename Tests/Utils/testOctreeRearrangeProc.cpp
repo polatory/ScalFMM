@@ -18,21 +18,21 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FParameters.hpp"
-#include "../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Components/FTestParticle.hpp"
-#include "../Src/Components/FTestCell.hpp"
+#include "../../Src/Components/FTestParticle.hpp"
+#include "../../Src/Components/FTestCell.hpp"
 
-#include "../Src/Arranger/FOctreeArrangerProc.hpp"
-#include "../Src/Files/FMpiTreeBuilder.hpp"
+#include "../../Src/Arranger/FOctreeArrangerProc.hpp"
+#include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 
 // Simply create particles and try the kernels

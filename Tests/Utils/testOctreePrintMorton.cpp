@@ -16,10 +16,10 @@
 #include <time.h>
 #include <string>
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Containers/FTreeCoordinate.hpp"
-#include "../Src/Utils/F3DPosition.hpp"
-#include "../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
+#include "../../Src/Containers/FTreeCoordinate.hpp"
+#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FMath.hpp"
 
 /**
 * In this file we show the morton indexed for each boxes

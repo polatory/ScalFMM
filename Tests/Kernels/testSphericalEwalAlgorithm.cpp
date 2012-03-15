@@ -14,20 +14,20 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
+#include "../../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
-#include "../Src/Files/FEwalLoader.hpp"
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Files/FEwalLoader.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
 /** Ewal particle is used in the gadget program
   * here we try to make the same simulation

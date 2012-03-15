@@ -14,21 +14,21 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Components/FTypedLeaf.hpp"
+#include "../../Src/Components/FTypedLeaf.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Core/FFmmAlgorithmTsm.hpp"
+#include "../../Src/Core/FFmmAlgorithmTsm.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
-#include "../Src/Files/FFmaTsmLoader.hpp"
+#include "../../Src/Files/FFmaTsmLoader.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo

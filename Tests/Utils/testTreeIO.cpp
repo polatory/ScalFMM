@@ -14,19 +14,19 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
 
-#include "../Src/Files/FFmaLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
+#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FTreeIO.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
 
 

@@ -15,23 +15,23 @@
 #include <cstdlib>
 #include <time.h>
 
-#include "../Src/Utils/FParameters.hpp"
-#include "../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Utils/FAssertable.hpp"
-#include "../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FAssertable.hpp"
+#include "../../Src/Utils/F3DPosition.hpp"
 
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Components/FBasicCell.hpp"
+#include "../../Src/Components/FFmaParticle.hpp"
+#include "../../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaLoader.hpp"
 
-// Compile by : g++ testLoaderFMA.cpp ../Src/Utils/FDebug.cpp ../Src/Utils/FTrace.cpp -O2 -o testLoaderFMA.exe
+// Compile by : g++ testLoaderFMA.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp -O2 -o testLoaderFMA.exe
 
 
 /**

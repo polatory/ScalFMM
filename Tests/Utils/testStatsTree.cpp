@@ -14,27 +14,27 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Components/FFmaParticle.hpp"
-#include "../Src/Extensions/FExtendForces.hpp"
-#include "../Src/Extensions/FExtendPotential.hpp"
+#include "../../Src/Components/FFmaParticle.hpp"
+#include "../../Src/Extensions/FExtendForces.hpp"
+#include "../../Src/Extensions/FExtendPotential.hpp"
 
-#include "../Src/Components/FBasicCell.hpp"
+#include "../../Src/Components/FBasicCell.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
 
-#include "../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FMath.hpp"
 
-#include "../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaLoader.hpp"
 
 
 /** This program show an example of use of
