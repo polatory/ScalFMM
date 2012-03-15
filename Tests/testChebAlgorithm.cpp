@@ -79,11 +79,17 @@ FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const unsigned int ORDER = 5;
-	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-5));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 100000);
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
+	const unsigned int ORDER = 3;
+	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
+	const long NbPart                = FParameters::getValue(argc, argv, "-num", 4000000);
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 7);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
+	const unsigned int NbThreads   = FParameters::getValue(argc, argv, "-t", 1);
+
+	omp_set_num_threads(NbThreads); 
+
+	std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
+
 
 	const FReal Width = 10.;
 	// init random fun

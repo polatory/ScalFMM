@@ -165,6 +165,57 @@ public:
 			if (SourceCells[idx]) {
 				const unsigned int pidx = SymHandler->pindices[idx];
 				const unsigned int count = (countExp[pidx])++;
+				FReal *const mul = Mul[pidx] + count*nnodes;
+				const unsigned int *const pvec = SymHandler->pvectors[idx];
+				const FReal *const MultiExp = SourceCells[idx]->getMultipole();
+				for (unsigned int n=0; n<nnodes; ++n)
+					mul[pvec[n]] = MultiExp[n];
+			}
+		}
+
+		// multiply (mat-mat-mul)
+		FReal Compressed [nnodes * 30];
+		const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
+		const FReal scale(AbstractBaseClass::MatrixKernel->getScaleFactor(CellWidth));
+		for (unsigned int pidx=0; pidx<343; ++pidx) {
+			const unsigned int count = countExp[pidx];
+			if (count) {
+				const unsigned int rank = SymHandler->LowRank[pidx];
+				FBlas::gemtm(nnodes, rank, count, FReal(1.),
+										 SymHandler->K[pidx]+rank*nnodes, nnodes, Mul[pidx], nnodes, Compressed, rank);
+				FBlas::gemm( nnodes, rank, count, scale,
+										 SymHandler->K[pidx], nnodes, Compressed, rank, Loc[pidx], nnodes);
+			}
+		}
+
+		// permute and add contribution to local expansions
+		FReal *const LocalExpansion = TargetCell->getLocal();
+		memset(countExp, 0, sizeof(int) * 343);
+		for (unsigned int idx=0; idx<343; ++idx) {
+			if (SourceCells[idx]) {
+				const unsigned int pidx = SymHandler->pindices[idx];
+				const unsigned int count = (countExp[pidx])++;
+				const FReal *const loc = Loc[pidx] + count*nnodes;
+				const unsigned int *const pvec = SymHandler->pvectors[idx];
+				for (unsigned int n=0; n<nnodes; ++n)
+					LocalExpansion[n] += loc[pvec[n]];
+			}
+		}
+
+	}
+
+	/*
+	void M2L(CellClass* const FRestrict TargetCell,
+					 const CellClass* SourceCells[343],
+					 const int NumSourceCells,
+					 const int TreeLevel)
+	{
+		// permute and copy multipole expansion
+		memset(countExp, 0, sizeof(int) * 343);
+		for (unsigned int idx=0; idx<343; ++idx) {
+			if (SourceCells[idx]) {
+				const unsigned int pidx = SymHandler->pindices[idx];
+				const unsigned int count = (countExp[pidx])++;
 				const FReal *const MultiExp = SourceCells[idx]->getMultipole();
 				for (unsigned int n=0; n<nnodes; ++n)
 					Mul[pidx][count*nnodes + SymHandler->pvectors[idx][n]] = MultiExp[n];
@@ -198,8 +249,8 @@ public:
 			}
 		}
 
-
 	}
+	*/
 
 	/*
 		void M2L(CellClass* const FRestrict TargetCell,
