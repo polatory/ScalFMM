@@ -13,6 +13,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
+#include "../Utils/FDebug.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -110,7 +111,9 @@ public:
         */
     virtual void P2PRemote(const FTreeCoordinate& inLeafPosition,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-                           ContainerClass* const directNeighborsParticles[27], const int size) { std::cout << "Error, implement P2PRemote!" << std::endl; };
+                           ContainerClass* const directNeighborsParticles[27], const int size) {
+        FDEBUG( FDebug::Controller.write("Warning, P2P remote is used but not implemented!").write(FDebug::Flush) );
+    }
 
 };
 
