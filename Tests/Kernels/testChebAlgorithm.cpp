@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 						// potential
 						Potential[counter] += one_over_r * ws;
 						// force
-						F3DPosition force(iTarget.data().getPosition() - iSource.data().getPosition());
+						F3DPosition force(iSource.data().getPosition() - iTarget.data().getPosition());
 						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 						Force[counter*3 + 0] += force.getX();
 						Force[counter*3 + 1] += force.getY();

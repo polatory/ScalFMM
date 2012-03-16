@@ -158,7 +158,7 @@ private:
 		const FReal ws = Source.getPhysicalValue();
 		// potential
 		Target.incPotential(one_over_r * ws);
-		F3DPosition force(Target.getPosition() - Source.getPosition());
+		F3DPosition force(Source.getPosition() - Target.getPosition());
 		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 		// force
 		Target.incForces(force.getX(), force.getY(), force.getZ());

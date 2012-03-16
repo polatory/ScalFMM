@@ -391,7 +391,7 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const F3DPosition& center
 			P[0] *= FReal(2.);
 			P[1] *= FReal(2.); P[1] += FReal(1.);
 			P[2] *= FReal(2.); P[2] += FReal(1.);
-			forces[0]	-= P[0] * P[1] * P[2] * localExpansion[n];
+			forces[0]	+= P[0] * P[1] * P[2] * localExpansion[n];
 
 			// f1 component //////////////////////////////////////
 			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
@@ -405,7 +405,7 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const F3DPosition& center
 			P[0] *= FReal(2.); P[0] += FReal(1.);
 			P[1] *= FReal(2.); 
 			P[2] *= FReal(2.); P[2] += FReal(1.);
-			forces[1]	-= P[0] * P[1] * P[2] * localExpansion[n];
+			forces[1]	+= P[0] * P[1] * P[2] * localExpansion[n];
 
 			// f2 component //////////////////////////////////////
 			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
@@ -419,7 +419,7 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const F3DPosition& center
 			P[0] *= FReal(2.); P[0] += FReal(1.);
 			P[1] *= FReal(2.); P[1] += FReal(1.);
 			P[2] *= FReal(2.);
-			forces[2]	-= P[0] * P[1] * P[2] * localExpansion[n];
+			forces[2]	+= P[0] * P[1] * P[2] * localExpansion[n];
 		}
 
 		// scale forces

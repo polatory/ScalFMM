@@ -140,7 +140,7 @@ public:
 							// potential
 							p[counter] += one_over_r * ws;
 							// force
-							F3DPosition force(iTarget.data().getPosition() - iSource.data().getPosition());
+							F3DPosition force(iSource.data().getPosition() - iTarget.data().getPosition());
 							force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 							f[counter*3 + 0] += force.getX();
 							f[counter*3 + 1] += force.getY();
@@ -181,16 +181,7 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
-    //	// potentials
-    //	FReal* p1; p1 = NULL;
-    //	FReal* p2; p2 = NULL;
-
-    //	FReal* p10; p10 = NULL; unsigned int nt1 = 0;
-    //	FReal* p20; p20 = NULL; unsigned int nt2 = 0;
-
-    //	// number of particles
-    //	unsigned int NumParticles = 0;
-
+		// only for direct computation of nt1 target particles
 		unsigned int nt1 = 0;
 		FReal* p10; p10 = NULL;
 		FReal* f10; p10 = NULL;
@@ -199,14 +190,11 @@ int main(int argc, char* argv[])
     {	// begin Chebyshef kernel
 
         // accuracy
-        const unsigned int ORDER = 7;
-        const FReal epsilon = FReal(1e-7);
+        const unsigned int ORDER = 5;
+        const FReal epsilon = FReal(1e-5);
 
-        //unsigned int nt1 = 0;
         FReal* p1;  p1  = NULL;
-        //FReal* p10; p10 = NULL;
         FReal* f1;  p1  = NULL;
-        //FReal* f10; p10 = NULL;
 
         // typedefs
         typedef FChebParticle ParticleClass;
@@ -225,9 +213,6 @@ int main(int argc, char* argv[])
         // open particle file
         FFmaScanfLoader<ParticleClass> loader(filename);
         if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
-
-        //		// loader set number of particles
-        //		NumParticles = loader.getNumberOfParticles();
 
         // init oct-tree
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -374,8 +359,6 @@ int main(int argc, char* argv[])
             } while(leavesIterator.moveRight());
         } // -----------------------------------------------------
 
-				FBlas::scal(nt1*3, FReal(-1.), f10);
-
         std::cout << "\nPotential error:" << std::endl;
         std::cout << "Relative L2 error   = "
 									<< computeL2norm( nt1, p10, fmmParticlesPotential) << std::endl;
@@ -394,15 +377,6 @@ int main(int argc, char* argv[])
         delete [] fmmParticlesForces;
 
     } // end FFmaBlas kernel
-
-
-
-
-    // analyse error
-
-
-    //std::cout << "\nRelative L2 error  = " << computeL2norm( NumParticles, p1, p2) << std::endl;
-    //std::cout << "Relative Lmax error = "  << computeINFnorm(NumParticles, p1, p2) << "\n" << std::endl;
 
 
 		// free memory
