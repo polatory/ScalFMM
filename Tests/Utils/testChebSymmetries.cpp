@@ -26,11 +26,11 @@
 
 
 
-#include "../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FTic.hpp"
 
-#include "../Src/Kernels/Chebyshev/FChebTensor.hpp"
-#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
 
 
 

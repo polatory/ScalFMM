@@ -23,33 +23,33 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Files/FFmaScanfLoader.hpp"
+#include "../../Src/Files/FFmaScanfLoader.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 // chebyshev kernel
-#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
-#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
 // spherical kernel
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 
 /**
@@ -96,7 +96,8 @@ public:
 		: MatrixKernel()
 	{}
 	
-	unsigned int operator()(OctreeClass& tree, const unsigned int NumTargetCells, FReal* &p, FReal* &f) const
+	unsigned int operator()(OctreeClass& tree, const unsigned int NumTargetCells,
+													FReal* &p, FReal* &f) const
 	{
 		// begin direct computation of first leaf cell
 		typename OctreeClass::Iterator iLeafs(&tree);
@@ -232,12 +233,14 @@ int main(int argc, char* argv[])
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
         { // -----------------------------------------------------
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+											<< " particles ..." << std::endl;
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
             time.tic();
             loader.fillTree(tree);
             time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = " << time.elapsed() << "s)." << std::endl;
+            std::cout << "Done  " << "(@Creating and Inserting Particles = "
+											<< time.elapsed() << "s)." << std::endl;
         } // -----------------------------------------------------
 
         { // -----------------------------------------------------
@@ -310,8 +313,8 @@ int main(int argc, char* argv[])
         //typedef FSphericalBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         //typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         //typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
-        //typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
-        typedef FSphericalRotationKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+        typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+        //typedef FSphericalRotationKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
         //typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
         typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -325,12 +328,15 @@ int main(int argc, char* argv[])
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
         { // -----------------------------------------------------
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+											<< " particles ..." << std::endl;
+            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
+											<< SubTreeHeight << std::endl;
             time.tic();
             loader.fillTree(tree);
             time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = " << time.elapsed() << "s)." << std::endl;
+            std::cout << "Done  " << "(@Creating and Inserting Particles = "
+											<< time.elapsed() << "s)." << std::endl;
         } // -----------------------------------------------------
 
         // -----------------------------------------------------
@@ -371,12 +377,16 @@ int main(int argc, char* argv[])
 				FBlas::scal(nt1*3, FReal(-1.), f10);
 
         std::cout << "\nPotential error:" << std::endl;
-        std::cout << "Relative L2 error   = " << computeL2norm( nt1, p10, fmmParticlesPotential) << std::endl;
-        std::cout << "Relative Lmax error = " << computeINFnorm(nt1, p10, fmmParticlesPotential) << std::endl;
+        std::cout << "Relative L2 error   = "
+									<< computeL2norm( nt1, p10, fmmParticlesPotential) << std::endl;
+        std::cout << "Relative Lmax error = "
+									<< computeINFnorm(nt1, p10, fmmParticlesPotential) << std::endl;
 
         std::cout << "\nForces error:" << std::endl;
-        std::cout << "Relative L2 error   = " << computeL2norm( nt1*3, f10, fmmParticlesForces) << std::endl;
-        std::cout << "Relative Lmax error = " << computeINFnorm(nt1*3, f10, fmmParticlesForces) << std::endl;
+        std::cout << "Relative L2 error   = "
+									<< computeL2norm( nt1*3, f10, fmmParticlesForces) << std::endl;
+        std::cout << "Relative Lmax error = "
+									<< computeINFnorm(nt1*3, f10, fmmParticlesForces) << std::endl;
 
 
 

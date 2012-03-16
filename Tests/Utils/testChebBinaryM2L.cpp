@@ -25,12 +25,12 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "../../Src/Utils/FGlobal.hpp"
 
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FMath.hpp"
-#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
+#include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FMath.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
 
 
 

@@ -23,21 +23,21 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
-#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
 //#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 
 /** This program show an example of use of
