@@ -48,7 +48,13 @@ endif()
 
 # starpu
 if( SCALFMM_USE_STARPU )
-	set( STARPU_LIBRARIES "-lstarpu" )
+	# starpu
+	set( STARPU_LIBRARIES "-lstarpu-1.0" )
+	set( STARPU_INCLUDE_DIRS "/home/bramas/starpulib/include/" )
+	set( STARPU_LIBRARY_DIRS "/home/bramas/starpulib/lib/" )
+	# Adding the project sources dir as an include dir
+	include_directories(${STARPU_INCLUDE_DIRS})
+	link_directories(${STARPU_LIBRARY_DIRS})
 endif()
 
 # Attach source code to exec

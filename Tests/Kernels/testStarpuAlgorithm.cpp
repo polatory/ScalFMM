@@ -163,16 +163,16 @@ public:
 class StarCell : public AbstractStarCell, public FSphericalCell {
 public:
     void initHandle(){
-        AbstractStarCell::handleUp.registerData(FSphericalCell::getMultipole(), sizeof(FComplexe) * FSphericalCell::GetPoleSize());
-        AbstractStarCell::handleDown.registerData(FSphericalCell::getLocal(), sizeof(FComplexe) * FSphericalCell::GetLocalSize());
+        AbstractStarCell::handleUp.registerVariable(FSphericalCell::getMultipole(), sizeof(FComplexe) * FSphericalCell::GetPoleSize());
+        AbstractStarCell::handleDown.registerVariable(FSphericalCell::getLocal(), sizeof(FComplexe) * FSphericalCell::GetLocalSize());
     }
 };
 
 class StarTestCell : public AbstractStarCell, public FTestCell {
 public:
     void initHandle(){
-        AbstractStarCell::handleUp.registerData( &dataUp, sizeof(dataUp));
-        AbstractStarCell::handleDown.registerData( &dataDown, sizeof(dataDown));
+        AbstractStarCell::handleUp.registerVariable( &dataUp );
+        AbstractStarCell::handleDown.registerVariable( &dataDown );
     }
 };
 

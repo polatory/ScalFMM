@@ -16,28 +16,38 @@
 
 
 struct StarHandle : public FNoCopyable, public FNoAssignement {
-    starpu_data_handle handle;
+    starpu_data_handle_t handle;
 
     StarHandle(){
-        memset(&handle, 0, sizeof(starpu_data_handle));
+        memset(&handle, 0, sizeof(starpu_data_handle_t));
     }
 
     ~StarHandle(){
-        starpu_data_unregister(handle);
+        if( handle ){
+            starpu_data_unregister(handle);
+        }
     }
 
-    void registerData(void* inData, const int inSize){
-        starpu_variable_data_register(&handle, 0, (uintptr_t)inData, inSize);
+    template <class ObjectType>
+    void registerVariable(ObjectType*const inData){
+        starpu_variable_data_register(&handle, 0, (uintptr_t)inData, sizeof(ObjectType));
     }
 
-    void registerVector(void* inData, const int inSizeOf, const int inSize){
-        starpu_vector_data_register(&handle, 0, (uintptr_t)inData, inSize, inSizeOf);
+    template <class ObjectType>
+    void registerVariable(ObjectType*const inData, const int sizeOfBlock){
+        starpu_variable_data_register(&handle, 0, (uintptr_t)inData, sizeOfBlock);
+    }
 
+    template <class ObjectType>
+    void registerVector(ObjectType*const inData, const int inSize){
+        starpu_vector_data_register(&handle, 0, (uintptr_t)inData, inSize, sizeof(ObjectType));
     }
 
     void unregisterData(){
-        starpu_data_unregister(handle);
-        memset(&handle, 0, sizeof(starpu_data_handle));
+        if( handle ){
+            starpu_data_unregister(handle);
+            memset(&handle, 0, sizeof(starpu_data_handle_t));
+        }
     }
 };
 
@@ -57,7 +67,7 @@ public:
     StarHandle handle;
 
     void initHandle() {
-        handle.registerVector( FVector<ElementClass>::data(), sizeof(ElementClass), FVector<ElementClass>::getSize());
+        handle.registerVector( FVector<ElementClass>::data(), FVector<ElementClass>::getSize());
     }
 };
 
@@ -226,33 +236,33 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     void initCodelets(){
         memset(&p2m_cl, 0, sizeof(p2m_cl));
         p2m_cl.where = STARPU_CPU;
-        p2m_cl.cpu_func = p2m_cpu;
+        p2m_cl.cpu_funcs[0] = p2m_cpu;
         p2m_cl.nbuffers = 2;
 
         memset(&p2p_cl, 0, sizeof(p2p_cl));
         p2p_cl.where = STARPU_CPU;
-        p2p_cl.cpu_func = p2p_cpu;
+        p2p_cl.cpu_funcs[0] = p2p_cpu;
         p2p_cl.nbuffers = 28;
 
         memset(&m2l_cl, 0, sizeof(m2l_cl));
         m2l_cl.where = STARPU_CPU;
-        m2l_cl.cpu_func = m2l_cpu;
-        m2l_cl.nbuffers = 343;
+        m2l_cl.cpu_funcs[0] = m2l_cpu;
+        m2l_cl.nbuffers = 344;
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
         l2p_cl.where = STARPU_CPU;
-        l2p_cl.cpu_func = l2p_cpu;
+        l2p_cl.cpu_funcs[0] = l2p_cpu;
         l2p_cl.nbuffers = 2;
 
         memset(&m2m_cl, 0, sizeof(m2m_cl));
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 
         m2m_cl.where = STARPU_CPU;
-        m2m_cl.cpu_func = m2m_cpu;
+        m2m_cl.cpu_funcs[0] = m2m_cpu;
         m2m_cl.nbuffers = 9;
 
         l2l_cl.where = STARPU_CPU;
-        l2l_cl.cpu_func = l2l_cpu;
+        l2l_cl.cpu_funcs[0] = l2l_cpu;
         l2l_cl.nbuffers = 9;
     }
 
@@ -343,7 +353,7 @@ public:
 
         starpu_init(NULL);
 
-        EmptyHandle.registerData( &EmptyValue, sizeof(EmptyValue) );
+        EmptyHandle.registerVariable( &EmptyValue );
 
         initCodelets();
         initArgs();
@@ -353,14 +363,14 @@ public:
 
     /** Default destructor */
     virtual ~FFmmAlgorithmStarpu(){
-        starpu_shutdown();
-
         EmptyHandle.unregisterData();
 
         releaseCodelets();
         releaseArgs();
         releaseHandles();
         releaseKernels();
+
+        starpu_shutdown();
     }
 
     /**
@@ -411,17 +421,17 @@ public:
                 //kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsIndex, counter);
                 struct starpu_task* const task = starpu_task_create();
 
-                task->buffers[0].handle = octreeIterator.getCurrentLeaf()->getTargets()->handle.handle;
-                task->buffers[0].mode = STARPU_RW;
+                task->handles[0] = octreeIterator.getCurrentLeaf()->getTargets()->handle.handle;
+                //task->handles[0].mode = STARPU_RW;
 
                 for(int idxCounterNeigh = 0 ; idxCounterNeigh < 27 ; ++idxCounterNeigh){
                     if( neighbors[idxCounterNeigh] ){
-                        task->buffers[idxCounterNeigh + 1].handle = neighbors[idxCounterNeigh]->handle.handle;
-                        task->buffers[idxCounterNeigh + 1].mode   = STARPU_RW;
+                        task->handles[idxCounterNeigh + 1] = neighbors[idxCounterNeigh]->handle.handle;
+                        //task->handles[idxCounterNeigh + 1].mode   = STARPU_RW;
                     }
                     else {
-                        task->buffers[idxCounterNeigh + 1].handle = EmptyHandle.handle;
-                        task->buffers[idxCounterNeigh + 1].mode   = STARPU_R;
+                        task->handles[idxCounterNeigh + 1] = EmptyHandle.handle;
+                        //task->handles[idxCounterNeigh + 1].mode   = STARPU_R;
                     }
                 }
 
@@ -429,6 +439,8 @@ public:
 
                 task->cl_arg = const_cast<FTreeCoordinate*>(&octreeIterator.getCurrentGlobalCoordinate());
                 task->cl_arg_size = sizeof(FTreeCoordinate);
+
+                task->priority = starpu_sched_get_min_priority();
 
                 starpu_task_submit(task);
 
@@ -457,24 +469,24 @@ public:
 
         // M2L at leaf level
         {
-            /*const int idxLevel = OctreeHeight - 1;
+            const int idxLevel = OctreeHeight - 1;
             do{
                  const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
 
                 if(counter){
                     struct starpu_task* const task = starpu_task_create();
 
-                    task->buffers[0].handle = octreeIterator.getCurrentCell()->handleDown.handle;
-                    task->buffers[0].mode = STARPU_RW;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                    //task->handles[0].mode = STARPU_RW;
 
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->buffers[idxNeigh+1].handle = neighbors[idxNeigh]->handleUp.handle;
-                            task->buffers[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handleUp.handle;
+                            //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                         else {
-                            task->buffers[idxNeigh+1].handle = EmptyHandle.handle;
-                            task->buffers[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxNeigh+1] = EmptyHandle.handle;
+                            //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                     }
 
@@ -486,7 +498,7 @@ public:
                     starpu_task_submit(task);
                 }
 
-            } while(octreeIterator.moveRight());*/
+            } while(octreeIterator.moveRight());
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
@@ -498,18 +510,18 @@ public:
                 //kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
 
-                task->buffers[0].handle = octreeIterator.getCurrentCell()->handleUp.handle;
-                task->buffers[0].mode = STARPU_RW;
+                task->handles[0] = octreeIterator.getCurrentCell()->handleUp.handle;
+                //task->handles[0].mode = STARPU_RW;
 
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->buffers[idxChild+1].handle = child[idxChild]->handleUp.handle;
-                        task->buffers[idxChild+1].mode = STARPU_R;
+                        task->handles[idxChild+1] = child[idxChild]->handleUp.handle;
+                        //task->handles[idxChild+1].mode = STARPU_R;
                     }
                     else{
-                        task->buffers[idxChild+1].handle = EmptyHandle.handle;
-                        task->buffers[idxChild+1].mode = STARPU_R;
+                        task->handles[idxChild+1] = EmptyHandle.handle;
+                        //task->handles[idxChild+1].mode = STARPU_R;
                     }
                 }
 
@@ -524,23 +536,23 @@ public:
             octreeIterator = avoidGotoLeftIterator;
 
             // M2L
-            /*do{
+            do{
                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
 
                 if(counter){
                     struct starpu_task* const task = starpu_task_create();
 
-                    task->buffers[0].handle = octreeIterator.getCurrentCell()->handleDown.handle;
-                    task->buffers[0].mode = STARPU_RW;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                    //task->handles[0].mode = STARPU_RW;
 
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->buffers[idxNeigh+1].handle = neighbors[idxNeigh]->handleUp.handle;
-                            task->buffers[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handleUp.handle;
+                            //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                         else {
-                            task->buffers[idxNeigh+1].handle = EmptyHandle.handle;
-                            task->buffers[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxNeigh+1] = EmptyHandle.handle;
+                            //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                     }
 
@@ -549,10 +561,10 @@ public:
                     task->cl_arg = &argsLevels[idxLevel];
                     task->cl_arg_size = sizeof(int);
 
-                    //TODO starpu_task_submit(task);
+                    starpu_task_submit(task);
                 }
 
-            } while(octreeIterator.moveRight());*/
+            } while(octreeIterator.moveRight());
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
@@ -583,18 +595,18 @@ public:
                 //kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
 
-                task->buffers[0].handle = octreeIterator.getCurrentCell()->handleDown.handle;
-                task->buffers[0].mode = STARPU_R;
+                task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                //task->handles[0].mode = STARPU_R;
 
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->buffers[idxChild+1].handle = child[idxChild]->handleDown.handle;
-                        task->buffers[idxChild+1].mode = STARPU_RW;
+                        task->handles[idxChild+1] = child[idxChild]->handleDown.handle;
+                        //task->handles[idxChild+1].mode = STARPU_RW;
                     }
                     else{
-                        task->buffers[idxChild+1].handle = EmptyHandle.handle;
-                        task->buffers[idxChild+1].mode = STARPU_R;
+                        task->handles[idxChild+1] = EmptyHandle.handle;
+                        //task->handles[idxChild+1].mode = STARPU_R;
                     }
                 }
 
@@ -647,8 +659,7 @@ public:
     {
         CellType* const currentCell = (CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
-        starpu_vector_interface_t* const data = (starpu_vector_interface_t*)descr[1];
-        DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(data), STARPU_VECTOR_GET_NX(data));
+        DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
 
         globalKernels[starpu_worker_get_id()]->P2M( currentCell , &particles );
     }
@@ -716,15 +727,13 @@ public:
     {
         const CellType* const currentCell = (const CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
-        starpu_vector_interface_t* const data = (starpu_vector_interface_t*)descr[1];
-        DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(data), STARPU_VECTOR_GET_NX(data));
+        DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
 
         globalKernels[starpu_worker_get_id()]->L2P( currentCell , &particles );
     }
 
     static void p2p_cpu(void *descr[], void* cl_arg) {
-        starpu_vector_interface_t* const dataCurrentCell = (starpu_vector_interface_t*)descr[0];
-        DataVector<ParticleClass> currentContainer((ParticleClass*)STARPU_VECTOR_GET_PTR(dataCurrentCell), STARPU_VECTOR_GET_NX(dataCurrentCell));
+        DataVector<ParticleClass> currentContainer((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[0]), STARPU_VECTOR_GET_NX(descr[0]));
         const FTreeCoordinate& coordinate = *(static_cast<const FTreeCoordinate*>(cl_arg));
 
         DataVector<ParticleClass>* neighors[27];
@@ -734,8 +743,7 @@ public:
         for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
             const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
             if(empty != EmptyValue){
-                starpu_vector_interface_t* const dataCell = (starpu_vector_interface_t*)descr[idxNeig+1];
-                neighors[idxNeig] = new DataVector<ParticleClass>((ParticleClass*)STARPU_VECTOR_GET_PTR(dataCell), STARPU_VECTOR_GET_NX(dataCell));
+                neighors[idxNeig] = new DataVector<ParticleClass>((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[idxNeig+1]), STARPU_VECTOR_GET_NX(descr[idxNeig+1]));
                 ++counter;
             }
         }
