@@ -15,6 +15,7 @@
 #include <starpu.h>
 
 
+
 struct StarHandle : public FNoCopyable, public FNoAssignement {
     starpu_data_handle_t handle;
 
@@ -52,14 +53,14 @@ struct StarHandle : public FNoCopyable, public FNoAssignement {
 };
 
 
-class AbstractStarCell {
+template <class CellClass>
+class FStarCell : public CellClass{
 public:
-    StarHandle handleUp;
-    StarHandle handleDown;
-
-    virtual void initHandle() = 0;
+    StarHandle handle;
+    void initHandle(){
+        handle.registerVariable( static_cast<CellClass*>(this) );
+    }
 };
-
 
 template < class ElementClass >
 class StarVector : public FVector<ElementClass> {
@@ -210,7 +211,7 @@ public:
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class CellType>
+template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmStarpu : protected FAssertable{
 
     OctreeClass* const tree;       //< The octree to work on
@@ -225,12 +226,11 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     static unsigned int EmptyValue;
     static StarHandle EmptyHandle;
 
-
     starpu_codelet p2m_cl;
-    starpu_codelet p2p_cl;
-    starpu_codelet m2m_cl;
-    starpu_codelet m2l_cl;
-    starpu_codelet l2l_cl;
+    starpu_codelet p2p_cl[28];
+    starpu_codelet m2m_cl[8];
+    starpu_codelet m2l_cl[189];
+    starpu_codelet l2l_cl[8];
     starpu_codelet l2p_cl;
 
     void initCodelets(){
@@ -239,31 +239,53 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         p2m_cl.cpu_funcs[0] = p2m_cpu;
         p2m_cl.nbuffers = 2;
 
-        memset(&p2p_cl, 0, sizeof(p2p_cl));
-        p2p_cl.where = STARPU_CPU;
-        p2p_cl.cpu_funcs[0] = p2p_cpu;
-        p2p_cl.nbuffers = 28;
+        memset(&p2p_cl, 0, sizeof(p2p_cl) * 28);
+        for(int idxNeig = 0 ; idxNeig <= 27 ; ++idxNeig){
+            p2p_cl[idxNeig].where = STARPU_CPU;
+            p2p_cl[idxNeig].cpu_funcs[0] = p2p_cpu;
+            p2p_cl[idxNeig].nbuffers = idxNeig + 1;
 
-        memset(&m2l_cl, 0, sizeof(m2l_cl));
-        m2l_cl.where = STARPU_CPU;
-        m2l_cl.cpu_funcs[0] = m2l_cpu;
-        m2l_cl.nbuffers = 344;
+            for( int idxMode = 0 ; idxMode <= idxNeig ; ++idxMode){
+                p2p_cl[idxNeig].modes[idxMode] = STARPU_RW;
+            }
+        }
+
+        memset(&m2l_cl, 0, sizeof(m2l_cl) * 189);
+        for(int idxNeig = 0 ; idxNeig < 189 ; ++idxNeig){
+            m2l_cl[idxNeig].where = STARPU_CPU;
+            m2l_cl[idxNeig].cpu_funcs[0] = m2l_cpu;
+            m2l_cl[idxNeig].nbuffers = idxNeig + 2;
+
+            m2l_cl[idxNeig].modes[0] = STARPU_RW;
+
+            for( int idxMode = 0 ; idxMode <= idxNeig ; ++idxMode){
+                m2l_cl[idxNeig].modes[idxMode+1] = STARPU_R;
+            }
+        }
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
         l2p_cl.where = STARPU_CPU;
         l2p_cl.cpu_funcs[0] = l2p_cpu;
         l2p_cl.nbuffers = 2;
 
-        memset(&m2m_cl, 0, sizeof(m2m_cl));
-        memset(&l2l_cl, 0, sizeof(l2l_cl));
+        memset(&m2m_cl, 0, sizeof(m2m_cl) * 8);
+        memset(&l2l_cl, 0, sizeof(l2l_cl) * 8);
+        for( int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            m2m_cl[idxChild].where = STARPU_CPU;
+            m2m_cl[idxChild].cpu_funcs[0] = m2m_cpu;
+            m2m_cl[idxChild].nbuffers = idxChild + 2;
+            m2m_cl[idxChild].modes[0] = STARPU_W;
 
-        m2m_cl.where = STARPU_CPU;
-        m2m_cl.cpu_funcs[0] = m2m_cpu;
-        m2m_cl.nbuffers = 9;
+            l2l_cl[idxChild].where = STARPU_CPU;
+            l2l_cl[idxChild].cpu_funcs[0] = l2l_cpu;
+            l2l_cl[idxChild].nbuffers = idxChild + 2;
+            l2l_cl[idxChild].modes[0] = STARPU_R;
 
-        l2l_cl.where = STARPU_CPU;
-        l2l_cl.cpu_funcs[0] = l2l_cpu;
-        l2l_cl.nbuffers = 9;
+            for( int idxMode = 0 ; idxMode <= idxChild ; ++idxMode){
+                m2m_cl[idxChild].modes[idxMode+1] = STARPU_R;
+                l2l_cl[idxChild].modes[idxMode+1] = STARPU_RW;
+            }
+        }
     }
 
     void releaseCodelets(){
@@ -412,7 +434,7 @@ public:
             // P2M
             {
                 //kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
-                starpu_insert_task( &p2m_cl, STARPU_RW, octreeIterator.getCurrentCell()->handleUp.handle,
+                starpu_insert_task( &p2m_cl, STARPU_RW, octreeIterator.getCurrentCell()->handle.handle,
                                     STARPU_R, octreeIterator.getCurrentLeaf()->getSrc()->handle.handle, 0);
             }
             // P2P
@@ -435,7 +457,7 @@ public:
                     }
                 }
 
-                task->cl = &p2p_cl;
+                task->cl = &p2p_cl[0];
 
                 task->cl_arg = const_cast<FTreeCoordinate*>(&octreeIterator.getCurrentGlobalCoordinate());
                 task->cl_arg_size = sizeof(FTreeCoordinate);
@@ -476,12 +498,12 @@ public:
                 if(counter){
                     struct starpu_task* const task = starpu_task_create();
 
-                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
                     //task->handles[0].mode = STARPU_RW;
 
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handleUp.handle;
+                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handle.handle;
                             //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                         else {
@@ -490,7 +512,7 @@ public:
                         }
                     }
 
-                    task->cl = &m2l_cl;
+                    task->cl = &m2l_cl[0];
 
                     task->cl_arg = &argsLevels[idxLevel];
                     task->cl_arg_size = sizeof(int);
@@ -510,13 +532,13 @@ public:
                 //kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
 
-                task->handles[0] = octreeIterator.getCurrentCell()->handleUp.handle;
+                task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
                 //task->handles[0].mode = STARPU_RW;
 
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->handles[idxChild+1] = child[idxChild]->handleUp.handle;
+                        task->handles[idxChild+1] = child[idxChild]->handle.handle;
                         //task->handles[idxChild+1].mode = STARPU_R;
                     }
                     else{
@@ -525,7 +547,7 @@ public:
                     }
                 }
 
-                task->cl = &m2m_cl;
+                task->cl = &m2m_cl[0];
 
                 task->cl_arg = &argsLevels[idxLevel];
                 task->cl_arg_size = sizeof(int);
@@ -542,12 +564,12 @@ public:
                 if(counter){
                     struct starpu_task* const task = starpu_task_create();
 
-                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
                     //task->handles[0].mode = STARPU_RW;
 
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handleUp.handle;
+                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handle.handle;
                             //task->handles[idxNeigh+1].mode = STARPU_R;
                         }
                         else {
@@ -556,7 +578,7 @@ public:
                         }
                     }
 
-                    task->cl = &m2l_cl;
+                    task->cl = &m2l_cl[0];
 
                     task->cl_arg = &argsLevels[idxLevel];
                     task->cl_arg_size = sizeof(int);
@@ -595,13 +617,13 @@ public:
                 //kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
 
-                task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
+                task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
                 //task->handles[0].mode = STARPU_R;
 
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->handles[idxChild+1] = child[idxChild]->handleDown.handle;
+                        task->handles[idxChild+1] = child[idxChild]->handle.handle;
                         //task->handles[idxChild+1].mode = STARPU_RW;
                     }
                     else{
@@ -610,7 +632,7 @@ public:
                     }
                 }
 
-                task->cl = &l2l_cl;
+                task->cl = &l2l_cl[0];
 
                 task->cl_arg = &argsLevels[idxLevel];
                 task->cl_arg_size = sizeof(int);
@@ -641,7 +663,7 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             //kernels->L2P( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
-            starpu_insert_task(&l2p_cl, STARPU_R, octreeIterator.getCurrentCell()->handleDown.handle,
+            starpu_insert_task(&l2p_cl, STARPU_R, octreeIterator.getCurrentCell()->handle.handle,
                                STARPU_RW, octreeIterator.getCurrentLeaf()->getTargets()->handle.handle, 0);
         } while(octreeIterator.moveRight());
 
@@ -657,7 +679,7 @@ public:
 
     static void p2m_cpu(void *descr[], void *)
     {
-        CellType* const currentCell = (CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
         DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
 
@@ -666,16 +688,16 @@ public:
 
     static void m2m_cpu(void *descr[], void *cl_arg)
     {
-        const CellType* child[8];
-        memset(child, 0, sizeof(CellType*)*8);
+        const RealCellClass* child[8];
+        memset(child, 0, sizeof(RealCellClass*)*8);
 
         const int level = (*static_cast<int*>(cl_arg));
-        CellType* const currentCell = (CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
             if(empty != EmptyValue){
-                child[idxChild] = ((const CellType*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
+                child[idxChild] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
             }
         }
 
@@ -685,16 +707,16 @@ public:
     static void m2l_cpu(void *descr[], void *cl_arg)
     {return;
         const int level = (*static_cast<int*>(cl_arg));
-        CellType* const currentCell = (CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
-        const CellType* neighbor[343];
-        memset(neighbor, 0, 343 * sizeof(CellType*));
+        const RealCellClass* neighbor[343];
+        memset(neighbor, 0, 343 * sizeof(RealCellClass*));
 
         int counter = 0;
         for(int idxNeig = 0 ; idxNeig < 343 ; ++idxNeig){
             const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
             if(empty != EmptyValue){
-                neighbor[idxNeig] = ((const CellType*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
+                neighbor[idxNeig] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
                 ++counter;
             }
         }
@@ -706,16 +728,16 @@ public:
 
     static void l2l_cpu(void *descr[], void * cl_arg)
     {
-        CellType* child[8];
-        memset(child, 0, sizeof(CellType*)*8);
+        RealCellClass* child[8];
+        memset(child, 0, sizeof(RealCellClass*)*8);
 
         const int level = (*static_cast<int*>(cl_arg));
-        CellType* const currentCell = (CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
             if(empty != EmptyValue){
-                child[idxChild] = ((CellType*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
+                child[idxChild] = ((RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
             }
 
         }
@@ -725,7 +747,7 @@ public:
 
     static void l2p_cpu(void *descr[], void *)
     {
-        const CellType* const currentCell = (const CellType*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        const RealCellClass* const currentCell = (const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
 
         DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
 
@@ -757,10 +779,10 @@ public:
 
 };
 
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class CellType>
-unsigned int FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,CellType>::EmptyValue = 0xFFFFFFFF;
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class CellType>
-StarHandle FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,CellType>::EmptyHandle;
+template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
+unsigned int FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass, KernelClass, LeafClass>::EmptyValue = 0xFFFFFFFF;
+template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
+StarHandle FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass, KernelClass, LeafClass>::EmptyHandle;
 
 #endif //FFMMALGORITHMSTARPU_HPP
 
