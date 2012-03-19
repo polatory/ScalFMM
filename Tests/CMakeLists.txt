@@ -34,6 +34,7 @@ INCLUDE_DIRECTORIES(
      ${CMAKE_BINARY_DIR}/Src 
 )
 
+
 # Add execs - 1 cpp = 1 exec
 foreach(exec ${source_tests_files}) 
 	get_filename_component(
@@ -61,6 +62,15 @@ foreach(exec ${source_tests_files})
 		endif()
 	endif()
 
+	# Test starpu dependency
+	file(STRINGS "${exec}" lines_starpu REGEX "@FUSE_STARPU")
+	if(lines_starpu)
+		if( NOT SCALFMM_USE_STARPU )
+			MESSAGE( STATUS "This needs Starpu = ${exec}" )
+			set(compile_exec "FALSE")
+		endif()
+	endif()
+
 	# Dependency are OK
 	if( compile_exec )
 		add_executable(
@@ -72,6 +82,7 @@ foreach(exec ${source_tests_files})
 			${scalfmm_lib}
 			${BLAS_LIBRARIES}
 			${LAPACK_LIBRARIES}
+			${STARPU_LIBRARIES}
 		)
 	endif()
 endforeach(exec)
