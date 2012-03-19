@@ -190,8 +190,8 @@ int main(int argc, char* argv[])
     {	// begin Chebyshef kernel
 
         // accuracy
-        const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+        const unsigned int ORDER = 7;
+        const FReal epsilon = FReal(1e-7);
 
         FReal* p1;  p1  = NULL;
         FReal* f1;  p1  = NULL;

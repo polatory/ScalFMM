@@ -26,6 +26,7 @@
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
 #include "../../Src/Containers/FVector.hpp"
 
@@ -136,7 +137,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////
 	// approximative computation
 	const unsigned int ORDER = 5;
-	const FReal epsilon = FReal(atof(argv[1]));
+	const FReal epsilon = FParameters::getValue(argc, argv, "-eps", 1e-5);
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	typedef FChebInterpolator<ORDER> InterpolatorClass;
 	InterpolatorClass S;
@@ -181,7 +182,7 @@ int main(int argc, char* argv[])
 	*/
 
 	// Interpolate f_i = \sum_m^L S(x_i,\bar x_m) * F_m
-	S.applyL2P(cx, width, F, X.getTargets());
+	S.applyL2PTotal(cx, width, F, X.getTargets());
 
 	time.tac();
 	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;

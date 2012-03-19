@@ -114,38 +114,80 @@ public:
 	{
 		// loop: target particles
 		typename ContainerClass::BasicIterator iTargets(*TargetParticles);
-		while (iTargets.hasNotFinished()) {
-			ParticleClass& Target = iTargets.data();
 
-			{ // loop: source particles (target leaf cell == source leaf cell)
-				typename ContainerClass::ConstBasicIterator iSources(*SourceParticles);
-				while (iSources.hasNotFinished()) {
-					const ParticleClass& Source = iSources.data();
-					// only if target and source are not identical
-					if (&Target != &Source)	this->directInteraction(Target, Source);
-					// progress sources
-					iSources.gotoNext();
+		if (TargetParticles != SourceParticles) {
+
+			while (iTargets.hasNotFinished()) {
+				ParticleClass& Target = iTargets.data();
+				
+				{ // loop: source particles (target leaf cell == source leaf cell)
+					typename ContainerClass::ConstBasicIterator iSources(*SourceParticles);
+					while (iSources.hasNotFinished()) {
+						const ParticleClass& Source = iSources.data();
+						// only if target and source are not identical
+						this->directInteraction(Target, Source);
+						// progress sources
+						iSources.gotoNext();
+					}
 				}
-			}
-			
-			{ // loop: source particles (target leaf cell != source leaf cell)
-				for (unsigned int idx=0; idx<27; ++idx) {
-					if (NeighborSourceParticles[idx]) {
-						typename ContainerClass::ConstBasicIterator	iSources(*NeighborSourceParticles[idx]);
-						while (iSources.hasNotFinished()) {
-							const ParticleClass& Source = iSources.data();
-							// target and source cannot be identical
-							this->directInteraction(Target, Source);
-							// progress sources
-							iSources.gotoNext();
+				
+				{ // loop: source particles (target leaf cell != source leaf cell)
+					for (unsigned int idx=0; idx<27; ++idx) {
+						if (NeighborSourceParticles[idx]) {
+							typename ContainerClass::ConstBasicIterator	iSources(*NeighborSourceParticles[idx]);
+							while (iSources.hasNotFinished()) {
+								const ParticleClass& Source = iSources.data();
+								// target and source cannot be identical
+								this->directInteraction(Target, Source);
+								// progress sources
+								iSources.gotoNext();
+							}
 						}
 					}
 				}
+		
+				// progress targets
+				iTargets.gotoNext();
 			}
-			
-			// progress targets
-			iTargets.gotoNext();
+
+		} else {
+
+			while (iTargets.hasNotFinished()) {
+				ParticleClass& Target = iTargets.data();
+				
+				{ // loop: source particles  (target leaf cell == source leaf cell)
+					typename ContainerClass::BasicIterator iSources = iTargets;
+					iSources.gotoNext();
+					while (iSources.hasNotFinished()) {
+						ParticleClass& Source = iSources.data();
+						// only if target and source are not identical
+						this->directInteractionMutual(Target, Source);
+						// progress sources
+						iSources.gotoNext();
+					}
+				}
+				
+				{ // loop: source particles (target leaf cell != source leaf cell)
+					for (unsigned int idx=0; idx<=13; ++idx) {
+						if (NeighborSourceParticles[idx]) {
+							typename ContainerClass::BasicIterator iSources(*NeighborSourceParticles[idx]);
+							while (iSources.hasNotFinished()) {
+								ParticleClass& Source = iSources.data();
+								// target and source cannot be identical
+								this->directInteractionMutual(Target, Source);
+								// progress sources
+								iSources.gotoNext();
+							}
+						}
+					}
+				}
+		
+				// progress targets
+				iTargets.gotoNext();
+			}
+
 		}
+
 	}
 
 
@@ -162,6 +204,21 @@ private:
 		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 		// force
 		Target.incForces(force.getX(), force.getY(), force.getZ());
+	}
+
+	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const
+	{
+		const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+		const FReal wt = Target.getPhysicalValue();
+		const FReal ws = Source.getPhysicalValue();
+		// potential
+		Target.incPotential(one_over_r * ws);
+		Source.incPotential(one_over_r * wt);
+		// force
+		F3DPosition force(Source.getPosition() - Target.getPosition());
+		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+		Target.incForces(  force.getX(),    force.getY(),    force.getZ());
+		Source.incForces((-force.getX()), (-force.getY()), (-force.getZ()));
 	}
 
 };

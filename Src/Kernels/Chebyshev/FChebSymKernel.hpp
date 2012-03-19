@@ -313,17 +313,24 @@ public:
 	void L2P(const CellClass* const LeafCell,
 					 ContainerClass* const TargetParticles)
 	{
-		// a) apply Sx
 		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
-		AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
-																							AbstractBaseClass::BoxWidthLeaf,
-																							LeafCell->getLocal(),
-																							TargetParticles);
-		// b) apply Px (grad Sx)
-		AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
-																											AbstractBaseClass::BoxWidthLeaf,
-																											LeafCell->getLocal(),
-																											TargetParticles);
+
+//		// a) apply Sx
+//		AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
+//																							AbstractBaseClass::BoxWidthLeaf,
+//																							LeafCell->getLocal(),
+//																							TargetParticles);
+//		// b) apply Px (grad Sx)
+//		AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
+//																											AbstractBaseClass::BoxWidthLeaf,
+//																											LeafCell->getLocal(),
+//																											TargetParticles);
+
+		// c) apply Sx and Px (grad Sx)
+		AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter,
+																									 AbstractBaseClass::BoxWidthLeaf,
+																									 LeafCell->getLocal(),
+																									 TargetParticles);
 	}
 
 

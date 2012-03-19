@@ -165,13 +165,20 @@ public:
 		M2LHandler->applyU(LeafCell->getLocal() + AbstractBaseClass::nnodes,
 											 const_cast<CellClass*>(LeafCell)->getLocal());
 		
-		// 2.a) apply Sx
 		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
-		AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
-																							AbstractBaseClass::BoxWidthLeaf,
-																							LeafCell->getLocal(),
-																							TargetParticles);
-		// 2.b) apply Px (grad Sx)
+
+		//// 2.a) apply Sx
+		//AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
+		//																					AbstractBaseClass::BoxWidthLeaf,
+		//																					LeafCell->getLocal(),
+		//																					TargetParticles);
+		//// 2.b) apply Px (grad Sx)
+		//AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
+		//																									AbstractBaseClass::BoxWidthLeaf,
+		//																									LeafCell->getLocal(),
+		//																									TargetParticles);
+
+		// 2.c) apply Sx and Px (grad Sx)
 		AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
 																											AbstractBaseClass::BoxWidthLeaf,
 																											LeafCell->getLocal(),
