@@ -10,7 +10,6 @@
 // ===================================================================================
 
 // ==== CMAKE =====
-// @FUSE_BLAS
 // @FUSE_STARPU
 // ================
 
@@ -45,8 +44,6 @@
 #include <stdio.h>
 #include <string.h>
 
-template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
-KernelClass** FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass>::globalKernels = 0;
 
 // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/
 // Compile With openmp : g++ testFmbAlgorithm.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
@@ -57,7 +54,7 @@ KernelClass** FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellCl
 // Define classes
 ////////////////////////////////////////////////////////////////
 
-
+// just to be able to load a fma file
 class TestParticle : public FTestParticle, public FExtendPhysicalValue{
 };
 
