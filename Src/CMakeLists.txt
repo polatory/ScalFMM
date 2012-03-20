@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.5)
-
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
