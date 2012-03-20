@@ -18,6 +18,7 @@ project(scalfmm)
 # Active language
 # -----------------------
 ENABLE_LANGUAGE(CXX )
+MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 # Options
 OPTION( SCALFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" ON )
@@ -43,7 +44,11 @@ if( SCALFMM_BUILD_DEBUG )
   ADD_DEFINITIONS(-O0)
 else()
   SET(CMAKE_BUILD_TYPE Release)
+  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    ADD_DEFINITIONS(-ip)
+  ENDIF()
 endif()
+
 
 # starpu
 if( SCALFMM_USE_STARPU )
