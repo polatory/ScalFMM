@@ -31,6 +31,7 @@
 #include "../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
 /*
   In this test we compare the spherical fmm results and the direct results.
@@ -70,6 +71,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
         // Warning in make test the exec dir it Build/UTests
@@ -110,17 +112,17 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                 //kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
                 const FReal wt = particles[idxTarget].getPhysicalValue();
-                const FReal ws = particles[idxOther].getPhysicalValue();
+                const FReal ws = particles[idxOther ].getPhysicalValue();
                 const FReal one_over_r = MatrixKernel.evaluate(particles[idxTarget].getPosition(),
                                                                particles[idxOther].getPosition());
                 // potential
                 particles[idxTarget].incPotential(one_over_r * ws);
-                particles[idxOther].incPotential(one_over_r * wt);
+                particles[idxOther ].incPotential(one_over_r * wt);
                 // force
-                F3DPosition force(particles[idxTarget].getPosition() - particles[idxOther].getPosition());
+                F3DPosition force(particles[idxOther].getPosition() - particles[idxTarget].getPosition());
                 force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-                particles[idxTarget].incForces( force.getX(), force.getY(), force.getZ());
-                particles[idxOther].incForces( -force.getX(), -force.getY(), -force.getZ());
+                particles[idxTarget].incForces(  force.getX(),  force.getY(),  force.getZ());
+                particles[idxOther ].incForces( -force.getX(), -force.getY(), -force.getZ());
             }
         }
 
