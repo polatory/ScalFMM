@@ -16,12 +16,15 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_STARPU
 // ================
 
 #include <iostream>
 
 #include <cstdio>
 #include <cstdlib>
+
+#include <starpu.h>
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
@@ -37,6 +40,7 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 
 
@@ -82,7 +86,6 @@ int main(int argc, char* argv[])
 
 	std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
 
-
 	const FReal Width = 10.;
 	// init random fun
 	const FReal FRandMax = FReal(RAND_MAX) / Width;
@@ -91,18 +94,18 @@ int main(int argc, char* argv[])
 	FTic time;
 
 
-	// typedefs
+	// typedefs for STARPU
 	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
+	typedef StarVector<ParticleClass> ContainerClass;
+	typedef DataVector<ParticleClass> RealContainerClass;
 	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
-	typedef FChebCell<ORDER> CellClass;
+	typedef FChebCell<ORDER> RealCellClass;
+	typedef FStarCell<RealCellClass> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-
+	//typedef FChebKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FChebSymKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";

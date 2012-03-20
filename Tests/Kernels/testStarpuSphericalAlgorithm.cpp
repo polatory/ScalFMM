@@ -22,19 +22,13 @@
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Components/FTestKernels.hpp"
-#include "../../Src/Components/FTestParticle.hpp"
-#include "../../Src/Components/FTestCell.hpp"
-
 #include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Components/FFmaParticle.hpp"
-#include "../../Src/Extensions/FExtendForces.hpp"
-#include "../../Src/Extensions/FExtendPotential.hpp"
-
-#include "../../Src/Components/FBasicCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../../Src/Files/FFmaLoader.hpp"
 
@@ -45,28 +39,20 @@
 
 
 ////////////////////////////////////////////////////////////////
-// Define classes
-////////////////////////////////////////////////////////////////
-
-// just to be able to load a fma file
-class TestParticle : public FTestParticle, public FExtendPhysicalValue{
-};
-
-////////////////////////////////////////////////////////////////
 // Typedefs
 ////////////////////////////////////////////////////////////////
-typedef TestParticle             ParticleClass;
+typedef FSphericalParticle             ParticleClass;
 typedef StarVector<ParticleClass> ContainerClass;
 typedef DataVector<ParticleClass> RealContainerClass;
 
-typedef FTestCell                RealCellClass;
+typedef FSphericalCell                RealCellClass;
 typedef FStarCell<RealCellClass> CellClass;
 
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-typedef FTestKernels<ParticleClass, RealCellClass, RealContainerClass >          KernelClass;
+typedef FSphericalKernel<ParticleClass, RealCellClass, RealContainerClass >          KernelClass;
 
 typedef FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
 
@@ -79,6 +65,7 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
+    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
@@ -93,6 +80,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
+    CellClass::Init(DevP);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -108,7 +96,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    KernelClass kernel;
+    KernelClass kernel(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
     AlgorithmClass algo( &tree, &kernel);
     std::cout << "There are " << starpu_worker_get_count() << " workers" << std::endl;
     algo.execute();
@@ -116,8 +104,26 @@ int main(int argc, char ** argv){
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
-    // Check result
-    ValidateFMMAlgo<OctreeClass, ParticleClass, CellClass, ContainerClass, LeafClass>(&tree);
+    // -----------------------------------------------------
+
+    { // get sum forces&potential
+        FReal potential = 0;
+        FPoint forces;
+        OctreeClass::Iterator octreeIterator(&tree);
+        octreeIterator.gotoBottomLeft();
+        do{
+            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            while( iter.hasNotFinished() ){
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+                forces += iter.data().getForces();
+
+                iter.gotoNext();
+            }
+        } while(octreeIterator.moveRight());
+
+        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+        std::cout << "Potential = " << potential << std::endl;
+    }
 
     return 0;
 }

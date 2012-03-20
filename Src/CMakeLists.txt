@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
@@ -29,6 +27,8 @@ add_library(
 target_link_libraries(
 	scalfmm
 	${BLAS_LIBRARIES}
+	${LAPACK_LIBRARIES}
+	${STARPU_LIBRARIES}
 )
 
 # Adding the entire project dir as an include dir
