@@ -46,7 +46,7 @@ if( SCALFMM_BUILD_DEBUG )
 else()
   SET(CMAKE_BUILD_TYPE Release)
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-#    ADD_DEFINITIONS(-ip)
+    ADD_DEFINITIONS(-ip)
   ENDIF()
 endif()
 
