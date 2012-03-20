@@ -15,64 +15,89 @@
 #include <starpu.h>
 
 
+////////////////////////////////////////////////////////
+// Utils
+////////////////////////////////////////////////////////
 
+/** This class is a c++ wrapper to starpu data handle
+  * @warning Delete is not working yet
+  */
 struct StarHandle : public FNoCopyable, public FNoAssignement {
+    /** The stapu handle */
     starpu_data_handle_t handle;
 
+    /** Init with 0 */
     StarHandle(){
         memset(&handle, 0, sizeof(starpu_data_handle_t));
     }
 
+    /** Release the handle */
     ~StarHandle(){
-        if( handle ){
-            starpu_data_unregister(handle);
+        if( handle != ((void *)0) ){
+            //starpu_data_unregister(handle);
         }
     }
 
+    /** Register a data from its size as a variable */
     template <class ObjectType>
     void registerVariable(ObjectType*const inData){
         starpu_variable_data_register(&handle, 0, (uintptr_t)inData, sizeof(ObjectType));
     }
 
+    /** Register a data from a given size as a variable */
     template <class ObjectType>
     void registerVariable(ObjectType*const inData, const int sizeOfBlock){
         starpu_variable_data_register(&handle, 0, (uintptr_t)inData, sizeOfBlock);
     }
 
+    /** Register a data vector from its data-type size */
     template <class ObjectType>
     void registerVector(ObjectType*const inData, const int inSize){
         starpu_vector_data_register(&handle, 0, (uintptr_t)inData, inSize, sizeof(ObjectType));
     }
 
+    /** Release data */
     void unregisterData(){
-        if( handle ){
-            starpu_data_unregister(handle);
+        if( handle != ((void *)0) ){
+            //starpu_data_unregister(handle);
             memset(&handle, 0, sizeof(starpu_data_handle_t));
         }
     }
 };
 
 
+/** This has to be used to make a cell
+  * starpu enabled
+  */
 template <class CellClass>
 class FStarCell : public CellClass{
 public:
+    /** The handle to register the data */
     StarHandle handle;
+    /** Called by fmm starpu to register data */
     void initHandle(){
         handle.registerVariable( static_cast<CellClass*>(this) );
     }
 };
 
+/** This has to be used to make a vector
+  * starpu enabled
+  */
 template < class ElementClass >
 class StarVector : public FVector<ElementClass> {
 public:
+    /** The handle to register the data */
     StarHandle handle;
-
+    /** Called by fmm starpu to register data */
     void initHandle() {
         handle.registerVector( FVector<ElementClass>::data(), FVector<ElementClass>::getSize());
     }
 };
 
-
+/** Wrapper vector to wrappe data from a real vector
+  * without copying again the data
+  * This vector do not release the data
+  */
 template<class T>
 class DataVector {
 protected:
@@ -199,6 +224,10 @@ public:
 
 };
 
+////////////////////////////////////////////////////////
+// Core
+////////////////////////////////////////////////////////
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -223,9 +252,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     // Codelets
     //////////////////////////////////////////////////////////////////
 
-    static unsigned int EmptyValue;
-    static StarHandle EmptyHandle;
-
+    // All the posible codelet
     starpu_codelet p2m_cl;
     starpu_codelet p2p_cl[28];
     starpu_codelet m2m_cl[8];
@@ -233,13 +260,15 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     starpu_codelet l2l_cl[8];
     starpu_codelet l2p_cl;
 
+    // Init the codelet
     void initCodelets(){
+        // P2M
         memset(&p2m_cl, 0, sizeof(p2m_cl));
         p2m_cl.where = STARPU_CPU;
         p2m_cl.cpu_funcs[0] = p2m_cpu;
         p2m_cl.nbuffers = 2;
-
-        memset(&p2p_cl, 0, sizeof(p2p_cl) * 28);
+        // P2P
+        memset(p2p_cl, 0, sizeof(starpu_codelet) * 28);
         for(int idxNeig = 0 ; idxNeig <= 27 ; ++idxNeig){
             p2p_cl[idxNeig].where = STARPU_CPU;
             p2p_cl[idxNeig].cpu_funcs[0] = p2p_cpu;
@@ -249,8 +278,8 @@ class FFmmAlgorithmStarpu : protected FAssertable{
                 p2p_cl[idxNeig].modes[idxMode] = STARPU_RW;
             }
         }
-
-        memset(&m2l_cl, 0, sizeof(m2l_cl) * 189);
+        // M2L
+        memset(m2l_cl, 0, sizeof(starpu_codelet) * 189);
         for(int idxNeig = 0 ; idxNeig < 189 ; ++idxNeig){
             m2l_cl[idxNeig].where = STARPU_CPU;
             m2l_cl[idxNeig].cpu_funcs[0] = m2l_cpu;
@@ -262,14 +291,14 @@ class FFmmAlgorithmStarpu : protected FAssertable{
                 m2l_cl[idxNeig].modes[idxMode+1] = STARPU_R;
             }
         }
-
+        // L2P
         memset(&l2p_cl, 0, sizeof(l2p_cl));
         l2p_cl.where = STARPU_CPU;
         l2p_cl.cpu_funcs[0] = l2p_cpu;
         l2p_cl.nbuffers = 2;
-
-        memset(&m2m_cl, 0, sizeof(m2m_cl) * 8);
-        memset(&l2l_cl, 0, sizeof(l2l_cl) * 8);
+        // M2M & L2L
+        memset(m2m_cl, 0, sizeof(starpu_codelet) * 8);
+        memset(l2l_cl, 0, sizeof(starpu_codelet) * 8);
         for( int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             m2m_cl[idxChild].where = STARPU_CPU;
             m2m_cl[idxChild].cpu_funcs[0] = m2m_cpu;
@@ -288,24 +317,8 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         }
     }
 
+    // Release the codelet
     void releaseCodelets(){
-    }
-
-    //////////////////////////////////////////////////////////////////
-    // Manage args
-    //////////////////////////////////////////////////////////////////
-
-    int* argsLevels;
-
-    void initArgs(){
-        argsLevels = new int[OctreeHeight];
-        for( int idx = 0 ;idx  < OctreeHeight ; ++idx){
-            argsLevels[idx] = idx;
-        }
-    }
-
-    void releaseArgs(){
-        delete[] argsLevels;
     }
 
     //////////////////////////////////////////////////////////////////
@@ -344,6 +357,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     // Init Kernels
     //////////////////////////////////////////////////////////////////
 
+    // Init the fmm kernel (1 per thread)
     void initKernels(){
         globalKernels = new KernelClass*[starpu_worker_get_count()];
         memset(globalKernels, 0, sizeof(KernelClass*) * starpu_worker_get_count());
@@ -355,6 +369,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         }
     }
 
+    // Delete kernels
     void releaseKernels(){
         for(unsigned int workerid = 0; workerid < starpu_worker_get_count(); ++workerid){
             delete globalKernels[workerid];
@@ -372,26 +387,22 @@ public:
     FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
         FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu\n");
-
+        // Run starpu
         starpu_init(NULL);
 
-        EmptyHandle.registerVariable( &EmptyValue );
-
+        // Init
         initCodelets();
-        initArgs();
         initHandles();
         initKernels();
     }
 
     /** Default destructor */
     virtual ~FFmmAlgorithmStarpu(){
-        EmptyHandle.unregisterData();
-
+        // Release stuff
         releaseCodelets();
-        releaseArgs();
         releaseHandles();
         releaseKernels();
-
+        // Shutdown
         starpu_shutdown();
     }
 
@@ -401,14 +412,14 @@ public:
       */
     void execute(){
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
-
+        // Insert tasks
         P2M_P2P_Tasks();
 
         M2M_M2L_Tasks();
 
         L2LTasks();
         L2PTasks();
-
+        // Wait
         FDEBUG(FDebug::Controller << "Waiting...\n");
         starpu_task_wait_for_all();
 
@@ -425,6 +436,7 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart P2M && P2P\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
+        // Neeed data
         ContainerClass* neighbors[27];
         const int heightMinusOne = OctreeHeight - 1;
 
@@ -439,31 +451,38 @@ public:
             }
             // P2P
             {
-                /*const int counter =*/ tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
+                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
                 //kernels->P2P(octreeIterator.getCurrentGlobalIndex(),octreeIterator.getCurrentListTargets(), octreeIterator.getCurrentListSrc() , neighbors, neighborsIndex, counter);
                 struct starpu_task* const task = starpu_task_create();
 
+                // handles 0 is the current leaf
                 task->handles[0] = octreeIterator.getCurrentLeaf()->getTargets()->handle.handle;
-                //task->handles[0].mode = STARPU_RW;
 
-                for(int idxCounterNeigh = 0 ; idxCounterNeigh < 27 ; ++idxCounterNeigh){
+                // then we insert neighbors with a mask system
+                unsigned int mask = 0;
+                int idxInsert = 1;
+                for(int idxCounterNeigh = 26 ; idxCounterNeigh >= 0 ; --idxCounterNeigh){
+                    mask <<= 1;
                     if( neighbors[idxCounterNeigh] ){
-                        task->handles[idxCounterNeigh + 1] = neighbors[idxCounterNeigh]->handle.handle;
-                        //task->handles[idxCounterNeigh + 1].mode   = STARPU_RW;
-                    }
-                    else {
-                        task->handles[idxCounterNeigh + 1] = EmptyHandle.handle;
-                        //task->handles[idxCounterNeigh + 1].mode   = STARPU_R;
+                        task->handles[idxInsert++] = neighbors[idxCounterNeigh]->handle.handle;
+                        ++mask;
                     }
                 }
+                // Put the right codelet
+                task->cl = &p2p_cl[counter];
 
-                task->cl = &p2p_cl[0];
-
-                task->cl_arg = const_cast<FTreeCoordinate*>(&octreeIterator.getCurrentGlobalCoordinate());
-                task->cl_arg_size = sizeof(FTreeCoordinate);
-
+                // Add buffer data
+                char *arg_buffer;
+                size_t arg_buffer_size;
+                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &mask, sizeof(mask),
+                        STARPU_VALUE, const_cast<FTreeCoordinate*>(&octreeIterator.getCurrentGlobalCoordinate()), sizeof(FTreeCoordinate),
+                        0);
+                task->cl_arg = arg_buffer;
+                task->cl_arg_size = arg_buffer_size;
+                // Set priority to min
                 task->priority = starpu_sched_get_min_priority();
-
+                // submit task
                 starpu_task_submit(task);
 
             }
@@ -482,115 +501,136 @@ public:
         FTRACE( FTrace::Controller.enterFunction(FTrace::FMM, __FUNCTION__ , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart M2M M2L\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
-
+        // Start from leaf level for M2L
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
+        // Needed data
         const CellClass* neighbors[343];
+        unsigned int mask_m2l[12];
 
         // M2L at leaf level
         {
             const int idxLevel = OctreeHeight - 1;
+            // for all leafs
             do{
-                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
-
+                // get interaction list
+                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                // if not empty
                 if(counter){
+                    // create task
                     struct starpu_task* const task = starpu_task_create();
-
+                    // buffer 0 is current leaf
                     task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
-                    //task->handles[0].mode = STARPU_RW;
 
-                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+                    // insert other with a mask
+                    memset(mask_m2l, 0, sizeof(unsigned int) * 12);
+                    int idxInsert = 1;
+                    for(int idxNeigh = 342 ; idxNeigh >= 0 ; --idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handle.handle;
-                            //task->handles[idxNeigh+1].mode = STARPU_R;
-                        }
-                        else {
-                            task->handles[idxNeigh+1] = EmptyHandle.handle;
-                            //task->handles[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
+                            mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
                         }
                     }
-
-                    task->cl = &m2l_cl[0];
-
-                    task->cl_arg = &argsLevels[idxLevel];
-                    task->cl_arg_size = sizeof(int);
-
+                    // put the right codelet
+                    task->cl = &m2l_cl[counter-1];
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                            STARPU_VALUE, mask_m2l, sizeof(unsigned int) * 12,
+                            0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    // submit task
                     starpu_task_submit(task);
                 }
 
             } while(octreeIterator.moveRight());
-
+            // move up
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
         }
 
+        // for all level above leaf-level
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             // M2M
             do{
                 //kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
-
+                // buffer 0 is parent cell
                 task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
-                //task->handles[0].mode = STARPU_RW;
-
+                // add child with mask
+                unsigned int mask = 0;
+                int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                for(int idxChild = 7 ; idxChild >= 0 ; --idxChild){
+                    mask <<= 1;
                     if(child[idxChild]){
-                        task->handles[idxChild+1] = child[idxChild]->handle.handle;
-                        //task->handles[idxChild+1].mode = STARPU_R;
-                    }
-                    else{
-                        task->handles[idxChild+1] = EmptyHandle.handle;
-                        //task->handles[idxChild+1].mode = STARPU_R;
+                        task->handles[idxInsert++] = child[idxChild]->handle.handle;
+                        ++mask;
                     }
                 }
-
-                task->cl = &m2m_cl[0];
-
-                task->cl_arg = &argsLevels[idxLevel];
-                task->cl_arg_size = sizeof(int);
-
+                // put right codelet
+                task->cl = &m2m_cl[idxInsert-2];
+                // put args data
+                char *arg_buffer;
+                size_t arg_buffer_size;
+                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                        STARPU_VALUE, &mask, sizeof(mask),
+                        0);
+                task->cl_arg = arg_buffer;
+                task->cl_arg_size = arg_buffer_size;
+                // insert task
                 starpu_task_submit(task);
             } while(octreeIterator.moveRight());
 
+            // restart this leve
             octreeIterator = avoidGotoLeftIterator;
 
             // M2L
             do{
+                // get interaction list
                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
-
+                // if not empty
                 if(counter){
+                    // create task
                     struct starpu_task* const task = starpu_task_create();
-
+                    // buffer 0 is current leaf
                     task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
-                    //task->handles[0].mode = STARPU_RW;
 
-                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+                    // insert other with a mask
+                    memset(mask_m2l, 0, sizeof(unsigned int) * 12);
+                    int idxInsert = 1;
+                    for(int idxNeigh = 342 ; idxNeigh >= 0 ; --idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxNeigh+1] = neighbors[idxNeigh]->handle.handle;
-                            //task->handles[idxNeigh+1].mode = STARPU_R;
-                        }
-                        else {
-                            task->handles[idxNeigh+1] = EmptyHandle.handle;
-                            //task->handles[idxNeigh+1].mode = STARPU_R;
+                            task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
+                            mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
                         }
                     }
-
-                    task->cl = &m2l_cl[0];
-
-                    task->cl_arg = &argsLevels[idxLevel];
-                    task->cl_arg_size = sizeof(int);
-
+                    // put the right codelet
+                    task->cl = &m2l_cl[counter-1];
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                            STARPU_VALUE, mask_m2l, sizeof(unsigned int) * 12,
+                            0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    // submit task
                     starpu_task_submit(task);
                 }
 
             } while(octreeIterator.moveRight());
 
+            // move up
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
-
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@M2M = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -607,40 +647,45 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart L2L\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
+        // start from level 2
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
-
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
+        // for all level until leaf-level
         for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel ){
             do{
                 //kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
-
+                // buffer 0 is parent cell
                 task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
-                //task->handles[0].mode = STARPU_R;
-
+                // insert children with mask
+                unsigned int mask = 0;
+                int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                for(int idxChild = 7 ; idxChild >= 0 ; --idxChild){
+                    mask <<= 1;
                     if(child[idxChild]){
-                        task->handles[idxChild+1] = child[idxChild]->handle.handle;
-                        //task->handles[idxChild+1].mode = STARPU_RW;
-                    }
-                    else{
-                        task->handles[idxChild+1] = EmptyHandle.handle;
-                        //task->handles[idxChild+1].mode = STARPU_R;
+                        task->handles[idxInsert++] = child[idxChild]->handle.handle;
+                        ++mask;
                     }
                 }
-
-                task->cl = &l2l_cl[0];
-
-                task->cl_arg = &argsLevels[idxLevel];
-                task->cl_arg_size = sizeof(int);
-
+                // put right codelet
+                task->cl = &l2l_cl[idxInsert-2];
+                // add buffer data
+                char *arg_buffer;
+                size_t arg_buffer_size;
+                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                        STARPU_VALUE, &mask, sizeof(mask),
+                        0);
+                task->cl_arg = arg_buffer;
+                task->cl_arg_size = arg_buffer_size;
+                // submit
                 starpu_task_submit(task);
 
             } while(octreeIterator.moveRight());
-
+            // go down
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
         }
@@ -659,6 +704,7 @@ public:
         FDEBUG( FDebug::Controller.write("\tStart L2P\n").write(FDebug::Flush) );
         FDEBUG(FTic counterTime);
 
+        // for all leaves
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
@@ -675,114 +721,135 @@ public:
     // Callback
     /////////////////////////////////////////////////////////////////////////////
 
+    // The current solution uses a global array of kernel
     static KernelClass** globalKernels;
 
-    static void p2m_cpu(void *descr[], void *)
-    {
+    // P2M
+    static void p2m_cpu(void *descr[], void *){
+        // get leaf
         RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
-
+        // get particles
         DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
-
+        // compute
         globalKernels[starpu_worker_get_id()]->P2M( currentCell , &particles );
     }
 
+    // M2M
     static void m2m_cpu(void *descr[], void *cl_arg)
     {
+        // init pointers array
         const RealCellClass* child[8];
         memset(child, 0, sizeof(RealCellClass*)*8);
-
-        const int level = (*static_cast<int*>(cl_arg));
-        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
-
-        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-            const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
-            if(empty != EmptyValue){
-                child[idxChild] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
+        // get args
+        int level;
+        unsigned int mask;
+        starpu_codelet_unpack_args(cl_arg, &level, &mask);
+        int counter = 1;
+        // get child
+        for(int idxChild = 0 ; idxChild < 8 && mask; ++idxChild){
+            if( mask & 1 ){
+                child[idxChild] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[counter++]));
             }
+            mask >>= 1;
         }
-
+        // get parent
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        // compute
         globalKernels[starpu_worker_get_id()]->M2M( currentCell , child , level);
     }
 
+    // M2L
     static void m2l_cpu(void *descr[], void *cl_arg)
-    {return;
-        const int level = (*static_cast<int*>(cl_arg));
-        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
-
+    {
+        // get args
+        int level;
+        unsigned int mask[12];
+        starpu_codelet_unpack_args(cl_arg, &level, mask);
+        // init pointers array
         const RealCellClass* neighbor[343];
         memset(neighbor, 0, 343 * sizeof(RealCellClass*));
-
+        // get interaction list from mask
         int counter = 0;
         for(int idxNeig = 0 ; idxNeig < 343 ; ++idxNeig){
-            const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
-            if(empty != EmptyValue){
-                neighbor[idxNeig] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
+            if(mask[idxNeig >> 5] & (1 << (idxNeig & 0x1F))){
                 ++counter;
+                neighbor[idxNeig] = ((const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[counter]));
             }
         }
-
+        // get current cell
+        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        // compute
         globalKernels[starpu_worker_get_id()]->M2L( currentCell , neighbor, counter, level );
-
     }
 
-
+    // L2L
     static void l2l_cpu(void *descr[], void * cl_arg)
     {
+        // init pointers data
         RealCellClass* child[8];
         memset(child, 0, sizeof(RealCellClass*)*8);
-
-        const int level = (*static_cast<int*>(cl_arg));
-        RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
-
-        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-            const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
-            if(empty != EmptyValue){
-                child[idxChild] = ((RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[idxChild+1]));
+        // get args
+        int level;
+        unsigned int mask;
+        starpu_codelet_unpack_args(cl_arg, &level, &mask);
+        int counter = 1;
+        // retrieve child
+        for(int idxChild = 0 ; idxChild < 8 && mask; ++idxChild){
+            if( mask & 1){
+                child[idxChild] = ((RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[counter++]));
             }
-
+            mask >>= 1;
         }
-
+        // get parents
+        const RealCellClass* const currentCell = (RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
+        // compute
         globalKernels[starpu_worker_get_id()]->L2L( currentCell , child , level);
     }
 
+    // L2L
     static void l2p_cpu(void *descr[], void *)
     {
+        // get leaf
         const RealCellClass* const currentCell = (const RealCellClass*)STARPU_VARIABLE_GET_PTR(descr[0]);
-
+        // get particles
         DataVector<ParticleClass> particles((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[1]), STARPU_VECTOR_GET_NX(descr[1]));
-
+        // compute
         globalKernels[starpu_worker_get_id()]->L2P( currentCell , &particles );
     }
 
+    // P2P
     static void p2p_cpu(void *descr[], void* cl_arg) {
-        DataVector<ParticleClass> currentContainer((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[0]), STARPU_VECTOR_GET_NX(descr[0]));
-        const FTreeCoordinate& coordinate = *(static_cast<const FTreeCoordinate*>(cl_arg));
-
+        // retrieve args
+        unsigned int mask;
+        FTreeCoordinate coordinate;
+        starpu_codelet_unpack_args(cl_arg, &mask, &coordinate);
+        // pointers data
         DataVector<ParticleClass>* neighors[27];
         memset(neighors, 0, 27 * sizeof(DataVector<ParticleClass>*) );
 
+        // get neigbors by allocating a vector wrapper
         int counter = 0;
-        for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-            const unsigned int empty = *((const unsigned int*)STARPU_VARIABLE_GET_PTR(descr[idxNeig+1]));
-            if(empty != EmptyValue){
-                neighors[idxNeig] = new DataVector<ParticleClass>((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[idxNeig+1]), STARPU_VECTOR_GET_NX(descr[idxNeig+1]));
+        for(int idxNeig = 0 ; idxNeig < 27 && mask; ++idxNeig){
+            if(mask & 1){
                 ++counter;
+                neighors[idxNeig] = new DataVector<ParticleClass>((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[counter]), STARPU_VECTOR_GET_NX(descr[counter]));
             }
+            mask >>= 1;
         }
-
+        // get current particles
+        DataVector<ParticleClass> currentContainer((ParticleClass*)STARPU_VECTOR_GET_PTR(descr[0]), STARPU_VECTOR_GET_NX(descr[0]));
+        // compute
         globalKernels[starpu_worker_get_id()]->P2P(coordinate, &currentContainer, &currentContainer , neighors, counter);
-
+        // dealloc wrapper
         for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-            delete neighors[idxNeig];
+            if(neighors[idxNeig]) delete neighors[idxNeig];
         }
     }
 
 };
 
 template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
-unsigned int FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass, KernelClass, LeafClass>::EmptyValue = 0xFFFFFFFF;
-template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
-StarHandle FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass, KernelClass, LeafClass>::EmptyHandle;
+KernelClass** FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass>::globalKernels = 0;
 
 #endif //FFMMALGORITHMSTARPU_HPP
 

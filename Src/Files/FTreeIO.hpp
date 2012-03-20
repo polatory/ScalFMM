@@ -53,7 +53,7 @@ public:
         const FReal width = tree.getBoxWidth();
         file.write((const char*)&width, sizeof(FReal));
 
-        file.write((const char*)&tree.getBoxCenter(), sizeof(F3DPosition));
+        file.write((const char*)&tree.getBoxCenter(), sizeof(FPoint));
 
         {
             typename OctreeClass::Iterator octreeIterator(&tree);
@@ -181,8 +181,8 @@ public:
         file.read((char*)&treeSubHeight, sizeof(int));
         FReal boxWidth = 0;
         file.read((char*)&boxWidth, sizeof(FReal));
-        F3DPosition center;
-        file.read((char*)&center, sizeof(F3DPosition));
+        FPoint center;
+        file.read((char*)&center, sizeof(FPoint));
 
         tree.~OctreeClass();
         new (&tree) OctreeClass(treeHeight,treeSubHeight,boxWidth,center);

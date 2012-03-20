@@ -25,7 +25,7 @@
 
 
 #include "../../Src/Utils/FGlobal.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FTic.hpp"
 
@@ -56,9 +56,9 @@ int main(int argc, char* argv[])
 	const unsigned int nnodes = TensorTraits<order>::nnodes;
 
 	// interpolation points of source (Y) and target (X) cell
-	F3DPosition X[nnodes], Y[nnodes];
+	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(F3DPosition(0.,0.,0.), FReal(2.), X);
+	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 	
 
 	/*
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 			for (int k=-3; k<=3; ++k) {
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					// set roots of source cell (Y)
-					const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 					// evaluate m2l operator
 					for (unsigned int n=0; n<nnodes; ++n)
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
 	const unsigned int i = 3;
 	const unsigned int j = 3;
 	const unsigned int k = 3;
-	const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+	const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 	FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 	// evaluate m2l operator
 	for (unsigned int n=0; n<nnodes; ++n)

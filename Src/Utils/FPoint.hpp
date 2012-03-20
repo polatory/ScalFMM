@@ -6,10 +6,10 @@
 // Initial software: ScalFmm Version 0.5
 // Co-authors: Olivier Coulaud, Bérenger Bramas.
 // Owners: INRIA.
-// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietardata[1] license.
 // ===================================================================================
-#ifndef F3DPOSITION_HPP
-#define F3DPOSITION_HPP
+#ifndef FPOINT_HPP
+#define FPOINT_HPP
 
 
 // To get memcpy
@@ -22,52 +22,58 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class F3DPosition
+* @class FPoint
 * Please read the license
 *
 * This class is a 3D vector. It can be used as a position
 * or as a 3d forces vector etc.
 */
-class F3DPosition{
+class FPoint {
 private:
-    FReal x; //< x position
-    FReal y; //< y position
-    FReal z; //< z position
+    FReal data[3]; //< all positions x y z
 
 public:	
     /** Default constructor (sets position to 0/0/0) */
-    F3DPosition() : x(0.0), y(0.0), z(0.0){
+    FPoint(){
+        data[0] = data[1] = data[2] = FReal(0);
     }
 
     /** Constructor from values */
-    explicit F3DPosition(const FReal inX,const FReal inY,const FReal inZ)
-        : x(inX), y(inY), z(inZ){
+    explicit FPoint(const FReal inX,const FReal inY,const FReal inZ){
+        data[0] = inX;
+        data[1] = inY;
+        data[2] = inZ;
     }
 
     /**
- * Copy constructor
+ * Copdata[1] constructor
  * @param other the source class to copy
  */
-    F3DPosition(const F3DPosition& other): x(other.x), y(other.y), z(other.z){
+    FPoint(const FPoint& other) {
+        data[0] = other.data[0];
+        data[1] = other.data[1];
+        data[2] = other.data[2];
     }
 
     /**
         * Assignement operator
         * @param other the source class to copy
         */
-    F3DPosition(const F3DPosition& other, const FReal addset)
-        : x(other.x + addset), y(other.y + addset), z(other.z + addset){
+    FPoint(const FPoint& other, const FReal addset) {
+        data[0] = other.data[0] + addset;
+        data[1] = other.data[1] + addset;
+        data[2] = other.data[2] + addset;
     }
 
     /**
- * Copy constructor
+ * Copdata[1] constructor
  * @param other the source class to copy
  * @return this a reference to the current class
  */
-    F3DPosition& operator=(const F3DPosition& other){
-        this->x = other.x;
-        this->y = other.y;
-        this->z = other.z;
+    FPoint& operator=(const FPoint& other){
+        this->data[0] = other.data[0];
+        this->data[1] = other.data[1];
+        this->data[2] = other.data[2];
         return *this;
     }
 
@@ -77,33 +83,33 @@ public:
  * @return this a reference to the current class
  */
     void setPosition(const FReal inX,const FReal inY,const FReal inZ){
-        this->x = inX;
-        this->y = inY;
-        this->z = inZ;
+        this->data[0] = inX;
+        this->data[1] = inY;
+        this->data[2] = inZ;
     }
 
     /**
  * Get x
- * @return this->x
+ * @return this->data[0]
  */
     FReal getX() const{
-        return this->x;
+        return this->data[0];
     }
 
     /**
  * Get y
- * @return this->y
+ * @return this->data[1]
  */
     FReal getY() const{
-        return this->y;
+        return this->data[1];
     }
 
     /**
  * Get z
- * @return this->z
+ * @return this->data[2]
  */
     FReal getZ() const{
-        return this->z;
+        return this->data[2];
     }
 
     /**
@@ -111,7 +117,7 @@ public:
  * @param the new x
  */
     void setX(const FReal inX){
-        this->x = inX;
+        this->data[0] = inX;
     }
 
     /**
@@ -119,7 +125,7 @@ public:
  * @param the new y
  */
     void setY(const FReal inY){
-        this->y = inY;
+        this->data[1] = inY;
     }
 
     /**
@@ -127,7 +133,7 @@ public:
  * @param the new z
  */
     void setZ(const FReal inZ){
-        this->z = inZ;
+        this->data[2] = inZ;
     }
 
     /**
@@ -135,7 +141,7 @@ public:
  * @param the new x
  */
     void incX(const FReal inX){
-        this->x += inX;
+        this->data[0] += inX;
     }
 
     /**
@@ -143,7 +149,7 @@ public:
  * @param the new y
  */
     void incY(const FReal inY){
-        this->y += inY;
+        this->data[1] += inY;
     }
 
     /**
@@ -151,7 +157,7 @@ public:
  * @param the new z
  */
     void incZ(const FReal inZ){
-        this->z += inZ;
+        this->data[2] += inZ;
     }
 
     /**
@@ -159,10 +165,10 @@ public:
  * @param inValue the value to substract
  * @return the current object after being subtracted
  */
-    F3DPosition& operator-=(const FReal inValue){
-        this->x -= inValue;
-        this->y -= inValue;
-        this->z -= inValue;
+    FPoint& operator-=(const FReal inValue){
+        this->data[0] -= inValue;
+        this->data[1] -= inValue;
+        this->data[2] -= inValue;
         return *this;
     }
 
@@ -171,10 +177,10 @@ public:
  * @param inValue the value to afect
  * @return the current object after being affected
  */
-    F3DPosition& operator+=(const FReal inValue){
-        this->x += inValue;
-        this->y += inValue;
-        this->z += inValue;
+    FPoint& operator+=(const FReal inValue){
+        this->data[0] += inValue;
+        this->data[1] += inValue;
+        this->data[2] += inValue;
         return *this;
     }
 
@@ -183,10 +189,10 @@ public:
         * @param other the value to substract
         * @return the current object after being subtracted
         */
-    F3DPosition& operator-=(const F3DPosition& other){
-        this->x -= other.x;
-        this->y -= other.y;
-        this->z -= other.z;
+    FPoint& operator-=(const FPoint& other){
+        this->data[0] -= other.data[0];
+        this->data[1] -= other.data[1];
+        this->data[2] -= other.data[2];
         return *this;
     }
 
@@ -195,10 +201,10 @@ public:
         * @param other the value to afect
         * @return the current object after being affected
         */
-    F3DPosition& operator+=(const F3DPosition& other){
-        this->x += other.x;
-        this->y += other.y;
-        this->z += other.z;
+    FPoint& operator+=(const FPoint& other){
+        this->data[0] += other.data[0];
+        this->data[1] += other.data[1];
+        this->data[2] += other.data[2];
         return *this;
     }
 
@@ -207,10 +213,10 @@ public:
         * @param other the value to afect
         * @return the current object after being affected
         */
-    F3DPosition& operator*=(const FReal value){
-        this->x *= value;
-        this->y *= value;
-        this->z *= value;
+    FPoint& operator*=(const FReal value){
+        this->data[0] *= value;
+        this->data[1] *= value;
+        this->data[2] *= value;
         return *this;
     }
 
@@ -221,8 +227,8 @@ public:
         * @param inValue the value to decrease/substract position
         * @return the resulting position
         */
-    friend inline F3DPosition operator-(const F3DPosition& inPosition, const FReal inValue){
-        return F3DPosition(inPosition, -inValue);
+    friend inline FPoint operator-(const FPoint& inPosition, const FReal inValue){
+        return FPoint(inPosition, -inValue);
     }
 
     /**
@@ -232,8 +238,8 @@ public:
         * @param inValue the value to increase/affect position
         * @return the resulting position
         */
-    friend inline F3DPosition operator+(const F3DPosition& inPosition, const FReal inValue){
-        return F3DPosition(inPosition, inValue);
+    friend inline FPoint operator+(const FPoint& inPosition, const FReal inValue){
+        return FPoint(inPosition, inValue);
     }
 
     /**
@@ -243,8 +249,8 @@ public:
         * @param inOther the position to decrease/substract inPosition
         * @return the resulting position
         */
-    friend inline F3DPosition operator-(const F3DPosition& inPosition, const F3DPosition& inOther){
-        return F3DPosition(inPosition.x - inOther.x, inPosition.y - inOther.y, inPosition.z - inOther.z);
+    friend inline FPoint operator-(const FPoint& inPosition, const FPoint& inOther){
+        return FPoint(inPosition.data[0] - inOther.data[0], inPosition.data[1] - inOther.data[1], inPosition.data[2] - inOther.data[2]);
     }
 
     /**
@@ -254,35 +260,35 @@ public:
         * @param inOther the position to increase inPosition
         * @return the resulting position
         */
-    friend inline F3DPosition operator+(const F3DPosition& inPosition, const F3DPosition& inOther){
-        return F3DPosition(inPosition.x + inOther.x, inPosition.y + inOther.y, inPosition.z + inOther.z);
+    friend inline FPoint operator+(const FPoint& inPosition, const FPoint& inOther){
+        return FPoint(inPosition.data[0] + inOther.data[0], inPosition.data[1] + inOther.data[1], inPosition.data[2] + inOther.data[2]);
     }
 
     /**
-     * Operator stream F3DPosition to std::ostream
-     * This can be used to simply write out a position
+     * Operator stream FPoint to std::ostream
+     * This can be used to simpldata[1] write out a position
      * @param[in,out] output where to write the position
      * @param[in] inPosition the position to write out
      * @return the output for multiple << operators
      */
-    friend std::ostream& operator<<(std::ostream& output, const F3DPosition& inPosition){
+    friend std::ostream& operator<<(std::ostream& output, const FPoint& inPosition){
         output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
         return output;  // for multiple << operators.
     }
 
     /** Save current object */
     void save(FBufferWriter& buffer) const {
-        buffer << x << y << z;
+        buffer << data[0] << data[1] << data[2];
     }
     /** Retrieve current object */
     void restore(FBufferReader& buffer) {
-        buffer >> x >> y >> z;
+        buffer >> data[0] >> data[1] >> data[2];
     }
 };
 
 
 
 
-#endif //F3DPOSITION_HPP
+#endif //FPOINT_HPP
 
 

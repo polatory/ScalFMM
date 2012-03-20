@@ -22,7 +22,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FBasicParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"

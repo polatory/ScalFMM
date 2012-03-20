@@ -28,13 +28,12 @@
 */
 class FTreeCoordinate{
 private:
-    int x;	//< x box-th position
-    int y;	//< y box-th position
-    int z;	//< z box-th position
+    int data[3];	//< all box-th position
 
 public:	
     /** Default constructor (position = {0,0,0})*/
-    FTreeCoordinate() : x(0), y(0), z(0){
+    FTreeCoordinate() {
+        data[0] = data[1] = data[2] = 0;
     }
 
     /**
@@ -43,23 +42,30 @@ public:
         * @param inY the y
         * @param inZ the z
         */
-    explicit FTreeCoordinate(const int inX,const int inY,const int inZ)
-        : x(inX), y(inY), z(inZ){
+    explicit FTreeCoordinate(const int inX,const int inY,const int inZ) {
+         data[0] = inX;
+         data[1] = inY;
+         data[2] = inZ;
     }
 
     /**
 	* Copy constructor
 	* @param other the source class to copy
 	*/
-    FTreeCoordinate(const FTreeCoordinate& other):x(other.x), y(other.y), z(other.z){
+    FTreeCoordinate(const FTreeCoordinate& other) {
+        data[0] = other.data[0];
+        data[1] = other.data[1];
+        data[2] = other.data[2];
     }
 
     /**
         * Copy constructor
         * @param other the source class to copy
         */
-    FTreeCoordinate(const FTreeCoordinate& other, const int inOffset)
-        : x(other.x + inOffset), y(other.y + inOffset), z(other.z + inOffset){
+    FTreeCoordinate(const FTreeCoordinate& other, const int inOffset) {
+        data[0] = other.data[0] + inOffset;
+        data[1] = other.data[1] + inOffset;
+        data[2] = other.data[2] + inOffset;
     }
 
     /**
@@ -68,9 +74,9 @@ public:
 	* @return this a reference to the current object
 	*/
     FTreeCoordinate& operator=(const FTreeCoordinate& other){
-        this->x = other.x;
-        this->y = other.y;
-        this->z = other.z;
+        data[0] = other.data[0];
+        data[1] = other.data[1];
+        data[2] = other.data[2];
         return *this;
     }
 
@@ -81,33 +87,33 @@ public:
         * @param inZ the new z
 	*/
     void setPosition(const int inX,const int inY,const int inZ){
-        this->x = inX;
-        this->y = inY;
-        this->z = inZ;
+        data[0] = inX;
+        data[1] = inY;
+        data[2] = inZ;
     }
 
     /**
 	* X Getter
-	* @return this->x
+        * @return data[0]
 	*/
     int getX() const{
-        return this->x;
+        return data[0];
     }
 
     /**
 	* Y Getter
-	* @return this->y
+        * @return data[1]
 	*/
     int getY() const{
-        return this->y;
+        return data[1];
     }
 
     /**
 	* Z Getter
-	* @return this->z
+        * @return data[2]
 	*/
     int getZ() const{
-        return this->z;
+        return data[2];
     }
 
     /**
@@ -115,7 +121,7 @@ public:
 	* @param the new x
 	*/
     void setX(const int inX){
-        this->x = inX;
+        data[0] = inX;
     }
 
     /**
@@ -123,7 +129,7 @@ public:
 	* @param the new y
 	*/
     void setY(const int inY){
-        this->y = inY;
+        data[1] = inY;
     }
 
     /**
@@ -131,7 +137,7 @@ public:
 	* @param the new z
 	*/
     void setZ(const int inZ){
-        this->z = inZ;
+        data[2] = inZ;
     }
 
     /**
@@ -144,9 +150,9 @@ public:
         MortonIndex index = 0x0LL;
         MortonIndex mask = 0x1LL;
         // the ordre is xyz.xyz...
-        MortonIndex mx = this->x << 2;
-        MortonIndex my = this->y << 1;
-        MortonIndex mz = this->z;
+        MortonIndex mx = data[0] << 2;
+        MortonIndex my = data[1] << 1;
+        MortonIndex mz = data[2];
 
         for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
             index |= (mz & mask);
@@ -171,16 +177,16 @@ public:
     void setPositionFromMorton(MortonIndex inIndex, const int inLevel){
         MortonIndex mask = 0x1LL;
 
-        this->x = 0;
-        this->y = 0;
-        this->z = 0;
+        data[0] = 0;
+        data[1] = 0;
+        data[2] = 0;
 
         for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
-            z |= int(inIndex & mask);
+            data[2] |= int(inIndex & mask);
             inIndex >>= 1;
-            y |= int(inIndex & mask);
+            data[1] |= int(inIndex & mask);
             inIndex >>= 1;
-            x |= int(inIndex & mask);
+            data[0] |= int(inIndex & mask);
 
             mask <<= 1;
         }
@@ -192,14 +198,14 @@ public:
           * @return true if other & current object have same position
           */
     bool operator==(const FTreeCoordinate& other) const {
-        return x == other.x && y == other.y && z == other.z;
+        return data[0] == other.data[0] && data[1] == other.data[1] && data[2] == other.data[2];
     }
 
     /** To test difference
       *
       */
     bool operator!=(const FTreeCoordinate& other) const{
-        return x != other.x || y != other.y || z != other.z;
+        return data[0] != other.data[0] || data[1] != other.data[1] || data[2] != other.data[2];
     }
 
     /**
@@ -214,14 +220,13 @@ public:
         return output;  // for multiple << operators.
     }
 
-
     /** Save current object */
     void save(FBufferWriter& buffer) const {
-        buffer << x << y << z;
+        buffer << data[0] << data[1] << data[2];
     }
     /** Retrieve current object */
     void restore(FBufferReader& buffer) {
-        buffer >> x >> y >> z;
+        buffer >> data[0] >> data[1] >> data[2];
     }
 };
 

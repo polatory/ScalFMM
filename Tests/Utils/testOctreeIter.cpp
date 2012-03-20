@@ -23,7 +23,7 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FBasicParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
@@ -55,7 +55,7 @@ int main(int argc, char ** argv){
     srand ( 1 ); // volontary set seed to constant
     // -----------------------------------------------------
 
-    OctreeClass tree(NbLevels, NbSubLevels, 1.0, F3DPosition(0.5,0.5,0.5));
+    OctreeClass tree(NbLevels, NbSubLevels, 1.0, FPoint(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;

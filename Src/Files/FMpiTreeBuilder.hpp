@@ -72,7 +72,7 @@ private:
         // create particles
         IndexedParticle*const realParticlesIndexed = new IndexedParticle[loader.getNumberOfParticles()];
         FMemUtils::memset(realParticlesIndexed, 0, sizeof(IndexedParticle) * loader.getNumberOfParticles());
-        F3DPosition boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
+        FPoint boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
         FTreeCoordinate host;
 
         const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / FReal(1 << (TreeHeight - 1) );
@@ -98,7 +98,7 @@ private:
     }
 
     static void SortParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass array[], const int size, const SortingType type,
-                                       const F3DPosition& centerOfBox, const FReal boxWidth,
+                                       const FPoint& centerOfBox, const FReal boxWidth,
                         const int TreeHeight, IndexedParticle**const outputArray, FSize* const outputSize){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__ , "Loader to Tree" , __FILE__ , __LINE__) );
 
@@ -106,7 +106,7 @@ private:
         IndexedParticle*const realParticlesIndexed = new IndexedParticle[size];
         FMemUtils::memset(realParticlesIndexed, 0, sizeof(IndexedParticle) * size);
 
-        F3DPosition boxCorner(centerOfBox - (boxWidth/2));
+        FPoint boxCorner(centerOfBox - (boxWidth/2));
         FTreeCoordinate host;
 
         const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
@@ -510,7 +510,7 @@ public:
 
     template <class OctreeClass>
     static void ArrayToTree(const FMpi::FComm& communicator, const ParticleClass array[], const int size,
-                            const F3DPosition& boxCenter, const FReal boxWidth,
+                            const FPoint& boxCenter, const FReal boxWidth,
                              OctreeClass& realTree, const SortingType type = QuickSort){
 
         IndexedParticle* particlesArray = 0;

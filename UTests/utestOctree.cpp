@@ -15,7 +15,7 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Utils/FAssertable.hpp"
-#include "../Src/Utils/F3DPosition.hpp"
+#include "../Src/Utils/FPoint.hpp"
 
 #include "../Src/Components/FBasicParticle.hpp"
 #include "../Src/Components/FBasicCell.hpp"
@@ -56,7 +56,7 @@ class TestOctree : public FUTester<TestOctree> {
             // For each level we try many sub-levels
             for(int idxSub = 1 ; idxSub < idxHeight ; ++idxSub){
 
-                OctreeClass tree(idxHeight, idxSub, BoxWidth, F3DPosition(BoxCenter,BoxCenter,BoxCenter));
+                OctreeClass tree(idxHeight, idxSub, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
 
                 // fill the tree
                 ParticleClass particleToFill;

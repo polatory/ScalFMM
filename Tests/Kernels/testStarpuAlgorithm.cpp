@@ -10,7 +10,6 @@
 // ===================================================================================
 
 // ==== CMAKE =====
-// @FUSE_BLAS
 // @FUSE_STARPU
 // ================
 
@@ -30,7 +29,6 @@
 #include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Components/FFmaParticle.hpp"
 #include "../../Src/Extensions/FExtendForces.hpp"
@@ -45,19 +43,17 @@
 #include <stdio.h>
 #include <string.h>
 
-template<class OctreeClass, class ParticleClass, class CellClass, class RealCellClass, class ContainerClass, class KernelClass, class LeafClass>
-KernelClass** FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass>::globalKernels = 0;
 
 // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/
 // Compile With openmp : g++ testFmbAlgorithm.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
 //
-// g++ -L../starpu/lib/ -I../starpu/include testFmbAlgorithmNoProc.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp ../../Src/Utils/FMath.cpp ../../Src/Utils/F3DPosition.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
+// g++ -L../starpu/lib/ -I../starpu/include testFmbAlgorithmNoProc.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp ../../Src/Utils/FMath.cpp ../../Src/Utils/FPoint.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
 
 ////////////////////////////////////////////////////////////////
 // Define classes
 ////////////////////////////////////////////////////////////////
 
-
+// just to be able to load a fma file
 class TestParticle : public FTestParticle, public FExtendPhysicalValue{
 };
 
@@ -65,19 +61,19 @@ class TestParticle : public FTestParticle, public FExtendPhysicalValue{
 // Typedefs
 ////////////////////////////////////////////////////////////////
 typedef TestParticle             ParticleClass;
+typedef StarVector<ParticleClass> ContainerClass;
+typedef DataVector<ParticleClass> RealContainerClass;
+
 typedef FTestCell                RealCellClass;
-
-
 typedef FStarCell<RealCellClass> CellClass;
 
-typedef StarVector<ParticleClass>      ContainerClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-typedef FTestKernels<ParticleClass, RealCellClass, DataVector<ParticleClass> >          KernelClass;
+typedef FTestKernels<ParticleClass, RealCellClass, RealContainerClass >          KernelClass;
 
-typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
+typedef FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
 
 ////////////////////////////////////////////////////////////////
 // Main

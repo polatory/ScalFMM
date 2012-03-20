@@ -19,7 +19,7 @@
 #include "../Utils/FGlobal.hpp"
 
 #include "FAbstractLoader.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -31,14 +31,14 @@ class FRandomLoader : public FAbstractLoader<ParticleClass> {
 protected:
     const int nbParticles;            //< the number of particles
     const FReal boxWidth;             //< the box width
-    const F3DPosition centerOfBox;    //< The center of box
+    const FPoint centerOfBox;    //< The center of box
 
 public:
     /**
     * The constructor need the simulation data
     */
     FRandomLoader(const int inNbParticles, const FReal inBoxWidth = 1.0,
-                  const F3DPosition& inCenterOfBox = F3DPosition(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
+                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
         srand(inSeed);
     }
@@ -68,7 +68,7 @@ public:
       * The center of the box
       * @return box center
       */
-    F3DPosition getCenterOfBox() const{
+    FPoint getCenterOfBox() const{
         return this->centerOfBox;
     }
 
@@ -104,7 +104,7 @@ template <class ParticleClass>
 class FRandomLoaderTsm : public FRandomLoader<ParticleClass> {
 public:
     FRandomLoaderTsm(const int inNbParticles, const FReal inBoxWidth = 1.0,
-                  const F3DPosition& inCenterOfBox = F3DPosition(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
+                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
         : FRandomLoader<ParticleClass>(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
     }
 

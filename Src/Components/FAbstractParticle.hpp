@@ -13,7 +13,7 @@
 
 
 /* forward declaration to avoid include */
-class F3DPosition;
+class FPoint;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -42,7 +42,7 @@ public:
 	* Must be implemented by each user Particle class
 	* @return the position of the current cell
 	*/
-        virtual const F3DPosition& getPosition() const = 0;
+        virtual const FPoint& getPosition() const = 0;
 };
 
 

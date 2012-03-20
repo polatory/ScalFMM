@@ -22,7 +22,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FBasicParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
@@ -46,7 +46,7 @@ int main(int argc, char ** argv){
     const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
     FTic counter;
 
-    FRandomLoader<FBasicParticle> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
+    FRandomLoader<FBasicParticle> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(10, 3, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------

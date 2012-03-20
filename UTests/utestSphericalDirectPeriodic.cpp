@@ -65,7 +65,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
-        const F3DPosition CenterOfBox = F3DPosition(0.5,0.5,0.5);
+        const FPoint CenterOfBox = FPoint(0.5,0.5,0.5);
 
         FSphericalCell::Init(DevP);
 
@@ -226,7 +226,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
-        const F3DPosition CenterOfBox = F3DPosition(0.5,0.5,0.5);
+        const FPoint CenterOfBox = FPoint(0.5,0.5,0.5);
 
         FSphericalCell::Init(DevP);
 
@@ -386,7 +386,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const long NbSmallBoxesPerSide = (1 << (NbLevels-1));
         const FReal SmallBoxWidth = BoxWidth / FReal(NbSmallBoxesPerSide);
         const FReal SmallBoxWidthDiv2 = SmallBoxWidth / 2;
-        const F3DPosition CenterOfBox = F3DPosition(0.5,0.5,0.5);
+        const FPoint CenterOfBox = FPoint(0.5,0.5,0.5);
 
         const int NbPart = NbSmallBoxesPerSide * NbSmallBoxesPerSide * NbSmallBoxesPerSide;
 

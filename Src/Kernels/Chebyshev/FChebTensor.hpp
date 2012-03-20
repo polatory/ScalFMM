@@ -90,13 +90,13 @@ public:
 	 * @param[out] rootPositions coordinates of interpolation points
 	 */
 	static
-	void setRoots(const F3DPosition& center, const FReal width,
-								F3DPosition rootPositions[nnodes])
+	void setRoots(const FPoint& center, const FReal width,
+								FPoint rootPositions[nnodes])
 	{
 		unsigned int node_ids[nnodes][3];
 		setNodeIds(node_ids);
 		const map_loc_glob map(center, width);
-		F3DPosition localPosition;
+		FPoint localPosition;
     for (unsigned int n=0; n<nnodes; ++n) {
 			localPosition.setX(FReal(BasisType::roots[node_ids[n][0]]));
 			localPosition.setY(FReal(BasisType::roots[node_ids[n][1]]));
@@ -113,7 +113,7 @@ public:
 	 */
 	static
 	void setRelativeChildCenter(const unsigned int ChildIndex,
-															F3DPosition& ChildCenter)
+															FPoint& ChildCenter)
 	{
 		const int RelativeChildPositions[][3] = { {-1, -1, -1},
 																							{-1, -1,  1},

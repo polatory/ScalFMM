@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <starpu.h>
+
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
@@ -38,6 +40,7 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 
 /** This program show an example of use of
@@ -81,8 +84,8 @@ int main(int argc, char* argv[])
 {
 	const unsigned int ORDER = 3;
 	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 4000000);
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 7);
+	const long NbPart                = FParameters::getValue(argc, argv, "-num", 400000);
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 6);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads   = FParameters::getValue(argc, argv, "-t", 1);
 
@@ -105,16 +108,29 @@ int main(int argc, char* argv[])
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	//typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+
+//	// typedefs for STARPU
+//	typedef FChebParticle ParticleClass;
+//	typedef StarVector<ParticleClass> ContainerClass;
+//	typedef DataVector<ParticleClass> RealContainerClass;
+//	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+//	typedef FChebMatrixKernelR MatrixKernelClass;
+//	typedef FChebCell<ORDER> RealCellClass;
+//	typedef FStarCell<RealCellClass> CellClass;
+//	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
+//	//typedef FChebKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+//	typedef FChebSymKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+//	typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
 	
-	const F3DPosition BoxCenter(.5*Width, .5*Width, .5*Width);
+	const FPoint BoxCenter(.5*Width, .5*Width, .5*Width);
 	OctreeClass tree(TreeHeight, SubTreeHeight, Width, BoxCenter);
 	
 	// -----------------------------------------------------
@@ -172,7 +188,7 @@ int main(int argc, char* argv[])
 						// potential
 						Potential[counter] += one_over_r * ws;
 						// force
-						F3DPosition force(iSource.data().getPosition() - iTarget.data().getPosition());
+						FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
 						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 						Force[counter*3 + 0] += force.getX();
 						Force[counter*3 + 1] += force.getY();
@@ -227,11 +243,11 @@ int main(int argc, char* argv[])
 	octreeIterator.gotoBottomLeft();
 	do{
 		const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-		const F3DPosition& LeafCellCenter = LeafCell -> getPosition();
+		const FPoint& LeafCellCenter = LeafCell -> getPosition();
 		const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
 		ContainerClass::ConstBasicIterator particleIterator(*Particles);
 		while(particleIterator.hasNotFinished()) {
-			const F3DPosition distance(LeafCellCenter-particleIterator.data().getPosition());
+			const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
 			std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
 			if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 					std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||

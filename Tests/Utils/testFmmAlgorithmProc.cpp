@@ -23,7 +23,7 @@
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 #include "../../Src/Utils/FAbstractSendable.hpp"
 
 #include "../../Src/Components/FFmaParticle.hpp"

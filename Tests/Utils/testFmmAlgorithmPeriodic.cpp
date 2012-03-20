@@ -23,7 +23,7 @@
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
@@ -66,7 +66,7 @@ int main(int argc, char ** argv){
     const FReal BoxWidth = 1.0;
     const FReal BoxCenter = 0.5;
 
-    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, F3DPosition(BoxCenter,BoxCenter,BoxCenter));
+    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

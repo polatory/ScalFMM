@@ -95,7 +95,7 @@ int main(int argc, char ** argv){
 
     { // get sum forces&potential
         FReal potential = 0;
-        F3DPosition forces;
+        FPoint forces;
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
