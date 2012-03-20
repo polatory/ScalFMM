@@ -29,7 +29,6 @@
 #include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Components/FFmaParticle.hpp"
 #include "../../Src/Extensions/FExtendForces.hpp"
@@ -62,19 +61,19 @@ class TestParticle : public FTestParticle, public FExtendPhysicalValue{
 // Typedefs
 ////////////////////////////////////////////////////////////////
 typedef TestParticle             ParticleClass;
+typedef StarVector<ParticleClass> ContainerClass;
+typedef DataVector<ParticleClass> RealContainerClass;
+
 typedef FTestCell                RealCellClass;
-
-
 typedef FStarCell<RealCellClass> CellClass;
 
-typedef StarVector<ParticleClass>      ContainerClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-typedef FTestKernels<ParticleClass, RealCellClass, DataVector<ParticleClass> >          KernelClass;
+typedef FTestKernels<ParticleClass, RealCellClass, RealContainerClass >          KernelClass;
 
-typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
+typedef FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
 
 ////////////////////////////////////////////////////////////////
 // Main
