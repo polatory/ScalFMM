@@ -22,9 +22,9 @@
 
 #include <cstdio>
 #include <cstdlib>
-
+#ifdef FUSE_STARPU
 #include <starpu.h>
-
+#endif
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
@@ -40,8 +40,9 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#ifdef FUSE_STARPU
 #include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
-
+#endif
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -101,6 +102,8 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
+#ifndef FUSE_STARPU
+
 	// typedefs
 	typedef FChebParticle ParticleClass;
 	typedef FVector<FChebParticle> ContainerClass;
@@ -108,11 +111,11 @@ int main(int argc, char* argv[])
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-	typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	//typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-
+#else
 //	// typedefs for STARPU
 //	typedef FChebParticle ParticleClass;
 //	typedef StarVector<ParticleClass> ContainerClass;
@@ -125,7 +128,7 @@ int main(int argc, char* argv[])
 //	//typedef FChebKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
 //	typedef FChebSymKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
 //	typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-
+#endif
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
@@ -182,7 +185,7 @@ int main(int argc, char* argv[])
 				ContainerClass::ConstBasicIterator iSource(*Sources);
 				while(iSource.hasNotFinished()) {
 					if (&iTarget.data() != &iSource.data()) {
-						const FReal one_over_r = MatrixKernel.evaluate(iTarget.data().getPosition(),
+					  const FReal one_over_r = MatrixKernel.evaluate(iTarget.data().getPosition(),
 																													 iSource.data().getPosition());
 						const FReal ws = iSource.data().getPhysicalValue();
 						// potential
