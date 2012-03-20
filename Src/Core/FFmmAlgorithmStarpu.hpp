@@ -267,6 +267,8 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         p2m_cl.where = STARPU_CPU;
         p2m_cl.cpu_funcs[0] = p2m_cpu;
         p2m_cl.nbuffers = 2;
+        p2m_cl.modes[0] = STARPU_W;
+        p2m_cl.modes[1] = STARPU_R;
         // P2P
         memset(p2p_cl, 0, sizeof(starpu_codelet) * 28);
         for(int idxNeig = 0 ; idxNeig <= 27 ; ++idxNeig){
@@ -378,7 +380,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     }
 
 
-public:	
+public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
@@ -446,7 +448,7 @@ public:
             // P2M
             {
                 //kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
-                starpu_insert_task( &p2m_cl, STARPU_RW, octreeIterator.getCurrentCell()->handle.handle,
+                starpu_insert_task( &p2m_cl, STARPU_W, octreeIterator.getCurrentCell()->handle.handle,
                                     STARPU_R, octreeIterator.getCurrentLeaf()->getSrc()->handle.handle, 0);
             }
             // P2P
@@ -461,11 +463,10 @@ public:
                 // then we insert neighbors with a mask system
                 unsigned int mask = 0;
                 int idxInsert = 1;
-                for(int idxCounterNeigh = 26 ; idxCounterNeigh >= 0 ; --idxCounterNeigh){
-                    mask <<= 1;
+                for(int idxCounterNeigh = 0 ; idxCounterNeigh < 27 ; ++idxCounterNeigh){
                     if( neighbors[idxCounterNeigh] ){
                         task->handles[idxInsert++] = neighbors[idxCounterNeigh]->handle.handle;
-                        ++mask;
+                        mask = mask | (1 << idxCounterNeigh);
                     }
                 }
                 // Put the right codelet
@@ -527,7 +528,7 @@ public:
                     // insert other with a mask
                     memset(mask_m2l, 0, sizeof(unsigned int) * 12);
                     int idxInsert = 1;
-                    for(int idxNeigh = 342 ; idxNeigh >= 0 ; --idxNeigh){
+                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
                             task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
                             mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
@@ -566,11 +567,10 @@ public:
                 unsigned int mask = 0;
                 int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
-                for(int idxChild = 7 ; idxChild >= 0 ; --idxChild){
-                    mask <<= 1;
+                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
                         task->handles[idxInsert++] = child[idxChild]->handle.handle;
-                        ++mask;
+                        mask = mask | (1 << idxChild);
                     }
                 }
                 // put right codelet
@@ -605,7 +605,7 @@ public:
                     // insert other with a mask
                     memset(mask_m2l, 0, sizeof(unsigned int) * 12);
                     int idxInsert = 1;
-                    for(int idxNeigh = 342 ; idxNeigh >= 0 ; --idxNeigh){
+                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
                             task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
                             mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
@@ -663,11 +663,10 @@ public:
                 unsigned int mask = 0;
                 int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
-                for(int idxChild = 7 ; idxChild >= 0 ; --idxChild){
-                    mask <<= 1;
+                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
                         task->handles[idxInsert++] = child[idxChild]->handle.handle;
-                        ++mask;
+                        mask = mask | (1 << idxChild);
                     }
                 }
                 // put right codelet
@@ -853,4 +852,3 @@ KernelClass** FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellCl
 
 #endif //FFMMALGORITHMSTARPU_HPP
 
-// [--LICENSE--]

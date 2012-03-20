@@ -44,11 +44,6 @@
 #include <string.h>
 
 
-// export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/
-// Compile With openmp : g++ testFmbAlgorithm.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
-//
-// g++ -L../starpu/lib/ -I../starpu/include testFmbAlgorithmNoProc.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp ../../Src/Utils/FMath.cpp ../../Src/Utils/FPoint.cpp -lgomp -fopenmp -lstarpu -O2 -o testFmbAlgorithm.exe
-
 ////////////////////////////////////////////////////////////////
 // Define classes
 ////////////////////////////////////////////////////////////////
