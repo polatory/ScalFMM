@@ -46,7 +46,7 @@ if( SCALFMM_BUILD_DEBUG )
 else()
   SET(CMAKE_BUILD_TYPE Release)
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    ADD_DEFINITIONS(-ip)
+#    ADD_DEFINITIONS(-ip)
   ENDIF()
 endif()
 
@@ -60,6 +60,8 @@ if( SCALFMM_USE_STARPU )
 	# Adding the project sources dir as an include dir
 	include_directories(${STARPU_INCLUDE_DIRS})
 	link_directories(${STARPU_LIBRARY_DIRS})
+	ADD_DEFINITIONS(-DFUSE_STARPU)
+
 endif()
 
 # Attach source code to exec
