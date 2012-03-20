@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <starpu.h>
+
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
@@ -38,6 +40,7 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
 
 
 /** This program show an example of use of
@@ -81,8 +84,8 @@ int main(int argc, char* argv[])
 {
 	const unsigned int ORDER = 3;
 	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 4000000);
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 7);
+	const long NbPart                = FParameters::getValue(argc, argv, "-num", 400000);
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 6);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads   = FParameters::getValue(argc, argv, "-t", 1);
 
@@ -105,10 +108,23 @@ int main(int argc, char* argv[])
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	//typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+
+//	// typedefs for STARPU
+//	typedef FChebParticle ParticleClass;
+//	typedef StarVector<ParticleClass> ContainerClass;
+//	typedef DataVector<ParticleClass> RealContainerClass;
+//	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+//	typedef FChebMatrixKernelR MatrixKernelClass;
+//	typedef FChebCell<ORDER> RealCellClass;
+//	typedef FStarCell<RealCellClass> CellClass;
+//	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
+//	//typedef FChebKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+//	typedef FChebSymKernel<ParticleClass,RealCellClass,RealContainerClass,MatrixKernelClass,ORDER> KernelClass;
+//	typedef FFmmAlgorithmStarpu<OctreeClass,ParticleClass,CellClass,RealCellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
