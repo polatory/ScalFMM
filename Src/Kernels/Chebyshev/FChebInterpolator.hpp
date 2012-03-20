@@ -106,14 +106,17 @@ public:
 	 * @param[out] Interpolator
 	 */
 	void assembleInterpolator(const unsigned int NumberOfLocalPoints,
-														const F3DPosition *const LocalPoints,
-														FReal *const Interpolator) const
-	{
+				  const F3DPosition *const LocalPoints,
+				  FReal *const Interpolator) const
+  {
 		// values of chebyshev polynomials of source particle: T_o(x_i)
 		FReal T_of_x[ORDER][3];
-
-		// loop: local points (mapped in [-1,1])
-		for (unsigned int m=0; m<NumberOfLocalPoints; ++m) {
+		FReal c0, c1, c2 ;
+		c0 = FReal(0.0) ;
+		c1 = FReal(1.) / ORDER;
+		c2 = FReal(2.) *c1 ;
+		  // loop: local points (mapped in [-1,1])
+		  for (unsigned int m=0; m<NumberOfLocalPoints; ++m) {
 			// evaluate chebyshev polynomials at local points
 			for (unsigned int o=1; o<ORDER; ++o) {
 				T_of_x[o][0] = BasisType::T(o, LocalPoints[m].getX());
@@ -126,9 +129,14 @@ public:
 				Interpolator[n*nnodes + m] = FReal(1.);
 				for (unsigned int d=0; d<3; ++d) {
 					const unsigned int j = node_ids[n][d];
-					FReal S_d = FReal(1.) / ORDER;
+					// FReal S_d = FReal(1.) / ORDER;
+					// for (unsigned int o=1; o<ORDER; ++o)
+					// 	S_d += FReal(2.) / ORDER * T_of_x[o][d] * T_of_roots[o][j];
+					// Interpolator[n*nnodes + m] *= S_d;
+					FReal S_d = c0 ;
 					for (unsigned int o=1; o<ORDER; ++o)
-						S_d += FReal(2.) / ORDER * T_of_x[o][d] * T_of_roots[o][j];
+						S_d +=  T_of_x[o][d] * T_of_roots[o][j];
+					S_d = c1 + c2*S_d ; 
 					Interpolator[n*nnodes + m] *= S_d;
 				}
 			}
@@ -224,8 +232,10 @@ inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
 	const map_glob_loc map(center, width);
 	F3DPosition localPosition;
 	FReal T_of_x[ORDER][3];
-	FReal S[3];
-
+	FReal S[3],c1;
+	//
+	FReal xpx,ypy,zpz ;
+	c1 = FReal(8.) / nnodes ;
 	// loop over source particles
 	typename ContainerClass::ConstBasicIterator iter(*sourceParticles);
 	while(iter.hasNotFinished()){
@@ -237,10 +247,17 @@ inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
 		T_of_x[0][0] = FReal(1.);	T_of_x[1][0] = localPosition.getX();
 		T_of_x[0][1] = FReal(1.);	T_of_x[1][1] = localPosition.getY();
 		T_of_x[0][2] = FReal(1.);	T_of_x[1][2] = localPosition.getZ();
+		xpx = FReal(2.) * localPosition.getX() ;
+		ypy = FReal(2.) * localPosition.getY() ;
+		zpz = FReal(2.) * localPosition.getZ() ;
+
 		for (unsigned int o=2; o<ORDER; ++o) {
-			T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
-			T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
-			T_of_x[o][2] = FReal(2.) * localPosition.getZ() * T_of_x[o-1][2] - T_of_x[o-2][2];
+			T_of_x[o][0] = xpx * T_of_x[o-1][0] - T_of_x[o-2][0];
+			T_of_x[o][1] = ypy * T_of_x[o-1][1] - T_of_x[o-2][1];
+			T_of_x[o][2] = zpz * T_of_x[o-1][2] - T_of_x[o-2][2];
+			// T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
+			// T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
+			// T_of_x[o][2] = FReal(2.) * localPosition.getZ() * T_of_x[o-1][2] - T_of_x[o-2][2];
 		}
 		
 		// anterpolate
@@ -256,10 +273,15 @@ inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
 				S[2] += T_of_x[o][2] * T_of_roots[o][j[2]];
 			}
 			// gather contributions
-			S[0] *= FReal(2.); S[0] += FReal(1.);
-			S[1] *= FReal(2.); S[1] += FReal(1.);
-			S[2] *= FReal(2.); S[2] += FReal(1.);
-			multipoleExpansion[n]	+= FReal(1.) / nnodes *	S[0] * S[1] * S[2] *	sourceValue;
+			//  Here we consider 1/2 S rather S then we multiply by 8 the results
+			// S[0] *= FReal(2.); S[0] += FReal(1.);
+			// S[1] *= FReal(2.); S[1] += FReal(1.);
+			// S[2] *= FReal(2.); S[2] += FReal(1.);
+			// multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
+			S[0] += FReal(0.5);
+			S[1] += FReal(0.5);
+			S[2] += FReal(0.5);
+			multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
 		}
 		// increment source iterator
 		iter.gotoNext();
@@ -281,8 +303,10 @@ inline void FChebInterpolator<ORDER>::applyL2P(const F3DPosition& center,
 	const map_glob_loc map(center, width);
 	F3DPosition localPosition;
 	FReal T_of_x[ORDER][3];
-	FReal S[3];
-		
+	FReal xpx,ypy,zpz ;
+	FReal S[3],c1;
+	//
+	c1 = FReal(8.) / nnodes ;
 	typename ContainerClass::BasicIterator iter(*localParticles);
 	while(iter.hasNotFinished()){
 			
@@ -293,6 +317,9 @@ inline void FChebInterpolator<ORDER>::applyL2P(const F3DPosition& center,
 		T_of_x[0][0] = FReal(1.);	T_of_x[1][0] = localPosition.getX();
 		T_of_x[0][1] = FReal(1.);	T_of_x[1][1] = localPosition.getY();
 		T_of_x[0][2] = FReal(1.);	T_of_x[1][2] = localPosition.getZ();
+		xpx = FReal(2.) * localPosition.getX() ;
+		ypy = FReal(2.) * localPosition.getY() ;
+		zpz = FReal(2.) * localPosition.getZ() ;
 		for (unsigned int o=2; o<ORDER; ++o) {
 			T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
 			T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
@@ -312,13 +339,19 @@ inline void FChebInterpolator<ORDER>::applyL2P(const F3DPosition& center,
 				S[2] += T_of_x[o][2] * T_of_roots[o][j[2]];
 			}
 			// gather contributions
-			S[0] *= FReal(2.); S[0] += FReal(1.);
-			S[1] *= FReal(2.); S[1] += FReal(1.);
-			S[2] *= FReal(2.); S[2] += FReal(1.);
+			// S[0] *= FReal(2.); S[0] += FReal(1.);
+			// S[1] *= FReal(2.); S[1] += FReal(1.);
+			// S[2] *= FReal(2.); S[2] += FReal(1.);
+			// targetValue	+= S[0] * S[1] * S[2] * localExpansion[n];
+			S[0] += FReal(0.5);
+			S[1] += FReal(0.5);
+			S[2] += FReal(0.5);
+			//
 			targetValue	+= S[0] * S[1] * S[2] * localExpansion[n];
 		}
 		// scale
-		targetValue /= nnodes;
+		//		targetValue /= nnodes;
+		targetValue *= c1;
 
 		// set potential
 		iter.data().setPotential(targetValue);
@@ -472,7 +505,10 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const F3DPosition& center,
 	FReal T_of_x[ORDER][3];
 	FReal U_of_x[ORDER][3];
 	FReal P[3];
-
+	//
+	FReal xpx,ypy,zpz ;
+	FReal c1 = FReal(8.0) / nnodes ; 
+	//
 	typename ContainerClass::BasicIterator iter(*localParticles);
 	while(iter.hasNotFinished()){
 			
@@ -481,22 +517,36 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const F3DPosition& center,
 			
 		// evaluate chebyshev polynomials of source particle
 		// T_0(x_i) and T_1(x_i)
+		xpx = FReal(2.) * localPosition.getX() ;
+		ypy = FReal(2.) * localPosition.getY() ;
+		zpz = FReal(2.) * localPosition.getZ() ;
+		//
 		T_of_x[0][0] = FReal(1.);	T_of_x[1][0] = localPosition.getX();
 		T_of_x[0][1] = FReal(1.);	T_of_x[1][1] = localPosition.getY();
 		T_of_x[0][2] = FReal(1.);	T_of_x[1][2] = localPosition.getZ();
 		// U_0(x_i) and U_1(x_i)
-		U_of_x[0][0] = FReal(1.);	U_of_x[1][0] = localPosition.getX() * FReal(2.);
-		U_of_x[0][1] = FReal(1.);	U_of_x[1][1] = localPosition.getY() * FReal(2.);
-		U_of_x[0][2] = FReal(1.);	U_of_x[1][2] = localPosition.getZ() * FReal(2.);
+		// U_of_x[0][0] = FReal(1.);	U_of_x[1][0] = localPosition.getX() * FReal(2.);
+		// U_of_x[0][1] = FReal(1.);	U_of_x[1][1] = localPosition.getY() * FReal(2.);
+		// U_of_x[0][2] = FReal(1.);	U_of_x[1][2] = localPosition.getZ() * FReal(2.);
+		U_of_x[0][0] = FReal(1.);	U_of_x[1][0] = xpx;
+		U_of_x[0][1] = FReal(1.);	U_of_x[1][1] = ypy;
+		U_of_x[0][2] = FReal(1.);	U_of_x[1][2] = zpz;
 		for (unsigned int o=2; o<ORDER; ++o) {
 			// T_o(x_i)
-			T_of_x[o][0] = FReal(2.)*localPosition.getX()*T_of_x[o-1][0] - T_of_x[o-2][0];
-			T_of_x[o][1] = FReal(2.)*localPosition.getY()*T_of_x[o-1][1] - T_of_x[o-2][1];
-			T_of_x[o][2] = FReal(2.)*localPosition.getZ()*T_of_x[o-1][2] - T_of_x[o-2][2];
+			// T_of_x[o][0] = FReal(2.)*localPosition.getX()*T_of_x[o-1][0] - T_of_x[o-2][0];
+			// T_of_x[o][1] = FReal(2.)*localPosition.getY()*T_of_x[o-1][1] - T_of_x[o-2][1];
+			// T_of_x[o][2] = FReal(2.)*localPosition.getZ()*T_of_x[o-1][2] - T_of_x[o-2][2];
+			// // U_o(x_i)
+			// U_of_x[o][0] = FReal(2.)*localPosition.getX()*U_of_x[o-1][0] - U_of_x[o-2][0];
+			// U_of_x[o][1] = FReal(2.)*localPosition.getY()*U_of_x[o-1][1] - U_of_x[o-2][1];
+			// U_of_x[o][2] = FReal(2.)*localPosition.getZ()*U_of_x[o-1][2] - U_of_x[o-2][2];
+			T_of_x[o][0] = xpx*T_of_x[o-1][0] - T_of_x[o-2][0];
+			T_of_x[o][1] = ypy*T_of_x[o-1][1] - T_of_x[o-2][1];
+			T_of_x[o][2] = zpz*T_of_x[o-1][2] - T_of_x[o-2][2];
 			// U_o(x_i)
-			U_of_x[o][0] = FReal(2.)*localPosition.getX()*U_of_x[o-1][0] - U_of_x[o-2][0];
-			U_of_x[o][1] = FReal(2.)*localPosition.getY()*U_of_x[o-1][1] - U_of_x[o-2][1];
-			U_of_x[o][2] = FReal(2.)*localPosition.getZ()*U_of_x[o-1][2] - U_of_x[o-2][2];
+			U_of_x[o][0] = xpx*U_of_x[o-1][0] - U_of_x[o-2][0];
+			U_of_x[o][1] = ypy*U_of_x[o-1][1] - U_of_x[o-2][1];
+			U_of_x[o][2] = zpz*U_of_x[o-1][2] - U_of_x[o-2][2];
 		}
 
 		// scale, because dT_o/dx = oU_{o-1}
@@ -509,6 +559,9 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const F3DPosition& center,
 		// apply P and increment forces
 		FReal potential = FReal(0.);
 		FReal forces[3] = {FReal(0.), FReal(0.), FReal(0.)};
+		//
+		// Optimization:
+		//   Here we compute 1/2 S and 1/2 P  rather S and F like in the paper
 		for (unsigned int n=0; n<nnodes; ++n) {
 			
 			// tensor indices of chebyshev nodes
@@ -527,55 +580,66 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const F3DPosition& center,
 				// for potential
 				S0   += T_of_x[o][0] * T_of_roots[o][j[0]];
 			}
-			P[0] *= FReal(2.);
-			P[1] *= FReal(2.); P[1] += FReal(1.);
-			P[2] *= FReal(2.); P[2] += FReal(1.);
+			// P[0] *= FReal(2.);
+			// P[1] *= FReal(2.); P[1] += FReal(1.);
+			// P[2] *= FReal(2.); P[2] += FReal(1.);
+			// forces[0]	+= P[0] * P[1] * P[2] * localExpansion[n];
+			P[1] += FReal(0.5);
+			P[2] += FReal(0.5);
 			forces[0]	+= P[0] * P[1] * P[2] * localExpansion[n];
 			// for potential
-			S0 *= FReal(2.); S0 += FReal(1.);
-			potential	+= FReal(1.) / nnodes *	S0 * P[1] * P[2] * localExpansion[n];
+			// S0 *= FReal(2.); S0 += FReal(1.);
+			S0 += FReal(0.5);
+			potential	+= S0 * P[1] * P[2] * localExpansion[n];
 
 			// f1 component //////////////////////////////////////
 			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
 			P[1] = U_of_x[0][1] * T_of_roots[1][j[1]];
-			P[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
+			//		P[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
 			for (unsigned int o=2; o<ORDER; ++o) {
 				P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
 				P[1] += U_of_x[o-1][1] * T_of_roots[o][j[1]];
-				P[2] += T_of_x[o  ][2] * T_of_roots[o][j[2]];
+				//				P[2] += T_of_x[o  ][2] * T_of_roots[o][j[2]];
 			}
-			P[0] *= FReal(2.); P[0] += FReal(1.);
-			P[1] *= FReal(2.); 
-			P[2] *= FReal(2.); P[2] += FReal(1.);
+			// P[0] *= FReal(2.); P[0] += FReal(1.);
+			// P[1] *= FReal(2.); 
+			// P[2] *= FReal(2.); P[2] += FReal(1.);
+			P[0] += FReal(0.5);
+			//			P[2] += FReal(0.5);
 			forces[1]	+= P[0] * P[1] * P[2] * localExpansion[n];
 
 			// f2 component //////////////////////////////////////
-			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
+			//			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
 			P[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
 			P[2] = U_of_x[0][2] * T_of_roots[1][j[2]];
 			for (unsigned int o=2; o<ORDER; ++o) {
-				P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
+			  //				P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
 				P[1] += T_of_x[o  ][1] * T_of_roots[o][j[1]];
 				P[2] += U_of_x[o-1][2] * T_of_roots[o][j[2]];
 			}
-			P[0] *= FReal(2.); P[0] += FReal(1.);
-			P[1] *= FReal(2.); P[1] += FReal(1.);
-			P[2] *= FReal(2.);
+			// P[0] *= FReal(2.); P[0] += FReal(1.);
+			// P[1] *= FReal(2.); P[1] += FReal(1.);
+			// P[2] *= FReal(2.);
+			//			P[0] += FReal(0.5);
+			P[1] += FReal(0.5);
 			forces[2]	+= P[0] * P[1] * P[2] * localExpansion[n];
 		}
 
 		// scale forces
-		forces[0] *= jacobian[0] / nnodes;
-		forces[1] *= jacobian[1] / nnodes;
-		forces[2] *= jacobian[2] / nnodes;
-
+		// forces[0] *= jacobian[0] / nnodes;
+		// forces[1] *= jacobian[1] / nnodes;
+		// forces[2] *= jacobian[2] / nnodes;
+		forces[0] *= jacobian[0] *c1;
+		forces[1] *= jacobian[1] *c1;
+		forces[2] *= jacobian[2] *c1;
+		potential *= c1 ;
 		// set computed potential
 		iter.data().incPotential(potential);
 
 		// set computed forces
 		iter.data().incForces(forces[0] * iter.data().getPhysicalValue(),
-													forces[1] * iter.data().getPhysicalValue(),
-													forces[2] * iter.data().getPhysicalValue());
+				      forces[1] * iter.data().getPhysicalValue(),
+				      forces[2] * iter.data().getPhysicalValue());
 
 		// increment iterator
 		iter.gotoNext();
