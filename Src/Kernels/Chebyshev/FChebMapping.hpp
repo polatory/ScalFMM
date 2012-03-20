@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "../../Utils/FNoCopyable.hpp"
-#include "../../Utils/F3DPosition.hpp"
+#include "../../Utils/FPoint.hpp"
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -21,10 +21,10 @@
 class FChebMapping : FNoCopyable
 {
 protected:
-  F3DPosition a;
-  F3DPosition b;
+  FPoint a;
+  FPoint b;
  
-  explicit FChebMapping(const F3DPosition& center,
+  explicit FChebMapping(const FPoint& center,
 											 const FReal width)
 		: a(center.getX() - width / FReal(2.),
 				center.getY() - width / FReal(2.),
@@ -33,7 +33,7 @@ protected:
 				center.getY() + width / FReal(2.),
 				center.getZ() + width / FReal(2.)) {}
 
-  virtual void operator()(const F3DPosition&, F3DPosition&) const = 0;
+  virtual void operator()(const FPoint&, FPoint&) const = 0;
 
 public:
 	/**
@@ -43,7 +43,7 @@ public:
 	 * @param[in] position position (eg of a particle)
 	 * @return @p true if position is in cluster else @p false
 	 */
-	bool is_in_cluster(const F3DPosition& position) const
+	bool is_in_cluster(const FPoint& position) const
 	{
 		// Set numerical limit
 		const FReal epsilon = FReal(10.) * std::numeric_limits<FReal>::epsilon();
@@ -82,7 +82,7 @@ public:
 class map_glob_loc : public FChebMapping
 {
 public:
-  explicit map_glob_loc(const F3DPosition& center, const FReal width)
+  explicit map_glob_loc(const FPoint& center, const FReal width)
 		: FChebMapping(center, width) {}
   
 	/**
@@ -92,7 +92,7 @@ public:
 	 * @param[in] globPos global position
 	 * @param[out] loclPos local position
 	 */
-  void operator()(const F3DPosition& globPos, F3DPosition& loclPos) const
+  void operator()(const FPoint& globPos, FPoint& loclPos) const
   {
 		loclPos.setX((FReal(2.)*globPos.getX()-b.getX()-a.getX()) /
 								 (b.getX()-a.getX()));
@@ -103,7 +103,7 @@ public:
 	}
 
 	// jacobian = 2 / (b - a);
-	void computeJacobian(F3DPosition& jacobian) const
+	void computeJacobian(FPoint& jacobian) const
   {
 		jacobian.setX(FReal(2.) / (b.getX() - a.getX()));
 		jacobian.setY(FReal(2.) / (b.getY() - a.getY()));
@@ -121,7 +121,7 @@ public:
 class map_loc_glob : public FChebMapping
 {
 public:
-  explicit map_loc_glob(const F3DPosition& center, const FReal width)
+  explicit map_loc_glob(const FPoint& center, const FReal width)
 		: FChebMapping(center, width) {}
   
 	// globPos = (a + b) / 2 + (b - a) * loclPos / 2;
@@ -132,7 +132,7 @@ public:
 	 * @param[in] loclPos local position
 	 * @param[out] globPos global position
 	 */
-  void operator()(const F3DPosition& loclPos, F3DPosition& globPos) const
+  void operator()(const FPoint& loclPos, FPoint& globPos) const
   {
 		globPos.setX((a.getX()+b.getX())/FReal(2.)+
 								 (b.getX()-a.getX())*loclPos.getX()/FReal(2.));

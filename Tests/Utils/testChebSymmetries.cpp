@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
 	const unsigned int nnodes = TensorTraits<order>::nnodes;
 
 	// interpolation points of source (Y) and target (X) cell
-	F3DPosition X[nnodes], Y[nnodes];
+	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(F3DPosition(0.,0.,0.), FReal(2.), X);
+	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 	
 	// allocate 343 pointers to K, but only 16 are actually filled
 	FReal** K = new FReal* [343];
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
 					//std::cout << i << "," << j << "," << k << "\t" << idx << std::endl;
 					
-					const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 			for (int k=-3; k<=3; ++k) {
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 
-					const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)

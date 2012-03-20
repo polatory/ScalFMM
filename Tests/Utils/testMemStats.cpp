@@ -22,7 +22,7 @@
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
@@ -65,7 +65,7 @@ int main(int argc, char ** argv){
         const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
         const int DevP         = FParameters::getValue(argc,argv,"-p", 5);
         const FReal FRandMax    = FReal(RAND_MAX);
-        const F3DPosition centerOfBox = F3DPosition(0.5,0.5,0.5);
+        const FPoint centerOfBox = FPoint(0.5,0.5,0.5);
         FTic counter;
 
         srand ( 1 ); // volontary set seed to constant

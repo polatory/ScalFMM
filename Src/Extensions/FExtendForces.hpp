@@ -13,7 +13,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FBufferWriter.hpp"
 
@@ -27,7 +27,7 @@
 */
 class FExtendForces {
 protected:
-    F3DPosition forces; //< 3D vector stored in a position object
+    FPoint forces; //< 3D vector stored in a position object
 
 public:
     /** Default constructor */
@@ -45,12 +45,12 @@ public:
     }
 
     /** Return the forces */
-    const F3DPosition& getForces() const {
+    const FPoint& getForces() const {
         return this->forces;
     }
 
     /** Set Forces */
-    void incForces(const F3DPosition& inForces) {
+    void incForces(const FPoint& inForces) {
         this->forces += inForces;
     }
 

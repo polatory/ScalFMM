@@ -48,7 +48,7 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebKernel(const int inTreeHeight,
-							const F3DPosition& inBoxCenter,
+							const FPoint& inBoxCenter,
 							const FReal inBoxWidth,
 							const FReal Epsilon)
 		: FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>(inTreeHeight,
@@ -66,7 +66,7 @@ public:
 					 const ContainerClass* const SourceParticles)
 	{
 		// 1) apply Sy
-		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 		AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter,
 																							AbstractBaseClass::BoxWidthLeaf,
 																							LeafCell->getMultipole(),
@@ -165,7 +165,7 @@ public:
 		M2LHandler->applyU(LeafCell->getLocal() + AbstractBaseClass::nnodes,
 											 const_cast<CellClass*>(LeafCell)->getLocal());
 		
-		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 
 		//// 2.a) apply Sx
 		//AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,

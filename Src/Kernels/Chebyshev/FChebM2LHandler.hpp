@@ -210,9 +210,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 	if (U||C||B) throw std::runtime_error("Compressed M2L operators are already set");
 
 	// interpolation points of source (Y) and target (X) cell
-	F3DPosition X[nnodes], Y[nnodes];
+	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(F3DPosition(0.,0.,0.), FReal(2.), X);
+	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 	// init matrix kernel
 	const MatrixKernelClass MatrixKernel;
 
@@ -226,7 +226,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 			for (int k=-3; k<=3; ++k) {
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					// set roots of source cell (Y)
-					const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
 					// evaluate m2l operator
 					for (unsigned int n=0; n<nnodes; ++n)

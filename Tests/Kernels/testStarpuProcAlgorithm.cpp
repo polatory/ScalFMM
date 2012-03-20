@@ -60,7 +60,7 @@ KernelClass** FFmmAlgorithmStarpuProc<OctreeClass,ParticleClass,CellClass,Contai
 // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/
 // ./configure --enable-maxbuffers=190 --prefix=/home/bramas/starpu/starpu
 // Compile With openmp : g++ testFmbAlgorithm.cpp ./Src/Utils/FDebug.cpp ./Src/Utils/FTrace.cpp -lgomp -fopenmp -lstarpu -lstarpumpi -O2 -o testFmbAlgorithm.exe
-// compile with intel : mpicxx -I/home/bramas/starpu/starpu-0.9.2/include -I/home/bramas/starpu/starpu-0.9.2/mpi -openmp -lstarpu -lstarpumpi testFmbAlgorithm.cpp ./Src/Utils/FDebug.cpp ./Src/Utils/FTrace.cpp ./Src/Utils/FMath.cpp ./Src/Utils/F3DPosition.cpp -g -o testFmbAlgorithm.exe
+// compile with intel : mpicxx -I/home/bramas/starpu/starpu-0.9.2/include -I/home/bramas/starpu/starpu-0.9.2/mpi -openmp -lstarpu -lstarpumpi testFmbAlgorithm.cpp ./Src/Utils/FDebug.cpp ./Src/Utils/FTrace.cpp ./Src/Utils/FMath.cpp ./Src/Utils/FPoint.cpp -g -o testFmbAlgorithm.exe
 
 ////////////////////////////////////////////////////////////////
 // Define classes
@@ -431,7 +431,7 @@ int main(int argc, char ** argv){
 #else
     { // get sum forces&potential
         FReal potential = 0;
-        F3DPosition forces;
+        FPoint forces;
         typename OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{

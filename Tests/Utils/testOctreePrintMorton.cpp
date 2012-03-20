@@ -18,7 +18,7 @@
 
 #include "../../Src/Utils/FGlobal.hpp"
 #include "../../Src/Containers/FTreeCoordinate.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 #include "../../Src/Utils/FMath.hpp"
 
 /**
@@ -56,7 +56,7 @@ int main(int , char ** ){
     char buffer[256];
 
     int treeLevel = 10;
-    F3DPosition centerOfBox(0.5,0.5,0.5);
+    FPoint centerOfBox(0.5,0.5,0.5);
     FReal rootBoxWidth = 1;
 
     std::cout << "Welcome in the morton index test." << std::endl;
@@ -232,7 +232,7 @@ int main(int , char ** ){
                     std::cout << "    Center of boxe Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
                 }while(sscanf(buffer,"%f %f %f",&x,&y,&z) != 3);
-                centerOfBox = F3DPosition(FReal(x),FReal(y),FReal(z));
+                centerOfBox = FPoint(FReal(x),FReal(y),FReal(z));
 
                 std::cout << "    boxe width (default is = " << rootBoxWidth << ") : ";
                 std::cin.getline( buffer , sizeof(buffer));

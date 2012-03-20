@@ -13,7 +13,7 @@
 
 #include "FGlobal.hpp"
 #include "FMath.hpp"
-#include "F3DPosition.hpp"
+#include "FPoint.hpp"
 
 /** This class is a Spherical position
 * This class is currently in its minimum version
@@ -27,7 +27,7 @@ class FSpherical {
 
 public:
     /** From now, we just need a constructor based on a 3D position */
-    explicit FSpherical(const F3DPosition& inVector){
+    explicit FSpherical(const FPoint& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
         this->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
         this->phi = FMath::Atan2(inVector.getY(),inVector.getX());

@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
 	
-	const F3DPosition BoxCenter(.5*Width, .5*Width, .5*Width);
+	const FPoint BoxCenter(.5*Width, .5*Width, .5*Width);
 	OctreeClass tree(TreeHeight, SubTreeHeight, Width, BoxCenter);
 	
 	// -----------------------------------------------------
@@ -188,7 +188,7 @@ int main(int argc, char* argv[])
 						// potential
 						Potential[counter] += one_over_r * ws;
 						// force
-						F3DPosition force(iSource.data().getPosition() - iTarget.data().getPosition());
+						FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
 						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 						Force[counter*3 + 0] += force.getX();
 						Force[counter*3 + 1] += force.getY();
@@ -243,11 +243,11 @@ int main(int argc, char* argv[])
 	octreeIterator.gotoBottomLeft();
 	do{
 		const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-		const F3DPosition& LeafCellCenter = LeafCell -> getPosition();
+		const FPoint& LeafCellCenter = LeafCell -> getPosition();
 		const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
 		ContainerClass::ConstBasicIterator particleIterator(*Particles);
 		while(particleIterator.hasNotFinished()) {
-			const F3DPosition distance(LeafCellCenter-particleIterator.data().getPosition());
+			const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
 			std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
 			if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 					std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||

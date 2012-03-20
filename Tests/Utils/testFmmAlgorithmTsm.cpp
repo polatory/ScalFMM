@@ -22,7 +22,7 @@
 
 #include "../../Src/Components/FTypedLeaf.hpp"
 
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
@@ -73,7 +73,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoaderTsm<ParticleClassTyped> loader(NbPart, 1, F3DPosition(0.5,0.5,0.5), 1);
+    FRandomLoaderTsm<ParticleClassTyped> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClassTyped tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////

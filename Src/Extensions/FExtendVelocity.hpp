@@ -14,7 +14,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FBufferWriter.hpp"
 
@@ -28,7 +28,7 @@
 */
 class FExtendVelocity {
 protected:
-    F3DPosition velocity; //< 3D vector stored in a position object
+    FPoint velocity; //< 3D vector stored in a position object
 
 public:
     /** Default constructor */
@@ -46,12 +46,12 @@ public:
     }
 
     /** Return the velocity */
-    const F3DPosition& getVelocity() const {
+    const FPoint& getVelocity() const {
         return this->velocity;
     }
 
     /** Set Velocity */
-    void incVelocity(const F3DPosition& inVelocity) {
+    void incVelocity(const FPoint& inVelocity) {
         this->velocity += inVelocity;
     }
 

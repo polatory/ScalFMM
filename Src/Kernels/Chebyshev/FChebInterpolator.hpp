@@ -40,12 +40,12 @@ class FChebInterpolator : FNoCopyable
 	 */
 	void initM2MandL2L()
 	{
-		F3DPosition ParentRoots[nnodes], ChildRoots[nnodes];
+		FPoint ParentRoots[nnodes], ChildRoots[nnodes];
 		const FReal ParentWidth(2.);
-		const F3DPosition ParentCenter(0., 0., 0.);
+		const FPoint ParentCenter(0., 0., 0.);
 		FChebTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
 
-		F3DPosition ChildCenter;
+		FPoint ChildCenter;
 		const FReal ChildWidth(1.);
 		
 		// loop: child cells
@@ -106,7 +106,7 @@ public:
 	 * @param[out] Interpolator
 	 */
 	void assembleInterpolator(const unsigned int NumberOfLocalPoints,
-														const F3DPosition *const LocalPoints,
+														const FPoint *const LocalPoints,
 														FReal *const Interpolator) const
 	{
 		// values of chebyshev polynomials of source particle: T_o(x_i)
@@ -143,7 +143,7 @@ public:
 	 * (anterpolation, it is the transposed interpolation)
 	 */
 	template <class ContainerClass>
-	void applyP2M(const F3DPosition& center,
+	void applyP2M(const FPoint& center,
 								const FReal width,
 								FReal *const multipoleExpansion,
 								const ContainerClass *const sourceParticles) const;
@@ -154,7 +154,7 @@ public:
 	 * Local to particle operation: application of \f$S_\ell(x,\bar x_m)\f$ (interpolation)
 	 */
 	template <class ContainerClass>
-	void applyL2P(const F3DPosition& center,
+	void applyL2P(const FPoint& center,
 								const FReal width,
 								const FReal *const localExpansion,
 								ContainerClass *const localParticles) const;
@@ -164,7 +164,7 @@ public:
 	 * Local to particle operation: application of \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
 	 */
 	template <class ContainerClass>
-	void applyL2PGradient(const F3DPosition& center,
+	void applyL2PGradient(const FPoint& center,
 												const FReal width,
 												const FReal *const localExpansion,
 												ContainerClass *const localParticles) const;
@@ -174,7 +174,7 @@ public:
 	 * \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
 	 */
 	template <class ContainerClass>
-	void applyL2PTotal(const F3DPosition& center,
+	void applyL2PTotal(const FPoint& center,
 										 const FReal width,
 										 const FReal *const localExpansion,
 										 ContainerClass *const localParticles) const;
@@ -212,7 +212,7 @@ public:
  */
 template <int ORDER>
 template <class ContainerClass>
-inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
+inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 																							 const FReal width,
 																							 FReal *const multipoleExpansion,
 																							 const ContainerClass *const sourceParticles) const
@@ -222,7 +222,7 @@ inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
 
 	// allocate stuff
 	const map_glob_loc map(center, width);
-	F3DPosition localPosition;
+	FPoint localPosition;
 	FReal T_of_x[ORDER][3];
 	FReal S[3];
 
@@ -272,14 +272,14 @@ inline void FChebInterpolator<ORDER>::applyP2M(const F3DPosition& center,
  */
 template <int ORDER>
 template <class ContainerClass>
-inline void FChebInterpolator<ORDER>::applyL2P(const F3DPosition& center,
+inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 																							 const FReal width,
 																							 const FReal *const localExpansion,
 																							 ContainerClass *const localParticles) const
 {
 	// allocate stuff
 	const map_glob_loc map(center, width);
-	F3DPosition localPosition;
+	FPoint localPosition;
 	FReal T_of_x[ORDER][3];
 	FReal S[3];
 		
@@ -337,17 +337,17 @@ inline void FChebInterpolator<ORDER>::applyL2P(const F3DPosition& center,
  */
 template <int ORDER>
 template <class ContainerClass>
-inline void FChebInterpolator<ORDER>::applyL2PGradient(const F3DPosition& center,
+inline void FChebInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
 																											 const FReal width,
 																											 const FReal *const localExpansion,
 																											 ContainerClass *const localParticles) const
 {
 	// setup local to global mapping
 	const map_glob_loc map(center, width);
-	F3DPosition Jacobian;
+	FPoint Jacobian;
 	map.computeJacobian(Jacobian);
 	const FReal jacobian[3] = {Jacobian.getX(), Jacobian.getY(), Jacobian.getZ()}; 
-	F3DPosition localPosition;
+	FPoint localPosition;
 	FReal T_of_x[ORDER][3];
 	FReal U_of_x[ORDER][3];
 	FReal P[3];
@@ -458,17 +458,17 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const F3DPosition& center
  */
 template <int ORDER>
 template <class ContainerClass>
-inline void FChebInterpolator<ORDER>::applyL2PTotal(const F3DPosition& center,
+inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 																										const FReal width,
 																										const FReal *const localExpansion,
 																										ContainerClass *const localParticles) const
 {
 	// setup local to global mapping
 	const map_glob_loc map(center, width);
-	F3DPosition Jacobian;
+	FPoint Jacobian;
 	map.computeJacobian(Jacobian);
 	const FReal jacobian[3] = {Jacobian.getX(), Jacobian.getY(), Jacobian.getZ()}; 
-	F3DPosition localPosition;
+	FPoint localPosition;
 	FReal T_of_x[ORDER][3];
 	FReal U_of_x[ORDER][3];
 	FReal P[3];

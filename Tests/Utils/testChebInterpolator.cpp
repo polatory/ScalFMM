@@ -31,7 +31,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
@@ -97,7 +97,7 @@ int main(int, char **){
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
-	F3DPosition cx(0., 0., 0.);
+	FPoint cx(0., 0., 0.);
 	const unsigned long M = 20000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
@@ -116,7 +116,7 @@ int main(int, char **){
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
-	F3DPosition cy(FReal(2.)*width, 0., 0.);
+	FPoint cy(FReal(2.)*width, 0., 0.);
 	const unsigned long N = 20000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
@@ -153,7 +153,7 @@ int main(int, char **){
 	std::cout << "M2L ... " << std::flush;
 	time.tic();
 	// Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
-	F3DPosition rootsX[nnodes], rootsY[nnodes];
+	FPoint rootsX[nnodes], rootsY[nnodes];
 	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
 	FChebTensor<ORDER>::setRoots(cy, width, rootsY);
 
@@ -196,18 +196,18 @@ int main(int, char **){
 		
 		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
 		while(iterX.hasNotFinished()){
-			const F3DPosition& x = iterX.data().getPosition();
+			const FPoint& x = iterX.data().getPosition();
 			const FReal       wx = iterX.data().getPhysicalValue();
 			
 			ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
 			while(iterY.hasNotFinished()){
-				const F3DPosition& y = iterY.data().getPosition();
+				const FPoint& y = iterY.data().getPosition();
 				const FReal       wy = iterY.data().getPhysicalValue();
 				const FReal one_over_r = MatrixKernel.evaluate(x, y);
 				// potential
 				p[counter] += one_over_r * wy;
 				// force
-				F3DPosition force(x - y);
+				FPoint force(x - y);
 				force *= one_over_r*one_over_r*one_over_r;
 				f[counter*3 + 0] += force.getX() * wx * wy;
 				f[counter*3 + 1] += force.getY() * wx * wy;
@@ -230,7 +230,7 @@ int main(int, char **){
 	unsigned int counter = 0;
 	while(iterX.hasNotFinished()) {
 		approx_p[counter] = iterX.data().getPotential();
-		const F3DPosition& force = iterX.data().getForces();
+		const FPoint& force = iterX.data().getForces();
 		approx_f[counter*3 + 0] = force.getX();
 		approx_f[counter*3 + 1] = force.getY();
 		approx_f[counter*3 + 2] = force.getZ();

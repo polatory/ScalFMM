@@ -42,7 +42,7 @@ protected:
 	/// Height of the entire oct-tree
 	const unsigned int TreeHeight;
 	/// Corner of oct-tree box
-	const F3DPosition BoxCorner;
+	const FPoint BoxCorner;
 	/// Width of oct-tree box   
 	const FReal BoxWidth;    
 	/// Width of a leaf cell box 
@@ -53,9 +53,9 @@ protected:
 	 * @param[in] Coordinate tree coordinate
 	 * @return center of leaf cell
 	 */
-	const F3DPosition getLeafCellCenter(const FTreeCoordinate& Coordinate) const
+	const FPoint getLeafCellCenter(const FTreeCoordinate& Coordinate) const
 	{
-		return F3DPosition(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
+		return FPoint(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
 											 BoxCorner.getY() + (FReal(Coordinate.getY()) + FReal(.5)) * BoxWidthLeaf,
 											 BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
 	}
@@ -68,7 +68,7 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FAbstractChebKernel(const int inTreeHeight,
-											const F3DPosition& inBoxCenter,
+											const FPoint& inBoxCenter,
 											const FReal inBoxWidth)
 		: Interpolator(new InterpolatorClass()),
 			MatrixKernel(new MatrixKernelClass()),
@@ -200,7 +200,7 @@ private:
 		const FReal ws = Source.getPhysicalValue();
 		// potential
 		Target.incPotential(one_over_r * ws);
-		F3DPosition force(Source.getPosition() - Target.getPosition());
+		FPoint force(Source.getPosition() - Target.getPosition());
 		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 		// force
 		Target.incForces(force.getX(), force.getY(), force.getZ());
@@ -215,7 +215,7 @@ private:
 		Target.incPotential(one_over_r * ws);
 		Source.incPotential(one_over_r * wt);
 		// force
-		F3DPosition force(Source.getPosition() - Target.getPosition());
+		FPoint force(Source.getPosition() - Target.getPosition());
 		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
 		Target.incForces(  force.getX(),    force.getY(),    force.getZ());
 		Source.incForces((-force.getX()), (-force.getY()), (-force.getZ()));

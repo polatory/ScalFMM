@@ -17,7 +17,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 #include "../Utils/FMpi.hpp"
 
 /**
@@ -50,7 +50,7 @@
 template <class ParticleClass>
 class FMpiFmaLoader : public FAbstractLoader<ParticleClass> {
 protected:
-    F3DPosition centerOfBox;    //< The center of box read from file
+    FPoint centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
     FSize totalNbParticles;     //< the number of particles read from file
     FSize nbParticles;          //< the number of particles read from file
@@ -204,7 +204,7 @@ public:
       * The center of the box from the simulation file opened by the loader
       * @return box center
       */
-    F3DPosition getCenterOfBox() const{
+    FPoint getCenterOfBox() const{
         return this->centerOfBox;
     }
 

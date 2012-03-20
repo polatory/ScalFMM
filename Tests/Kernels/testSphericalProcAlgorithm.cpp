@@ -270,7 +270,7 @@ int main(int argc, char ** argv){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Sum Result" , __FILE__ , __LINE__) );
 
         FReal potential = 0;
-        F3DPosition forces;
+        FPoint forces;
 
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
@@ -318,7 +318,7 @@ int main(int argc, char ** argv){
         std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
         FReal potentialValide = 0;
-        F3DPosition forcesValide;
+        FPoint forcesValide;
 
         OctreeClass::Iterator octreeIteratorValide(&treeValide);
         octreeIteratorValide.gotoBottomLeft();

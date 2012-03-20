@@ -17,7 +17,7 @@
 
 #include "../Utils/FDebug.hpp"
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FNoCopyable.hpp"
 #include "../Utils/FAssertable.hpp"
@@ -33,7 +33,7 @@
  * Please refere to testOctree.cpp to see an example.
  * <code>
  * // can be used as : <br>
- * FOctree<TestParticle, TestCell> tree(1.0,F3DPosition(0.5,0.5,0.5));
+ * FOctree<TestParticle, TestCell> tree(1.0,FPoint(0.5,0.5,0.5));
  * </code>
  *
  * Particles and cells has to respect the Abstract class definition.
@@ -50,8 +50,8 @@ class FOctree : protected FAssertable, public FNoCopyable {
 
     FAbstractSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
 
-    const F3DPosition boxCenter;	//< the space system center
-    const F3DPosition boxCorner;	//< the space system corner (used to compute morton index)
+    const FPoint boxCenter;	//< the space system center
+    const FPoint boxCorner;	//< the space system corner (used to compute morton index)
 
     const FReal boxWidth;          //< the space system width
 
@@ -61,7 +61,7 @@ class FOctree : protected FAssertable, public FNoCopyable {
         * @param inPosition position to compute
         * @return the morton index
         */
-    FTreeCoordinate getCoordinateFromPosition(const F3DPosition& inPosition) const {
+    FTreeCoordinate getCoordinateFromPosition(const FPoint& inPosition) const {
         // box coordinate to host the particle
         FTreeCoordinate host;
         // position has to be relative to corner not center
@@ -94,7 +94,7 @@ public:
  * @param inBoxCenter box center for this simulation
  */
     FOctree(const int inHeight, const int inSubHeight,
-            const FReal inBoxWidth, const F3DPosition& inBoxCenter)
+            const FReal inBoxWidth, const FPoint& inBoxCenter)
         : boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
           root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
@@ -138,7 +138,7 @@ public:
     }
 
     /** To get the center of the box */
-    const F3DPosition& getBoxCenter() const{
+    const FPoint& getBoxCenter() const{
         return this->boxCenter;
     }
 
@@ -189,7 +189,7 @@ public:
         * @param a position to compute MI
         * @return the morton index
         */
-    MortonIndex getMortonFromPosition(const F3DPosition& position) const {
+    MortonIndex getMortonFromPosition(const FPoint& position) const {
         return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
     }
 

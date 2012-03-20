@@ -13,7 +13,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-class F3DPosition;
+class FPoint;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -46,7 +46,7 @@ public:
         * Get the center of the simulation box
         * @return box center needed by the octree
         */
-    virtual F3DPosition getCenterOfBox() const = 0;
+    virtual FPoint getCenterOfBox() const = 0;
 
     /**
         * Get the simulation box width
