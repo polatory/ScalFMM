@@ -26,7 +26,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
@@ -60,7 +60,7 @@ int main(int, char **){
 	srand( static_cast<unsigned int>(time(NULL)) );
 	
 	const FReal BoxWidth = 1.;
-	const F3DPosition BoxCenter(.5, .5, .5);
+	const FPoint BoxCenter(.5, .5, .5);
 	const unsigned int TreeHeight = 10;
 	OctreeClass tree(TreeHeight, 3, BoxWidth, BoxCenter);
 
@@ -88,15 +88,15 @@ int main(int, char **){
 		do{
 			const CellClass *const LeafCell = octreeIterator.getCurrentCell();
 
-			const F3DPosition Origin(BoxCenter - BoxWidth / FReal(2.));
-			const F3DPosition LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
+			const FPoint Origin(BoxCenter - BoxWidth / FReal(2.));
+			const FPoint LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getY() + (FReal(LeafCell->getCoordinate().getY()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getZ() + (FReal(LeafCell->getCoordinate().getZ()) + FReal(.5)) * BoxWidthLeaf);
 
 			const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
 			ContainerClass::ConstBasicIterator particleIterator(*Particles);
 			while(particleIterator.hasNotFinished()) {
-				const F3DPosition distance(LeafCellCenter-particleIterator.data().getPosition());
+				const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
 				if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {

@@ -17,7 +17,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -50,7 +50,7 @@ template <class ParticleClass>
 class FFmaScanfLoader : public FAbstractLoader<ParticleClass> {
 protected:
     FILE* file;                 //< The file to read
-    F3DPosition centerOfBox;    //< The center of box read from file
+    FPoint centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
     int nbParticles;            //< the number of particles read from file
 
@@ -108,7 +108,7 @@ public:
       * The center of the box from the simulation file opened by the loader
       * @return box center
       */
-    F3DPosition getCenterOfBox() const{
+    FPoint getCenterOfBox() const{
         return this->centerOfBox;
     }
 

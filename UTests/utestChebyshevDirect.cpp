@@ -117,7 +117,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 particles[idxTarget].incPotential(one_over_r * ws);
                 particles[idxOther].incPotential(one_over_r * wt);
                 // force
-                F3DPosition force(particles[idxTarget].getPosition() - particles[idxOther].getPosition());
+                FPoint force(particles[idxTarget].getPosition() - particles[idxOther].getPosition());
                 force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
                 particles[idxTarget].incForces( force.getX(), force.getY(), force.getZ());
                 particles[idxOther].incForces( -force.getX(), -force.getY(), -force.getZ());

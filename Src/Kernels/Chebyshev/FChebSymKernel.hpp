@@ -88,7 +88,7 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebSymKernel(const int inTreeHeight,
-								 const F3DPosition& inBoxCenter,
+								 const FPoint& inBoxCenter,
 								 const FReal inBoxWidth,
 								 const FReal Epsilon)
 		: AbstractBaseClass(inTreeHeight, inBoxCenter, inBoxWidth),
@@ -129,7 +129,7 @@ public:
 					 const ContainerClass* const SourceParticles)
 	{
 		// apply Sy
-		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 		AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter,
 																							AbstractBaseClass::BoxWidthLeaf,
 																							LeafCell->getMultipole(),
@@ -313,7 +313,7 @@ public:
 	void L2P(const CellClass* const LeafCell,
 					 ContainerClass* const TargetParticles)
 	{
-		const F3DPosition LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
 
 //		// a) apply Sx
 //		AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
@@ -405,9 +405,9 @@ private:
 	void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const double Epsilon)
 	{
 		// interpolation points of source (Y) and target (X) cell
-		F3DPosition X[nnodes], Y[nnodes];
+		FPoint X[nnodes], Y[nnodes];
 		// set roots of target cell (X)
-		FChebTensor<ORDER>::setRoots(F3DPosition(0.,0.,0.), FReal(2.), X);
+		FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 		// temporary matrix
 		FReal* U = new FReal [nnodes*nnodes];
 
@@ -423,7 +423,7 @@ private:
 				for (int k=0; k<=j; ++k) {
 
 					// assemble matrix
-					const F3DPosition cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
 					FChebTensor<ORDER>::setRoots(cy, FReal(2.), Y);
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)

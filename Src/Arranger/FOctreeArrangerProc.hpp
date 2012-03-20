@@ -89,8 +89,8 @@ public:
         { // iterate on the leafs and found particle to remove or to send
             // For periodic
             const FReal boxWidth = tree->getBoxWidth();
-            const F3DPosition min(tree->getBoxCenter(),-boxWidth/2);
-            const F3DPosition max(tree->getBoxCenter(),boxWidth/2);
+            const FPoint min(tree->getBoxCenter(),-boxWidth/2);
+            const FPoint max(tree->getBoxCenter(),boxWidth/2);
 
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
@@ -100,7 +100,7 @@ public:
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 while( iter.hasNotFinished() ){
                     if(isPeriodic){
-                        F3DPosition partPos = iter.data().getPosition();
+                        FPoint partPos = iter.data().getPosition();
                         while(partPos.getX() < min.getX()){
                             partPos.incX(boxWidth);
                         }

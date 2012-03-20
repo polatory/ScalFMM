@@ -13,7 +13,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/F3DPosition.hpp"
+#include "../Utils/FPoint.hpp"
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FBufferWriter.hpp"
 
@@ -26,7 +26,7 @@
 */
 class FExtendPosition {
 protected:
-    F3DPosition position; //< The position
+    FPoint position; //< The position
 
 public:
     /** Default constructor */
@@ -44,12 +44,12 @@ public:
     }
 
     /** To get the position */
-    const F3DPosition& getPosition() const {
+    const FPoint& getPosition() const {
         return this->position;
     }
 
     /** To set the position */
-    void setPosition(const F3DPosition& inPosition) {
+    void setPosition(const FPoint& inPosition) {
         this->position = inPosition;
     }
 
@@ -61,7 +61,7 @@ public:
     }
 
     /** Set Position */
-    void incPosition(const F3DPosition& inPosition) {
+    void incPosition(const FPoint& inPosition) {
         this->position += inPosition;
     }
 

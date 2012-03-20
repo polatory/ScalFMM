@@ -45,8 +45,8 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     CellClass::Init(DevP, true);
-    OctreeClass tree1(5, 3, 0, F3DPosition());
-    OctreeClass tree2(5, 3, 0, F3DPosition());
+    OctreeClass tree1(5, 3, 0, FPoint());
+    OctreeClass tree2(5, 3, 0, FPoint());
 
     // -----------------------------------------------------
     const char* const filename1 = FParameters::getStr(argc,argv,"-f1", "tree.data");

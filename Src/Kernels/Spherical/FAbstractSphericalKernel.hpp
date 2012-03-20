@@ -37,7 +37,7 @@ protected:
 
     const FReal widthAtLeafLevel;       //< the width of a box at leaf level
     const FReal widthAtLeafLevelDiv2;   //< the width of a box at leaf level divided by 2
-    const F3DPosition boxCorner;        //< the corner of the box system
+    const FPoint boxCorner;        //< the corner of the box system
 
     FHarmonic harmonic; //< The harmonic computation class
 
@@ -58,14 +58,14 @@ protected:
             preL2LTransitions[idxLevel + periodicLevels] = new FComplexe[ 8 * harmonic.getExpSize()];
             preM2MTransitions[idxLevel + periodicLevels] = new FComplexe[ 8 * harmonic.getExpSize()];
 
-            const F3DPosition father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
+            const FPoint father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild ){
                 FTreeCoordinate childBox;
                 childBox.setPositionFromMorton(idxChild,1);
 
-                const F3DPosition M2MVector (
+                const FPoint M2MVector (
                         father.getX() - (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))),
                         father.getY() - (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))),
                         father.getZ() - (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2)))
@@ -74,7 +74,7 @@ protected:
                 harmonic.computeInner(FSpherical(M2MVector));
                 FMemUtils::copyall<FComplexe>(&preM2MTransitions[idxLevel + periodicLevels][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
 
-                const F3DPosition L2LVector (
+                const FPoint L2LVector (
                         (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
                         (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))) - father.getY(),
                         (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2))) - father.getZ()
@@ -87,8 +87,8 @@ protected:
     }
 
     /** Get a leaf real position from its tree coordinate */
-    F3DPosition getLeafCenter(const FTreeCoordinate coordinate) const {
-        return F3DPosition(
+    FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
+        return FPoint(
                     FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
                     FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
                     FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
@@ -97,7 +97,7 @@ protected:
 
 public:
     /** Kernel constructor */
-    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const F3DPosition& inBoxCenter, const int inPeriodicLevel = 0)
+    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const int inPeriodicLevel = 0)
         : devP(inDevP),
           boxWidth(inBoxWidth),
           treeHeight(inTreeHeight),
@@ -141,7 +141,7 @@ public:
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
         FComplexe* FRestrict const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
-        const F3DPosition polePosition = getLeafCenter(inPole->getCoordinate());
+        const FPoint polePosition = getLeafCenter(inPole->getCoordinate());
         // For all particles in the leaf box
         typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
         while( iterParticle.hasNotFinished()){
@@ -182,7 +182,7 @@ public:
     void L2P(const CellClass* const local, ContainerClass* const particles){
         const FComplexe* const cellLocal = local->getLocal();
         // Copying the position is faster than using cell position
-        const F3DPosition localPosition = getLeafCenter(local->getCoordinate());
+        const FPoint localPosition = getLeafCenter(local->getCoordinate());
         // For all particles in the leaf box
         typename ContainerClass::BasicIterator iterTarget(*particles);
         while( iterTarget.hasNotFinished() ){
@@ -481,7 +481,7 @@ private:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void particleToMultiPole(FComplexe* const cellMultiPole, const F3DPosition& inPolePosition ,
+    void particleToMultiPole(FComplexe* const cellMultiPole, const FPoint& inPolePosition ,
                              const ParticleClass& particle){
 
         // Inner of Qi - Z0 => harmonic.result
@@ -696,7 +696,7 @@ private:
 
     /** L2P
       */
-    void localToParticle(ParticleClass*const particle, const F3DPosition& local_position,
+    void localToParticle(ParticleClass*const particle, const FPoint& local_position,
                          const FComplexe*const local_exp){
         //--------------- Forces ----------------//
 
@@ -909,7 +909,7 @@ public:
         const FReal coef = (FReal(1.0)/physicalValue) * (DT/FReal(2.0));
 
         // velocity = velocity + forces * coef
-        F3DPosition forces_coef(target->getForces());
+        FPoint forces_coef(target->getForces());
         forces_coef *= coef;
         target->incVelocity(forces_coef);
     }
@@ -918,7 +918,7 @@ public:
       *
       */
     void updatePosition(ParticleClass*const FRestrict target, const FReal DT){
-        F3DPosition velocity_dt( target->getVelocity() );
+        FPoint velocity_dt( target->getVelocity() );
         velocity_dt *= DT;
         target->incPosition( velocity_dt );
     }

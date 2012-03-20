@@ -31,7 +31,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Utils/FAssertable.hpp"
-#include "../../Src/Utils/F3DPosition.hpp"
+#include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
-	F3DPosition cx(0., 0., 0.);
+	FPoint cx(0., 0., 0.);
 	const long M = 10000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=[" << cx.getX() << "," << cx.getY() << "," << cx.getZ()
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
-	F3DPosition cy(FReal(2.)*width, 0., 0.);
+	FPoint cy(FReal(2.)*width, 0., 0.);
 	const long N = 10000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=[" << cy.getX() << "," << cy.getY() << "," << cy.getZ()
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 
 	/*
 	// M2L (direct)
-	F3DPosition rootsX[nnodes], rootsY[nnodes];
+	FPoint rootsX[nnodes], rootsY[nnodes];
 	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
 	FChebTensor<ORDER>::setRoots(cy, width, rootsY);
 	for (unsigned int i=0; i<nnodes; ++i) {
@@ -198,12 +198,12 @@ int main(int argc, char* argv[])
 	for (unsigned int i=0; i<M; ++i) f[i] = FReal(0.);
 	ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
 	while(iterY.hasNotFinished()){
-		const F3DPosition& y = iterY.data().getPosition();
+		const FPoint& y = iterY.data().getPosition();
 		const FReal        w = iterY.data().getPhysicalValue();
 		unsigned int counter = 0;
 		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
 		while(iterX.hasNotFinished()){
-			const F3DPosition& x = iterX.data().getPosition();
+			const FPoint& x = iterX.data().getPosition();
 			f[counter++] += MatrixKernel.evaluate(x,y) * w;
 			iterX.gotoNext();
 		}
