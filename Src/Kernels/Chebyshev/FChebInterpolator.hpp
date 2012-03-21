@@ -566,10 +566,10 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 		  
 		  // tensor indices of chebyshev nodes
 		  const unsigned int j[3] = {node_ids[n][0], node_ids[n][1], node_ids[n][2]};
-		  //			P[0] = U_of_x[0][0] * T_of_roots[1][j[0]];
-		  P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
-		  P[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
-		  P[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
+		  //
+		  P[0] =  FReal(0.5) + T_of_x[1][0] * T_of_roots[1][j[0]];
+		  P[1] =  FReal(0.5) + T_of_x[1][1] * T_of_roots[1][j[1]];
+		  P[2] =  FReal(0.5) + T_of_x[1][2] * T_of_roots[1][j[2]];
 		  P[3] = U_of_x[0][0] * T_of_roots[1][j[0]];
 		  P[4] = U_of_x[0][1] * T_of_roots[1][j[1]];
 		  P[5] = U_of_x[0][2] * T_of_roots[1][j[2]];
@@ -581,9 +581,6 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 		    P[4] += U_of_x[o-1][1] * T_of_roots[o][j[1]];
 		    P[5] += U_of_x[o-1][2] * T_of_roots[o][j[2]];
 		  }
-		  P[0] += FReal(0.5);
-		  P[1] += FReal(0.5);
-		  P[2] += FReal(0.5);
 		  //
 		  potential	+= P[0] * P[1] * P[2] * localExpansion[n];
 		  forces[0]	+= P[3] * P[1] * P[2] * localExpansion[n];
