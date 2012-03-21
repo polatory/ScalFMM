@@ -1,3 +1,13 @@
+// ===================================================================================
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
+// ===================================================================================
 #ifndef FFMMALGORITHMSTARPU_HPP
 #define FFMMALGORITHMSTARPU_HPP
 // /!\ Please, you must read the license at the bottom of this page
@@ -73,10 +83,12 @@ template <class CellClass>
 class FStarCell : public CellClass{
 public:
     /** The handle to register the data */
-    StarHandle handle;
+    StarHandle handleUp;
+    StarHandle handleDown;
     /** Called by fmm starpu to register data */
     void initHandle(){
-        handle.registerVariable( static_cast<CellClass*>(this) );
+        handleUp.registerVariable( static_cast<CellClass*>(this) );
+        handleDown.registerVariable( static_cast<CellClass*>(this) );
     }
 };
 
@@ -448,7 +460,7 @@ public:
             // P2M
             {
                 //kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
-                starpu_insert_task( &p2m_cl, STARPU_W, octreeIterator.getCurrentCell()->handle.handle,
+                starpu_insert_task( &p2m_cl, STARPU_W, octreeIterator.getCurrentCell()->handleUp.handle,
                                     STARPU_R, octreeIterator.getCurrentLeaf()->getSrc()->handle.handle, 0);
             }
             // P2P
@@ -523,14 +535,14 @@ public:
                     // create task
                     struct starpu_task* const task = starpu_task_create();
                     // buffer 0 is current leaf
-                    task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
 
                     // insert other with a mask
                     memset(mask_m2l, 0, sizeof(unsigned int) * 12);
                     int idxInsert = 1;
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
+                            task->handles[idxInsert++] = neighbors[idxNeigh]->handleUp.handle;
                             mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
                         }
                     }
@@ -562,14 +574,14 @@ public:
                 //kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
                 // buffer 0 is parent cell
-                task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
+                task->handles[0] = octreeIterator.getCurrentCell()->handleUp.handle;
                 // add child with mask
                 unsigned int mask = 0;
                 int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->handles[idxInsert++] = child[idxChild]->handle.handle;
+                        task->handles[idxInsert++] = child[idxChild]->handleUp.handle;
                         mask = mask | (1 << idxChild);
                     }
                 }
@@ -600,14 +612,14 @@ public:
                     // create task
                     struct starpu_task* const task = starpu_task_create();
                     // buffer 0 is current leaf
-                    task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
+                    task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
 
                     // insert other with a mask
                     memset(mask_m2l, 0, sizeof(unsigned int) * 12);
                     int idxInsert = 1;
                     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
                         if( neighbors[idxNeigh] ){
-                            task->handles[idxInsert++] = neighbors[idxNeigh]->handle.handle;
+                            task->handles[idxInsert++] = neighbors[idxNeigh]->handleUp.handle;
                             mask_m2l[ idxNeigh >> 5 ] = mask_m2l[ idxNeigh >> 5 ] | (1 << (idxNeigh & 0x1F));
                         }
                     }
@@ -658,14 +670,14 @@ public:
                 //kernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 struct starpu_task* const task = starpu_task_create();
                 // buffer 0 is parent cell
-                task->handles[0] = octreeIterator.getCurrentCell()->handle.handle;
+                task->handles[0] = octreeIterator.getCurrentCell()->handleDown.handle;
                 // insert children with mask
                 unsigned int mask = 0;
                 int idxInsert = 1;
                 CellClass*const*const child = octreeIterator.getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                     if(child[idxChild]){
-                        task->handles[idxInsert++] = child[idxChild]->handle.handle;
+                        task->handles[idxInsert++] = child[idxChild]->handleDown.handle;
                         mask = mask | (1 << idxChild);
                     }
                 }
@@ -708,7 +720,7 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             //kernels->L2P( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
-            starpu_insert_task(&l2p_cl, STARPU_R, octreeIterator.getCurrentCell()->handle.handle,
+            starpu_insert_task(&l2p_cl, STARPU_R, octreeIterator.getCurrentCell()->handleDown.handle,
                                STARPU_RW, octreeIterator.getCurrentLeaf()->getTargets()->handle.handle, 0);
         } while(octreeIterator.moveRight());
 
