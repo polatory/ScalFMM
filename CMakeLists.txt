@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.5)
+cmake_minimum_required (VERSION 2.8.3)
 
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
@@ -58,13 +58,14 @@ endif()
 if( SCALFMM_USE_STARPU )
 	# starpu
 	set( STARPU_LIBRARIES "-lstarpu-1.0" )
-	set( STARPU_INCLUDE_DIRS "/home/bramas/starpulib/include/" )
-	set( STARPU_LIBRARY_DIRS "/home/bramas/starpulib/lib/" )
+	set( STARPU_INCLUDE_DIRS "/usr/local/include/starpu/1.0" CACHE STRING "Set your StarPU include directory")
+	set( STARPU_LIBRARY_DIRS "/usr/local/lib/" CACHE STRING "Set your StarPU library directory")
 	# Adding the project sources dir as an include dir
 	include_directories(${STARPU_INCLUDE_DIRS})
 	link_directories(${STARPU_LIBRARY_DIRS})
-	ADD_DEFINITIONS(-DFUSE_STARPU)
-
+else()
+	unset(STARPU_INCLUDE_DIRS CACHE)
+	unset(STARPU_LIBRARY_DIRS CACHE)
 endif()
 
 # Attach source code to exec
