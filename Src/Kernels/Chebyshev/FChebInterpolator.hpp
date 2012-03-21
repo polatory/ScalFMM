@@ -255,32 +255,22 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 			T_of_x[o][0] = xpx * T_of_x[o-1][0] - T_of_x[o-2][0];
 			T_of_x[o][1] = ypy * T_of_x[o-1][1] - T_of_x[o-2][1];
 			T_of_x[o][2] = zpz * T_of_x[o-1][2] - T_of_x[o-2][2];
-			// T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
-			// T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
-			// T_of_x[o][2] = FReal(2.) * localPosition.getZ() * T_of_x[o-1][2] - T_of_x[o-2][2];
 		}
 		
 		// anterpolate
 		const FReal sourceValue = iter.data().getPhysicalValue();
 		for (unsigned int n=0; n<nnodes; ++n) {
 			const unsigned int j[3] = {node_ids[n][0], node_ids[n][1], node_ids[n][2]};
-			S[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
-			S[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
-			S[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
+			S[0] = FReal(0.5) + T_of_x[1][0] * T_of_roots[1][j[0]];
+			S[1] = FReal(0.5) + T_of_x[1][1] * T_of_roots[1][j[1]];
+			S[2] = FReal(0.5) + T_of_x[1][2] * T_of_roots[1][j[2]];
 			for (unsigned int o=2; o<ORDER; ++o) {
 				S[0] += T_of_x[o][0] * T_of_roots[o][j[0]];
 				S[1] += T_of_x[o][1] * T_of_roots[o][j[1]];
 				S[2] += T_of_x[o][2] * T_of_roots[o][j[2]];
 			}
 			// gather contributions
-			//  Here we consider 1/2 S rather S then we multiply by 8 the results
-			// S[0] *= FReal(2.); S[0] += FReal(1.);
-			// S[1] *= FReal(2.); S[1] += FReal(1.);
-			// S[2] *= FReal(2.); S[2] += FReal(1.);
-			// multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
-			S[0] += FReal(0.5);
-			S[1] += FReal(0.5);
-			S[2] += FReal(0.5);
+			//
 			multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
 		}
 		// increment source iterator
