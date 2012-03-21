@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "../../Src/Files/FFmaScanfLoader.hpp"
+
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
@@ -71,22 +73,18 @@ FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const unsigned int ORDER = 3;
-	const FReal epsilon              = FParameters::getValue(argc, argv, "-eps", FReal(1e-3));
-	const long NbPart                = FParameters::getValue(argc, argv, "-num", 400000);
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 6);
+	const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
-	const unsigned int NbThreads   = FParameters::getValue(argc, argv, "-t", 1);
+	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
+	const unsigned int ORDER = 7;
+	const FReal epsilon = FReal(1e-7);
+
+	// set threads
 	omp_set_num_threads(NbThreads); 
-
 	std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
 
-
-	const FReal Width = 10.;
-	// init random fun
-	const FReal FRandMax = FReal(RAND_MAX) / Width;
-	srand( static_cast<unsigned int>(time(NULL)) );
 	// init timer
 	FTic time;
 
@@ -100,27 +98,25 @@ int main(int argc, char* argv[])
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
 	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
+	// open particle file
+	FFmaScanfLoader<ParticleClass> loader(filename);
+	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 	
-	const FPoint BoxCenter(.5*Width, .5*Width, .5*Width);
-	OctreeClass tree(TreeHeight, SubTreeHeight, Width, BoxCenter);
-	
+	// init oct-tree
+	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
 	// -----------------------------------------------------
-	std::cout << "Creating and inserting " << NbPart << " particles in a octree of height " << TreeHeight
+	std::cout << "Creating and inserting " << loader.getNumberOfParticles() << " particles in a octree of height " << TreeHeight
 						<< " ..." << std::endl;
 	time.tic();
-	ParticleClass particle;
-	for(long i=0; i<NbPart; ++i) {
-		particle.setPosition(FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
-		particle.setPhysicalValue(FReal(rand())/FReal(RAND_MAX));
-		tree.insert(particle);
-	}
+	loader.fillTree(tree);
 	std::cout << "Done  " << "(" << time.tacAndElapsed() << ")." << std::endl;
 	// -----------------------------------------------------
 
@@ -128,7 +124,7 @@ int main(int argc, char* argv[])
 	// -----------------------------------------------------
 	std::cout << "\nChebyshev FMM ... " << std::endl;
 	time.tic();
-	KernelClass kernels(TreeHeight, BoxCenter, Width, epsilon);
+	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
 	FmmClass algorithm(&tree,&kernels);
 	algorithm.execute();
 	std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;

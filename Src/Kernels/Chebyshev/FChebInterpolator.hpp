@@ -321,9 +321,9 @@ inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 		ypy = FReal(2.) * localPosition.getY() ;
 		zpz = FReal(2.) * localPosition.getZ() ;
 		for (unsigned int o=2; o<ORDER; ++o) {
-			T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
-			T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
-			T_of_x[o][2] = FReal(2.) * localPosition.getZ() * T_of_x[o-1][2] - T_of_x[o-2][2];
+			T_of_x[o][0] = xpx * T_of_x[o-1][0] - T_of_x[o-2][0];
+			T_of_x[o][1] = ypy * T_of_x[o-1][1] - T_of_x[o-2][1];
+			T_of_x[o][2] = zpz * T_of_x[o-1][2] - T_of_x[o-2][2];
 		}
 
 		// interpolate and increment target value
