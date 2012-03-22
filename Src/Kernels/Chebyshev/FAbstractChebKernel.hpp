@@ -193,32 +193,36 @@ public:
 
 
 private:
-	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const
+	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const  // 21 overall flops
 	{
-		const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
+		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
+																										 xy.getY()*xy.getY() +
+																										 xy.getZ()*xy.getZ()); // 1 + 1 + 1 + 5 = 8 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
 		// potential
-		Target.incPotential(one_over_r * ws);
-		FPoint force(Source.getPosition() - Target.getPosition());
-		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
+		Target.incPotential(one_over_r * ws); // 2 flops
 		// force
-		Target.incForces(force.getX(), force.getY(), force.getZ());
+		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
+		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
 	}
 
-	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const
+	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const // 26 overall flops
 	{
-		const FReal one_over_r = MatrixKernel->evaluate(Target.getPosition(), Source.getPosition());
+		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
+		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
+																										 xy.getY()*xy.getY() +
+																										 xy.getZ()*xy.getZ()); // 1 + 1 + 1 + 5 = 8 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
 		// potential
-		Target.incPotential(one_over_r * ws);
-		Source.incPotential(one_over_r * wt);
+		Target.incPotential(one_over_r * ws); // 2 flops
+		Source.incPotential(one_over_r * wt); // 2 flops
 		// force
-		FPoint force(Source.getPosition() - Target.getPosition());
-		force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-		Target.incForces(  force.getX(),    force.getY(),    force.getZ());
-		Source.incForces((-force.getX()), (-force.getY()), (-force.getZ()));
+		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
+		Target.incForces(  xy.getX(),    xy.getY(),    xy.getZ());  // 3 flops 
+		Source.incForces((-xy.getX()), (-xy.getY()), (-xy.getZ())); // 3 flops
 	}
 
 };

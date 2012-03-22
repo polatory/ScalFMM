@@ -197,17 +197,17 @@ int main(int, char **){
 		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
 		while(iterX.hasNotFinished()){
 			const FPoint& x = iterX.data().getPosition();
-			const FReal       wx = iterX.data().getPhysicalValue();
+			const FReal  wx = iterX.data().getPhysicalValue();
 			
 			ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
 			while(iterY.hasNotFinished()){
 				const FPoint& y = iterY.data().getPosition();
-				const FReal       wy = iterY.data().getPhysicalValue();
+				const FReal  wy = iterY.data().getPhysicalValue();
 				const FReal one_over_r = MatrixKernel.evaluate(x, y);
 				// potential
 				p[counter] += one_over_r * wy;
 				// force
-				FPoint force(x - y);
+				FPoint force(y - x);
 				force *= one_over_r*one_over_r*one_over_r;
 				f[counter*3 + 0] += force.getX() * wx * wy;
 				f[counter*3 + 1] += force.getY() * wx * wy;
