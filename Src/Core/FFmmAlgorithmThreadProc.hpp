@@ -916,7 +916,7 @@ private:
     // Direct
     /////////////////////////////////////////////////////////////////////////////
     struct LeafData{
-        MortonIndex index;
+        FTreeCoordinate coord;
         CellClass* cell;
         ContainerClass* targets;
         ContainerClass* sources;
@@ -981,13 +981,10 @@ private:
             int uselessIndexArray[26];
 
             for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf){
-                FTreeCoordinate center;
-                center.setPositionFromMorton(iterArray[idxLeaf].getCurrentGlobalIndex(), OctreeHeight - 1);
-
                 memset(alreadySent, 0, sizeof(int) * nbProcess);
                 bool needOther = false;
 
-                const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalIndex(), limite, indexesNeighbors, uselessIndexArray);
+                const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors, uselessIndexArray);
 
                 for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
@@ -1103,7 +1100,7 @@ private:
             for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf, ++idxInArray){
                 const int shapePosition = shapeType[idxInArray];
 
-                leafsDataArray[startPosAtShape[shapePosition]].index = myLeafs[idxInArray].getCurrentGlobalIndex();
+                leafsDataArray[startPosAtShape[shapePosition]].coord = myLeafs[idxInArray].getCurrentGlobalCoordinate();
                 leafsDataArray[startPosAtShape[shapePosition]].cell = myLeafs[idxInArray].getCurrentCell();
                 leafsDataArray[startPosAtShape[shapePosition]].targets = myLeafs[idxInArray].getCurrentListTargets();
                 leafsDataArray[startPosAtShape[shapePosition]].sources = myLeafs[idxInArray].getCurrentListSrc();
@@ -1140,8 +1137,8 @@ private:
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                    myThreadkernels.P2P( currentIter.cell->getCoordinate(),currentIter.targets,
+                    const int counter = tree->getLeafsNeighbors(neighbors, currentIter.coord, LeafIndex);
+                    myThreadkernels.P2P( currentIter.coord,currentIter.targets,
                                          currentIter.sources, neighbors, counter);
                 }
 
@@ -1213,7 +1210,7 @@ private:
                 memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
                 // Take possible data
-                const int nbNeigh = getNeighborsIndexes(currentIter.index, limite, indexesNeighbors, indexArray);
+                const int nbNeigh = getNeighborsIndexes(currentIter.coord, limite, indexesNeighbors, indexArray);
 
                 for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
@@ -1251,9 +1248,7 @@ private:
     }
 
 
-    int getNeighborsIndexes(const MortonIndex centerIndex, const int limite, MortonIndex indexes[26], int indexInArray[26]) const{
-        FTreeCoordinate center;
-        center.setPositionFromMorton(centerIndex, OctreeHeight - 1);
+    int getNeighborsIndexes(const FTreeCoordinate& center, const int limite, MortonIndex indexes[26], int indexInArray[26]) const{
         int idxNeig = 0;
         // We test all cells around
         for(int idxX = -1 ; idxX <= 1 ; ++idxX){
