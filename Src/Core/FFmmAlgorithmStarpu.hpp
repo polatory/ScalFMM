@@ -272,8 +272,34 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     starpu_codelet l2l_cl[8];
     starpu_codelet l2p_cl;
 
+    starpu_perfmodel p2p_model;
+    starpu_perfmodel p2m_model;
+    starpu_perfmodel m2m_model;
+    starpu_perfmodel m2l_model;
+    starpu_perfmodel l2l_model;
+    starpu_perfmodel l2p_model;
+
     // Init the codelet
-    void initCodelets(){
+    void initCodelets(const bool putNameInTask){
+        memset(&p2p_model, 0, sizeof(p2p_model));
+        p2p_model.type = STARPU_HISTORY_BASED;
+        p2p_model.symbol = "P2P";
+        memset(&p2m_model, 0, sizeof(p2m_model));
+        p2m_model.type = STARPU_HISTORY_BASED;
+        p2m_model.symbol = "P2M";
+        memset(&m2l_model, 0, sizeof(m2l_model));
+        m2l_model.type = STARPU_HISTORY_BASED;
+        m2l_model.symbol = "M2L";
+        memset(&l2p_model, 0, sizeof(l2p_model));
+        l2p_model.type = STARPU_HISTORY_BASED;
+        l2p_model.symbol = "L2P";
+        memset(&l2l_model, 0, sizeof(l2l_model));
+        l2l_model.type = STARPU_HISTORY_BASED;
+        l2l_model.symbol = "L2L";
+        memset(&m2m_model, 0, sizeof(m2m_model));
+        m2m_model.type = STARPU_HISTORY_BASED;
+        m2m_model.symbol = "M2M";
+
         // P2M
         memset(&p2m_cl, 0, sizeof(p2m_cl));
         p2m_cl.where = STARPU_CPU;
@@ -281,12 +307,16 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         p2m_cl.nbuffers = 2;
         p2m_cl.modes[0] = STARPU_W;
         p2m_cl.modes[1] = STARPU_R;
+        if(putNameInTask) p2m_cl.model = &p2m_model;
+
         // P2P
         memset(p2p_cl, 0, sizeof(starpu_codelet) * 28);
         for(int idxNeig = 0 ; idxNeig <= 27 ; ++idxNeig){
             p2p_cl[idxNeig].where = STARPU_CPU;
             p2p_cl[idxNeig].cpu_funcs[0] = p2p_cpu;
             p2p_cl[idxNeig].nbuffers = idxNeig + 1;
+
+            if( putNameInTask ) p2p_cl[idxNeig].model = &p2p_model;
 
             for( int idxMode = 0 ; idxMode <= idxNeig ; ++idxMode){
                 p2p_cl[idxNeig].modes[idxMode] = STARPU_RW;
@@ -299,8 +329,9 @@ class FFmmAlgorithmStarpu : protected FAssertable{
             m2l_cl[idxNeig].cpu_funcs[0] = m2l_cpu;
             m2l_cl[idxNeig].nbuffers = idxNeig + 2;
 
-            m2l_cl[idxNeig].modes[0] = STARPU_RW;
+            if( putNameInTask ) m2l_cl[idxNeig].model = &m2l_model;
 
+            m2l_cl[idxNeig].modes[0] = STARPU_RW;
             for( int idxMode = 0 ; idxMode <= idxNeig ; ++idxMode){
                 m2l_cl[idxNeig].modes[idxMode+1] = STARPU_R;
             }
@@ -310,6 +341,8 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         l2p_cl.where = STARPU_CPU;
         l2p_cl.cpu_funcs[0] = l2p_cpu;
         l2p_cl.nbuffers = 2;
+        if(putNameInTask)  l2p_cl.model = &l2p_model;
+
         // M2M & L2L
         memset(m2m_cl, 0, sizeof(starpu_codelet) * 8);
         memset(l2l_cl, 0, sizeof(starpu_codelet) * 8);
@@ -318,11 +351,13 @@ class FFmmAlgorithmStarpu : protected FAssertable{
             m2m_cl[idxChild].cpu_funcs[0] = m2m_cpu;
             m2m_cl[idxChild].nbuffers = idxChild + 2;
             m2m_cl[idxChild].modes[0] = STARPU_W;
+            if( putNameInTask)m2m_cl[idxChild].model = &m2m_model;
 
             l2l_cl[idxChild].where = STARPU_CPU;
             l2l_cl[idxChild].cpu_funcs[0] = l2l_cpu;
             l2l_cl[idxChild].nbuffers = idxChild + 2;
             l2l_cl[idxChild].modes[0] = STARPU_R;
+            if( putNameInTask)l2l_cl[idxChild].model = &l2l_model;
 
             for( int idxMode = 0 ; idxMode <= idxChild ; ++idxMode){
                 m2m_cl[idxChild].modes[idxMode+1] = STARPU_R;
@@ -398,14 +433,14 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels)
+    FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels, const bool putNameInTask = false)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
         FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu\n");
         // Run starpu
         starpu_init(NULL);
 
         // Init
-        initCodelets();
+        initCodelets(putNameInTask);
         initHandles();
         initKernels();
     }
