@@ -51,8 +51,8 @@ int main(int argc, char* argv[])
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
-	const unsigned int ORDER = 3;
-	const FReal epsilon = FReal(1e-3);
+	const unsigned int ORDER = 9;
+	const FReal epsilon = FReal(1e-9);
 
 	// init timer
 	FTic time;
@@ -97,108 +97,6 @@ int main(int argc, char* argv[])
 	// -----------------------------------------------------
 	
 
-//	// -----------------------------------------------------
-//	// find first non empty leaf cell 
-//	OctreeClass::Iterator iLeafs(&tree);
-//	iLeafs.gotoBottomLeft();
-//	
-//	const ContainerClass *const Targets = iLeafs.getCurrentListTargets();
-//	const unsigned int NumTargets = Targets->getSize();
-//
-//	FReal* Potential = new FReal [NumTargets];
-//	FBlas::setzero(NumTargets, Potential);
-//
-//	FReal* Force = new FReal [NumTargets * 3];
-//	FBlas::setzero(NumTargets * 3, Force);
-//	
-//	std::cout << "\nDirect computation of " << NumTargets << " target particles ..." << std::endl;
-//	const MatrixKernelClass MatrixKernel;
-//	do {
-//			const ContainerClass *const Sources = iLeafs.getCurrentListSrc();
-//			unsigned int counter = 0;
-//			ContainerClass::ConstBasicIterator iTarget(*Targets);
-//			while(iTarget.hasNotFinished()) {
-//				const FReal wt = iTarget.data().getPhysicalValue();
-//				ContainerClass::ConstBasicIterator iSource(*Sources);
-//				while(iSource.hasNotFinished()) {
-//					if (&iTarget.data() != &iSource.data()) {
-//					  const FReal one_over_r = MatrixKernel.evaluate(iTarget.data().getPosition(),
-//																													 iSource.data().getPosition());
-//						const FReal ws = iSource.data().getPhysicalValue();
-//						// potential
-//						Potential[counter] += one_over_r * ws;
-//						// force
-//						FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
-//						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-//						Force[counter*3 + 0] += force.getX();
-//						Force[counter*3 + 1] += force.getY();
-//						Force[counter*3 + 2] += force.getZ();
-//					}
-//					iSource.gotoNext();
-//				}
-//				counter++;
-//				iTarget.gotoNext();
-//			}
-//	} while(iLeafs.moveRight());
-//
-//	
-//	FReal* ApproxPotential = new FReal [NumTargets];
-//	FReal* ApproxForce     = new FReal [NumTargets * 3];
-//
-//	unsigned int counter = 0;
-//	ContainerClass::ConstBasicIterator iTarget(*Targets);
-//	while(iTarget.hasNotFinished()) {
-//		ApproxPotential[counter]   = iTarget.data().getPotential();
-//		ApproxForce[counter*3 + 0] = iTarget.data().getForces().getX();
-//		ApproxForce[counter*3 + 1] = iTarget.data().getForces().getY();
-//		ApproxForce[counter*3 + 2] = iTarget.data().getForces().getZ();
-//		counter++;
-//		iTarget.gotoNext();
-//	}
-//
-//	std::cout << "\nPotential error:" << std::endl;
-//	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets, Potential, ApproxPotential)
-//						<< std::endl;
-//	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets, Potential, ApproxPotential)
-//						<< std::endl;
-//
-//	std::cout << "\nForce error:" << std::endl;
-//	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets*3, Force, ApproxForce)
-//						<< std::endl;
-//	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets*3, Force, ApproxForce)
-//						<< std::endl;
-//	std::cout << std::endl;
-//
-//	// free memory
-//	delete [] Potential;
-//	delete [] ApproxPotential;
-//	delete [] Force;
-//	delete [] ApproxForce;
-	
-
-	/*
-	// Check if particles are strictly within its containing cells
-	const FReal BoxWidthLeaf = BoxWidth / FReal(FMath::pow(2, TreeHeight-1));
-	OctreeClass::Iterator octreeIterator(&tree);
-	octreeIterator.gotoBottomLeft();
-	do{
-		const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-		const FPoint& LeafCellCenter = LeafCell -> getPosition();
-		const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
-		ContainerClass::ConstBasicIterator particleIterator(*Particles);
-		while(particleIterator.hasNotFinished()) {
-			const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
-			std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
-			if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
-					std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
-					std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
-				std::cout << "stop" << std::endl;
-				exit(-1);
-			}
-			particleIterator.gotoNext();
-		}
-	} while(octreeIterator.moveRight());
-	*/
 
 
     return 0;

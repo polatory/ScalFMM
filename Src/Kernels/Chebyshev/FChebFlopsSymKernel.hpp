@@ -55,13 +55,16 @@ class FChebFlopsSymKernel
 
 	// start flop counters 
 	unsigned int countFlopsP2MorL2P(const unsigned int N) const
-	{	return     N      * (nnodes*(24*ORDER-26) - 1); }
+	{	return 1 + N * (nnodes*(6*ORDER-2) + 6*ORDER + 6); }
+	//{	return     N*nnodes*(15*ORDER-19) + ORDER*(3*ORDER-6) + 2; }
+	//{	return     N      * (nnodes*(24*ORDER-26) - 1); }
 	unsigned int countFlopsM2MorL2L() const
 	{ return     nnodes * (nnodes*2             - 1); }
-	unsigned int countFlopsL2PGradient(const unsigned int N) const
-	{ return 3 * N      * (nnodes*(17*ORDER-21) - 1); }
+	//unsigned int countFlopsL2PGradient(const unsigned int N) const
+	//{ return 3 * N      * (nnodes*(17*ORDER-21) - 1); }
 	unsigned int countFlopsL2PTotal(const unsigned int N) const
-	{ return     N      * (nnodes*2             -1 ) + countFlopsL2PGradient(N); }
+	{ return 7 + N * (nnodes*(12*ORDER-1) + 15*ORDER + 2); }
+	//{ return     N      * (nnodes*2             -1 ) + countFlopsL2PGradient(N); }
 	unsigned int countFlopsM2L(const unsigned int nexp, const unsigned int rank) const
 	{ return nexp * (4*nnodes*rank - rank - nnodes); }
 	unsigned int countFlopsP2P() const
