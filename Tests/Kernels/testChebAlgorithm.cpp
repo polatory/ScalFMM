@@ -78,8 +78,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 5;
-	const FReal epsilon = FReal(1e-5);
+	const unsigned int ORDER = 9;
+	const FReal epsilon = FReal(1e-9);
 
 	// set threads
 	omp_set_num_threads(NbThreads); 
@@ -98,8 +98,8 @@ int main(int argc, char* argv[])
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
 	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
 	// What we do //////////////////////////////////////////////////////
