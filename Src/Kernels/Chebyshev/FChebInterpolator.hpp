@@ -255,32 +255,22 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 			T_of_x[o][0] = xpx * T_of_x[o-1][0] - T_of_x[o-2][0];
 			T_of_x[o][1] = ypy * T_of_x[o-1][1] - T_of_x[o-2][1];
 			T_of_x[o][2] = zpz * T_of_x[o-1][2] - T_of_x[o-2][2];
-			// T_of_x[o][0] = FReal(2.) * localPosition.getX() * T_of_x[o-1][0] - T_of_x[o-2][0];
-			// T_of_x[o][1] = FReal(2.) * localPosition.getY() * T_of_x[o-1][1] - T_of_x[o-2][1];
-			// T_of_x[o][2] = FReal(2.) * localPosition.getZ() * T_of_x[o-1][2] - T_of_x[o-2][2];
 		}
 		
 		// anterpolate
 		const FReal sourceValue = iter.data().getPhysicalValue();
 		for (unsigned int n=0; n<nnodes; ++n) {
 			const unsigned int j[3] = {node_ids[n][0], node_ids[n][1], node_ids[n][2]};
-			S[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
-			S[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
-			S[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
+			S[0] = FReal(0.5) + T_of_x[1][0] * T_of_roots[1][j[0]];
+			S[1] = FReal(0.5) + T_of_x[1][1] * T_of_roots[1][j[1]];
+			S[2] = FReal(0.5) + T_of_x[1][2] * T_of_roots[1][j[2]];
 			for (unsigned int o=2; o<ORDER; ++o) {
 				S[0] += T_of_x[o][0] * T_of_roots[o][j[0]];
 				S[1] += T_of_x[o][1] * T_of_roots[o][j[1]];
 				S[2] += T_of_x[o][2] * T_of_roots[o][j[2]];
 			}
 			// gather contributions
-			//  Here we consider 1/2 S rather S then we multiply by 8 the results
-			// S[0] *= FReal(2.); S[0] += FReal(1.);
-			// S[1] *= FReal(2.); S[1] += FReal(1.);
-			// S[2] *= FReal(2.); S[2] += FReal(1.);
-			// multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
-			S[0] += FReal(0.5);
-			S[1] += FReal(0.5);
-			S[2] += FReal(0.5);
+			//
 			multipoleExpansion[n]	+= c1 *	S[0] * S[1] * S[2] *	sourceValue;
 		}
 		// increment source iterator
@@ -504,7 +494,7 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 	FPoint localPosition;
 	FReal T_of_x[ORDER][3];
 	FReal U_of_x[ORDER][3];
-	FReal P[3];
+	FReal P[6];
 	//
 	FReal xpx,ypy,zpz ;
 	FReal c1 = FReal(8.0) / nnodes ; 
@@ -563,76 +553,35 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 		// Optimization:
 		//   Here we compute 1/2 S and 1/2 P  rather S and F like in the paper
 		for (unsigned int n=0; n<nnodes; ++n) {
-			
-			// tensor indices of chebyshev nodes
-			const unsigned int j[3] = {node_ids[n][0], node_ids[n][1], node_ids[n][2]};
-
-			// f0 component //////////////////////////////////////
-			P[0] = U_of_x[0][0] * T_of_roots[1][j[0]];
-			P[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
-			P[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
-			// for potential
-			FReal S0 = T_of_x[1][0] * T_of_roots[1][j[0]];
-			for (unsigned int o=2; o<ORDER; ++o) {
-				P[0] += U_of_x[o-1][0] * T_of_roots[o][j[0]];
-				P[1] += T_of_x[o  ][1] * T_of_roots[o][j[1]];
-				P[2] += T_of_x[o  ][2] * T_of_roots[o][j[2]];
-				// for potential
-				S0   += T_of_x[o][0] * T_of_roots[o][j[0]];
-			}
-			// P[0] *= FReal(2.);
-			// P[1] *= FReal(2.); P[1] += FReal(1.);
-			// P[2] *= FReal(2.); P[2] += FReal(1.);
-			// forces[0]	+= P[0] * P[1] * P[2] * localExpansion[n];
-			P[1] += FReal(0.5);
-			P[2] += FReal(0.5);
-			forces[0]	+= P[0] * P[1] * P[2] * localExpansion[n];
-			// for potential
-			// S0 *= FReal(2.); S0 += FReal(1.);
-			S0 += FReal(0.5);
-			potential	+= S0 * P[1] * P[2] * localExpansion[n];
-
-			// f1 component //////////////////////////////////////
-			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
-			P[1] = U_of_x[0][1] * T_of_roots[1][j[1]];
-			//		P[2] = T_of_x[1][2] * T_of_roots[1][j[2]];
-			for (unsigned int o=2; o<ORDER; ++o) {
-				P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
-				P[1] += U_of_x[o-1][1] * T_of_roots[o][j[1]];
-				//				P[2] += T_of_x[o  ][2] * T_of_roots[o][j[2]];
-			}
-			// P[0] *= FReal(2.); P[0] += FReal(1.);
-			// P[1] *= FReal(2.); 
-			// P[2] *= FReal(2.); P[2] += FReal(1.);
-			P[0] += FReal(0.5);
-			//			P[2] += FReal(0.5);
-			forces[1]	+= P[0] * P[1] * P[2] * localExpansion[n];
-
-			// f2 component //////////////////////////////////////
-			//			P[0] = T_of_x[1][0] * T_of_roots[1][j[0]];
-			P[1] = T_of_x[1][1] * T_of_roots[1][j[1]];
-			P[2] = U_of_x[0][2] * T_of_roots[1][j[2]];
-			for (unsigned int o=2; o<ORDER; ++o) {
-			  //				P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
-				P[1] += T_of_x[o  ][1] * T_of_roots[o][j[1]];
-				P[2] += U_of_x[o-1][2] * T_of_roots[o][j[2]];
-			}
-			// P[0] *= FReal(2.); P[0] += FReal(1.);
-			// P[1] *= FReal(2.); P[1] += FReal(1.);
-			// P[2] *= FReal(2.);
-			//			P[0] += FReal(0.5);
-			P[1] += FReal(0.5);
-			forces[2]	+= P[0] * P[1] * P[2] * localExpansion[n];
+		  
+		  // tensor indices of chebyshev nodes
+		  const unsigned int j[3] = {node_ids[n][0], node_ids[n][1], node_ids[n][2]};
+		  //
+		  P[0] =  FReal(0.5) + T_of_x[1][0] * T_of_roots[1][j[0]];
+		  P[1] =  FReal(0.5) + T_of_x[1][1] * T_of_roots[1][j[1]];
+		  P[2] =  FReal(0.5) + T_of_x[1][2] * T_of_roots[1][j[2]];
+		  P[3] = U_of_x[0][0] * T_of_roots[1][j[0]];
+		  P[4] = U_of_x[0][1] * T_of_roots[1][j[1]];
+		  P[5] = U_of_x[0][2] * T_of_roots[1][j[2]];
+		  for (unsigned int o=2; o<ORDER; ++o) {
+		    P[0] += T_of_x[o  ][0] * T_of_roots[o][j[0]];
+		    P[1] += T_of_x[o  ][1] * T_of_roots[o][j[1]];
+		    P[2] += T_of_x[o  ][2] * T_of_roots[o][j[2]];
+		    P[3] += U_of_x[o-1][0] * T_of_roots[o][j[0]];
+		    P[4] += U_of_x[o-1][1] * T_of_roots[o][j[1]];
+		    P[5] += U_of_x[o-1][2] * T_of_roots[o][j[2]];
+		  }
+		  //
+		  potential	+= P[0] * P[1] * P[2] * localExpansion[n];
+		  forces[0]	+= P[3] * P[1] * P[2] * localExpansion[n];
+		  forces[1]	+= P[0] * P[4] * P[2] * localExpansion[n];
+		  forces[2]	+= P[0] * P[1] * P[5] * localExpansion[n];
 		}
-
-		// scale forces
-		// forces[0] *= jacobian[0] / nnodes;
-		// forces[1] *= jacobian[1] / nnodes;
-		// forces[2] *= jacobian[2] / nnodes;
+		//
+		potential *= c1 ;
 		forces[0] *= jacobian[0] *c1;
 		forces[1] *= jacobian[1] *c1;
 		forces[2] *= jacobian[2] *c1;
-		potential *= c1 ;
 		// set computed potential
 		iter.data().incPotential(potential);
 
