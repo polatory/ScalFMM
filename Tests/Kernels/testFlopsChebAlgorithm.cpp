@@ -51,8 +51,8 @@ int main(int argc, char* argv[])
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
-	const unsigned int ORDER = 9;
-	const FReal epsilon = FReal(1e-9);
+	const unsigned int ORDER = 5;
+	const FReal epsilon = FReal(1e-5);
 
 	// init timer
 	FTic time;

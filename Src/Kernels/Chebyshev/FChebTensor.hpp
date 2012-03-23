@@ -90,8 +90,7 @@ public:
 	 * @param[out] rootPositions coordinates of interpolation points
 	 */
 	static
-	void setRoots(const FPoint& center, const FReal width,
-								FPoint rootPositions[nnodes])
+	void setRoots(const FPoint& center, const FReal width, FPoint rootPositions[nnodes])
 	{
 		unsigned int node_ids[nnodes][3];
 		setNodeIds(node_ids);
@@ -102,6 +101,29 @@ public:
 			localPosition.setY(FReal(BasisType::roots[node_ids[n][1]]));
 			localPosition.setZ(FReal(BasisType::roots[node_ids[n][2]]));
 			map(localPosition, rootPositions[n]);
+		}
+	}
+
+	/**
+	 * Sets the Chebyshev roots in the cluster with @p center and @p width
+	 *
+	 * @param[in] center of cluster
+	 * @param[in] width of cluster
+	 * @param[out] roots coordinates of Chebyshev roots
+	 */
+	static
+	void setChebyshevRoots(const FPoint& center, const FReal width, FReal roots[3][ORDER])
+	{
+		const map_loc_glob map(center, width);
+		FPoint lPos, gPos;
+    for (unsigned int n=0; n<ORDER; ++n) {
+			lPos.setX(FReal(BasisType::roots[n]));
+			lPos.setY(FReal(BasisType::roots[n]));
+			lPos.setZ(FReal(BasisType::roots[n]));
+			map(lPos, gPos);
+			roots[0][n] = gPos.getX();
+			roots[1][n] = gPos.getY();
+			roots[2][n] = gPos.getZ();
 		}
 	}
 

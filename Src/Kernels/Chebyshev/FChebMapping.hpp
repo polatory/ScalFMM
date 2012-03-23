@@ -94,20 +94,17 @@ public:
 	 */
   void operator()(const FPoint& globPos, FPoint& loclPos) const
   {
-		loclPos.setX((FReal(2.)*globPos.getX()-b.getX()-a.getX()) /
-								 (b.getX()-a.getX()));
-		loclPos.setY((FReal(2.)*globPos.getY()-b.getY()-a.getY()) /
-								 (b.getY()-a.getY()));
-		loclPos.setZ((FReal(2.)*globPos.getZ()-b.getZ()-a.getZ()) /
-								 (b.getZ()-a.getZ()));
+		loclPos.setX((FReal(2.)*globPos.getX()-b.getX()-a.getX()) / (b.getX()-a.getX())); // 5 flops
+		loclPos.setY((FReal(2.)*globPos.getY()-b.getY()-a.getY()) / (b.getY()-a.getY())); // 5 flops
+		loclPos.setZ((FReal(2.)*globPos.getZ()-b.getZ()-a.getZ()) / (b.getZ()-a.getZ())); // 5 flops
 	}
 
 	// jacobian = 2 / (b - a);
 	void computeJacobian(FPoint& jacobian) const
   {
-		jacobian.setX(FReal(2.) / (b.getX() - a.getX()));
-		jacobian.setY(FReal(2.) / (b.getY() - a.getY()));
-		jacobian.setZ(FReal(2.) / (b.getZ() - a.getZ()));
+		jacobian.setX(FReal(2.) / (b.getX() - a.getX())); // 2 flops
+		jacobian.setY(FReal(2.) / (b.getY() - a.getY()));	// 2 flops
+		jacobian.setZ(FReal(2.) / (b.getZ() - a.getZ())); // 2 flops
   }
 };
 
