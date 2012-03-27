@@ -255,15 +255,22 @@ int main(int argc, char ** argv){
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
-
-    std::cout << "Working on particles ..." << std::endl;
-    counter.tic();
+    std::cout << "Create kernel..." << std::endl;
 
     KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-    FmmClass algo(app.global(),&tree,&kernels);
-    algo.execute();
 
+    std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
+
+    // -----------------------------------------------------
+
+    std::cout << "Working on particles ..." << std::endl;
+
+    FmmClass algo(app.global(),&tree,&kernels);
+
+    counter.tic();
+    algo.execute();
     counter.tac();
+
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     { // get sum forces&potential
@@ -311,8 +318,8 @@ int main(int argc, char ** argv){
         }
 
         std::cout << "Working on particles ..." << std::endl;
-        counter.tic();
         FmmClassNoProc algoValide(&treeValide,&kernels);
+        counter.tic();
         algoValide.execute();
         counter.tac();
         std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;

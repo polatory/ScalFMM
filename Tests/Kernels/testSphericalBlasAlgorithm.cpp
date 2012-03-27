@@ -92,21 +92,31 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Working on particles ..." << std::endl;
+    std::cout << "Create kernel ..." << std::endl;
     counter.tic();
 
     KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
+    counter.tac();
+    std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
+
+    // -----------------------------------------------------
+
+    std::cout << "Working on particles ..." << std::endl;
+
     if( FParameters::findParameter(argc,argv,"-sequential") != FParameters::NotFound){
         FmmClass algo(&tree,&kernels);
+        counter.tic();
         algo.execute();
     }
     else if( FParameters::findParameter(argc,argv,"-task") != FParameters::NotFound){
         FmmClassTask algo(&tree,&kernels);
+        counter.tic();
         algo.execute();
     }
     else {
         FmmClassThread algo(&tree,&kernels);
+        counter.tic();
         algo.execute();
     }
 

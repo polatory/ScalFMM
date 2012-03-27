@@ -86,16 +86,20 @@ int main(int argc, char ** argv){
         loader.fillTree(tree);
 
         // -----------------------------------------------------
-        counter.tic();
 
         KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), idxBlockSize);
-
         FmmClass algo(&tree,&kernels);
+
+        // -----------------------------------------------------
+
+        counter.tic();
+
         algo.execute();
 
         counter.tac();
         std::cout << "For block size = " << idxBlockSize << ", time is = " << counter.elapsed() << "s" << std::endl;
 
+        // update best
         if(counter.elapsed() < minTime){
             minTime = counter.elapsed();
             bestSize = idxBlockSize;

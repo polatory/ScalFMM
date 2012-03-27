@@ -116,16 +116,18 @@ int main(int argc, char ** argv){
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
-
-    std::cout << "Working on particles ..." << std::endl;
-    counter.tic();
+    std::cout << "Create kernels ..." << std::endl;
 
     KernelClass kernels(DevP, NbLevels, BoxWidth, CenterOfBox);
     KernelClassTyped kernelsTyped(DevP, NbLevels, BoxWidth, CenterOfBox);
 
+
+    std::cout << "Working on particles ..." << std::endl;
+
     FmmClass algo(&tree,&kernels);
     FmmClassTyped algoTyped(&treeTyped,&kernelsTyped);
 
+    counter.tic();
     algo.execute();
     algoTyped.execute();
 
