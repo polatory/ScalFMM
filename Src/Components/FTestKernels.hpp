@@ -150,7 +150,8 @@ void ValidateFMMAlgo(OctreeClass* const tree){
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSrc()->getSize() ){
-                    std::cout << "Problem P2M : " << (octreeIterator.getCurrentCell()->getDataUp() - octreeIterator.getCurrentListSrc()->getSize()) << "\n";
+                    std::cout << "Problem P2M : " << octreeIterator.getCurrentCell()->getDataUp() <<
+                                 " (should be " << octreeIterator.getCurrentListSrc()->getSize() << ")\n";
             }
             NbPart += octreeIterator.getCurrentListSrc()->getSize();
         } while(octreeIterator.moveRight());
