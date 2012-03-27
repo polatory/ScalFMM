@@ -435,7 +435,6 @@ public:
       */
     FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels, const bool putNameInTask = false)
                       : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu\n");
         // Run starpu
         starpu_init(NULL);
 
@@ -443,6 +442,8 @@ public:
         initCodelets(putNameInTask);
         initHandles();
         initKernels();
+
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu (there are" << starpu_worker_get_count() << " workers\n");
     }
 
     /** Default destructor */
