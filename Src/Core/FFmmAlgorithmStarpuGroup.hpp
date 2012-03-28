@@ -27,10 +27,7 @@
 
 /*
 TODO:
-mettre les cellules directement dans les tableaux
 scinder multipole/local
-organiser M2L/P2P remote et local.
-function from groups to tree
 */
 
 
@@ -45,6 +42,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     /////////////////////////////////////////////////////////////
     // Utils classes
     /////////////////////////////////////////////////////////////
+
 
     struct MortonContainer : public FExtendMortonIndex, public FExtendCoordinate {
         ContainerClass container;
@@ -70,10 +68,9 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
       * a process task
       */
     struct TransferBuffer {
-        TransferBuffer() : groupDestination(0), transferBufferCell(0), transferBufferLeaf(0) {
+        TransferBuffer() : groupDestination(0), transferBufferLeaf(0) {
         }
         ~TransferBuffer() {
-            delete[] transferBufferCell;
             delete[] transferBufferLeaf;
         }
 
@@ -83,8 +80,9 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         FVector<int> originalIndexPosition;
         // transfer properties
         FVector<TransferProperties> compuationProperties;
+        // where data will be copied
+        int indexToStarCopying;
         // memory to copy before compute remotly
-        CellClass* FRestrict transferBufferCell;
         ContainerClass* FRestrict transferBufferLeaf;
     };
 
@@ -92,14 +90,16 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
       * and some properties
       */
     struct Group {
-        Group() : cellArray(0), leavesArray(0) {
+        Group() : cellArray(0), needOther(0), leavesArray(0), transferBufferCell(0), nbCellToReceive(0) {
         }
         ~Group(){
             delete[] cellArray;
+            delete[] needOther;
             delete[] leavesArray;
             for(int idx = 0 ; idx < dataToSend.getSize() ; ++idx){
                 delete dataToSend[idx];
             }
+            delete[] transferBufferCell;
         }
 
         // Morton index the group start at
@@ -110,6 +110,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         int nbElements;
         // The data of the group
         CellClass* cellArray;
+        bool* needOther;
         // Or the leaves data
         MortonContainer* FRestrict leavesArray;
         // Information needed to compute parent child operations
@@ -117,6 +118,10 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         FVector<Group*> lowerGroups;
         // Information needed in case of transfering data needed
         FVector<TransferBuffer*> dataToSend;
+
+        // memory to copy before compute remotly
+        CellClass* FRestrict transferBufferCell;
+        int nbCellToReceive;
     };
 
     /////////////////////////////////////////////////////////////
@@ -205,10 +210,12 @@ public:
 
                     blockedTree[idxLevel][idxGroup].nbElements = cellsInThisGroup;
                     blockedTree[idxLevel][idxGroup].cellArray = new CellClass[cellsInThisGroup];
+                    blockedTree[idxLevel][idxGroup].needOther = new bool[cellsInThisGroup];
 
                     for(int idxCell = 0 ; idxCell < cellsInThisGroup ; ++idxCell, ++copyIndex){
                         blockedTree[idxLevel][idxGroup].cellArray[idxCell].setMortonIndex( iterArray[copyIndex].getCurrentGlobalIndex() );
                         blockedTree[idxLevel][idxGroup].cellArray[idxCell].setCoordinate( iterArray[copyIndex].getCurrentGlobalCoordinate() );
+                        blockedTree[idxLevel][idxGroup].needOther[idxCell] = false;
                         blockedTree[idxLevel][idxGroup].cellArray[idxCell].intialCopy( iterArray[copyIndex].getCurrentCell() );
                     }
 
@@ -338,21 +345,42 @@ public:
                                         // add to the sending transferBuffer
                                         blockedTree[idxLevel][idxGroup].dataToSend[transferBufferToSend]->compuationProperties.push(TransferProperties(idxInReceiver,342-potentialPosition[idxInteraction],
                                                                                                                   blockedTree[idxLevel][idxGroup].dataToSend[transferBufferToSend]->originalIndexPosition.getSize()-1));
-
+                                        // need other data
+                                        blockedTree[idxLevel][idxGroup].needOther[idxCell] = true;
                                     }
                                 }
                             }
                         }
                     }
+                }
+                // pre-compte buffer to copy data
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                     // Copy transferBuffer to send
                     const int nbRemoteInteractions = blockedTree[idxLevel][idxGroup].dataToSend.getSize();
                     for(int idxRemote = 0 ; idxRemote < nbRemoteInteractions ; ++idxRemote){
                         const int cellToCopy = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition.getSize();
-                        blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell = new CellClass[cellToCopy];
+                        const int receiver = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                        blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying = blockedTree[idxLevel][receiver].nbCellToReceive;
+                        // increase index
+                        blockedTree[idxLevel][receiver].nbCellToReceive += cellToCopy;
+                    }
+                }
+                // allocate
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    blockedTree[idxLevel][idxGroup].transferBufferCell = new CellClass[blockedTree[idxLevel][idxGroup].nbCellToReceive];
+                }
+                // init with right index
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // Copy transferBuffer to send
+                    const int nbRemoteInteractions = blockedTree[idxLevel][idxGroup].dataToSend.getSize();
+                    for(int idxRemote = 0 ; idxRemote < nbRemoteInteractions ; ++idxRemote){
+                        const int cellToCopy = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition.getSize();
+                        const int receiver = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                        const int offset = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
                         for(int idxCell = 0 ; idxCell < cellToCopy ; ++idxCell){
                             const int cellPosition = blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition[idxCell];
-                            blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell[idxCell].setMortonIndex( blockedTree[idxLevel][idxGroup].cellArray[cellPosition].getMortonIndex() );
-                            blockedTree[idxLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell[idxCell].setCoordinate( blockedTree[idxLevel][idxGroup].cellArray[cellPosition].getCoordinate() );
+                            blockedTree[idxLevel][receiver].transferBufferCell[idxCell + offset].setMortonIndex( blockedTree[idxLevel][idxGroup].cellArray[cellPosition].getMortonIndex() );
+                            blockedTree[idxLevel][receiver].transferBufferCell[idxCell + offset].setCoordinate( blockedTree[idxLevel][idxGroup].cellArray[cellPosition].getCoordinate() );
                         }
                     }
                 }
@@ -649,29 +677,36 @@ public:
 
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                     exec_M2L(blockedTree[lowerLevel][idxGroup].cellArray,
+                             blockedTree[lowerLevel][idxGroup].needOther,
                              blockedTree[lowerLevel][idxGroup].nbElements,
                              lowerLevel, blockedTree[lowerLevel][idxGroup].beginIndex,
                              blockedTree[lowerLevel][idxGroup].endIndex);
 
-                    FDEBUG(counterTimeM2LRemote.tic());
 
                     const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
                     for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
                         // copy
-                        exec_M2L_copy(blockedTree[lowerLevel][idxGroup].cellArray,
-                                      blockedTree[lowerLevel][idxGroup].nbElements,
+                        const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                        exec_M2L_copy(blockedTree[lowerLevel][receiver].transferBufferCell,
+                                      blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying,
                                       blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
-                                      blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell);
-                        // remote M2L
-                        const int targetGroup = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
-                        exec_M2L_remote(blockedTree[lowerLevel][targetGroup].cellArray,
-                                       blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->compuationProperties,
-                                       blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell,
-                                       lowerLevel);
+                                      blockedTree[lowerLevel][idxGroup].cellArray);
                     }
-
-                    FDEBUG(counterTimeM2LRemote.tac());
                 }
+
+                FDEBUG(counterTimeM2LRemote.tic());
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                        // remote M2L
+                        exec_M2L_remote(blockedTree[lowerLevel][idxGroup].cellArray,
+                                        blockedTree[lowerLevel][idxGroup].needOther,
+                                        blockedTree[lowerLevel][idxGroup].nbElements,
+                                        blockedTree[lowerLevel][idxGroup].transferBufferCell,
+                                        blockedTree[lowerLevel][idxGroup].nbCellToReceive,
+                                        lowerLevel,
+                                        blockedTree[lowerLevel][idxGroup].beginIndex,
+                                        blockedTree[lowerLevel][idxGroup].endIndex);
+                }                
+                FDEBUG(counterTimeM2LRemote.tac());
             }
             FDEBUG(counterTimeM2L.tac());
         }
@@ -683,29 +718,36 @@ public:
 
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                 exec_M2L(blockedTree[lowerLevel][idxGroup].cellArray,
+                         blockedTree[lowerLevel][idxGroup].needOther,
                          blockedTree[lowerLevel][idxGroup].nbElements,
                          lowerLevel, blockedTree[lowerLevel][idxGroup].beginIndex,
                          blockedTree[lowerLevel][idxGroup].endIndex);
 
-                FDEBUG(counterTimeM2LRemote.tic());
 
                 const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
                 for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
                     // copy
-                    exec_M2L_copy(blockedTree[lowerLevel][idxGroup].cellArray,
-                                  blockedTree[lowerLevel][idxGroup].nbElements,
+                    const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                    exec_M2L_copy(blockedTree[lowerLevel][receiver].transferBufferCell,
+                                  blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying,
                                   blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
-                                  blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell);
-                    // remote M2L
-                    const int targetGroup = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
-                    exec_M2L_remote(blockedTree[lowerLevel][targetGroup].cellArray,
-                                   blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->compuationProperties,
-                                   blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->transferBufferCell,
-                                   lowerLevel);
+                                  blockedTree[lowerLevel][idxGroup].cellArray);
                 }
-
-                FDEBUG(counterTimeM2LRemote.tac());
             }
+
+            FDEBUG(counterTimeM2LRemote.tic());
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // remote M2L
+                    exec_M2L_remote(blockedTree[lowerLevel][idxGroup].cellArray,
+                                    blockedTree[lowerLevel][idxGroup].needOther,
+                                    blockedTree[lowerLevel][idxGroup].nbElements,
+                                    blockedTree[lowerLevel][idxGroup].transferBufferCell,
+                                    blockedTree[lowerLevel][idxGroup].nbCellToReceive,
+                                    lowerLevel,
+                                    blockedTree[lowerLevel][idxGroup].beginIndex,
+                                    blockedTree[lowerLevel][idxGroup].endIndex);
+            }
+            FDEBUG(counterTimeM2LRemote.tac());
 
             FDEBUG(counterTimeM2L.tac());
         }
@@ -717,31 +759,67 @@ public:
     }
 
     void exec_M2L_remote(CellClass multipole_local[],
-                   FVector<TransferProperties> compuationProperties,
+                         const bool needOther[],
+                   const int size,
                    const CellClass transferBuffer[],
-                   const int level){
-        // TODO factorize for the same cell
+                   const int sizeBuffer,
+                   const int level,
+                   const MortonIndex begin, const MortonIndex end){
         const CellClass* neighbors[343];
         memset(neighbors, 0, sizeof(CellClass*) * 343);
 
-        for(int idxInteraction = 0 ; idxInteraction < compuationProperties.getSize() ; ++idxInteraction){
-            TransferProperties& properties = compuationProperties[idxInteraction];
+        MortonIndex potentialInteraction[189];
+        int potentialPosition[189];
 
-            neighbors[properties.positionInComputationArray] = &transferBuffer[properties.positionInDataArray];
-            kernel->M2L( &multipole_local[properties.indexWhoNeedsData], neighbors, 1, level);
-            neighbors[properties.positionInComputationArray] = 0;
+        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
+            if( needOther[idxCell] ){
+                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), OctreeHeight, potentialInteraction, potentialPosition);
+                int counter = 0;
+
+                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
+                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
+                        int neighPosition = -1;
+                        int offset = 0;
+                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
+                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
+                        }
+                        else {
+                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
+                            offset = idxCell + 1;
+                        }
+                        if( neighPosition != -1 ){
+                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
+                            ++counter;
+                        }
+                    }
+                    else {
+                        const int neighPosition = findNeigh(transferBuffer, sizeBuffer, potentialInteraction[idxInteraction]);
+                        if( neighPosition != -1 ){
+                            neighbors[ potentialPosition[idxInteraction] ] = &transferBuffer[neighPosition];
+                            ++counter;
+                        }
+                    }
+                }
+
+                if(counter){
+                    kernel->M2L( &multipole_local[idxCell] , neighbors, counter, level);
+                    memset(neighbors, 0, sizeof(CellClass*) * 343);
+                }
+            }
         }
     }
 
-    void exec_M2L_copy(const CellClass multipole_local[], const int size,
-                       const FVector<int>& originalIndexPosition, CellClass transferBuffer[]){
+    void exec_M2L_copy(CellClass transferBuffer[], const int indexOfStart,
+                       const FVector<int>& originalIndexPosition, const CellClass multipole_local[]){
         for(int idxLeaf = 0 ; idxLeaf < originalIndexPosition.getSize() ; ++idxLeaf){
             const int leafPosition = originalIndexPosition[idxLeaf];
-            transferBuffer[idxLeaf].copyUp(&multipole_local[leafPosition]);
+            transferBuffer[idxLeaf + indexOfStart].copyUp(&multipole_local[leafPosition]);
         }
     }
 
-    void exec_M2L(CellClass multipole_local[], const int size, const int level,
+    void exec_M2L(CellClass multipole_local[],
+                  const bool needOther[],
+                  const int size, const int level,
                   const MortonIndex begin, const MortonIndex end){
         const CellClass* neighbors[343];
         memset(neighbors, 0, sizeof(CellClass*) * 343);
@@ -750,30 +828,32 @@ public:
         int potentialPosition[189];
 
         for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), OctreeHeight, potentialInteraction, potentialPosition);
-            int counter = 0;
+            if( !needOther[idxCell] ){
+                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), OctreeHeight, potentialInteraction, potentialPosition);
+                int counter = 0;
 
-            for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                    int neighPosition = -1;
-                    int offset = 0;
-                    if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
-                        neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
-                    }
-                    else {
-                        neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
-                        offset = idxCell + 1;
-                    }
-                    if( neighPosition != -1 ){
-                        neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
-                        ++counter;
+                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
+                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
+                        int neighPosition = -1;
+                        int offset = 0;
+                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
+                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
+                        }
+                        else {
+                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
+                            offset = idxCell + 1;
+                        }
+                        if( neighPosition != -1 ){
+                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
+                            ++counter;
+                        }
                     }
                 }
-            }
 
-            if(counter){
-                kernel->M2L( &multipole_local[idxCell] , neighbors, counter, level);
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                if(counter){
+                    kernel->M2L( &multipole_local[idxCell] , neighbors, counter, level);
+                    memset(neighbors, 0, sizeof(CellClass*) * 343);
+                }
             }
         }
     }
