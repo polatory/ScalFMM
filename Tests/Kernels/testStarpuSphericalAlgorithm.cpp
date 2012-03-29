@@ -98,12 +98,15 @@ int main(int argc, char ** argv){
 
     KernelClass kernel(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
     AlgorithmClass algo( &tree, &kernel);
-    std::cout << "There are " << starpu_worker_get_count() << " workers" << std::endl;
-    algo.execute();
+    algo.initStarpu();
 
+    counter.tic();
+    algo.execute();
     counter.tac();
+
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
+    algo.releaseStarpu();
     // -----------------------------------------------------
 
     { // get sum forces&potential

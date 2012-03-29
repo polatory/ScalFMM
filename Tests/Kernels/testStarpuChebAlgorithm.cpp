@@ -129,8 +129,14 @@ int main(int argc, char* argv[])
 	time.tic();
 	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
 	FmmClass algorithm(&tree,&kernels);
+        algorithm.initStarpu();
+        std::cout << "init fmm & kernel " << time.tacAndElapsed() << "sec." << std::endl;
+
+        time.tic();
 	algorithm.execute();
 	std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;
+
+        algorithm.releaseStarpu();
 	// -----------------------------------------------------
 	
 

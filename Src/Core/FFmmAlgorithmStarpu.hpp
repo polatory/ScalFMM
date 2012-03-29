@@ -43,8 +43,8 @@ struct StarHandle : public FNoCopyable, public FNoAssignement {
 
     /** Release the handle */
     ~StarHandle(){
-        if( handle != ((void *)0) ){
-            //starpu_data_unregister(handle);
+        if( handle != starpu_data_handle_t(0) ){
+            starpu_data_unregister(handle);
         }
     }
 
@@ -69,7 +69,7 @@ struct StarHandle : public FNoCopyable, public FNoAssignement {
     /** Release data */
     void unregisterData(){
         if( handle != ((void *)0) ){
-            //starpu_data_unregister(handle);
+            starpu_data_unregister(handle);
             memset(&handle, 0, sizeof(starpu_data_handle_t));
         }
     }
@@ -259,6 +259,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     KernelClass* const kernels;    //< The kernels
 
     const int OctreeHeight;
+    const bool putNameInTask;
 
     //////////////////////////////////////////////////////////////////
     // Codelets
@@ -280,7 +281,7 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     starpu_perfmodel l2p_model;
 
     // Init the codelet
-    void initCodelets(const bool putNameInTask){
+    void initCodelets(){
         memset(&p2p_model, 0, sizeof(p2p_model));
         p2p_model.type = STARPU_HISTORY_BASED;
         p2p_model.symbol = "P2P";
@@ -400,6 +401,29 @@ class FFmmAlgorithmStarpu : protected FAssertable{
     }
 
     void releaseHandles(){
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.gotoBottomLeft();
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        // init leaf handle
+        do{
+            octreeIterator.getCurrentLeaf()->getSrc()->handle.unregisterData();
+            if(octreeIterator.getCurrentLeaf()->getSrc() != octreeIterator.getCurrentLeaf()->getTargets()){
+                octreeIterator.getCurrentLeaf()->getTargets()->handle.unregisterData();
+            }
+        } while(octreeIterator.moveRight());
+
+        octreeIterator = avoidGotoLeftIterator;
+
+        // init cells handle
+        for(int idxLevel = OctreeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
+            do{
+                octreeIterator.getCurrentCell()->handleUp.unregisterData();
+                octreeIterator.getCurrentCell()->handleDown.unregisterData();
+            } while(octreeIterator.moveRight());
+
+            avoidGotoLeftIterator.moveUp();
+            octreeIterator = avoidGotoLeftIterator;
+        }
     }
 
     //////////////////////////////////////////////////////////////////
@@ -433,21 +457,30 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels, const bool putNameInTask = false)
-                      : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
-        // Run starpu
-        starpu_init(NULL);
+    FFmmAlgorithmStarpu(OctreeClass* const inTree, KernelClass* const inKernels, const bool inPutNameInTask = false)
+        : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()), putNameInTask(inPutNameInTask) {
 
-        // Init
-        initCodelets(putNameInTask);
-        initHandles();
-        initKernels();
-
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu (there are" << starpu_worker_get_count() << " workers\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpu\n");
     }
 
     /** Default destructor */
     virtual ~FFmmAlgorithmStarpu(){
+    }
+
+    /** Run starpu */
+    void initStarpu(){
+        // Run starpu
+        starpu_init(NULL);
+        FDEBUG(FDebug::Controller << "Init starpu, there are " << starpu_worker_get_count() << " workers\n");
+
+        // Init
+        initCodelets();
+        initHandles();
+        initKernels();
+    }
+
+    /** Release starpu */
+    void releaseStarpu(){
         // Release stuff
         releaseCodelets();
         releaseHandles();
