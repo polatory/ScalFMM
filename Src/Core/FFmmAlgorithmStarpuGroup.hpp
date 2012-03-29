@@ -200,7 +200,7 @@ public:
                 octreeIterator = avoidGotLeftIterator;
                 // find the number of groups
                 const int NbGroups = (counterAtLevel + BlockSize - 1) / BlockSize;
-
+                FDEBUG( FDebug::Controller << "\t\tAt level " << idxLevel << " there are " << NbGroups << " groups\n"; );
                 blockedPerLevel[idxLevel] = NbGroups;
                 blockedTree[idxLevel] = new Group[NbGroups];
 
@@ -250,6 +250,7 @@ public:
         {
             for(int idxLevel = 1; idxLevel < OctreeHeight - 1; ++idxLevel){
                 int currentLowerGroup = 0;
+                FDEBUG( FReal totalDependencies = 0 );
                 // find the number of groups
                 const int NbGroups = blockedPerLevel[idxLevel];
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
@@ -275,7 +276,9 @@ public:
                             (blockedTree[idxLevel+1][currentLowerGroup].beginIndex>>3) <= blockedTree[idxLevel][idxGroup].endIndex){
                         blockedTree[idxLevel][idxGroup].lowerGroups.push( &blockedTree[idxLevel+1][currentLowerGroup] );
                     }
+                    FDEBUG( totalDependencies += blockedTree[idxLevel][idxGroup].lowerGroups.getSize()/FReal(NbGroups) );
                 }
+                FDEBUG( FDebug::Controller << "\t\tAt level " << idxLevel << " average parent-child dependencies " << totalDependencies << "\n"; );
             }
         }
         FDEBUG( FDebug::Controller << "\tPrepare M2L\n"; );
