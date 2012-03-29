@@ -68,12 +68,8 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
       * a process task
       */
     struct TransferBuffer {
-        TransferBuffer() : groupDestination(0), transferBufferLeaf(0) {
+        TransferBuffer() : groupDestination(0) {
         }
-        ~TransferBuffer() {
-            delete[] transferBufferLeaf;
-        }
-
         // the group who need the data
         int groupDestination;
         // position in the original group
@@ -82,15 +78,14 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         FVector<TransferProperties> compuationProperties;
         // where data will be copied
         int indexToStarCopying;
-        // memory to copy before compute remotly
-        ContainerClass* FRestrict transferBufferLeaf;
     };
 
     /** A group contains several cells
       * and some properties
       */
     struct Group {
-        Group() : cellArray(0), needOther(0), leavesArray(0), transferBufferCell(0), nbCellToReceive(0) {
+        Group() : cellArray(0), needOther(0), leavesArray(0), transferBufferCell(0),
+            nbCellToReceive(0), transferBufferLeaf(0), nbLeafToReceive(0) {
         }
         ~Group(){
             delete[] cellArray;
@@ -100,6 +95,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
                 delete dataToSend[idx];
             }
             delete[] transferBufferCell;
+            delete[] transferBufferLeaf;
         }
 
         // Morton index the group start at
@@ -122,6 +118,10 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         // memory to copy before compute remotly
         CellClass* FRestrict transferBufferCell;
         int nbCellToReceive;
+
+        // memory to copy before compute remotly
+        MortonContainer* FRestrict transferBufferLeaf;
+        int nbLeafToReceive;
     };
 
     /////////////////////////////////////////////////////////////
@@ -466,24 +466,42 @@ public:
                         }
                     }
                 }
+            }
+            // pre-compte buffer to copy data
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                 // Copy transferBuffer to send
                 const int nbRemoteInteractions = blockedTree[OctreeHeight][idxGroup].dataToSend.getSize();
                 for(int idxRemote = 0 ; idxRemote < nbRemoteInteractions ; ++idxRemote){
                     const int leafToCopy = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition.getSize();
-                    blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->transferBufferLeaf = new ContainerClass[leafToCopy];
+                    const int receiver = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->groupDestination;
+                    blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->indexToStarCopying = blockedTree[OctreeHeight][receiver].nbLeafToReceive;
+                    // increase index
+                    blockedTree[OctreeHeight][receiver].nbLeafToReceive += leafToCopy;
+                }
+            }
+            // allocate needed memory
+            FDEBUG( FReal totalNeeded = 0 );
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                FDEBUG( totalNeeded += blockedTree[OctreeHeight][idxGroup].nbLeafToReceive/FReal(NbGroups); );
+                blockedTree[OctreeHeight][idxGroup].transferBufferLeaf = new MortonContainer[blockedTree[OctreeHeight][idxGroup].nbLeafToReceive];
+            }
+            FDEBUG( FDebug::Controller << "\t\tAverage leaves needed by each group = " << totalNeeded << "\n"; );
+            // copy data
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                // Copy transferBuffer to send
+                const int nbRemoteInteractions = blockedTree[OctreeHeight][idxGroup].dataToSend.getSize();
+                for(int idxRemote = 0 ; idxRemote < nbRemoteInteractions ; ++idxRemote){
+                    const int leafToCopy = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition.getSize();
+                    const int receiver = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->groupDestination;
+                    const int offset = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
                     for(int idxLeaf = 0 ; idxLeaf < leafToCopy ; ++idxLeaf){
                         const int leafPosition = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition[idxLeaf];
-                        blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->transferBufferLeaf[idxLeaf] = blockedTree[OctreeHeight][idxGroup].leavesArray[leafPosition].container;
+                        blockedTree[OctreeHeight][receiver].transferBufferLeaf[idxLeaf + offset].setMortonIndex( blockedTree[OctreeHeight][idxGroup].leavesArray[leafPosition].getMortonIndex() );
+                        blockedTree[OctreeHeight][receiver].transferBufferLeaf[idxLeaf + offset].setCoordinate( blockedTree[OctreeHeight][idxGroup].leavesArray[leafPosition].getCoordinate() );
+                        blockedTree[OctreeHeight][receiver].transferBufferLeaf[idxLeaf + offset].container = blockedTree[OctreeHeight][idxGroup].leavesArray[leafPosition].container;
                     }
                 }
             }
-#ifdef SCALFMM_USE_DEBUG
-            FReal totalNeeded = 0;
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                totalNeeded += blockedTree[OctreeHeight][idxGroup].dataToSend.getSize() / FReal(NbGroups);
-            }
-            FDebug::Controller << "\t\tEach leaves group are related in average to = " << totalNeeded << " other groups\n";
-#endif
         }
     }
 
@@ -550,34 +568,38 @@ public:
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic counterTimeRemote);
+        FDEBUG(FTic counterTimeCopy);
 
         // P2P inside leaves
         const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             exec_P2P( blockedTree[OctreeHeight][idxGroup].leavesArray,
-                      blockedTree[OctreeHeight][idxGroup].nbElements);
+                      blockedTree[OctreeHeight][idxGroup].nbElements,
+                      blockedTree[OctreeHeight][idxGroup].transferBufferLeaf,
+                      blockedTree[OctreeHeight][idxGroup].nbLeafToReceive);
         }
 
-        FDEBUG(counterTimeRemote.tic());
+        FDEBUG(counterTimeCopy.tic());
 
-        // P2P with partial leaves
+        // P2P restore
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             const int nbRemoteInteraction = blockedTree[OctreeHeight][idxGroup].dataToSend.getSize();
             for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
-                const int targetGroup = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->groupDestination;
-                exec_P2P_remote(blockedTree[OctreeHeight][targetGroup].leavesArray,
-                               blockedTree[OctreeHeight][targetGroup].nbElements,
-                               blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->compuationProperties,
-                               blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->transferBufferLeaf);
+                const int receiver = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->groupDestination;
+                const int offset = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
+
+                exec_P2P_restore(blockedTree[OctreeHeight][idxGroup].leavesArray,
+                               blockedTree[OctreeHeight][idxGroup].nbElements,
+                               blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
+                                 &blockedTree[OctreeHeight][receiver].transferBufferLeaf[offset]);
             }
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2P + Remote P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tRemote P2P only = "  << counterTimeRemote.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tRestore leaves only = "  << counterTimeCopy.tacAndElapsed() << "s)\n" );
     }
 
-    void exec_P2P(MortonContainer leafs[], const int size){
+    void exec_P2P(MortonContainer leafs[], const int size, MortonContainer otherleafs[], const int othersize){
         ContainerClass* neighbors[27];
         memset(neighbors, 0, sizeof(ContainerClass*) * 27);
 
@@ -606,6 +628,13 @@ public:
                         ++counter;
                     }
                 }
+                else if( othersize ){
+                    const int neighPosition = findNeigh(otherleafs, othersize, potentialInteraction[idxInteraction]);
+                    if( neighPosition != -1 ){
+                        neighbors[ potentialPosition[idxInteraction] ] = &otherleafs[neighPosition].container;
+                        ++counter;
+                    }
+                }
             }
 
             kernel->P2P(leafs[idxLeaf].getCoordinate(),&leafs[idxLeaf].container,
@@ -616,24 +645,12 @@ public:
         }
     }
 
-    void exec_P2P_remote(MortonContainer leafs[], const int size,
-                   FVector<TransferProperties> compuationProperties,
-                   ContainerClass transferBuffer[]){
-        // TODO factorize for the same leaf
-        ContainerClass* neighbors[27];
-        memset(neighbors, 0, sizeof(ContainerClass*) * 27);
+    void exec_P2P_restore(MortonContainer leafs[], const int size,
+                   FVector<int> originalPosition,
+                   const MortonContainer transferBuffer[]){
 
-        for(int idxInteraction = 0 ; idxInteraction < compuationProperties.getSize() ; ++idxInteraction){
-            TransferProperties& properties = compuationProperties[idxInteraction];
-
-            neighbors[properties.positionInComputationArray] = &transferBuffer[properties.positionInDataArray];
-
-            kernel->P2PRemote(leafs[properties.indexWhoNeedsData].getCoordinate(),
-                              &leafs[properties.indexWhoNeedsData].container,
-                              &leafs[properties.indexWhoNeedsData].container,
-                              neighbors, 1);
-
-            neighbors[properties.positionInComputationArray] = 0;
+        for(int idxLeaf = 0 ; idxLeaf < originalPosition.getSize() ; ++idxLeaf){
+            leafs[originalPosition[idxLeaf]].container.reduce( &transferBuffer[idxLeaf].container );
         }
     }
 

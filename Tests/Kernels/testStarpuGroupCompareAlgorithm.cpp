@@ -196,9 +196,20 @@ public:
     }
 };
 
+template <class ParticleClass>
+class Container : public FVector<ParticleClass> {
+public:
+    void reduce(const Container*const other){
+        for( int idx = 0 ; idx < FVector<ParticleClass>::getSize() ; ++idx){
+            FVector<ParticleClass>::data()[idx].incForces(other->FVector<ParticleClass>::data()[idx].getForces());
+            FVector<ParticleClass>::data()[idx].incPotential(other->FVector<ParticleClass>::data()[idx].getPotential());
+        }
+    }
+};
+
 
 typedef FSphericalParticle             ParticleClass;
-typedef FVector<ParticleClass> ContainerClass;
+typedef Container<ParticleClass>       ContainerClass;
 
 typedef SphericalCell CellClass;
 

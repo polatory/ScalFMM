@@ -68,11 +68,22 @@ public:
 class TestParticle : public FTestParticle, public FExtendPhysicalValue{
 };
 
+template <class ParticleClass>
+class Container : public FVector<ParticleClass> {
+public:
+    void reduce(const Container*const other){
+        for( int idx = 0 ; idx < FVector<ParticleClass>::getSize() ; ++idx){
+            FVector<ParticleClass>::data()[idx].setDataDown(FVector<ParticleClass>::data()[idx].getDataDown() +
+                                                            other->FVector<ParticleClass>::data()[idx].getDataDown());
+        }
+    }
+};
+
 ////////////////////////////////////////////////////////////////
 // Typedefs
 ////////////////////////////////////////////////////////////////
 typedef TestParticle             ParticleClass;
-typedef FVector<ParticleClass>   ContainerClass;
+typedef Container<ParticleClass>   ContainerClass;
 
 typedef TestCell                CellClass;
 
