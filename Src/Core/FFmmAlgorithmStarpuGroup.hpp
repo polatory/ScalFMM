@@ -185,6 +185,7 @@ public:
             iterArray = new typename OctreeClass::Iterator[leafsNumber];
             fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
         }
+        FDEBUG( FDebug::Controller << "\tCopy the tree\n"; );
         // Then we start creating the block
         {
             typename OctreeClass::Iterator octreeIterator(tree);
@@ -244,6 +245,7 @@ public:
         }
         delete[] iterArray;
         iterArray = 0;
+        FDEBUG( FDebug::Controller << "\tPrepare child parent relations\n"; );
         // All block has been created, now find the parent-child relations
         {
             for(int idxLevel = 1; idxLevel < OctreeHeight - 1; ++idxLevel){
@@ -276,6 +278,7 @@ public:
                 }
             }
         }
+        FDEBUG( FDebug::Controller << "\tPrepare M2L\n"; );
         // We have the parent-child relation, prepare the Multipole copy
         {
             MortonIndex potentialInteraction[189];
@@ -366,9 +369,12 @@ public:
                     }
                 }
                 // allocate
+                FDEBUG( FReal totalNeeded = 0);
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    FDEBUG( totalNeeded += blockedTree[idxLevel][idxGroup].nbCellToReceive/FReal(NbGroups); );
                     blockedTree[idxLevel][idxGroup].transferBufferCell = new CellClass[blockedTree[idxLevel][idxGroup].nbCellToReceive];
                 }
+                FDEBUG( FDebug::Controller << "\t\tAverage cells needed by each group at level " << idxLevel << " = " << totalNeeded << "\n"; );
                 // init with right index
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                     // Copy transferBuffer to send
@@ -386,6 +392,7 @@ public:
                 }
             }
         }
+        FDEBUG( FDebug::Controller << "\tPrepare P2P\n"; );
         // Prepare sending receiving for the P2P
         {
             MortonIndex potentialInteraction[26];
@@ -470,6 +477,13 @@ public:
                     }
                 }
             }
+#ifdef SCALFMM_USE_DEBUG
+            FReal totalNeeded = 0;
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                totalNeeded += blockedTree[OctreeHeight][idxGroup].dataToSend.getSize() / FReal(NbGroups);
+            }
+            FDebug::Controller << "\t\tEach leaves group are related in average to = " << totalNeeded << " other groups\n";
+#endif
         }
     }
 
