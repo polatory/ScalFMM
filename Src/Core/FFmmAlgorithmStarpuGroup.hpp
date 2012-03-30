@@ -801,16 +801,8 @@ public:
         // P2P inside leaves
         const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-            /*exec_P2M(blockedTree[OctreeHeight-1][idxGroup].cellArray,
-                     blockedTree[OctreeHeight][idxGroup].leavesArray,
-                     blockedTree[OctreeHeight-1][idxGroup].nbElements);*/
             starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
                                 STARPU_R, blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0);
-
-            /*exec_P2P( blockedTree[OctreeHeight][idxGroup].leavesArray,
-                      blockedTree[OctreeHeight][idxGroup].nbElements,
-                      blockedTree[OctreeHeight][idxGroup].transferBufferLeaf,
-                      blockedTree[OctreeHeight][idxGroup].nbLeafToReceive);*/
 
             starpu_insert_task( &p2p_cl, STARPU_VALUE, &OctreeHeight, sizeof(OctreeHeight),
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
@@ -827,10 +819,6 @@ public:
                 const int receiver = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->groupDestination;
                 const int offset = blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
 
-                /*exec_P2P_restore(blockedTree[OctreeHeight][idxGroup].leavesArray,
-                               blockedTree[OctreeHeight][idxGroup].nbElements,
-                               blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
-                                 &blockedTree[OctreeHeight][receiver].transferBufferLeaf[offset]);*/
                 FVector<int>* indexPosition = &blockedTree[OctreeHeight][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
                 starpu_insert_task( &p2p_restore_cl,
                                     STARPU_VALUE, &indexPosition, sizeof(indexPosition),
@@ -845,67 +833,6 @@ public:
         FDEBUG( FDebug::Controller << "\t\tRestore P2P leaves only = "  << counterTimeCopy.tacAndElapsed() << "s)\n" );
     }
 
-    void exec_P2P(MortonContainer leafs[], const int size, MortonContainer otherleafs[], const int othersize){
-        ContainerClass* neighbors[27];
-        memset(neighbors, 0, sizeof(ContainerClass*) * 27);
-
-        MortonIndex potentialInteraction[26];
-        int potentialPosition[26];
-
-        const MortonIndex begin = leafs[0].getMortonIndex();
-        const MortonIndex end = leafs[size-1].getMortonIndex();
-
-        for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
-            const int nbInteraction = getNeighborsFromPosition( leafs[idxLeaf].getCoordinate(), OctreeHeight, potentialInteraction, potentialPosition);
-            int counter = 0;
-            for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                    int neighPosition = -1;
-                    int offset = 0;
-                    if( potentialInteraction[idxInteraction] < leafs[idxLeaf].getMortonIndex()){
-                        neighPosition = findNeigh(leafs, idxLeaf, potentialInteraction[idxInteraction]);
-                    }
-                    else {
-                        neighPosition = findNeigh(leafs + idxLeaf + 1, size - idxLeaf - 1, potentialInteraction[idxInteraction]);
-                        offset = idxLeaf+1;
-                    }
-                    if( neighPosition != -1 ){
-                        neighbors[ potentialPosition[idxInteraction] ] = &leafs[neighPosition + offset].container;
-                        ++counter;
-                    }
-                }
-                else if( othersize ){
-                    const int neighPosition = findNeigh(otherleafs, othersize, potentialInteraction[idxInteraction]);
-                    if( neighPosition != -1 ){
-                        neighbors[ potentialPosition[idxInteraction] ] = &otherleafs[neighPosition].container;
-                        ++counter;
-                    }
-                }
-            }
-
-            kernel->P2P(leafs[idxLeaf].getCoordinate(),&leafs[idxLeaf].container,
-                        &leafs[idxLeaf].container, neighbors, counter);
-            if( counter ){
-                memset(neighbors, 0, sizeof(ContainerClass*) * 27);
-            }
-        }
-    }
-
-    void exec_P2P_restore(MortonContainer leafs[], const int size,
-                   FVector<int> originalPosition,
-                   const MortonContainer transferBuffer[]){
-
-        for(int idxLeaf = 0 ; idxLeaf < originalPosition.getSize() ; ++idxLeaf){
-            leafs[originalPosition[idxLeaf]].container.reduce( &transferBuffer[idxLeaf].container );
-        }
-    }
-
-
-    void exec_P2M(CellClass multipole[], const MortonContainer particles[], const int size){
-        for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
-            kernel->P2M( &multipole[idxLeaf], &particles[idxLeaf].container);
-        }
-    }
 
     /////////////////////////////////////////////////////////////
 
@@ -922,12 +849,7 @@ public:
             {
                 const int NbGroups = blockedPerLevel[idxLevel];
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    // Todo copy the memory
-                    /*exec_M2M(blockedTree[idxLevel][idxGroup].cellArray,
-                             blockedTree[idxLevel][idxGroup].nbElements,
-                             blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups,
-                             blockedTree[idxLevel][idxGroup].lowerGroups,
-                             idxLevel);*/
+
                     struct starpu_task* const task = starpu_task_create();
                     // buffer 0 is current leaf
                     task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
@@ -961,11 +883,7 @@ public:
                 const int NbGroups = blockedPerLevel[lowerLevel];
 
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    /*exec_M2L(blockedTree[lowerLevel][idxGroup].cellArray,
-                             blockedTree[lowerLevel][idxGroup].needOther,
-                             blockedTree[lowerLevel][idxGroup].nbElements,
-                             lowerLevel, blockedTree[lowerLevel][idxGroup].beginIndex,
-                             blockedTree[lowerLevel][idxGroup].endIndex);*/
+
                     const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                     const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
                     bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
@@ -984,10 +902,7 @@ public:
                         const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
                         const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
                         FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
-                        /*exec_M2L_copy(blockedTree[lowerLevel][receiver].transferBufferCell,
-                                      blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying,
-                                      blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
-                                      blockedTree[lowerLevel][idxGroup].cellArray);*/
+
                         starpu_insert_task( &m2l_copy_cl,
                                             STARPU_VALUE, &indexStart, sizeof(indexStart),
                                             STARPU_VALUE, &originalPosition, sizeof(originalPosition),
@@ -999,14 +914,6 @@ public:
                 FDEBUG(counterTimeM2LRemote.tic());
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                         // remote M2L
-                        /*exec_M2L_remote(blockedTree[lowerLevel][idxGroup].cellArray,
-                                        blockedTree[lowerLevel][idxGroup].needOther,
-                                        blockedTree[lowerLevel][idxGroup].nbElements,
-                                        blockedTree[lowerLevel][idxGroup].transferBufferCell,
-                                        blockedTree[lowerLevel][idxGroup].nbCellToReceive,
-                                        lowerLevel,
-                                        blockedTree[lowerLevel][idxGroup].beginIndex,
-                                        blockedTree[lowerLevel][idxGroup].endIndex);*/
                     const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                     const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
                     bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
@@ -1029,11 +936,6 @@ public:
             const int NbGroups = blockedPerLevel[lowerLevel];
 
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                /*exec_M2L(blockedTree[lowerLevel][idxGroup].cellArray,
-                         blockedTree[lowerLevel][idxGroup].needOther,
-                         blockedTree[lowerLevel][idxGroup].nbElements,
-                         lowerLevel, blockedTree[lowerLevel][idxGroup].beginIndex,
-                         blockedTree[lowerLevel][idxGroup].endIndex);*/
 
                 const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                 const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
@@ -1053,10 +955,7 @@ public:
                     const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
                     const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
                     FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
-                    /*exec_M2L_copy(blockedTree[lowerLevel][receiver].transferBufferCell,
-                                  blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying,
-                                  blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition,
-                                  blockedTree[lowerLevel][idxGroup].cellArray);*/
+
                     starpu_insert_task( &m2l_copy_cl,
                                         STARPU_VALUE, &indexStart, sizeof(indexStart),
                                         STARPU_VALUE, &originalPosition, sizeof(originalPosition),
@@ -1069,15 +968,6 @@ public:
             FDEBUG(counterTimeM2LRemote.tic());
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
                     // remote M2L
-                    /*exec_M2L_remote(blockedTree[lowerLevel][idxGroup].cellArray,
-                                    blockedTree[lowerLevel][idxGroup].needOther,
-                                    blockedTree[lowerLevel][idxGroup].nbElements,
-                                    blockedTree[lowerLevel][idxGroup].transferBufferCell,
-                                    blockedTree[lowerLevel][idxGroup].nbCellToReceive,
-                                    lowerLevel,
-                                    blockedTree[lowerLevel][idxGroup].beginIndex,
-                                    blockedTree[lowerLevel][idxGroup].endIndex);*/
-
                     const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                     const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
                     bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
@@ -1100,131 +990,6 @@ public:
         FDEBUG( FDebug::Controller << "\t\tM2L Remote only = "  << counterTimeM2LRemote.cumulated() << "s)\n" );
     }
 
-    void exec_M2L_remote(CellClass multipole_local[],
-                         const bool needOther[],
-                   const int size,
-                   const CellClass transferBuffer[],
-                   const int sizeBuffer,
-                   const int level,
-                   const MortonIndex begin, const MortonIndex end){
-        const CellClass* neighbors[343];
-        memset(neighbors, 0, sizeof(CellClass*) * 343);
-
-        MortonIndex potentialInteraction[189];
-        int potentialPosition[189];
-
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            if( needOther[idxCell] ){
-                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), level, potentialInteraction, potentialPosition);
-                int counter = 0;
-
-                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                        int neighPosition = -1;
-                        int offset = 0;
-                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
-                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
-                        }
-                        else {
-                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
-                            offset = idxCell + 1;
-                        }
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
-                            ++counter;
-                        }
-                    }
-                    else {
-                        const int neighPosition = findNeigh(transferBuffer, sizeBuffer, potentialInteraction[idxInteraction]);
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &transferBuffer[neighPosition];
-                            ++counter;
-                        }
-                    }
-                }
-
-                if(counter){
-                    kernel->M2L( &multipole_local[idxCell] , neighbors, counter, level);
-                    memset(neighbors, 0, sizeof(CellClass*) * 343);
-                }
-            }
-        }
-    }
-
-    void exec_M2L_copy(CellClass transferBuffer[], const int indexOfStart,
-                       const FVector<int>& originalIndexPosition, const CellClass multipole_local[]){
-        for(int idxLeaf = 0 ; idxLeaf < originalIndexPosition.getSize() ; ++idxLeaf){
-            const int leafPosition = originalIndexPosition[idxLeaf];
-            transferBuffer[idxLeaf + indexOfStart].copyUp(&multipole_local[leafPosition]);
-        }
-    }
-
-    void exec_M2L(CellClass multipole_local[],
-                  const bool needOther[],
-                  const int size, const int level,
-                  const MortonIndex begin, const MortonIndex end){
-        const CellClass* neighbors[343];
-        memset(neighbors, 0, sizeof(CellClass*) * 343);
-
-        MortonIndex potentialInteraction[189];
-        int potentialPosition[189];
-
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            if( !needOther[idxCell] ){
-                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), level, potentialInteraction, potentialPosition);
-                int counter = 0;
-
-                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                        int neighPosition = -1;
-                        int offset = 0;
-                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
-                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
-                        }
-                        else {
-                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
-                            offset = idxCell + 1;
-                        }
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
-                            ++counter;
-                        }
-                    }
-                }
-
-                if(counter){
-                    kernel->M2L( &multipole_local[idxCell] , neighbors, counter, level);
-                    memset(neighbors, 0, sizeof(CellClass*) * 343);
-                }
-            }
-        }
-    }
-
-    void exec_M2M(CellClass multipole[], const int size, const int indexOfStart,
-                  const FVector<Group*>& childrenGroup, const int level){
-        int childIndex = indexOfStart;
-        int childGroup = 0;
-
-        const CellClass* children[8];
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            const MortonIndex currentIndex = multipole[idxCell].getMortonIndex();
-            memset(children , 0, 8 * sizeof(CellClass*));
-
-            while( currentIndex == (childrenGroup[childGroup]->cellArray[childIndex].getMortonIndex() >> 3) ){
-                children[childrenGroup[childGroup]->cellArray[childIndex].getMortonIndex() & 7] = &childrenGroup[childGroup]->cellArray[childIndex];
-                ++childIndex;
-                if(childIndex == childrenGroup[childGroup]->nbElements){
-                    childIndex = 0;
-                    ++childGroup;
-                    if( childGroup == childrenGroup.getSize() ){
-                        break;
-                    }
-                }
-            }
-            kernel->M2M(&multipole[idxCell], children, level);
-        }
-    }
-
     /////////////////////////////////////////////////////////////
 
     void L2L(){
@@ -1235,11 +1000,6 @@ public:
         for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel){
             const int NbGroups = blockedPerLevel[idxLevel];
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                /*exec_L2L(blockedTree[idxLevel][idxGroup].cellArray,
-                         blockedTree[idxLevel][idxGroup].nbElements,
-                         blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups,
-                         blockedTree[idxLevel][idxGroup].lowerGroups,
-                         idxLevel);*/
                 struct starpu_task* const task = starpu_task_create();
                 // buffer 0 is current leaf
                 task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
@@ -1272,32 +1032,6 @@ public:
         FDEBUG( FDebug::Controller << "\tFinished (@Downard (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
-    void exec_L2L(const CellClass local[], const int size, const int indexOfStart,
-                  FVector<Group*>& childrenGroup, const int level){
-        int childIndex = indexOfStart;
-        int childGroup = 0;
-
-        CellClass* children[8];
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            const MortonIndex currentIndex = local[idxCell].getMortonIndex();
-            memset( children, 0, 8 * sizeof(CellClass*));
-
-            while(currentIndex == (childrenGroup[childGroup]->cellArray[childIndex].getMortonIndex() >> 3)){
-                children[childrenGroup[childGroup]->cellArray[childIndex].getMortonIndex() & 7] = &childrenGroup[childGroup]->cellArray[childIndex];
-                ++childIndex;
-                if(childIndex == childrenGroup[childGroup]->nbElements){
-                    childIndex = 0;
-                    ++childGroup;
-                    if( childGroup == childrenGroup.getSize() ){
-                        break;
-                    }
-                }
-            }
-
-            kernel->L2L(&local[idxCell], children, level);
-        }
-    }
-
     /////////////////////////////////////////////////////////////
 
     void L2P(){
@@ -1307,21 +1041,11 @@ public:
 
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-            // Todo copy the memory
-            /*exec_L2P(blockedTree[OctreeHeight-1][idxGroup].cellArray,
-                     blockedTree[OctreeHeight][idxGroup].leavesArray,
-                     blockedTree[OctreeHeight][idxGroup].nbElements);*/
             starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@L2P (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-    }
-
-    void exec_L2P(const CellClass local[], MortonContainer particles[], const int size){
-        for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
-            kernel->L2P(&local[idxLeaf], &particles[idxLeaf].container);
-        }
     }
 
     /////////////////////////////////////////////////////////////
