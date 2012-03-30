@@ -82,15 +82,24 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Working on particles ..." << std::endl;
+    std::cout << "Create kernel ..." << std::endl;
     counter.tic();
 
     KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    FmmClass algo(&tree,&kernels);
-    algo.execute();
-
     counter.tac();
+    std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
+
+    // -----------------------------------------------------
+
+    std::cout << "Working on particles ..." << std::endl;
+
+    FmmClass algo(&tree,&kernels);
+
+    counter.tic();
+    algo.execute();
+    counter.tac();
+
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     { // get sum forces&potential

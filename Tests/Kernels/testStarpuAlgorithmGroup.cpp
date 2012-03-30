@@ -22,13 +22,20 @@
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Core/FFmmAlgorithmStarpu.hpp"
+#include "../../Src/Components/FTestKernels.hpp"
+#include "../../Src/Components/FTestParticle.hpp"
+#include "../../Src/Components/FTestCell.hpp"
+
+#include "../../Src/Core/FFmmAlgorithmStarpuGroup.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Components/FFmaParticle.hpp"
+#include "../../Src/Extensions/FExtendForces.hpp"
+#include "../../Src/Extensions/FExtendPotential.hpp"
+
+#include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Files/FFmaLoader.hpp"
 
@@ -39,22 +46,54 @@
 
 
 ////////////////////////////////////////////////////////////////
+// Define classes
+////////////////////////////////////////////////////////////////
+
+class TestCell : public FTestCell {
+public:
+    void intialCopy(const TestCell*const other){
+        setDataUp( other->getDataUp() );
+        setDataDown( other->getDataDown() );
+    }
+    void copyUp(const TestCell*const other){
+        setDataUp( other->getDataUp() );
+    }
+    void restoreCopy(const TestCell*const other){
+        setDataUp( other->getDataUp() );
+        setDataDown( other->getDataDown() );
+    }
+};
+
+// just to be able to load a fma file
+class TestParticle : public FTestParticle, public FExtendPhysicalValue{
+};
+
+template <class ParticleClass>
+class Container : public FVector<ParticleClass> {
+public:
+    void reduce(const Container*const other){
+        for( int idx = 0 ; idx < FVector<ParticleClass>::getSize() ; ++idx){
+            FVector<ParticleClass>::data()[idx].setDataDown(FVector<ParticleClass>::data()[idx].getDataDown() +
+                                                            other->FVector<ParticleClass>::data()[idx].getDataDown());
+        }
+    }
+};
+
+////////////////////////////////////////////////////////////////
 // Typedefs
 ////////////////////////////////////////////////////////////////
-typedef FSphericalParticle             ParticleClass;
-typedef StarVector<ParticleClass> ContainerClass;
-typedef DataVector<ParticleClass> RealContainerClass;
+typedef TestParticle             ParticleClass;
+typedef Container<ParticleClass>   ContainerClass;
 
-typedef FSphericalCell                RealCellClass;
-typedef FStarCell<RealCellClass> CellClass;
-
+typedef TestCell                CellClass;
 
 typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
 typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-typedef FSphericalKernel<ParticleClass, RealCellClass, RealContainerClass >          KernelClass;
+typedef FTestKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
-typedef FFmmAlgorithmStarpu<OctreeClass, ParticleClass, CellClass, RealCellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
+typedef FFmmAlgorithmStarpuGroup<OctreeClass, ParticleClass, CellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
+typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass,KernelClass,LeafClass>  TestAlgorithmClass;
 
 ////////////////////////////////////////////////////////////////
 // Main
@@ -65,9 +104,9 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
-    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 250);
     FTic counter;
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 
@@ -80,7 +119,6 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-    CellClass::Init(DevP);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -96,37 +134,39 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    KernelClass kernel(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-    AlgorithmClass algo( &tree, &kernel);
-    algo.initStarpu();
+    KernelClass kernel;
+    TestAlgorithmClass testalgo( &tree, &kernel);
+    AlgorithmClass algo( &tree, &kernel, BlockSize);
 
-    counter.tic();
-    algo.execute();
-    counter.tac();
-
-    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
-
-    algo.releaseStarpu();
     // -----------------------------------------------------
 
-    { // get sum forces&potential
-        FReal potential = 0;
-        FPoint forces;
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished() ){
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-                forces += iter.data().getForces();
+    std::cout << "Build gouped tree..." << std::endl;
+    counter.tic();
+    algo.buildGroups();
+    counter.tac();
+    std::cout << "Done  in " << counter.elapsed() << "s." << std::endl;
 
-                iter.gotoNext();
-            }
-        } while(octreeIterator.moveRight());
+    // -----------------------------------------------------
 
-        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
-        std::cout << "Potential = " << potential << std::endl;
-    }
+    std::cout << "Execute Fmm..." << std::endl;
+    counter.tic();
+    algo.execute();
+    //testalgo.execute();
+    counter.tac();
+    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
+
+    // -----------------------------------------------------
+
+    std::cout << "Release gouped tree..." << std::endl;
+    counter.tic();
+    algo.releaseGroups();
+    counter.tac();
+    std::cout << "Done in " << counter.elapsed() << "s." << std::endl;
+
+    // -----------------------------------------------------
+
+    // Check result
+    ValidateFMMAlgo<OctreeClass, ParticleClass, CellClass, ContainerClass, LeafClass>(&tree);
 
     return 0;
 }

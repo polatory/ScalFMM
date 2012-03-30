@@ -10,45 +10,36 @@
 // ===================================================================================
 
 // ==== CMAKE =====
-// @FUSE_MPI
+// @FUSE_STARPU
 // ================
 
+#include <starpu.h>
+
+
 #include "../../Src/Utils/FTic.hpp"
-#include "../../Src/Utils/FMpi.hpp"
 #include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Utils/FMath.hpp"
 
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
-
-#include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmStarpuGroup.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Files/FMpiFmaLoader.hpp"
-#include "../../Src/Files/FMpiTreeBuilder.hpp"
-#include "../../Src/Files/FFmaBinLoader.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+
+#include "../../Src/Files/FFmaLoader.hpp"
 
 #include <iostream>
-
-#include <cstdio>
-#include <cstdlib>
-
-// Uncoment to validate the FMM
-#define VALIDATE_FMM
-
-/** This program show an example of use of
-  * the fmm basic algo it also check that eachh particles is little or longer
-  * related that each other
-  */
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 
-#ifdef VALIDATE_FMM
 
 static const FReal Epsilon = FReal(0.0005);
 
@@ -56,8 +47,8 @@ static const FReal Epsilon = FReal(0.0005);
 // to test equality between good and potentialy bad solution
 ///////////////////////////////////////////////////////
 /** To compare data */
-template <class CellClass>
-bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul){
+template <class CellClass, class CellClass2>
+bool isEqualPole(const CellClass& me, const CellClass2& other, FReal*const cumul){
     FMath::FAccurater accurate;
     for(int idx = 0; idx < CellClass::GetPoleSize(); ++idx){
         accurate.add(me.getMultipole()[idx].getImag(),other.getMultipole()[idx].getImag());
@@ -68,7 +59,8 @@ bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul)
 }
 
 /** To compare data */
-bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other, FReal*const cumul){
+template <class CellClass, class CellClass2>
+bool isEqualLocal(const CellClass& me, const CellClass2& other, FReal*const cumul){
     FMath::FAccurater accurate;
     for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
         accurate.add(me.getLocal()[idx].getImag(),other.getLocal()[idx].getImag());
@@ -79,13 +71,12 @@ bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other, FReal*c
 }
 
 
-template<class OctreeClass, class ContainerClass>
-void ValidateFMMAlgoProc(OctreeClass* const badTree,
-                         OctreeClass* const valideTree){
+template<class OctreeClass, class OctreeClass2, class ContainerClass, class ContainerClass2, class CellClass, class CellClass2>
+void ValidateFMMAlgoProc(OctreeClass2* const badTree, OctreeClass* const valideTree){
     std::cout << "Check Result\n";
     {
         const int OctreeHeight = valideTree->getHeight();
-        typename OctreeClass::Iterator octreeIterator(badTree);
+        typename OctreeClass2::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
         typename OctreeClass::Iterator octreeIteratorValide(valideTree);
@@ -121,7 +112,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
     }
     {
         // Check that each particle has been summed with all other
-        typename OctreeClass::Iterator octreeIterator(badTree);
+        typename OctreeClass2::Iterator octreeIterator(badTree);
         octreeIterator.gotoBottomLeft();
 
         typename OctreeClass::Iterator octreeIteratorValide(valideTree);
@@ -139,7 +130,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 std::cout << " Index are differents " << std::endl;
             }
 
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            typename ContainerClass2::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
             while( iter.hasNotFinished() ){
 
@@ -184,36 +175,82 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
     std::cout << "Done\n";
 }
-#endif
 
+
+////////////////////////////////////////////////////////////////
+// Typedefs
+////////////////////////////////////////////////////////////////
+
+class SphericalCell : public FSphericalCell {
+public:
+    void intialCopy(const SphericalCell*const other){
+        FMemUtils::copyall(multipole_exp, other->multipole_exp, PoleSize);
+        FMemUtils::copyall(local_exp, other->local_exp, LocalSize);
+    }
+    void copyUp(const SphericalCell*const other){
+        FMemUtils::copyall(multipole_exp, other->multipole_exp, PoleSize);
+    }
+    void restoreCopy(const SphericalCell*const other){
+        FMemUtils::copyall(multipole_exp, other->multipole_exp, PoleSize);
+        FMemUtils::copyall(local_exp, other->local_exp, LocalSize);
+    }
+};
+
+template <class ParticleClass>
+class Container : public FVector<ParticleClass> {
+public:
+    void reduce(const Container*const other){
+        for( int idx = 0 ; idx < FVector<ParticleClass>::getSize() ; ++idx){
+            FVector<ParticleClass>::data()[idx].incForces(other->FVector<ParticleClass>::data()[idx].getForces());
+            FVector<ParticleClass>::data()[idx].incPotential(other->FVector<ParticleClass>::data()[idx].getPotential());
+        }
+    }
+};
+
+
+typedef FSphericalParticle             ParticleClass;
+typedef Container<ParticleClass>       ContainerClass;
+
+typedef SphericalCell CellClass;
+
+
+typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
+typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+
+typedef FFmmAlgorithmStarpuGroup<OctreeClass, ParticleClass, CellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
+
+
+typedef FSphericalParticle             ParticleClass2;
+typedef FSphericalCell                 CellClass2;
+typedef FVector<ParticleClass2>         ContainerClass2;
+
+typedef FSimpleLeaf<ParticleClass2, ContainerClass2 >                     LeafClass2;
+typedef FOctree<ParticleClass2, CellClass2, ContainerClass2 , LeafClass2 >  OctreeClass2;
+typedef FSphericalKernel<ParticleClass2, CellClass2, ContainerClass2 >     KernelClass2;
+
+typedef FFmmAlgorithmThread<OctreeClass2, ParticleClass2, CellClass2, ContainerClass2, KernelClass2, LeafClass2 > FmmClass2;
+////////////////////////////////////////////////////////////////
+// Main
+////////////////////////////////////////////////////////////////
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle     ParticleClass;
-    typedef FSphericalCell         CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
-
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
-
-    typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
     ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
+    std::cout << ">> This executable has to be used to test fmb algorithm.\n";
     //////////////////////////////////////////////////////////////
-
-    FMpi app( argc, argv);
-
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 250);
+    const int NbThread = FParameters::getValue(argc,argv,"-t", -1);
     FTic counter;
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma");
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 
     std::cout << "Opening : " << filename << "\n";
 
-    FMpiFmaLoader<ParticleClass> loader(filename, app.global());
+    FFmaLoader<ParticleClass> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -221,7 +258,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     CellClass::Init(DevP);
-    OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
 
@@ -229,43 +266,27 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    if( app.global().processCount() != 1){
-        //////////////////////////////////////////////////////////////////////////////////
-        // Build tree from mpi loader
-        //////////////////////////////////////////////////////////////////////////////////
-        std::cout << "Build Tree ..." << std::endl;
-        counter.tic();
-
-        FMpiTreeBuilder<ParticleClass>::LoaderToTree(app.global(), loader, tree);
-
-        counter.tac();
-        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-        //////////////////////////////////////////////////////////////////////////////////
-    }
-    else{
-        ParticleClass partToInsert;
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(partToInsert);
-            tree.insert(partToInsert);
-        }
-    }
+    loader.fillTree(tree);
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
-    std::cout << "Create kernel..." << std::endl;
 
-    KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-
-    std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
+    KernelClass kernel(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
+    AlgorithmClass algo( &tree, &kernel, BlockSize);
 
     // -----------------------------------------------------
 
-    std::cout << "Working on particles ..." << std::endl;
+    std::cout << "Build gouped tree..." << std::endl;
+    counter.tic();
+    algo.buildGroups(NbThread);
+    counter.tac();
+    std::cout << "Done  in " << counter.elapsed() << "s." << std::endl;
 
-    FmmClass algo(app.global(),&tree,&kernels);
+    // -----------------------------------------------------
+
+    std::cout << "Execute Fmm..." << std::endl;
 
     counter.tic();
     algo.execute();
@@ -273,86 +294,44 @@ int main(int argc, char ** argv){
 
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
-    { // get sum forces&potential
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Sum Result" , __FILE__ , __LINE__) );
+    // -----------------------------------------------------
 
-        FReal potential = 0;
-        FPoint forces;
-
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-					ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished()){
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-                forces += iter.data().getForces();
-
-                iter.gotoNext();
-            }
-        } while(octreeIterator.moveRight());
-
-        std::cout << "My potential is " << potential << std::endl;
-
-        potential = app.global().reduceSum(potential);
-        forces.setX(app.global().reduceSum(forces.getX()));
-        forces.setY(app.global().reduceSum(forces.getY()));
-        forces.setZ(app.global().reduceSum(forces.getZ()));
-
-
-        if(app.global().processId() == 0){
-            std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
-            std::cout << "Potential Sum = " << potential << std::endl;
-        }
-    }
-
-#ifdef VALIDATE_FMM
-    {
-        OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
-        {
-            FFmaBinLoader<ParticleClass> loaderSeq(filename);
-            ParticleClass partToInsert;
-            for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-                loaderSeq.fillParticle(partToInsert);
-                treeValide.insert(partToInsert);
-            }
-        }
-
-        std::cout << "Working on particles ..." << std::endl;
-        FmmClassNoProc algoValide(&treeValide,&kernels);
-        counter.tic();
-        algoValide.execute();
-        counter.tac();
-        std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
-
-        FReal potentialValide = 0;
-        FPoint forcesValide;
-
-        OctreeClass::Iterator octreeIteratorValide(&treeValide);
-        octreeIteratorValide.gotoBottomLeft();
-
-        do{
-            ContainerClass::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-            while( iterValide.hasNotFinished()){
-                potentialValide += iterValide.data().getPotential() * iterValide.data().getPhysicalValue();
-                forcesValide += iterValide.data().getForces();
-
-                iterValide.gotoNext();
-            }
-
-        } while(octreeIteratorValide.moveRight());
-
-        std::cout << "Valide Foces Sum  x = " << forcesValide.getX() << " y = " << forcesValide.getY() << " z = " << forcesValide.getZ() << std::endl;
-        std::cout << "Valide Potential = " << potentialValide << std::endl;
-
-        ValidateFMMAlgoProc<OctreeClass,ContainerClass>(&tree,&treeValide);
-    }
-#endif
-
+    std::cout << "Release gouped tree..." << std::endl;
+    counter.tic();
+    algo.releaseGroups();
+    counter.tac();
+    std::cout << "Done in " << counter.elapsed() << "s." << std::endl;
 
     // -----------------------------------------------------
 
+    FFmaLoader<ParticleClass2> loader2(filename);
+    if(!loader2.isOpen()){
+        std::cout << "Loader Error, " << filename << " is missing\n";
+        return 1;
+    }
+
+    // -----------------------------------------------------
+    CellClass2::Init(DevP);
+    OctreeClass2 tree2(NbLevels, SizeSubLevels, loader2.getBoxWidth(), loader2.getCenterOfBox());
+
+    // -----------------------------------------------------
+
+    loader2.fillTree(tree2);
+
+    // -----------------------------------------------------
+
+    KernelClass2 kernels2(DevP, NbLevels,loader2.getBoxWidth(), loader2.getCenterOfBox());
+    FmmClass2 algo2(&tree2,&kernels2);
+
+    counter.tic();
+    algo2.execute();
+    counter.tac();
+
+    std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
+
+    // -----------------------------------------------------
+
+    ValidateFMMAlgoProc<OctreeClass2, OctreeClass, ContainerClass2, ContainerClass, CellClass2, CellClass>(&tree, &tree2);
+
     return 0;
 }
-
-
-

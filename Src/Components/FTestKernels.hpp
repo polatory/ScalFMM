@@ -150,7 +150,8 @@ void ValidateFMMAlgo(OctreeClass* const tree){
         octreeIterator.gotoBottomLeft();
         do{
             if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSrc()->getSize() ){
-                    std::cout << "Problem P2M : " << (octreeIterator.getCurrentCell()->getDataUp() - octreeIterator.getCurrentListSrc()->getSize()) << "\n";
+                    std::cout << "Problem P2M : " << octreeIterator.getCurrentCell()->getDataUp() <<
+                                 " (should be " << octreeIterator.getCurrentListSrc()->getSize() << ")\n";
             }
             NbPart += octreeIterator.getCurrentListSrc()->getSize();
         } while(octreeIterator.moveRight());
@@ -194,7 +195,7 @@ void ValidateFMMAlgo(OctreeClass* const tree){
                 // there is a problem
                 if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
                     (isUsingTsm && iter.data().getDataDown() != NbPart) ){
-                    std::cout << "Problem L2P + P2P : " << iter.data().getDataDown() << "\n";
+                    std::cout << "Problem L2P + P2P : " << iter.data().getDataDown() << "(" << octreeIterator.getCurrentGlobalIndex() << ")\n";
                 }
                 iter.gotoNext();
             }
