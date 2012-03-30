@@ -106,7 +106,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 40);
+    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 250);
     FTic counter;
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 

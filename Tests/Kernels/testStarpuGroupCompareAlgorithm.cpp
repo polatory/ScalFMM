@@ -243,7 +243,8 @@ int main(int argc, char ** argv){
     const int DevP = FParameters::getValue(argc,argv,"-p", 8);
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 40);
+    const int BlockSize = FParameters::getValue(argc,argv,"-bs", 250);
+    const int NbThread = FParameters::getValue(argc,argv,"-t", -1);
     FTic counter;
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 
@@ -279,7 +280,7 @@ int main(int argc, char ** argv){
 
     std::cout << "Build gouped tree..." << std::endl;
     counter.tic();
-    algo.buildGroups();
+    algo.buildGroups(NbThread);
     counter.tac();
     std::cout << "Done  in " << counter.elapsed() << "s." << std::endl;
 

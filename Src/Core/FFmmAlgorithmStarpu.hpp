@@ -470,9 +470,12 @@ public:
     }
 
     /** Run starpu */
-    void initStarpu(){
+    void initStarpu(const int nbThreads = -1){
+        starpu_conf setup;
+        starpu_conf_init(&setup);
+        setup.ncpus = nbThreads;
         // Run starpu
-        starpu_init(NULL);
+        starpu_init(&setup);
         FDEBUG(FDebug::Controller << "Init starpu, there are " << starpu_worker_get_count() << " workers\n");
 
         // Init

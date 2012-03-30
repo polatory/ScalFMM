@@ -322,7 +322,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmStarpuGroup(OctreeClass* const inTree, KernelClass* const inKernel,
-                             const int inBlockedSize = 25, const bool inUseStarpuPerfModel = false)
+                             const int inBlockedSize = 250, const bool inUseStarpuPerfModel = false)
         : tree(inTree), OctreeHeight(tree->getHeight()),
           BlockSize(inBlockedSize),
           blockedTree(new Group*[OctreeHeight + 1]) ,
@@ -351,11 +351,14 @@ public:
 
     /**
       */
-    void buildGroups(){
+    void buildGroups(const int nbThreads = -1){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        // star starpu
-        starpu_init(NULL);
+        starpu_conf setup;
+        starpu_conf_init(&setup);
+        setup.ncpus = nbThreads;
+        // Run starpu
+        starpu_init(&setup);
         FDEBUG(FDebug::Controller << "Start starpu runtime, Nb Workers = " << starpu_worker_get_count() << "\n");
 
         // create codelet
