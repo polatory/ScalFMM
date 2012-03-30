@@ -88,7 +88,8 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     struct Group {
         Group() : cellArray(0), needOther(0), leavesArray(0), transferBufferCell(0),
             nbCellToReceive(0), transferBufferLeaf(0), nbLeafToReceive(0) {
-            handleCellArray = 0;
+            handleCellArrayUp = 0;
+            handleCellArrayDown = 0;
             handleLeafArray = 0;
             handleLeafArrayRead = 0;
             handleTransferCell = 0;
@@ -104,7 +105,8 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
             delete[] transferBufferCell;
             delete[] transferBufferLeaf;
 
-            if( handleCellArray != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArray);
+            if( handleCellArrayUp != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayUp);
+            if( handleCellArrayDown != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayDown);
             if( handleLeafArray != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArray);
             if( handleLeafArrayRead != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArrayRead);
             if( handleTransferCell != starpu_data_handle_t(0)) starpu_data_unregister(handleTransferCell);
@@ -137,7 +139,8 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         int nbLeafToReceive;
 
         // Starpu data
-        starpu_data_handle_t handleCellArray;
+        starpu_data_handle_t handleCellArrayUp;
+        starpu_data_handle_t handleCellArrayDown;
         starpu_data_handle_t handleLeafArray;
         starpu_data_handle_t handleLeafArrayRead;
         starpu_data_handle_t handleTransferCell;
@@ -269,8 +272,9 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         memset(&m2l_cl, 0, sizeof(starpu_codelet) );
         m2l_cl.where = STARPU_CPU;
         m2l_cl.cpu_funcs[0] = m2l_cpu;
-        m2l_cl.nbuffers = 1;
+        m2l_cl.nbuffers = 2;
         m2l_cl.modes[0] = STARPU_RW;
+        m2l_cl.modes[1] = STARPU_R;
         if( useStarpuPerfModel ) m2l_cl.model = &m2l_model;
         // M2L other
         memset(&m2l_other_cl, 0, sizeof(starpu_codelet) );
@@ -401,7 +405,10 @@ public:
                     blockedTree[idxLevel][idxGroup].needOther = new bool[cellsInThisGroup];
 
                     // starpu
-                    starpu_vector_data_register(&blockedTree[idxLevel][idxGroup].handleCellArray, 0,
+                    starpu_vector_data_register(&blockedTree[idxLevel][idxGroup].handleCellArrayUp, 0,
+                                                (uintptr_t)blockedTree[idxLevel][idxGroup].cellArray,
+                                                blockedTree[idxLevel][idxGroup].nbElements, sizeof(CellClass));
+                    starpu_vector_data_register(&blockedTree[idxLevel][idxGroup].handleCellArrayDown, 0,
                                                 (uintptr_t)blockedTree[idxLevel][idxGroup].cellArray,
                                                 blockedTree[idxLevel][idxGroup].nbElements, sizeof(CellClass));
 
@@ -797,7 +804,7 @@ public:
             /*exec_P2M(blockedTree[OctreeHeight-1][idxGroup].cellArray,
                      blockedTree[OctreeHeight][idxGroup].leavesArray,
                      blockedTree[OctreeHeight-1][idxGroup].nbElements);*/
-            starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArray,
+            starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
                                 STARPU_R, blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0);
 
             /*exec_P2P( blockedTree[OctreeHeight][idxGroup].leavesArray,
@@ -923,11 +930,11 @@ public:
                              idxLevel);*/
                     struct starpu_task* const task = starpu_task_create();
                     // buffer 0 is current leaf
-                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArray;
+                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
 
                     const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
                     for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArray;
+                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayUp;
                     }
                     // put the right codelet
                     task->cl = &m2m_cl[nbLowerGroups-1];
@@ -967,7 +974,8 @@ public:
                                         STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                         STARPU_VALUE, &begin, sizeof(begin),
                                         STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArray, 0);
+                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
 
 
                     const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
@@ -984,7 +992,7 @@ public:
                                             STARPU_VALUE, &indexStart, sizeof(indexStart),
                                             STARPU_VALUE, &originalPosition, sizeof(originalPosition),
                                             STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                            STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArray, 0);
+                                            STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
                     }
                 }
 
@@ -1007,7 +1015,7 @@ public:
                                         STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                         STARPU_VALUE, &begin, sizeof(begin),
                                         STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArray,
+                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
                 }                
                 FDEBUG(counterTimeM2LRemote.tac());
@@ -1035,7 +1043,8 @@ public:
                                     STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                     STARPU_VALUE, &begin, sizeof(begin),
                                     STARPU_VALUE, &end, sizeof(end),
-                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArray, 0);
+                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
 
 
                 const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
@@ -1052,7 +1061,7 @@ public:
                                         STARPU_VALUE, &indexStart, sizeof(indexStart),
                                         STARPU_VALUE, &originalPosition, sizeof(originalPosition),
                                         STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArray, 0);
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
                 }
 
             }
@@ -1077,7 +1086,7 @@ public:
                                         STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                         STARPU_VALUE, &begin, sizeof(begin),
                                         STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArray,
+                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
             }
             FDEBUG(counterTimeM2LRemote.tac());
@@ -1233,11 +1242,11 @@ public:
                          idxLevel);*/
                 struct starpu_task* const task = starpu_task_create();
                 // buffer 0 is current leaf
-                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArray;
+                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
 
                 const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
                 for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArray;
+                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayDown;
                 }
                 // put the right codelet
                 task->cl = &l2l_cl[nbLowerGroups-1];
@@ -1302,7 +1311,7 @@ public:
             /*exec_L2P(blockedTree[OctreeHeight-1][idxGroup].cellArray,
                      blockedTree[OctreeHeight][idxGroup].leavesArray,
                      blockedTree[OctreeHeight][idxGroup].nbElements);*/
-            starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArray,
+            starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
         }
 
