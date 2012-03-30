@@ -342,6 +342,8 @@ class FFmmAlgorithmStarpu : protected FAssertable{
         l2p_cl.where = STARPU_CPU;
         l2p_cl.cpu_funcs[0] = l2p_cpu;
         l2p_cl.nbuffers = 2;
+        l2p_cl.modes[0] = STARPU_R;
+        l2p_cl.modes[1] = STARPU_RW;
         if(putNameInTask)  l2p_cl.model = &l2p_model;
 
         // M2M & L2L
