@@ -36,10 +36,11 @@
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
 
+void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
+{ FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
 
 
 FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
@@ -97,7 +98,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
 	FPoint cx(0., 0., 0.);
-	const long M = 10000;
+	const long M = 1000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=[" << cx.getX() << "," << cx.getY() << "," << cx.getZ()
 						<< "] with M=" << M << " target particles" << std::endl;
@@ -116,7 +117,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
 	FPoint cy(FReal(2.)*width, 0., 0.);
-	const long N = 10000;
+	const long N = 1000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=[" << cy.getX() << "," << cy.getY() << "," << cy.getZ()
 						<< "] with N=" << N << " target particles" << std::endl;
@@ -133,43 +134,25 @@ int main(int argc, char* argv[])
 	}
 
 
-
 	////////////////////////////////////////////////////////////////////
 	// approximative computation
-	const unsigned int ORDER = 5;
-	const FReal epsilon = FParameters::getValue(argc, argv, "-eps", 1e-5);
+	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	typedef FChebInterpolator<ORDER> InterpolatorClass;
 	InterpolatorClass S;
+	
 
-	// set compressed M2L operators
-	FChebM2LHandler<ORDER,MatrixKernelClass> M2L(epsilon); 
-	//M2L.ComputeAndCompressAndSet();  // <- precompute M2L operators
-	M2L.ReadFromBinaryFileAndSet();    // <- read precomputed M2L operators from binary file
-
-	std::cout << "\nCompute interactions approximatively, ACC = (" << ORDER << ", " << epsilon << ") ..." << std::endl;
-	time.tic();
-	FReal W[nnodes * 2]; // multipole expansion
-	FReal F[nnodes * 2]; // local expansion
-	for (unsigned int n=0; n<nnodes*2; ++n)
+	std::cout << "\nCompute interactions approximatively, ORDER = " << ORDER << std::endl;
+	FReal W[nnodes]; // multipole expansion
+	FReal F[nnodes]; // local expansion
+	for (unsigned int n=0; n<nnodes; ++n)
 		W[n] = F[n] = FReal(0.);
 
 	// Anterpolate: W_n = \sum_j^N S(y_j,\bar y_n) * w_j
+	time.tic();
 	S.applyP2M(cy, width, W, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
+	std::cout << "P2M done in " << time.tacAndElapsed() << "s" << std::endl;
 
-	
-	// M2L (compressed)
-	const int diffx = int((cy.getX()-cx.getX()) / width);
-	const int diffy = int((cy.getY()-cx.getY()) / width);
-	const int diffz = int((cy.getZ()-cx.getZ()) / width);
-	const int transfer[3] = {diffx, diffy, diffz};
-	M2L.applyB(W, W+nnodes);
-	M2L.applyC(transfer, width, W+nnodes, F+nnodes);
-	M2L.applyU(F+nnodes, F);
-	
-	//for (unsigned int n=0; n<nnodes; ++n) F[n] *= MatrixKernel.getScaleFactor(width);
-
-	/*
 	// M2L (direct)
 	FPoint rootsX[nnodes], rootsY[nnodes];
 	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
@@ -179,13 +162,13 @@ int main(int argc, char* argv[])
 		for (unsigned int j=0; j<nnodes; ++j)
 			F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
 	}
-	*/
 
 	// Interpolate f_i = \sum_m^L S(x_i,\bar x_m) * F_m
-	S.applyL2PTotal(cx, width, F, X.getTargets());
+	time.tic();
+	//S.applyL2PTotal(cx, width, F, X.getTargets());
+	S.applyL2P(cx, width, F, X.getTargets());
+	std::cout << "L2P done in " << time.tacAndElapsed() << "s" << std::endl;
 
-	time.tac();
-	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
 	// -----------------------------------------------------
 
 	////////////////////////////////////////////////////////////////////
@@ -220,6 +203,11 @@ int main(int argc, char* argv[])
 		approx_f[counter++] = iterX.data().getPotential();
 		iterX.gotoNext();
 	}
+
+	
+//	for (unsigned int i=0; i<1; ++i)
+//		std::cout << f[i] << "\t" << approx_f[i] << "\t" << approx_f[i]/f[i] << std::endl;
+	
 
 	std::cout << "\nRelative L2 error  = " << computeL2norm( M, f, approx_f) << std::endl;
 	std::cout << "Relative Lmax error = "  << computeINFnorm(M, f, approx_f) << "\n" << std::endl;

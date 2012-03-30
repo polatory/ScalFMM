@@ -93,7 +93,7 @@ int main(int, char **){
 
 	
 	// Leaf size
-	FReal width = 3.723;
+	FReal width = FReal(3.723);
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;

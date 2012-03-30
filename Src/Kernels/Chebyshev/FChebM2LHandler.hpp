@@ -409,26 +409,6 @@ unsigned int ReadRankFromBinaryFile(const std::string& filename)
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-
-// DANGEROUS FORMULA ?!?!
-//template <int ORDER>
-//unsigned int getRank(const FReal singular_values[], const double eps)
-//{
-//	enum {nnodes = TensorTraits<ORDER>::nnodes};
-//	FReal sum(0.);
-//	for (unsigned int i=0; i<nnodes; ++i)
-//		sum += singular_values[i] * singular_values[i];
-//	
-//	unsigned int k = 0;
-//	double sum_k = sum;
-//	while (sqrt(sum_k) > eps*sqrt(sum)) {
-//		sum_k -= singular_values[k] * singular_values[k];
-//		k++;
-//	}
-//	if (k>nnodes) throw std::runtime_error("rank cannot be larger than nnodes");
-//	return k;
-//}
-
 /**
  * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_kV^\top\|_F \le
  * \epsilon \|K\|_F\f$, ie., the truncation rank of the singular value
