@@ -779,11 +779,13 @@ public:
     /////////////////////////////////////////////////////////////
 
     void execute(){
-        P2P_P2M();
+        P2M();
 
-        M2M_M2L();
+        M2M();
 
-        L2L();
+        L2L_M2L();
+
+        P2P();
 
         L2P();
 
@@ -794,12 +796,10 @@ public:
     /////////////////////////////////////////////////////////////
 
     // The P2P
-    void P2P_P2M(){
+    void P2M(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass (P2P + P2M)\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTimeP2PP2M);
+        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass (P2M)\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic counterTimeCopy);
 
         // P2P inside leaves
         const int NbGroups = blockedPerLevel[OctreeHeight];
@@ -807,12 +807,28 @@ public:
             starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
                                 STARPU_R, blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0);
 
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    // The P2P
+    void P2P(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Direct Pass (P2P)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTimeP2P);
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic counterTimeCopy);
+
+        // P2P inside leaves
+        const int NbGroups = blockedPerLevel[OctreeHeight];
+        for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &p2p_cl, STARPU_VALUE, &OctreeHeight, sizeof(OctreeHeight),
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleTransferLeaf, 0);
         }
 
-        FDEBUG(counterTimeP2PP2M.tac());
+        FDEBUG(counterTimeP2P.tac());
         FDEBUG(counterTimeCopy.tic());
 
         // P2P restore
@@ -831,55 +847,115 @@ public:
             }
         }
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M + P2P + Copy P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tP2P + P2M = "  << counterTimeP2PP2M.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2M + Copy P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tP2P = "  << counterTimeP2P.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\tRestore P2P leaves only = "  << counterTimeCopy.tacAndElapsed() << "s)\n" );
     }
 
 
     /////////////////////////////////////////////////////////////
 
-    void M2M_M2L(){
+    void M2M(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward and Transfer pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic counterTimeM2M);
+
+
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel){
+            const int NbGroups = blockedPerLevel[idxLevel];
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+
+                struct starpu_task* const task = starpu_task_create();
+                // buffer 0 is current leaf
+                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
+
+                const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
+                for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
+                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayUp;
+                }
+                // put the right codelet
+                task->cl = &m2m_cl[nbLowerGroups-1];
+                // put args values
+                char *arg_buffer;
+                size_t arg_buffer_size;
+                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                        STARPU_VALUE, &blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups, sizeof(blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups),
+                        STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
+                        0);
+                task->cl_arg = arg_buffer;
+                task->cl_arg_size = arg_buffer_size;
+
+                // submit task
+                starpu_task_submit(task);
+            }
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Upward and transfer (M2M + M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    /////////////////////////////////////////////////////////////
+
+    void L2L_M2L(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Downard pass\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic counterTimeL2L);
         FDEBUG(FTic counterTimeM2L);
         FDEBUG(FTic counterTimeM2LRemote);
 
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel){
-            FDEBUG(counterTimeM2M.tic());
-            {
-                const int NbGroups = blockedPerLevel[idxLevel];
-                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+        FDEBUG(counterTimeM2L.tic());
+        {
+            const int lowerLevel = 2;
+            const int NbGroups = blockedPerLevel[lowerLevel];
 
-                    struct starpu_task* const task = starpu_task_create();
-                    // buffer 0 is current leaf
-                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
 
-                    const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
-                    for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayUp;
-                    }
-                    // put the right codelet
-                    task->cl = &m2m_cl[nbLowerGroups-1];
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
-                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
-                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, &blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups, sizeof(blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups),
-                            STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
-                            0);
-                    task->cl_arg = arg_buffer;
-                    task->cl_arg_size = arg_buffer_size;
+                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
+                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
+                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
+                starpu_insert_task( &m2l_cl,
+                                    STARPU_VALUE, &needOther, sizeof(needOther),
+                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
+                                    STARPU_VALUE, &begin, sizeof(begin),
+                                    STARPU_VALUE, &end, sizeof(end),
+                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
 
-                    // submit task
-                    starpu_task_submit(task);
+
+                const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
+                for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
+                    // copy
+                    const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                    const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
+                    FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
+
+                    starpu_insert_task( &m2l_copy_cl,
+                                        STARPU_VALUE, &indexStart, sizeof(indexStart),
+                                        STARPU_VALUE, &originalPosition, sizeof(originalPosition),
+                                        STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
                 }
             }
-            FDEBUG(counterTimeM2M.tac());
 
+            FDEBUG(counterTimeM2LRemote.tic());
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // remote M2L
+                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
+                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
+                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
+                starpu_insert_task( &m2l_other_cl,
+                                    STARPU_VALUE, &needOther, sizeof(needOther),
+                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
+                                    STARPU_VALUE, &begin, sizeof(begin),
+                                    STARPU_VALUE, &end, sizeof(end),
+                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
+            }
+            FDEBUG(counterTimeM2LRemote.tac());
+        }
+        FDEBUG(counterTimeM2L.tac());
+        for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel){
             FDEBUG(counterTimeM2L.tic());
             {
                 const int lowerLevel = idxLevel + 1;
@@ -927,112 +1003,49 @@ public:
                                         STARPU_VALUE, &end, sizeof(end),
                                         STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
-                }                
+                }
                 FDEBUG(counterTimeM2LRemote.tac());
             }
             FDEBUG(counterTimeM2L.tac());
-        }
-        {
-            FDEBUG(counterTimeM2L.tic());
+            FDEBUG(counterTimeL2L.tic());
+            {
+                const int NbGroups = blockedPerLevel[idxLevel];
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    struct starpu_task* const task = starpu_task_create();
+                    // buffer 0 is current leaf
+                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
 
-            const int lowerLevel = 2;
-            const int NbGroups = blockedPerLevel[lowerLevel];
+                    const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
+                    for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
+                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayDown;
+                    }
+                    // put the right codelet
+                    task->cl = &l2l_cl[nbLowerGroups-1];
 
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    const int indexOfStart = blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups;
+                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                            STARPU_VALUE, &indexOfStart, sizeof(indexOfStart),
+                            STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
+                            0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
 
-                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                starpu_insert_task( &m2l_cl,
-                                    STARPU_VALUE, &needOther, sizeof(needOther),
-                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                    STARPU_VALUE, &begin, sizeof(begin),
-                                    STARPU_VALUE, &end, sizeof(end),
-                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
-
-
-                const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
-                for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
-                    // copy
-                    const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
-                    const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
-                    FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
-
-                    starpu_insert_task( &m2l_copy_cl,
-                                        STARPU_VALUE, &indexStart, sizeof(indexStart),
-                                        STARPU_VALUE, &originalPosition, sizeof(originalPosition),
-                                        STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
+                    // submit task
+                    starpu_task_submit(task);
                 }
-
             }
-
-            FDEBUG(counterTimeM2LRemote.tic());
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    // remote M2L
-                    const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                    const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                    bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                    starpu_insert_task( &m2l_other_cl,
-                                        STARPU_VALUE, &needOther, sizeof(needOther),
-                                        STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                        STARPU_VALUE, &begin, sizeof(begin),
-                                        STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
-            }
-            FDEBUG(counterTimeM2LRemote.tac());
-
-            FDEBUG(counterTimeM2L.tac());
+            FDEBUG(counterTimeL2L.tac());
         }
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Upward and transfer (M2M + M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2M only = "  << counterTimeM2M.cumulated() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2L all = "  << counterTimeM2L.cumulated() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2L Remote only = "  << counterTimeM2LRemote.cumulated() << "s)\n" );
-    }
-
-    /////////////////////////////////////////////////////////////
-
-    void L2L(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Downard pass\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-
-        for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel){
-            const int NbGroups = blockedPerLevel[idxLevel];
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                struct starpu_task* const task = starpu_task_create();
-                // buffer 0 is current leaf
-                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
-
-                const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
-                for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayDown;
-                }
-                // put the right codelet
-                task->cl = &l2l_cl[nbLowerGroups-1];
-
-                // put args values
-                char *arg_buffer;
-                size_t arg_buffer_size;
-                const int indexOfStart = blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups;
-                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                        STARPU_VALUE, &indexOfStart, sizeof(indexOfStart),
-                        STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
-                        0);
-                task->cl_arg = arg_buffer;
-                task->cl_arg_size = arg_buffer_size;
-
-                // submit task
-                starpu_task_submit(task);
-            }
-
-        }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downard (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tL2L only = "  << counterTimeL2L.cumulated() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tM2L all = "  << counterTimeM2L.cumulated() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tM2L Remote only = "  << counterTimeM2LRemote.cumulated() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////
