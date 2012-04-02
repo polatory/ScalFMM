@@ -108,10 +108,10 @@ int main(int argc, char* argv[])
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
-        const unsigned int BlockSize     = FParameters::getValue(argc, argv, "-t", 250);
+        const unsigned int BlockSize     = FParameters::getValue(argc, argv, "-bs", 250);
 
-	const unsigned int ORDER = 3;
-	const FReal epsilon = FReal(1e-3);
+        const unsigned int ORDER = 7;
+        const FReal epsilon = FReal(1e-7);
 
 	// set threads
 	omp_set_num_threads(NbThreads); 

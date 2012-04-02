@@ -93,7 +93,6 @@ typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeCl
 typedef FTestKernels<ParticleClass, CellClass, ContainerClass >          KernelClass;
 
 typedef FFmmAlgorithmStarpuGroup<OctreeClass, ParticleClass, CellClass, ContainerClass,KernelClass,LeafClass>  AlgorithmClass;
-typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass,KernelClass,LeafClass>  TestAlgorithmClass;
 
 ////////////////////////////////////////////////////////////////
 // Main
@@ -135,7 +134,6 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     KernelClass kernel;
-    TestAlgorithmClass testalgo( &tree, &kernel);
     AlgorithmClass algo( &tree, &kernel, BlockSize);
 
     // -----------------------------------------------------
@@ -151,7 +149,6 @@ int main(int argc, char ** argv){
     std::cout << "Execute Fmm..." << std::endl;
     counter.tic();
     algo.execute();
-    //testalgo.execute();
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
