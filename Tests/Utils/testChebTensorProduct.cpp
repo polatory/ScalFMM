@@ -44,7 +44,7 @@ void applym2m(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const
 { FBlas::gemtm(n, n, n*n, FReal(1.), S, n, w, n, W, n); }
 
 void applyL2L(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const f, const unsigned int N)
-{ FBlas::gemva(n, n, FReal(1.), S, F, f);	}
+{ FBlas::gemva(N, n, FReal(1.), S, F, f);	}
 
 void applyl2l(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const f, const unsigned int N)
 { FBlas::gemm(n, n, n*n, FReal(1.), S, n, F, n, f, n); }
@@ -145,7 +145,8 @@ int main(int argc, char* argv[])
 			m2m_error += w[n] - W0[n];
 		}
 
-		std::cout << "ERROR M2M = " << m2m_error << std::endl;
+		std::cout << "------------------------------------------"
+							<< "\n - M2M: ERROR = " << m2m_error << std::endl;
 
 
 
@@ -163,8 +164,9 @@ int main(int argc, char* argv[])
 			//std::cout << n << "\t" << f[n] << " - " << F0[n] << " = " << f[n]-F0[n] << std::endl;
 			l2l_error += f[n] - F0[n];
 		}
-
-		std::cout << "ERROR L2L = " << l2l_error << std::endl;
+		
+		std::cout << "------------------------------------------"
+							<< "\n - L2L: ERROR = " << l2l_error << std::endl;
 		
 	}
 
@@ -173,10 +175,6 @@ int main(int argc, char* argv[])
 	// P2M /////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
-
-	std::cout << "\n--------------------------------------\n"
-						<< "-- P2M -------------------------------\n"
-						<< "--------------------------------------" << std::endl;
 		
 
 	const unsigned int M = 10;
@@ -192,19 +190,14 @@ int main(int argc, char* argv[])
 			points[1][p] = (FReal(rand())/FRandMax - FReal(.5)) * FReal(2.);
 			points[2][p] = (FReal(rand())/FRandMax - FReal(.5)) * FReal(2.);
 			weights[p] = FReal(rand())/FRandMax;
-			//std::cout << points[0][p] << "\t"
-			//					<< points[1][p] << "\t"
-			//					<< points[2][p] << "\t"
-			//					<< weights[p] << std::endl;
 			lp[p].setX(points[0][p]);
 			lp[p].setY(points[1][p]);
 			lp[p].setZ(points[2][p]);
-			//std::cout << lp[p] << std::endl;
 		}
 	} ////////////////////////////////////////////////////////
 
 	
-	{
+	{ // compute exact equivalent source values
 		for(unsigned int i=0; i<nnodes; ++i) equivW[i] = FReal(0.);
 		FReal Snorm[M * nnodes];
 		Interpolator.assembleInterpolator(M, lp, Snorm);
@@ -272,8 +265,8 @@ int main(int argc, char* argv[])
 	FReal F8[   ORDER*ORDER*ORDER];
 
 	{ ////////////////////////////////////////////////////////
-		//for(unsigned int i=0; i<ORDER; ++i)
-		//	F2[0][i] = F2[1][i] = F2[2][i] = FReal(0.);
+		for(unsigned int i=0; i<ORDER; ++i)
+			F2[0][i] = F2[1][i] = F2[2][i] = FReal(0.);
 		for(unsigned int i=0; i<ORDER*ORDER; ++i)
 			F4[0][i] = F4[1][i] = F4[2][i] = FReal(0.);
 		for(unsigned int i=0; i<ORDER*ORDER*ORDER; ++i)
@@ -284,76 +277,25 @@ int main(int argc, char* argv[])
       for (unsigned int j=0; j<ORDER; ++j)
         T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<ORDER>::T(o, FReal(FChebRoots<ORDER>::roots[j])));
 
-		FBlas::gemv(ORDER, ORDER-1, FReal(1.), T_of_y, W2[0], F2[0]);
-		FBlas::gemv(ORDER, ORDER-1, FReal(1.), T_of_y, W2[1], F2[1]);
-		FBlas::gemv(ORDER, ORDER-1, FReal(1.), T_of_y, W2[2], F2[2]);
-
-		FReal C[ORDER * (ORDER-1)];
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, W4[0], ORDER-1, C, ORDER);
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, C, ORDER-1, F4[0], ORDER);
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, W4[1], ORDER-1, C, ORDER);
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, C, ORDER-1, F4[1], ORDER);
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, W4[2], ORDER-1, C, ORDER);
-		FBlas::gemmt(ORDER, ORDER-1, ORDER-1, FReal(1.), T_of_y, ORDER, C, ORDER-1, F4[2], ORDER);
-
-		FReal D[ORDER * (ORDER-1) * (ORDER-1)];
-		FBlas::gemm(ORDER, ORDER-1, (ORDER-1)*(ORDER-1), FReal(1.), T_of_y, ORDER, W8, ORDER-1, D, ORDER);
-		FReal E[(ORDER-1) * (ORDER-1) * ORDER];
-		for (unsigned int i=0; i<ORDER; ++i) {
-			for (unsigned int m=0; m<ORDER-1; ++m) {
-				for (unsigned int n=0; n<ORDER-1; ++n) {
-					const unsigned int a = n*(ORDER-1)*ORDER + m*ORDER + i;
-					const unsigned int b = i*(ORDER-1)*(ORDER-1) + n*(ORDER-1) + m;
-					E[b] = D[a];
-				}
+		for (unsigned int l=0; l<ORDER-1; ++l)
+			for (unsigned int i=0; i<ORDER; ++i) {
+				F2[0][i] += T_of_y[l*ORDER + i] * W2[0][l];
+				F2[1][i] += T_of_y[l*ORDER + i] * W2[1][l];
+				F2[2][i] += T_of_y[l*ORDER + i] * W2[2][l];
+				
+				for (unsigned int m=0; m<ORDER-1; ++m)
+					for (unsigned int j=0; j<ORDER; ++j) {
+						F4[0][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[0][m*(ORDER-1) + l];
+						F4[1][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[1][m*(ORDER-1) + l];
+						F4[2][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[2][m*(ORDER-1) + l];
+							
+						for (unsigned int n=0; n<ORDER-1; ++n)
+							for (unsigned int k=0; k<ORDER; ++k)
+								F8[k*ORDER*ORDER + j*ORDER + i] +=
+									T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * T_of_y[n*ORDER + k]	*
+									W8[n*(ORDER-1)*(ORDER-1) + m*(ORDER-1) + l];
+								}
 			}
-		}
-		FReal F[ORDER * (ORDER-1) * ORDER];
-		FBlas::gemm(ORDER, ORDER-1, ORDER*(ORDER-1), FReal(1.), T_of_y, ORDER, E, ORDER-1, F, ORDER);
-		FReal G[(ORDER-1) * ORDER * ORDER];
-		for (unsigned int i=0; i<ORDER; ++i) {
-			for (unsigned int j=0; j<ORDER; ++j) {
-				for (unsigned int n=0; n<ORDER-1; ++n) {
-					const unsigned int a = i*(ORDER-1)*ORDER + n*ORDER + j;
-					const unsigned int b = j*ORDER*(ORDER-1) + i*(ORDER-1) + n;
-					G[b] = F[a];
-				}
-			}
-		}
-		
-		FReal H[ORDER * ORDER * ORDER];
-		FBlas::gemm(ORDER, ORDER-1, ORDER*ORDER, FReal(1.), T_of_y, ORDER, G, ORDER-1, H, ORDER);
-		for (unsigned int i=0; i<ORDER; ++i) {
-			for (unsigned int j=0; j<ORDER; ++j) {
-				for (unsigned int k=0; k<ORDER; ++k) {
-					const unsigned int a = j*ORDER*ORDER + i*ORDER + k;
-					const unsigned int b = j*ORDER*ORDER + k*ORDER + i;
-					F8[b] = H[a];
-				}
-			}
-		}
-
-		
-
-		//for (unsigned int l=0; l<ORDER-1; ++l)
-		//	for (unsigned int i=0; i<ORDER; ++i) {
-		//		//F2[0][i] += T_of_y[l*ORDER + i] * W2[0][l];
-		//		//F2[1][i] += T_of_y[l*ORDER + i] * W2[1][l];
-		//		//F2[2][i] += T_of_y[l*ORDER + i] * W2[2][l];
-		//		
-		//		for (unsigned int m=0; m<ORDER-1; ++m)
-		//			for (unsigned int j=0; j<ORDER; ++j) {
-		//				//F4[0][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[0][m*(ORDER-1) + l];
-		//				//F4[1][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[1][m*(ORDER-1) + l];
-		//				//F4[2][j*ORDER + i] += T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * W4[2][m*(ORDER-1) + l];
-		//					
-		//				for (unsigned int n=0; n<ORDER-1; ++n)
-		//					for (unsigned int k=0; k<ORDER; ++k)
-		//						//F8[k*ORDER*ORDER + j*ORDER + i] +=
-		//						//	T_of_y[l*ORDER + i] * T_of_y[m*ORDER + j] * T_of_y[n*ORDER + k]	*
-		//						//	W8[n*(ORDER-1)*(ORDER-1) + m*(ORDER-1) + l];
-		//						}
-		//	}
 
 	} ////////////////////////////////////////////////////////
 
@@ -374,13 +316,138 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	std::cout << std::endl;
 	FReal p2m_error(0.);
 	for (unsigned int i=0; i<nnodes; ++i) {
 		p2m_error += W[i] - equivW[i];
 		//std::cout << W[i] - equivW[i] << std::endl;
 	}
-	std::cout << "ERROR P2M = " << p2m_error << std::endl;
+
+	std::cout << "------------------------------------------"
+						<< "\n - P2M: ERROR = " << p2m_error << std::endl;
+
+
+
+	////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////
+	// L2P /////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////
+
+
+	FReal exactf[M];
+	FReal f[M];
+	for(unsigned int i=0; i<M; ++i) exactf[i] = f[i] = FReal(0.);
+
+
+	{ // compute exact target values
+		FReal Snorm[M * nnodes];
+		Interpolator.assembleInterpolator(M, lp, Snorm);
+		applyL2L(Snorm, W, nnodes, exactf, M);
+		//for (unsigned int i=0; i<M; ++i)
+		//	std::cout << exactf[i] << std::endl;
+	}
+
+	FReal f1;
+	{ // sum over interpolation points
+		FReal T_of_y[ORDER * (ORDER-1)];
+    for (unsigned int o=1; o<ORDER; ++o)
+      for (unsigned int j=0; j<ORDER; ++j)
+        T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<ORDER>::T(o, FReal(FChebRoots<ORDER>::roots[j])));
+		
+		// set everything to zero
+		f1 = FReal(0.);
+		for(unsigned int i=0; i<ORDER-1; ++i)
+			W2[0][i] = W2[1][i] = W2[2][i] = FReal(0.);
+		for(unsigned int i=0; i<(ORDER-1)*(ORDER-1); ++i)
+			W4[0][i] = W4[1][i] = W4[2][i] = FReal(0.);
+		for(unsigned int i=0; i<(ORDER-1)*(ORDER-1)*(ORDER-1); ++i)
+			W8[i] = FReal(0.);
+
+		{
+			unsigned int nids[nnodes][3];
+			FChebTensor<ORDER>::setNodeIds(nids);
+
+			for (unsigned int idx=0; idx<nnodes; ++idx) {
+				f1 += W[idx];
+				const unsigned int i = nids[idx][0];
+				const unsigned int j = nids[idx][1];
+				const unsigned int k = nids[idx][2];
+				
+				//std::cout << i << "\t" << j << "\t" << k << std::endl;
+
+				for (unsigned int l=0; l<ORDER-1; ++l) {
+					W2[0][l] += T_of_y[l*ORDER+i] * W[idx];
+					W2[1][l] += T_of_y[l*ORDER+j] * W[idx];
+					W2[2][l] += T_of_y[l*ORDER+k] * W[idx];
+					for (unsigned int m=0; m<ORDER-1; ++m) {
+						W4[0][m*(ORDER-1)+l] += T_of_y[l*ORDER+i] * T_of_y[m*ORDER+j] * W[idx];
+						W4[1][m*(ORDER-1)+l] += T_of_y[l*ORDER+i] * T_of_y[m*ORDER+k] * W[idx];
+						W4[2][m*(ORDER-1)+l] += T_of_y[l*ORDER+j] * T_of_y[m*ORDER+k] * W[idx];
+						for (unsigned int n=0; n<ORDER-1; ++n)
+							W8[n*(ORDER-1)*(ORDER-1) + m*(ORDER-1) + l]
+								+= T_of_y[l*ORDER+i]*T_of_y[m*ORDER+j]*T_of_y[n*ORDER+k] * W[idx];
+					}
+				}
+			}
+
+		}
+
+	}
+
+	{ // sum over targets
+		for (unsigned int p=0; p<M; ++p) {
+
+			FReal T_of_x[3][ORDER];
+			{
+				T_of_x[0][0] = FReal(1.); T_of_x[0][1] = points[0][p];
+				T_of_x[1][0] = FReal(1.); T_of_x[1][1] = points[1][p];
+				T_of_x[2][0] = FReal(1.); T_of_x[2][1] = points[2][p];
+				const FReal x2 = FReal(2.) * T_of_x[0][1]; // 1 flop
+				const FReal y2 = FReal(2.) * T_of_x[1][1]; // 1 flop
+				const FReal z2 = FReal(2.) * T_of_x[2][1]; // 1 flop
+				for (unsigned int j=2; j<ORDER; ++j) {
+					T_of_x[0][j] = x2 * T_of_x[0][j-1] - T_of_x[0][j-2]; // 2 flops
+					T_of_x[1][j] = y2 * T_of_x[1][j-1] - T_of_x[1][j-2]; // 2 flops
+					T_of_x[2][j] = z2 * T_of_x[2][j-1] - T_of_x[2][j-2]; // 2 flops
+				}
+			}
+			
+			FReal f2, f4, f8;
+			{
+				f2 = f4 = f8 = FReal(0.);
+				for (unsigned int l=1; l<ORDER; ++l) {
+					f2 +=
+						T_of_x[0][l] * W2[0][l-1] +
+						T_of_x[1][l] * W2[1][l-1] +
+						T_of_x[2][l] * W2[2][l-1];
+					for (unsigned int m=1; m<ORDER; ++m) {
+						f4 +=
+							T_of_x[0][l] * T_of_x[1][m] * W4[0][(m-1)*(ORDER-1)+(l-1)] +
+							T_of_x[0][l] * T_of_x[2][m] * W4[1][(m-1)*(ORDER-1)+(l-1)] +
+							T_of_x[1][l] * T_of_x[2][m] * W4[2][(m-1)*(ORDER-1)+(l-1)];
+						for (unsigned int n=1; n<ORDER; ++n)
+							f8 +=
+								T_of_x[0][l]*T_of_x[1][m]*T_of_x[2][n] *
+								W8[(n-1)*(ORDER-1)*(ORDER-1) + (m-1)*(ORDER-1) + (l-1)];
+					}
+				}
+			}
+			f[p] = (f1 + FReal(2.)*f2 + FReal(4.)*f4 + FReal(8.)*f8) / (ORDER*ORDER*ORDER);
+			
+		}
+	}
+
+
+	FReal l2p_error(0.);
+	for (unsigned int i=0; i<M; ++i) {
+		l2p_error += f[i] - exactf[i];
+		//std::cout << exactf[i] << "\t" << f[i] << std::endl;
+	}
+
+	std::cout << "------------------------------------------"
+						<< "\n - L2P: ERROR = " << l2p_error << std::endl;
+
+
 
 
 	return 0;
@@ -388,3 +455,25 @@ int main(int argc, char* argv[])
 
 
 // [--END--]
+
+		//for (unsigned int l=0; l<ORDER-1; ++l)
+		//	for (unsigned int m=0; m<ORDER-1; ++m)
+		//		for (unsigned int n=0; n<ORDER-1; ++n)
+		//			
+		//			for (unsigned int i=0; i<ORDER; ++i)
+		//				for (unsigned int j=0; j<ORDER; ++j)
+		//					for (unsigned int k=0; k<ORDER; ++k) {
+		//
+		//						const unsigned int idx = k*ORDER*ORDER + j*ORDER + i;
+		//
+		//						W2[0][l] += T_of_y[l*ORDER+i] * W[idx];
+		//						W2[1][m] += T_of_y[m*ORDER+j] * W[idx];
+		//						W2[2][n] += T_of_y[n*ORDER+k] * W[idx];
+		//
+		//						W4[0][m*(ORDER-1) + l] += T_of_y[l*ORDER+i] * T_of_y[m*ORDER+j] * W[idx];
+		//						W4[1][n*(ORDER-1) + l] += T_of_y[l*ORDER+i] * T_of_y[n*ORDER+k] * W[idx];
+		//						W4[2][n*(ORDER-1) + m] += T_of_y[m*ORDER+j] * T_of_y[n*ORDER+k] * W[idx];
+		//
+		//						W8[n*(ORDER-1)*(ORDER-1) + m*(ORDER-1) + l]
+		//							+= T_of_y[l*ORDER+i]*T_of_y[m*ORDER+j]*T_of_y[n*ORDER+k] * W[idx];
+		//					}

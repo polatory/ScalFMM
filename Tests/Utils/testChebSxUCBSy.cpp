@@ -157,16 +157,35 @@ int main(int argc, char* argv[])
 	FPoint rootsX[nnodes], rootsY[nnodes];
 	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
 	FChebTensor<ORDER>::setRoots(cy, width, rootsY);
-	for (unsigned int i=0; i<nnodes; ++i) {
-		F[i] = FReal(0.);
-		for (unsigned int j=0; j<nnodes; ++j)
-			F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
+
+	{
+		for (unsigned int i=0; i<nnodes; ++i) {
+			F[i] = FReal(0.);
+			for (unsigned int j=0; j<nnodes; ++j)
+				F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
+		}
 	}
+
+//	{
+//		for (unsigned int ix=0; ix<ORDER; ++ix)
+//			for (unsigned int jx=0; jx<ORDER; ++jx)
+//				for (unsigned int kx=0; kx<ORDER; ++kx)  {
+//					const unsigned int idx = kx*ORDER*ORDER + jx*ORDER + ix;
+//					F[idx] = FReal(0.);
+//					for (unsigned int iy=0; iy<ORDER; ++iy)
+//						for (unsigned int jy=0; jy<ORDER; ++jy)
+//							for (unsigned int ky=0; ky<ORDER; ++ky) {
+//								const unsigned int idy = ky*ORDER*ORDER + jy*ORDER + iy;
+//								F[idx] += MatrixKernel.evaluate(rootsX[idx], rootsY[idy]) * W[idy];
+//							}
+//				}
+//	}
+		
 
 	// Interpolate f_i = \sum_m^L S(x_i,\bar x_m) * F_m
 	time.tic();
 	//S.applyL2PTotal(cx, width, F, X.getTargets());
-	S.applyL2P(cx, width, F, X.getTargets());
+	S.applyL2PTotal(cx, width, F, X.getTargets());
 	std::cout << "L2P done in " << time.tacAndElapsed() << "s" << std::endl;
 
 	// -----------------------------------------------------
@@ -205,8 +224,8 @@ int main(int argc, char* argv[])
 	}
 
 	
-//	for (unsigned int i=0; i<1; ++i)
-//		std::cout << f[i] << "\t" << approx_f[i] << "\t" << approx_f[i]/f[i] << std::endl;
+	//for (unsigned int i=0; i<8; ++i)
+	//	std::cout << f[i] << "\t" << approx_f[i] << "\t" << approx_f[i]/f[i] << std::endl;
 	
 
 	std::cout << "\nRelative L2 error  = " << computeL2norm( M, f, approx_f) << std::endl;
