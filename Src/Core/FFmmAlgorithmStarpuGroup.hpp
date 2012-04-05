@@ -91,7 +91,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
             handleCellArrayUp = 0;
             handleCellArrayDown = 0;
             handleLeafArray = 0;
-            handleLeafArrayRead = 0;
             handleTransferCell = 0;
             handleTransferLeaf = 0;
         }
@@ -108,7 +107,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
             if( handleCellArrayUp != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayUp);
             if( handleCellArrayDown != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayDown);
             if( handleLeafArray != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArray);
-            if( handleLeafArrayRead != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArrayRead);
             if( handleTransferCell != starpu_data_handle_t(0)) starpu_data_unregister(handleTransferCell);
             if( handleTransferLeaf != starpu_data_handle_t(0)) starpu_data_unregister(handleTransferLeaf);
         }
@@ -142,7 +140,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         starpu_data_handle_t handleCellArrayUp;
         starpu_data_handle_t handleCellArrayDown;
         starpu_data_handle_t handleLeafArray;
-        starpu_data_handle_t handleLeafArrayRead;
         starpu_data_handle_t handleTransferCell;
         starpu_data_handle_t handleTransferLeaf;
     };
@@ -187,6 +184,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
 
     starpu_codelet p2m_cl;
     starpu_codelet p2p_cl;
+    starpu_codelet mergep_cl;
     starpu_codelet p2p_restore_cl;
     starpu_codelet m2m_cl[MaxChild];
     starpu_codelet m2l_cl;
@@ -196,6 +194,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     starpu_codelet l2p_cl;
 
     starpu_perfmodel p2p_model;
+    starpu_perfmodel mergep_model;
     starpu_perfmodel p2p_restore_model;
     starpu_perfmodel p2m_model;
     starpu_perfmodel m2m_model;
@@ -210,6 +209,9 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         memset(&p2p_model, 0, sizeof(p2p_model));
         p2p_model.type = STARPU_HISTORY_BASED;
         p2p_model.symbol = "P2P";
+        memset(&mergep_model, 0, sizeof(mergep_model));
+        mergep_model.type = STARPU_HISTORY_BASED;
+        mergep_model.symbol = "MergeP";
         memset(&p2p_restore_model, 0, sizeof(p2p_restore_model));
         p2p_restore_model.type = STARPU_HISTORY_BASED;
         p2p_restore_model.symbol = "P2P Restore";
@@ -243,6 +245,14 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         p2m_cl.modes[0] = STARPU_W;
         p2m_cl.modes[1] = STARPU_R;
         if(useStarpuPerfModel) p2m_cl.model = &p2m_model;
+        // MergeP
+        memset(&mergep_cl, 0, sizeof(mergep_cl));
+        mergep_cl.where = STARPU_CPU;
+        mergep_cl.cpu_funcs[0] = mergep_cpu;
+        mergep_cl.nbuffers = 2;
+        mergep_cl.modes[0] = STARPU_R;
+        mergep_cl.modes[1] = STARPU_RW;
+        if(useStarpuPerfModel) mergep_cl.model = &mergep_model;
         // P2P
         memset(&p2p_cl, 0, sizeof(starpu_codelet) );
         p2p_cl.where = STARPU_CPU;
@@ -438,19 +448,24 @@ public:
 
                 const int NbLeaves = blockedTree[OctreeHeight][idxGroup].nbElements;
                 blockedTree[OctreeHeight][idxGroup].leavesArray = new MortonContainer[NbLeaves];
+                blockedTree[OctreeHeight-1][idxGroup].leavesArray = new MortonContainer[NbLeaves];
 
                 // starpu
                 starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0,
                                             (uintptr_t)blockedTree[OctreeHeight][idxGroup].leavesArray,
                                             NbLeaves, sizeof(MortonContainer));
-                starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0,
-                                            (uintptr_t)blockedTree[OctreeHeight][idxGroup].leavesArray,
+                starpu_vector_data_register(&blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0,
+                                            (uintptr_t)blockedTree[OctreeHeight-1][idxGroup].leavesArray,
                                             NbLeaves, sizeof(MortonContainer));
 
                 for(int idxLeaf = 0 ; idxLeaf < NbLeaves ; ++idxLeaf, ++copyIndex){
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].container = *iterArray[copyIndex].getCurrentListSrc();
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].setMortonIndex(iterArray[copyIndex].getCurrentGlobalIndex());
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].setCoordinate(iterArray[copyIndex].getCurrentGlobalCoordinate());
+
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].container = *iterArray[copyIndex].getCurrentListSrc();
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].setMortonIndex(iterArray[copyIndex].getCurrentGlobalIndex());
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].setCoordinate(iterArray[copyIndex].getCurrentGlobalCoordinate());
                 }
             }
         }
@@ -785,9 +800,11 @@ public:
 
         L2L_M2L();
 
+        L2P();
+
         P2P();
 
-        L2P();
+        MergeP();
 
         FDEBUG( FDebug::Controller << "Wait task to be finished...\n" );
         starpu_task_wait_for_all();
@@ -805,7 +822,7 @@ public:
         const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
-                                STARPU_R, blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0);
+                                STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0);
 
         }
 
@@ -1058,10 +1075,26 @@ public:
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
-                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
+                                STARPU_RW, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@L2P (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    /////////////////////////////////////////////////////////////
+
+    void MergeP(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tMerge Particles\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+
+        const int NbGroups = blockedPerLevel[OctreeHeight-1];
+        for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+            starpu_insert_task( &mergep_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray,
+                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@MergeP (LP2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////
@@ -1393,6 +1426,17 @@ public:
 
         for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
             globalKernels[starpu_worker_get_id()]->L2P( &local[idxLeaf], &particles[idxLeaf].container);
+        }
+    }
+
+    // MergeP
+    static void mergep_cpu(void *descr[], void *) {
+        MortonContainer*const particlesCopy = (MortonContainer*)STARPU_VECTOR_GET_PTR(descr[0]);
+        MortonContainer*const particles = (MortonContainer*)STARPU_VECTOR_GET_PTR(descr[1]);
+        const int size = STARPU_VECTOR_GET_NX(descr[0]);
+
+        for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
+            particles[idxLeaf].container.reduce( &particlesCopy[idxLeaf].container );
         }
     }
 
