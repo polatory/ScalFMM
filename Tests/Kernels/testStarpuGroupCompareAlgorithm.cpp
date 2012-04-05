@@ -245,6 +245,8 @@ int main(int argc, char ** argv){
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const int BlockSize = FParameters::getValue(argc,argv,"-bs", 250);
     const int NbThread = FParameters::getValue(argc,argv,"-t", -1);
+    const bool usePerfModel = (FParameters::findParameter(argc, argv, "-perf") != FParameters::NotFound);
+    const bool useReductionPart = (FParameters::findParameter(argc, argv, "-reducepart") != FParameters::NotFound);
     FTic counter;
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 
@@ -274,7 +276,7 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     KernelClass kernel(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-    AlgorithmClass algo( &tree, &kernel, BlockSize);
+    AlgorithmClass algo( &tree, &kernel, BlockSize, usePerfModel, useReductionPart);
 
     // -----------------------------------------------------
 

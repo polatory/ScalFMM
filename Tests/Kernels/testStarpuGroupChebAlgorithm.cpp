@@ -109,6 +109,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
         const unsigned int BlockSize     = FParameters::getValue(argc, argv, "-bs", 250);
+        const bool usePerfModel = (FParameters::findParameter(argc, argv, "-perf") != FParameters::NotFound);
+        const bool useReductionPart = (FParameters::findParameter(argc, argv, "-reducepart") != FParameters::NotFound);
 
         const unsigned int ORDER = 7;
         const FReal epsilon = FReal(1e-7);
@@ -154,7 +156,7 @@ int main(int argc, char* argv[])
 	std::cout << "\nChebyshev FMM ... " << std::endl;
 	time.tic();
 	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
-        FmmClass algorithm(&tree,&kernels, BlockSize);
+        FmmClass algorithm(&tree,&kernels, BlockSize, usePerfModel, useReductionPart);
         algorithm.buildGroups(NbThreads);
         std::cout << "init fmm & kernel " << time.tacAndElapsed() << "sec." << std::endl;
 

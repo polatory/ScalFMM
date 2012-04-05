@@ -179,6 +179,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     int*const blockedPerLevel;    //< Number of block per level
     KernelClass* const kernel;    //< The kernel
     const bool useStarpuPerfModel;//< to know if perf model has to be used
+    const bool usePartReduction;//< Particles reduction
 
     static const int MaxChild = 9;
 
@@ -332,13 +333,15 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmStarpuGroup(OctreeClass* const inTree, KernelClass* const inKernel,
-                             const int inBlockedSize = 250, const bool inUseStarpuPerfModel = false)
+                             const int inBlockedSize = 250, const bool inUseStarpuPerfModel = false,
+                             const bool inUsePartReduction = true)
         : tree(inTree), OctreeHeight(tree->getHeight()),
           BlockSize(inBlockedSize),
           blockedTree(new Group*[OctreeHeight + 1]) ,
           blockedPerLevel(new int[OctreeHeight + 1]),
           kernel(inKernel),
-          useStarpuPerfModel(inUseStarpuPerfModel) {
+          useStarpuPerfModel(inUseStarpuPerfModel),
+          usePartReduction(inUsePartReduction) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(kernel, "kernel cannot be null", __LINE__, __FILE__);
@@ -346,7 +349,9 @@ public:
         memset(blockedTree, 0, sizeof(Group*) * (OctreeHeight + 1));
         memset(blockedPerLevel, 0, (OctreeHeight + 1) * sizeof(int));
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpuGroup (Block size = " << BlockSize <<")\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpuGroup (Block size = " << BlockSize);
+        FDEBUG(FDebug::Controller << ", Use Perf " << (inUseStarpuPerfModel?"TRUE":"FALSE"));
+        FDEBUG(FDebug::Controller << ", Use Part Reduction " << (inUsePartReduction?"TRUE":"FALSE") << ")\n");
     }
 
     /** Default destructor */
@@ -502,7 +507,7 @@ public:
                             (blockedTree[idxLevel+1][currentLowerGroup].beginIndex>>3) <= blockedTree[idxLevel][idxGroup].endIndex){
                         blockedTree[idxLevel][idxGroup].lowerGroups.push( &blockedTree[idxLevel+1][currentLowerGroup] );
                     }
-                    FDEBUG( totalDependencies += blockedTree[idxLevel][idxGroup].lowerGroups.getSize()/FReal(NbGroups) );
+                    FDEBUG( totalDependencies += FReal(blockedTree[idxLevel][idxGroup].lowerGroups.getSize())/FReal(NbGroups) );
                 }
                 FDEBUG( FDebug::Controller << "\t\tAt level " << idxLevel << " average parent-child dependencies " << totalDependencies << "\n"; );
             }
@@ -600,7 +605,7 @@ public:
                 // allocate
                 FDEBUG( FReal totalNeeded = 0);
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    FDEBUG( totalNeeded += blockedTree[idxLevel][idxGroup].nbCellToReceive/FReal(NbGroups); );
+                    FDEBUG( totalNeeded += FReal(blockedTree[idxLevel][idxGroup].nbCellToReceive)/FReal(NbGroups); );
                     blockedTree[idxLevel][idxGroup].transferBufferCell = new CellClass[blockedTree[idxLevel][idxGroup].nbCellToReceive];
                     // starpu
                     starpu_vector_data_register(&blockedTree[idxLevel][idxGroup].handleTransferCell, 0,
@@ -715,7 +720,7 @@ public:
             // allocate needed memory
             FDEBUG( FReal totalNeeded = 0 );
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                FDEBUG( totalNeeded += blockedTree[OctreeHeight][idxGroup].nbLeafToReceive/FReal(NbGroups); );
+                FDEBUG( totalNeeded += FReal(blockedTree[OctreeHeight][idxGroup].nbLeafToReceive)/FReal(NbGroups); );
                 blockedTree[OctreeHeight][idxGroup].transferBufferLeaf = new MortonContainer[blockedTree[OctreeHeight][idxGroup].nbLeafToReceive];
                 // starpu
                 starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleTransferLeaf, 0,
@@ -804,7 +809,7 @@ public:
 
         P2P();
 
-        MergeP();
+        if(usePartReduction) MergeP();
 
         FDEBUG( FDebug::Controller << "Wait task to be finished...\n" );
         starpu_task_wait_for_all();
@@ -1072,10 +1077,12 @@ public:
         FDEBUG( FDebug::Controller.write("\tL2P\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
+        const int LevelToWrite = (usePartReduction ? OctreeHeight-1 : OctreeHeight);
+
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
-                                STARPU_RW, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0);
+                                STARPU_RW, blockedTree[LevelToWrite][idxGroup].handleLeafArray, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@L2P (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
