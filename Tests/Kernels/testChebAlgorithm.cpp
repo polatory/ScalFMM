@@ -78,8 +78,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 7;
-	const FReal epsilon = FReal(1e-7);
+	const unsigned int ORDER = 3;
+	const FReal epsilon = FReal(1e-3);
 
 	// set threads
 	omp_set_num_threads(NbThreads); 
@@ -113,7 +113,8 @@ int main(int argc, char* argv[])
 	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
 	// -----------------------------------------------------
-	std::cout << "Creating and inserting " << loader.getNumberOfParticles() << " particles in a octree of height " << TreeHeight
+	std::cout << "Creating and inserting " << loader.getNumberOfParticles()
+						<< " particles in a octree of height " << TreeHeight
 						<< " ..." << std::endl;
 	time.tic();
 	loader.fillTree(tree);
