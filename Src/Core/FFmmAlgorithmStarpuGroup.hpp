@@ -805,11 +805,18 @@ public:
 
         L2L_M2L();
 
-        L2P();
+        if(usePartReduction){
+            L2P();
 
-        P2P();
+            P2P();
 
-        if(usePartReduction) MergeP();
+            MergeP();
+        }
+        else{
+            P2P();
+
+            L2P();
+        }
 
         FDEBUG( FDebug::Controller << "Wait task to be finished...\n" );
         starpu_task_wait_for_all();
