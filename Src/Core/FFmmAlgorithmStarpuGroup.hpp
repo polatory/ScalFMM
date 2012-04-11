@@ -91,7 +91,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
             handleCellArrayUp = 0;
             handleCellArrayDown = 0;
             handleLeafArray = 0;
-            handleLeafArrayRead = 0;
             handleTransferCell = 0;
             handleTransferLeaf = 0;
         }
@@ -108,7 +107,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
             if( handleCellArrayUp != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayUp);
             if( handleCellArrayDown != starpu_data_handle_t(0)) starpu_data_unregister(handleCellArrayDown);
             if( handleLeafArray != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArray);
-            if( handleLeafArrayRead != starpu_data_handle_t(0)) starpu_data_unregister(handleLeafArrayRead);
             if( handleTransferCell != starpu_data_handle_t(0)) starpu_data_unregister(handleTransferCell);
             if( handleTransferLeaf != starpu_data_handle_t(0)) starpu_data_unregister(handleTransferLeaf);
         }
@@ -142,7 +140,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         starpu_data_handle_t handleCellArrayUp;
         starpu_data_handle_t handleCellArrayDown;
         starpu_data_handle_t handleLeafArray;
-        starpu_data_handle_t handleLeafArrayRead;
         starpu_data_handle_t handleTransferCell;
         starpu_data_handle_t handleTransferLeaf;
     };
@@ -182,11 +179,13 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     int*const blockedPerLevel;    //< Number of block per level
     KernelClass* const kernel;    //< The kernel
     const bool useStarpuPerfModel;//< to know if perf model has to be used
+    const bool usePartReduction;//< Particles reduction
 
     static const int MaxChild = 9;
 
     starpu_codelet p2m_cl;
     starpu_codelet p2p_cl;
+    starpu_codelet mergep_cl;
     starpu_codelet p2p_restore_cl;
     starpu_codelet m2m_cl[MaxChild];
     starpu_codelet m2l_cl;
@@ -196,6 +195,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     starpu_codelet l2p_cl;
 
     starpu_perfmodel p2p_model;
+    starpu_perfmodel mergep_model;
     starpu_perfmodel p2p_restore_model;
     starpu_perfmodel p2m_model;
     starpu_perfmodel m2m_model;
@@ -210,6 +210,9 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         memset(&p2p_model, 0, sizeof(p2p_model));
         p2p_model.type = STARPU_HISTORY_BASED;
         p2p_model.symbol = "P2P";
+        memset(&mergep_model, 0, sizeof(mergep_model));
+        mergep_model.type = STARPU_HISTORY_BASED;
+        mergep_model.symbol = "MergeP";
         memset(&p2p_restore_model, 0, sizeof(p2p_restore_model));
         p2p_restore_model.type = STARPU_HISTORY_BASED;
         p2p_restore_model.symbol = "P2P Restore";
@@ -243,6 +246,14 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         p2m_cl.modes[0] = STARPU_W;
         p2m_cl.modes[1] = STARPU_R;
         if(useStarpuPerfModel) p2m_cl.model = &p2m_model;
+        // MergeP
+        memset(&mergep_cl, 0, sizeof(mergep_cl));
+        mergep_cl.where = STARPU_CPU;
+        mergep_cl.cpu_funcs[0] = mergep_cpu;
+        mergep_cl.nbuffers = 2;
+        mergep_cl.modes[0] = STARPU_R;
+        mergep_cl.modes[1] = STARPU_RW;
+        if(useStarpuPerfModel) mergep_cl.model = &mergep_model;
         // P2P
         memset(&p2p_cl, 0, sizeof(starpu_codelet) );
         p2p_cl.where = STARPU_CPU;
@@ -322,13 +333,15 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmStarpuGroup(OctreeClass* const inTree, KernelClass* const inKernel,
-                             const int inBlockedSize = 250, const bool inUseStarpuPerfModel = false)
+                             const int inBlockedSize = 250, const bool inUseStarpuPerfModel = false,
+                             const bool inUsePartReduction = true)
         : tree(inTree), OctreeHeight(tree->getHeight()),
           BlockSize(inBlockedSize),
           blockedTree(new Group*[OctreeHeight + 1]) ,
           blockedPerLevel(new int[OctreeHeight + 1]),
           kernel(inKernel),
-          useStarpuPerfModel(inUseStarpuPerfModel) {
+          useStarpuPerfModel(inUseStarpuPerfModel),
+          usePartReduction(inUsePartReduction) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(kernel, "kernel cannot be null", __LINE__, __FILE__);
@@ -336,7 +349,9 @@ public:
         memset(blockedTree, 0, sizeof(Group*) * (OctreeHeight + 1));
         memset(blockedPerLevel, 0, (OctreeHeight + 1) * sizeof(int));
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpuGroup (Block size = " << BlockSize <<")\n");
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmStarpuGroup (Block size = " << BlockSize);
+        FDEBUG(FDebug::Controller << ", Use Perf " << (inUseStarpuPerfModel?"TRUE":"FALSE"));
+        FDEBUG(FDebug::Controller << ", Use Part Reduction " << (inUsePartReduction?"TRUE":"FALSE") << ")\n");
     }
 
     /** Default destructor */
@@ -438,19 +453,24 @@ public:
 
                 const int NbLeaves = blockedTree[OctreeHeight][idxGroup].nbElements;
                 blockedTree[OctreeHeight][idxGroup].leavesArray = new MortonContainer[NbLeaves];
+                blockedTree[OctreeHeight-1][idxGroup].leavesArray = new MortonContainer[NbLeaves];
 
                 // starpu
                 starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0,
                                             (uintptr_t)blockedTree[OctreeHeight][idxGroup].leavesArray,
                                             NbLeaves, sizeof(MortonContainer));
-                starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0,
-                                            (uintptr_t)blockedTree[OctreeHeight][idxGroup].leavesArray,
+                starpu_vector_data_register(&blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0,
+                                            (uintptr_t)blockedTree[OctreeHeight-1][idxGroup].leavesArray,
                                             NbLeaves, sizeof(MortonContainer));
 
                 for(int idxLeaf = 0 ; idxLeaf < NbLeaves ; ++idxLeaf, ++copyIndex){
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].container = *iterArray[copyIndex].getCurrentListSrc();
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].setMortonIndex(iterArray[copyIndex].getCurrentGlobalIndex());
                     blockedTree[OctreeHeight][idxGroup].leavesArray[idxLeaf].setCoordinate(iterArray[copyIndex].getCurrentGlobalCoordinate());
+
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].container = *iterArray[copyIndex].getCurrentListSrc();
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].setMortonIndex(iterArray[copyIndex].getCurrentGlobalIndex());
+                    blockedTree[OctreeHeight-1][idxGroup].leavesArray[idxLeaf].setCoordinate(iterArray[copyIndex].getCurrentGlobalCoordinate());
                 }
             }
         }
@@ -487,7 +507,7 @@ public:
                             (blockedTree[idxLevel+1][currentLowerGroup].beginIndex>>3) <= blockedTree[idxLevel][idxGroup].endIndex){
                         blockedTree[idxLevel][idxGroup].lowerGroups.push( &blockedTree[idxLevel+1][currentLowerGroup] );
                     }
-                    FDEBUG( totalDependencies += blockedTree[idxLevel][idxGroup].lowerGroups.getSize()/FReal(NbGroups) );
+                    FDEBUG( totalDependencies += FReal(blockedTree[idxLevel][idxGroup].lowerGroups.getSize())/FReal(NbGroups) );
                 }
                 FDEBUG( FDebug::Controller << "\t\tAt level " << idxLevel << " average parent-child dependencies " << totalDependencies << "\n"; );
             }
@@ -585,7 +605,7 @@ public:
                 // allocate
                 FDEBUG( FReal totalNeeded = 0);
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    FDEBUG( totalNeeded += blockedTree[idxLevel][idxGroup].nbCellToReceive/FReal(NbGroups); );
+                    FDEBUG( totalNeeded += FReal(blockedTree[idxLevel][idxGroup].nbCellToReceive)/FReal(NbGroups); );
                     blockedTree[idxLevel][idxGroup].transferBufferCell = new CellClass[blockedTree[idxLevel][idxGroup].nbCellToReceive];
                     // starpu
                     starpu_vector_data_register(&blockedTree[idxLevel][idxGroup].handleTransferCell, 0,
@@ -700,7 +720,7 @@ public:
             // allocate needed memory
             FDEBUG( FReal totalNeeded = 0 );
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                FDEBUG( totalNeeded += blockedTree[OctreeHeight][idxGroup].nbLeafToReceive/FReal(NbGroups); );
+                FDEBUG( totalNeeded += FReal(blockedTree[OctreeHeight][idxGroup].nbLeafToReceive)/FReal(NbGroups); );
                 blockedTree[OctreeHeight][idxGroup].transferBufferLeaf = new MortonContainer[blockedTree[OctreeHeight][idxGroup].nbLeafToReceive];
                 // starpu
                 starpu_vector_data_register(&blockedTree[OctreeHeight][idxGroup].handleTransferLeaf, 0,
@@ -779,13 +799,24 @@ public:
     /////////////////////////////////////////////////////////////
 
     void execute(){
-        P2P_P2M();
+        P2M();
 
-        M2M_M2L();
+        M2M();
 
-        L2L();
+        L2L_M2L();
 
-        L2P();
+        if(usePartReduction){
+            L2P();
+
+            P2P();
+
+            MergeP();
+        }
+        else{
+            P2P();
+
+            L2P();
+        }
 
         FDEBUG( FDebug::Controller << "Wait task to be finished...\n" );
         starpu_task_wait_for_all();
@@ -794,25 +825,39 @@ public:
     /////////////////////////////////////////////////////////////
 
     // The P2P
-    void P2P_P2M(){
+    void P2M(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass (P2P + P2M)\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTimeP2PP2M);
+        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass (P2M)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+
+        // P2P inside leaves
+        const int NbGroups = blockedPerLevel[OctreeHeight];
+        for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+            starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
+                                STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0);
+
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    // The P2P
+    void P2P(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Direct Pass (P2P)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTimeP2P);
         FDEBUG(FTic counterTime);
         FDEBUG(FTic counterTimeCopy);
 
         // P2P inside leaves
         const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-            starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
-                                STARPU_R, blockedTree[OctreeHeight][idxGroup].handleLeafArrayRead, 0);
-
             starpu_insert_task( &p2p_cl, STARPU_VALUE, &OctreeHeight, sizeof(OctreeHeight),
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleTransferLeaf, 0);
         }
 
-        FDEBUG(counterTimeP2PP2M.tac());
+        FDEBUG(counterTimeP2P.tac());
         FDEBUG(counterTimeCopy.tic());
 
         // P2P restore
@@ -831,55 +876,115 @@ public:
             }
         }
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M + P2P + Copy P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tP2P + P2M = "  << counterTimeP2PP2M.elapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2M + Copy P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tP2P = "  << counterTimeP2P.elapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\tRestore P2P leaves only = "  << counterTimeCopy.tacAndElapsed() << "s)\n" );
     }
 
 
     /////////////////////////////////////////////////////////////
 
-    void M2M_M2L(){
+    void M2M(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Upward and Transfer pass\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic counterTimeM2M);
+
+
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel){
+            const int NbGroups = blockedPerLevel[idxLevel];
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+
+                struct starpu_task* const task = starpu_task_create();
+                // buffer 0 is current leaf
+                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
+
+                const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
+                for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
+                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayUp;
+                }
+                // put the right codelet
+                task->cl = &m2m_cl[nbLowerGroups-1];
+                // put args values
+                char *arg_buffer;
+                size_t arg_buffer_size;
+                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                        STARPU_VALUE, &blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups, sizeof(blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups),
+                        STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
+                        0);
+                task->cl_arg = arg_buffer;
+                task->cl_arg_size = arg_buffer_size;
+
+                // submit task
+                starpu_task_submit(task);
+            }
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Upward and transfer (M2M + M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    /////////////////////////////////////////////////////////////
+
+    void L2L_M2L(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Downard pass\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+        FDEBUG(FTic counterTimeL2L);
         FDEBUG(FTic counterTimeM2L);
         FDEBUG(FTic counterTimeM2LRemote);
 
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel){
-            FDEBUG(counterTimeM2M.tic());
-            {
-                const int NbGroups = blockedPerLevel[idxLevel];
-                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+        FDEBUG(counterTimeM2L.tic());
+        {
+            const int lowerLevel = 2;
+            const int NbGroups = blockedPerLevel[lowerLevel];
 
-                    struct starpu_task* const task = starpu_task_create();
-                    // buffer 0 is current leaf
-                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayUp;
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
 
-                    const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
-                    for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayUp;
-                    }
-                    // put the right codelet
-                    task->cl = &m2m_cl[nbLowerGroups-1];
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
-                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
-                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, &blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups, sizeof(blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups),
-                            STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
-                            0);
-                    task->cl_arg = arg_buffer;
-                    task->cl_arg_size = arg_buffer_size;
+                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
+                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
+                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
+                starpu_insert_task( &m2l_cl,
+                                    STARPU_VALUE, &needOther, sizeof(needOther),
+                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
+                                    STARPU_VALUE, &begin, sizeof(begin),
+                                    STARPU_VALUE, &end, sizeof(end),
+                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
 
-                    // submit task
-                    starpu_task_submit(task);
+
+                const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
+                for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
+                    // copy
+                    const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
+                    const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
+                    FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
+
+                    starpu_insert_task( &m2l_copy_cl,
+                                        STARPU_VALUE, &indexStart, sizeof(indexStart),
+                                        STARPU_VALUE, &originalPosition, sizeof(originalPosition),
+                                        STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
                 }
             }
-            FDEBUG(counterTimeM2M.tac());
 
+            FDEBUG(counterTimeM2LRemote.tic());
+            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // remote M2L
+                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
+                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
+                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
+                starpu_insert_task( &m2l_other_cl,
+                                    STARPU_VALUE, &needOther, sizeof(needOther),
+                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
+                                    STARPU_VALUE, &begin, sizeof(begin),
+                                    STARPU_VALUE, &end, sizeof(end),
+                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
+            }
+            FDEBUG(counterTimeM2LRemote.tac());
+        }
+        FDEBUG(counterTimeM2L.tac());
+        for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel){
             FDEBUG(counterTimeM2L.tic());
             {
                 const int lowerLevel = idxLevel + 1;
@@ -927,112 +1032,49 @@ public:
                                         STARPU_VALUE, &end, sizeof(end),
                                         STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
-                }                
+                }
                 FDEBUG(counterTimeM2LRemote.tac());
             }
             FDEBUG(counterTimeM2L.tac());
-        }
-        {
-            FDEBUG(counterTimeM2L.tic());
+            FDEBUG(counterTimeL2L.tic());
+            {
+                const int NbGroups = blockedPerLevel[idxLevel];
+                for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    struct starpu_task* const task = starpu_task_create();
+                    // buffer 0 is current leaf
+                    task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
 
-            const int lowerLevel = 2;
-            const int NbGroups = blockedPerLevel[lowerLevel];
+                    const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
+                    for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
+                        task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayDown;
+                    }
+                    // put the right codelet
+                    task->cl = &l2l_cl[nbLowerGroups-1];
 
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    const int indexOfStart = blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups;
+                    starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
+                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                            STARPU_VALUE, &indexOfStart, sizeof(indexOfStart),
+                            STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
+                            0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
 
-                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                starpu_insert_task( &m2l_cl,
-                                    STARPU_VALUE, &needOther, sizeof(needOther),
-                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                    STARPU_VALUE, &begin, sizeof(begin),
-                                    STARPU_VALUE, &end, sizeof(end),
-                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
-
-
-                const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
-                for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
-                    // copy
-                    const int receiver = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->groupDestination;
-                    const int indexStart = blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->indexToStarCopying;
-                    FVector<int>* originalPosition = &blockedTree[lowerLevel][idxGroup].dataToSend[idxRemote]->originalIndexPosition;
-
-                    starpu_insert_task( &m2l_copy_cl,
-                                        STARPU_VALUE, &indexStart, sizeof(indexStart),
-                                        STARPU_VALUE, &originalPosition, sizeof(originalPosition),
-                                        STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
+                    // submit task
+                    starpu_task_submit(task);
                 }
-
             }
-
-            FDEBUG(counterTimeM2LRemote.tic());
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                    // remote M2L
-                    const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                    const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                    bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                    starpu_insert_task( &m2l_other_cl,
-                                        STARPU_VALUE, &needOther, sizeof(needOther),
-                                        STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                        STARPU_VALUE, &begin, sizeof(begin),
-                                        STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
-            }
-            FDEBUG(counterTimeM2LRemote.tac());
-
-            FDEBUG(counterTimeM2L.tac());
+            FDEBUG(counterTimeL2L.tac());
         }
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Upward and transfer (M2M + M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2M only = "  << counterTimeM2M.cumulated() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2L all = "  << counterTimeM2L.cumulated() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tM2L Remote only = "  << counterTimeM2LRemote.cumulated() << "s)\n" );
-    }
-
-    /////////////////////////////////////////////////////////////
-
-    void L2L(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Downard pass\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-
-        for(int idxLevel = 2 ; idxLevel < OctreeHeight - 1 ; ++idxLevel){
-            const int NbGroups = blockedPerLevel[idxLevel];
-            for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-                struct starpu_task* const task = starpu_task_create();
-                // buffer 0 is current leaf
-                task->handles[0] = blockedTree[idxLevel][idxGroup].handleCellArrayDown;
-
-                const int nbLowerGroups = blockedTree[idxLevel][idxGroup].lowerGroups.getSize();
-                for(int idxLower = 0 ; idxLower < nbLowerGroups ; ++idxLower){
-                    task->handles[idxLower + 1] = blockedTree[idxLevel][idxGroup].lowerGroups[idxLower]->handleCellArrayDown;
-                }
-                // put the right codelet
-                task->cl = &l2l_cl[nbLowerGroups-1];
-
-                // put args values
-                char *arg_buffer;
-                size_t arg_buffer_size;
-                const int indexOfStart = blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups;
-                starpu_codelet_pack_args(&arg_buffer, &arg_buffer_size,
-                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                        STARPU_VALUE, &indexOfStart, sizeof(indexOfStart),
-                        STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
-                        0);
-                task->cl_arg = arg_buffer;
-                task->cl_arg_size = arg_buffer_size;
-
-                // submit task
-                starpu_task_submit(task);
-            }
-
-        }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downard (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tL2L only = "  << counterTimeL2L.cumulated() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tM2L all = "  << counterTimeM2L.cumulated() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\t\tM2L Remote only = "  << counterTimeM2LRemote.cumulated() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////
@@ -1042,13 +1084,31 @@ public:
         FDEBUG( FDebug::Controller.write("\tL2P\n").write(FDebug::Flush); );
         FDEBUG(FTic counterTime);
 
+        const int LevelToWrite = (usePartReduction ? OctreeHeight-1 : OctreeHeight);
+
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
-                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
+                                STARPU_RW, blockedTree[LevelToWrite][idxGroup].handleLeafArray, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@L2P (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    /////////////////////////////////////////////////////////////
+
+    void MergeP(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tMerge Particles\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
+
+        const int NbGroups = blockedPerLevel[OctreeHeight-1];
+        for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
+            starpu_insert_task( &mergep_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray,
+                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
+        }
+
+        FDEBUG( FDebug::Controller << "\tFinished (@MergeP (LP2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////
@@ -1380,6 +1440,17 @@ public:
 
         for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
             globalKernels[starpu_worker_get_id()]->L2P( &local[idxLeaf], &particles[idxLeaf].container);
+        }
+    }
+
+    // MergeP
+    static void mergep_cpu(void *descr[], void *) {
+        MortonContainer*const particlesCopy = (MortonContainer*)STARPU_VECTOR_GET_PTR(descr[0]);
+        MortonContainer*const particles = (MortonContainer*)STARPU_VECTOR_GET_PTR(descr[1]);
+        const int size = STARPU_VECTOR_GET_NX(descr[0]);
+
+        for( int idxLeaf = 0 ; idxLeaf < size ; ++idxLeaf ){
+            particles[idxLeaf].container.reduce( &particlesCopy[idxLeaf].container );
         }
     }
 
