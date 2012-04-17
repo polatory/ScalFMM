@@ -189,7 +189,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     starpu_codelet p2p_restore_cl;
     starpu_codelet m2m_cl[MaxChild];
     starpu_codelet m2l_cl;
-    starpu_codelet m2l_other_cl;
     starpu_codelet m2l_copy_cl;
     starpu_codelet l2l_cl[MaxChild];
     starpu_codelet l2p_cl;
@@ -200,7 +199,6 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
     starpu_perfmodel p2m_model;
     starpu_perfmodel m2m_model;
     starpu_perfmodel m2l_model;
-    starpu_perfmodel m2l_other_model;
     starpu_perfmodel m2l_copy_model;
     starpu_perfmodel l2l_model;
     starpu_perfmodel l2p_model;
@@ -221,10 +219,7 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         p2m_model.symbol = "P2M";
         memset(&m2l_model, 0, sizeof(m2l_model));
         m2l_model.type = STARPU_HISTORY_BASED;
-        m2l_model.symbol = "M2L";
-        memset(&m2l_other_model, 0, sizeof(m2l_other_model));
-        m2l_other_model.type = STARPU_HISTORY_BASED;
-        m2l_other_model.symbol = "M2L Other";
+        m2l_model.symbol = "M2L";        
         memset(&m2l_copy_model, 0, sizeof(m2l_model));
         m2l_copy_model.type = STARPU_HISTORY_BASED;
         m2l_copy_model.symbol = "M2L Copy";
@@ -283,18 +278,11 @@ class FFmmAlgorithmStarpuGroup : protected FAssertable{
         memset(&m2l_cl, 0, sizeof(starpu_codelet) );
         m2l_cl.where = STARPU_CPU;
         m2l_cl.cpu_funcs[0] = m2l_cpu;
-        m2l_cl.nbuffers = 2;
+        m2l_cl.nbuffers = 3;
         m2l_cl.modes[0] = STARPU_RW;
         m2l_cl.modes[1] = STARPU_R;
+        m2l_cl.modes[2] = STARPU_R;
         if( useStarpuPerfModel ) m2l_cl.model = &m2l_model;
-        // M2L other
-        memset(&m2l_other_cl, 0, sizeof(starpu_codelet) );
-        m2l_other_cl.where = STARPU_CPU;
-        m2l_other_cl.cpu_funcs[0] = m2l_other_cpu;
-        m2l_other_cl.nbuffers = 2;
-        m2l_other_cl.modes[0] = STARPU_RW;
-        m2l_other_cl.modes[1] = STARPU_R;
-        if( useStarpuPerfModel ) m2l_other_cl.model = &m2l_other_model;
         // M2L copy
         memset(&m2l_copy_cl, 0, sizeof(starpu_codelet) );
         m2l_copy_cl.where = STARPU_CPU;
@@ -940,18 +928,6 @@ public:
 
             for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
 
-                const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                starpu_insert_task( &m2l_cl,
-                                    STARPU_VALUE, &needOther, sizeof(needOther),
-                                    STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                    STARPU_VALUE, &begin, sizeof(begin),
-                                    STARPU_VALUE, &end, sizeof(end),
-                                    STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
-
-
                 const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
                 for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
                     // copy
@@ -973,12 +949,13 @@ public:
                 const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                 const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
                 bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                starpu_insert_task( &m2l_other_cl,
+                starpu_insert_task( &m2l_cl,
                                     STARPU_VALUE, &needOther, sizeof(needOther),
                                     STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                     STARPU_VALUE, &begin, sizeof(begin),
                                     STARPU_VALUE, &end, sizeof(end),
                                     STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
                                     STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
             }
             FDEBUG(counterTimeM2LRemote.tac());
@@ -991,18 +968,6 @@ public:
                 const int NbGroups = blockedPerLevel[lowerLevel];
 
                 for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
-
-                    const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
-                    const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
-                    bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                    starpu_insert_task( &m2l_cl,
-                                        STARPU_VALUE, &needOther, sizeof(needOther),
-                                        STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
-                                        STARPU_VALUE, &begin, sizeof(begin),
-                                        STARPU_VALUE, &end, sizeof(end),
-                                        STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
-
 
                     const int nbRemoteInteraction = blockedTree[lowerLevel][idxGroup].dataToSend.getSize();
                     for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
@@ -1025,12 +990,13 @@ public:
                     const MortonIndex begin = blockedTree[lowerLevel][idxGroup].beginIndex;
                     const MortonIndex end = blockedTree[lowerLevel][idxGroup].endIndex;
                     bool*const needOther = blockedTree[lowerLevel][idxGroup].needOther;
-                    starpu_insert_task( &m2l_other_cl,
+                    starpu_insert_task( &m2l_cl,
                                         STARPU_VALUE, &needOther, sizeof(needOther),
                                         STARPU_VALUE, &lowerLevel, sizeof(lowerLevel),
                                         STARPU_VALUE, &begin, sizeof(begin),
                                         STARPU_VALUE, &end, sizeof(end),
                                         STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
                 }
                 FDEBUG(counterTimeM2LRemote.tac());
@@ -1270,56 +1236,6 @@ public:
     // M2L
     static void m2l_cpu(void *descr[], void *cl_arg)
     {
-        bool* needOther;
-        int level;
-        MortonIndex begin;
-        MortonIndex end;
-        starpu_codelet_unpack_args(cl_arg, &needOther, &level, &begin, &end);
-
-        CellClass*const multipole_local = (CellClass*)STARPU_VECTOR_GET_PTR(descr[0]);
-        const int size = STARPU_VECTOR_GET_NX(descr[0]);
-
-
-        const CellClass* neighbors[343];
-        memset(neighbors, 0, sizeof(CellClass*) * 343);
-
-        MortonIndex potentialInteraction[189];
-        int potentialPosition[189];
-
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            if( !needOther[idxCell] ){
-                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), level, potentialInteraction, potentialPosition);
-                int counter = 0;
-
-                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                        int neighPosition = -1;
-                        int offset = 0;
-                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
-                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
-                        }
-                        else {
-                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
-                            offset = idxCell + 1;
-                        }
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
-                            ++counter;
-                        }
-                    }
-                }
-
-                if(counter){
-                    globalKernels[starpu_worker_get_id()]->M2L( &multipole_local[idxCell] , neighbors, counter, level);
-                    memset(neighbors, 0, sizeof(CellClass*) * 343);
-                }
-            }
-        }
-    }
-
-    // M2L other
-    static void m2l_other_cpu(void *descr[], void *cl_arg)
-    {
 
         bool* needOther;
         int level;
@@ -1339,40 +1255,38 @@ public:
         MortonIndex potentialInteraction[189];
         int potentialPosition[189];
 
-        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){
-            if( needOther[idxCell] ){
-                const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), level, potentialInteraction, potentialPosition);
-                int counter = 0;
+        for( int idxCell = 0 ; idxCell < size ; ++idxCell ){            
+            const int nbInteraction = getInteractionsFromPosition( multipole_local[idxCell].getCoordinate(), level, potentialInteraction, potentialPosition);
+            int counter = 0;
 
-                for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
-                    if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
-                        int neighPosition = -1;
-                        int offset = 0;
-                        if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
-                            neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
-                        }
-                        else {
-                            neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
-                            offset = idxCell + 1;
-                        }
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
-                            ++counter;
-                        }
+            for(int idxInteraction = 0 ; idxInteraction < nbInteraction ; ++idxInteraction){
+                if( begin <= potentialInteraction[idxInteraction] && potentialInteraction[idxInteraction] <= end){
+                    int neighPosition = -1;
+                    int offset = 0;
+                    if( potentialInteraction[idxInteraction] < multipole_local[idxCell].getMortonIndex()){
+                        neighPosition = findNeigh(multipole_local, idxCell, potentialInteraction[idxInteraction]);
                     }
                     else {
-                        const int neighPosition = findNeigh(transferBuffer, sizeBuffer, potentialInteraction[idxInteraction]);
-                        if( neighPosition != -1 ){
-                            neighbors[ potentialPosition[idxInteraction] ] = &transferBuffer[neighPosition];
-                            ++counter;
-                        }
+                        neighPosition = findNeigh(multipole_local + idxCell + 1, size - idxCell - 1, potentialInteraction[idxInteraction]);
+                        offset = idxCell + 1;
+                    }
+                    if( neighPosition != -1 ){
+                        neighbors[ potentialPosition[idxInteraction] ] = &multipole_local[neighPosition + offset];
+                        ++counter;
                     }
                 }
-
-                if(counter){
-                    globalKernels[starpu_worker_get_id()]->M2L( &multipole_local[idxCell] , neighbors, counter, level);
-                    memset(neighbors, 0, sizeof(CellClass*) * 343);
+                else if( needOther[idxCell] ) {
+                    const int neighPosition = findNeigh(transferBuffer, sizeBuffer, potentialInteraction[idxInteraction]);
+                    if( neighPosition != -1 ){
+                        neighbors[ potentialPosition[idxInteraction] ] = &transferBuffer[neighPosition];
+                        ++counter;
+                    }
                 }
+            }
+
+            if(counter){
+                globalKernels[starpu_worker_get_id()]->M2L( &multipole_local[idxCell] , neighbors, counter, level);
+                memset(neighbors, 0, sizeof(CellClass*) * 343);
             }
         }
     }
