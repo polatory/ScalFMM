@@ -822,7 +822,8 @@ public:
         const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &p2m_cl, STARPU_W, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayUp,
-                                STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray, 0);
+                                STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray,
+                                STARPU_PRIORITY, 1, 0);
 
         }
 
@@ -842,7 +843,8 @@ public:
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &p2p_cl, STARPU_VALUE, &OctreeHeight, sizeof(OctreeHeight),
                                 STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
-                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleTransferLeaf, 0);
+                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleTransferLeaf,
+                                STARPU_PRIORITY, 0, 0);
         }
 
         FDEBUG(counterTimeP2P.tac());
@@ -860,7 +862,8 @@ public:
                                     STARPU_VALUE, &indexPosition, sizeof(indexPosition),
                                     STARPU_VALUE, &offset, sizeof(offset),
                                     STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
-                                    STARPU_R, blockedTree[OctreeHeight][receiver].handleTransferLeaf, 0);
+                                    STARPU_R, blockedTree[OctreeHeight][receiver].handleTransferLeaf,
+                                    STARPU_PRIORITY, 0, 0);
             }
         }
 
@@ -899,6 +902,7 @@ public:
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                         STARPU_VALUE, &blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups, sizeof(blockedTree[idxLevel][idxGroup].indexOfStartInLowerGroups),
                         STARPU_VALUE, &nbLowerGroups, sizeof(nbLowerGroups),
+                                         STARPU_PRIORITY, 1,
                         0);
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
@@ -939,7 +943,8 @@ public:
                                         STARPU_VALUE, &indexStart, sizeof(indexStart),
                                         STARPU_VALUE, &originalPosition, sizeof(originalPosition),
                                         STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
+                                        STARPU_PRIORITY, 1, 0);
                 }
             }
 
@@ -956,7 +961,8 @@ public:
                                     STARPU_VALUE, &end, sizeof(end),
                                     STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                     STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
-                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
+                                    STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell,
+                                    STARPU_PRIORITY, 1, 0);
             }
             FDEBUG(counterTimeM2LRemote.tac());
         }
@@ -980,7 +986,8 @@ public:
                                             STARPU_VALUE, &indexStart, sizeof(indexStart),
                                             STARPU_VALUE, &originalPosition, sizeof(originalPosition),
                                             STARPU_RW, blockedTree[lowerLevel][receiver].handleTransferCell,
-                                            STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp, 0);
+                                            STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
+                                            STARPU_PRIORITY, 1, 0);
                     }
                 }
 
@@ -997,7 +1004,8 @@ public:
                                         STARPU_VALUE, &end, sizeof(end),
                                         STARPU_RW, blockedTree[lowerLevel][idxGroup].handleCellArrayDown,
                                         STARPU_R, blockedTree[lowerLevel][idxGroup].handleCellArrayUp,
-                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell, 0);
+                                        STARPU_R, blockedTree[lowerLevel][idxGroup].handleTransferCell,
+                                        STARPU_PRIORITY, 1, 0);
                 }
                 FDEBUG(counterTimeM2LRemote.tac());
             }
@@ -1028,7 +1036,7 @@ public:
                             0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
-
+                    task->priority = 1;
                     // submit task
                     starpu_task_submit(task);
                 }
@@ -1055,7 +1063,8 @@ public:
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &l2p_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleCellArrayDown,
-                                STARPU_RW, blockedTree[LevelToWrite][idxGroup].handleLeafArray, 0);
+                                STARPU_RW, blockedTree[LevelToWrite][idxGroup].handleLeafArray,
+                                STARPU_PRIORITY, 1, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@L2P (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -1071,7 +1080,8 @@ public:
         const int NbGroups = blockedPerLevel[OctreeHeight-1];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             starpu_insert_task( &mergep_cl, STARPU_R, blockedTree[OctreeHeight-1][idxGroup].handleLeafArray,
-                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray, 0);
+                                STARPU_RW, blockedTree[OctreeHeight][idxGroup].handleLeafArray,
+                                STARPU_PRIORITY, 1, 0);
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@MergeP (LP2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
