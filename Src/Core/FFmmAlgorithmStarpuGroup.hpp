@@ -793,17 +793,14 @@ public:
 
         L2L_M2L();
 
+        P2P();
+
+        L2P();
+
+        RestoreP2P();
+
         if(usePartReduction){
-            L2P();
-
-            P2P();
-
             MergeP();
-        }
-        else{
-            P2P();
-
-            L2P();
         }
 
         FDEBUG( FDebug::Controller << "Wait task to be finished...\n" );
@@ -834,9 +831,7 @@ public:
     void P2P(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FDEBUG( FDebug::Controller.write("\tStart Direct Pass (P2P)\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTimeP2P);
         FDEBUG(FTic counterTime);
-        FDEBUG(FTic counterTimeCopy);
 
         // P2P inside leaves
         const int NbGroups = blockedPerLevel[OctreeHeight];
@@ -847,10 +842,17 @@ public:
                                 STARPU_PRIORITY, 0, 0);
         }
 
-        FDEBUG(counterTimeP2P.tac());
-        FDEBUG(counterTimeCopy.tic());
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2M ) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    void RestoreP2P(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Restore Pass (RestoreP2P)\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
 
         // P2P restore
+        const int NbGroups = blockedPerLevel[OctreeHeight];
         for( int idxGroup = 0 ; idxGroup < NbGroups ; ++idxGroup ){
             const int nbRemoteInteraction = blockedTree[OctreeHeight][idxGroup].dataToSend.getSize();
             for( int idxRemote = 0 ; idxRemote < nbRemoteInteraction ; ++idxRemote ){
@@ -867,9 +869,7 @@ public:
             }
         }
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (P2M + Copy P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tP2P = "  << counterTimeP2P.elapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\tRestore P2P leaves only = "  << counterTimeCopy.tacAndElapsed() << "s)\n" );
+        FDEBUG( FDebug::Controller << "\tFinished (@Restore Pass (RestoreP2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
 
