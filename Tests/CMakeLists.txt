@@ -12,7 +12,18 @@ file(
 	GLOB_RECURSE
 	source_tests_files
 	./*.cpp
-)
+	)
+
+# Find all cuda files
+if( SCALFMM_USE_CUDA )
+	file(
+		GLOB_RECURSE
+		source_cuda_files
+		./*.cu
+		)
+endif()
+
+
 
 # Adding the project sources dir as an include dir
 INCLUDE_DIRECTORIES(
@@ -58,16 +69,25 @@ foreach(exec ${source_tests_files})
 
 	# Dependency are OK
 	if( compile_exec )
-		add_executable(
-			${execname}
-			${exec}
-		)
+		if( SCALFMM_USE_CUDA )
+			CUDA_ADD_EXECUTABLE(
+				${execname}
+				${exec}
+				${source_cuda_files}
+				)
+		else()
+			add_executable(
+				${execname}
+				${exec}
+				)
+		endif()
+		
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
 			${BLAS_LIBRARIES}
 			${LAPACK_LIBRARIES}
 			${STARPU_LIBRARIES}
-		)
+			)
 	endif()
 endforeach(exec)

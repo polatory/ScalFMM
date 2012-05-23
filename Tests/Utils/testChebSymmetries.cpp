@@ -27,12 +27,27 @@
 
 
 #include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FBlas.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
 
 
+
+template <int ORDER>
+void permuteMatrix(const unsigned int perm[ORDER*ORDER*ORDER], FReal *const Matrix)
+{
+	const unsigned int nnodes = ORDER*ORDER*ORDER;
+	// allocate temporary memory for matrix
+	FReal temp[nnodes*nnodes];
+	// permute rows
+	for (unsigned int r=0; r<nnodes; ++r)
+		FBlas::copy(nnodes, Matrix+r, nnodes, temp+perm[r], nnodes);
+	// permute columns
+	for (unsigned int c=0; c<nnodes; ++c)
+		FBlas::copy(nnodes, temp + c * nnodes, Matrix + perm[c] * nnodes);
+}
 
 
 
@@ -115,7 +130,7 @@ int main(int argc, char* argv[])
 					
 					// permute
 					const unsigned int pidx = permuter.getPermutationArrayAndIndex(i, j, k, perm);
-					permuter.permuteMatrix(perm, K0);
+					permuteMatrix<order>(perm, K0);
 
 					if (K[pidx]==NULL) std::cout << " - not existing index " << pidx << std::endl;
 

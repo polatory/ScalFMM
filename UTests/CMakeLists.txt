@@ -48,10 +48,18 @@ foreach(exec ${source_tests_files})
 
 	# Dependency are OK
 	if( compile_exec )
-		add_executable(
-			${execname}
-			${exec}
-		)
+		if( SCALFMM_USE_CUDA )
+			CUDA_ADD_EXECUTABLE(
+				${execname}
+				${exec}
+			)
+		else()
+			add_executable(
+				${execname}
+				${exec}
+			)
+		endif()
+
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
