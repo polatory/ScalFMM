@@ -412,8 +412,12 @@ public:
 	
 
 
+	const FReal *const *const getChildParentInterpolator() const
+	{ return ChildParentInterpolator; }
+	const unsigned int *const getPermutationsM2ML2L(unsigned int i) const
+	{ return perm[i]; }
 
-
+	
 
 
 
@@ -487,16 +491,19 @@ public:
 								FReal *const ParentExpansion) const
 	{
 		FReal Exp[nnodes], PermExp[nnodes];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								 ChildParentInterpolator[ChildIndex], ORDER,
 								 const_cast<FReal*>(ChildExpansion), ORDER, PermExp, ORDER);
 		
 		for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								 ChildParentInterpolator[ChildIndex] + 2 * ORDER*ORDER, ORDER,
 								 Exp, ORDER, PermExp, ORDER);
 
 		for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								 ChildParentInterpolator[ChildIndex] + 1 * ORDER*ORDER, ORDER,
 								 Exp, ORDER, PermExp, ORDER);
@@ -510,24 +517,26 @@ public:
 								FReal *const ChildExpansion) const
 	{
 		FReal Exp[nnodes], PermExp[nnodes];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								ChildParentInterpolator[ChildIndex], ORDER,
 								const_cast<FReal*>(ParentExpansion), ORDER, PermExp, ORDER);
 		
 		for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								ChildParentInterpolator[ChildIndex] + 2 * ORDER*ORDER, ORDER,
 								Exp, ORDER, PermExp, ORDER);
 		
 		for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+		// ORDER*ORDER*ORDER * (2*ORDER-1)
 		FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
 								ChildParentInterpolator[ChildIndex] + 1 * ORDER*ORDER, ORDER,
 								Exp, ORDER, PermExp, ORDER);
 
 		for (unsigned int n=0; n<nnodes; ++n)	ChildExpansion[perm[2][n]] += PermExp[n];
 	}
-	
-	
+	// total flops count: 3 * ORDER*ORDER*ORDER * (2*ORDER-1)
 };
 
 
@@ -1124,40 +1133,40 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 		// IMPORTANT: NOT CHANGE ORDER OF COMPUTATIONS!!! ////////////////
 		//////////////////////////////////////////////////////////////////
 
-		// W2[0] /////////////////
+		// W2[0] ///////////////// (ORDER-1)*ORDER*ORDER * 2*ORDER
 		FBlas::gemtm(ORDER, ORDER-1, ORDER*ORDER, FReal(1.), const_cast<FReal*>(T), ORDER,
 								 const_cast<FReal*>(localExpansion), ORDER, F2, ORDER-1);
 		for (unsigned int l=0; l<ORDER-1; ++l) { W2[0][l] = F2[l];
 			for (unsigned int j=1; j<ORDER*ORDER; ++j) W2[0][l] += F2[j*(ORDER-1) + l];	}
-		// W4[0] /////////////////
+		// W4[0] ///////////////// ORDER*(ORDER-1)*(ORDER-1) + 2*ORDER
 		perm5.permute(F2, F4);
 		FBlas::gemtm(ORDER, ORDER-1, ORDER*(ORDER-1), FReal(1.), const_cast<FReal*>(T), ORDER, F4, ORDER, G4, ORDER-1);
 		for (unsigned int l=0; l<ORDER-1; ++l)
 			for (unsigned int m=0; m<ORDER-1; ++m) { W4[0][m*(ORDER-1)+l] = G4[l*ORDER*(ORDER-1) + m];
 				for (unsigned int k=1; k<ORDER; ++k) W4[0][m*(ORDER-1)+l] += G4[l*ORDER*(ORDER-1) + k*(ORDER-1) + m];	}
-		// W8 ////////////////////
+		// W8 //////////////////// (ORDER-1)*(ORDER-1)*(ORDER-1) * (2*ORDER-1)
 		perm8.permute(G4, G8);
 		FReal F8[(ORDER-1)*(ORDER-1)*(ORDER-1)];
 		FBlas::gemtm(ORDER, ORDER-1, (ORDER-1)*(ORDER-1), FReal(1.), const_cast<FReal*>(T), ORDER, G8, ORDER, F8, ORDER-1);
 		perm9.permute(F8, W8);
-		// W4[1] /////////////////
+		// W4[1] ///////////////// ORDER*(ORDER-1)*(ORDER-1) + 2*ORDER
 		perm6.permute(F2, F4);
 		FBlas::gemtm(ORDER, ORDER-1, (ORDER-1)*ORDER, FReal(1.), const_cast<FReal*>(T), ORDER, F4, ORDER, G4, ORDER-1);
 		for (unsigned int l=0; l<ORDER-1; ++l)
 			for (unsigned int n=0; n<ORDER-1; ++n) { W4[1][n*(ORDER-1)+l] = G4[l*(ORDER-1) + n];
 				for (unsigned int j=1; j<ORDER; ++j) W4[1][n*(ORDER-1)+l] += G4[j*(ORDER-1)*(ORDER-1) + l*(ORDER-1) + n];	}
-		// W2[1] /////////////////
+		// W2[1] ///////////////// (ORDER-1)*ORDER*ORDER * 2*ORDER
 		perm3.permute(localExpansion, lE);
 		FBlas::gemtm(ORDER, ORDER-1, ORDER*ORDER, FReal(1.), const_cast<FReal*>(T), ORDER, lE, ORDER, F2, ORDER-1);
 		for (unsigned int i=0; i<ORDER-1; ++i) { W2[1][i] = F2[i];
 			for (unsigned int j=1; j<ORDER*ORDER; ++j) W2[1][i] += F2[j*(ORDER-1) + i]; }
-		// W4[2] /////////////////
+		// W4[2] ///////////////// ORDER*(ORDER-1)*(ORDER-1) + 2*ORDER
 		perm7.permute(F2, F4);
 		FBlas::gemtm(ORDER, ORDER-1, (ORDER-1)*ORDER, FReal(1.), const_cast<FReal*>(T), ORDER, F4, ORDER, G4, ORDER-1);
 		for (unsigned int m=0; m<ORDER-1; ++m)
 			for (unsigned int n=0; n<ORDER-1; ++n) { W4[2][n*(ORDER-1)+m] = G4[m*ORDER*(ORDER-1) + n];
 				for (unsigned int i=1; i<ORDER; ++i) W4[2][n*(ORDER-1)+m] += G4[m*ORDER*(ORDER-1) + i*(ORDER-1) + n];	}
-		// W2[2] /////////////////
+		// W2[2] ///////////////// (ORDER-1)*ORDER*ORDER * 2*ORDER
 		perm4.permute(localExpansion, lE);
 		FBlas::gemtm(ORDER, ORDER-1, ORDER*ORDER, FReal(1.), const_cast<FReal*>(T), ORDER, lE, ORDER, F2, ORDER-1);
 		for (unsigned int i=0; i<ORDER-1; ++i) { W2[2][i] = F2[i];
@@ -1198,15 +1207,13 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 				U_of_x[1][j] = y2 * U_of_x[1][j-1] - U_of_x[1][j-2]; // 2 flops
 				U_of_x[2][j] = z2 * U_of_x[2][j-1] - U_of_x[2][j-2]; // 2 flops
 			}
-			
 			// scale, because dT_j/dx = jU_{j-1}
 			for (unsigned int j=2; j<ORDER; ++j) {
 				U_of_x[0][j-1] *= FReal(j); // 1 flops
 				U_of_x[1][j-1] *= FReal(j); // 1 flops
 				U_of_x[2][j-1] *= FReal(j); // 1 flops
 			}
-
-		}
+		} // 3 + (ORDER-2)*15
 
 		// apply P and increment forces
 		FReal potential = FReal(0.);
@@ -1233,19 +1240,19 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 						f4[3] += T_of_x[0][l]   * U_of_x[2][m-1] * w4[1] + T_of_x[1][l]   * U_of_x[2][m-1] * w4[2]; // 6 flops
 						for (unsigned int n=1; n<ORDER; ++n) {
 							const FReal w8 = W8[(n-1)*(ORDER-1)*(ORDER-1) + (m-1)*(ORDER-1) + (l-1)];
-							f8[0] += T_of_x[0][l]   * T_of_x[1][m]   * T_of_x[2][n]   * w8;
-							f8[1] += U_of_x[0][l-1] * T_of_x[1][m]   * T_of_x[2][n]   * w8;
-							f8[2] += T_of_x[0][l]   * U_of_x[1][m-1] * T_of_x[2][n]   * w8;
-							f8[3] += T_of_x[0][l]   * T_of_x[1][m]   * U_of_x[2][n-1] * w8;
-						} // ORDER * 4 flops
-					} // ORDER * (9 + ORDER * 4) flops
-				} // ORDER * (ORDER * (9 + ORDER * 4)) flops
+							f8[0] += T_of_x[0][l]   * T_of_x[1][m]   * T_of_x[2][n]   * w8; // 4 flops
+							f8[1] += U_of_x[0][l-1] * T_of_x[1][m]   * T_of_x[2][n]   * w8; // 4 flops
+							f8[2] += T_of_x[0][l]   * U_of_x[1][m-1] * T_of_x[2][n]   * w8; // 4 flops
+							f8[3] += T_of_x[0][l]   * T_of_x[1][m]   * U_of_x[2][n-1] * w8; // 4 flops
+						} // (ORDER-1) * 16 flops
+					} // (ORDER-1) * (27 + (ORDER-1) * 16) flops
+				} // (ORDER-1) * ((ORDER-1) * (27 + (ORDER-1) * 16)) flops
 			}
 			potential = (f1 + FReal(2.)*f2[0] + FReal(4.)*f4[0] + FReal(8.)*f8[0]) / nnodes; // 7 flops
-			forces[0] = (     FReal(2.)*f2[1] + FReal(4.)*f4[1] + FReal(8.)*f8[1]) * jacobian[0] / nnodes; // 6 flops
-			forces[1] = (     FReal(2.)*f2[2] + FReal(4.)*f4[2] + FReal(8.)*f8[2]) * jacobian[1] / nnodes; // 6 flops
-			forces[2] = (     FReal(2.)*f2[3] + FReal(4.)*f4[3] + FReal(8.)*f8[3]) * jacobian[2] / nnodes; // 6 flops
-		} // 7 + ORDER * (ORDER * (9 + ORDER * 4)) flops
+			forces[0] = (     FReal(2.)*f2[1] + FReal(4.)*f4[1] + FReal(8.)*f8[1]) * jacobian[0] / nnodes; // 7 flops
+			forces[1] = (     FReal(2.)*f2[2] + FReal(4.)*f4[2] + FReal(8.)*f8[2]) * jacobian[1] / nnodes; // 7 flops
+			forces[2] = (     FReal(2.)*f2[3] + FReal(4.)*f4[3] + FReal(8.)*f8[3]) * jacobian[2] / nnodes; // 7 flops
+		} // 28 + (ORDER-1) * ((ORDER-1) * (27 + (ORDER-1) * 16)) flops
 
 		// set computed potential
 		iter.data().incPotential(potential); // 1 flop
@@ -1257,7 +1264,7 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 
 		// increment target iterator
 		iter.gotoNext();
-	} // N * (7 + ORDER * (ORDER * (9 + ORDER * 4))) flops
+	} // N * (38 + (ORDER-2)*15 + (ORDER-1)*((ORDER-1) * (27 + (ORDER-1) * 16))) + 6 flops
 }
 
 

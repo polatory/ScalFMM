@@ -3,9 +3,6 @@
 
 #include <climits>
 
-#include "../../Utils/FBlas.hpp"
-
-#include "./FChebTensor.hpp"
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -20,7 +17,7 @@
 template <int ORDER>
 class FChebSymmetries
 {
-	enum {nnodes = TensorTraits<ORDER>::nnodes};
+	enum {nnodes = ORDER*ORDER*ORDER};
 
 	// index permutations (j<i)(k<i)(k<j)
 	unsigned int perms[8][3];
@@ -39,6 +36,8 @@ class FChebSymmetries
 
 
 	public:
+
+	/** Constructor */
 	FChebSymmetries()
 	{
 		// permutations for 8 quadrants
@@ -125,41 +124,13 @@ class FChebSymmetries
 	}
 	
 
-
-	static void permuteMatrix(const unsigned int perm[nnodes], FReal *const Matrix)
-	{
-		// allocate temporary memory for matrix
-		FReal temp[nnodes*nnodes];
-		// permute rows
-		for (unsigned int r=0; r<nnodes; ++r)
-			FBlas::copy(nnodes, Matrix+r, nnodes, temp+perm[r], nnodes);
-		// permute columns
-		for (unsigned int c=0; c<nnodes; ++c)
-			FBlas::copy(nnodes, temp + c * nnodes, Matrix + perm[c] * nnodes);
-	}
-
 };
 
 
+
+
+
+
+
+
 #endif
-
-
-////		if (uj>ui) FMemUtils::swap(uj,ui);
-////		if (uk>ui) FMemUtils::swap(uk,ui);
-////		if (uk>uj) FMemUtils::swap(uk,uj);
-
-////	const unsigned int *const getPermQuadrant(const int i, const int j, const int k) const
-////	{
-////		// if < 0 then 0, else 1
-////		const int si = ((unsigned int)i >> (sizeof(int)*CHAR_BIT - 1));
-////		const int sj = ((unsigned int)j >> (sizeof(int)*CHAR_BIT - 2)) & 2;
-////		const int sk = ((unsigned int)k >> (sizeof(int)*CHAR_BIT - 3)) & 4;
-////		const int qidx = sk | sj | si;
-////		return quads[qidx];
-////	}
-
-////	const void permuteMatrix(const int i, const int j, const int k, FReal *const Matrix) const
-////	{	permuteMatrix(getPermQuadrant(i, j, k), Matrix); }
-
-
-////for (unsigned int n=0; n<nnodes; ++n)	permutation[n] = cones[cidx][quads[qidx][n]];

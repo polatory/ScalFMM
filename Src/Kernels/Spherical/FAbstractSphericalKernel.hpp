@@ -29,21 +29,21 @@
 template< class ParticleClass, class CellClass, class ContainerClass>
 class FAbstractSphericalKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
 protected:
-    const int   devP;           //! The P
-    const FReal boxWidth;       //! the box width at leaf level
-    const int   treeHeight;     //! The height of the tree
+    const int   devP;           //< The P
+    const FReal boxWidth;       //< the box width at leaf level
+    const int   treeHeight;     //< The height of the tree
 
-    const int periodicLevels;   //! The number of levels above 1 used for periodicity
+    const int periodicLevels;   //< The number of levels above 1 used for periodicity
 
-    const FReal widthAtLeafLevel;       //! the width of a box at leaf level
-    const FReal widthAtLeafLevelDiv2;   //! the width of a box at leaf level divided by 2
-    const FPoint boxCorner;        //! the corner of the box system
+    const FReal widthAtLeafLevel;       //< the width of a box at leaf level
+    const FReal widthAtLeafLevelDiv2;   //< the width of a box at leaf level divided by 2
+    const FPoint boxCorner;        //< the corner of the box system
 
-    FHarmonic harmonic; //! The harmonic computation class
+    FHarmonic harmonic; //< The harmonic computation class
 
     // For normal computation
-    FSmartPointer<FComplexe*> preL2LTransitions; //! The pre-computation for the L2L based on the level
-    FSmartPointer<FComplexe*> preM2MTransitions; //! The pre-computation for the M2M based on the level
+    FSmartPointer<FComplexe*> preL2LTransitions; //< The pre-computation for the L2L based on the level
+    FSmartPointer<FComplexe*> preM2MTransitions; //< The pre-computation for the M2M based on the level
 
 
     /** Alloc and init pre-vectors*/
@@ -162,31 +162,6 @@ public:
             }
         }
     }
-    //  Just for check purpose
-    void ocM2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
-        FComplexe* FRestrict const multipole_exp_target = inPole->getMultipole();
-        // iter on each child and process M2M
-        // Reset to zero
-        //
-        std::cout << std::endl<<"Multipole value to found" <<std::endl;
-        for(int idxPole = 0 ; idxPole < inPole->GetPoleSize() ; ++idxPole){
-            std::cout <<  "  "<< multipole_exp_target[idxPole] ;
-            multipole_exp_target[idxPole] = FComplexe(0.0,0.0);
-        }
-        std::cout <<std::endl;
-//
-        const FComplexe* FRestrict const preM2MTransitionsAtLevel = preM2MTransitions[inLevel + periodicLevels];
-        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-            if(inChild[idxChild]){
-                multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitionsAtLevel[idxChild * harmonic.getExpSize()]);
-                std::cout << "Add multipole from child "<< idxChild << std::endl;
-                for(int idxPole = 0 ; idxPole < inPole->GetPoleSize() ; ++idxPole){
-                    std::cout <<  "  "<< multipole_exp_target[idxPole] ;
-                }
-                std::cout <<std::endl;
-            }
-        }
-    }
 
     /** M2L with a cell and all the existing neighbors */
     virtual void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
@@ -271,6 +246,7 @@ public:
     }
 
 private:
+
     ///////////////////////////////////////////////////////////////////////////////
     //                                  P2P possibilities
     ///////////////////////////////////////////////////////////////////////////////

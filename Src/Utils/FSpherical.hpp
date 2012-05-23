@@ -18,40 +18,16 @@
 /** This class is a Spherical position
 * This class is currently in its minimum version
 */
-//! The spherical coordinate system is the following
-//! x = r sin(theta) cos(phi)
-//! y = r sin(theta) sin(phi)
-//! z = r cos(theta)
-//! This system is defined in p 872 of the paper of Epton and Dembart, SIAM J Sci Comput 1995.
-//!
-//! \bug Error of naming : phi is in fact theta and theta is phi
-//!  z = r cos Phi --> CosPhi = Z/r
-//!  getPhi returns in fact the theta angle !!!!
-//! To change
 class FSpherical {
     // The attributes of a sphere
     FReal r;
     FReal cosTheta;
     FReal sinTheta;
     FReal phi;
-//    FReal theta;
 
 public:
     /** From now, we just need a constructor based on a 3D position */
     explicit FSpherical(const FPoint& inVector){
-        //
-//        // The good code for me but expansions are wrong
-//        this->r = FMath::Sqrt( inVector.getX() * inVector.getX() + inVector.getY() * inVector.getY()
-//                               + inVector.getZ() * inVector.getZ());
-//        this->theta = FMath::Atan2(inVector.getY(),inVector.getX());
-//        cosTheta = FMath::Cos(this->theta);
-//        sinTheta = FMath::Sin(this->theta);
-//        if( r < FMath::Epsilon ){ // if r == 0 we cannot divide!
-//            this->phi = 0;
-//        }
-//        else {
-//            this->phi = FMath::ACos(inVector.getZ() / r );
-//        }
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
         this->r = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
         this->phi = FMath::Atan2(inVector.getY(),inVector.getX());

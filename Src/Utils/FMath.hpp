@@ -106,6 +106,22 @@ struct FMath{
         return sqrt(inValue);
     }
 
+    /** To get Log of a FReal */
+    static float Log(const float inValue){
+        return logf(inValue);
+    }
+    static double Log(const double inValue){
+        return log(inValue);
+    }
+
+    /** To get Log2 of a FReal */
+    static float Log2(const float inValue){
+        return log2f(inValue);
+    }
+    static double Log2(const double inValue){
+        return log2(inValue);
+    }
+
     /** To get atan2 of a 2 FReal */
     static float Atan2(const float inValue1,const float inValue2){
         return atan2f(inValue1,inValue2);
@@ -114,7 +130,7 @@ struct FMath{
         return atan2(inValue1,inValue2);
     }
 
-    /** To get sin of a FReal */
+    /** To get sqrt of a FReal */
     static float Sin(const float inValue){
         return sinf(inValue);
     }

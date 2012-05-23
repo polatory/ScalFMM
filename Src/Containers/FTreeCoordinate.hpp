@@ -48,6 +48,12 @@ public:
          data[2] = inZ;
     }
 
+    explicit FTreeCoordinate(const int inPosition[3]) {
+        data[0] = inPosition[0];
+        data[1] = inPosition[1];
+        data[2] = inPosition[2];
+    }
+
     /**
 	* Copy constructor
 	* @param other the source class to copy

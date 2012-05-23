@@ -8,7 +8,7 @@
 
 #include "./FAbstractChebKernel.hpp"
 #include "./FChebInterpolator.hpp"
-#include "./FChebSymmetries.hpp"
+#include "./FChebSymM2LHandler.hpp"
 
 class FTreeCoordinate;
 
@@ -35,16 +35,12 @@ template <class ParticleClass, class CellClass,	class ContainerClass,	class Matr
 class FChebSymKernel
 	: public FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
 {
-	typedef FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
-	AbstractBaseClass;
+	typedef FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>	AbstractBaseClass;
+	typedef SymmetryHandler<ORDER> SymmetryHandlerClass;
   enum {nnodes = AbstractBaseClass::nnodes};
 
-	/// Handler to deal with all symmetries: Stores permutation indices and
-	/// vectors to reduce 343 different interactions to 16 only.
-	struct SymmetryHandler;
-
 	/// Needed for handling all symmetries
-	const FSmartPointer<SymmetryHandler,FSmartPointerMemory> SymHandler;
+	const FSmartPointer<SymmetryHandlerClass,FSmartPointerMemory> SymHandler;
 
 	// permuted local and multipole expansions
 	FReal** Loc;
@@ -74,8 +70,8 @@ class FChebSymKernel
 				for (int k=0; k<=j; ++k) {
 					const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 					assert(Mul[idx]==NULL || Loc[idx]==NULL);
-					Mul[idx] = new FReal [30 * nnodes];
-					Loc[idx] = new FReal [30 * nnodes];
+					Mul[idx] = new FReal [24 * nnodes];
+					Loc[idx] = new FReal [24 * nnodes];
 				}
 	}
 	
@@ -92,7 +88,7 @@ public:
 								 const FReal inBoxWidth,
 								 const FReal Epsilon)
 		: AbstractBaseClass(inTreeHeight, inBoxCenter, inBoxWidth),
-			SymHandler(new SymmetryHandler(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon)),
+			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon)),
 			Loc(NULL), Mul(NULL), countExp(NULL)
 	{
 		this->allocateMemoryForPermutedExpansions();
@@ -123,6 +119,10 @@ public:
 		if (countExp!=NULL) delete [] countExp;
 	}
 
+
+	const SymmetryHandlerClass *const getPtrToSymHandler() const
+	{	return SymHandler.getPtr();	}
+	
 
 
 	void P2M(CellClass* const LeafCell,
@@ -174,15 +174,17 @@ public:
 		}
 
 		// multiply (mat-mat-mul)
-		FReal Compressed [nnodes * 30];
+		FReal Compressed [nnodes * 24];
 		const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
 		const FReal scale(AbstractBaseClass::MatrixKernel->getScaleFactor(CellWidth));
 		for (unsigned int pidx=0; pidx<343; ++pidx) {
 			const unsigned int count = countExp[pidx];
 			if (count) {
 				const unsigned int rank = SymHandler->LowRank[pidx];
+				// rank * count * (2*nnodes-1) flops
 				FBlas::gemtm(nnodes, rank, count, FReal(1.),
 										 SymHandler->K[pidx]+rank*nnodes, nnodes, Mul[pidx], nnodes, Compressed, rank);
+				// nnodes *count * (2*rank-1) flops
 				FBlas::gemm( nnodes, rank, count, scale,
 										 SymHandler->K[pidx], nnodes, Compressed, rank, Loc[pidx], nnodes);
 			}
@@ -197,6 +199,7 @@ public:
 				const unsigned int count = (countExp[pidx])++;
 				const FReal *const loc = Loc[pidx] + count*nnodes;
 				const unsigned int *const pvec = SymHandler->pvectors[idx];
+				// nnodes flops
 				for (unsigned int n=0; n<nnodes; ++n)
 					LocalExpansion[n] += loc[pvec[n]];
 			}
@@ -345,137 +348,6 @@ public:
 
 
 
-/**
- * Handler to deal with all symmetries: Stores permutation indices and vectors
- * to reduce 343 different interactions to 16 only.
- */
-template <class ParticleClass,
-					class CellClass,
-					class ContainerClass,
-					class MatrixKernelClass,
-					int ORDER>
-struct FChebSymKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
-::SymmetryHandler
-{
-	// M2L operators
-	FReal*    K[343];
-	int LowRank[343];
-		
-	// permutation vectors and permutated indices
-	unsigned int pvectors[343][nnodes];
-	unsigned int pindices[343];
-
-
-
-	/** Constructor */
-	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon)
-	{
-		// init all 343 item to zero, because effectively only 16 exist
-		for (unsigned int t=0; t<343; ++t) {
-			K[t] = NULL;
-			LowRank[t] = 0;
-		}
-			
-		// set permutation vector and indices
-		const FChebSymmetries<ORDER> Symmetries;
-		for (int i=-3; i<=3; ++i)
-			for (int j=-3; j<=3; ++j)
-				for (int k=-3; k<=3; ++k)
-					if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
-						const unsigned int idx = ((i+3) * 7 + (j+3)) * 7 + (k+3);
-						pindices[idx] = Symmetries.getPermutationArrayAndIndex(i,j,k, pvectors[idx]);
-					}
-
-		// precompute 16 M2L operators
-		this->precomputeSVD(MatrixKernel, Epsilon);
-	}
-
-
-
-	/** Destructor */
-	~SymmetryHandler()
-	{
-		for (unsigned int t=0; t<343; ++t)
-			if (K[  t]!=NULL) delete [] K[  t];
-	}
-
-
-
-private:
-	void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const double Epsilon)
-	{
-		// interpolation points of source (Y) and target (X) cell
-		FPoint X[nnodes], Y[nnodes];
-		// set roots of target cell (X)
-		FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
-		// temporary matrix
-		FReal* U = new FReal [nnodes*nnodes];
-
-		// needed for the SVD
-		const unsigned int LWORK = 2 * (3*nnodes + nnodes);
-		FReal *const WORK = new FReal [LWORK];
-		FReal *const VT = new FReal [nnodes*nnodes];
-		FReal *const S = new FReal [nnodes];
-		
-		unsigned int counter = 0;
-		for (int i=2; i<=3; ++i) {
-			for (int j=0; j<=i; ++j) {
-				for (int k=0; k<=j; ++k) {
-
-					// assemble matrix
-					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-					FChebTensor<ORDER>::setRoots(cy, FReal(2.), Y);
-					for (unsigned int n=0; n<nnodes; ++n)
-						for (unsigned int m=0; m<nnodes; ++m)
-							U[n*nnodes + m] = MatrixKernel->evaluate(X[m], Y[n]);
-
-					// applying weights ////////////////////////////////////////
-					FReal weights[nnodes];
-					FChebTensor<ORDER>::setRootOfWeights(weights);
-					for (unsigned int n=0; n<nnodes; ++n) {
-						FBlas::scal(nnodes, weights[n], U + n,  nnodes); // scale rows
-						FBlas::scal(nnodes, weights[n], U + n * nnodes); // scale cols
-					}
-					//////////////////////////////////////////////////////////		
-
-					// truncated singular value decomposition of matrix
-					const unsigned int info	= FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
-					if (info!=0) throw std::runtime_error("SVD did not converge with " + info);
-					const unsigned int rank = getRank<ORDER>(S, Epsilon);
-
-					// store 
-					const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-					assert(K[idx]==NULL);
-					K[idx] = new FReal [2*rank*nnodes];
-					LowRank[idx] = rank;
-					for (unsigned int r=0; r<rank; ++r)
-						FBlas::scal(nnodes, S[r], U + r*nnodes);
-					FBlas::copy(rank*nnodes, U,  K[idx]);
-					for (unsigned int r=0; r<rank; ++r)
-						FBlas::copy(nnodes, VT + r, nnodes, K[idx] + rank*nnodes + r*nnodes, 1);
-
-					// un-weighting ////////////////////////////////////////////
-					for (unsigned int n=0; n<nnodes; ++n) {
-						FBlas::scal(rank, FReal(1.) / weights[n], K[idx] + n,               nnodes); // scale rows
-						FBlas::scal(rank, FReal(1.) / weights[n], K[idx] + rank*nnodes + n, nnodes); // scale rows
-					}
-					//////////////////////////////////////////////////////////		
-
-					std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-						", low rank = " << rank << std::endl;
-
-					counter++;
-				}
-			}
-		}
-		std::cout << "num interactions = " << counter << std::endl;
-		delete [] U;
-		delete [] WORK;
-		delete [] VT;
-		delete [] S;
-	}
-
-};
 
 
 

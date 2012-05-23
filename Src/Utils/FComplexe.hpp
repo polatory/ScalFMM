@@ -184,18 +184,6 @@ public:
     static const FReal* ToFReal(const FComplexe*const array){
         return reinterpret_cast<const FReal*>(array);
     }
-    /**
-     * Operator stream FComplexe to std::ostream
-     * This can be used to simpldata[1] write out a complex with format (Re,Im)
-     * @param[in,out] output where to write the position
-     * @param[in] inPosition the position to write out
-     * @return the output for multiple << operators
-     */
-    friend std::ostream& operator<<(std::ostream& output, const FComplexe& inC){
-        output << "(" <<  inC.getReal() << ", " << inC.getImag() << ")";
-        return output;  // for multiple << operators.
-    }
-
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */
@@ -205,7 +193,6 @@ inline FComplexe operator*=(const FComplexe& first, const FComplexe& second){
             (first.getReal() * second.getReal()) - (first.getImag() * second.getImag())
             );
 }
-
 
 #endif //FCOMPLEXE_HPP
 

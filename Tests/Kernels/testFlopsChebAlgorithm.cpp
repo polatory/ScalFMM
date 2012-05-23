@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "../../Src/Files/FFmaBinLoader.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
@@ -51,8 +52,8 @@ int main(int argc, char* argv[])
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 
-	const unsigned int ORDER = 5;
-	const FReal epsilon = FReal(1e-5);
+	const unsigned int ORDER = 8;
+	const FReal epsilon = FReal(1e-8);
 
 	// init timer
 	FTic time;
@@ -72,7 +73,8 @@ int main(int argc, char* argv[])
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
 	// open particle file
-	FFmaScanfLoader<ParticleClass> loader(filename);
+	//FFmaScanfLoader<ParticleClass> loader(filename);
+	FFmaBinLoader<ParticleClass> loader(filename);
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 	
 	// init oct-tree
@@ -89,9 +91,9 @@ int main(int argc, char* argv[])
 	
 	// -----------------------------------------------------
 	std::cout << "\nChebyshev FMM ... " << std::endl;
-	time.tic();
 	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
 	FmmClass algorithm(&tree,&kernels);
+	time.tic();
 	algorithm.execute();
 	std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;
 	// -----------------------------------------------------

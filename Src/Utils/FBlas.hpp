@@ -157,13 +157,13 @@ namespace FBlas {
 
 	// set zero
 	inline void setzero(const unsigned n, double* const x)
-	{	dscal_(&n, &D_ZERO, x, &N_ONE); }
+	{	for (unsigned i=0; i<n; ++i) x[i] = 0.0; }
 	inline void setzero(const unsigned n, float* const x)
-	{	sscal_(&n, &S_ZERO, x, &N_ONE); }
+	{	for (unsigned i=0; i<n; ++i) x[i] = 0.0f; }
 	inline void c_setzero(const unsigned n, double* const x)
-	{	zscal_(&n, Z_ZERO, x, &N_ONE); }
+	{	for (unsigned i=0; i<n; ++i) x[i*2] = x[i*2+1] = 0.0; }
 	inline void c_setzero(const unsigned n, float* const x)
-	{	cscal_(&n, C_ZERO, x, &N_ONE); }
+	{	for (unsigned i=0; i<n; ++i) x[i*2] = x[i*2+1] = 0.0f; }
 
 	// y += x
 	inline void add(const unsigned n, double* const x, double* const y)

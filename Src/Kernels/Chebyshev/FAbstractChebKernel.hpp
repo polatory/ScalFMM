@@ -60,7 +60,6 @@ protected:
 											 BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
 	}
 
-
 public:
 	/**
 	 * The constructor initializes all constant attributes and it reads the
@@ -79,6 +78,9 @@ public:
 	{
 		/* empty */
 	}
+
+	const InterpolatorClass *const getPtrToInterpolator() const
+	{ return Interpolator.getPtr(); }
 
 
 	virtual void P2M(CellClass* const LeafCell,
@@ -193,12 +195,12 @@ public:
 
 
 private:
-	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const  // 21 overall flops
+	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const  // 34 overall flops
 	{
 		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
 		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
 																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 1 + 1 + 5 = 8 flops
+																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
 		// potential
@@ -208,12 +210,12 @@ private:
 		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
 	}
 
-	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const // 26 overall flops
+	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const // 39 overall flops
 	{
 		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
 		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
 																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 1 + 1 + 5 = 8 flops
+																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
 		// potential

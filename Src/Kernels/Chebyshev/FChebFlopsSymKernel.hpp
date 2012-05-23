@@ -37,7 +37,7 @@ class FChebFlopsSymKernel
 	: public FAbstractKernels<ParticleClass, CellClass, ContainerClass>
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-
+public:
 	/// Handler to deal with all symmetries: Stores permutation indices and
 	/// vectors to reduce 343 different interactions to 16 only.
 	struct SymmetryHandler;
@@ -46,31 +46,41 @@ class FChebFlopsSymKernel
 	const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
 	const FSmartPointer<SymmetryHandler,  FSmartPointerMemory> SymHandler;
 
+	/// tree height
+	const unsigned int inTreeHeight;
+
 	// count permuted local and multipole expansions
 	unsigned int* countExp;
 
 
 	unsigned long long flopsP2M, flopsM2M, flopsM2L, flopsL2L, flopsL2P, flopsP2P;
 
+	unsigned long long *flopsPerLevelM2M, *flopsPerLevelM2L, *flopsPerLevelL2L;
 
 	// start flop counters 
-	unsigned int countFlopsP2MorL2P(const unsigned int N) const
-	{	return 1 + N * (nnodes*(6*ORDER-2) + 6*ORDER + 6); }
-	//{	return     N*nnodes*(15*ORDER-19) + ORDER*(3*ORDER-6) + 2; }
-	//{	return     N      * (nnodes*(24*ORDER-26) - 1); }
 	unsigned int countFlopsM2MorL2L() const
-	{ return     nnodes * (nnodes*2             - 1); }
-	//unsigned int countFlopsL2PGradient(const unsigned int N) const
-	//{ return 3 * N      * (nnodes*(17*ORDER-21) - 1); }
-	unsigned int countFlopsL2PTotal(const unsigned int N) const
-	{ return 7 + N * (nnodes*(12*ORDER-1) + 15*ORDER + 2); }
-	//{ return     N      * (nnodes*2             -1 ) + countFlopsL2PGradient(N); }
+	{ return 3 * nnodes * (2*ORDER-1); }
 	unsigned int countFlopsM2L(const unsigned int nexp, const unsigned int rank) const
 	{ return nexp * (4*nnodes*rank - rank - nnodes); }
 	unsigned int countFlopsP2P() const
-	{ return 21; }
+	{ return 34; }
 	unsigned int countFlopsP2Pmutual() const
-	{ return 26; }
+	{ return 39; }
+	unsigned int countFlopsP2M(const unsigned int N) const	{
+		const unsigned first  = N * (18 + (ORDER-2) * 6 + (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1) * 2)));
+		const unsigned W2 = 3 * ORDER*(2*(ORDER-1)-1);
+		const unsigned W4 = 3 * (ORDER*(ORDER-1)*(2*(ORDER-1)-1) + ORDER*ORDER*(2*(ORDER-1)-1));
+		const unsigned W8 = 3 * (2*(ORDER-1)-1) * (ORDER*(ORDER-1)*(ORDER-1) + ORDER*ORDER*(ORDER-1) + nnodes);
+		return first + W2 + W4 + W8 + nnodes*11;
+	}
+	unsigned int countFlopsL2PTotal(const unsigned int N) const	{
+		const unsigned W0 = nnodes;
+		const unsigned W2 = 3 * (ORDER-1)*ORDER*ORDER * 2*ORDER;
+		const unsigned W4 = 3 * ORDER*(ORDER-1)*(ORDER-1) * 2*ORDER;
+		const unsigned W8 = (ORDER-1)*(ORDER-1)*(ORDER-1) * (2*ORDER-1);
+		const unsigned second = N * (38 + (ORDER-2)*15 + (ORDER-1)*((ORDER-1) * (27 + (ORDER-1) * 16))) + 6;
+		return W0 + W2 + W4 + W8 + second;
+	}
 	// end flop counters
 
 public:
@@ -79,14 +89,22 @@ public:
 	 * precomputed and compressed M2L operators from a binary file (an
 	 * runtime_error is thrown if the required file is not valid).
 	 */
-	FChebFlopsSymKernel(const int inTreeHeight,
+	FChebFlopsSymKernel(const int _inTreeHeight,
 								 const FPoint& inBoxCenter,
 								 const FReal inBoxWidth,
 								 const FReal Epsilon)
 		:	MatrixKernel(new MatrixKernelClass()),
-			SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)),
-			flopsP2M(0), flopsM2M(0), flopsM2L(0), flopsL2L(0), flopsL2P(0), flopsP2P(0)
-	{	countExp = new unsigned int [343]; }
+			SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)), inTreeHeight(_inTreeHeight),
+			flopsP2M(0), flopsM2M(0), flopsM2L(0), flopsL2L(0), flopsL2P(0), flopsP2P(0),
+			flopsPerLevelM2M(NULL), flopsPerLevelM2L(NULL), flopsPerLevelL2L(NULL)
+	{
+		countExp = new unsigned int [343];
+		flopsPerLevelM2M = new unsigned long long [inTreeHeight];
+		flopsPerLevelM2L = new unsigned long long [inTreeHeight];
+		flopsPerLevelL2L = new unsigned long long [inTreeHeight];
+		for (unsigned int level = 0; level<inTreeHeight; ++level)
+			flopsPerLevelM2M[level] = flopsPerLevelM2L[level] = flopsPerLevelL2L[level] = 0;
+	}
 	
 
 
@@ -110,26 +128,48 @@ public:
 							<< "\n- Flops for L2L = " << flopsL2L
 							<< "\n- Flops for L2P = " << flopsL2P
 							<< "\n- Flops for P2P = " << flopsP2P
+							<< "\n- Overall Flops = " << flopsP2M + flopsM2M + flopsM2L + flopsL2L + flopsL2P + flopsP2P
 							<< "\n==================================================\n"
 							<< std::endl;
 
+		std::cout << "\n==================================================" 
+							<< "\n- Flops for M2M" << std::endl;
+		for (unsigned int level=0; level<inTreeHeight; ++level)
+			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelM2M[level] << std::endl;
+		std::cout << "==================================================" 
+							<< "\n- Flops for M2L" << std::endl;
+		for (unsigned int level=0; level<inTreeHeight; ++level)
+			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelM2L[level] << std::endl;
+		std::cout << "==================================================" 
+							<< "\n- Flops for L2L" << std::endl;
+		for (unsigned int level=0; level<inTreeHeight; ++level)
+			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelL2L[level] << std::endl;
+		std::cout << "==================================================" << std::endl; 
+
+
+		if (flopsPerLevelM2M) delete [] flopsPerLevelM2M;
+		if (flopsPerLevelM2L) delete [] flopsPerLevelM2L;
+		if (flopsPerLevelL2L) delete [] flopsPerLevelL2L;
 	}
 	
 	
 	
 	void P2M(CellClass* const /* not needed */, const ContainerClass* const SourceParticles)
 	{
-		flopsP2M += countFlopsP2MorL2P(SourceParticles->getSize());
+		flopsP2M += countFlopsP2M(SourceParticles->getSize());
 	}
 
 
 
 	void M2M(CellClass* const FRestrict /* not needed */,
 					 const CellClass*const FRestrict *const FRestrict ChildCells,
-					 const int /* not needed */)
+					 const int TreeLevel)
 	{
+		unsigned int flops = 0;
 		for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
-			if (ChildCells[ChildIndex])	flopsM2M += countFlopsM2MorL2L();
+			if (ChildCells[ChildIndex])	flops += countFlopsM2MorL2L();
+		flopsM2M += flops;
+		flopsPerLevelM2M[TreeLevel] += flops;
 	}
 
 
@@ -138,24 +178,30 @@ public:
 	void M2L(CellClass* const FRestrict /* not needed */,
 					 const CellClass* SourceCells[343],
 					 const int /* not needed */,
-					 const int /* not needed*/)
+					 const int TreeLevel)
 	{
+		unsigned int flops = 0;
 		// count how ofter each of the 16 interactions is used
 		memset(countExp, 0, sizeof(int) * 343);
 		for (unsigned int idx=0; idx<343; ++idx)
 			if (SourceCells[idx])	countExp[SymHandler->pindices[idx]]++;
 		// multiply (mat-mat-mul)
 		for (unsigned int pidx=0; pidx<343; ++pidx)
-			if (countExp[pidx]) flopsM2L += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
+			if (countExp[pidx]) flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
+		flopsM2L += flops;
+		flopsPerLevelM2L[TreeLevel] += flops;
 	}
 
 
 	void L2L(const CellClass* const FRestrict /* not needed */,
 					 CellClass* FRestrict *const FRestrict ChildCells,
-					 const int /* not needed */)
+					 const int TreeLevel)
 	{
+		unsigned int flops = 0;
 		for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
-			if (ChildCells[ChildIndex])	flopsL2L += countFlopsM2MorL2L() + nnodes;
+			if (ChildCells[ChildIndex])	flops += countFlopsM2MorL2L() + nnodes;
+		flopsL2L += flops;
+		flopsPerLevelL2L[TreeLevel] += flops;
 	}
 
 
