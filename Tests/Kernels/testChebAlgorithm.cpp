@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "../../Src/Files/FFmaBinLoader.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
@@ -33,6 +34,7 @@
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
 #include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FMemUtils.hpp"
 
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -76,14 +78,14 @@ int main(int argc, char* argv[])
 	const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
-	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
+	//const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 3;
-	const FReal epsilon = FReal(1e-3);
+	const unsigned int ORDER = 7;
+	const FReal epsilon = FReal(1e-7);
 
-	// set threads
-	omp_set_num_threads(NbThreads); 
-	std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
+	//// set threads
+	//omp_set_num_threads(NbThreads); 
+	//std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
 
 	// init timer
 	FTic time;
@@ -98,15 +100,16 @@ int main(int argc, char* argv[])
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
 	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	//typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
 	// open particle file
-	FFmaScanfLoader<ParticleClass> loader(filename);
+	//FFmaScanfLoader<ParticleClass> loader(filename);
+	FFmaBinLoader<ParticleClass> loader(filename);
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 	
 	// init oct-tree
@@ -123,32 +126,97 @@ int main(int argc, char* argv[])
 
 	
 	// -----------------------------------------------------
-	std::cout << "\nChebyshev FMM ... " << std::endl;
-	time.tic();
 	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
-	FmmClass algorithm(&tree,&kernels);
-	algorithm.execute();
-	std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;
+	for (unsigned int NbThreads=1; NbThreads<=160; NbThreads+=3) {
+		omp_set_num_threads(NbThreads); 
+		std::cout << "\n================================================================"
+							<< "\nChebyshev FMM using" << omp_get_max_threads() << " threads ..." << std::endl;
+
+		{	// reinitialize //////////////////////////////////////
+			OctreeClass::Iterator octreeIterator(&tree);
+			octreeIterator.gotoBottomLeft();
+			OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);   // for each levels
+			
+			// set potential and forces to zero
+			do {
+				ContainerClass *const Sources = octreeIterator.getCurrentListSrc();
+				ContainerClass::BasicIterator iSource(*Sources);
+				while(iSource.hasNotFinished()) {
+					iSource.data().setPotential(FReal(0.));
+					iSource.data().setForces(FReal(0.), FReal(0.), FReal(0.));
+					iSource.gotoNext();
+				}
+			} while(octreeIterator.moveRight());
+			
+			// set multipole and local expansions
+			octreeIterator = avoidGotoLeftIterator;
+			for(int idxLevel = TreeHeight-1; idxLevel>1; --idxLevel) { // for each cells
+		
+				do{
+					FMemUtils::setall( octreeIterator.getCurrentCell()->getLocal(), FReal(0), ORDER*ORDER*ORDER * 2);
+					FMemUtils::setall( octreeIterator.getCurrentCell()->getMultipole(), FReal(0), ORDER*ORDER*ORDER * 2);
+				} while(octreeIterator.moveRight());
+		
+				avoidGotoLeftIterator.moveUp();
+				octreeIterator = avoidGotoLeftIterator;
+			}
+		} //////////////////////////////////////////////////////
+
+		FmmClass algorithm(&tree,&kernels);
+		time.tic();
+		algorithm.execute();
+		std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;
+	}
 	// -----------------------------------------------------
+
+
+	//// -----------------------------------------------------
+	//{ // cost of symmetric m2l opertors, weighted rank, etc.
+	//	const unsigned int nnodes = ORDER*ORDER*ORDER;
+	//	const SymmetryHandler<ORDER> *const SymHandler = kernels.getPtrToSymHandler();
+	//	unsigned int expansionCounter[343];
+	//	for (unsigned i=0; i<343; ++i) expansionCounter[i] = 0;
+	//	for (unsigned i=0; i<343; ++i) if (SymHandler->pindices[i]) expansionCounter[SymHandler->pindices[i]]++;
+	//
+	//	unsigned int overallCost = 0;
+	//	unsigned int overallWeightedRank = 0;
+	//	unsigned int nbExpansions = 0;
+	//	for (unsigned i=0; i<343; ++i)
+	//		if (expansionCounter[i]) {
+	//			const unsigned int cost = (2*nnodes*SymHandler->LowRank[i]) * expansionCounter[i];
+	//			const unsigned int weightedRank = SymHandler->LowRank[i] * expansionCounter[i];
+	//			overallCost += cost;
+	//			overallWeightedRank += weightedRank;
+	//			nbExpansions += expansionCounter[i];
+	//			std::cout << "expansionCounter[" << i << "] = " << expansionCounter[i]
+	//								<< "\tlow rank = " << SymHandler->LowRank[i]
+	//								<< "\t(2*nnodes*rank) * nb_exp = " << cost
+	//								<< std::endl;
+	//		}
+	//	std::cout << "=== Overall cost = " << overallCost << "\t Weighted rank = " << (double)overallWeightedRank / (double)nbExpansions << std::endl;
+	//	if (nbExpansions!=316) std::cout << "Something went wrong, number of counted expansions = " << nbExpansions << std::endl;
+	//}
+	//// -----------------------------------------------------
 	
 
 	// -----------------------------------------------------
 	// find first non empty leaf cell 
-	OctreeClass::Iterator iLeafs(&tree);
-	iLeafs.gotoBottomLeft();
+	if (FParameters::findParameter(argc,argv,"-dont_check_accuracy") == FParameters::NotFound) {
+		OctreeClass::Iterator iLeafs(&tree);
+		iLeafs.gotoBottomLeft();
 	
-	const ContainerClass *const Targets = iLeafs.getCurrentListTargets();
-	const unsigned int NumTargets = Targets->getSize();
+		const ContainerClass *const Targets = iLeafs.getCurrentListTargets();
+		const unsigned int NumTargets = Targets->getSize();
 
-	FReal* Potential = new FReal [NumTargets];
-	FBlas::setzero(NumTargets, Potential);
+		FReal* Potential = new FReal [NumTargets];
+		FBlas::setzero(NumTargets, Potential);
 
-	FReal* Force = new FReal [NumTargets * 3];
-	FBlas::setzero(NumTargets * 3, Force);
+		FReal* Force = new FReal [NumTargets * 3];
+		FBlas::setzero(NumTargets * 3, Force);
 	
-	std::cout << "\nDirect computation of " << NumTargets << " target particles ..." << std::endl;
-	const MatrixKernelClass MatrixKernel;
-	do {
+		std::cout << "\nDirect computation of " << NumTargets << " target particles ..." << std::endl;
+		const MatrixKernelClass MatrixKernel;
+		do {
 			const ContainerClass *const Sources = iLeafs.getCurrentListSrc();
 			unsigned int counter = 0;
 			ContainerClass::ConstBasicIterator iTarget(*Targets);
@@ -174,69 +242,71 @@ int main(int argc, char* argv[])
 				counter++;
 				iTarget.gotoNext();
 			}
-	} while(iLeafs.moveRight());
+		} while(iLeafs.moveRight());
 
 	
-	FReal* ApproxPotential = new FReal [NumTargets];
-	FReal* ApproxForce     = new FReal [NumTargets * 3];
+		FReal* ApproxPotential = new FReal [NumTargets];
+		FReal* ApproxForce     = new FReal [NumTargets * 3];
 
-	unsigned int counter = 0;
-	ContainerClass::ConstBasicIterator iTarget(*Targets);
-	while(iTarget.hasNotFinished()) {
-		ApproxPotential[counter]   = iTarget.data().getPotential();
-		ApproxForce[counter*3 + 0] = iTarget.data().getForces().getX();
-		ApproxForce[counter*3 + 1] = iTarget.data().getForces().getY();
-		ApproxForce[counter*3 + 2] = iTarget.data().getForces().getZ();
-		counter++;
-		iTarget.gotoNext();
+		unsigned int counter = 0;
+		ContainerClass::ConstBasicIterator iTarget(*Targets);
+		while(iTarget.hasNotFinished()) {
+			ApproxPotential[counter]   = iTarget.data().getPotential();
+			ApproxForce[counter*3 + 0] = iTarget.data().getForces().getX();
+			ApproxForce[counter*3 + 1] = iTarget.data().getForces().getY();
+			ApproxForce[counter*3 + 2] = iTarget.data().getForces().getZ();
+			counter++;
+			iTarget.gotoNext();
+		}
+
+		std::cout << "\nPotential error:" << std::endl;
+		std::cout << "Relative L2 error   = " << computeL2norm( NumTargets, Potential, ApproxPotential)
+							<< std::endl;
+		std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets, Potential, ApproxPotential)
+							<< std::endl;
+
+		std::cout << "\nForce error:" << std::endl;
+		std::cout << "Relative L2 error   = " << computeL2norm( NumTargets*3, Force, ApproxForce)
+							<< std::endl;
+		std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets*3, Force, ApproxForce)
+							<< std::endl;
+		std::cout << std::endl;
+
+		// free memory
+		delete [] Potential;
+		delete [] ApproxPotential;
+		delete [] Force;
+		delete [] ApproxForce;
 	}
-
-	std::cout << "\nPotential error:" << std::endl;
-	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets, Potential, ApproxPotential)
-						<< std::endl;
-	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets, Potential, ApproxPotential)
-						<< std::endl;
-
-	std::cout << "\nForce error:" << std::endl;
-	std::cout << "Relative L2 error   = " << computeL2norm( NumTargets*3, Force, ApproxForce)
-						<< std::endl;
-	std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets*3, Force, ApproxForce)
-						<< std::endl;
-	std::cout << std::endl;
-
-	// free memory
-	delete [] Potential;
-	delete [] ApproxPotential;
-	delete [] Force;
-	delete [] ApproxForce;
-	
 
 	/*
 	// Check if particles are strictly within its containing cells
-	const FReal BoxWidthLeaf = BoxWidth / FReal(FMath::pow(2, TreeHeight-1));
+	const FReal BoxWidthLeaf = loader.getBoxWidth() / FReal(FMath::pow(2, TreeHeight-1));
 	OctreeClass::Iterator octreeIterator(&tree);
 	octreeIterator.gotoBottomLeft();
 	do{
-		const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-		const FPoint& LeafCellCenter = LeafCell -> getPosition();
-		const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
-		ContainerClass::ConstBasicIterator particleIterator(*Particles);
-		while(particleIterator.hasNotFinished()) {
-			const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
-			std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
-			if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
-					std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
-					std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
-				std::cout << "stop" << std::endl;
-				exit(-1);
-			}
-			particleIterator.gotoNext();
-		}
+	const CellClass *const LeafCell = octreeIterator.getCurrentCell();
+	const FPoint LeafCellCenter(LeafCell->getCoordinate().getX() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getX(),
+	LeafCell->getCoordinate().getY() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getY(),
+	LeafCell->getCoordinate().getZ() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getZ());
+	const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
+	ContainerClass::ConstBasicIterator particleIterator(*Particles);
+	while(particleIterator.hasNotFinished()) {
+	const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
+	std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
+	if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
+	std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
+	std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
+	std::cout << "stop" << std::endl;
+	exit(-1);
+	}
+	particleIterator.gotoNext();
+	}
 	} while(octreeIterator.moveRight());
 	*/
 
 
-    return 0;
+	return 0;
 }
 
 
