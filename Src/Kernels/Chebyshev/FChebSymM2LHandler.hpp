@@ -15,6 +15,101 @@
  */
 
 
+#define FACASVD
+
+
+/**
+ * Fully pivoted adaptive cross approximation (ACA)
+ */
+template <int ORDER>
+static void fACA(const FReal *const R, const double eps, FReal* &U, FReal* &V, unsigned int &k)
+{
+	static const int nnodes = ORDER*ORDER*ORDER;
+
+	// copy K to R
+	FReal *const K = new FReal[nnodes*nnodes];
+	for (int i=0; i<nnodes*nnodes; ++i) K[i] = R[i];
+
+	// control vectors (true if not used, false if used)
+	bool r[nnodes], c[nnodes];
+	for (int i=0; i<nnodes; ++i) r[i] = c[i] = true;
+
+	// compute Frobenius norm of original Matrix K
+	FReal norm2K = 0;
+	for (int j=0; j<nnodes; ++j) {
+		const FReal *const colK = K + j*nnodes;
+		for (int i=0; i<nnodes; ++i) norm2K += colK[i]*colK[i];
+	}
+
+	// initialize rank k and UV'
+	k = 0;
+	const int size = nnodes * nnodes/2;
+	U = new FReal[size];
+	V = new FReal[size];
+	for (int i=0; i<size; ++i) U[i] = V[i] = 0.;
+	FReal norm2R;
+
+	////////////////////////////////////////////////
+	// start fully pivoted ACA
+	do {
+		
+		// find max(K) and argmax(K)
+		FReal maxK = 0.;
+		int pi=0, pj=0;
+		for (int j=0; j<nnodes; ++j)
+			if (c[j]) {
+				const FReal *const colK = K + j*nnodes;
+				for (int i=0; i<nnodes; ++i)
+					if (r[i] && maxK < FMath::Abs(colK[i])) {
+						maxK = FMath::Abs(colK[i]);
+						pi = i; 
+						pj = j;
+					}
+			}
+
+		// copy pivot cross into U and V
+		FReal *const colU = U + k*nnodes;
+		FReal *const colV = V + k*nnodes;
+		const FReal pivot = K[pj*nnodes + pi];
+		for (int i=0; i<nnodes; ++i) {
+			if (r[i]) colU[i] = K[pj*nnodes + i];
+			if (c[i]) colV[i] = K[i *nnodes + pi] / pivot;
+		}
+		
+		// dont use these cols and rows anymore
+		c[pj] = false;
+		r[pi] = false;
+		
+		// subtract k-th outer product from K
+		for (int j=0; j<nnodes; ++j)
+			if (c[j]) {
+				FReal *const colK = K + j*nnodes;
+				for (int i=0; i<nnodes; ++i)
+					if (r[i])	colK[i] -= colU[i] * colV[j];
+			}
+
+		// compute Frobenius norm of updated K
+		norm2R = 0.;
+		for (int j=0; j<nnodes; ++j)
+			if (c[j]) {
+				const FReal *const colK = K + j*nnodes;
+				for (int i=0; i<nnodes; ++i)
+					if (r[i])	norm2R += colK[i]*colK[i];
+			}
+
+		// increment rank k
+		k++;
+		
+	} while (norm2R > eps*eps * norm2K);
+	////////////////////////////////////////////////
+
+	//std::cout << "fACA rank = " << k << " and error = " << FMath::Sqrt(norm2R) << std::endl;
+
+	delete [] K;
+
+}
+
+
 template <int ORDER, typename MatrixKernelClass>
 static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const double Epsilon, FReal* K[343], int LowRank[343])
 {
@@ -31,6 +126,7 @@ static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const dou
 	FReal* U = new FReal [nnodes*nnodes];
 
 	// needed for the SVD
+	unsigned int INFO;
 	const unsigned int LWORK = 2 * (3*nnodes + nnodes);
 	FReal *const WORK = new FReal [LWORK];
 	FReal *const VT = new FReal [nnodes*nnodes];
@@ -57,11 +153,101 @@ static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const dou
 				}
 				//////////////////////////////////////////////////////////		
 
-				// truncated singular value decomposition of matrix
-				const unsigned int info	= FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
-				if (info!=0) throw std::runtime_error("SVD did not converge with " + info);
-				const unsigned int rank = getRank<ORDER>(S, Epsilon);
 
+				
+				//////////////////////////////////////////////////////////////
+#ifdef FACASVD ///////////////////////////////////////////////////////
+				// fully pivoted ACA
+				FReal *UU, *VV;
+				unsigned int rank;
+				fACA<ORDER>(U, Epsilon, UU, VV, rank);
+
+				// QR decomposition
+				FReal* phi = new FReal [rank*rank];
+				{
+					// QR of U and V
+					FReal* tauU = new FReal [rank];
+					INFO = FBlas::geqrf(nnodes, rank, UU, tauU, LWORK, WORK);
+					assert(INFO==0);
+					FReal* tauV = new FReal [rank];
+					INFO = FBlas::geqrf(nnodes, rank, VV, tauV, LWORK, WORK);
+					assert(INFO==0);
+					// phi = Ru Rv'
+					FReal* rU = new FReal [2 * rank*rank];
+					FReal* rV = rU + rank*rank;
+					FBlas::setzero(2 * rank*rank, rU);
+					for (unsigned int l=0; l<rank; ++l) {
+						FBlas::copy(l+1, UU + l*nnodes, rU + l*rank);
+						FBlas::copy(l+1, VV + l*nnodes, rV + l*rank);
+					}
+					FBlas::gemmt(rank, rank, rank, FReal(1.), rU, rank, rV, rank, phi, rank);
+					delete [] rU;
+					// get Qu and Qv
+					INFO = FBlas::orgqr(nnodes, rank, UU, tauU, LWORK, WORK);
+					assert(INFO==0);
+					INFO = FBlas::orgqr(nnodes, rank, VV, tauV, LWORK, WORK);
+					assert(INFO==0);
+					delete [] tauU;
+					delete [] tauV;
+				}
+				
+				const unsigned int aca_rank = rank;
+
+				// SVD
+				{
+					INFO = FBlas::gesvd(aca_rank, aca_rank, phi, S, VT, aca_rank, LWORK, WORK);
+					if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
+					rank = getRank(S, aca_rank, Epsilon);
+					//std::cout << " - recompression with SVD leads to rank = " << rank << std::endl;
+				}					
+				
+				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
+
+				// store
+				{
+					// allocate
+					assert(K[idx]==NULL);
+					K[idx] = new FReal [2*rank*nnodes];
+					
+					// set low rank
+					LowRank[idx] = rank;
+					
+					// (U Sigma)
+					for (unsigned int r=0; r<rank; ++r)
+						FBlas::scal(aca_rank, S[r], phi + r*aca_rank);
+
+					// Qu (U Sigma) 
+					FBlas::gemm(nnodes, aca_rank, rank, FReal(1.), UU, nnodes, phi, aca_rank, K[idx], nnodes);
+					delete [] phi;
+
+					// Vt -> V and then Qu V
+					FReal *const V = new FReal [aca_rank * rank];
+					for (unsigned int r=0; r<rank; ++r)
+						FBlas::copy(aca_rank, VT + r, aca_rank, V + r*aca_rank, 1);
+					FBlas::gemm(nnodes, aca_rank, rank, FReal(1.), VV, nnodes, V, aca_rank, K[idx] + rank*nnodes, nnodes);
+					delete [] V;
+				}
+
+				//// store recompressed UV
+				//const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
+				//assert(K[idx]==NULL);
+				//K[idx] = new FReal [2*rank*nnodes];
+				//LowRank[idx] = rank;
+				//FBlas::copy(rank*nnodes, UU,  K[idx]);
+				//FBlas::copy(rank*nnodes, VV,  K[idx] + rank*nnodes);
+			
+				delete [] UU;
+				delete [] VV;
+
+				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
+					", low rank = " << rank << " (" << aca_rank << ")" << std::endl;
+
+#else
+				// truncated singular value decomposition of matrix
+				INFO = FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
+				if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
+				const unsigned int rank = getRank<ORDER>(S, Epsilon);
+				
 				// store 
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 				assert(K[idx]==NULL);
@@ -73,15 +259,20 @@ static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const dou
 				for (unsigned int r=0; r<rank; ++r)
 					FBlas::copy(nnodes, VT + r, nnodes, K[idx] + rank*nnodes + r*nnodes, 1);
 
+				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
+					", low rank = " << rank << std::endl;
+
+#endif ///////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+
+
+
 				// un-weighting ////////////////////////////////////////////
 				for (unsigned int n=0; n<nnodes; ++n) {
 					FBlas::scal(rank, FReal(1.) / weights[n], K[idx] + n,               nnodes); // scale rows
 					FBlas::scal(rank, FReal(1.) / weights[n], K[idx] + rank*nnodes + n, nnodes); // scale rows
 				}
 				//////////////////////////////////////////////////////////		
-
-				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-					", low rank = " << rank << std::endl;
 
 				counter++;
 			}
@@ -168,7 +359,9 @@ public:
 #include <sstream>
 
 
-
+/**
+ * Computes, compresses and stores the 16 M2L kernels in a binary file.
+ */
 template <int ORDER, typename MatrixKernelClass>
 static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon)
 {
@@ -215,6 +408,10 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 }
 
 
+/**
+ * Reads the 16 compressed M2L kernels from the binary files and writes them
+ * in K and the respective low-rank in LowRank.
+ */
 template <int ORDER>
 void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
 {

@@ -61,7 +61,11 @@ extern "C"
 	void dgesvd_(const char*, const char*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*,
 							 double*, const unsigned*, double*, const unsigned*, int*);
-	
+	void dgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
+							 double*, double*, const unsigned*, int*);
+	void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
+							 double*, const unsigned*, double*, double*, const unsigned*, int*);
+
 	// single //////////////////////////////////////////////////////////
 	// blas 1
 	float sdot_(const unsigned*, const float*, const unsigned*,	const float*, const unsigned*);
@@ -80,6 +84,10 @@ extern "C"
 	void sgesvd_(const char*, const char*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*,
 							 float*, const unsigned*, float*, const unsigned*, int*);
+	void sgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
+							 float*, float*, const unsigned*, int*);
+	void sorgqr_(const unsigned*, const unsigned*, const unsigned*,
+							 float*, const unsigned*, float*, float*, const unsigned*, int*);
 
 	// double complex //////////////////////////////////////////////////
 	// blas 1
@@ -94,6 +102,8 @@ extern "C"
 	void zgemm_(const char*, const char*, const unsigned*, const unsigned*,
 							const unsigned*, const double*, double*, const unsigned*,
 							double*, const unsigned*, const double*, double*, const unsigned*);
+	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
+							 double*, double*, const unsigned*, int*);
 
 
 	// single complex //////////////////////////////////////////////////
@@ -109,6 +119,8 @@ extern "C"
 	void cgemm_(const char*, const char*, const unsigned*, const unsigned*,
 							const unsigned*, const float*, float*, const unsigned*,
 							float*, const unsigned*, const float*, float*, const unsigned*);
+	void cgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
+							 float*, float*, const unsigned*, int*);
 
 }
 
@@ -389,6 +401,55 @@ namespace FBlas {
 	{	return ddot_(&n, v1, &N_ONE, v2, &N_ONE); }
 	inline float scpr(const unsigned n, const float* const v1, const float* const v2)
 	{	return sdot_(&n, v1, &N_ONE, v2, &N_ONE);	}
+
+
+
+	// QR factorisation
+	inline int geqrf(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
+	{
+		int INF;
+		dgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	inline int geqrf(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
+	{
+		int INF;
+		sgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	
+	inline int c_geqrf(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
+	{
+		int INF;
+		cgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	
+	inline int c_geqrf(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
+	{
+		int INF;
+		zgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+
+
+
+	// return Q-Matrix (QR factorization) in A
+	inline int orgqr(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
+	{
+		int INF;
+		dorgqr_(&m, &n, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	inline int orgqr(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
+	{
+		int INF;
+		sorgqr_(&m, &n, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+
+
+
 
 } // end namespace FCBlas
 
