@@ -440,6 +440,21 @@ unsigned int getRank(const FReal singular_values[], const double eps)
 	return 0;
 }
 
+unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
+{
+	FReal nrm2(0.);
+	for (unsigned int k=0; k<size; ++k)
+		nrm2 += singular_values[k] * singular_values[k];
+
+	FReal nrm2k(0.);
+	for (unsigned int k=size; k>0; --k) {
+		nrm2k += singular_values[k-1] * singular_values[k-1];
+		if (nrm2k > eps*eps * nrm2)	return k;
+	}
+	throw std::runtime_error("rank cannot be larger than size");
+	return 0;
+}
+
 
 /**
  * Compresses \f$[K_1,\dots,K_{316}]\f$ in \f$C\f$. Attention: the matrices

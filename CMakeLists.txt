@@ -76,7 +76,7 @@ endif()
 # Attach source code to exec
 if( SCALFMM_ATTACHE_SOURCE )
   MESSAGE( STATUS "Use -g in compiler flags" )
-  ADD_DEFINITIONS(-g -G)
+  ADD_DEFINITIONS(-g)
 endif()
 
 # Trace
