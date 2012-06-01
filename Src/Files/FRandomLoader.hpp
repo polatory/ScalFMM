@@ -38,7 +38,7 @@ public:
     * The constructor need the simulation data
     */
     FRandomLoader(const int inNbParticles, const FReal inBoxWidth = 1.0,
-                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
+                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(0))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
         srand(inSeed);
     }
