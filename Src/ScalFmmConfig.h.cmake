@@ -20,6 +20,7 @@
 
 #cmakedefine SCALFMM_USE_TRACE
 #cmakedefine SCALFMM_USE_ITAC
+#cmakedefine SCALFMM_USE_EZTRACE
 
 ///////////////////////////////////////////////////////
 // Memory trace

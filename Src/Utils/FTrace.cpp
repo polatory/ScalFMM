@@ -11,10 +11,10 @@
 #include "FTrace.hpp"
 #ifdef SCALFMM_USE_TRACE
 
-#ifndef SCALFMM_USE_ITAC
+#if !defined (SCALFMM_USE_ITAC) && !defined (SCALFMM_USE_EZTRACE)
 int FTrace::Deep = 0;
 FTic FTrace::TimeSinceBegining;
-#endif //SCALFMM_USE_ITAC
+#endif
 
 #endif // SCALFMM_USE_TRACE
 
