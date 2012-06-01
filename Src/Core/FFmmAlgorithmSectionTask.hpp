@@ -9,8 +9,8 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#ifndef FFMMALGORITHMTASK_HPP
-#define FFMMALGORITHMTASK_HPP
+#ifndef FFMMALGORITHMSECTIONTASK_HPP
+#define FFMMALGORITHMSECTIONTASK_HPP
 
 
 #include "../Utils/FGlobal.hpp"
