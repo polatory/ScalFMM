@@ -16,6 +16,7 @@
 #include <cstring>
 #include <iostream>
 
+#include "FMath.hpp"
 #include "FGlobal.hpp"
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FBufferWriter.hpp"
@@ -137,27 +138,42 @@ public:
     }
 
     /**
- * Set x
- * @param the new x
+ * Add to the x-dimension the inX value
+ * @param  inXthe increment in x
  */
     void incX(const FReal inX){
         this->data[0] += inX;
     }
 
     /**
- * Set y
- * @param the new y
+ *  Add to the y-dimension the inY value
+ * @param  in<<<<<<y the increment in y
  */
     void incY(const FReal inY){
         this->data[1] += inY;
     }
 
     /**
- * Set z
- * @param the new z
+ *  Add to z-dimension the inZ value
+ * @param inZ the increment in z
  */
     void incZ(const FReal inZ){
         this->data[2] += inZ;
+    }
+    /**
+      * Get a pointer on the coordinate of FPoint
+      * @return the data value array
+     */
+    FReal * getDataValue(){
+        return this->data ;
+    }
+  /**
+    *Compute the distance to the origin
+    * @return the norm of the Fpoint
+    */
+    FReal norm() const {
+        return FMath::Sqrt(this->data[0]*this->data[0]+this->data[1]*this->data[1]
+                        +this->data[2]*this->data[2]) ;
     }
 
     /**
