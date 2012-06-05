@@ -83,10 +83,6 @@ int main(int argc, char* argv[])
 	const unsigned int ORDER = 7;
 	const FReal epsilon = FReal(1e-7);
 
-	//// set threads
-	//omp_set_num_threads(NbThreads); 
-	//std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
-
 	// init timer
 	FTic time;
 

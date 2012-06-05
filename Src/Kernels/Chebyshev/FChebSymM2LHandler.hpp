@@ -15,20 +15,28 @@
  */
 
 
+/*!
+  If \a FACASVD is defined ACA+SVD will be used instead of only SVD.
+*/
 #define FACASVD
 
 
-/**
- * Fully pivoted adaptive cross approximation (ACA)
- */
+/*!  The fully pivoted adaptive cross approximation (fACA) compresses a
+	far-field interaction as \f$K\sim UV^\top\f$. The fACA requires all entries
+	to be computed beforehand, then the compression follows in
+	\f$\mathcal{O}(2\ell^3k)\f$ operations based on the required accuracy
+	\f$\varepsilon\f$.
+
+	@param[in] K far-field to be approximated
+	@param[in] eps prescribed accuracy
+	@param[out] U matrix containing \a k column vectors
+	@param[out] V matrix containing \a k row vectors
+	@param[out] k final low-rank depends on prescribed accuracy \a eps
+*/
 template <int ORDER>
-static void fACA(const FReal *const R, const double eps, FReal* &U, FReal* &V, unsigned int &k)
+static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigned int &k)
 {
 	static const int nnodes = ORDER*ORDER*ORDER;
-
-	// copy K to R
-	FReal *const K = new FReal[nnodes*nnodes];
-	for (int i=0; i<nnodes*nnodes; ++i) K[i] = R[i];
 
 	// control vectors (true if not used, false if used)
 	bool r[nnodes], c[nnodes];
@@ -102,16 +110,16 @@ static void fACA(const FReal *const R, const double eps, FReal* &U, FReal* &V, u
 		
 	} while (norm2R > eps*eps * norm2K);
 	////////////////////////////////////////////////
-
-	//std::cout << "fACA rank = " << k << " and error = " << FMath::Sqrt(norm2R) << std::endl;
-
-	delete [] K;
-
 }
 
 
+/*!  Precomputes the 16 far-field interactions (due to symmetries in their
+  arrangement all 316 far-field interactions can be represented by
+  permutations of the 16 we compute in this function). Depending on whether
+  FACASVD is defined or not, either ACA+SVD or only SVD is used to compress
+  them. */
 template <int ORDER, typename MatrixKernelClass>
-static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const double Epsilon, FReal* K[343], int LowRank[343])
+static void precompute(const MatrixKernelClass *const MatrixKernel, const double Epsilon, FReal* K[343], int LowRank[343])
 {
 	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -293,11 +301,15 @@ static void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const dou
 
 
 
+/*!  \class SymmetryHandler 
 
-/**
- * Handler to deal with all symmetries: Stores permutation indices and vectors
- * to reduce 343 different interactions to 16 only.
- */
+	\brief Deals with all the symmetries in the arrangement of the far-field interactions
+
+	Stores permutation indices and permutation vectors to reduce 316 (7^3-3^3)
+  different far-field interactions to 16 only. We use the number 343 (7^3)
+  because it allows us to use to associate the far-field interactions based on
+  the index \f$t = 7^2(i+3) + 7(j+3) + (k+3)\f$ where \f$(i,j,k)\f$ denotes
+  the relative position of the source cell to the target cell. */
 template <int ORDER>
 class SymmetryHandler
 {
@@ -335,7 +347,7 @@ public:
 				}
 
 		// precompute 16 M2L operators
-		precomputeSVD<ORDER>(MatrixKernel, Epsilon, K, LowRank);
+		precompute<ORDER>(MatrixKernel, Epsilon, K, LowRank);
 	}
 
 
@@ -371,7 +383,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	FReal* K[343];
 	int LowRank[343];
 	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
-	precomputeSVD<ORDER>(MatrixKernel, Epsilon, K, LowRank);
+	precompute<ORDER>(MatrixKernel, Epsilon, K, LowRank);
 
 	// write to binary file ////////////
 	FTic time; time.tic();
