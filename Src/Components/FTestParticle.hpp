@@ -22,7 +22,8 @@
 * This class is used in the FTestKernels, please
 * look at this class to know whit it is.
 *
-* Particles just need the data down.
+* Particles just need the data down (after and run with FTestKernel the
+* value shoud be NB PARTICLES (-1)).
 */
 class FTestParticle : public FBasicParticle {
 protected:
@@ -46,10 +47,15 @@ public:
         this->dataDown = inData;
     }
 
+    //////////////////////////////////////////////////
+
+    /** Save the current cell in a buffer */
     void save(FBufferWriter& buffer) const{
         FBasicParticle::save(buffer);
         buffer << dataDown;
     }
+
+    /** Restore the current cell from a buffer */
     void restore(FBufferReader& buffer){
         FBasicParticle::restore(buffer);
         buffer >> dataDown;

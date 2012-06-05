@@ -24,7 +24,7 @@
  * This class is a vector container.
  * It is a very basic vector to enable strong performance.
  *
- * Please refere to unit test utestFVector.cpp to know more.
+ * Please refere to unit test utestVector.cpp to know more.
  */
 template<class ObjectType>
 class FVector {

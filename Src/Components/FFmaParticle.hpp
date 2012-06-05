@@ -12,7 +12,7 @@
 #define FFmaPARTICLE_HPP
 
 
-#include "FBasicParticle.hpp"
+#include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendPhysicalValue.hpp"
 
 /**
@@ -23,14 +23,16 @@
 * This class defines a particle for FMA loader.
 * As defined in FFmaLoader it needs {FBasicParticle,FExtendPhysicalValue}
 */
-class FFmaParticle : public FBasicParticle, public FExtendPhysicalValue {
+class FFmaParticle : public FExtendPosition, public FExtendPhysicalValue {
 public:
+    /** Save the current cell in a buffer */
     void save(FBufferWriter& buffer) const{
-        FBasicParticle::save(buffer);
+        FExtendPosition::save(buffer);
         FExtendPhysicalValue::save(buffer);
     }
+    /** Restore the current cell from a buffer */
     void restore(FBufferReader& buffer){
-        FBasicParticle::restore(buffer);
+        FExtendPosition::restore(buffer);
         FExtendPhysicalValue::restore(buffer);
     }
 };

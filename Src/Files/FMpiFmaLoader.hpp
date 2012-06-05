@@ -29,7 +29,7 @@
 * NB_particles Box_width Box_X Box_Y Box_Z // init
 * X Y Z // one particle by line
 * ....
-* <code>
+* @code
 *    FMpiFmaLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
@@ -43,7 +43,7 @@
 *        loader.fillParticle(part); <br>
 *        tree.insert(part); <br>
 *    } <br>
-* </code>
+* @endcode
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
@@ -70,7 +70,7 @@ public:
             char nonConstFilename[512];
             strcpy(nonConstFilename,filename);
             MPI_File file;
-            if(MPI_File_open(MPI_COMM_WORLD, nonConstFilename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file) == MPI_SUCCESS){
+            if(MPI_File_open(comm.getComm(), nonConstFilename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file) == MPI_SUCCESS){
                 int sizeOfElement(0);
                 FReal xyzBoxWidth[4];
 

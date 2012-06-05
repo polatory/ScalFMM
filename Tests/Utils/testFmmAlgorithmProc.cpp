@@ -24,7 +24,7 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Utils/FPoint.hpp"
-#include "../../Src/Utils/FAbstractSendable.hpp"
+#include "../../Src/Components/FAbstractSendable.hpp"
 
 #include "../../Src/Components/FFmaParticle.hpp"
 #include "../../Src/Components/FTestParticle.hpp"

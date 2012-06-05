@@ -172,7 +172,7 @@ int main(int argc, char ** argv){
         }
 
         MortonIndex*const allintervals = new MortonIndex[ 2 * app.global().processCount() ];
-        MPI_Allgather( interval, sizeof(MortonIndex) * 2, MPI_BYTE, allintervals, sizeof(MortonIndex) * 2, MPI_BYTE, MPI_COMM_WORLD);
+        MPI_Allgather( interval, sizeof(MortonIndex) * 2, MPI_BYTE, allintervals, sizeof(MortonIndex) * 2, MPI_BYTE, app.global().getComm());
         if(app.global().processId() == 0){
             for(int idxProc = 1 ; idxProc < app.global().processCount() ; ++idxProc){
                 if( allintervals[idxProc*2-1] > allintervals[idxProc*2] ){

@@ -14,6 +14,7 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This class has to be inherited to forbid copy
+* @todo use C++0x ?
 */
 class FNoCopyable {
 private:

@@ -33,7 +33,7 @@ public:
 
     /**
         * To add a new particle in the leaf
-        * @param particle the new particle
+        * @param particle the new particle to store in the current leaf
         */
     void push(const ParticleClass& particle){
         this->particles.push(particle);

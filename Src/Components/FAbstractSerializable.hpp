@@ -6,7 +6,7 @@ class FBufferWriter;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FAbstractSendable
+* @class FAbstractSerializable
 * Please read the license
 *
 * This propose an interface to save and restore a class

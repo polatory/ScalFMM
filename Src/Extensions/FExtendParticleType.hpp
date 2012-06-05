@@ -20,7 +20,7 @@
 * @class FExtendParticleType
 * Please read the license
 * This class is an extenssion.
-* It proposes a target/source extenssion.
+* It proposes a target/source extenssion for particles.
 */
 class FExtendParticleType {
 protected:
@@ -36,7 +36,7 @@ protected:
 
 public:
     /** Default constructor */
-    FExtendParticleType() : type(Undef) {
+    FExtendParticleType(const Type inType = Undef) : type(inType) {
     }
 
     /** Copy constructor */

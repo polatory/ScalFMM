@@ -36,7 +36,7 @@
 
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
-#include "../../Src/Utils/FAbstractSendable.hpp"
+#include "../../Src/Components/FAbstractSendable.hpp"
 
 
 /** This program show an example of use of

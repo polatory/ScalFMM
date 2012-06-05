@@ -99,7 +99,9 @@ public:
 };
 
 
-
+/** This class is a random loader but it also generate
+  * randomly the particles type (target or source)
+  */
 template <class ParticleClass>
 class FRandomLoaderTsm : public FRandomLoader<ParticleClass> {
 public:

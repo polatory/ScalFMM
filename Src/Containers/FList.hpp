@@ -23,7 +23,7 @@
  * This class is a linked list container.
  * It is a very basic list to enable strong performance.
  *
- * Please refere to unit test flistUTest.cpp to know more.
+ * Please refere to unit test utestList.cpp to know more.
  */
 template< class Object >
 class FList {

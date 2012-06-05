@@ -36,6 +36,9 @@
     void operator delete[](void* p, std::nothrow_t const&) throw();
 #endif
 
+/** Give the memory allocation details
+  *
+  */
 class FMemStats {
 private:
     unsigned long long maxAllocated;

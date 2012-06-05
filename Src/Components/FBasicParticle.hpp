@@ -27,9 +27,11 @@
 */
 class FBasicParticle : public FExtendPosition{
 public:
+    /** Save the current cell in a buffer */
     void save(FBufferWriter& buffer) const{
         FExtendPosition::save(buffer);
     }
+    /** Restore the current cell from a buffer */
     void restore(FBufferReader& buffer){
         FExtendPosition::restore(buffer);
     }
