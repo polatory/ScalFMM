@@ -242,7 +242,7 @@ public:
     *   \result P+1 cofficients of the Inner expansion.
     */
     void computeInnerOnZaxis(const FReal& inRadius,FReal* Inner){
-        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        // Not used : const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
         //
         int   index_l = 0   ;
         FReal r_pow_l = 1.0 ;
