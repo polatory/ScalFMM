@@ -58,36 +58,18 @@ foreach(exec ${source_tests_files})
 		endif()
 	endif()
 
-	# Test starpu dependency
-	file(STRINGS "${exec}" lines_starpu REGEX "@FUSE_STARPU")
-	if(lines_starpu)
-		if( NOT SCALFMM_USE_STARPU )
-			MESSAGE( STATUS "This needs Starpu = ${exec}" )
-			set(compile_exec "FALSE")
-		endif()
-	endif()
-
 	# Dependency are OK
 	if( compile_exec )
-		if( SCALFMM_USE_CUDA )
-			CUDA_ADD_EXECUTABLE(
-				${execname}
-				${exec}
-				${source_cuda_files}
-				)
-		else()
-			add_executable(
+		add_executable(
 				${execname}
 				${exec}
 				)
-		endif()
 		
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
 			${BLAS_LIBRARIES}
 			${LAPACK_LIBRARIES}
-			${STARPU_LIBRARIES}
 			)
 	endif()
 endforeach(exec)

@@ -29,8 +29,6 @@ OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" OFF )
 OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
-OPTION( SCALFMM_USE_STARPU "Set to ON to use starpu" OFF )
-OPTION( SCALFMM_USE_CUDA "Set to ON to use cuda (with starpu for example)" OFF )
 
 
 # Test if openmp is here
@@ -52,25 +50,6 @@ else()
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     ADD_DEFINITIONS(-ip)
   ENDIF()
-endif()
-
-# cuda
-if( SCALFMM_USE_CUDA )
-  FIND_PACKAGE(CUDA)
-endif()
-
-# starpu
-if( SCALFMM_USE_STARPU )
-	# starpu
-	set( STARPU_LIBRARIES "-lstarpu-1.0" )
-	set( STARPU_INCLUDE_DIRS "/usr/local/include/starpu/1.0" CACHE STRING "Set your StarPU include directory")
-	set( STARPU_LIBRARY_DIRS "/usr/local/lib/" CACHE STRING "Set your StarPU library directory")
-	# Adding the project sources dir as an include dir
-	include_directories(${STARPU_INCLUDE_DIRS})
-	link_directories(${STARPU_LIBRARY_DIRS})
-else()
-	unset(STARPU_INCLUDE_DIRS CACHE)
-	unset(STARPU_LIBRARY_DIRS CACHE)
 endif()
 
 # Attach source code to exec

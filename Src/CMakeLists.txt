@@ -28,7 +28,6 @@ target_link_libraries(
 	scalfmm
 	${BLAS_LIBRARIES}
 	${LAPACK_LIBRARIES}
-	${STARPU_LIBRARIES}
 )
 
 # Adding the entire project dir as an include dir
