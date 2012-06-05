@@ -21,8 +21,8 @@
   * It computes the inner, outter, and legendre.
   */
 class FHarmonic : public FNoAssignement {
-    const int devP;     //< P
-    const int expSize;  //< Exponen Size
+    const int devP;     //<  Degre of the Local and Multipole expansions, p.
+    const int expSize;  //<  Number of elements in the expansion expSize = (p+1)^2
     const int nExpSize; //<
 
     FComplexe* harmonic;//< Harmonic Result
@@ -32,8 +32,11 @@ class FHarmonic : public FNoAssignement {
     FComplexe* thetaDerivatedResult; //< the theta derivated result
     FReal*     sphereHarmoInnerCoef; //< sphere innter pre computed coefficients
     FReal*     sphereHarmoOuterCoef; //< sphere outer pre computed coefficients
-
-    int* preExpRedirJ; //< A indirection to acceess the good value in the preX complexes vector
+    //!
+    //! An indirection to access the good value in the preX complexes vector. Array of size devP + 1
+    //!  The storage of the triangular shape is  0,-1,0,1,-2,-1,...2, ...
+    //!     and the first element of level l is stored at position l^2
+    int* preExpRedirJ;
 
     /** Allocate and init */
     void allocAndInit(){
@@ -74,11 +77,15 @@ class FHarmonic : public FNoAssignement {
         }
     }
 
-    /** Compute cos/sin from phi */
+    //! fill in the array cosSin  such that
+    //!    cosSin[l] = exp( l*inPhi) * i^l for l = 0..p
+    //! \param inPhi the phi angle
+    //!
     void computeCosSin(const FReal inPhi, const FReal piArray[4]){
         for(int l = 0 ; l <= devP ; ++l){
             const FReal angle = FReal(l) * inPhi + piArray[l & 0x3];
-            cosSin[l].setReal( FMath::Sin(angle + FMath::FPiDiv2) );
+            cosSin[l].setReal( FMath::Sin(angle + FMath::FPiDiv2) );  // add Pi/2 for the cosine
+
             cosSin[l].setImag( FMath::Sin(angle) );
         }
     }
@@ -205,7 +212,9 @@ public:
     /////////////////////////////////////////////////////////////////
 
     void computeInner(const FSpherical& inSphere){
+        // For i^|m|
         const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        //
         computeCosSin(inSphere.getPhi(), PiArrayInner);
 
         // fill legendre array
@@ -224,6 +233,24 @@ public:
             }
 
             r_pow_l *= inSphere.getR();
+        }
+    }
+    /*
+    * \brief Compute The inner expansion on the z axis
+    *   On the z axis theta = phi = 0 and the the expression of the coefficients are
+    *     I_l^m= (-1)^l i^m r^l/(l+|m|)! Kronecker(m,0)
+    *   \result P+1 cofficients of the Inner expansion.
+    */
+    void computeInnerOnZaxis(const FReal& inRadius,FReal* Inner){
+        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        //
+        int   index_l = 0   ;
+        FReal r_pow_l = 1.0 ;
+
+        for(int l = 0; l <= devP ; ++l){
+            Inner[l] = sphereHarmoInnerCoef[index_l] * r_pow_l;
+            r_pow_l *= inRadius ;
+            index_l +=  l+1 ;
         }
     }
 

@@ -130,7 +130,7 @@ struct FMath{
         return atan2(inValue1,inValue2);
     }
 
-    /** To get sqrt of a FReal */
+    /** To get sin of a FReal */
     static float Sin(const float inValue){
         return sinf(inValue);
     }
