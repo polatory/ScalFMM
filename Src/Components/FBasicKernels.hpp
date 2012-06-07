@@ -14,8 +14,6 @@
 
 #include "FAbstractKernels.hpp"
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FTrace.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -23,8 +21,7 @@
 * @brief
 * Please read the license
 *
-* This kernels simply shows the details of the information
-* it receives (in debug)
+* This kernels is empty and does nothing.
 */
 template< class ParticleClass, class CellClass, class ContainerClass>
 class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {

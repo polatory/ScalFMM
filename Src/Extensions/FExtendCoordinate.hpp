@@ -22,7 +22,7 @@
 * @class FExtendCoordinate
 * Please read the license
 * This class is an extenssion.
-* It proposes a mortonIndex.
+* It proposes a tree coordinate.
 */
 class FExtendCoordinate {
 protected:

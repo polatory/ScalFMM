@@ -17,7 +17,6 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendCellType
-* Please read the license
 * This class is an extenssion.
 * It proposes a target/source extenssion for cell.
 * Because cells may have child that contains only

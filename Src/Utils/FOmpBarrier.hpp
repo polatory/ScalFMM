@@ -17,7 +17,7 @@
 /** This function is a custom omp barrier
   * Because openmp give only a global barrier we need
   * to be ablo to peform a barrier operation between a group
-  * of thread only.
+  * of threads only.
   */
 
 class FOmpBarrier {

@@ -33,10 +33,12 @@ public:
     virtual ~FBasicCell(){
     }
 
+    /** Save the current cell in a buffer */
     void save(FBufferWriter& buffer) const{
         FExtendMortonIndex::save(buffer);
         FExtendCoordinate::save(buffer);
     }
+    /** Restore the current cell from a buffer */
     void restore(FBufferReader& buffer){
         FExtendMortonIndex::restore(buffer);
         FExtendCoordinate::restore(buffer);

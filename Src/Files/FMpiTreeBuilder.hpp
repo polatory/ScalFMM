@@ -152,17 +152,17 @@ private:
             if(workingSize != 0 && rank != 0 && rank != nbProcs - 1){
                 MPI_Sendrecv(&workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs,
                              &otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs,
-                             MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                             communicator.getComm(), MPI_STATUS_IGNORE);
             }
             else if( rank == 0){
-                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, communicator.getComm(), MPI_STATUS_IGNORE);
             }
             else if( rank == nbProcs - 1){
-                MPI_Send( &workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
+                MPI_Send( &workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, communicator.getComm());
             }
             else {
-                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Send(&otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, MPI_COMM_WORLD);
+                MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, communicator.getComm(), MPI_STATUS_IGNORE);
+                MPI_Send(&otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, communicator.getComm());
             }
 
             // at this point every one know the first index of his right neighbors
@@ -181,10 +181,11 @@ private:
                     sendBuffer = new IndexedParticle[particlesToSend];
                     memcpy(sendBuffer, &workingArray[idxPart + 1], particlesToSend * sizeof(IndexedParticle));
 
-                    MPI_Isend( sendBuffer, particlesToSend * int(sizeof(IndexedParticle)), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
+                    MPI_Isend( sendBuffer, particlesToSend * int(sizeof(IndexedParticle)), MPI_BYTE,
+                               rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
                 }
                 else{
-                    MPI_Isend( 0, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &requestSendLeaf);
+                    MPI_Isend( 0, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
                 }
             }
 
@@ -192,7 +193,7 @@ private:
                 int sendByOther = 0;
 
                 MPI_Status probStatus;
-                MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, &probStatus);
+                MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), &probStatus);
                 MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
 
                 if(sendByOther){
@@ -206,15 +207,17 @@ private:
                     FMemUtils::memcpy(&workingArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
                     delete[] reallocOutputArray;
 
-                    MPI_Recv(workingArray, int(sizeof(IndexedParticle)) * sendByOther, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(workingArray, int(sizeof(IndexedParticle)) * sendByOther, MPI_BYTE,
+                             rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
                 }
                 else{
-                    MPI_Recv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
                 }
             }
 
             if(rank != nbProcs - 1 && needToRecvBeforeSend == true){
-                MPI_Send( workingArray, int(workingSize * sizeof(IndexedParticle)), MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, MPI_COMM_WORLD);
+                MPI_Send( workingArray, int(workingSize * sizeof(IndexedParticle)), MPI_BYTE,
+                          rank + 1, FMpi::TagSplittedLeaf, communicator.getComm());
                 delete[] workingArray;
                 workingArray = 0;
                 workingSize  = 0;
@@ -280,7 +283,7 @@ private:
         // We have to know the number of leaves each procs holds
         FSize leavesPerProcs[nbProcs];
         memset(leavesPerProcs, 0, sizeof(int) * nbProcs);
-        MPI_Allgather(&nbLeavesInIntervals, 1, MPI_LONG_LONG, leavesPerProcs, 1, MPI_LONG_LONG, MPI_COMM_WORLD);
+        MPI_Allgather(&nbLeavesInIntervals, 1, MPI_LONG_LONG, leavesPerProcs, 1, MPI_LONG_LONG, communicator.getComm());
 
         // Count the number of leaves on each side
         FSize currentLeafsOnMyLeft  = 0;
@@ -420,7 +423,7 @@ private:
         // Inform other about who will send/receive what
         int bytesToSendRecv[nbProcs * nbProcs];
         memset(bytesToSendRecv, 0, sizeof(int) * nbProcs * nbProcs);
-        MPI_Allgather(bytesToSend, nbProcs, MPI_INT, bytesToSendRecv, nbProcs, MPI_INT, MPI_COMM_WORLD);
+        MPI_Allgather(bytesToSend, nbProcs, MPI_INT, bytesToSendRecv, nbProcs, MPI_INT, communicator.getComm());
 
         int bytesToRecv[nbProcs];
         memset(bytesToRecv, 0, sizeof(int) * nbProcs);
@@ -441,7 +444,7 @@ private:
         char* const recvbuf = new char[sumBytesToRecv];
         MPI_Alltoallv(leavesArray, bytesToSend, bytesOffset, MPI_BYTE,
                       recvbuf, bytesToRecv, bytesOffsetToRecv, MPI_BYTE,
-                      MPI_COMM_WORLD);
+                      communicator.getComm());
 
         { // Insert received data
             FTRACE( FTrace::FRegion regionTrace("Insert Received data", __FUNCTION__ , __FILE__ , __LINE__) );

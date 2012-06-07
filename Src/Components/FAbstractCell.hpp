@@ -18,12 +18,11 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractCell
 * @brief
-* Please read the license
 *
-* This class define the method that every cell class
-* has to implement.
-*
-* In fact FOctree & FFmmAlgorithm need this function to be implemented.
+* This class define the methods that every cell class
+* has to implement to be insertable in the tree.
+* \n
+* In fact FOctree & FFmmAlgorithm need this functions to be implemented.
 * But you cannot use this interface with the extension (as an example :
 * because the compiler will faill to know if getMortonIndex is coming
 * from this interface or from the extension)
@@ -37,9 +36,9 @@ public:
     }
 
     /**
-        * Must be implemented by each user Cell class
- * @return the position of the current cell
- */
+     * Must be implemented by each user Cell class
+     * @return the position of the current cell
+     */
     virtual MortonIndex getMortonIndex() const = 0;
 
 

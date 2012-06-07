@@ -58,6 +58,8 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
 
+    const FMpi::FComm& comm;                 //< MPI comm
+
     typename OctreeClass::Iterator* iterArray;
     int numberOfLeafs;                          //< To store the size at the previous level
 
@@ -96,11 +98,11 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProc(const FMpi::FComm& comm, OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(0), numberOfLeafs(0),
-          MaxThreads(omp_get_max_threads()), nbProcess(comm.processCount()), idProcess(comm.processId()),
-          OctreeHeight(tree->getHeight()),intervals(new Interval[comm.processCount()]),
-          workingIntervalsPerLevel(new Interval[comm.processCount() * tree->getHeight()]){
+    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
+        : tree(inTree) , kernels(0), comm(inComm), numberOfLeafs(0),
+          MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
+          OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
+          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]){
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
 
@@ -150,7 +152,7 @@ public:
             fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
             // We get the min/max indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
 
             Interval*const myIntervals = new Interval[OctreeHeight];
             myIntervals[OctreeHeight - 1] = myLastInterval;
@@ -177,7 +179,7 @@ public:
 
             // We get the min/max indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
-                                            workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, MPI_COMM_WORLD),  __LINE__ );
+                                            workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
             delete[] myIntervals;
         }
 
@@ -318,7 +320,7 @@ private:
                     --sendToProc;
                 }
 
-                MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, sendToProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
             }
 
             // We may need to receive something
@@ -347,7 +349,7 @@ private:
 
                         for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
                             MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE,
-                                      idxProc, FMpi::TagFmmM2M, MPI_COMM_WORLD, &requests[iterRequests++]);
+                                      idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
                         }
                     }
                 }
@@ -546,7 +548,7 @@ private:
         // what the will send to who
         int*const globalReceiveMap = new int[nbProcess * nbProcess * OctreeHeight];
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
-        FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+        FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
         FDEBUG(gatherCounter.tac());
 
 
@@ -583,7 +585,7 @@ private:
                     }
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(), sendBuffer[idxLevel * nbProcess + idxProc]->getSize()
-                                                , MPI_BYTE , idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                                , MPI_BYTE , idxProc, FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                 }
 
                 const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -591,7 +593,7 @@ private:
                     recvBuffer[idxLevel * nbProcess + idxProc] = new FBufferReader(toReceiveFromProcAtLevel * SizeOfCellToSend);
 
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(), recvBuffer[idxLevel * nbProcess + idxProc]->getSize(), MPI_BYTE,
-                                               idxProc, FMpi::TagLast + idxLevel, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                               idxProc, FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                 }
             }
         }
@@ -839,7 +841,7 @@ private:
 
 
                 MPI_Irecv( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, MPI_ANY_SOURCE,
-                           FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                           FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
             }
 
 
@@ -862,7 +864,7 @@ private:
                     for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
 
                         MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, idxProc,
-                                  FMpi::TagFmmL2L, MPI_COMM_WORLD, &requests[iterRequests++]);
+                                  FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
                     }
 
                 }
@@ -1016,7 +1018,7 @@ private:
             }
 
             FDEBUG(gatherCounter.tic());
-            FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, MPI_COMM_WORLD),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
             FDEBUG(gatherCounter.tac());
 
             // Prepare receive
@@ -1024,7 +1026,7 @@ private:
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
                     recvBuffer[idxProc] = new FBufferReader(int(sizeof(ParticleClass)) * globalReceiveMap[idxProc * nbProcess + idProcess]);
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
-                                               idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                               idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                 }
             }
 
@@ -1043,7 +1045,7 @@ private:
                     }
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
-                                                idxProc, FMpi::TagFmmP2P, MPI_COMM_WORLD, &requests[iterRequest++]) , __LINE__ );
+                                                idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 
                 }
             }

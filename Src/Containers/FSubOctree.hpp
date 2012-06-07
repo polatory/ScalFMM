@@ -49,10 +49,10 @@ protected:
     CellClass*** cells;		            //< Potential cells, cells are allocated only if needed
     FAbstractSubOctree* const parent;       //< Parent suboctree (null for root)
 
-    const int indexInParent;               //< This is the index of the current octree in the parent's array
+    const int indexInParent;                //< This is the index of the current octree in the parent's array
 
-    int leftLeafIndex;                     //< The leaf at the left position (this is the array index to start when iterate)
-    int rightLeafIndex;                    //< The leaf at the right position (this is the last array index when iterate)
+    int leftLeafIndex;                      //< The leaf at the left position (this is the array index to start when iterate)
+    int rightLeafIndex;                     //< The leaf at the right position (this is the last array index when iterate)
 
     const int subOctreeHeight;              //< Height of this suboctree
     const int subOctreePosition;	    //< Level of the current suboctree in the global tree (0 if node)

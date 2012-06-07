@@ -22,7 +22,7 @@
 * @class FExtendPosition
 * Please read the license
 * This class is an extenssion.
-* It proposes a mortonIndex.
+* It proposes a position from a FPoint.
 */
 class FExtendPosition {
 protected:

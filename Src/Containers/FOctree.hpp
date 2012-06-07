@@ -31,29 +31,33 @@
  * This class is an octree container.
  *
  * Please refere to testOctree.cpp to see an example.
- * <code>
+ * @code
  * // can be used as : <br>
  * FOctree<TestParticle, TestCell> tree(1.0,FPoint(0.5,0.5,0.5));
- * </code>
+ * @endcode
  *
  * Particles and cells has to respect the Abstract class definition.
  * Particle must extend {FExtendPosition}
  * Cell must extend extend {FTreeCoordinate,FExtendMortonIndex}
+ *
+ * If the octree as an height H, then it goes from 0 to H-1
+ * at level 0 the space is not split
  */
 template< class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
 class FOctree : protected FAssertable, public FNoCopyable {
-    FReal*const boxWidthAtLevel;		//< to store the width of each boxs at all levels
+
+    FAbstractSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
+
+    FReal*const boxWidthAtLevel;	//< to store the width of each boxs at all levels
 
     const int height;                   //< tree height
     const int subHeight;		//< tree height
     const int leafIndex;		//< index of leaf int array
 
-    FAbstractSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
-
     const FPoint boxCenter;	//< the space system center
     const FPoint boxCorner;	//< the space system corner (used to compute morton index)
 
-    const FReal boxWidth;          //< the space system width
+    const FReal boxWidth;       //< the space system width
 
 
     /**
@@ -89,15 +93,17 @@ class FOctree : protected FAssertable, public FNoCopyable {
 
 public:
     /**
- * Constructor
- * @param inBoxWidth box width for this simulation
- * @param inBoxCenter box center for this simulation
- */
+     * Constructor
+     * @param inHeight the octree height
+     * @param inSubHeight the octree subheight
+     * @param inBoxWidth box width for this simulation
+     * @param inBoxCenter box center for this simulation
+     */
     FOctree(const int inHeight, const int inSubHeight,
             const FReal inBoxWidth, const FPoint& inBoxCenter)
-        : boxWidthAtLevel(new FReal[inHeight]),
+        : root(0), boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
-          root(0), boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
+          boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
     {
         fassert(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
@@ -178,15 +184,15 @@ public:
     }
 
     /** Remove a leaf from its morton index
-          * @param the index of the leaf to remove
-          */
+      * @param indexToRemove the index of the leaf to remove
+      */
     void removeLeaf(const MortonIndex indexToRemove ){
         root->removeLeaf( indexToRemove , this->height);
     }
 
     /**
         * Get a morton index from a real position
-        * @param a position to compute MI
+        * @param position a position to compute MI
         * @return the morton index
         */
     MortonIndex getMortonFromPosition(const FPoint& position) const {
@@ -219,7 +225,7 @@ public:
           * It simply stores an pointer on a suboctree and moves to right/left/up/down.
           * Please refere to testOctreeIter file to see how it works.
           *
-          * <code>
+          * @code
           * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree); <br>
           * octreeIterator.gotoBottomLeft(); <br>
           * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){ <br>
@@ -229,7 +235,7 @@ public:
           *     octreeIterator.moveUp(); <br>
           *     octreeIterator.gotoLeft(); <br>
           * } <br>
-          * <code>
+          * @endcode
           * Remark :
           * It uses the left right limit on each suboctree and their morton index.
           * Please have a look to the move functions to understand how the system is working.
@@ -237,13 +243,13 @@ public:
     class Iterator : protected FAssertable {
         SubOctreeTypes current; //< Current suboctree
 
-        int currentLocalIndex; //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
+        int currentLocalIndex;  //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
         int currentLocalLevel;  //< Current level in the current suboctree
 
         /**
-              * To know what is the left limit on the current level on the current subtree
-              * @retrun suboctree.left_limit >> 3 * diff(leaf_index, current_index).
-              */
+          * To know what is the left limit on the current level on the current subtree
+          * @return suboctree.left_limit >> 3 * diff(leaf_index, current_index).
+          */
         static int TransposeIndex(const int indexInLeafLevel, const int distanceFromLeafLevel) {
             return indexInLeafLevel >> (3 * distanceFromLeafLevel);
         }

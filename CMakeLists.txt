@@ -6,11 +6,14 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
-# MPI option has to be set before project
-OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
+# MPI option has to be set before project, cannot be changed in the cache!
 if( SCALFMM_USE_MPI )
-	SET(CMAKE_CXX_COMPILER mpicxx)
-endif()
+	include(CMakeForceCompiler)
+	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
+    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
+else()
+	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
+endif(SCALFMM_USE_MPI)
 
 # Project Infos
 project(scalfmm)
@@ -32,9 +35,12 @@ OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
 
 
 # Test if openmp is here
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)
-find_package(OpenMP)
-# include(FindOpenMP)
+find_package (OpenMP) 
+if(OPENMP_FOUND)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 # Debug
 MESSAGE( STATUS "SCALFMM_BUILD_DEBUG = ${SCALFMM_BUILD_DEBUG}" )
@@ -86,15 +92,6 @@ CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 
 # Use Mem stats
 MESSAGE( STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
-
-# Test if openmp is here
-find_package (OpenMP) 
-# include(FindOpenMP)
-if(OPENMP_FOUND)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")

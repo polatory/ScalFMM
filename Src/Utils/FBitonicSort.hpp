@@ -34,13 +34,14 @@ private:
 
     // This function exchange data with the other rank,
     // its send the max value and receive min value
-    static void SendMaxAndGetMin(SortType array[], const IndexType size, const int otherRank){
+    static void SendMaxAndGetMin(SortType array[], const IndexType size, const int otherRank, const FMpi::FComm& comm){
         IndexType left  = -1;
         IndexType right = size - 1;
         IndexType pivot = left + (right - left + 1)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
-        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,&otherValue,sizeof(CompareType),
+                     MPI_BYTE,otherRank,FMpi::TagBitonicMax,comm.getComm(),MPI_STATUS_IGNORE);
 
         while( pivot != left && pivot != right  && array[pivot] != otherValue) {
 
@@ -53,20 +54,21 @@ private:
             pivot = left + (right - left + 1)/2;
             tempCompareValue = CompareType(array[pivot]);
 
-            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,
+                         &otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,comm.getComm(),MPI_STATUS_IGNORE);
         }
 
         if( otherValue <= array[pivot] ){
             MPI_Sendrecv_replace(&array[pivot], int((size - pivot) * sizeof(SortType)) , MPI_BYTE,
                                    otherRank, FMpi::TagBitonicMinMess, otherRank, FMpi::TagBitonicMaxMess,
-                                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                   comm.getComm(), MPI_STATUS_IGNORE);
 
         }
         else if( array[pivot] < otherValue){
             if(pivot != size - 1){
                 MPI_Sendrecv_replace(&array[pivot + 1], int((size - pivot - 1) * sizeof(SortType)) , MPI_BYTE,
                                        otherRank, FMpi::TagBitonicMinMess, otherRank, FMpi::TagBitonicMaxMess,
-                                       MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                       comm.getComm(), MPI_STATUS_IGNORE);
             }
         }
 
@@ -74,13 +76,14 @@ private:
 
     // This function exchange data with the other rank,
     // its send the min value and receive max value
-    static void SendMinAndGetMax(SortType array[], const IndexType size, const int otherRank){
+    static void SendMinAndGetMax(SortType array[], const IndexType size, const int otherRank, const FMpi::FComm& comm){
         IndexType left  = 0;
         IndexType right = size ;
         IndexType pivot = left + (right - left)/2;
         CompareType otherValue = -1;
         CompareType tempCompareValue = CompareType(array[pivot]);
-        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,
+                     &otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,comm.getComm(),MPI_STATUS_IGNORE);
 
         while(  pivot != left  && array[pivot] != otherValue) {
 
@@ -92,20 +95,21 @@ private:
             }
             pivot = left + (right - left)/2;
             tempCompareValue = CompareType(array[pivot]);
-            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,&otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            MPI_Sendrecv(&tempCompareValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMax,
+                         &otherValue,sizeof(CompareType),MPI_BYTE,otherRank,FMpi::TagBitonicMin,comm.getComm(),MPI_STATUS_IGNORE);
         }
 
 
         if( array[pivot] <= otherValue ){
             MPI_Sendrecv_replace(&array[0], int((pivot + 1) * sizeof(SortType)) , MPI_BYTE,
                                    otherRank, FMpi::TagBitonicMaxMess, otherRank, FMpi::TagBitonicMinMess,
-                                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                   comm.getComm(), MPI_STATUS_IGNORE);
         }
         else if( otherValue < array[pivot]){
             if(pivot != 0){
                 MPI_Sendrecv_replace(&array[0], int((pivot) * sizeof(SortType)) , MPI_BYTE,
                                        otherRank, FMpi::TagBitonicMaxMess, otherRank, FMpi::TagBitonicMinMess,
-                                       MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                       comm.getComm(), MPI_STATUS_IGNORE);
             }
         }
     }
@@ -154,10 +158,10 @@ public:
                 const int otherRank = rank ^ (1 << otherBit);
 
                 if( diBit != myOtherBit ){
-                    SendMinAndGetMax(array, size, otherRank);
+                    SendMinAndGetMax(array, size, otherRank, comm);
                 }
                 else{
-                    SendMaxAndGetMin(array, size, otherRank);
+                    SendMaxAndGetMin(array, size, otherRank, comm);
                 }
                 // A merge sort is possible since the array is composed
                 // by two part already sorted, but we want to do this in space

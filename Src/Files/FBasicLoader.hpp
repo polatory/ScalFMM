@@ -28,7 +28,7 @@
 * NB_particles Box_width Box_X Box_Y Box_Z // init
 * X Y Z // one particle by line
 * ....
-* <code>
+* @code
 *    FBasicLoader<FBasicParticle> loader("../Adir/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
@@ -42,15 +42,15 @@
 *        loader.fillParticle(part); <br>
 *        tree.insert(part); <br>
 *    } <br>
-* </code>
+* @endcode
 */
 template <class ParticleClass>
 class FBasicLoader : public FAbstractLoader<ParticleClass> {
 protected:
     std::ifstream file;         //< The file to read
-    FPoint centerOfBox;    //< The center of box read from file
-    FReal boxWidth;            //< the box width read from file
-    int nbParticles;           //< the number of particles read from file
+    FPoint centerOfBox;         //< The center of box read from file
+    FReal boxWidth;             //< the box width read from file
+    int nbParticles;            //< the number of particles read from file
 
 public:
     /**

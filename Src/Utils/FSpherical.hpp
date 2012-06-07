@@ -14,6 +14,7 @@
 #include "FGlobal.hpp"
 #include "FMath.hpp"
 #include "FPoint.hpp"
+#include "FDebug.hpp"
 
 /** This class is a Spherical position
 * This class is currently in its minimum version
@@ -41,6 +42,7 @@ public:
         this->r          = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
         this->phi        = FMath::Atan2(inVector.getY(),inVector.getX());
         if( r < FMath::Epsilon ){ // if r == 0 we cannot divide!
+            FDEBUG( FDebug::Controller << "!!! In FSpherical, r == 0!\n"; )
             this->cosTheta = FReal(1);
             this->sinTheta = FReal(1);
         }
@@ -49,7 +51,6 @@ public:
             this->sinTheta = FMath::Sqrt(x2y2) / r;
         }
         this->theta    = FMath::ACos(this->cosTheta);
-
     }
 
     /** Get the radius */

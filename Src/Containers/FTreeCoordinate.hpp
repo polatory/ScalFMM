@@ -24,7 +24,8 @@
 *
 * This class represents tree coordinate. It is used to save
 * the position in "box unit" (not system/space unit!).
-* It is directly related to morton index
+* It is directly related to morton index, as interleaves
+* bits from this coordinate make the morton index
 */
 class FTreeCoordinate{
 private:

@@ -28,7 +28,7 @@
 * NB_particles Box_width Box_X Box_Y Box_Z // init
 * X Y Z // one particle by line
 * ....
-* <code>
+* @code
 *    FFmaTsmLoader<FBasicParticle> loader("../Adir/Tests/particles.basic.txt"); <br>
 *    if(!loader.isOpen()){ <br>
 *        std::cout << "Loader Error\n"; <br>
@@ -42,7 +42,7 @@
 *        loader.fillParticle(part); <br>
 *        tree.insert(part); <br>
 *    } <br>
-* </code>
+* @endcode
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */

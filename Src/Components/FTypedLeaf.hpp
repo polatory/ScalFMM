@@ -21,12 +21,14 @@
 * @brief
 * Please read the license
 * This class is used to enable the use of typed particles
-* (source XOR target) or simple system (source AND target)
+* (source XOR target) or simple system (source AND target).
+*
+* Particles should be typed to enable targets/sources difference.
 */
 template< class ParticleClass , class ContainerClass>
 class FTypedLeaf  : public FAbstractLeaf<ParticleClass,ContainerClass>, public FAssertable {
-    ContainerClass sources;
-    ContainerClass targets;
+    ContainerClass sources; //< The sources containers
+    ContainerClass targets; //< The targets containers
 
 public:
     /** Default destructor */
@@ -38,6 +40,7 @@ public:
         * @param particle the new particle
         */
     void push(const ParticleClass& particle){
+        // Test if is source or target particle
         if(particle.isTarget()) this->targets.push(particle);
         else if(particle.isSource()) this->sources.push(particle);
         else fassert(false, "Error particle has undefined type.", __LINE__, __FILE__);

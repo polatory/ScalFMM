@@ -15,6 +15,8 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)This class is a light octree
 * It is just a linked list with 8 pointers per node
 * it is used to store small data in an octree way.
+* @warning It can only store one level of data!
+* As it is linked, the acess is always made fro the top.
 */
 template <class CellClass>
 class FLightOctree {

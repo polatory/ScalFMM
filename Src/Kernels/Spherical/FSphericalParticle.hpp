@@ -16,7 +16,7 @@
 #include "../../Extensions/FExtendParticleType.hpp"
 #include "../../Components/FFmaParticle.hpp"
 
-#include "../../Utils/FAbstractSerializable.hpp"
+#include "../../Components/FAbstractSerializable.hpp"
 
 class FSphericalParticle : public FExtendForces, public FFmaParticle, public FExtendPotential {
 public:

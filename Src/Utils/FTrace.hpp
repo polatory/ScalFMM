@@ -53,8 +53,7 @@
 
     #ifdef SCALFMM_USE_ITAC
 
-        //#include <VT.h>
-        #include "/opt/intel/itac/8.0.1.009/include/VT.h"
+        #include <VT.h>
 
         class FTrace {
         public:

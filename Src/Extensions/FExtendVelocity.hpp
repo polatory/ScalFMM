@@ -24,7 +24,7 @@
 * Please read the license
 *
 * This class is an extenssion.
-* It proposes a 3d array as a velocity vector.
+* It proposes a FPoint as a velocity vector.
 */
 class FExtendVelocity {
 protected:

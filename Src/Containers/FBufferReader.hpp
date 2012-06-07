@@ -18,8 +18,7 @@
   * This class provide a fast way to manage a memory and convert
   * the content to basic type.
   *
-  * Specifie the needed space with reserve,
-  * then fill it with data
+  * Specifie the needed space with reserve, then fill it with data
   * finaly read and convert.
   */
 class FBufferReader {

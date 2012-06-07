@@ -71,10 +71,11 @@ public:
     /**
         * L2L
         * Local to local
-        * @param the father to take value from
-        * @param the child to downward values (child may have already been impacted by M2L)
-        * @param level the current level of computation
+        * @param local the father to take value from
+        * @param child the child to downward values (child may have already been impacted by M2L)
+        * @param inLevel the current level of computation
         * the child array has a size of 8 elements (address if exists or 0 otherwise).
+        * Children are ordering in the morton index way.
         * You must test if a pointer is 0 to know if an element exists inside this array
         */
     virtual void L2L(const CellClass* const FRestrict local, CellClass* FRestrict * const FRestrict child, const int inLevel) = 0;
