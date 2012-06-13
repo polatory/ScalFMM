@@ -38,10 +38,11 @@ protected:
 	* @param inMessage a message - from any type - to print
 	* @param inLinePosition line number
 	* @param inFilePosition file name
+	* @param inExitCode an exit code
 	*
-        * @code
-        * fassert(toto == titi, "problem : toto is not equal titi!", __LINE__, __FILE__);
-        * @endcode
+	* @code
+	* fassert(toto == titi, "problem : toto is not equal titi!", __LINE__, __FILE__);
+	* @endcode
 	* To prevent use from multiple thread we use a ostringstream before printing
 	*/
 	template <class Tmess, class Tline, class Tfile>

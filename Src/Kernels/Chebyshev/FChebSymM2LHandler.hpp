@@ -119,17 +119,17 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
   FACASVD is defined or not, either ACA+SVD or only SVD is used to compress
   them. */
 template <int ORDER, typename MatrixKernelClass>
-static void precompute(const MatrixKernelClass *const MatrixKernel, const double Epsilon, FReal* K[343], int LowRank[343])
+static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
+											 const double Epsilon, FReal* K[343], int LowRank[343])
 {
-	static const unsigned int nnodes = ORDER*ORDER*ORDER;
+	std::cout << "\nComputing 16 far-field interactions for cells of width w = " << CellWidth << std::endl;
 
-	// set all to zero
-	for (unsigned int t=0; t<343; ++t) { K[t] = NULL;	LowRank[t] = 0;	}
+	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// interpolation points of source (Y) and target (X) cell
 	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
+	FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
 	// temporary matrix
 	FReal* U = new FReal [nnodes*nnodes];
 
@@ -146,8 +146,8 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const double
 			for (int k=0; k<=j; ++k) {
 
 				// assemble matrix
-				const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-				FChebTensor<ORDER>::setRoots(cy, FReal(2.), Y);
+				const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
+				FChebTensor<ORDER>::setRoots(cy, CellWidth, Y);
 				for (unsigned int n=0; n<nnodes; ++n)
 					for (unsigned int m=0; m<nnodes; ++m)
 						U[n*nnodes + m] = MatrixKernel->evaluate(X[m], Y[n]);
@@ -206,7 +206,6 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const double
 					INFO = FBlas::gesvd(aca_rank, aca_rank, phi, S, VT, aca_rank, LWORK, WORK);
 					if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
 					rank = getRank(S, aca_rank, Epsilon);
-					//std::cout << " - recompression with SVD leads to rank = " << rank << std::endl;
 				}					
 				
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
@@ -310,15 +309,19 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const double
   because it allows us to use to associate the far-field interactions based on
   the index \f$t = 7^2(i+3) + 7(j+3) + (k+3)\f$ where \f$(i,j,k)\f$ denotes
   the relative position of the source cell to the target cell. */
+template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
+
+/*! Specialization for homogeneous kernel functions */
 template <int ORDER>
-class SymmetryHandler
+class SymmetryHandler<ORDER, HOMOGENEOUS>
 {
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
-public:
 	// M2L operators
 	FReal*    K[343];
 	int LowRank[343];
+
+public:
 	
 	// permutation vectors and permutated indices
 	unsigned int pvectors[343][nnodes];
@@ -327,7 +330,8 @@ public:
 
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
-	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon)
+	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon,
+									const FReal, const unsigned int)
 	{
 		// init all 343 item to zero, because effectively only 16 exist
 		for (unsigned int t=0; t<343; ++t) {
@@ -347,7 +351,8 @@ public:
 				}
 
 		// precompute 16 M2L operators
-		precompute<ORDER>(MatrixKernel, Epsilon, K, LowRank);
+		const FReal ReferenceCellWidth = FReal(2.);
+		precompute<ORDER>(MatrixKernel, ReferenceCellWidth, Epsilon, K, LowRank);
 	}
 
 
@@ -357,6 +362,107 @@ public:
 	{
 		for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
 	}
+
+
+	/*! return the t-th approximated far-field interactions*/
+	const FReal *const getK(const unsigned int, const unsigned int t) const
+	{	return K[t]; }
+
+	/*! return the t-th approximated far-field interactions*/
+	const int getLowRank(const unsigned int, const unsigned int t) const
+	{	return LowRank[t]; }
+
+};
+
+
+
+
+
+
+/*! Specialization for non-homogeneous kernel functions */
+template <int ORDER>
+class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
+{
+  static const unsigned int nnodes = ORDER*ORDER*ORDER;
+
+	// Height of octree; needed only in the case of non-homogeneous kernel functions
+	const unsigned int TreeHeight;
+
+	// M2L operators for all levels in the octree
+	FReal***    K;
+	int** LowRank;
+
+public:
+	
+	// permutation vectors and permutated indices
+	unsigned int pvectors[343][nnodes];
+	unsigned int pindices[343];
+
+
+	/** Constructor: with 16 small SVDs */
+	template <typename MatrixKernelClass>
+	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon,
+									const FReal RootCellWidth, const unsigned int inTreeHeight)
+		: TreeHeight(inTreeHeight)
+	{
+		// init all 343 item to zero, because effectively only 16 exist
+		K       = new FReal** [TreeHeight];
+		LowRank = new int*    [TreeHeight];
+		K[0]       = NULL; K[1]       = NULL;
+		LowRank[0] = NULL; LowRank[1] = NULL;
+		for (unsigned int l=2; l<TreeHeight; ++l) {
+			K[l]       = new FReal* [343];
+			LowRank[l] = new int    [343];
+			for (unsigned int t=0; t<343; ++t) {
+				K[l][t]       = NULL;
+				LowRank[l][t] = 0;
+			}
+		}
+		
+
+		// set permutation vector and indices
+		const FChebSymmetries<ORDER> Symmetries;
+		for (int i=-3; i<=3; ++i)
+			for (int j=-3; j<=3; ++j)
+				for (int k=-3; k<=3; ++k) {
+					const unsigned int idx = ((i+3) * 7 + (j+3)) * 7 + (k+3);
+					pindices[idx] = 0;
+					if (abs(i)>1 || abs(j)>1 || abs(k)>1)
+						pindices[idx] = Symmetries.getPermutationArrayAndIndex(i,j,k, pvectors[idx]);
+				}
+
+		// precompute 16 M2L operators at all levels having far-field interactions
+		FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
+		CellWidth /= FReal(2.);                      // at level 2
+		for (unsigned int l=2; l<TreeHeight; ++l) {
+			precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
+			CellWidth /= FReal(2.);                    // at level l+1 
+		}
+	}
+
+
+
+	/** Destructor */
+	~SymmetryHandler()
+	{
+		for (unsigned int l=0; l<TreeHeight; ++l) {
+			if (K[l]!=NULL) {
+				for (unsigned int t=0; t<343; ++t) if (K[l][t]!=NULL) delete [] K[l][t];
+				delete [] K[l];
+			}
+			if (LowRank[l]!=NULL)	delete [] LowRank[l];
+		}
+		delete [] K;
+		delete [] LowRank;
+	}
+
+	/*! return the t-th approximated far-field interactions*/
+	const FReal *const getK(const unsigned int l, const unsigned int t) const
+	{	return K[l][t]; }
+
+	/*! return the t-th approximated far-field interactions*/
+	const int getLowRank(const unsigned int l, const unsigned int t) const
+	{	return LowRank[l][t]; }
 
 };
 
@@ -383,7 +489,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	FReal* K[343];
 	int LowRank[343];
 	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
-	precompute<ORDER>(MatrixKernel, Epsilon, K, LowRank);
+	precompute<ORDER>(MatrixKernel, FReal(2.), Epsilon, K, LowRank);
 
 	// write to binary file ////////////
 	FTic time; time.tic();
