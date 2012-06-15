@@ -32,33 +32,37 @@
 	\f$\varepsilon\f$. The matrix K will be destroyed as a result.
 
 	@param[in] K far-field to be approximated
+	@param[in] nx number of rows
+	@param[in] ny number of cols
 	@param[in] eps prescribed accuracy
 	@param[out] U matrix containing \a k column vectors
 	@param[out] V matrix containing \a k row vectors
 	@param[out] k final low-rank depends on prescribed accuracy \a eps
 */
-template <int ORDER>
-static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigned int &k)
+void fACA(FReal *const K,
+					const unsigned int nx, const unsigned int ny,
+					const double eps, FReal* &U, FReal* &V, unsigned int &k)
 {
-	static const int nnodes = ORDER*ORDER*ORDER;
-
 	// control vectors (true if not used, false if used)
-	bool r[nnodes], c[nnodes];
-	for (int i=0; i<nnodes; ++i) r[i] = c[i] = true;
+	bool *const r = new bool[nx];
+	bool *const c = new bool[ny];
+	for (unsigned int i=0; i<nx; ++i) r[i] = true;
+	for (unsigned int j=0; j<ny; ++j) c[j] = true;
 
 	// compute Frobenius norm of original Matrix K
 	FReal norm2K = 0;
-	for (int j=0; j<nnodes; ++j) {
-		const FReal *const colK = K + j*nnodes;
-		for (int i=0; i<nnodes; ++i) norm2K += colK[i]*colK[i];
+	for (unsigned int j=0; j<ny; ++j) {
+		const FReal *const colK = K + j*nx;
+		norm2K += FBlas::scpr(nx, colK, colK);
 	}
 
 	// initialize rank k and UV'
 	k = 0;
-	const int size = nnodes * nnodes/2;
-	U = new FReal[size];
-	V = new FReal[size];
-	for (int i=0; i<size; ++i) U[i] = V[i] = 0.;
+	const int maxk = (nx + ny) / 2;
+	U = new FReal[nx * maxk];
+	V = new FReal[ny * maxk];
+	FBlas::setzero(nx*maxk, U);
+	FBlas::setzero(ny*maxk, V);
 	FReal norm2R;
 
 	////////////////////////////////////////////////
@@ -68,10 +72,10 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
 		// find max(K) and argmax(K)
 		FReal maxK = 0.;
 		int pi=0, pj=0;
-		for (int j=0; j<nnodes; ++j)
+		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
-				const FReal *const colK = K + j*nnodes;
-				for (int i=0; i<nnodes; ++i)
+				const FReal *const colK = K + j*nx;
+				for (unsigned int i=0; i<nx; ++i)
 					if (r[i] && maxK < FMath::Abs(colK[i])) {
 						maxK = FMath::Abs(colK[i]);
 						pi = i; 
@@ -80,33 +84,29 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
 			}
 
 		// copy pivot cross into U and V
-		FReal *const colU = U + k*nnodes;
-		FReal *const colV = V + k*nnodes;
-		const FReal pivot = K[pj*nnodes + pi];
-		for (int i=0; i<nnodes; ++i) {
-			if (r[i]) colU[i] = K[pj*nnodes + i];
-			if (c[i]) colV[i] = K[i *nnodes + pi] / pivot;
-		}
+		FReal *const colU = U + k*nx;
+		FReal *const colV = V + k*ny;
+		const FReal pivot = K[pj*nx + pi];
+		for (unsigned int i=0; i<nx; ++i) if (r[i]) colU[i] = K[pj*nx + i];
+		for (unsigned int j=0; j<ny; ++j) if (c[j]) colV[j] = K[j *nx + pi] / pivot;
 		
 		// dont use these cols and rows anymore
 		c[pj] = false;
 		r[pi] = false;
 		
 		// subtract k-th outer product from K
-		for (int j=0; j<nnodes; ++j)
+		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
-				FReal *const colK = K + j*nnodes;
-				for (int i=0; i<nnodes; ++i)
-					if (r[i])	colK[i] -= colU[i] * colV[j];
+				FReal *const colK = K + j*nx;
+				FBlas::axpy(nx, FReal(-1. * colV[j]), colU, colK);
 			}
 
 		// compute Frobenius norm of updated K
 		norm2R = 0.;
-		for (int j=0; j<nnodes; ++j)
+		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
-				const FReal *const colK = K + j*nnodes;
-				for (int i=0; i<nnodes; ++i)
-					if (r[i])	norm2R += colK[i]*colK[i];
+				const FReal *const colK = K + j*nx;
+				norm2R += FBlas::scpr(nx, colK, colK);
 			}
 
 		// increment rank k
@@ -114,7 +114,15 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
 		
 	} while (norm2R > eps*eps * norm2K);
 	////////////////////////////////////////////////
+
+	delete [] r;
+	delete [] c;
 }
+
+
+
+
+
 
 
 
@@ -138,9 +146,9 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
 	@param[out] k final low-rank depends on prescribed accuracy \a eps
 */
 template <typename ComputerType>
-void pACA(const ComputerType& Computer, const FReal eps,
+void pACA(const ComputerType& Computer,
 					const unsigned int nx, const unsigned int ny,
-					FReal* &U, FReal* &V, unsigned int &k)
+					const FReal eps, FReal* &U, FReal* &V, unsigned int &k)
 {
 	// control vectors (true if not used, false if used)
 	bool *const r = new bool[nx];
@@ -173,8 +181,7 @@ void pACA(const ComputerType& Computer, const FReal eps,
 		for (unsigned int l=0; l<k; ++l) {
 			FReal *const u = U + nx*l;
 			FReal *const v = V + ny*l;
-			for (unsigned int j=0; j<ny; ++j)
-				colV[j] -= u[I] * v[j];
+			FBlas::axpy(ny, FReal(-1. * u[I]), v, colV);
 		}
 		
 		// find max of residual and argmax
@@ -185,8 +192,8 @@ void pACA(const ComputerType& Computer, const FReal eps,
 				J = j;
 			}
 		// scale pivot v
-		const FReal pivot = colV[J];
-		for (unsigned int j=0; j<ny; ++j)	colV[j] /= pivot;
+		const FReal pivot = FReal(1.) / colV[J];
+		FBlas::scal(ny, pivot, colV);
 		
 		////////////////////////////////////////////
 		// compute col J and its residual
@@ -195,8 +202,7 @@ void pACA(const ComputerType& Computer, const FReal eps,
 		for (unsigned int l=0; l<k; ++l) {
 			FReal *const u = U + nx*l;
 			FReal *const v = V + ny*l;
-			for (unsigned int i=0; i<nx; ++i)
-				colU[i] -= u[i] * v[J];
+			FBlas::axpy(nx, FReal(-1. * v[J]), u, colU);
 		}
 		
 		// find max of residual and argmax
@@ -306,9 +312,9 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				unsigned int rank;
 
 #ifdef FULLY_PIVOTED_ACASVD
-				fACA<ORDER>(U, Epsilon, UU, VV, rank);
+				fACA(U,        nnodes, nnodes, Epsilon, UU, VV, rank);
 #else
-				pACA(Computer, Epsilon, nnodes, nnodes, UU, VV, rank);
+				pACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
 #endif 
 
 				// QR decomposition
@@ -447,7 +453,8 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-	std::cout << "num interactions = " << counter << " in " << overall_time << "s" << std::endl;
+	std::cout << "The approximation of the " << counter << " far-field interactions took "
+						<< overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;

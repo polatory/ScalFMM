@@ -26,16 +26,9 @@
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FMath.hpp"
-//#include "../../Src/Utils/FParameters.hpp"
 
-//#include "../../Src/Containers/FVector.hpp"
-//
-////#include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-//#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
-//#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
-//#include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebRoots.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
@@ -126,7 +119,7 @@ int main(int argc, char* argv[])
 	time.tic();
 	FReal *U, *V;
 	unsigned int k;
-	fACA<ORDER>(K, epsilon, U, V, k);
+	fACA(K, nnodes, nnodes, epsilon, U, V, k);
 	std::cout << " (k = " << k << "), finished in " << time.tacAndElapsed() << "s." << std::endl;
 	delete [] K;
 	
@@ -143,8 +136,7 @@ int main(int argc, char* argv[])
 	// call pACA ///////////////////////////////////
 	std::cout << "|- Computing pACA" << std::flush;
 	time.tic();
-//	pACA(Computer, epsilon, nnodes, rootsX, nnodes, rootsY, U, V, k);
-	pACA(Computer, epsilon, nnodes, nnodes, U, V, k);
+	pACA(Computer, nnodes, nnodes, epsilon, U, V, k);
 	std::cout << " (k = " << k << "), finished in " << time.tacAndElapsed() << "s." << std::endl;
 	// compute f1 = UV'w
 	FReal *const f2 = new FReal [nnodes];

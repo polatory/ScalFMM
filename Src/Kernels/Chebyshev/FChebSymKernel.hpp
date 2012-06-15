@@ -13,6 +13,9 @@
 class FTreeCoordinate;
 
 
+/// for verbosity only!!!
+//#define COUNT_BLOCKED_INTERACTIONS
+
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
@@ -171,6 +174,23 @@ public:
 					mul[pvec[n]] = MultiExp[n];
 			}
 		}
+
+
+#ifdef COUNT_BLOCKED_INTERACTIONS ////////////////////////////////////
+		unsigned int count_lidx = 0;
+		unsigned int count_interactions = 0;
+		for (unsigned int idx=0; idx<343; ++idx) 
+			count_interactions += countExp[idx];
+		if (count_interactions==189) {
+			for (unsigned int idx=0; idx<343; ++idx) {
+				if (countExp[idx])
+					std::cout << "gidx = " << idx << " gives lidx = " << count_lidx++ << " and has "
+										<< countExp[idx] << " interactions" << std::endl;
+			}
+			std::cout << std::endl;
+		}
+#endif ///////////////////////////////////////////////////////////////
+
 
 		// multiply (mat-mat-mul)
 		FReal Compressed [nnodes * 24];
