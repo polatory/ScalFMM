@@ -15,17 +15,21 @@
  */
 
 
-/*!
-  If \a FACASVD is defined ACA+SVD will be used instead of only SVD.
+/*!  Choose either \a FULLY_PIVOTED_ACASVD or \a PARTIALLY_PIVOTED_ACASVD or
+	\a ONLY_SVD.
 */
-#define FACASVD
+//#define ONLY_SVD
+//#define FULLY_PIVOTED_ACASVD
+#define PARTIALLY_PIVOTED_ACASVD
+
+
 
 
 /*!  The fully pivoted adaptive cross approximation (fACA) compresses a
 	far-field interaction as \f$K\sim UV^\top\f$. The fACA requires all entries
 	to be computed beforehand, then the compression follows in
 	\f$\mathcal{O}(2\ell^3k)\f$ operations based on the required accuracy
-	\f$\varepsilon\f$.
+	\f$\varepsilon\f$. The matrix K will be destroyed as a result.
 
 	@param[in] K far-field to be approximated
 	@param[in] eps prescribed accuracy
@@ -113,6 +117,116 @@ static void fACA(FReal *const K, const double eps, FReal* &U, FReal* &V, unsigne
 }
 
 
+
+
+
+
+/*!  The partially pivoted adaptive cross approximation (pACA) compresses a
+	far-field interaction as \f$K\sim UV^\top\f$. The pACA computes the matrix
+	entries on the fly, as they are needed. The compression follows in
+	\f$\mathcal{O}(2\ell^3k)\f$ operations based on the required accuracy
+	\f$\varepsilon\f$. The matrix K will be destroyed as a result.
+
+	@tparam ComputerType the functor type which allows to compute matrix entries
+	
+	@param[in] Computer the entry-computer functor
+	@param[in] eps prescribed accuracy
+	@param[in] nx number of rows
+	@param[in] ny number of cols
+	@param[out] U matrix containing \a k column vectors
+	@param[out] V matrix containing \a k row vectors
+	@param[out] k final low-rank depends on prescribed accuracy \a eps
+*/
+template <typename ComputerType>
+void pACA(const ComputerType& Computer, const FReal eps,
+					const unsigned int nx, const unsigned int ny,
+					FReal* &U, FReal* &V, unsigned int &k)
+{
+	// control vectors (true if not used, false if used)
+	bool *const r = new bool[nx];
+	bool *const c = new bool[ny];
+	for (unsigned int i=0; i<nx; ++i) r[i] = true;
+	for (unsigned int j=0; j<ny; ++j) c[j] = true;
+	
+	// initialize rank k and UV'
+	k = 0;
+	const int maxk = (nx + ny) / 2;
+	U = new FReal[nx * maxk];
+	V = new FReal[ny * maxk];
+	
+	// initialize norm
+	FReal norm2S(0.);
+	FReal norm2uv(0.);
+	
+	////////////////////////////////////////////////
+	// start partially pivoted ACA
+	unsigned int J = 0, I = 0;
+	
+	do {
+		FReal *const colU = U + nx*k;
+		FReal *const colV = V + ny*k;
+		
+		////////////////////////////////////////////
+		// compute row I and its residual
+		Computer(I, I+1, 0, ny, colV);
+		r[I] = false;
+		for (unsigned int l=0; l<k; ++l) {
+			FReal *const u = U + nx*l;
+			FReal *const v = V + ny*l;
+			for (unsigned int j=0; j<ny; ++j)
+				colV[j] -= u[I] * v[j];
+		}
+		
+		// find max of residual and argmax
+		FReal maxval = 0.;
+		for (unsigned int j=0; j<ny; ++j)
+			if (c[j] && maxval < FMath::Abs(colV[j])) {
+				maxval = FMath::Abs(colV[j]);
+				J = j;
+			}
+		// scale pivot v
+		const FReal pivot = colV[J];
+		for (unsigned int j=0; j<ny; ++j)	colV[j] /= pivot;
+		
+		////////////////////////////////////////////
+		// compute col J and its residual
+		Computer(0, nx, J, J+1, colU);
+		c[J] = false;
+		for (unsigned int l=0; l<k; ++l) {
+			FReal *const u = U + nx*l;
+			FReal *const v = V + ny*l;
+			for (unsigned int i=0; i<nx; ++i)
+				colU[i] -= u[i] * v[J];
+		}
+		
+		// find max of residual and argmax
+		maxval = 0.;
+		for (unsigned int i=0; i<nx; ++i)
+			if (r[i] && maxval < FMath::Abs(colU[i])) {
+				maxval = FMath::Abs(colU[i]);
+				I = i;
+			}
+		
+		////////////////////////////////////////////
+			// increment Frobenius norm: |Sk|^2 += |uk|^2 |vk|^2 + 2 sumj ukuj vjvk
+		FReal normuuvv(0.);
+		for (unsigned int l=0; l<k; ++l)
+			normuuvv += FBlas::scpr(nx, colU, U + nx*l) * FBlas::scpr(ny, V + ny*l, colV);
+		norm2uv = FBlas::scpr(nx, colU, colU) * FBlas::scpr(ny, colV, colV);
+		norm2S += norm2uv + 2*normuuvv;
+		
+		////////////////////////////////////////////
+		// increment low-rank
+		k++;
+
+	} while (norm2uv > eps*eps * norm2S);
+	
+	delete [] r;
+	delete [] c;
+}
+
+
+
 /*!  Precomputes the 16 far-field interactions (due to symmetries in their
   arrangement all 316 far-field interactions can be represented by
   permutations of the 16 we compute in this function). Depending on whether
@@ -139,19 +253,34 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 	FReal *const WORK = new FReal [LWORK];
 	FReal *const VT = new FReal [nnodes*nnodes];
 	FReal *const S = new FReal [nnodes];
-		
+
+
+	// initialize timer
+	FTic time;
+	FReal overall_time(0.);
+	FReal elapsed_time(0.);
+
 	unsigned int counter = 0;
 	for (int i=2; i<=3; ++i) {
 		for (int j=0; j<=i; ++j) {
 			for (int k=0; k<=j; ++k) {
 
-				// assemble matrix
+				// assemble matrix and apply weighting matrices
 				const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
 				FChebTensor<ORDER>::setRoots(cy, CellWidth, Y);
-				for (unsigned int n=0; n<nnodes; ++n)
-					for (unsigned int m=0; m<nnodes; ++m)
-						U[n*nnodes + m] = MatrixKernel->evaluate(X[m], Y[n]);
+				FReal weights[nnodes];
+				FChebTensor<ORDER>::setRootOfWeights(weights);
 
+				// now the entry-computer is responsible for weighting the matrix entries
+				EntryComputer<MatrixKernelClass> Computer(nnodes, X, nnodes, Y, weights);
+
+				// start timer
+				time.tic();
+
+#if (defined ONLY_SVD || defined FULLY_PIVOTED_ACASVD)
+				Computer(0, nnodes, 0, nnodes, U);
+#endif
+				/*
 				// applying weights ////////////////////////////////////////
 				FReal weights[nnodes];
 				FChebTensor<ORDER>::setRootOfWeights(weights);
@@ -159,16 +288,28 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 					FBlas::scal(nnodes, weights[n], U + n,  nnodes); // scale rows
 					FBlas::scal(nnodes, weights[n], U + n * nnodes); // scale cols
 				}
-				//////////////////////////////////////////////////////////		
+				*/
 
-
-				
 				//////////////////////////////////////////////////////////////
-#ifdef FACASVD ///////////////////////////////////////////////////////
-				// fully pivoted ACA
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				// ALL PREPROC FLAGS ARE SET ON TOP OF THIS FILE !!! /////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+
+
+
+				//////////////////////////////////////////////////////////////
+#if (defined FULLY_PIVOTED_ACASVD || defined PARTIALLY_PIVOTED_ACASVD) ////////////
 				FReal *UU, *VV;
 				unsigned int rank;
+
+#ifdef FULLY_PIVOTED_ACASVD
 				fACA<ORDER>(U, Epsilon, UU, VV, rank);
+#else
+				pACA(Computer, Epsilon, nnodes, nnodes, UU, VV, rank);
+#endif 
 
 				// QR decomposition
 				FReal* phi = new FReal [rank*rank];
@@ -246,10 +387,20 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				delete [] UU;
 				delete [] VV;
 
+				elapsed_time = time.tacAndElapsed(); 
+				overall_time += elapsed_time;
 				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-					", low rank = " << rank << " (" << aca_rank << ")" << std::endl;
+					", low rank = " << rank << " (" << aca_rank << ") in " << elapsed_time << "s" << std::endl;
 
-#else
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				// ALL PREPROC FLAGS ARE SET ON TOP OF THIS FILE !!! /////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+
+#elif defined ONLY_SVD
 				// truncated singular value decomposition of matrix
 				INFO = FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
 				if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
@@ -266,12 +417,23 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				for (unsigned int r=0; r<rank; ++r)
 					FBlas::copy(nnodes, VT + r, nnodes, K[idx] + rank*nnodes + r*nnodes, 1);
 
+				elapsed_time = time.tacAndElapsed(); 
+				overall_time += elapsed_time;
 				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-					", low rank = " << rank << std::endl;
-
+					", low rank = " << rank << " in " << elapsed_time << "s" << std::endl;
+#else
+#error Either fully-, partially pivoted ACA or only SVD must be defined!
 #endif ///////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
 
+				
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				// ALL PREPROC FLAGS ARE SET ON TOP OF THIS FILE !!! /////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////
 
 
 				// un-weighting ////////////////////////////////////////////
@@ -285,7 +447,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-	std::cout << "num interactions = " << counter << std::endl;
+	std::cout << "num interactions = " << counter << " in " << overall_time << "s" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;

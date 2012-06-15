@@ -5,6 +5,8 @@
 #include "../../Utils/FPoint.hpp"
 #include "../../Utils/FNoCopyable.hpp"
 #include "../../Utils/FMath.hpp"
+#include "../../Utils/FBlas.hpp"
+
 
 // extendable
 enum KERNEL_FUNCCTION_IDENTIFIER {ONE_OVER_R,
@@ -119,6 +121,73 @@ struct FChebMatrixKernelLJ : FChebAbstractMatrixKernel
 	{
 		// return 1 because non homogeneous kernel functions cannot be scaled!!!
 		return FReal(1.);
+	}
+};
+
+
+
+
+
+/*!  Functor which provides the interface to assemble a matrix based on the
+  number of rows and cols and on the coordinates x and y and the type of the
+  generating matrix-kernel function.
+ */
+template <typename MatrixKernel>
+class EntryComputer
+{
+	const MatrixKernel Kernel;
+
+	const unsigned int nx, ny;
+	const FPoint *const px, *const py;
+
+	const FReal *const weights;
+
+public:
+	explicit EntryComputer(const unsigned int _nx, const FPoint *const _px,
+												 const unsigned int _ny, const FPoint *const _py,
+												 const FReal *const _weights = NULL)
+		: Kernel(),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
+
+//	template <typename Point>
+//	void operator()(const unsigned int nx, const Point *const px,
+//									const unsigned int ny, const Point *const py,
+//									FReal *const data) const
+//	{
+//		for (unsigned int j=0; j<ny; ++j)
+//			for (unsigned int i=0; i<nx; ++i)
+//				data[j*nx + i] = Kernel.evaluate(px[i], py[j]);
+//	}
+
+	void operator()(const unsigned int xbeg, const unsigned int xend,
+									const unsigned int ybeg, const unsigned int yend,
+									FReal *const data) const
+	{
+		unsigned int idx = 0;
+		if (weights) {
+			for (unsigned int j=ybeg; j<yend; ++j)
+				for (unsigned int i=xbeg; i<xend; ++i)
+					data[idx++] = weights[i] * weights[j] * Kernel.evaluate(px[i], py[j]);
+		} else {
+			for (unsigned int j=ybeg; j<yend; ++j)
+				for (unsigned int i=xbeg; i<xend; ++i)
+					data[idx++] = Kernel.evaluate(px[i], py[j]);
+		}
+
+		/*
+		// apply weighting matrices
+		if (weights) {
+			if ((xend-xbeg) == (yend-ybeg) && (xend-xbeg) == nx)
+				for (unsigned int n=0; n<nx; ++n) {
+					FBlas::scal(nx, weights[n], data + n,  nx); // scale rows
+					FBlas::scal(nx, weights[n], data + n * nx); // scale cols
+				}
+			else if ((xend-xbeg) == 1 && (yend-ybeg) == ny)
+				for (unsigned int j=0; j<ny; ++j)	data[j] *= weights[j];
+			else if ((yend-ybeg) == 1 && (xend-xbeg) == nx)
+				for (unsigned int i=0; i<nx; ++i)	data[i] *= weights[i];
+		}
+		*/
+
 	}
 };
 

@@ -80,8 +80,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 5;
-	const FReal epsilon = FReal(1e-5);
+	const unsigned int ORDER = 7;
+	const FReal epsilon = FReal(1e-7);
 
 	// init timer
 	FTic time;
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
 
 	{
 		omp_set_num_threads(NbThreads); 
-		std::cout << "\nChebyshev FMM using" << omp_get_max_threads() << " threads ..." << std::endl;
+		std::cout << "\nChebyshev FMM using " << omp_get_max_threads() << " threads ..." << std::endl;
 		KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
 		FmmClass algorithm(&tree, &kernels);
 		time.tic();
