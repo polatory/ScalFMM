@@ -113,12 +113,15 @@ int main(int argc, char* argv[])
 	// compute f0 = Kw
 	FReal *const f0 = new FReal [nnodes];
 	FBlas::gemv(nnodes, nnodes, FReal(1.), K, w, f0);
-	
+
+	// allocate UV and k
+	FReal *U, *V;
+	unsigned int k;
+
+	/*	
 	// call fACA /////////////////////////////////
 	std::cout << "|- Computing fACA" << std::flush;
 	time.tic();
-	FReal *U, *V;
-	unsigned int k;
 	fACA(K, nnodes, nnodes, epsilon, U, V, k);
 	std::cout << " (k = " << k << "), finished in " << time.tacAndElapsed() << "s." << std::endl;
 	delete [] K;
@@ -132,6 +135,8 @@ int main(int argc, char* argv[])
 	std::cout << "   |- L2 error = " << computeL2norm(nnodes, f0, f1) << std::endl;
 	delete [] U;
 	delete [] V;
+	delete [] f1;
+	*/
 
 	// call pACA ///////////////////////////////////
 	std::cout << "|- Computing pACA" << std::flush;
@@ -151,7 +156,6 @@ int main(int argc, char* argv[])
 
 	delete [] w;
 	delete [] f0;
-	delete [] f1;
 	delete [] f2;
 
 	return 0;
