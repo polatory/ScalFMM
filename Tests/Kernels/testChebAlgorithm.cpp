@@ -80,8 +80,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 7;
-	const FReal epsilon = FReal(1e-7);
+	const unsigned int ORDER = 9;
+	const FReal epsilon = FReal(1e-9);
 
 	// init timer
 	FTic time;

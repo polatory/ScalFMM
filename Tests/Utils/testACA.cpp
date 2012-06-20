@@ -74,21 +74,34 @@ int main(int argc, char* argv[])
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 
-	const unsigned int ORDER = 10;
-	const FReal epsilon = 1e-10;
+	const unsigned int ORDER = 5;
+	const FReal epsilon = 1e-5;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	
-	// cell size
-	FReal width = FReal(2.);
+	//// width of cell X and Y
+	//FReal wx = FReal(2.);
+	//FReal wy = FReal(2.);
+	//// centers of cells X and Y
+	//FPoint cx( 0., 0., 0.);
+	//FPoint cy( 4., 0., 0.);
 
+	// width of cell X and Y
+	FReal wx = FReal(2.);
+	FReal wy = FReal(4.);
 	// centers of cells X and Y
-	FPoint cx(0., 0., 0.);
-	FPoint cy(FReal(2.)*width, 0., 0.);
+	FPoint cx( 1.,-1.,-1.);
+	//FPoint cy(-4., 0., 0.);
+	FPoint cy(-4., 4., 4.);
+
+
+	std::cout << "[cx = " << cx << ", wx = " << wx
+						<< "] [cy = " << cy << ", wy = " << wy
+						<< "] -> dist = " << FPoint(cx-cy).norm() << std::endl;
 
 	// compute Cheb points in cells X and Y
 	FPoint rootsX[nnodes], rootsY[nnodes];
-	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
-	FChebTensor<ORDER>::setRoots(cy, width, rootsY);
+	FChebTensor<ORDER>::setRoots(cx, wx, rootsX);
+	FChebTensor<ORDER>::setRoots(cy, wy, rootsY);
 
 	
 	// initialize timer
@@ -118,7 +131,7 @@ int main(int argc, char* argv[])
 	FReal *U, *V;
 	unsigned int k;
 
-	/*	
+
 	// call fACA /////////////////////////////////
 	std::cout << "|- Computing fACA" << std::flush;
 	time.tic();
@@ -132,11 +145,11 @@ int main(int argc, char* argv[])
 	FBlas::gemtv(nnodes, k, FReal(1.), V, w,  c1);
 	FBlas::gemv( nnodes, k, FReal(1.), U, c1, f1);
 	delete [] c1;
-	std::cout << "   |- L2 error = " << computeL2norm(nnodes, f0, f1) << std::endl;
+	std::cout << "|  |- L2 error = " << computeL2norm(nnodes, f0, f1) << std::endl;
 	delete [] U;
 	delete [] V;
 	delete [] f1;
-	*/
+
 
 	// call pACA ///////////////////////////////////
 	std::cout << "|- Computing pACA" << std::flush;
@@ -149,7 +162,7 @@ int main(int argc, char* argv[])
 	FBlas::gemtv(nnodes, k, FReal(1.), V, w,  c2);
 	FBlas::gemv( nnodes, k, FReal(1.), U, c2, f2);
 	delete [] c2;
-	std::cout << "   |- L2 error = " << computeL2norm(nnodes, f0, f2) << std::endl;
+	std::cout << "|  |- L2 error = " << computeL2norm(nnodes, f0, f2) << std::endl;
 	delete [] U;
 	delete [] V;
 	
