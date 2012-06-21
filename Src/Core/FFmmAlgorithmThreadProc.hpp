@@ -70,14 +70,19 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
 
     const int OctreeHeight;
 
+    /** An interval is the morton index interval
+      * that a proc use (it holds data in this interval)
+      */
     struct Interval{
         MortonIndex min;
         MortonIndex max;
     };
+    /** My interval */
     Interval*const intervals;
+    /** All process intervals */
     Interval*const workingIntervalsPerLevel;
 
-
+    /** Get an interval from proc id and level */
     Interval& getWorkingInterval(const int level, const int proc){
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
@@ -85,10 +90,12 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
 
 public:
 
+    /** Get current proc interval at level */
     Interval& getWorkingInterval(const int level){
         return getWorkingInterval(level, idProcess);
     }
 
+    /** Does the current proc has some work at this level */
     bool hasWorkAtLevel(const int level){
         return idProcess == 0 || getWorkingInterval(level, idProcess - 1).max < getWorkingInterval(level, idProcess).max;
     }
