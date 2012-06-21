@@ -191,7 +191,8 @@ public:
      * @param[in] inPosition the position to write out
      * @return the output for multiple << operators
      */
-    friend std::ostream& operator<<(std::ostream& output, const FComplexe& inC){
+    template <class StreamClass>
+    friend StreamClass& operator<<(StreamClass& output, const FComplexe& inC){
         output << "(" <<  inC.getReal() << ", " << inC.getImag() << ")";
         return output;  // for multiple << operators.
     }
