@@ -80,12 +80,8 @@ int main(int argc, char* argv[])
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
 	const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
-	const unsigned int ORDER = 7;
-	const FReal epsilon = FReal(1e-7);
-
-	//// set threads
-	//omp_set_num_threads(NbThreads); 
-	//std::cout << "Using " << omp_get_max_threads() << " threads." << std::endl;
+	const unsigned int ORDER = 9;
+	const FReal epsilon = FReal(1e-9);
 
 	// init timer
 	FTic time;
@@ -95,6 +91,7 @@ int main(int argc, char* argv[])
 	typedef FChebParticle ParticleClass;
 	typedef FVector<FChebParticle> ContainerClass;
 	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+	//typedef FChebMatrixKernelLJ MatrixKernelClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
 	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
@@ -171,7 +168,7 @@ int main(int argc, char* argv[])
 
 	{
 		omp_set_num_threads(NbThreads); 
-		std::cout << "\nChebyshev FMM using" << omp_get_max_threads() << " threads ..." << std::endl;
+		std::cout << "\nChebyshev FMM using " << omp_get_max_threads() << " threads ..." << std::endl;
 		KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
 		FmmClass algorithm(&tree, &kernels);
 		time.tic();
@@ -235,17 +232,31 @@ int main(int argc, char* argv[])
 				ContainerClass::ConstBasicIterator iSource(*Sources);
 				while(iSource.hasNotFinished()) {
 					if (&iTarget.data() != &iSource.data()) {
-					  const FReal one_over_r = MatrixKernel.evaluate(iTarget.data().getPosition(),
+						const FReal potential_value = MatrixKernel.evaluate(iTarget.data().getPosition(),
 																													 iSource.data().getPosition());
 						const FReal ws = iSource.data().getPhysicalValue();
 						// potential
-						Potential[counter] += one_over_r * ws;
+						Potential[counter] += potential_value * ws;
 						// force
-						FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
-						force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-						Force[counter*3 + 0] += force.getX();
-						Force[counter*3 + 1] += force.getY();
-						Force[counter*3 + 2] += force.getZ();
+						if (MatrixKernelClass::Identifier == ONE_OVER_R) { // laplace force
+							FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
+							force *= ((ws*wt) * (potential_value*potential_value*potential_value));
+							Force[counter*3 + 0] += force.getX();
+							Force[counter*3 + 1] += force.getY();
+							Force[counter*3 + 2] += force.getZ();
+						} else if (MatrixKernelClass::Identifier == LEONARD_JONES_POTENTIAL) { // lenard-jones force
+							FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
+							const FReal one_over_r = FReal(1.) / FMath::Sqrt(force.getX()*force.getX() +
+																															 force.getY()*force.getY() +
+																															 force.getZ()*force.getZ()); // 1 + 15 + 5 = 21 flops
+							const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
+							const FReal one_over_r6 = one_over_r3 * one_over_r3;
+							const FReal one_over_r4 = one_over_r3 * one_over_r;
+							force *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4));
+							Force[counter*3 + 0] += force.getX();
+							Force[counter*3 + 1] += force.getY();
+							Force[counter*3 + 2] += force.getZ();
+						}
 					}
 					iSource.gotoNext();
 				}

@@ -29,6 +29,7 @@ class FTreeCsvSaver {
 public:
     /** Constructor
       * @param inBasefile is the output file name, you must put %d in it
+			* @param inIncludeHeader tells if header must be included
       */
     FTreeCsvSaver(const char inBasefile[], const bool inIncludeHeader = false)
         : includeHeader(inIncludeHeader), nbFrames(0) {

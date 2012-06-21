@@ -117,7 +117,7 @@ public:
 
     /**
     *@brief Set the buffer capacity
-    *@param incapacity to change the capacity
+    *@param inCapacity to change the capacity
     * If capacity given is lower than size elements after capacity are removed
     */
     void setCapacity(const int inCapacity) {

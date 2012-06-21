@@ -27,9 +27,11 @@ class FTreeMpiCsvSaver {
     static const int SizeOfLine = 56;
 
 public:
-    /** Constructor
-      * @param inBasefile is the output file name, you must put %d in it
-      */
+	/** Constructor
+	 * @param inBasefile is the output file name, you must put %d in it
+	 * @param communicator Mpi communicator
+	 * @param inIncludeHeader tells if header must be included
+	 */
     FTreeMpiCsvSaver(const char inBasefile[], const FMpi::FComm& communicator, const bool inIncludeHeader = false)
         : comm(communicator.getComm()), includeHeader(inIncludeHeader), nbFrames(0) {
         strcpy(basefile, inBasefile);

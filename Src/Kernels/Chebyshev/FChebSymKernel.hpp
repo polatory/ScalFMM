@@ -13,6 +13,9 @@
 class FTreeCoordinate;
 
 
+/// for verbosity only!!!
+//#define COUNT_BLOCKED_INTERACTIONS
+
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
@@ -36,7 +39,7 @@ class FChebSymKernel
 	: public FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
 {
 	typedef FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>	AbstractBaseClass;
-	typedef SymmetryHandler<ORDER> SymmetryHandlerClass;
+	typedef SymmetryHandler<ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
   enum {nnodes = AbstractBaseClass::nnodes};
 
 	/// Needed for handling all symmetries
@@ -88,7 +91,7 @@ public:
 								 const FReal inBoxWidth,
 								 const FReal Epsilon)
 		: AbstractBaseClass(inTreeHeight, inBoxCenter, inBoxWidth),
-			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon)),
+			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon, inBoxWidth, inTreeHeight)),
 			Loc(NULL), Mul(NULL), countExp(NULL)
 	{
 		this->allocateMemoryForPermutedExpansions();
@@ -153,7 +156,6 @@ public:
 
 
 
-
 	void M2L(CellClass* const FRestrict TargetCell,
 					 const CellClass* SourceCells[343],
 					 const int NumSourceCells,
@@ -173,20 +175,38 @@ public:
 			}
 		}
 
+
+#ifdef COUNT_BLOCKED_INTERACTIONS ////////////////////////////////////
+		unsigned int count_lidx = 0;
+		unsigned int count_interactions = 0;
+		for (unsigned int idx=0; idx<343; ++idx) 
+			count_interactions += countExp[idx];
+		if (count_interactions==189) {
+			for (unsigned int idx=0; idx<343; ++idx) {
+				if (countExp[idx])
+					std::cout << "gidx = " << idx << " gives lidx = " << count_lidx++ << " and has "
+										<< countExp[idx] << " interactions" << std::endl;
+			}
+			std::cout << std::endl;
+		}
+#endif ///////////////////////////////////////////////////////////////
+
+
 		// multiply (mat-mat-mul)
 		FReal Compressed [nnodes * 24];
-		const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-		const FReal scale(AbstractBaseClass::MatrixKernel->getScaleFactor(CellWidth));
+		const FReal scale = AbstractBaseClass::MatrixKernel->getScaleFactor(AbstractBaseClass::BoxWidth, TreeLevel);
 		for (unsigned int pidx=0; pidx<343; ++pidx) {
 			const unsigned int count = countExp[pidx];
 			if (count) {
-				const unsigned int rank = SymHandler->LowRank[pidx];
+				const unsigned int rank = SymHandler->getLowRank(TreeLevel, pidx);
 				// rank * count * (2*nnodes-1) flops
 				FBlas::gemtm(nnodes, rank, count, FReal(1.),
-										 SymHandler->K[pidx]+rank*nnodes, nnodes, Mul[pidx], nnodes, Compressed, rank);
+										 const_cast<FReal*>(SymHandler->getK(TreeLevel, pidx))+rank*nnodes,
+										 nnodes, Mul[pidx], nnodes, Compressed, rank);
 				// nnodes *count * (2*rank-1) flops
 				FBlas::gemm( nnodes, rank, count, scale,
-										 SymHandler->K[pidx], nnodes, Compressed, rank, Loc[pidx], nnodes);
+										 const_cast<FReal*>(SymHandler->getK(TreeLevel, pidx)),
+										 nnodes, Compressed, rank, Loc[pidx], nnodes);
 			}
 		}
 
@@ -206,6 +226,8 @@ public:
 		}
 
 	}
+
+
 
 	/*
 	void M2L(CellClass* const FRestrict TargetCell,
@@ -338,19 +360,6 @@ public:
 
 
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -11,13 +11,12 @@
 #include "./FChebInterpolator.hpp"
 
 class FTreeCoordinate;
+template <KERNEL_FUNCCTION_IDENTIFIER Identifier> struct DirectInteactionComputer;
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
  * @class FAbstractChebKernel
  * @brief
- * Please read the license
- *
  * This kernels implement the Chebyshev interpolation based FMM operators. It
  * implements all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are required by
  * the FFmmAlgorithm and FFmmAlgorithmThread.
@@ -127,7 +126,7 @@ public:
 					while (iSources.hasNotFinished()) {
 						const ParticleClass& Source = iSources.data();
 						// only if target and source are not identical
-						this->directInteraction(Target, Source);
+						DirectInteactionComputer<MatrixKernelClass::Identifier>::compute(Target, Source);
 						// progress sources
 						iSources.gotoNext();
 					}
@@ -140,7 +139,7 @@ public:
 							while (iSources.hasNotFinished()) {
 								const ParticleClass& Source = iSources.data();
 								// target and source cannot be identical
-								this->directInteraction(Target, Source);
+								DirectInteactionComputer<MatrixKernelClass::Identifier>::compute(Target, Source);
 								// progress sources
 								iSources.gotoNext();
 							}
@@ -163,7 +162,7 @@ public:
 					while (iSources.hasNotFinished()) {
 						ParticleClass& Source = iSources.data();
 						// only if target and source are not identical
-						this->directInteractionMutual(Target, Source);
+						DirectInteactionComputer<MatrixKernelClass::Identifier>::computeMutual(Target, Source);
 						// progress sources
 						iSources.gotoNext();
 					}
@@ -176,7 +175,7 @@ public:
 							while (iSources.hasNotFinished()) {
 								ParticleClass& Source = iSources.data();
 								// target and source cannot be identical
-								this->directInteractionMutual(Target, Source);
+								DirectInteactionComputer<MatrixKernelClass::Identifier>::computeMutual(Target, Source);
 								// progress sources
 								iSources.gotoNext();
 							}
@@ -192,10 +191,15 @@ public:
 
 	}
 
+};
 
 
-private:
-	void directInteraction(ParticleClass& Target, const ParticleClass& Source) const  // 34 overall flops
+/*! Specialization for Laplace potential */
+template <>
+struct DirectInteactionComputer<ONE_OVER_R>
+{
+	template <typename ParticleClass>
+	static void compute(ParticleClass& Target, const ParticleClass& Source) // 34 overall flops
 	{
 		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
 		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
@@ -203,14 +207,17 @@ private:
 																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
-		// potential
+
+		// laplace potential
 		Target.incPotential(one_over_r * ws); // 2 flops
+
 		// force
 		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
 		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
 	}
 
-	void directInteractionMutual(ParticleClass& Target, ParticleClass& Source) const // 39 overall flops
+	template <typename ParticleClass>
+	static void computeMutual(ParticleClass& Target, ParticleClass& Source) // 39 overall flops
 	{
 		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
 		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
@@ -218,16 +225,68 @@ private:
 																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
 		const FReal wt = Target.getPhysicalValue();
 		const FReal ws = Source.getPhysicalValue();
-		// potential
+
+		// laplace potential
 		Target.incPotential(one_over_r * ws); // 2 flops
 		Source.incPotential(one_over_r * wt); // 2 flops
+
 		// force
 		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
 		Target.incForces(  xy.getX(),    xy.getY(),    xy.getZ());  // 3 flops 
 		Source.incForces((-xy.getX()), (-xy.getY()), (-xy.getZ())); // 3 flops
 	}
-
 };
+
+
+/*! Specialization for Leonard-Jones potential */
+template <>
+struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL>
+{
+	template <typename ParticleClass>
+	static void compute(ParticleClass& Target, const ParticleClass& Source) // 39 overall flops
+	{
+		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
+		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
+																										 xy.getY()*xy.getY() +
+																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
+		const FReal wt = Target.getPhysicalValue();
+		const FReal ws = Source.getPhysicalValue();
+
+		// lenard-jones potential
+		const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
+		const FReal one_over_r6 = one_over_r3 * one_over_r3;
+		Target.incPotential((one_over_r6*one_over_r6 - one_over_r6) * ws); // 2 flops
+
+		// force
+		const FReal one_over_r4 = one_over_r3 * one_over_r; // 1 flop
+		xy *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4)); // 9 flops
+		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
+	}
+
+	template <typename ParticleClass>
+	static void computeMutual(ParticleClass& Target, ParticleClass& Source) // 44 overall flops
+	{
+		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
+		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
+																										 xy.getY()*xy.getY() +
+																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
+		const FReal wt = Target.getPhysicalValue();
+		const FReal ws = Source.getPhysicalValue();
+
+		// lenard-jones potential
+		const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
+		const FReal one_over_r6 = one_over_r3 * one_over_r3;
+		Target.incPotential((one_over_r6*one_over_r6 - one_over_r6) * ws); // 2 flops
+		Source.incPotential((one_over_r6*one_over_r6 - one_over_r6) * wt); // 2 flops
+
+		// force
+		const FReal one_over_r4 = one_over_r3 * one_over_r; // 1 flop
+		xy *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4)); // 9 flops
+		Target.incForces(  xy.getX(),    xy.getY(),    xy.getZ());  // 3 flops 
+		Source.incForces((-xy.getX()), (-xy.getY()), (-xy.getZ())); // 3 flops
+	}
+};
+
 
 
 #endif //FCHEBKERNELS_HPP

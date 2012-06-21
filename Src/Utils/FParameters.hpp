@@ -20,24 +20,25 @@
   */
 
 namespace FParameters{
-    /** If it is not found */
-    const static int NotFound = -1;
-    /**
-    * This function gives a parameter in a standart type
-    * @parameter inArg parameter position has to be strictly less than argc/userParemetersCount
-    * @return argv[inArg] in the template VariableType form
-    * @warning VariableType need to work with istream >> operator
-    * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
-    */
-    template <class VariableType>
-    const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
-            std::istringstream iss(str,std::istringstream::in);
-            VariableType value;
-            iss >> value;
-            if( /*iss.tellg()*/ iss.eof() ) return value;
-            return defaultValue;
-    }
-
+	/** If it is not found */
+	const static int NotFound = -1;
+	/**
+	 * This function gives a parameter in a standart type
+	 * @param str string of chars to be converted from
+	 * @param defaultValue the value to be converted to
+	 * @return argv[inArg] in the template VariableType form
+	 * @warning VariableType need to work with istream >> operator
+	 * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
+	 */
+	template <class VariableType>
+	const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
+		std::istringstream iss(str,std::istringstream::in);
+		VariableType value;
+		iss >> value;
+		if( /*iss.tellg()*/ iss.eof() ) return value;
+		return defaultValue;
+	}
+	
     /** To put a char into lower format
       *
       */
