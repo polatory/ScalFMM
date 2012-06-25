@@ -74,10 +74,11 @@ int main(int argc, char* argv[])
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 
-	const unsigned int ORDER = 5;
-	const FReal epsilon = 1e-5;
+	const unsigned int ORDER = 9;
+	const FReal epsilon = 1e-9;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	
+
+	/*	
 	//// width of cell X and Y
 	//FReal wx = FReal(2.);
 	//FReal wy = FReal(2.);
@@ -170,6 +171,112 @@ int main(int argc, char* argv[])
 	delete [] w;
 	delete [] f0;
 	delete [] f2;
+*/
+
+	// test different levels of multipole expansions
+	const FReal pw = FReal(4.);
+	const FReal cw = pw / FReal(2.);
+
+	const FPoint cpx( 0., 0., 0.);
+	const FPoint ccx(-1.,-1.,-1.);
+
+
+	// compute Cheb points in cells X and Y
+	FPoint rootsX[nnodes], rootsY[nnodes];
+	FChebTensor<ORDER>::setRoots(ccx, cw, rootsX);
+
+	unsigned int all_counter = 0;
+	unsigned int ccounter = 0;
+	unsigned int pcounter = 0;
+
+	unsigned int overall_rank = 0;
+	unsigned int all_overall_rank = 0;
+
+	// allocate UV and k
+	FReal *U, *V;
+	unsigned int rank;
+
+
+	for (int i=-1; i<=1; ++i)
+		for (int j=-1; j<=1; ++j)
+			for (int k=-1; k<=1; ++k) {
+				const FPoint cpy(FReal(i)*pw, FReal(j)*pw, FReal(k)*pw);
+				
+				// exclude target cell itself
+				if ((FMath::Abs(i) + FMath::Abs(j) + FMath::Abs(k)) != 0) {
+					
+					//////////////////////////////////////////////////////////////////////
+					// use all multipole expansions form child level
+					for (int ci=-1; ci<=1; ci+=2)
+						for (int cj=-1; cj<=1; cj+=2)
+							for (int ck=-1; ck<=1; ck+=2) {
+								const FPoint ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
+								
+								// exclude near-field 
+								if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
+									FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
+									EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+									pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+									//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
+									
+									all_counter++;
+									all_overall_rank += rank;
+									
+									delete [] U;
+									delete [] V;
+								}
+							}
+					
+					//////////////////////////////////////////////////////////////////////
+					// exclude source cells whose multipole expansion are taken from parent level
+					if (cpy.getX()*ccx.getX() >= 0 &&	cpy.getY()*ccx.getY() >= 0 &&	cpy.getZ()*ccx.getZ() >= 0) {
+						
+						for (int ci=-1; ci<=1; ci+=2)
+							for (int cj=-1; cj<=1; cj+=2)
+								for (int ck=-1; ck<=1; ck+=2) {
+									const FPoint ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
+									
+									// exclude near-field 
+									if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
+										FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
+										EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+										pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+										//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
+										
+										ccounter++;
+										overall_rank += rank;
+										
+										delete [] U;
+										delete [] V;
+									}
+								}
+						
+					}
+					// remaining far-field: source cells whose multipole expansion is taken from parent level
+					else {
+						FChebTensor<ORDER>::setRoots(cpy, pw, rootsY);
+						EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+						pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+						//std::cout << "- Compress " << cpy << "\tof width " << pw << " to rank " << rank << std::endl;
+
+						pcounter++;
+						overall_rank += rank;
+
+						delete [] U;
+						delete [] V;
+					}
+					
+				}
+			}
+
+	std::cout << "-- Overall low rank " << overall_rank
+						<< ", child cells = " << ccounter
+						<< ", parent cells = " << pcounter << std::endl;
+
+	std::cout << "-- Overall low rank " << all_overall_rank
+						<< ", child cells = " << all_counter << std::endl;
+	
+	std::cout << "--- Ratio = " << FReal(overall_rank) / FReal(all_overall_rank) << std::endl;
 
 	return 0;
 }

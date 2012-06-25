@@ -170,8 +170,23 @@ public:
 				FReal *const mul = Mul[pidx] + count*nnodes;
 				const unsigned int *const pvec = SymHandler->pvectors[idx];
 				const FReal *const MultiExp = SourceCells[idx]->getMultipole();
+
+				/*
+				// no loop unrolling
 				for (unsigned int n=0; n<nnodes; ++n)
 					mul[pvec[n]] = MultiExp[n];
+				*/
+
+				// explicit loop unrolling
+				for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
+					mul[pvec[n  ]] = MultiExp[n];
+					mul[pvec[n+1]] = MultiExp[n+1];
+					mul[pvec[n+2]] = MultiExp[n+2];
+					mul[pvec[n+3]] = MultiExp[n+3];
+				}
+				for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n)
+					mul[pvec[n]] = MultiExp[n];
+
 			}
 		}
 
@@ -219,9 +234,23 @@ public:
 				const unsigned int count = (countExp[pidx])++;
 				const FReal *const loc = Loc[pidx] + count*nnodes;
 				const unsigned int *const pvec = SymHandler->pvectors[idx];
-				// nnodes flops
+
+				/*
+				// no loop unrolling
 				for (unsigned int n=0; n<nnodes; ++n)
 					LocalExpansion[n] += loc[pvec[n]];
+				*/
+
+				// explicit loop unrolling
+				for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
+					LocalExpansion[n  ] += loc[pvec[n  ]];
+					LocalExpansion[n+1] += loc[pvec[n+1]];
+					LocalExpansion[n+2] += loc[pvec[n+2]];
+					LocalExpansion[n+3] += loc[pvec[n+3]];
+				}
+				for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n)
+					LocalExpansion[n] += loc[pvec[n]];
+
 			}
 		}
 
