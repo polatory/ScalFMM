@@ -287,7 +287,8 @@ public:
      * @param[in] inPosition the position to write out
      * @return the output for multiple << operators
      */
-    friend std::ostream& operator<<(std::ostream& output, const FPoint& inPosition){
+    template <class StreamClass>
+    friend StreamClass& operator<<(StreamClass& output, const FPoint& inPosition){
         output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
         return output;  // for multiple << operators.
     }

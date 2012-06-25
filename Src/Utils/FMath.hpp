@@ -81,7 +81,7 @@ struct FMath{
 
     /** To get pow */
     template <class NumType>
-    static NumType pow(const NumType inValue, long power){
+    static NumType pow(const NumType inValue, int power){
         NumType result = 1;
         while(power-- > 0) result *= inValue;
         return result;

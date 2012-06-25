@@ -221,8 +221,9 @@ public:
      * @param[in,out] output where to write the coordinate
      * @param[in] inCoordinate the coordinate to write out
      * @return the output for multiple << operators
-     */
-    friend std::ostream& operator<<(std::ostream& output, const FTreeCoordinate& inCoordinate){
+     */    
+    template <class StreamClass>
+    friend StreamClass& operator<<(StreamClass& output, const FTreeCoordinate& inCoordinate){
         output << "(" <<  inCoordinate.getX() << ", " << inCoordinate.getY() << ", " << inCoordinate.getZ() <<")";
         return output;  // for multiple << operators.
     }
