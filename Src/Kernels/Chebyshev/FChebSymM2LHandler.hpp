@@ -18,9 +18,9 @@
 /*!  Choose either \a FULLY_PIVOTED_ACASVD or \a PARTIALLY_PIVOTED_ACASVD or
 	\a ONLY_SVD.
 */
-#define ONLY_SVD
+//#define ONLY_SVD
 //#define FULLY_PIVOTED_ACASVD
-//#define PARTIALLY_PIVOTED_ACASVD
+#define PARTIALLY_PIVOTED_ACASVD
 
 
 
@@ -242,7 +242,8 @@ template <int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
 											 const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
-	std::cout << "\nComputing 16 far-field interactions for cells of width w = " << CellWidth << std::endl;
+	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
+						<< ") for cells of width w = " << CellWidth << std::endl;
 
 	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
