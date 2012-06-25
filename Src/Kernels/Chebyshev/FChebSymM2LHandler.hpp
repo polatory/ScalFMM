@@ -18,9 +18,9 @@
 /*!  Choose either \a FULLY_PIVOTED_ACASVD or \a PARTIALLY_PIVOTED_ACASVD or
 	\a ONLY_SVD.
 */
-//#define ONLY_SVD
+#define ONLY_SVD
 //#define FULLY_PIVOTED_ACASVD
-#define PARTIALLY_PIVOTED_ACASVD
+//#define PARTIALLY_PIVOTED_ACASVD
 
 
 
@@ -240,7 +240,7 @@ void pACA(const ComputerType& Computer,
   them. */
 template <int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
-											 const double Epsilon, FReal* K[343], int LowRank[343])
+											 const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
 	std::cout << "\nComputing 16 far-field interactions for cells of width w = " << CellWidth << std::endl;
 
@@ -263,8 +263,11 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 	// initialize timer
 	FTic time;
-	FReal overall_time(0.);
-	FReal elapsed_time(0.);
+	double overall_time(0.);
+	double elapsed_time(0.);
+
+	// initialize rank counter
+	unsigned int overall_rank = 0;
 
 	unsigned int counter = 0;
 	for (int i=2; i<=3; ++i) {
@@ -395,6 +398,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 				elapsed_time = time.tacAndElapsed(); 
 				overall_time += elapsed_time;
+				overall_rank += rank;
 				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
 					", low rank = " << rank << " (" << aca_rank << ") in " << elapsed_time << "s" << std::endl;
 
@@ -425,6 +429,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 				elapsed_time = time.tacAndElapsed(); 
 				overall_time += elapsed_time;
+				overall_rank += rank;
 				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
 					", low rank = " << rank << " in " << elapsed_time << "s" << std::endl;
 #else
@@ -453,7 +458,8 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-	std::cout << "The approximation of the " << counter << " far-field interactions took "
+	std::cout << "The approximation of the " << counter
+						<< " far-field interactions (overall rank " << overall_rank << ") took "
 						<< overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
@@ -499,7 +505,7 @@ public:
 
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
-	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon,
+	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon,
 									const FReal, const unsigned int)
 	{
 		// init all 343 item to zero, because effectively only 16 exist
