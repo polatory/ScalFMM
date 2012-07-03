@@ -13,9 +13,11 @@
 class FTreeCoordinate;
 
 
-/// for verbosity only!!!
+// for verbosity only!!!
 //#define COUNT_BLOCKED_INTERACTIONS
 
+// if timings should be logged
+//#define LOG_TIMINGS
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
@@ -79,6 +81,10 @@ class FChebSymKernel
 	}
 	
 
+#ifdef LOG_TIMINGS
+	FTic time;
+	FReal t_m2l_1, t_m2l_2, t_m2l_3;
+#endif
 
 public:
 	/**
@@ -95,6 +101,12 @@ public:
 			Loc(NULL), Mul(NULL), countExp(NULL)
 	{
 		this->allocateMemoryForPermutedExpansions();
+
+#ifdef LOG_TIMINGS
+		t_m2l_1 = FReal(0.);
+		t_m2l_2 = FReal(0.);
+		t_m2l_3 = FReal(0.);
+#endif
 	}
 	
 	
@@ -120,6 +132,13 @@ public:
 		if (Loc!=NULL)      delete [] Loc;
 		if (Mul!=NULL)      delete [] Mul;
 		if (countExp!=NULL) delete [] countExp;
+
+#ifdef LOG_TIMINGS
+		std::cout << "- Permutation took " << t_m2l_1 << "s"
+							<< "\n- GEMMT and GEMM took " << t_m2l_2 << "s"
+							<< "\n- Unpermutation took " << t_m2l_3 << "s"
+							<< std::endl;
+#endif
 	}
 
 
@@ -161,6 +180,10 @@ public:
 					 const int NumSourceCells,
 					 const int TreeLevel)
 	{
+#ifdef LOG_TIMINGS
+		time.tic();
+#endif
+
 		// permute and copy multipole expansion
 		memset(countExp, 0, sizeof(int) * 343);
 		for (unsigned int idx=0; idx<343; ++idx) {
@@ -190,6 +213,10 @@ public:
 			}
 		}
 
+#ifdef LOG_TIMINGS
+		t_m2l_1 += time.tacAndElapsed();
+#endif
+
 
 #ifdef COUNT_BLOCKED_INTERACTIONS ////////////////////////////////////
 		unsigned int count_lidx = 0;
@@ -206,6 +233,10 @@ public:
 		}
 #endif ///////////////////////////////////////////////////////////////
 
+
+#ifdef LOG_TIMINGS
+		time.tic();
+#endif
 
 		// multiply (mat-mat-mul)
 		FReal Compressed [nnodes * 24];
@@ -224,6 +255,14 @@ public:
 										 nnodes, Compressed, rank, Loc[pidx], nnodes);
 			}
 		}
+
+#ifdef LOG_TIMINGS
+		t_m2l_2 += time.tacAndElapsed();
+#endif
+
+#ifdef LOG_TIMINGS
+		time.tic();
+#endif
 
 		// permute and add contribution to local expansions
 		FReal *const LocalExpansion = TargetCell->getLocal();
@@ -253,6 +292,11 @@ public:
 
 			}
 		}
+
+#ifdef LOG_TIMINGS
+		t_m2l_3 += time.tacAndElapsed();
+#endif
+
 
 	}
 

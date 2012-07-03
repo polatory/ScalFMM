@@ -158,6 +158,7 @@ void pACA(const ComputerType& Computer,
 	
 	// initialize rank k and UV'
 	k = 0;
+	const FReal eps2 = eps * eps;
 	const int maxk = (nx + ny) / 2;
 	U = new FReal[nx * maxk];
 	V = new FReal[ny * maxk];
@@ -186,12 +187,14 @@ void pACA(const ComputerType& Computer,
 		
 		// find max of residual and argmax
 		FReal maxval = 0.;
-		for (unsigned int j=0; j<ny; ++j)
-			if (c[j] && maxval < FMath::Abs(colV[j])) {
-				maxval = FMath::Abs(colV[j]);
+		for (unsigned int j=0; j<ny; ++j) {
+			const FReal abs_val = FMath::Abs(colV[j]);
+			if (c[j] && maxval < abs_val) {
+				maxval = abs_val;
 				J = j;
 			}
-		// scale pivot v
+		}
+		// find pivot and scale column of V
 		const FReal pivot = FReal(1.) / colV[J];
 		FBlas::scal(ny, pivot, colV);
 		
@@ -207,11 +210,13 @@ void pACA(const ComputerType& Computer,
 		
 		// find max of residual and argmax
 		maxval = 0.;
-		for (unsigned int i=0; i<nx; ++i)
-			if (r[i] && maxval < FMath::Abs(colU[i])) {
-				maxval = FMath::Abs(colU[i]);
+		for (unsigned int i=0; i<nx; ++i) {
+			const FReal abs_val = FMath::Abs(colU[i]);
+			if (r[i] && maxval < abs_val) {
+				maxval = abs_val;
 				I = i;
 			}
+		}
 		
 		////////////////////////////////////////////
 			// increment Frobenius norm: |Sk|^2 += |uk|^2 |vk|^2 + 2 sumj ukuj vjvk
@@ -225,7 +230,7 @@ void pACA(const ComputerType& Computer,
 		// increment low-rank
 		k++;
 
-	} while (norm2uv > eps*eps * norm2S);
+	} while (norm2uv > eps2 * norm2S);
 	
 	delete [] r;
 	delete [] c;
