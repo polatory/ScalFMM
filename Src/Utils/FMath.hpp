@@ -80,8 +80,15 @@ struct FMath{
     }
 
     /** To get pow */
+    static double pow(double x, double y){
+        return ::pow(x,y);
+    }
+    static double pow(float x, float y){
+        return ::powf(x,y);
+    }
     template <class NumType>
     static NumType pow(const NumType inValue, int power){
+        if(power<0) power = -power;
         NumType result = 1;
         while(power-- > 0) result *= inValue;
         return result;

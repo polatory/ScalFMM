@@ -36,6 +36,11 @@ class FSpherical {
     FReal theta;     //!< the inclination angle
     FReal phi;       //!< the azimuth angle
 public:
+    /** Default Constructor, set attributes to 0 */
+    FSpherical()
+        : r(0), cosTheta(0), sinTheta(0), theta(0), phi(0) {
+    }
+
     /** From now, we just need a constructor based on a 3D position */
     explicit FSpherical(const FPoint& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
