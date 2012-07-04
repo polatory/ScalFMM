@@ -559,79 +559,10 @@ public:
                 // Copy multipole data into buffer
                 FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
 
-                // delete me
-                source_w[atLm(0,0)].setReal(0.1);
-                source_w[atLm(0,0)].setImag(0.0);
-                source_w[atLm(1,0)].setReal(0.025);
-                source_w[atLm(1,0)].setImag(0.0);
-                source_w[atLm(1,1)].setReal(0.001250);
-                source_w[atLm(1,1)].setImag(-0.001250);
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("0 - [%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(), source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                }
-                // end delete me
-
                 // Rotate
                 const FSpherical sph = getSphericalInteraction(inLevel, idxNeigh);
                 rotateMultipole(source_w, sph.getTheta(), sph.getPhi());
-                //DELETE ME =======================================
-                printf("After a rotation of theta %f phi %f \n", sph.getTheta(), sph.getPhi());
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("1 - [%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(),
-                               source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                }
-               /* for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        source_w[atLm(l,m)].setRealImag(0.0,0.0);
-                    }
-                }
-                source_w[atLm(0,0)].setReal(1.0);
-                source_w[atLm(0,0)].setImag(0.0);
-                source_w[atLm(1,0)].setReal(3.0);
-                source_w[atLm(1,0)].setImag(0.0);
-                source_w[atLm(1,1)].setReal(5.0);
-                source_w[atLm(1,1)].setImag(6.0);
-                if(P >= 2){
-                    source_w[atLm(2,0)].setReal(7.0);
-                    source_w[atLm(2,0)].setImag(0.0);
-                    source_w[atLm(2,1)].setReal(8.0);
-                    source_w[atLm(2,1)].setImag(9.0);
-                    source_w[atLm(2,2)].setReal(10.0);
-                    source_w[atLm(2,2)].setImag(11.0);
-                }
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("[%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(), source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                }
-                rotateMultipoleFull(source_w, 0, 2);
-                //rotateMultipolePhi(source_w, 2);
-                //rotateMultipoleTheta(source_w, FMath::FPi/2);
-                ///rotateMultipole(source_w, 2.186276, -2.356194);//Phi -2.356194, Betha 2.186276
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("[%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(), source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                }
-                rotateMultipoleFull(source_w,0, -2);
-                //rotateMultipoleTheta(source_w,FMath::FPi*2 - FMath::FPi/2);
-                //rotateMultipolePhi(source_w, -2);
-                ///deRotateMultipole(source_w, 2.186276, -2.356194);
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("[%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(), source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                } */
-                // end delete me ====================================
+
                 const FReal b = sph.getR();
 
                 // Transfer to u
@@ -650,14 +581,7 @@ public:
                         target_u[atLm(l,m)].setRealImag(u_lm_real,u_lm_imag);
                     }
                 }
-                // delete me
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        printf("2 - [%d][%d] %f %f\t", l, m, source_w[atLm(l,m)].getReal(), source_w[atLm(l,m)].getImag());
-                    }
-                    printf("\n");
-                }
-                // end delete me
+
                 // Rotate it back
                 deRotateTaylor(target_u, FMath::FPi*2 - sph.getTheta(), FMath::FPi*2 - sph.getPhi());
                 // Sum
