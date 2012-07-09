@@ -38,7 +38,7 @@ public:
       * @param inImag the imaginary
       * @param inReal the complex[0]
       */
-    explicit FComplexe(const FReal inImag, const FReal inReal) {
+    explicit FComplexe(const FReal inReal, const FReal inImag) {
         complex[0] = inReal;
         complex[1] = inImag;
     }
@@ -91,6 +91,16 @@ public:
     void setRealImag(const FReal inReal, const FReal inImag) {
         this->complex[0] = inReal;
         this->complex[1] = inImag;
+    }
+
+    /** Return the conjugate */
+    FComplexe conjugate() const{
+        return FComplexe(complex[0],-complex[1]);
+    }
+
+    /** Return the conjugate */
+    FComplexe negate() const{
+        return FComplexe(-complex[0],-complex[1]);
     }
 
     /**
@@ -173,6 +183,12 @@ public:
     void addMul(const FComplexe& other, const FComplexe& another){
         this->complex[0] += (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
         this->complex[1] += (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
+    }
+
+    /** Mul other and another and add the result to current complexe */
+    void equalMul(const FComplexe& other, const FComplexe& another){
+        this->complex[0] = (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
+        this->complex[1] = (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
     }
 
     /** To cast to FReal */
