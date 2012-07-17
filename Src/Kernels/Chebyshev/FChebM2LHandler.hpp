@@ -442,10 +442,7 @@ unsigned int getRank(const FReal singular_values[], const double eps)
 
 unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
 {
-	FReal nrm2(0.);
-	for (unsigned int k=0; k<size; ++k)
-		nrm2 += singular_values[k] * singular_values[k];
-
+	const FReal nrm2 = FBlas::scpr(size, singular_values, singular_values);
 	FReal nrm2k(0.);
 	for (unsigned int k=size; k>0; --k) {
 		nrm2k += singular_values[k-1] * singular_values[k-1];
