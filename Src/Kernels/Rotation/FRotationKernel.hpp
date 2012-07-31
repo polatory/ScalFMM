@@ -260,6 +260,18 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         FMemUtils::copyall(vec,cell_rotate,SizeArray);
     }
 
+    void rotateMultipolePhi2(FComplexe vec[], const FReal phi){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                const FReal minus_m = FReal(-m);
+                const FComplexe exp_minus_imphi(FMath::Cos(phi * minus_m), FMath::Sin(phi * minus_m));
+                cell_rotate[atLm(l,m)].equalMul(exp_minus_imphi , vec[atLm(l,m)]);
+            }
+        }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
     void rotateTaylorPhi(FComplexe vec[], const FReal phi){
         FComplexe cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
@@ -298,13 +310,39 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         FMemUtils::copyall(vec,cell_rotate,SizeArray);
     }
 
+    void rotateMultipoleTheta2(FComplexe vec[], const FReal theta){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                FReal w_lkm_real = 0.0;
+                FReal w_lkm_imag = 0.0;
+
+                for(int k = -l ; k < 0 ; ++k){
+                    const FReal d_lmk = analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    const FReal factor = FMath::Sqrt(FReal(fact(l-k)*fact(l+k))/FReal(fact(l-abs(m))*fact(l+abs(m))));
+                    w_lkm_real += FMath::pow(-1,-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
+                    w_lkm_imag -= FMath::pow(-1,-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
+                }
+                for(int k = 0 ; k <= l ; ++k){
+                    const FReal d_lmk = analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    const FReal factor = FMath::Sqrt(FReal(fact(l-k)*fact(l+k))/FReal(fact(l-abs(m))*fact(l+abs(m))));
+                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
+                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
+                }
+                //printf("l%d m%d res = %f\n", l,m,w_lkm_real);
+                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
+            }
+        }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
     void rotateMultipole(FComplexe vec[], FReal theta, FReal phi){
-        rotateMultipolePhi(vec,phi);
-        rotateMultipoleTheta(vec,theta);
+        rotateMultipolePhi2(vec,-phi);
+        rotateMultipoleTheta2(vec,-theta);
     }
     void deRotateMultipole(FComplexe vec[], const FReal theta, const FReal phi){
-        rotateMultipoleTheta(vec,-theta);
-        rotateMultipolePhi(vec,-phi);
+        rotateMultipoleTheta2(vec,theta);
+        rotateMultipolePhi2(vec,phi);
     }
 
     void rotateTaylor(FComplexe vec[], const FReal theta, const FReal phi){
@@ -520,7 +558,7 @@ public:
                         target_w[atLm(l,m)].setRealImag(w_lm_real,w_lm_imag);
                     }
                 }
-
+                //FMemUtils::copyall( target_w, source_w, SizeArray);
                 //delete me
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){

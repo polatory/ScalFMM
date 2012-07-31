@@ -52,7 +52,7 @@ public:
 
 
 int main(int argc, char** argv){
-    static const int P = 1;
+    static const int P = 2;
 
     typedef IndexedParticle                ParticleClass;
     typedef FRotationCell<P>               CellClass;
