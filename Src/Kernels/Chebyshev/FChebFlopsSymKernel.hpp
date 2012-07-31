@@ -133,17 +133,23 @@ public:
 							<< std::endl;
 
 		std::cout << "\n==================================================" 
-							<< "\n- Flops for M2M" << std::endl;
+							<< "\n- Flops for P2M/M2M" << std::endl;
 		for (unsigned int level=0; level<inTreeHeight; ++level)
-			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelM2M[level] << std::endl;
+			if (level < inTreeHeight-1)
+				std::cout << "  |- at level " << level << " flops = " << flopsPerLevelM2M[level] << std::endl;
+			else
+				std::cout << "  |- at level " << level << " flops = " << flopsP2M << std::endl;
 		std::cout << "==================================================" 
 							<< "\n- Flops for M2L" << std::endl;
 		for (unsigned int level=0; level<inTreeHeight; ++level)
 			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelM2L[level] << std::endl;
 		std::cout << "==================================================" 
-							<< "\n- Flops for L2L" << std::endl;
+							<< "\n- Flops for L2L/L2P" << std::endl;
 		for (unsigned int level=0; level<inTreeHeight; ++level)
-			std::cout << "  |- at level " << level << " flops = " << flopsPerLevelL2L[level] << std::endl;
+			if (level < inTreeHeight-1)
+				std::cout << "  |- at level " << level << " flops = " << flopsPerLevelL2L[level] << std::endl;
+			else
+				std::cout << "  |- at level " << level << " flops = " << flopsL2P << std::endl;
 		std::cout << "==================================================" << std::endl; 
 
 
@@ -187,7 +193,8 @@ public:
 			if (SourceCells[idx])	countExp[SymHandler->pindices[idx]]++;
 		// multiply (mat-mat-mul)
 		for (unsigned int pidx=0; pidx<343; ++pidx)
-			if (countExp[pidx]) flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
+			if (countExp[pidx])
+				flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
 		flopsM2L += flops;
 		flopsPerLevelM2L[TreeLevel] += flops;
 	}
