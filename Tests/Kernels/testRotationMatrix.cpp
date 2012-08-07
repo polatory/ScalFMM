@@ -120,7 +120,8 @@ int main(){
     //const FReal sinTheta = FMath::Sin(FMath::FPiDiv2/FReal(2.0));
     const FPoint relativPos(FReal(0.1),FReal(0.1),FReal(0.1));
     const FSpherical relativPosSphere(relativPos);
-    const FReal Betha = 2.186276;//FMath::FPi/2; //2*FMath::FPi-FMath::FPi/2
+    //Theta 0.955317 Phi 2.356194
+    const FReal Betha = 0.955317;//FMath::FPi/2; //2*FMath::FPi-FMath::FPi/2
     const FReal cosTheta = FMath::Cos(Betha); // relativPosSphere.getCosTheta();
     const FReal sinTheta = FMath::Sin(Betha); // relativPosSphere.getSinTheta();
 

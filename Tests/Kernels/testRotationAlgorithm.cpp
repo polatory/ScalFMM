@@ -23,6 +23,7 @@
 #include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -52,7 +53,7 @@ public:
 
 
 int main(int argc, char** argv){
-    static const int P = 2;
+    static const int P = 1;
 
     typedef IndexedParticle                ParticleClass;
     typedef FRotationCell<P>               CellClass;
@@ -179,7 +180,7 @@ int main(int argc, char** argv){
                     const ParticleClass& other = particles[leafIter.data().getIndex()];
 
                     potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-std::cout << "Direct Potential = " << other.getPotential() << " Fmm Potential = " << leafIter.data().getPotential() << std::endl; // Remove Me
+std::cout << leafIter.data().getIndex() << " Direct Potential = " << other.getPotential() << " Fmm Potential = " << leafIter.data().getPotential() << std::endl; // Remove Me
                     fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
 
                     fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
