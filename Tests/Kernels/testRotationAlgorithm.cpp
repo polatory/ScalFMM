@@ -21,6 +21,7 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
@@ -53,7 +54,7 @@ public:
 
 
 int main(int argc, char** argv){
-    static const int P = 1;
+    static const int P = 8;
 
     typedef IndexedParticle                ParticleClass;
     typedef FRotationCell<P>               CellClass;
@@ -109,7 +110,7 @@ int main(int argc, char** argv){
     std::cout << "Create kernel ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(P, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     counter.tac();
     std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
@@ -180,7 +181,7 @@ int main(int argc, char** argv){
                     const ParticleClass& other = particles[leafIter.data().getIndex()];
 
                     potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-std::cout << leafIter.data().getIndex() << " Direct Potential = " << other.getPotential() << " Fmm Potential = " << leafIter.data().getPotential() << std::endl; // Remove Me
+//std::cout << leafIter.data().getIndex() << " Direct Potential = " << other.getPotential() << " Fmm Potential = " << leafIter.data().getPotential() << std::endl; // Remove Me
                     fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
 
                     fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
@@ -200,6 +201,89 @@ std::cout << leafIter.data().getIndex() << " Direct Potential = " << other.getPo
     }
 
     delete[] particles;
+
+    {
+        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass>   ShKernelClass;
+        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, ShKernelClass, LeafClass > ShFmmClass;
+
+        FFmaLoader<ParticleClass> loaderSh(filename);
+        OctreeClass treeSh(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            ParticleClass particle;
+            loaderSh.fillParticle(particle);
+            treeSh.insert(particle);
+        }
+
+        ShKernelClass kernelsSh(P, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+        ShFmmClass algoSh(&treeSh,&kernelsSh);
+        algoSh.execute();
+
+        {
+            const int OctreeHeight = tree.getHeight();
+            typename OctreeClass::Iterator octreeIterator(&treeSh);
+            octreeIterator.gotoBottomLeft();
+
+            typename OctreeClass::Iterator octreeIteratorValide(&tree);
+            octreeIteratorValide.gotoBottomLeft();
+
+            for(int level = OctreeHeight - 1 ; level > 1 ; --level){
+                FMath::FAccurater pole, local;
+
+                do {
+                    for(int idx = 0 ; idx < ((P+2)*(P+1))/2 ; ++idx){
+                        pole.add(octreeIteratorValide.getCurrentCell()->getMultipole()[idx].getReal(),
+                                 octreeIterator.getCurrentCell()->getMultipole()[idx].getReal());
+                        pole.add(octreeIteratorValide.getCurrentCell()->getMultipole()[idx].getImag(),
+                                 octreeIterator.getCurrentCell()->getMultipole()[idx].getImag());
+                    }
+                    for(int idx = 0 ; idx < ((P+2)*(P+1))/2 ; ++idx){
+                        local.add(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal(),
+                                  octreeIterator.getCurrentCell()->getLocal()[idx].getReal());
+                        local.add(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag(),
+                                  octreeIterator.getCurrentCell()->getLocal()[idx].getImag());
+                    }
+                } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
+
+                octreeIterator.moveUp();
+                octreeIterator.gotoLeft();
+
+                octreeIteratorValide.moveUp();
+                octreeIteratorValide.gotoLeft();
+
+                printf("At level %d:", level);
+                printf(">> pole %f, %f\n", pole.getL2Norm(), pole.getInfNorm() );
+                printf(">> local %f, %f\n", local.getL2Norm(), local.getInfNorm() );
+            }
+        }
+        {
+            // Check that each particle has been summed with all other
+            typename OctreeClass::Iterator octreeIterator(&treeSh);
+            octreeIterator.gotoBottomLeft();
+
+            typename OctreeClass::Iterator octreeIteratorValide(&tree);
+            octreeIteratorValide.gotoBottomLeft();
+
+            FMath::FAccurater potential, forces;
+
+            do {
+                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+                typename ContainerClass::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
+
+                while( iter.hasNotFinished() ){
+
+                   potential.add( iterValide.data().getPotential() , iter.data().getPotential());
+                   forces.add(iterValide.data().getForces().getX(),iter.data().getForces().getX());
+                   forces.add(iterValide.data().getForces().getY(),iter.data().getForces().getY());
+                   forces.add(iterValide.data().getForces().getZ(),iter.data().getForces().getZ());
+
+                    iter.gotoNext();
+                    iterValide.gotoNext();
+                }
+
+            } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
+        }
+    }
 
     return 0;
 }
