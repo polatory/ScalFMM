@@ -8,8 +8,8 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#ifndef FROTATIONKERNEL_HPP
-#define FROTATIONKERNEL_HPP
+#ifndef FROTATIONORIGINALKERNEL_HPP
+#define FROTATIONORIGINALKERNEL_HPP
 
 #include "../../Components/FAbstractKernels.hpp"
 #include "../../Utils/FSmartPointer.hpp"
@@ -20,20 +20,32 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FRotationKernel
+* @class FRotationOriginalKernel
 * @brief
 *
 * This kernels is a complete rotation based kernel with spherical
 * harmonic.
 *
-* Here is the optimizated kernel, please refer to FRotationOriginalKernel
-* to see the non optimized easy to understand kernel.
+* This kernel is still not optimized for a pedagogic purpose.
+* Please with refer to the optimized version to run real simulation.
+*
+* Here there is no real precomputation no optimization.
+*
+* The fallowing code has to be insert inside this class to print
+* the details of a vector during the computation if needed.
+* @code
+* for(int l = 0 ; l <= P ; ++l ){
+*    for(int m = 0 ; m <= l ; ++m ){
+*        printf("3 - [%d][%d] %f i%f\t", l, m, target_u[atLm(l,m)].getReal(), target_u[atLm(l,m)].getImag());
+*    }
+*    printf("\n");
+* }
+* @endcode
 */
 template< class ParticleClass, class CellClass, class ContainerClass, int P>
-class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {    
+class FRotationOriginalKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
     //< Size of the data array computed using a suite relation
     static const int SizeArray = ((P+2)*(P+1))/2;
-    static const int P2 = P*2;
 
     ///////////////////////////////////////////////////////
     // Object attributes
@@ -48,17 +60,6 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
 
     FSmartPointer<FSpherical> childrenPosition;     //< The transfers between level
     FSmartPointer<FSpherical> interactionsPosition; //< The transfers at a same level
-
-    FReal factorials[P2+1];
-
-    FSmartPointer<FReal[P+1]>      M2MTranslationCoef;
-    FSmartPointer<FReal[343][P+1]> M2LTranslationCoef;
-    FSmartPointer<FReal[P+1]>      L2LTranslationCoef;
-
-    FComplexe rotationExpMinusImPhi[8][SizeArray];
-    FComplexe rotationExpImPhi[8][SizeArray];
-
-    FSmartPointer<FComplexe[343][SizeArray]> M2LAroundZCoef;
 
     ///////////////////////////////////////////////////////
     // d_lmk
@@ -78,53 +79,271 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         return T(0);
     }
 
-    /** Compute the factorial from 0 to P*2 */
-    void precomputeFactorials(){
-        factorials[0] = 1;
-        FReal fidx = 1;
-        for(int idx = 1 ; idx <= P2 ; ++idx, ++fidx){
-            factorials[idx] = fidx * factorials[idx-1];
+    /** Return the factorial of a number */
+    FReal fact(const int a){
+        if(a<0) printf("Error factorial negative!! a=%d\n",a);
+        FReal result = 1;
+        for(int i = 1 ; i <= a ; ++i){
+            result *= FReal(i);
+        }
+        return result;
+    }
+
+    /** Return the combine of a paire of number */    
+    FReal combin(const int& a, const int& b){
+        if(a-b<0) printf("Error combi negative!! a=%d b=%d\n",a,b);
+        return fact(a) / (fact(b)*fact(a-b));
+    }
+
+    /** To access the rotation matrix value with an analytical computation on the fly
+      * These analytical formula has been taken from two papers:
+      * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
+      * Formulas 13, 14, 15, 16
+      * Parallelization of the Fast Multipole Method
+      * Formula 19
+      *  \f[
+      * P^{l}_{m,k} = \frac{1}{2} \sqrt{ \frac{(l-m)!(l+m)!}{(l-k)!(l+k)!} } (1+sgn(k)cos( \theta))^{|k|} sin( \theta )^{m-|k|}
+      *              \sum_{n=max(-(m+k),0)}^{min(l-m,l-k)}{ (-1)^{l-m-n} {{l-k} \choose {n}} {{l+k} \choose {l-m-n}}
+      *              (1+cos( \theta ))^n (1+cos( \theta ))^{l-m-n} } , l \geq 0, -l \leq k \leq l, |k| \leq m \leq l
+      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
+      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
+      * \f]
+      */
+    FReal d_lmk_analytical(const FReal cosTheta, const FReal sinTheta, const int l , const int m, const int k){
+        if( l >= 0 && -l <= k && k <= l && FMath::Abs(k) <= m && m <= l ){
+            FReal sum = 0;
+            for(int n = FMath::Max(-(m+k),0) ; n <= FMath::Min(l-m,l-k) ; ++n){
+                sum += FMath::pow(FReal(-1.0), l-m-n) * combin(l-k, n) * combin(l+k, l-m-n) * FMath::pow(FReal(1.0)+cosTheta,n) * FMath::pow(FReal(1.0)-cosTheta, l-m-n);
+            }
+            return (FReal(1.0)/FMath::pow(FReal(2.0),l)) * FMath::Sqrt((fact(l-m)*fact(l+m))/(fact(l-k)*fact(l+k)))
+                    * FMath::pow(FReal(1.0) + FReal(Sgn(k))*cosTheta, FMath::Abs(k)) * FMath::pow(sinTheta, m - FMath::Abs(k)) * sum;
+        }
+        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
+        else if( (l > 0 && -l <= m && m < 0 && FMath::Abs(m) <= k && k <= l)
+                 ||  (l > 0 && 0 <= m && m < l && m < k && k <= l )) {
+            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, k ,m);
+        }
+        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
+        else if( l > 0 && -l <= m && m < l && -l <= k && k < -m ){
+            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, -m, -k);
+        }
+        else{
+            printf("Error that should not be possible!\n");
+            return FReal(0.0);
         }
     }
 
-    void precomputeTranslationCoef(){
-        M2MTranslationCoef = new FReal[treeHeight-1][P+1];
-        L2LTranslationCoef = new FReal[treeHeight-1][P+1];
+    ///////////////////////////////////////////////////////
+    // legendre
+    ///////////////////////////////////////////////////////
 
-        FReal widthAtLevel = boxWidth/4;
-        for( int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel){
-            FReal b = FMath::Sqrt(widthAtLevel*widthAtLevel*3);
-            FReal bPowIdx = 1.0;
-            FReal minus_1_pow_idx = 1.0;
-            for(int idx = 0 ; idx <= P ; ++idx){
-                // coef m2m = (-b)^j/j!
-                M2MTranslationCoef[idxLevel][idx] = minus_1_pow_idx * bPowIdx / factorials[idx];
-                // coef l2l = b^j/j!
-                L2LTranslationCoef[idxLevel][idx] = bPowIdx / factorials[idx];
-                // increase
-                bPowIdx *= b;
-                minus_1_pow_idx = -minus_1_pow_idx;
+    /** Compute the legendre polynomial from {0,0} to {P,P}
+      * the computation is made by recurence (P cannot be equal to 0)
+      * @todo use pointer
+      *
+      * The formula has been taken from:
+      * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
+      * Formula number (22)
+      * \f[
+      * P_{0,0} = 1
+      * P_{l,l} = (2l-1) sin( \theta ) P_{l-1,l-1} ,l \ge 0
+      * P_{l,l-1} = (2l-1) cos( \theta ) P_{l-1,l-1} ,l \ge 0
+      * P_{l,m} = \frac{(2l-1) cos( \theta ) P_{l-1,m} - (l+m-1) P_{l-2,m}x}{(l-k)} ,l \ge 1, 0 \leq m \le l-1
+      * \f]
+      */
+    void computeLegendre(FReal legendre[], const FReal inCosTheta, const FReal inSinTheta){
+        const FReal invSinTheta = -inSinTheta;
+        legendre[atLm(0,0)] = 1.0;             // P_0,0(1) = 1
+
+        legendre[atLm(1,0)] = inCosTheta;      // P_1,0 = cos(theta)
+        legendre[atLm(1,1)] = invSinTheta;     // P_1,1 = -sin(theta)
+
+        // Compute using recurrence
+        for(int l = 2; l <= P ; ++l ){
+            for( int m = 0; m < l - 1 ; ++m ){
+                // P_{l,m} = \frac{(2l-1) cos( \theta ) P_{l-1,m} - (l+m-1) P_{l-2,m}x}{(l-k)}
+                legendre[atLm(l,m)] = (FReal(2*l-1) * inCosTheta * legendre[atLm(l-1,m)] - FReal( l + m - 1 ) * legendre[atLm(l-2,m)] )
+                                                                    / FReal( l - m );
             }
-            widthAtLevel /= 2;
+            // P_{l,l-1} = (2l-1) cos( \theta ) P_{l-1,l-1}
+            legendre[atLm(l,l-1)] = FReal(2*l-1) * inCosTheta * legendre[atLm(l-1,l-1)];
+            // P_{l,l} = (2l-1) sin( \theta ) P_{l-1,l-1}
+            legendre[atLm(l,l)] = FReal(2*l-1) * invSinTheta * legendre[atLm(l-1,l-1)];
         }
+    }
 
-        M2LTranslationCoef = new FReal[treeHeight][343][P+1];
-        for( int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            for(int idxInteraction = 0 ; idxInteraction < 343 ; ++idxInteraction){
-                int x = (idxInteraction/7*7)-3;
-                int y = ((idxInteraction - (x+3)*7*7)/7) - 3;
-                int z = idxInteraction - ((x+3)*7 + (y+3))*7;//idxInteraction%7;
-                if( x < -1 || 1 < x || y < -1 || 1 < y || z < -1 || 1 < 1 ){
-                    const FReal b = getSphericalInteraction(idxLevel, idxInteraction).getR();
-                    FReal bPowIdx1 = b;
-                    for(int idx = 0 ; idx <= P ; ++idx){
-                        // factorials[j+l] / FMath::pow(b,j+l+1)
-                        M2LTranslationCoef[idxLevel][idxInteraction][idx] = factorials[idx] / bPowIdx1;
-                        bPowIdx1 *= b;
-                    }
+    ///////////////////////////////////////////////////////
+    // Real rotation
+    ///////////////////////////////////////////////////////
+
+    /** This function rotate a multipole vector by an angle azimuth phi
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
+      * \f]
+      * The computation is simply a multiplication per a complex number \f$ e^{-i \phi m} \f$
+      * Phi should be in [0,2pi]
+      */
+    void rotateMultipoleAroundZ(FComplexe vec[], const FReal phi){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
+                const FComplexe exp_minus_imphi(FMath::Cos(-phi * FReal(m)), FMath::Sin(-phi * FReal(m)));
+                cell_rotate[atLm(l,m)].equalMul(exp_minus_imphi , vec[atLm(l,m)]);
+            }
+        }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
+    /** This function rotate a local vector by an angle azimuth phi
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
+      * \f]
+      * The computation is simply a multiplication per a complex number \f$ e^{i \phi m} \f$
+      * Phi should be in [0,2pi]
+      */
+    void rotateTaylorAroundZ(FComplexe vec[], const FReal phi){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
+                const FComplexe exp_imphi(FMath::Cos(phi * FReal(m)), FMath::Sin(phi * FReal(m)));
+                cell_rotate[atLm(l,m)].equalMul(exp_imphi , vec[atLm(l,m)]);
+            }
+        }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
+    /** This function rotate a multipole vector by an angle inclination \theta
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * O_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+      *                                     d^l_{km}( \theta ) O_{l,k}( \alpha, \beta ) }
+      * \f]
+      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
+      * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
+      * Theta should be in [0,pi]
+      */
+    void rotateMultipoleAroundY(FComplexe vec[], const FReal theta){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                FReal w_lkm_real = 0.0;
+                FReal w_lkm_imag = 0.0;
+
+                for(int k = -l ; k < 0 ; ++k){
+                    // O_{l,-m} = \bar{ O_{l,m} } (-1)^m
+                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+                    const FReal factor = FMath::Sqrt((fact(l-k)*fact(l+k))/(fact(l-abs(m))*fact(l+abs(m))));
+                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
+                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
                 }
+                for(int k = 0 ; k <= l ; ++k){
+                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+                    const FReal factor = FMath::Sqrt((fact(l-k)*fact(l+k))/(fact(l-abs(m))*fact(l+abs(m))));
+                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
+                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
+                }
+                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
             }
         }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
+    /** This function rotate a local vector by an angle inclination \theta
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * M_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
+      *                                     d^l_{km}( \theta ) M_{l,k}( \alpha, \beta ) }
+      * \f]
+      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
+      * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
+      * Theta should be in [0,pi]
+      */
+    void rotateTaylorAroundY(FComplexe vec[], const FReal theta){
+        FComplexe cell_rotate[SizeArray];
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = 0 ; m <= l ; ++m ){
+                FReal w_lkm_real = 0.0;
+                FReal w_lkm_imag = 0.0;
+
+                for(int k = -l ; k < 0 ; ++k){
+                    // M_{l,-m} = \bar{ M_{l,m} } (-1)^m
+                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
+                    const FReal factor = FMath::Sqrt((fact(l-abs(m))*fact(l+abs(m)))/(fact(l-k)*fact(l+k)));
+                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
+                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
+                }
+                for(int k = 0 ; k <= l ; ++k){
+                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
+                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
+                    const FReal factor = FMath::Sqrt((fact(l-abs(m))*fact(l+abs(m)))/(fact(l-k)*fact(l+k)));
+                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
+                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
+                }
+                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
+            }
+        }
+        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    }
+
+    /** This function rotate a multipole vector by a angles inclination & azimuth
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1 as the forward rotation
+      *
+      * Rotation are not commutative so we have to do it in the right order
+      */
+    void rotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
+        rotateMultipoleAroundZ(vec,(FMath::FPiDiv2 + azimuth));
+        rotateMultipoleAroundY(vec,inclination);
+    }
+    /** This function rotate a multipole vector by a angles inclination & azimuth
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1 as the forward rotation
+      *
+      * Rotation are not commutative so we have to do it in the right order
+      */
+    void deRotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
+        rotateMultipoleAroundY(vec,-inclination);
+        rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
+    }
+
+    /** This function rotate a local vector by a angles inclination & azimuth
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1 as the forward rotation
+      *
+      * Rotation are not commutative so we have to do it in the right order
+      */
+    void rotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
+        rotateTaylorAroundZ(vec,(FMath::FPiDiv2 + azimuth));
+        rotateTaylorAroundY(vec,inclination);
+    }
+    /** This function rotate a local vector by a angles inclination & azimuth
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1 as the forward rotation
+      *
+      * Rotation are not commutative so we have to do it in the right order
+      */
+    void deRotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
+        rotateTaylorAroundY(vec,-inclination);
+        rotateTaylorAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
     }
 
     ///////////////////////////////////////////////////////
@@ -174,64 +393,6 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         }
     }
 
-    /** This function rotate a multipole vector by an angle azimuth phi
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
-      * \f]
-      * The computation is simply a multiplication per a complex number \f$ e^{-i \phi m} \f$
-      * Phi should be in [0,2pi]
-      */
-    /** This function rotate a local vector by an angle azimuth phi
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
-      * \f]
-      * The computation is simply a multiplication per a complex number \f$ e^{i \phi m} \f$
-      * Phi should be in [0,2pi]
-      */
-
-    void precomputeRotationVectors(){
-        const int index_P0 = atLm(P,0);
-        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-            const FReal x = FReal((idxChild&4)? -boxWidth : boxWidth);
-            const FReal y = FReal((idxChild&2)? -boxWidth : boxWidth);
-            const FReal z = FReal((idxChild&1)? -boxWidth : boxWidth);
-            const FPoint relativePosition( x , y , z );
-
-            FSpherical sph(relativePosition);
-
-            // compute the last part with l == P
-            {
-                int index_lm = index_P0;
-                for(int m = 0 ; m <= P ; ++m, ++index_lm ){
-                    const FReal mphi = (sph.getAzimuth() + FMath::FPiDiv2) * FReal(m);
-                    // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
-                    rotationExpMinusImPhi[idxChild][index_lm].setRealImag(FMath::Cos(-mphi), FMath::Sin(-mphi));
-                    // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
-                    rotationExpImPhi[idxChild][index_lm].setRealImag(FMath::Cos(mphi), FMath::Sin(mphi));
-                }
-            }
-            // Then copy
-            {
-                int index_lm = 0;
-                for(int l = 0 ; l < P ; ++l){
-                    FMemUtils::copyall(rotationExpMinusImPhi[idxChild] + index_lm,
-                                       rotationExpMinusImPhi[idxChild] + index_P0,
-                                       l + 1);
-                    FMemUtils::copyall(rotationExpImPhi[idxChild] + index_lm,
-                                       rotationExpImPhi[idxChild] + index_P0,
-                                       l + 1);
-                    index_lm += l + 1;
-                }
-            }
-        }
-    }
-
     /** To get the right spherical object from level and child position */
     FSpherical getSphericalChild(const int idxLevel, const int position) const {
         return childrenPosition[(idxLevel-1)*8 + position];
@@ -250,244 +411,10 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
                     FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getZ());
     }
 
-
-    /** Return the combine of a paire of number */    
-    FReal combin(const int& a, const int& b){
-        if(a-b<0) printf("Error combi negative!! a=%d b=%d\n",a,b);
-        return factorials[a] / (factorials[b]*factorials[a-b]);
-    }
-
-    /** To access the rotation matrix value with an analytical computation on the fly
-      * These analytical formula has been taken from two papers:
-      * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
-      * Formulas 13, 14, 15, 16
-      * Parallelization of the Fast Multipole Method
-      * Formula 19
-      *  \f[
-      * P^{l}_{m,k} = \frac{1}{2} \sqrt{ \frac{(l-m)!(l+m)!}{(l-k)!(l+k)!} } (1+sgn(k)cos( \theta))^{|k|} sin( \theta )^{m-|k|}
-      *              \sum_{n=max(-(m+k),0)}^{min(l-m,l-k)}{ (-1)^{l-m-n} {{l-k} \choose {n}} {{l+k} \choose {l-m-n}}
-      *              (1+cos( \theta ))^n (1+cos( \theta ))^{l-m-n} } , l \geq 0, -l \leq k \leq l, |k| \leq m \leq l
-      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
-      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
-      * \f]
-      */
-    FReal d_lmk_analytical(const FReal cosTheta, const FReal sinTheta, const int l , const int m, const int k){
-        if( l >= 0 && -l <= k && k <= l && FMath::Abs(k) <= m && m <= l ){
-            FReal sum = 0;
-            for(int n = FMath::Max(-(m+k),0) ; n <= FMath::Min(l-m,l-k) ; ++n){
-                sum += FMath::pow(FReal(-1.0), l-m-n) * combin(l-k, n) * combin(l+k, l-m-n) * FMath::pow(FReal(1.0)+cosTheta,n) * FMath::pow(FReal(1.0)-cosTheta, l-m-n);
-            }
-            return (FReal(1.0)/FMath::pow(FReal(2.0),l)) * FMath::Sqrt((factorials[l-m]*factorials[l+m])/(factorials[l-k]*factorials[l+k]))
-                    * FMath::pow(FReal(1.0) + FReal(Sgn(k))*cosTheta, FMath::Abs(k)) * FMath::pow(sinTheta, m - FMath::Abs(k)) * sum;
-        }
-        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
-        else if( (l > 0 && -l <= m && m < 0 && FMath::Abs(m) <= k && k <= l)
-                 ||  (l > 0 && 0 <= m && m < l && m < k && k <= l )) {
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, k ,m);
-        }
-        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
-        else if( l > 0 && -l <= m && m < l && -l <= k && k < -m ){
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, -m, -k);
-        }
-        else{
-            printf("Error that should not be possible!\n");
-            return FReal(0.0);
-        }
-    }
-
-    ///////////////////////////////////////////////////////
-    // legendre
-    ///////////////////////////////////////////////////////
-
-    /** Compute the legendre polynomial from {0,0} to {P,P}
-      * the computation is made by recurence (P cannot be equal to 0)
-      * @todo use pointer
-      *
-      * The formula has been taken from:
-      * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
-      * Formula number (22)
-      * \f[
-      * P_{0,0} = 1
-      * P_{l,l} = (2l-1) sin( \theta ) P_{l-1,l-1} ,l \ge 0
-      * P_{l,l-1} = (2l-1) cos( \theta ) P_{l-1,l-1} ,l \ge 0
-      * P_{l,m} = \frac{(2l-1) cos( \theta ) P_{l-1,m} - (l+m-1) P_{l-2,m}x}{(l-k)} ,l \ge 1, 0 \leq m \le l-1
-      * \f]
-      */
-    void computeLegendre(FReal legendre[], const FReal inCosTheta, const FReal inSinTheta){
-        const FReal invSinTheta = -inSinTheta;
-
-        legendre[0] = 1.0;             // P_0,0(1) = 1
-
-        legendre[1] = inCosTheta;      // P_1,0 = cos(theta)
-        legendre[2] = invSinTheta;     // P_1,1 = -sin(theta)
-
-        // work with pointers
-        FReal* FRestrict legendre_l1_m1 = legendre;     // P{l-2,m} starts with P_{0,0}
-        FReal* FRestrict legendre_l1_m  = legendre + 1; // P{l-1,m} starts with P_{1,0}
-        FReal* FRestrict legendre_lm  = legendre + 3;   // P{l,m} starts with P_{2,0}
-
-        // Compute using recurrence
-        FReal l2_minus_1 = 3; // 2 * l - 1
-        FReal fl = FReal(2.0);// To get 'l' as a float
-        for(int l = 2; l <= P ; ++l, ++fl ){
-            FReal lm_minus_1 = fl - FReal(1.0); // l + m - 1
-            FReal l_minus_m = fl;               // l - m
-            for( int m = 0; m < l - 1 ; ++m ){
-                // P_{l,m} = \frac{(2l-1) cos( \theta ) P_{l-1,m} - (l+m-1) P_{l-2,m}x}{(l-m)}
-                *(legendre_lm++) = (l2_minus_1 * inCosTheta * (*legendre_l1_m++) - (lm_minus_1++) * (*legendre_l1_m1++) )
-                                                        / (l_minus_m--);
-            }
-            // P_{l,l-1} = (2l-1) cos( \theta ) P_{l-1,l-1}
-            *(legendre_lm++) = l2_minus_1 * inCosTheta * (*legendre_l1_m);
-            // P_{l,l} = (2l-1) sin( \theta ) P_{l-1,l-1}
-            *(legendre_lm++) = l2_minus_1 * invSinTheta * (*legendre_l1_m);
-            // goto P_{l-1,0}
-            ++legendre_l1_m;
-            l2_minus_1 += FReal(2.0); // 2 * l - 1 => progress by two
-        }
-    }
-
-    ///////////////////////////////////////////////////////
-    // Real rotation
-    ///////////////////////////////////////////////////////
-
-
-    /** This function rotate a multipole vector by an angle inclination \theta
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * O_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-      *                                     d^l_{km}( \theta ) O_{l,k}( \alpha, \beta ) }
-      * \f]
-      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
-      * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
-      * Theta should be in [0,pi]
-      */
-    void rotateMultipoleAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
-        for(int l = 0 ; l <= P ; ++l){
-            for(int m = 0 ; m <= l ; ++m ){
-                FReal w_lkm_real = 0.0;
-                FReal w_lkm_imag = 0.0;
-
-                for(int k = -l ; k < 0 ; ++k){
-                    // O_{l,-m} = \bar{ O_{l,m} } (-1)^m
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-k]*factorials[l+k])/(factorials[l-abs(m)]*factorials[l+abs(m)]));
-                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
-                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
-                }
-                for(int k = 0 ; k <= l ; ++k){
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-k]*factorials[l+k])/(factorials[l-abs(m)]*factorials[l+abs(m)]));
-                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
-                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
-                }
-                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
-            }
-        }
-        FMemUtils::copyall(vec,cell_rotate,SizeArray);
-    }
-
-    /** This function rotate a local vector by an angle inclination \theta
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * M_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-      *                                     d^l_{km}( \theta ) M_{l,k}( \alpha, \beta ) }
-      * \f]
-      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
-      * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
-      * Theta should be in [0,pi]
-      */
-    void rotateTaylorAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
-        for(int l = 0 ; l <= P ; ++l){
-            for(int m = 0 ; m <= l ; ++m ){
-                FReal w_lkm_real = 0.0;
-                FReal w_lkm_imag = 0.0;
-
-                for(int k = -l ; k < 0 ; ++k){
-                    // M_{l,-m} = \bar{ M_{l,m} } (-1)^m
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-abs(m)]*factorials[l+abs(m)])/(factorials[l-k]*factorials[l+k]));
-                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
-                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
-                }
-                for(int k = 0 ; k <= l ; ++k){
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-abs(m)]*factorials[l+abs(m)])/(factorials[l-k]*factorials[l+k]));
-                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
-                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
-                }
-                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
-            }
-        }
-        FMemUtils::copyall(vec,cell_rotate,SizeArray);
-    }
-
-    /** This function rotate a multipole vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void rotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        //rotateMultipoleAroundZ(vec,(FMath::FPiDiv2 + azimuth));
-        rotateMultipoleAroundY(vec,inclination);
-    }
-    /** This function rotate a multipole vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void deRotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        rotateMultipoleAroundY(vec,-inclination);
-        //rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
-    }
-
-    /** This function rotate a local vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void rotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        //rotateTaylorAroundZ(vec,(FMath::FPiDiv2 + azimuth));
-        rotateTaylorAroundY(vec,inclination);
-    }
-    /** This function rotate a local vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void deRotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        rotateTaylorAroundY(vec,-inclination);
-        //rotateTaylorAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
-    }
-
-    static void ComplexeArrayMulEqual(FComplexe dest[], const FComplexe src[], const int sizeOfArray){
-        for(int idx = 0 ; idx < sizeOfArray ; ++idx) {
-            dest[idx] *= src[idx];
-        }
-    }
-
 public:
 
     /** Constructor, needs system information */
-    FRotationKernel( const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
+    FRotationOriginalKernel( const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
         boxWidth(inBoxWidth),
         treeHeight(inTreeHeight),
         widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
@@ -495,14 +422,11 @@ public:
         boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2))
         {
         // simply does the precomputation
-        precomputeFactorials();
         preComputePosition();
-        precomputeTranslationCoef();
-        precomputeRotationVectors();
     }
 
     /** Default destructor */
-    virtual ~FRotationKernel(){
+    virtual ~FRotationOriginalKernel(){
     }
 
     /** P2M
@@ -540,16 +464,13 @@ public:
             computeLegendre(legendre, sph.getCosTheta(), sph.getSinTheta());
 
             // w{l,m}(q,a) = q a^l/(l+|m|)! P{l,m}(cos(alpha)) exp(-i m Beta)
-            FReal q_aPowL = q; // To consutrct q*a^l continously
-            int index_l_m = 0; // To construct the index of (l,m) continously
             for(int l = 0 ; l <= P ; ++l ){
-                FReal fm = 0.0; // To have "m" has a float
-                for(int m = 0 ; m <= l ; ++m, ++index_l_m, ++fm){
-                    const FReal magnitude = q_aPowL * legendre[index_l_m] / factorials[l+m];
-                    w[index_l_m].incReal(magnitude * FMath::Cos(fm * sph.getPhi() + i_pow_m[m & 0x3]));
-                    w[index_l_m].incImag(magnitude * FMath::Sin(fm * sph.getPhi() + i_pow_m[m & 0x3]));
+                for(int m = 0 ; m <= l ; ++m ){
+                    const FReal magnitude = q * (FMath::pow( a , l )/fact(l+m))
+                            * legendre[atLm(l,m)];
+                    w[atLm(l,m)].incReal(magnitude * FMath::Cos(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]));
+                    w[atLm(l,m)].incImag(magnitude * FMath::Sin(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]));
                 }
-                q_aPowL *= a;
             }
 
             // Goto next particle
@@ -569,8 +490,6 @@ public:
       * and finaly rotate back.
       */
     void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel) {
-        // Get the translation coef for this level (same for all chidl)
-        const FReal*const coef = M2MTranslationCoef[inLevel];
         // A buffer to copy the source w allocated once
         FComplexe source_w[SizeArray];
         // For all children
@@ -582,32 +501,27 @@ public:
 
                 // rotate it forward
                 const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                ComplexeArrayMulEqual(source_w,rotationExpMinusImPhi[idxChild],SizeArray);
                 rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
 
-                //const FReal b = -sph.getR();
+                const FReal b = -sph.getR();
                 // Translate it
                 FComplexe target_w[SizeArray];
-                int index_lm = 0;
                 for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m, ++index_lm ){
+                    for(int m = 0 ; m <= l ; ++m ){
                         // w{l,m}(a+b) = sum(j=m:l, b^(l-j)/(l-j)! w{j,m}(a)
                         FReal w_lm_real = 0.0;
                         FReal w_lm_imag = 0.0;
-                        int index_jm = atLm(m,m);   // get atLm(l,m)
-                        int index_l_minus_j = l-m;  // get l-j continously
-                        for(int j = m ; j <= l ; ++j, --index_l_minus_j, index_jm += j ){
-                            //const coef = (b^l-j) / (l-j)!;
-                            w_lm_real += coef[index_l_minus_j] * source_w[index_jm].getReal();
-                            w_lm_imag += coef[index_l_minus_j] * source_w[index_jm].getImag();
+                        for(int j = m ; j <= l ; ++j ){
+                            const FReal coef = FMath::pow(b,l-j) / fact(l-j);
+                            w_lm_real += coef * source_w[atLm(j,m)].getReal();
+                            w_lm_imag += coef * source_w[atLm(j,m)].getImag();
                         }
-                        target_w[index_lm].setRealImag(w_lm_real,w_lm_imag);
+                        target_w[atLm(l,m)].setRealImag(w_lm_real,w_lm_imag);
                     }
                 }
 
                 // Rotate it back
                 deRotateMultipole(target_w, sph.getAzimuth(), sph.getInclination());
-                ComplexeArrayMulEqual(target_w,rotationExpImPhi[idxChild],SizeArray);
 
                 // Sum the result
                 FMemUtils::addall( inPole->getMultipole(), target_w, SizeArray);
@@ -633,7 +547,6 @@ public:
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             // if interaction exits
             if(inInteractions[idxNeigh]){
-                const FReal*const coef = M2LTranslationCoef[inLevel][idxNeigh];
                 // Copy multipole data into buffer
                 FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
 
@@ -641,25 +554,21 @@ public:
                 const FSpherical sph = getSphericalInteraction(inLevel, idxNeigh);
                 rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
 
+                const FReal b = sph.getR();
                 // Transfer to u
                 FComplexe target_u[SizeArray];
-                int index_lm = 0;
                 for(int l = 0 ; l <= P ; ++l ){
-                    FReal minus_1_pow_m = 1.0;
-                    for(int m = 0 ; m <= l ; ++m, ++index_lm ){
+                    for(int m = 0 ; m <= l ; ++m ){
                         // u{l,m}(a-b) = sum(j=|m|:P-l, (j+l)!/b^(j+l+1) w{j,-m}(a)
                         FReal u_lm_real = 0.0;
                         FReal u_lm_imag = 0.0;
-                        int index_jl = m + l;       // get j+l
-                        int index_jm = atLm(m,m);   // get atLm(l,m)
-                        for(int j = m ; j <= P-l ; ++j, ++index_jl, index_jm += j ){
-                            // coef = (j+l)!/b^(j+l+1)
+                        for(int j = m ; j <= P-l ; ++j ){
+                            const FReal coef = FMath::pow(FReal(-1.0),m) * ( fact(j+l) / FMath::pow(b,j+l+1));
                             // because {l,-m} => {l,m} conjugate -1^m with -i
-                            u_lm_real += minus_1_pow_m * coef[index_jl] * source_w[index_jm].getReal();
-                            u_lm_imag -= minus_1_pow_m * coef[index_jl] * source_w[index_jm].getImag();
+                            u_lm_real += coef * source_w[atLm(j,m)].getReal();
+                            u_lm_imag -= coef * source_w[atLm(j,m)].getImag();
                         }
-                        target_u[index_lm].setRealImag(u_lm_real,u_lm_imag);
-                        minus_1_pow_m = -minus_1_pow_m;
+                        target_u[atLm(l,m)].setRealImag(u_lm_real,u_lm_imag);
                     }
                 }
 
@@ -684,8 +593,6 @@ public:
       * and finaly rotate back.
       */
     void L2L(const CellClass* const FRestrict inLocal, CellClass* FRestrict *const FRestrict  inChildren, const int inLevel) {
-        // Get the translation coef for this level (same for all chidl)
-        const FReal*const coef = L2LTranslationCoef[inLevel];
         // To copy the source local allocated once
         FComplexe source_u[SizeArray];
         // For all children
@@ -697,9 +604,9 @@ public:
 
                 // Rotate
                 const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                ComplexeArrayMulEqual(source_u,rotationExpImPhi[idxChild],SizeArray);
                 rotateTaylor(source_u, sph.getAzimuth(), sph.getInclination());
 
+                const FReal b = sph.getR();
                 // Translate
                 FComplexe target_u[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
@@ -707,12 +614,10 @@ public:
                         // u{l,m}(r-b) = sum(j=0:P, b^(j-l)/(j-l)! u{j,m}(r);
                         FReal u_lm_real = 0.0;
                         FReal u_lm_imag = 0.0;
-                        int index_jm = atLm(l,m);   // get atLm(j,m)
-                        int index_j_minus_l = 0;    // get l-j continously
-                        for(int j = l ; j <= P ; ++j, ++index_j_minus_l, index_jm += j){
-                            // coef = b^j-l/j-l!
-                            u_lm_real += coef[index_j_minus_l] * source_u[index_jm].getReal();
-                            u_lm_imag += coef[index_j_minus_l] * source_u[index_jm].getImag();
+                        for(int j = l ; j <= P ; ++j ){
+                            const FReal coef = FMath::pow(b,j-l) / fact(j-l);
+                            u_lm_real += coef * source_u[atLm(j,m)].getReal();
+                            u_lm_imag += coef * source_u[atLm(j,m)].getImag();
                         }
                         target_u[atLm(l,m)].setRealImag(u_lm_real,u_lm_imag);
                     }
@@ -720,7 +625,6 @@ public:
 
                 // Rotate
                 deRotateTaylor(target_u, sph.getAzimuth(), sph.getInclination());
-                ComplexeArrayMulEqual(source_u,rotationExpMinusImPhi[idxChild],SizeArray);
 
                 // Sum in child
                 FMemUtils::addall(inChildren[idxChild]->getLocal(), target_u, SizeArray);
@@ -767,73 +671,46 @@ public:
             // Compute the legendre polynomial
             FReal legendre[SizeArray];
             computeLegendre(legendre, sph.getCosTheta(), sph.getSinTheta());
-
-            // pre compute what is used more than once
-            FReal minus_r_pow_l_div_fact_lm[SizeArray];
-            FReal minus_r_pow_l_legendre_div_fact_lm[SizeArray];
-            {
-                int index_lm = 0;
-                FReal minus_r_pow_l = 1.0;  // To get (-1*r)^l
-                for(int l = 0 ; l <= P ; ++l){
-                    for(int m = 0 ; m <= l ; ++m, ++index_lm){
-                        minus_r_pow_l_div_fact_lm[index_lm] = minus_r_pow_l / factorials[l+m];
-                        minus_r_pow_l_legendre_div_fact_lm[index_lm] = minus_r_pow_l_div_fact_lm[index_lm] * legendre[index_lm];
-                    }
-                    minus_r_pow_l *= -r;
-                }
-            }
-            // pre compute what is use more than once
-            FReal cos_m_phi_i_pow_m[P+1];
-            FReal sin_m_phi_i_pow_m[P+1];
-            {
-                for(int m = 0 ; m <= P ; ++m){
-                    const FReal m_phi_i_pow_m = FReal(m) * sph.getPhi() + i_pow_m[m & 0x3];
-                    cos_m_phi_i_pow_m[m] = FMath::Cos(m_phi_i_pow_m);
-                    sin_m_phi_i_pow_m[m] = FMath::Sin(m_phi_i_pow_m);
-                }
-            }
-
-            // compute the forces
             {
                 FReal Fr = 0;
                 FReal FO = 0;
                 FReal Fp = 0;
 
-                int index_lm = 1;          // To get atLm(l,m), warning starts with l = 1
-                FReal fl = 1.0;            // To get "l" as a float
+                for(int l = 1 ; l <= P ; ++l){
+                    {
+                        const FReal coef = FMath::pow(FReal(-1.0),l) * FMath::pow(r,l) * legendre[atLm(l,0)] / fact(l+0);
+                        const FReal I_real = coef * FMath::Cos(FReal(0) * sph.getPhi() + i_pow_m[0]);
+                        const FReal I_imag = coef * FMath::Sin(FReal(0) * sph.getPhi() + i_pow_m[0]);
 
-                for(int l = 1 ; l <= P ; ++l, ++fl){
-                    // first m == 0
-                    {
-                        Fr += fl * u[index_lm].getReal() * minus_r_pow_l_legendre_div_fact_lm[index_lm];
+                        Fr += FReal(l) * (u[atLm(l,0)].getReal() * I_real - u[atLm(l,0)].getImag() * I_imag);
                     }
                     {
-                        const FReal coef = minus_r_pow_l_div_fact_lm[index_lm] * (fl * (sph.getCosTheta()*legendre[index_lm]
-                                                  - legendre[index_lm-l]) / sph.getSinTheta());
-                        const FReal dI_real = coef;
+                        const FReal coef = (FMath::pow(FReal(-1.0),l)/fact(l+0)) * FMath::pow(r,l) * ((FReal(l) * sph.getCosTheta()*legendre[atLm(l,0)]
+                                                  - FReal(l) * legendre[atLm(l-1,0)]) / sph.getSinTheta());
+                        const FReal dI_real = coef * FMath::Cos(FReal(0) * sph.getPhi() + i_pow_m[0 & 0x3]);
+                        const FReal dI_imag = coef * FMath::Sin(FReal(0) * sph.getPhi() + i_pow_m[0 & 0x3]);
                         // F(O) += 2 * Real(L dI/dO)
-                        FO += u[index_lm].getReal() * dI_real;
+                        FO += u[atLm(l,0)].getReal() * dI_real - u[atLm(l,0)].getImag() * dI_imag;
                     }
-                    ++index_lm;
-                    // then 0 < m
-                    for(int m = 1 ; m <= l ; ++m, ++index_lm){
+
+                    for(int m = 1 ; m <= l ; ++m){
                         {
-                            const FReal coef = minus_r_pow_l_legendre_div_fact_lm[index_lm];
-                            const FReal I_real = coef * cos_m_phi_i_pow_m[m];
-                            const FReal I_imag = coef * sin_m_phi_i_pow_m[m];
+                            const FReal coef = FMath::pow(FReal(-1.0),l) * FMath::pow(r,l) * legendre[atLm(l,m)] / fact(l+m);
+                            const FReal I_real = coef * FMath::Cos(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
+                            const FReal I_imag = coef * FMath::Sin(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
                             // F(r) += 2 x l x Real(LI)
-                            Fr += 2 * fl * (u[index_lm].getReal() * I_real - u[index_lm].getImag() * I_imag);
+                            Fr += 2 * FReal(l) * (u[atLm(l,m)].getReal() * I_real - u[atLm(l,m)].getImag() * I_imag);
                             // F(p) += -2 x m x Imag(LI)
-                            Fp -= 2 * FReal(m) * (u[index_lm].getReal() * I_imag + u[index_lm].getImag() * I_real);
+                            Fp -= 2 * FReal(m) * (u[atLm(l,m)].getReal() * I_imag + u[atLm(l,m)].getImag() * I_real);
                         }
                         {
-                            const FReal legendre_l_minus_1 = (m == l) ? FReal(0.0) : FReal(l+m)*legendre[index_lm-l];
-                            const FReal coef = minus_r_pow_l_div_fact_lm[index_lm] * ((fl * sph.getCosTheta()*legendre[index_lm]
+                            const FReal legendre_l_minus_1 = (m == l) ? 0 : FReal(l+m)*legendre[atLm(l-1,m)];
+                            const FReal coef = (FMath::pow(FReal(-1.0),l)/fact(l+m)) * FMath::pow(r,l) * ((FReal(l) * sph.getCosTheta()*legendre[atLm(l,m)]
                                                       - legendre_l_minus_1) / sph.getSinTheta());
-                            const FReal dI_real = coef * cos_m_phi_i_pow_m[m];
-                            const FReal dI_imag = coef * sin_m_phi_i_pow_m[m];
+                            const FReal dI_real = coef * FMath::Cos(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
+                            const FReal dI_imag = coef * FMath::Sin(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
                             // F(O) += 2 * Real(L dI/dO)
-                            FO += FReal(2.0) * (u[index_lm].getReal() * dI_real - u[index_lm].getImag() * dI_imag);
+                            FO += FReal(2.0) * (u[atLm(l,m)].getReal() * dI_real - u[atLm(l,m)].getImag() * dI_imag);
                         }
                     }
                 }
@@ -865,22 +742,23 @@ public:
                 // inc particles forces
                 particle.incForces( forceX, forceY, forceZ );
             }
-            // compute the potential
-            {
+
+            { // Result for potential
                 FReal magnitude = 0;
                 // E = sum( l = 0:P, sum(m = -l:l, u{l,m} ))
-                int index_lm = 0;
                 for(int l = 0 ; l <= P ; ++l ){
-                    {//for m == 0
+                    {
                         // (l-|m|)! * P{l,0} / r^(l+1)
-                        magnitude += u[index_lm].getReal() * minus_r_pow_l_legendre_div_fact_lm[index_lm];
-                        ++index_lm;
+                        const FReal coef = FMath::pow(FReal(-1.0),l) * FMath::pow(r,l) * legendre[atLm(l,0)] / fact(l+0);
+                        const FReal I_real = coef * FMath::Cos(FReal(0) * sph.getPhi() + i_pow_m[0]);
+                        const FReal I_imag = coef * FMath::Sin(FReal(0) * sph.getPhi() + i_pow_m[0]);
+                        magnitude += u[atLm(l,0)].getReal() * I_real - u[atLm(l,0)].getImag() * I_imag;
                     }
-                    for(int m = 1 ; m <= l ; ++m, ++index_lm ){
-                        const FReal coef = minus_r_pow_l_legendre_div_fact_lm[index_lm];
-                        const FReal I_real = coef * cos_m_phi_i_pow_m[m];
-                        const FReal I_imag = coef * sin_m_phi_i_pow_m[m];
-                        magnitude += FReal(2.0) * ( u[index_lm].getReal() * I_real - u[index_lm].getImag() * I_imag );
+                    for(int m = 1 ; m <= l ; ++m ){
+                        const FReal coef = FMath::pow(FReal(-1.0),l) * FMath::pow(r,l) * legendre[atLm(l,m)] / fact(l+m);
+                        const FReal I_real = coef * FMath::Cos(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
+                        const FReal I_imag = coef * FMath::Sin(FReal(m) * sph.getPhi() + i_pow_m[m & 0x3]);
+                        magnitude += FReal(2.0) * ( u[atLm(l,m)].getReal() * I_real - u[atLm(l,m)].getImag() * I_imag );
                     }
                 }
                 // inc potential
@@ -1003,4 +881,4 @@ public:
 };
 
 
-#endif // FROTATIONKERNEL_HPP
+#endif // FROTATIONORIGINALKERNEL_HPP

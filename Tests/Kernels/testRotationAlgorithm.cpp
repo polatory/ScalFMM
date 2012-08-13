@@ -24,6 +24,7 @@
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "../../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
@@ -63,6 +64,7 @@ int main(int argc, char** argv){
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FRotationKernel<ParticleClass, CellClass, ContainerClass , P>   KernelClass;
+    //typedef FRotationOriginalKernel<ParticleClass, CellClass, ContainerClass , P>   KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
@@ -242,6 +244,19 @@ int main(int argc, char** argv){
                                   octreeIterator.getCurrentCell()->getLocal()[idx].getReal());
                         local.add(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag(),
                                   octreeIterator.getCurrentCell()->getLocal()[idx].getImag());
+
+                        if(FMath::IsNan(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal())){
+                            printf("Valide real is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal());
+                        }
+                        if(FMath::IsNan(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag())){
+                            printf("Valide imag is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag());
+                        }
+                        if(FMath::IsNan(octreeIterator.getCurrentCell()->getLocal()[idx].getReal())){
+                            printf("Valide real is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal());
+                        }
+                        if(FMath::IsNan(octreeIterator.getCurrentCell()->getLocal()[idx].getImag())){
+                            printf("Valide imag is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag());
+                        }
                     }
                 } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
 
