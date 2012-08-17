@@ -18,6 +18,15 @@
 #include "../../Utils/FSpherical.hpp"
 
 
+/** This is a recursion to get the minimal size of the matrix dlmk
+  */
+template<int N> struct NumberOfValuesInDlmk{
+    enum {Value = (N*2+1)*(N*2+1) + NumberOfValuesInDlmk<N - 1>::Value};
+};
+template<> struct NumberOfValuesInDlmk<0>{
+    enum {Value = 1};
+};
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FRotationKernel
@@ -30,9 +39,11 @@
 * to see the non optimized easy to understand kernel.
 */
 template< class ParticleClass, class CellClass, class ContainerClass, int P>
-class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {    
+class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+
     //< Size of the data array computed using a suite relation
     static const int SizeArray = ((P+2)*(P+1))/2;
+    //< To have P*2 where needed
     static const int P2 = P*2;
 
     ///////////////////////////////////////////////////////
@@ -45,40 +56,42 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
     const FReal widthAtLeafLevelDiv2;   //< width of box at leaf leve div 2
     const FPoint boxCorner;             //< position of the box corner
 
+    FReal factorials[P2+1];             //< This contains the factorial until 2*P+1
 
-    FSmartPointer<FSpherical> childrenPosition;     //< The transfers between level
-    FSmartPointer<FSpherical> interactionsPosition; //< The transfers at a same level
+    ///////////// Translation /////////////////////////////
+    FSmartPointer<FReal[P+1]>      M2MTranslationCoef;  //< This contains some precalculated values for M2M translation
+    FSmartPointer<FReal[343][P+1]> M2LTranslationCoef;  //< This contains some precalculated values for M2L translation
+    FSmartPointer<FReal[P+1]>      L2LTranslationCoef;  //< This contains some precalculated values for L2L translation
 
-    FReal factorials[P2+1];
+    ///////////// Rotation    /////////////////////////////
+    FComplexe rotationExpMinusImPhi[8][SizeArray];  //< This is the vector use for the rotation around z for the M2M (multipole)
+    FComplexe rotationExpImPhi[8][SizeArray];       //< This is the vector use for the rotation around z for the L2L (taylor)
 
-    FSmartPointer<FReal[P+1]>      M2MTranslationCoef;
-    FSmartPointer<FReal[343][P+1]> M2LTranslationCoef;
-    FSmartPointer<FReal[P+1]>      L2LTranslationCoef;
+    FComplexe rotationM2LExpMinusImPhi[343][SizeArray]; //< This is the vector use for the rotation around z for the M2L (multipole)
+    FComplexe rotationM2LExpImPhi[343][SizeArray];      //< This is the vector use for the rotation around z for the M2L (taylor)
 
-    FComplexe rotationExpMinusImPhi[8][SizeArray];
-    FComplexe rotationExpImPhi[8][SizeArray];
+    ///////////// Rotation    /////////////////////////////
+    // First we compute the size of the d{l,m,k} matrix.
 
-    FSmartPointer<FComplexe[343][SizeArray]> M2LAroundZCoef;
+    static const int SizeDlmkMatrix = NumberOfValuesInDlmk<P>::Value;
+
+    FReal DlmkCoefOTheta[8][SizeDlmkMatrix];        //< d_lmk for Multipole rotation
+    FReal DlmkCoefOMinusTheta[8][SizeDlmkMatrix];   //< d_lmk for Multipole reverse rotation
+
+    FReal DlmkCoefMTheta[8][SizeDlmkMatrix];        //< d_lmk for Local rotation
+    FReal DlmkCoefMMinusTheta[8][SizeDlmkMatrix];   //< d_lmk for Local reverse rotation
+
+    FReal DlmkCoefM2LOTheta[343][SizeDlmkMatrix];       //< d_lmk for Multipole rotation
+    FReal DlmkCoefM2LMMinusTheta[343][SizeDlmkMatrix];  //< d_lmk for Local reverse rotation
 
     ///////////////////////////////////////////////////////
-    // d_lmk
+    // Precomputation
     ///////////////////////////////////////////////////////
 
-    /** Return position in the array of the l/m couple */
-    int atLm(const int l, const int m){
-        // summation series over l + m => (l*(l+1))/2 + m
-        return ((l*(l+1))>>1) + m;
-    }
-
-    /** Return the sign of a value */
-    template < class T >
-    T Sgn(const T a){
-        if(a < 0) return T(-1);
-        else if(a > 0) return T(1);
-        return T(0);
-    }
-
-    /** Compute the factorial from 0 to P*2 */
+    /** Compute the factorial from 0 to P*2
+      * Then the data is accessible in factorials array:
+      * factorials[n] = n! with n <= 2*P
+      */
     void precomputeFactorials(){
         factorials[0] = 1;
         FReal fidx = 1;
@@ -87,94 +100,97 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         }
     }
 
+    /** This function precompute the translation coef.
+      * Translation are independant of the angle between both cells.
+      * So in the M2M/L2L the translation is the same for all children.
+      * In the M2L the translation depend on the distance between the
+      * source and the target (so a few number of possibilities exist)
+      *
+      * The number of possible translation depend of the tree height,
+      * so the memory is allocated dynamically with a smart pointer to share
+      * the data between threads.
+      */
     void precomputeTranslationCoef(){
-        M2MTranslationCoef = new FReal[treeHeight-1][P+1];
-        L2LTranslationCoef = new FReal[treeHeight-1][P+1];
-
-        FReal widthAtLevel = boxWidth/4;
-        for( int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel){
-            FReal b = FMath::Sqrt(widthAtLevel*widthAtLevel*3);
-            FReal bPowIdx = 1.0;
-            FReal minus_1_pow_idx = 1.0;
-            for(int idx = 0 ; idx <= P ; ++idx){
-                // coef m2m = (-b)^j/j!
-                M2MTranslationCoef[idxLevel][idx] = minus_1_pow_idx * bPowIdx / factorials[idx];
-                // coef l2l = b^j/j!
-                L2LTranslationCoef[idxLevel][idx] = bPowIdx / factorials[idx];
-                // increase
-                bPowIdx *= b;
-                minus_1_pow_idx = -minus_1_pow_idx;
-            }
-            widthAtLevel /= 2;
-        }
-
-        M2LTranslationCoef = new FReal[treeHeight][343][P+1];
-        for( int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            for(int idxInteraction = 0 ; idxInteraction < 343 ; ++idxInteraction){
-                int x = (idxInteraction/7*7)-3;
-                int y = ((idxInteraction - (x+3)*7*7)/7) - 3;
-                int z = idxInteraction - ((x+3)*7 + (y+3))*7;//idxInteraction%7;
-                if( x < -1 || 1 < x || y < -1 || 1 < y || z < -1 || 1 < 1 ){
-                    const FReal b = getSphericalInteraction(idxLevel, idxInteraction).getR();
-                    FReal bPowIdx1 = b;
-                    for(int idx = 0 ; idx <= P ; ++idx){
-                        // factorials[j+l] / FMath::pow(b,j+l+1)
-                        M2LTranslationCoef[idxLevel][idxInteraction][idx] = factorials[idx] / bPowIdx1;
-                        bPowIdx1 *= b;
-                    }
+        {// M2M & L2L
+            // Allocate
+            M2MTranslationCoef = new FReal[treeHeight-1][P+1];
+            L2LTranslationCoef = new FReal[treeHeight-1][P+1];
+            // widthAtLevel represents half of the size of a box
+            FReal widthAtLevel = boxWidth/4;
+            // we go from the root to the leaf-1
+            for( int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel){
+                // b is the parent-child distance = norm( vec(widthAtLevel,widthAtLevel,widthAtLevel))
+                const FReal b = FMath::Sqrt(widthAtLevel*widthAtLevel*3);
+                // we compute b^idx iteratively
+                FReal bPowIdx = 1.0;
+                // we compute -1^idx iteratively
+                FReal minus_1_pow_idx = 1.0;
+                for(int idx = 0 ; idx <= P ; ++idx){
+                    // coef m2m = (-b)^j/j!
+                    M2MTranslationCoef[idxLevel][idx] = minus_1_pow_idx * bPowIdx / factorials[idx];
+                    // coef l2l = b^j/j!
+                    L2LTranslationCoef[idxLevel][idx] = bPowIdx / factorials[idx];
+                    // increase
+                    bPowIdx *= b;
+                    minus_1_pow_idx = -minus_1_pow_idx;
                 }
+                // divide by two per level
+                widthAtLevel /= 2;
             }
         }
-    }
-
-    ///////////////////////////////////////////////////////
-    // Position precomputation
-    ///////////////////////////////////////////////////////
-
-    /** This function precompute the position between cells */
-    void preComputePosition(){
-        // Compute the parent/children relation for M2M L2L
-        childrenPosition = new FSpherical[8 * (treeHeight-1)];
-        {
-            FReal subBoxWidth = widthAtLeafLevelDiv2;
-            // For each
-            for(int idxLevel = treeHeight-2 ; idxLevel > 0 ; --idxLevel){
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild ){
-                    // coord from child to parent
-                    const FReal x = FReal((idxChild&4)? -subBoxWidth : subBoxWidth);
-                    const FReal y = FReal((idxChild&2)? -subBoxWidth : subBoxWidth);
-                    const FReal z = FReal((idxChild&1)? -subBoxWidth : subBoxWidth);
-                    const FPoint relativePosition( x , y , z );
-
-                    childrenPosition[(idxLevel-1)*8 + idxChild] = FSpherical(relativePosition);
-                }
-                subBoxWidth *= FReal(2.0);
-            }
-        }
-        // Compute the interaction relations for M2L
-        interactionsPosition = new FSpherical[343 * (treeHeight-1)];
-        {
+        {// M2L
+            // Allocate
+            M2LTranslationCoef = new FReal[treeHeight][343][P+1];
+            // This is the width of a box at each level
             FReal boxWidthAtLevel = widthAtLeafLevel;
+            // from leaf level to the root
             for(int idxLevel = treeHeight-1 ; idxLevel > 0 ; --idxLevel){
+                // we compute all possibilities
                 for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                     for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                         for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
-                            if( idxX != 0 || idxY != 0 || idxZ != 0 ){
+                            // if this is not a neighbour
+                            if( idxX < -1 || 1 < idxX || idxY < -1 || 1 < idxY || idxZ < -1 || 1 < idxZ ){
+                                // compute the relative position
                                 const FPoint relativePosition( -FReal(idxX)*boxWidthAtLevel,
                                                                -FReal(idxY)*boxWidthAtLevel,
                                                                -FReal(idxZ)*boxWidthAtLevel);
+                                // this is the position in the index system from 0 to 343
                                 const int position = ((( (idxX+3) * 7) + (idxY+3))) * 7 + idxZ + 3;
-                                interactionsPosition[(idxLevel-1)*343 + position] = FSpherical(relativePosition);
+                                // b is the distance between the two cells
+                                const FReal b = FMath::Sqrt( (relativePosition.getX() * relativePosition.getX()) +
+                                                             (relativePosition.getY() * relativePosition.getY()) +
+                                                             (relativePosition.getZ() * relativePosition.getZ()));
+                                // compute b^idx+1 iteratively
+                                FReal bPowIdx1 = b;
+                                for(int idx = 0 ; idx <= P ; ++idx){
+                                    // factorials[j+l] / FMath::pow(b,j+l+1)
+                                    M2LTranslationCoef[idxLevel][position][idx] = factorials[idx] / bPowIdx1;
+                                    bPowIdx1 *= b;
+                                }
                             }
                         }
                     }
                 }
+                // multiply per two at each level
                 boxWidthAtLevel *= FReal(2.0);
             }
         }
     }
 
-    /** This function rotate a multipole vector by an angle azimuth phi
+    ///////////////////////////////////////////////////////
+    // Precomputation rotation vector
+    // This is a all in one function
+    // First we compute the d_lmk needed,
+    // then we compute vectors for M2M/L2L
+    // finally we compute the vectors for M2L
+    ///////////////////////////////////////////////////////
+
+
+    /** The fallowing comments include formula taken from the original vectors
+      *
+      *
+      * This function rotate a multipole vector by an angle azimuth phi
       * The formula used is present in several paper, but we refer to
       * Implementation of rotation-based operators for Fast Multipole Method in X10
       * At page 5 .1
@@ -183,8 +199,8 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
       * \f]
       * The computation is simply a multiplication per a complex number \f$ e^{-i \phi m} \f$
       * Phi should be in [0,2pi]
-      */
-    /** This function rotate a local vector by an angle azimuth phi
+      *
+      * This function rotate a local vector by an angle azimuth phi
       * The formula used is present in several paper, but we refer to
       * Implementation of rotation-based operators for Fast Multipole Method in X10
       * At page 5 .1
@@ -193,18 +209,98 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
       * \f]
       * The computation is simply a multiplication per a complex number \f$ e^{i \phi m} \f$
       * Phi should be in [0,2pi]
+      *
+      * This function rotate a multipole vector by an angle inclination \theta
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * O_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+      *                                     d^l_{km}( \theta ) O_{l,k}( \alpha, \beta ) }
+      * \f]
+      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
+      * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
+      * Theta should be in [0,pi]
+      *
+      * This function rotate a local vector by an angle inclination \theta
+      * The formula used is present in several paper, but we refer to
+      * Implementation of rotation-based operators for Fast Multipole Method in X10
+      * At page 5 .1
+      * \f[
+      * M_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
+      *                                     d^l_{km}( \theta ) M_{l,k}( \alpha, \beta ) }
+      * \f]
+      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
+      * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
+      * Theta should be in [0,pi]
+      *
+      * Remark about the structure of the structure of the matrixes DlmkCoef[O/M](Minus)Theta.
+      * It is composed of "P" small matrix.
+      * The matrix M(l) (0 <= l <= P) has a size of (l*2+1)²
+      * It means indexes are going from -l to l for column and row.
+      * l = 0: ( -0 <= m <= 0 ; -0 <= k <= 0)
+      * [X]
+      * l = 1: ( -1 <= m <= 1 ; -1 <= k <= 1)
+      * [X X X]
+      * [X X X]
+      * [X X X]
+      * etc.
+      * The real size of such matrix is :
+      * 1x1 + 3x3 + ... + (2P+1)x(2P+1)
       */
-
     void precomputeRotationVectors(){
+        /////////////////////////////////////////////////////////////////
+        // We will need a Sqrt(factorial[x-y]*factorial[x+y])
+        // so we precompute it
+        FReal sqrtDoubleFactorials[P+1][P+1];
+        for(int l = 0 ; l <= P ; ++l ){
+            for(int m = 0 ; m <= l ; ++m ){
+                sqrtDoubleFactorials[l][m] = FMath::Sqrt(factorials[l-m]*factorials[l+m]);
+            }
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // We compute the rotation matrix, we do not need 343 matrix
+        // We will compute only a part of the since we compute the inclinaison
+        // angle. inclinaison(+/-x,+/-y,z) = inclinaison(+/-y,+/-x,z)
+        // we put the negative (-theta) with a negative x
+        FReal dlmkMatrix[7][4][7][P+1][P2+1][P2+1];
+        // First we compute special vectors:
+        DlmkBuild0(dlmkMatrix[0+3][0][1+3]);    // theta = 0
+        DlmkBuildPi(dlmkMatrix[0+3][0][-1+3]);  // theta = Pi
+        DlmkBuild(dlmkMatrix[1+3][0][0+3],FMath::FPiDiv2);              // theta = Pi/2
+        DlmkInverse(dlmkMatrix[-1+3][0][0+3],dlmkMatrix[1+3][0][0+3]);  // theta = -Pi/2
+        // Then other angle
+        for(int x = 1 ; x <= 3 ; ++x){
+            for(int y = 0 ; y <= x ; ++y){
+                for(int z = 1 ; z <= 3 ; ++z){
+                    const FReal inclinaison = FSpherical(FPoint(FReal(x),FReal(y),FReal(z))).getInclination();
+                    DlmkBuild(dlmkMatrix[x+3][y][z+3],inclinaison);
+                    // For inclinaison between ]pi/2;pi[
+                    DlmkZNegative(dlmkMatrix[x+3][y][(-z)+3],dlmkMatrix[x+3][y][z+3]);
+                    // For inclinaison between ]pi;3pi/2[
+                    DlmkInverseZNegative(dlmkMatrix[(-x)+3][y][(-z)+3],dlmkMatrix[x+3][y][z+3]);
+                    // For inclinaison between ]3pi/2;2pi[
+                    DlmkInverse(dlmkMatrix[(-x)+3][y][z+3],dlmkMatrix[x+3][y][z+3]);
+                }
+            }
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // Manage angle for M2M/L2L
+
         const int index_P0 = atLm(P,0);
+        // For all possible child (morton indexing from 0 to 7)
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            // Retrieve relative position of child to parent
             const FReal x = FReal((idxChild&4)? -boxWidth : boxWidth);
             const FReal y = FReal((idxChild&2)? -boxWidth : boxWidth);
             const FReal z = FReal((idxChild&1)? -boxWidth : boxWidth);
             const FPoint relativePosition( x , y , z );
+            // compute azimuth
+            const FSpherical sph(relativePosition);
 
-            FSpherical sph(relativePosition);
-
+            // First compute azimuth rotation
             // compute the last part with l == P
             {
                 int index_lm = index_P0;
@@ -216,92 +312,419 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
                     rotationExpImPhi[idxChild][index_lm].setRealImag(FMath::Cos(mphi), FMath::Sin(mphi));
                 }
             }
-            // Then copy
+            // Then for l < P it just a copy of the previous computed vector
             {
                 int index_lm = 0;
+                // for l < P
                 for(int l = 0 ; l < P ; ++l){
+                    // take the l + 1 numbers from the vector with l' = P
                     FMemUtils::copyall(rotationExpMinusImPhi[idxChild] + index_lm,
                                        rotationExpMinusImPhi[idxChild] + index_P0,
                                        l + 1);
                     FMemUtils::copyall(rotationExpImPhi[idxChild] + index_lm,
                                        rotationExpImPhi[idxChild] + index_P0,
                                        l + 1);
+                    // index(l+1,0) = index(l,0) + l + 1
                     index_lm += l + 1;
+                }
+            }
+            { // Then compute the inclinaison rotation
+                // For the child parent relation we always have a inclinaison
+                // for (1,1,1) or (1,1,-1)
+                const int dx = 1;
+                const int dy = 1;
+                const int dz = (idxChild&1)?-1:1;
+
+                //
+                int index_lmk = 0;
+                for(int l = 0 ; l <= P ; ++l){
+                    for(int m = 0 ; m <= l ; ++m ){
+                        { // for k == 0
+                            const FReal d_lmk_minusTheta = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][0+P];
+                            const FReal d_lmk            = dlmkMatrix[dx+3][dy][dz+3][l][m+P][0+P];
+                            // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+                            const FReal Ofactor = sqrtDoubleFactorials[l][0]/sqrtDoubleFactorials[l][m];
+                            const FReal Mfactor = sqrtDoubleFactorials[l][m]/sqrtDoubleFactorials[l][0];
+
+                            DlmkCoefOTheta[idxChild][index_lmk]      = Ofactor * d_lmk;
+                            DlmkCoefMTheta[idxChild][index_lmk]      = Mfactor * d_lmk;
+                            DlmkCoefOMinusTheta[idxChild][index_lmk] = Ofactor * d_lmk_minusTheta;
+                            DlmkCoefMMinusTheta[idxChild][index_lmk] = Mfactor * d_lmk_minusTheta;
+
+                            ++index_lmk;
+                        }
+                        // for 0 < k
+                        FReal minus_1_pow_k = -1.0;
+                        for(int k = 1 ; k <= l ; ++k){
+                            const FReal d_lm_minus_k            = dlmkMatrix[dx+3][dy][dz+3][l][m+P][-k+P];
+                            const FReal d_lmk                   = dlmkMatrix[dx+3][dy][dz+3][l][m+P][k+P];
+                            const FReal d_lm_minus_k_minusTheta = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][-k+P];
+                            const FReal d_lmk_minusTheta        = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][k+P];
+
+                            const FReal Ofactor = sqrtDoubleFactorials[l][k]/sqrtDoubleFactorials[l][m];
+                            const FReal Mfactor = sqrtDoubleFactorials[l][m]/sqrtDoubleFactorials[l][k];
+
+                            // for k negatif
+                            DlmkCoefOTheta[idxChild][index_lmk]      = Ofactor * (d_lmk + minus_1_pow_k * d_lm_minus_k);
+                            DlmkCoefMTheta[idxChild][index_lmk]      = Mfactor * (d_lmk + minus_1_pow_k * d_lm_minus_k);
+                            DlmkCoefOMinusTheta[idxChild][index_lmk] = Ofactor * (d_lmk_minusTheta + minus_1_pow_k * d_lm_minus_k_minusTheta);
+                            DlmkCoefMMinusTheta[idxChild][index_lmk] = Mfactor * (d_lmk_minusTheta + minus_1_pow_k * d_lm_minus_k_minusTheta);
+                            ++index_lmk;
+                            // for k positif
+                            DlmkCoefOTheta[idxChild][index_lmk]      = Ofactor * (d_lmk - minus_1_pow_k * d_lm_minus_k);
+                            DlmkCoefMTheta[idxChild][index_lmk]      = Mfactor * (d_lmk - minus_1_pow_k * d_lm_minus_k);
+                            DlmkCoefOMinusTheta[idxChild][index_lmk] = Ofactor * (d_lmk_minusTheta - minus_1_pow_k * d_lm_minus_k_minusTheta);
+                            DlmkCoefMMinusTheta[idxChild][index_lmk] = Mfactor * (d_lmk_minusTheta - minus_1_pow_k * d_lm_minus_k_minusTheta);
+                            ++index_lmk;
+
+                            minus_1_pow_k = -minus_1_pow_k;
+                        }
+                    }
+                }
+            }
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // Manage angle for M2L
+        // For all possible cases
+        for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
+            for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
+                for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
+                    // Test if it is not a neighbors
+                    if( idxX < -1 || 1 < idxX || idxY < -1 || 1 < idxY || idxZ < -1 || 1 < idxZ ){
+                        // Build relative position between target and source
+                        const FPoint relativePosition( -FReal(idxX)*boxWidth,
+                                                       -FReal(idxY)*boxWidth,
+                                                       -FReal(idxZ)*boxWidth);
+                        const int position = ((( (idxX+3) * 7) + (idxY+3))) * 7 + idxZ + 3;
+                        const FSpherical sph(relativePosition);
+
+                        // Compute azimuth rotation vector
+                        // first compute the last part with l == P
+                        {
+                            int index_lm = index_P0;
+                            for(int m = 0 ; m <= P ; ++m, ++index_lm ){
+                                const FReal mphi = (sph.getAzimuth() + FMath::FPiDiv2) * FReal(m);
+                                // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
+                                rotationM2LExpMinusImPhi[position][index_lm].setRealImag(FMath::Cos(-mphi), FMath::Sin(-mphi));
+                                // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
+                                rotationM2LExpImPhi[position][index_lm].setRealImag(FMath::Cos(mphi), FMath::Sin(mphi));
+                            }
+                        }
+                        // Then for l < P copy the subpart of the previous vector
+                        {
+                            int index_lm = 0;
+                            for(int l = 0 ; l < P ; ++l){
+                                FMemUtils::copyall(rotationM2LExpMinusImPhi[position] + index_lm,
+                                                   rotationM2LExpMinusImPhi[position] + index_P0,
+                                                   l + 1);
+                                FMemUtils::copyall(rotationM2LExpImPhi[position] + index_lm,
+                                                   rotationM2LExpImPhi[position] + index_P0,
+                                                   l + 1);
+                                index_lm += l + 1;
+                            }
+                        }
+                        // Compute inclination vector
+                        {
+                            // We have to find the right d_lmk matrix
+                            int dx = 0 , dy = 0, dz = 0;
+                            // if x == 0 && y == 0 it means we have an inclination of 0 or PI
+                            if(idxX == 0 && idxY == 0){
+                                dx = 0;
+                                dy = 0;
+                                // no matter if z is big, we want [0][0][1] or [0][0][-1]
+                                if( idxZ < 0 ) dz = 1;
+                                else dz = -1;
+                            }
+                            // if z == 0 we have an inclination of Pi/2
+                            else if ( idxZ == 0){
+                                dx = 1;
+                                dy = 0;
+                                dz = 0;
+                            }
+                            // else we take the right indexes
+                            else {
+                                dx = FMath::Max(FMath::Abs(idxX),FMath::Abs(idxY));
+                                dy = FMath::Min(FMath::Abs(idxX),FMath::Abs(idxY));
+                                dz = -idxZ;
+                            }
+
+                            int index_lmk = 0;
+                            for(int l = 0 ; l <= P ; ++l){
+                                for(int m = 0 ; m <= l ; ++m ){
+                                    { // k == 0
+                                        const FReal d_lmk            = dlmkMatrix[dx+3][dy][dz+3][l][m+P][0+P];
+                                        const FReal d_lmk_minusTheta = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][0+P];
+
+                                        // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
+                                        const FReal Ofactor = sqrtDoubleFactorials[l][0]/sqrtDoubleFactorials[l][m];
+                                        const FReal Mfactor = sqrtDoubleFactorials[l][m]/sqrtDoubleFactorials[l][0];
+
+                                        DlmkCoefM2LOTheta[position][index_lmk]      = Ofactor * d_lmk;
+                                        DlmkCoefM2LMMinusTheta[position][index_lmk] = Mfactor * d_lmk_minusTheta;
+                                        ++index_lmk;
+                                    }
+                                    FReal minus_1_pow_k = -1.0;
+                                    for(int k = 1 ; k <= l ; ++k){
+                                        const FReal d_lm_minus_k            = dlmkMatrix[dx+3][dy][dz+3][l][m+P][-k+P];
+                                        const FReal d_lmk                   = dlmkMatrix[dx+3][dy][dz+3][l][m+P][k+P];
+
+                                        const FReal d_lm_minus_k_minusTheta = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][-k+P];
+                                        const FReal d_lmk_minusTheta        = dlmkMatrix[-dx+3][dy][dz+3][l][m+P][k+P];
+
+                                        const FReal Ofactor = sqrtDoubleFactorials[l][k]/sqrtDoubleFactorials[l][m];
+                                        const FReal Mfactor = sqrtDoubleFactorials[l][m]/sqrtDoubleFactorials[l][k];
+
+                                        DlmkCoefM2LOTheta[position][index_lmk]      = Ofactor * (d_lmk + minus_1_pow_k * d_lm_minus_k);
+                                        DlmkCoefM2LMMinusTheta[position][index_lmk] = Mfactor * (d_lmk_minusTheta + minus_1_pow_k * d_lm_minus_k_minusTheta);
+                                        ++index_lmk;
+
+                                        DlmkCoefM2LOTheta[position][index_lmk]      = Ofactor * (d_lmk - minus_1_pow_k * d_lm_minus_k);
+                                        DlmkCoefM2LMMinusTheta[position][index_lmk] = Mfactor * (d_lmk_minusTheta - minus_1_pow_k * d_lm_minus_k_minusTheta);
+                                        ++index_lmk;
+
+                                        minus_1_pow_k = -minus_1_pow_k;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
-    /** To get the right spherical object from level and child position */
-    FSpherical getSphericalChild(const int idxLevel, const int position) const {
-        return childrenPosition[(idxLevel-1)*8 + position];
-    }
-
-    /** To get the right spherical object from level and interaction position */
-    FSpherical getSphericalInteraction(const int idxLevel, const int position) const {
-        return interactionsPosition[(idxLevel-1)*343 + position];
-    }
-
-    /** Return the position of a leaf from its tree coordinate */
-    FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
-        return FPoint(
-                    FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-                    FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getY(),
-                    FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getZ());
-    }
 
 
-    /** Return the combine of a paire of number */    
-    FReal combin(const int& a, const int& b){
-        if(a-b<0) printf("Error combi negative!! a=%d b=%d\n",a,b);
-        return factorials[a] / (factorials[b]*factorials[a-b]);
-    }
+    ///////////////////////////////////////////////////////
+    // d_lmk computation
+    // This part is constitued of 6 functions :
+    // DlmkBuild computes the matrix from a angle ]0;pi/2]
+    // DlmkBuild0 computes the matrix for angle 0
+    // DlmkBuildPi computes the matrix for angle pi
+    // Then, others use the d_lmk to build a rotated matrix:
+    // DlmkZNegative computes for angle \theta ]pi/2;pi[ using d_lmk(pi- \theta)
+    // DlmkInverseZNegative computes for angle \theta ]pi;3pi/2[ using d_lmk(\theta-pi)
+    // DlmkInverse computes for angle \theta ]3pi/2;2pi[ using d_lmk(2pi- \theta)
+    ///////////////////////////////////////////////////////
 
-    /** To access the rotation matrix value with an analytical computation on the fly
-      * These analytical formula has been taken from two papers:
-      * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
-      * Formulas 13, 14, 15, 16
-      * Parallelization of the Fast Multipole Method
-      * Formula 19
-      *  \f[
-      * P^{l}_{m,k} = \frac{1}{2} \sqrt{ \frac{(l-m)!(l+m)!}{(l-k)!(l+k)!} } (1+sgn(k)cos( \theta))^{|k|} sin( \theta )^{m-|k|}
-      *              \sum_{n=max(-(m+k),0)}^{min(l-m,l-k)}{ (-1)^{l-m-n} {{l-k} \choose {n}} {{l+k} \choose {l-m-n}}
-      *              (1+cos( \theta ))^n (1+cos( \theta ))^{l-m-n} } , l \geq 0, -l \leq k \leq l, |k| \leq m \leq l
-      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
-      * P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
+    /** Compute d_mlk for \theta = 0
+      * \f[
+      * d^l_{m,k}( \theta ) = \delta_{m,k}, \textrm{ \delta Kronecker delta }
       * \f]
       */
-    FReal d_lmk_analytical(const FReal cosTheta, const FReal sinTheta, const int l , const int m, const int k){
-        if( l >= 0 && -l <= k && k <= l && FMath::Abs(k) <= m && m <= l ){
-            FReal sum = 0;
-            for(int n = FMath::Max(-(m+k),0) ; n <= FMath::Min(l-m,l-k) ; ++n){
-                sum += FMath::pow(FReal(-1.0), l-m-n) * combin(l-k, n) * combin(l+k, l-m-n) * FMath::pow(FReal(1.0)+cosTheta,n) * FMath::pow(FReal(1.0)-cosTheta, l-m-n);
+    void DlmkBuild0(FReal dlmk[P+1][P2+1][P2+1]) const {
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = -l ; m <= l ; ++m){
+                // first put 0 every where
+                for(int k = -l ; k <= l ; ++k){
+                    dlmk[l][P+m][P+k] = FReal(0.0);
+                }
+                // then replace per 1 for m == k
+                dlmk[l][P+m][P+m] = FReal(1.0);
             }
-            return (FReal(1.0)/FMath::pow(FReal(2.0),l)) * FMath::Sqrt((factorials[l-m]*factorials[l+m])/(factorials[l-k]*factorials[l+k]))
-                    * FMath::pow(FReal(1.0) + FReal(Sgn(k))*cosTheta, FMath::Abs(k)) * FMath::pow(sinTheta, m - FMath::Abs(k)) * sum;
-        }
-        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
-        else if( (l > 0 && -l <= m && m < 0 && FMath::Abs(m) <= k && k <= l)
-                 ||  (l > 0 && 0 <= m && m < l && m < k && k <= l )) {
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, k ,m);
-        }
-        // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
-        else if( l > 0 && -l <= m && m < l && -l <= k && k < -m ){
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, -m, -k);
-        }
-        else{
-            printf("Error that should not be possible!\n");
-            return FReal(0.0);
         }
     }
 
-    ///////////////////////////////////////////////////////
-    // legendre
-    ///////////////////////////////////////////////////////
+    /** Compute d_mlk for \theta = PI
+      * \f[
+      * d^l_{m,k}( \theta ) = (-1)^{l+k} \delta_{m,k}, \textrm{ \delta Kronecker delta }
+      * \f]
+      */
+    void DlmkBuildPi(FReal dlmk[P+1][P2+1][P2+1]) const {
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = -l ; m <= l ; ++m){
+                // put 0 every where
+                for(int k = -l ; k <= l ; ++k){
+                    dlmk[l][P+m][P+k] = FReal(0.0);
+                }
+                // -1^l+k * 1 where m == k
+                dlmk[l][P+m][P-m] = ((l+m)&0x1 ? FReal(-1) : FReal(1));
+            }
+        }
+    }
+
+    /** Compute d_mlk for \theta = ]PI/2;PI[
+      * \f[
+      * d^l_{m,k}( \theta ) = (-1)^{l+m} d^l_{m,-k}( \Pi - \theta )
+      * \f]
+      */
+    void DlmkZNegative(FReal dlmk[P+1][P2+1][P2+1], const FReal dlmkZPositif[P+1][P2+1][P2+1]) const {
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = -l ; m <= l ; ++m){
+                // if l+m is odd
+                if( (l+m)&0x1 ){
+                    // put -1 every where
+                    for(int k = -l ; k <= l ; ++k){
+                        dlmk[l][P+m][P+k] = -dlmkZPositif[l][P+m][P-k];
+                    }
+                }
+                else{
+                    // else just copy
+                    for(int k = -l ; k <= l ; ++k){
+                        dlmk[l][P+m][P+k] = dlmkZPositif[l][P+m][P-k];
+                    }
+                }
+            }
+        }
+    }
+
+    /** Compute d_mlk for \theta = ]PI;3PI/2[
+      * \f[
+      * d^l_{m,k}( \theta ) = (-1)^{l+m} d^l_{-m,k}( \theta - \Pi )
+      * \f]
+      */
+    void DlmkInverseZNegative(FReal dlmk[P+1][P2+1][P2+1], const FReal dlmkZPositif[P+1][P2+1][P2+1]) const {
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = -l ; m <= l ; ++m){
+                if( (l+m)&0x1 ){
+                    for(int k = -l ; k <= l ; ++k){
+                        dlmk[l][P+m][P+k] = -dlmkZPositif[l][P-m][P+k];
+                    }
+                }
+                else{
+                    for(int k = -l ; k <= l ; ++k){
+                        dlmk[l][P+m][P+k] = dlmkZPositif[l][P-m][P+k];
+                    }
+                }
+            }
+        }
+    }
+
+    /** Compute d_mlk for \theta = ]3PI/2;2PI[
+      * \f[
+      * d^l_{m,k}( \theta ) = (-1)^{m+k} d^l_{m,k}( 2 \Pi - \theta )
+      * \f]
+      */
+    void DlmkInverse(FReal dlmk[P+1][P2+1][P2+1], const FReal dlmkZPositif[P+1][P2+1][P2+1]) const {
+        for(int l = 0 ; l <= P ; ++l){
+            for(int m = -l ; m <= l ; ++m){
+                // we start with k == -l, so if (k+m) is odd
+                if( (l+m)&0x1 ){
+                    // then we start per (-1)
+                    for(int k = -l ; k < l ; k+=2){
+                        dlmk[l][P+m][P+k] = -dlmkZPositif[l][P+m][P+k];
+                        dlmk[l][P+m][P+k+1] = dlmkZPositif[l][P+m][P+k+1];
+                    }
+                    // l is always odd
+                    dlmk[l][P+m][P+l] = -dlmkZPositif[l][P+m][P+l];
+                }
+                else{
+                    // else we start per (+1)
+                    for(int k = -l ; k < l ; k+=2){
+                        dlmk[l][P+m][P+k] = dlmkZPositif[l][P+m][P+k];
+                        dlmk[l][P+m][P+k+1] = -dlmkZPositif[l][P+m][P+k+1];
+                    }
+                    // l is always odd
+                    dlmk[l][P+m][P+l] = dlmkZPositif[l][P+m][P+l];
+                }
+            }
+        }
+    }
+
+
+    /** Compute d_mlk for \theta = ]0;PI/2[
+      * This used the second formula from the paper:
+      * Fast and accurate determination of the wigner rotation matrices in FMM
+      *
+      * We use formula 28,29 to compute "g"
+      * Then 25,26,27 for the recurrence.
+      */
+    // theta should be between [0;pi] as the inclinaison angle
+    void DlmkBuild(FReal dlmk[P+1][P2+1][P2+1], const FReal inTheta) const {
+        // To have constants for very used values
+        const FReal F0 = FReal(0.0);
+        const FReal F1 = FReal(1.0);
+        const FReal F2 = FReal(2.0);
+
+        const FReal cosTheta = FMath::Cos(inTheta);
+        const FReal sinTheta = FMath::Sin(inTheta);
+
+        // First compute g
+        FReal g[SizeArray];
+        {// Equ 29
+            // g{0,0} = 1
+            g[0] = F1;
+
+            // g{l,0} = sqrt( (2l - 1) / 2l) g{l-1,0}  for l > 0
+            {
+                int index_l0 = 1;
+                FReal fl = F1;
+                for(int l = 1; l <= P ; ++l, ++fl ){
+                    g[index_l0] = FMath::Sqrt((fl*F2-F1)/(fl*F2)) * g[index_l0-l];
+                    index_l0 += l + 1;
+                }
+            }
+            // g{l,m} = sqrt( (l - m + 1) / (l+m)) g{l,m-1}  for l > 0, 0 < m <= l
+            {
+                int index_lm = 2;
+                FReal fl = F1;
+                for(int l = 1; l <= P ; ++l, ++fl ){
+                    FReal fm = F1;
+                    for(int m = 1; m <= l ; ++m, ++index_lm, ++fm ){
+                        g[index_lm] = FMath::Sqrt((fl-fm+F1)/(fl+fm)) * g[index_lm-1];
+                    }
+                    ++index_lm;
+                }
+            }
+        }
+        { // initial condition
+            // Equ 28
+            // d{l,m,l} = -1^(l+m) g{l,m} (1+cos(theta))^m sin(theta)^(l-m) , For l > 0, 0 <= m <= l
+            int index_lm = 0;
+            FReal sinTheta_pow_l = F1;
+            for(int l = 0 ; l <= P ; ++l){
+                // build variable iteratively
+                FReal minus_1_pow_lm = l&0x1 ? FReal(-1) : FReal(1);
+                FReal cosTheta_1_pow_m = F1;
+                FReal sinTheta_pow_l_minus_m = sinTheta_pow_l;
+                for(int m = 0 ; m <= l ; ++m, ++index_lm){
+                    dlmk[l][P+m][P+l] = minus_1_pow_lm * g[index_lm] * cosTheta_1_pow_m * sinTheta_pow_l_minus_m;
+                    // update
+                    minus_1_pow_lm = -minus_1_pow_lm;
+                    cosTheta_1_pow_m *= F1 + cosTheta;
+                    sinTheta_pow_l_minus_m /= sinTheta;
+                }
+                // update
+                sinTheta_pow_l *= sinTheta;
+            }
+        }
+        { // build the rest of the matrix
+            FReal fl = F1;
+            for(int l = 1 ; l <= P ; ++l, ++fl){
+                FReal fk = fl;
+                for(int k = l ; k > -l ; --k, --fk){
+                    // Equ 25
+                    // For l > 0, 0 <= m < l, -l < k <= l, cos(theta) >= 0
+                    // d{l,m,k-1} = sqrt( l(l+1) - m(m+1) / l(l+1) - k(k-1)) d{l,m+1,k}
+                    //            + (m+k) sin(theta) d{l,m,k} / sqrt(l(l+1) - k(k-1)) (1+cos(theta))
+                    FReal fm = F0;
+                    for(int m = 0 ; m < l ; ++m, ++fm){
+                        dlmk[l][P+m][P+k-1] =
+                                (FMath::Sqrt((fl*(fl+F1)-fm*(fm+F1))/(fl*(fl+F1)-fk*(fk-F1))) * dlmk[l][P+m+1][P+k])
+                                + ((fm+fk)*sinTheta*dlmk[l][P+m][P+k]/(FMath::Sqrt(fl*(fl+F1)-fk*(fk-F1))*(F1+cosTheta)));
+                    }
+                    // Equ 26
+                    // For l > 0, -l < k <= l, cos(theta) >= 0
+                    // d{l,l,k-1} = (l+k) sin(theta) d{l,l,k}
+                    //             / sqrt(l(l+1)-k(k-1)) (1+cos(theta))
+                    dlmk[l][P+l][P+k-1] = (fl+fk)*sinTheta*dlmk[l][P+l][P+k]/(FMath::Sqrt(fl*(fl+F1)-fk*(fk-F1))*(F1+cosTheta));
+                }
+                // Equ 27
+                // d{l,m,k} = -1^(m+k) d{l,-m,-k}  , For l > 0, -l <= m < 0, -l <= k <= l
+                for(int m = -l ; m < 0 ; ++m){
+                    FReal minus_1_pow_mk = (m-l)&0x1 ? FReal(-1) : FReal(1);
+                    for(int k = -l ; k <= l ; ++k){
+                        dlmk[l][P+m][P+k] = minus_1_pow_mk * dlmk[l][P-m][P-k];
+                        minus_1_pow_mk = -minus_1_pow_mk;
+                    }
+                }
+            }
+        }
+    }
 
     /** Compute the legendre polynomial from {0,0} to {P,P}
       * the computation is made by recurence (P cannot be equal to 0)
-      * @todo use pointer
       *
       * The formula has been taken from:
       * Fast and accurate determination of the wigner rotation matrices in the fast multipole method
@@ -313,7 +736,7 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
       * P_{l,m} = \frac{(2l-1) cos( \theta ) P_{l-1,m} - (l+m-1) P_{l-2,m}x}{(l-k)} ,l \ge 1, 0 \leq m \le l-1
       * \f]
       */
-    void computeLegendre(FReal legendre[], const FReal inCosTheta, const FReal inSinTheta){
+    void computeLegendre(FReal legendre[], const FReal inCosTheta, const FReal inSinTheta) const {
         const FReal invSinTheta = -inSinTheta;
 
         legendre[0] = 1.0;             // P_0,0(1) = 1
@@ -348,155 +771,105 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
     }
 
     ///////////////////////////////////////////////////////
-    // Real rotation
+    // Multiplication for rotation
+    // Here we have two function that are optimized
+    // to compute the rotation fast!
+    ///////////////////////////////////////////////////////
+
+    /** This function use a d_lmk vector to rotate the vec
+      * multipole or local vector.
+      * The result is copyed in vec.
+      * Please see the structure of dlmk to understand this function.
+      * Warning we cast the vec FComplexe array into a FReal array
+      */
+    static void RotationZWithDlmk(FComplexe vec[], const FReal* dlmkCoef){
+        FReal originalVec[2*SizeArray];
+        FMemUtils::copyall((FComplexe*)originalVec,vec,SizeArray);
+        // index_lm == atLm(l,m) but progress iteratively to write the result
+        int index_lm = 0;
+        for(int l = 0 ; l <= P ; ++l){
+            const FReal*const FRestrict originalVecAtL0 = originalVec + (index_lm * 2);
+            for(int m = 0 ; m <= l ; ++m, ++index_lm ){
+                FReal res_lkm_real = 0.0;
+                FReal res_lkm_imag = 0.0;
+                // To read all "m" value for current "l"
+                const FReal* FRestrict iterOrignalVec = originalVecAtL0;
+                { // for k == 0
+                    // same coef for real and imaginary
+                    res_lkm_real += (*dlmkCoef) * (*iterOrignalVec++);
+                    res_lkm_imag += (*dlmkCoef++) * (*iterOrignalVec++);
+                }
+                for(int k = 1 ; k <= l ; ++k){
+                    // coef contains first real value
+                    res_lkm_real += (*dlmkCoef++) * (*iterOrignalVec++);
+                    // then imaginary
+                    res_lkm_imag += (*dlmkCoef++) * (*iterOrignalVec++);
+                }
+                // save the result
+                vec[index_lm].setRealImag(res_lkm_real, res_lkm_imag);
+            }
+        }
+    }
+
+    /** This function is computing dest[:] *= src[:]
+      * it computes inSize FComplexe multiplication
+      * to do so we first proceed per 4 and the the inSize%4 rest
+      */
+    static void RotationYVectorsMul(FComplexe* FRestrict dest, const FComplexe* FRestrict src, const int inSize = SizeArray){
+        const FComplexe*const FRestrict lastElement = dest + inSize;
+        const FComplexe*const FRestrict intermediateLastElement = dest + (inSize & ~0x3);
+        // first the inSize - inSize%4 elements
+        for(; dest != intermediateLastElement ;) {
+            (*dest++) *= (*src++);
+            (*dest++) *= (*src++);
+            (*dest++) *= (*src++);
+            (*dest++) *= (*src++);
+        }
+        // then the rest
+        for(; dest != lastElement ;) {
+            (*dest++) *= (*src++);
+        }
+    }
+
+    ///////////////////////////////////////////////////////
+    // Utils
     ///////////////////////////////////////////////////////
 
 
-    /** This function rotate a multipole vector by an angle inclination \theta
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * O_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-      *                                     d^l_{km}( \theta ) O_{l,k}( \alpha, \beta ) }
-      * \f]
-      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
-      * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
-      * Theta should be in [0,pi]
+    /** Return the position of a leaf from its tree coordinate
+      * This is used only for the leaf
       */
-    void rotateMultipoleAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
-        for(int l = 0 ; l <= P ; ++l){
-            for(int m = 0 ; m <= l ; ++m ){
-                FReal w_lkm_real = 0.0;
-                FReal w_lkm_imag = 0.0;
-
-                for(int k = -l ; k < 0 ; ++k){
-                    // O_{l,-m} = \bar{ O_{l,m} } (-1)^m
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-k]*factorials[l+k])/(factorials[l-abs(m)]*factorials[l+abs(m)]));
-                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
-                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
-                }
-                for(int k = 0 ; k <= l ; ++k){
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-k)!(l+k)!}{(l-|m|)!(l+|m|)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-k]*factorials[l+k])/(factorials[l-abs(m)]*factorials[l+abs(m)]));
-                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
-                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
-                }
-                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
-            }
-        }
-        FMemUtils::copyall(vec,cell_rotate,SizeArray);
+    FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
+        return FPoint(
+                    FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                    FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getY(),
+                    FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getZ());
     }
 
-    /** This function rotate a local vector by an angle inclination \theta
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1
-      * \f[
-      * M_{l,m}( \alpha + \theta, \beta ) = \sum_{k=-l}^l{ \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-      *                                     d^l_{km}( \theta ) M_{l,k}( \alpha, \beta ) }
-      * \f]
-      * Because we store only P_lm for l >= 0 and m >= 0 we use the relation of symetrie as:
-      * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
-      * Theta should be in [0,pi]
+    /** Return position in the array of the l/m couple
+      * P[atLm(l,m)] => P{l,m}
+      * 0
+      * 1 2
+      * 3 4 5
+      * 6 7 8 9 ...
       */
-    void rotateTaylorAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
-        for(int l = 0 ; l <= P ; ++l){
-            for(int m = 0 ; m <= l ; ++m ){
-                FReal w_lkm_real = 0.0;
-                FReal w_lkm_imag = 0.0;
-
-                for(int k = -l ; k < 0 ; ++k){
-                    // M_{l,-m} = \bar{ M_{l,m} } (-1)^m
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-abs(m)]*factorials[l+abs(m)])/(factorials[l-k]*factorials[l+k]));
-                    w_lkm_real += FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getReal(); // k<0 => Conjugate * -1^k
-                    w_lkm_imag -= FMath::pow(FReal(-1.0),-k) * factor * d_lmk * vec[atLm(l,-k)].getImag(); // k<0 => Conjugate * -1^k
-                }
-                for(int k = 0 ; k <= l ; ++k){
-                    const FReal d_lmk = d_lmk_analytical(FMath::Cos(theta),FMath::Sin(theta),l,m,k);
-                    // \sqrt{ \frac{(l-|m|)!(l+|m|)!}{(l-k)!(l+k)!} }
-                    const FReal factor = FMath::Sqrt((factorials[l-abs(m)]*factorials[l+abs(m)])/(factorials[l-k]*factorials[l+k]));
-                    w_lkm_real += factor * d_lmk * vec[atLm(l,k)].getReal();
-                    w_lkm_imag += factor * d_lmk * vec[atLm(l,k)].getImag();
-                }
-                cell_rotate[atLm(l,m)].setRealImag(w_lkm_real, w_lkm_imag);
-            }
-        }
-        FMemUtils::copyall(vec,cell_rotate,SizeArray);
-    }
-
-    /** This function rotate a multipole vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void rotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        //rotateMultipoleAroundZ(vec,(FMath::FPiDiv2 + azimuth));
-        rotateMultipoleAroundY(vec,inclination);
-    }
-    /** This function rotate a multipole vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void deRotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        rotateMultipoleAroundY(vec,-inclination);
-        //rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
-    }
-
-    /** This function rotate a local vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void rotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        //rotateTaylorAroundZ(vec,(FMath::FPiDiv2 + azimuth));
-        rotateTaylorAroundY(vec,inclination);
-    }
-    /** This function rotate a local vector by a angles inclination & azimuth
-      * The formula used is present in several paper, but we refer to
-      * Implementation of rotation-based operators for Fast Multipole Method in X10
-      * At page 5 .1 as the forward rotation
-      *
-      * Rotation are not commutative so we have to do it in the right order
-      */
-    void deRotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
-        rotateTaylorAroundY(vec,-inclination);
-        //rotateTaylorAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
-    }
-
-    static void ComplexeArrayMulEqual(FComplexe dest[], const FComplexe src[], const int sizeOfArray){
-        for(int idx = 0 ; idx < sizeOfArray ; ++idx) {
-            dest[idx] *= src[idx];
-        }
+    int atLm(const int l, const int m) const {
+        // summation series over l + m => (l*(l+1))/2 + m
+        return ((l*(l+1))>>1) + m;
     }
 
 public:
 
     /** Constructor, needs system information */
     FRotationKernel( const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
-        boxWidth(inBoxWidth),
-        treeHeight(inTreeHeight),
-        widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
-        widthAtLeafLevelDiv2(widthAtLeafLevel/2),
-        boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2))
-        {
+                    boxWidth(inBoxWidth),
+                    treeHeight(inTreeHeight),
+                    widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
+                    widthAtLeafLevelDiv2(widthAtLeafLevel/2),
+                    boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2))
+                    {
         // simply does the precomputation
         precomputeFactorials();
-        preComputePosition();
         precomputeTranslationCoef();
         precomputeRotationVectors();
     }
@@ -581,11 +954,9 @@ public:
                 FMemUtils::copyall(source_w, inChildren[idxChild]->getMultipole(), SizeArray);
 
                 // rotate it forward
-                const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                ComplexeArrayMulEqual(source_w,rotationExpMinusImPhi[idxChild],SizeArray);
-                rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
+                RotationYVectorsMul(source_w,rotationExpMinusImPhi[idxChild]);
+                RotationZWithDlmk(source_w,DlmkCoefOTheta[idxChild]);
 
-                //const FReal b = -sph.getR();
                 // Translate it
                 FComplexe target_w[SizeArray];
                 int index_lm = 0;
@@ -606,8 +977,8 @@ public:
                 }
 
                 // Rotate it back
-                deRotateMultipole(target_w, sph.getAzimuth(), sph.getInclination());
-                ComplexeArrayMulEqual(target_w,rotationExpImPhi[idxChild],SizeArray);
+                RotationZWithDlmk(target_w,DlmkCoefOMinusTheta[idxChild]);
+                RotationYVectorsMul(target_w,rotationExpImPhi[idxChild]);
 
                 // Sum the result
                 FMemUtils::addall( inPole->getMultipole(), target_w, SizeArray);
@@ -638,8 +1009,8 @@ public:
                 FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
 
                 // Rotate
-                const FSpherical sph = getSphericalInteraction(inLevel, idxNeigh);
-                rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
+                RotationYVectorsMul(source_w,rotationM2LExpMinusImPhi[idxNeigh]);
+                RotationZWithDlmk(source_w,DlmkCoefM2LOTheta[idxNeigh]);
 
                 // Transfer to u
                 FComplexe target_u[SizeArray];
@@ -664,7 +1035,8 @@ public:
                 }
 
                 // Rotate it back
-                deRotateTaylor(target_u, sph.getAzimuth(), sph.getInclination());
+                RotationZWithDlmk(target_u,DlmkCoefM2LMMinusTheta[idxNeigh]);
+                RotationYVectorsMul(target_u,rotationM2LExpMinusImPhi[idxNeigh]);
 
                 // Sum
                 FMemUtils::addall(inLocal->getLocal(), target_u, SizeArray);
@@ -696,9 +1068,8 @@ public:
                 FMemUtils::copyall(source_u, inLocal->getLocal(), SizeArray);
 
                 // Rotate
-                const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                ComplexeArrayMulEqual(source_u,rotationExpImPhi[idxChild],SizeArray);
-                rotateTaylor(source_u, sph.getAzimuth(), sph.getInclination());
+                RotationYVectorsMul(source_u,rotationExpImPhi[idxChild]);
+                RotationZWithDlmk(source_u,DlmkCoefMTheta[idxChild]);
 
                 // Translate
                 FComplexe target_u[SizeArray];
@@ -719,8 +1090,8 @@ public:
                 }
 
                 // Rotate
-                deRotateTaylor(target_u, sph.getAzimuth(), sph.getInclination());
-                ComplexeArrayMulEqual(source_u,rotationExpMinusImPhi[idxChild],SizeArray);
+                RotationZWithDlmk(target_u,DlmkCoefMMinusTheta[idxChild]);
+                RotationYVectorsMul(target_u,rotationExpMinusImPhi[idxChild]);
 
                 // Sum in child
                 FMemUtils::addall(inChildren[idxChild]->getLocal(), target_u, SizeArray);

@@ -20,11 +20,11 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "../../Src/Kernels/Rotation/FRotationParticle.hpp"
+//#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
+//#include "../../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
@@ -39,25 +39,11 @@
 
 
 
-/** We need to know the position of the particle in the array */
-class IndexedParticle : public FSphericalParticle {
-    int index;
-public:
-    IndexedParticle(): index(-1){}
-
-    int getIndex() const{
-        return index;
-    }
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
-};
-
 
 int main(int argc, char** argv){
-    static const int P = 8;
+    static const int P = 9;
 
-    typedef IndexedParticle                ParticleClass;
+    typedef FRotationParticle                ParticleClass;
     typedef FRotationCell<P>               CellClass;
     typedef FVector<ParticleClass>         ContainerClass;
 
@@ -96,13 +82,7 @@ int main(int argc, char** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    //loader.fillTree(tree);
-    ParticleClass* const particles = new ParticleClass[loader.getNumberOfParticles()];
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(particles[idxPart]);
-        particles[idxPart].setIndex( idxPart );
-        tree.insert(particles[idxPart]);
-    }
+    loader.fillTree(tree);
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -160,7 +140,7 @@ int main(int argc, char** argv){
     }
 
     // -----------------------------------------------------
-
+/*
     {
         std::cout << "Compute direct interaction for all\n";
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
@@ -299,7 +279,7 @@ int main(int argc, char** argv){
             } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
         }
     }
-
+*/
     return 0;
 }
 

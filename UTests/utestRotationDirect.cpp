@@ -16,7 +16,7 @@
 #include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Rotation/FRotationParticle.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/Rotation/FRotationKernel.hpp"
@@ -34,7 +34,7 @@
   */
 
 /** We need to know the position of the particle in the array */
-class IndexedParticle : public FSphericalParticle {
+class IndexedParticle : public FRotationParticle {
     int index;
 public:
     IndexedParticle(): index(-1){}

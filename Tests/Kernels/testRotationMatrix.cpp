@@ -28,6 +28,7 @@
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
+#include "../../Src/Utils/FParameters.hpp"
 
 
 int atLm(const int l, const int m){
@@ -112,19 +113,20 @@ FReal analyticalDachsel(const FReal cosTheta, const FReal sinTheta, const int l 
 
 
 
-int main(){
+int main(int argc, char ** argv){
     static const int P = 2;
     static const int SizeArray = (P+1)*(P+1);
 
     //const FReal cosTheta = FMath::Cos(FMath::FPiDiv2/FReal(2.0));
     //const FReal sinTheta = FMath::Sin(FMath::FPiDiv2/FReal(2.0));
-    const FPoint relativPos(FReal(0.1),FReal(0.1),FReal(0.1));
-    const FSpherical relativPosSphere(relativPos);
+    //const FPoint relativPos(FReal(0.1),FReal(0.1),FReal(0.1));
+    //const FSpherical relativPosSphere(relativPos);
     //Theta 0.955317 Phi 2.356194
-    const FReal Betha = 0.955317;//FMath::FPi/2; //2*FMath::FPi-FMath::FPi/2
-    const FReal cosTheta = FMath::Cos(Betha); // relativPosSphere.getCosTheta();
-    const FReal sinTheta = FMath::Sin(Betha); // relativPosSphere.getSinTheta();
+    const FReal theta = FParameters::getValue(argc,argv,"-theta", 0.955317);//FMath::FPi/2; //2*FMath::FPi-FMath::FPi/2
+    const FReal cosTheta = FMath::Cos(theta); // relativPosSphere.getCosTheta();
+    const FReal sinTheta = FMath::Sin(theta); // relativPosSphere.getSinTheta();
 
+    std::cout << "theta = " << theta << "\n";
     std::cout << "cosTheta = " << cosTheta << "\n";
     std::cout << "sinTheta = " << sinTheta << "\n";
 
@@ -301,6 +303,109 @@ int main(){
     }
     FMemUtils::setall((FReal*)d, FReal(std::numeric_limits<FReal>::quiet_NaN()), (P+1)*(2*P+1)*(2*P+1));
 
+    /////////////////////////////////////////////////////////////
+    // Second method optimized
+    /////////////////////////////////////////////////////////////
+
+    {
+        const FReal F0 = FReal(0.0);
+        const FReal F1 = FReal(1.0);
+        const FReal F2 = FReal(2.0);
+        //const FReal cosTheta = FMath::Cos(inTheta);
+        //const FReal sinTheta = FMath::Sin(inTheta);
+        //FReal g[SizeArray];
+        {// Equ 29
+            // g{0,0} = 1
+            g[0] = F1;
+
+            // g{l,0} = sqrt( (2l - 1) / 2l) g{l-1,0}  for l > 0
+            {
+                int index_l0 = 1;
+                FReal fl = F1;
+                for(int l = 1; l <= P ; ++l, ++fl ){
+                    g[index_l0] = FMath::Sqrt((fl*F2-F1)/(fl*F2)) * g[index_l0-l];
+                    index_l0 += l + 1;
+                }
+            }
+            // g{l,m} = sqrt( (l - m + 1) / (l+m)) g{l,m-1}  for l > 0, 0 < m <= l
+            {
+                int index_lm = 2;
+                FReal fl = F1;
+                for(int l = 1; l <= P ; ++l, ++fl ){
+                    FReal fm = F1;
+                    for(int m = 1; m <= l ; ++m, ++index_lm, ++fm ){
+                        g[index_lm] = FMath::Sqrt((fl-fm+F1)/(fl+fm)) * g[index_lm-1];
+                    }
+                    ++index_lm;
+                }
+            }
+
+        }
+        { // initial
+            // Equ 28
+            // d{l,m,l} = -1^(l+m) g{l,m} (1+cos(theta))^m sin(theta)^(l-m) , For l > 0, 0 <= m <= l
+            int index_lm = 0;
+            FReal sinTheta_pow_l = F1;
+            for(int l = 0 ; l <= P ; ++l){
+                FReal minus_1_pow_lm = l&0x1 ? FReal(-1) : FReal(1);
+                FReal cosTheta_1_pow_m = F1;
+                FReal sinTheta_pow_l_minus_m = sinTheta_pow_l;
+                for(int m = 0 ; m <= l ; ++m, ++index_lm){
+                    d[l][P+m][P+l] = minus_1_pow_lm * g[index_lm] * cosTheta_1_pow_m * sinTheta_pow_l_minus_m;
+
+                    minus_1_pow_lm = -minus_1_pow_lm;
+                    cosTheta_1_pow_m *= F1 + cosTheta;
+                    sinTheta_pow_l_minus_m /= sinTheta;
+                }
+                sinTheta_pow_l *= sinTheta;
+            }
+        }
+        {
+            FReal fl = F1;
+            for(int l = 1 ; l <= P ; ++l, ++fl){
+                FReal fk = fl;
+                for(int k = l ; k > -l ; --k, --fk){
+                    // Equ 25
+                    // For l > 0, 0 <= m < l, -l < k <= l, cos(theta) >= 0
+                    // d{l,m,k-1} = sqrt( l(l+1) - m(m+1) / l(l+1) - k(k-1)) d{l,m+1,k}
+                    //            + (m+k) sin(theta) d{l,m,k} / sqrt(l(l+1) - k(k-1)) (1+cos(theta))
+                    FReal fm = F0;
+                    for(int m = 0 ; m < l ; ++m, ++fm){
+                        d[l][P+m][P+k-1] =
+                                (FMath::Sqrt((fl*(fl+F1)-fm*(fm+F1))/(fl*(fl+F1)-fk*(fk-F1))) * d[l][P+m+1][P+k])
+                                + ((fm+fk)*sinTheta*d[l][P+m][P+k]/(FMath::Sqrt(fl*(fl+F1)-fk*(fk-F1))*(F1+cosTheta)));
+                    }
+                    // Equ 26
+                    // For l > 0, -l < k <= l, cos(theta) >= 0
+                    // d{l,l,k-1} = (l+k) sin(theta) d{l,l,k}
+                    //             / sqrt(l(l+1)-k(k-1)) (1+cos(theta))
+                    d[l][P+l][P+k-1] = (fl+fk)*sinTheta*d[l][P+l][P+k]/(FMath::Sqrt(fl*(fl+F1)-fk*(fk-F1))*(F1+cosTheta));
+                }
+                // Equ 27
+                // d{l,m,k} = -1^(m+k) d{l,-m,-k}  , For l > 0, -l <= m < 0, -l <= k <= l
+                for(int m = -l ; m < 0 ; ++m){
+                    FReal minus_1_pow_mk = (m-l)&0x1 ? FReal(-1) : FReal(1);
+                    for(int k = -l ; k <= l ; ++k){
+                        d[l][P+m][P+k] = minus_1_pow_mk * d[l][P-m][P-k];
+                        minus_1_pow_mk = -minus_1_pow_mk;
+                    }
+                }
+            }
+        }
+    }
+
+    // Print
+    std::cout << "Print result\n";
+    for(int l = 0 ; l <= P ; ++l){
+        for(int m = -l ; m <= l ; ++m ){
+            for(int k = -l ; k <= l ; ++k ){
+                std::cout << d[l][P+m][P+k] << "\t";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+    }
+    FMemUtils::setall((FReal*)d, FReal(std::numeric_limits<FReal>::quiet_NaN()), (P+1)*(2*P+1)*(2*P+1));
 
     /////////////////////////////////////////////////////////////
     // Analatycall values
@@ -336,15 +441,15 @@ int main(){
     std::cout << "Print L=1\n";
     {
         FReal resL[9];
-        resL[0] = FMath::pow(FMath::Cos(Betha/2.0),2);
-        resL[1] = -FMath::Sin(Betha)/FMath::Sqrt(2.0);
-        resL[2] = FMath::pow(FMath::Sin(Betha/2.0),2);
-        resL[3] = FMath::Sin(Betha)/FMath::Sqrt(2.0);;
-        resL[4] = FMath::Cos(Betha);
-        resL[5] = -FMath::Sin(Betha)/FMath::Sqrt(2.0);;
-        resL[6] = FMath::pow(FMath::Sin(Betha/2.0),2);
-        resL[7] = FMath::Sin(Betha)/FMath::Sqrt(2.0);
-        resL[8] = FMath::pow(FMath::Cos(Betha/2.0),2);
+        resL[0] = FMath::pow(FMath::Cos(theta/2.0),2);
+        resL[1] = -FMath::Sin(theta)/FMath::Sqrt(2.0);
+        resL[2] = FMath::pow(FMath::Sin(theta/2.0),2);
+        resL[3] = FMath::Sin(theta)/FMath::Sqrt(2.0);;
+        resL[4] = FMath::Cos(theta);
+        resL[5] = -FMath::Sin(theta)/FMath::Sqrt(2.0);;
+        resL[6] = FMath::pow(FMath::Sin(theta/2.0),2);
+        resL[7] = FMath::Sin(theta)/FMath::Sqrt(2.0);
+        resL[8] = FMath::pow(FMath::Cos(theta/2.0),2);
 
         for(int m = 0 ; m < 3 ; ++m ){
             for(int k = 0 ; k < 3 ; ++k ){
@@ -359,35 +464,35 @@ int main(){
     std::cout << "Print L=2\n";
     {
         FReal resL[25];
-        resL[0] = FMath::pow(FMath::Cos(Betha/2.0),4);
-        resL[1] = (-FMath::pow(FMath::Cos(Betha/2.0),2))*FMath::Sin(Betha);
-        resL[2] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(Betha),2);
-        resL[3] = (-FMath::pow(FMath::Sin(Betha/2.0),2))*FMath::Sin(Betha);
-        resL[4] = FMath::pow(FMath::Sin(Betha/2.0),4);
+        resL[0] = FMath::pow(FMath::Cos(theta/2.0),4);
+        resL[1] = (-FMath::pow(FMath::Cos(theta/2.0),2))*FMath::Sin(theta);
+        resL[2] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(theta),2);
+        resL[3] = (-FMath::pow(FMath::Sin(theta/2.0),2))*FMath::Sin(theta);
+        resL[4] = FMath::pow(FMath::Sin(theta/2.0),4);
 
-        resL[5] = FMath::pow(FMath::Cos(Betha/2.0),2)*FMath::Sin(Betha);
-        resL[6] = FMath::pow(FMath::Cos(Betha),2)- FMath::pow(FMath::Sin(Betha/2),2);
-        resL[7] = (-1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(2*Betha);
-        resL[8] = FMath::pow(FMath::Cos(Betha/2),2)- FMath::pow(FMath::Cos(Betha),2);
-        resL[9] = (-FMath::pow(FMath::Sin(Betha/2.0),2))*FMath::Sin(Betha);
+        resL[5] = FMath::pow(FMath::Cos(theta/2.0),2)*FMath::Sin(theta);
+        resL[6] = FMath::pow(FMath::Cos(theta),2)- FMath::pow(FMath::Sin(theta/2),2);
+        resL[7] = (-1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(2*theta);
+        resL[8] = FMath::pow(FMath::Cos(theta/2),2)- FMath::pow(FMath::Cos(theta),2);
+        resL[9] = (-FMath::pow(FMath::Sin(theta/2.0),2))*FMath::Sin(theta);
 
-        resL[10] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(Betha),2);
-        resL[11] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(Betha*2);
-        resL[12] = (1.0/2.0)*(-1+3*FMath::pow(FMath::Cos(Betha),2));
-        resL[13] = (-1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(Betha*2);
-        resL[14] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(Betha),2);
+        resL[10] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(theta),2);
+        resL[11] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(theta*2);
+        resL[12] = (1.0/2.0)*(-1+3*FMath::pow(FMath::Cos(theta),2));
+        resL[13] = (-1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(theta*2);
+        resL[14] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(theta),2);
 
-        resL[15] = FMath::pow(FMath::Sin(Betha/2.0),2)*FMath::Sin(Betha);
-        resL[16] = FMath::pow(FMath::Cos(Betha/2),2)- FMath::pow(FMath::Cos(Betha),2);
-        resL[17] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(2*Betha);
-        resL[18] = FMath::pow(FMath::Cos(Betha),2)- FMath::pow(FMath::Sin(Betha/2),2);
-        resL[19] = (-FMath::pow(FMath::Cos(Betha/2.0),2))*FMath::Sin(Betha);
+        resL[15] = FMath::pow(FMath::Sin(theta/2.0),2)*FMath::Sin(theta);
+        resL[16] = FMath::pow(FMath::Cos(theta/2),2)- FMath::pow(FMath::Cos(theta),2);
+        resL[17] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::Sin(2*theta);
+        resL[18] = FMath::pow(FMath::Cos(theta),2)- FMath::pow(FMath::Sin(theta/2),2);
+        resL[19] = (-FMath::pow(FMath::Cos(theta/2.0),2))*FMath::Sin(theta);
 
-        resL[20] = FMath::pow(FMath::Sin(Betha/2.0),4);
-        resL[21] = FMath::pow(FMath::Sin(Betha/2.0),2)*FMath::Sin(Betha);
-        resL[22] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(Betha),2);
-        resL[23] = FMath::pow(FMath::Cos(Betha/2.0),2)*FMath::Sin(Betha);
-        resL[24] = FMath::pow(FMath::Cos(Betha/2.0),4);
+        resL[20] = FMath::pow(FMath::Sin(theta/2.0),4);
+        resL[21] = FMath::pow(FMath::Sin(theta/2.0),2)*FMath::Sin(theta);
+        resL[22] = (1.0/2.0)*FMath::Sqrt(3.0/2.0)*FMath::pow(FMath::Sin(theta),2);
+        resL[23] = FMath::pow(FMath::Cos(theta/2.0),2)*FMath::Sin(theta);
+        resL[24] = FMath::pow(FMath::Cos(theta/2.0),4);
 
 
         for(int m = 0 ; m < 5 ; ++m ){
