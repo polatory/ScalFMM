@@ -919,8 +919,9 @@ public:
                 FReal fm = 0.0; // To have "m" has a float
                 for(int m = 0 ; m <= l ; ++m, ++index_l_m, ++fm){
                     const FReal magnitude = q_aPowL * legendre[index_l_m] / factorials[l+m];
-                    w[index_l_m].incReal(magnitude * FMath::Cos(fm * sph.getPhi() + i_pow_m[m & 0x3]));
-                    w[index_l_m].incImag(magnitude * FMath::Sin(fm * sph.getPhi() + i_pow_m[m & 0x3]));
+                    const FReal angle = fm * sph.getPhi() + i_pow_m[m & 0x3];
+                    w[index_l_m].incReal(magnitude * FMath::Cos(angle));
+                    w[index_l_m].incImag(magnitude * FMath::Sin(angle));
                 }
                 q_aPowL *= a;
             }

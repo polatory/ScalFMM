@@ -21,10 +21,8 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationParticle.hpp"
-//#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-//#include "../../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
@@ -38,8 +36,6 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 
-
-
 int main(int argc, char** argv){
     static const int P = 9;
 
@@ -50,7 +46,6 @@ int main(int argc, char** argv){
     typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
     typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FRotationKernel<ParticleClass, CellClass, ContainerClass , P>   KernelClass;
-    //typedef FRotationOriginalKernel<ParticleClass, CellClass, ContainerClass , P>   KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
@@ -140,146 +135,7 @@ int main(int argc, char** argv){
     }
 
     // -----------------------------------------------------
-/*
-    {
-        std::cout << "Compute direct interaction for all\n";
-        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-            for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                kernels.particlesMutualInteraction(&particles[idxTarget], &particles[idxOther]);
-            }
-        }
 
-        std::cout << "Compute Diff...\n";
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
-
-            do{
-                typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
-
-                while( leafIter.hasNotFinished() ){
-                    const ParticleClass& other = particles[leafIter.data().getIndex()];
-
-                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-//std::cout << leafIter.data().getIndex() << " Direct Potential = " << other.getPotential() << " Fmm Potential = " << leafIter.data().getPotential() << std::endl; // Remove Me
-                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
-
-                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
-
-                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
-
-                    leafIter.gotoNext();
-                }
-            } while(octreeIterator.moveRight());
-        }
-
-        // Print for information
-        std::cout << "Potential diff is = " << potentialDiff.getL2Norm() << " " << potentialDiff.getInfNorm() << std::endl;
-        std::cout << "Fx diff is = " << fx.getL2Norm() << " " << fx.getInfNorm() << std::endl;
-        std::cout << "Fy diff is = " << fy.getL2Norm() << " " << fy.getInfNorm() << std::endl;
-        std::cout << "Fz diff is = " << fz.getL2Norm() << " " << fz.getInfNorm() << std::endl;
-    }
-
-    delete[] particles;
-
-    {
-        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass>   ShKernelClass;
-        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, ShKernelClass, LeafClass > ShFmmClass;
-
-        FFmaLoader<ParticleClass> loaderSh(filename);
-        OctreeClass treeSh(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            ParticleClass particle;
-            loaderSh.fillParticle(particle);
-            treeSh.insert(particle);
-        }
-
-        ShKernelClass kernelsSh(P, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        ShFmmClass algoSh(&treeSh,&kernelsSh);
-        algoSh.execute();
-
-        {
-            const int OctreeHeight = tree.getHeight();
-            typename OctreeClass::Iterator octreeIterator(&treeSh);
-            octreeIterator.gotoBottomLeft();
-
-            typename OctreeClass::Iterator octreeIteratorValide(&tree);
-            octreeIteratorValide.gotoBottomLeft();
-
-            for(int level = OctreeHeight - 1 ; level > 1 ; --level){
-                FMath::FAccurater pole, local;
-
-                do {
-                    for(int idx = 0 ; idx < ((P+2)*(P+1))/2 ; ++idx){
-                        pole.add(octreeIteratorValide.getCurrentCell()->getMultipole()[idx].getReal(),
-                                 octreeIterator.getCurrentCell()->getMultipole()[idx].getReal());
-                        pole.add(octreeIteratorValide.getCurrentCell()->getMultipole()[idx].getImag(),
-                                 octreeIterator.getCurrentCell()->getMultipole()[idx].getImag());
-                    }
-                    for(int idx = 0 ; idx < ((P+2)*(P+1))/2 ; ++idx){
-                        local.add(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal(),
-                                  octreeIterator.getCurrentCell()->getLocal()[idx].getReal());
-                        local.add(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag(),
-                                  octreeIterator.getCurrentCell()->getLocal()[idx].getImag());
-
-                        if(FMath::IsNan(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal())){
-                            printf("Valide real is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal());
-                        }
-                        if(FMath::IsNan(octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag())){
-                            printf("Valide imag is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag());
-                        }
-                        if(FMath::IsNan(octreeIterator.getCurrentCell()->getLocal()[idx].getReal())){
-                            printf("Valide real is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getReal());
-                        }
-                        if(FMath::IsNan(octreeIterator.getCurrentCell()->getLocal()[idx].getImag())){
-                            printf("Valide imag is nan = %f\n", octreeIteratorValide.getCurrentCell()->getLocal()[idx].getImag());
-                        }
-                    }
-                } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
-
-                octreeIterator.moveUp();
-                octreeIterator.gotoLeft();
-
-                octreeIteratorValide.moveUp();
-                octreeIteratorValide.gotoLeft();
-
-                printf("At level %d:", level);
-                printf(">> pole %f, %f\n", pole.getL2Norm(), pole.getInfNorm() );
-                printf(">> local %f, %f\n", local.getL2Norm(), local.getInfNorm() );
-            }
-        }
-        {
-            // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&treeSh);
-            octreeIterator.gotoBottomLeft();
-
-            typename OctreeClass::Iterator octreeIteratorValide(&tree);
-            octreeIteratorValide.gotoBottomLeft();
-
-            FMath::FAccurater potential, forces;
-
-            do {
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                typename ContainerClass::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-
-                while( iter.hasNotFinished() ){
-
-                   potential.add( iterValide.data().getPotential() , iter.data().getPotential());
-                   forces.add(iterValide.data().getForces().getX(),iter.data().getForces().getX());
-                   forces.add(iterValide.data().getForces().getY(),iter.data().getForces().getY());
-                   forces.add(iterValide.data().getForces().getZ(),iter.data().getForces().getZ());
-
-                    iter.gotoNext();
-                    iterValide.gotoNext();
-                }
-
-            } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
-        }
-    }
-*/
     return 0;
 }
 
