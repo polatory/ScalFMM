@@ -896,7 +896,7 @@ public:
 
         // We need a legendre array
         FReal legendre[SizeArray];
-        FReal angles[SizeArray][2];
+        FReal angles[P+1][2];
 
         // For all particles in the leaf box
         typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
