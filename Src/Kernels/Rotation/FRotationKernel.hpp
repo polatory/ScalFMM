@@ -896,6 +896,7 @@ public:
 
         // We need a legendre array
         FReal legendre[SizeArray];
+        FReal angles[SizeArray][2];
 
         // For all particles in the leaf box
         typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
@@ -915,13 +916,18 @@ public:
             // w{l,m}(q,a) = q a^l/(l+|m|)! P{l,m}(cos(alpha)) exp(-i m Beta)
             FReal q_aPowL = q; // To consutrct q*a^l continously
             int index_l_m = 0; // To construct the index of (l,m) continously
-            for(int l = 0 ; l <= P ; ++l ){
-                FReal fm = 0.0; // To have "m" has a float
-                for(int m = 0 ; m <= l ; ++m, ++index_l_m, ++fm){
+            FReal fl = 0.0;
+            for(int l = 0 ; l <= P ; ++l, ++fl ){
+                { // We need to compute the angles to use in the "m" loop
+                  // So we can compute only the one needed after "l" inc
+                    const FReal angle = fl * sph.getPhi() + i_pow_m[l & 0x3];
+                    angles[l][0] = FMath::Cos(angle);
+                    angles[l][1] = FMath::Sin(angle);
+                }
+                for(int m = 0 ; m <= l ; ++m, ++index_l_m){
                     const FReal magnitude = q_aPowL * legendre[index_l_m] / factorials[l+m];
-                    const FReal angle = fm * sph.getPhi() + i_pow_m[m & 0x3];
-                    w[index_l_m].incReal(magnitude * FMath::Cos(angle));
-                    w[index_l_m].incImag(magnitude * FMath::Sin(angle));
+                    w[index_l_m].incReal(magnitude * angles[m][0]);
+                    w[index_l_m].incImag(magnitude * angles[m][1]);
                 }
                 q_aPowL *= a;
             }
