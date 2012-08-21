@@ -51,8 +51,12 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
     /** the test */
     void TestTree(){
         // Warning in make test the exec dir it Build/UTests
-        const char* const DataFile = "../../Data/utestSpherical.data";
-        const char* const ParticleFile = "../../Data/utestSpherical.bin.fma";
+        const char* const DataFile = (sizeof(FReal) == sizeof(float))?
+                    "../../Data/utestSphericalPrevious.data.single":
+                    "../../Data/utestSphericalPrevious.data.double";
+        const char* const ParticleFile = (sizeof(FReal) == sizeof(float))?
+                    "../../Data/utestDirect.bin.fma.single":
+                    "../../Data/utestDirect.bin.fma.double";
 
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;

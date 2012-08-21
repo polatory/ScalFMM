@@ -59,7 +59,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void RunTest(const bool isBlasKernel){
         // Warning in make test the exec dir it Build/UTests
         // Load particles
-        FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
+        const char* const filename = (sizeof(FReal) == sizeof(float))?
+                                        "../../Data/utestDirect.bin.fma.single":
+                                        "../../Data/utestDirect.bin.fma.double";
+        FFmaBinLoader<ParticleClass> loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);

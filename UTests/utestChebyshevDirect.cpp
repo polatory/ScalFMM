@@ -65,7 +65,10 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	void RunTest(const FReal epsilon)	{
 		// Warning in make test the exec dir it Build/UTests
 		// Load particles
-		FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
+        const char* const filename = (sizeof(FReal) == sizeof(float))?
+                                        "../../Data/utestDirect.bin.fma.single":
+                                        "../../Data/utestDirect.bin.fma.double";
+        FFmaBinLoader<ParticleClass> loader(filename);
 		if(!loader.isOpen()){
 			Print("Cannot open particles file.");
 			uassert(false);
@@ -159,8 +162,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		Print(fz.getInfNorm());
 
 		// Assert
-		const FReal MaximumDiffPotential = FReal(1e-5);
-		const FReal MaximumDiffForces = FReal(1e-3);
+        const FReal MaximumDiffPotential = FReal(9e-5);
+        const FReal MaximumDiffForces = FReal(9e-3);
 
 		uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);
 		uassert(potentialDiff.getInfNorm() < MaximumDiffPotential);

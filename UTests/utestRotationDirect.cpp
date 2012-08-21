@@ -54,10 +54,13 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** The test method to factorize all the test based on different kernels */
     template <class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
-    void RunTest(const bool isBlasKernel){
+    void RunTest(){
         // Warning in make test the exec dir it Build/UTests
         // Load particles
-        FFmaBinLoader<ParticleClass> loader("../../Data/utestSphericalDirect.bin.fma");
+        const char* const filename = (sizeof(FReal) == sizeof(float))?
+                                        "../../Data/utestDirect.bin.fma.single":
+                                        "../../Data/utestDirect.bin.fma.double";
+        FFmaBinLoader<ParticleClass> loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -178,7 +181,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
-                OctreeClass, FmmClass>(false);
+                OctreeClass, FmmClass>();
     }
 
     ///////////////////////////////////////////////////////////

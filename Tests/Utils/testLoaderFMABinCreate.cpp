@@ -43,7 +43,10 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char* const Output = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma");
+    const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
+                                    "../../Data/test20k.bin.fma.single":
+                                    "../../Data/test20k.bin.fma.double";
+    const char* const Output = FParameters::getStr(argc,argv,"-f", defaultFilename);
     std::cout << "Creating : " << Output << "\n";
 
     // Create file

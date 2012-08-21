@@ -209,7 +209,10 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     FTic counter;
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma");
+    const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
+                                    "../../Data/test20k.bin.fma.single":
+                                    "../../Data/test20k.bin.fma.double";
+    const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
 
     std::cout << "Opening : " << filename << "\n";
 
