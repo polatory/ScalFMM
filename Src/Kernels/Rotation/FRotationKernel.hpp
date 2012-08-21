@@ -264,7 +264,15 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
         // We will compute only a part of the since we compute the inclinaison
         // angle. inclinaison(+/-x,+/-y,z) = inclinaison(+/-y,+/-x,z)
         // we put the negative (-theta) with a negative x
-        FReal dlmkMatrix[7][4][7][P+1][P2+1][P2+1];
+        typedef FReal (*pMatrixDlmk) /*[P+1]*/[P2+1][P2+1];
+        pMatrixDlmk dlmkMatrix[7][4][7];
+        // Allocate matrix
+        for(int idxX = 0 ; idxX < 7 ; ++idxX)
+            for(int idxY = 0 ; idxY < 4 ; ++idxY)
+                for(int idxZ = 0 ; idxZ < 7 ; ++idxZ) {
+                    dlmkMatrix[idxX][idxY][idxZ] = new FReal[P+1][P2+1][P2+1];
+        }
+
         // First we compute special vectors:
         DlmkBuild0(dlmkMatrix[0+3][0][1+3]);    // theta = 0
         DlmkBuildPi(dlmkMatrix[0+3][0][-1+3]);  // theta = Pi
@@ -491,6 +499,12 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
                     }
                 }
             }
+        }
+        // Deallocate matrix
+        for(int idxX = 0 ; idxX < 7 ; ++idxX)
+            for(int idxY = 0 ; idxY < 4 ; ++idxY)
+                for(int idxZ = 0 ; idxZ < 7 ; ++idxZ) {
+                    delete[] dlmkMatrix[idxX][idxY][idxZ];
         }
     }
 
