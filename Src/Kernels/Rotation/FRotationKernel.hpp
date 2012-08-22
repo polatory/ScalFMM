@@ -524,7 +524,7 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
 
     /** Compute d_mlk for \theta = 0
       * \f[
-      * d^l_{m,k}( \theta ) = \delta_{m,k}, \textrm{ \delta Kronecker delta }
+      * d^l_{m,k}( \theta ) = \delta_{m,k,} \,\, \mbox{\textrm{ $\delta$ Kronecker symbol }}
       * \f]
       */
     void DlmkBuild0(FReal dlmk[P+1][P2+1][P2+1]) const {
@@ -542,7 +542,7 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
 
     /** Compute d_mlk for \theta = PI
       * \f[
-      * d^l_{m,k}( \theta ) = (-1)^{l+k} \delta_{m,k}, \textrm{ \delta Kronecker delta }
+      * d^l_{m,k}( \theta ) = (-1)^{l+k} \delta_{m,k},\,\, \mbox{\textrm{ $\delta$ Kronecker delta } }
       * \f]
       */
     void DlmkBuildPi(FReal dlmk[P+1][P2+1][P2+1]) const {
@@ -1012,7 +1012,7 @@ public:
       * Implementation of rotation-based operators for Fast Multipole Method in X10
       * At page 5 .1 as the operator B
       * \f[
-      * M_{l,m}(a-b') = \sum_{j=|m|}^{\infty}{ \frac{ (j+l)! } { b^{j+l+1} } O_{j,-m}(a) } , \textrm{j bounded by P-l}
+      * M_{l,m}(a-b') = \sum_{j=|m|}^{\infty}{ \frac{ (j+l)! } { b^{j+l+1} } O_{j,-m}(a) } , \mbox{\textrm{ j bounded by P-l } }
       * \f]
       * As describe in the paper, when need first to rotate the SH
       * then transfer using the formula
