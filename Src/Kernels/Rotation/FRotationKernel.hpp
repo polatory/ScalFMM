@@ -796,7 +796,7 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
       * Please see the structure of dlmk to understand this function.
       * Warning we cast the vec FComplexe array into a FReal array
       */
-    static void RotationZWithDlmk(FComplexe vec[], const FReal* dlmkCoef){
+    static void RotationYWithDlmk(FComplexe vec[], const FReal* dlmkCoef){
         FReal originalVec[2*SizeArray];
         FMemUtils::copyall((FComplexe*)originalVec,vec,SizeArray);
         // index_lm == atLm(l,m) but progress iteratively to write the result
@@ -829,7 +829,7 @@ class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,Containe
       * it computes inSize FComplexe multiplication
       * to do so we first proceed per 4 and the the inSize%4 rest
       */
-    static void RotationYVectorsMul(FComplexe* FRestrict dest, const FComplexe* FRestrict src, const int inSize = SizeArray){
+    static void RotationZVectorsMul(FComplexe* FRestrict dest, const FComplexe* FRestrict src, const int inSize = SizeArray){
         const FComplexe*const FRestrict lastElement = dest + inSize;
         const FComplexe*const FRestrict intermediateLastElement = dest + (inSize & ~0x3);
         // first the inSize - inSize%4 elements
@@ -975,8 +975,8 @@ public:
                 FMemUtils::copyall(source_w, inChildren[idxChild]->getMultipole(), SizeArray);
 
                 // rotate it forward
-                RotationYVectorsMul(source_w,rotationExpMinusImPhi[idxChild]);
-                RotationZWithDlmk(source_w,DlmkCoefOTheta[idxChild]);
+                RotationZVectorsMul(source_w,rotationExpMinusImPhi[idxChild]);
+                RotationYWithDlmk(source_w,DlmkCoefOTheta[idxChild]);
 
                 // Translate it
                 FComplexe target_w[SizeArray];
@@ -998,8 +998,8 @@ public:
                 }
 
                 // Rotate it back
-                RotationZWithDlmk(target_w,DlmkCoefOMinusTheta[idxChild]);
-                RotationYVectorsMul(target_w,rotationExpImPhi[idxChild]);
+                RotationYWithDlmk(target_w,DlmkCoefOMinusTheta[idxChild]);
+                RotationZVectorsMul(target_w,rotationExpImPhi[idxChild]);
 
                 // Sum the result
                 FMemUtils::addall( inPole->getMultipole(), target_w, SizeArray);
@@ -1030,8 +1030,8 @@ public:
                 FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
 
                 // Rotate
-                RotationYVectorsMul(source_w,rotationM2LExpMinusImPhi[idxNeigh]);
-                RotationZWithDlmk(source_w,DlmkCoefM2LOTheta[idxNeigh]);
+                RotationZVectorsMul(source_w,rotationM2LExpMinusImPhi[idxNeigh]);
+                RotationYWithDlmk(source_w,DlmkCoefM2LOTheta[idxNeigh]);
 
                 // Transfer to u
                 FComplexe target_u[SizeArray];
@@ -1056,8 +1056,8 @@ public:
                 }
 
                 // Rotate it back
-                RotationZWithDlmk(target_u,DlmkCoefM2LMMinusTheta[idxNeigh]);
-                RotationYVectorsMul(target_u,rotationM2LExpMinusImPhi[idxNeigh]);
+                RotationYWithDlmk(target_u,DlmkCoefM2LMMinusTheta[idxNeigh]);
+                RotationZVectorsMul(target_u,rotationM2LExpMinusImPhi[idxNeigh]);
 
                 // Sum
                 FMemUtils::addall(inLocal->getLocal(), target_u, SizeArray);
@@ -1089,8 +1089,8 @@ public:
                 FMemUtils::copyall(source_u, inLocal->getLocal(), SizeArray);
 
                 // Rotate
-                RotationYVectorsMul(source_u,rotationExpImPhi[idxChild]);
-                RotationZWithDlmk(source_u,DlmkCoefMTheta[idxChild]);
+                RotationZVectorsMul(source_u,rotationExpImPhi[idxChild]);
+                RotationYWithDlmk(source_u,DlmkCoefMTheta[idxChild]);
 
                 // Translate
                 FComplexe target_u[SizeArray];
@@ -1111,8 +1111,8 @@ public:
                 }
 
                 // Rotate
-                RotationZWithDlmk(target_u,DlmkCoefMMinusTheta[idxChild]);
-                RotationYVectorsMul(target_u,rotationExpMinusImPhi[idxChild]);
+                RotationYWithDlmk(target_u,DlmkCoefMMinusTheta[idxChild]);
+                RotationZVectorsMul(target_u,rotationExpMinusImPhi[idxChild]);
 
                 // Sum in child
                 FMemUtils::addall(inChildren[idxChild]->getLocal(), target_u, SizeArray);
@@ -1358,6 +1358,7 @@ public:
         }
     }
 
+public:
     /** P2P mutual interaction,
       * this function computes the interaction for 2 particles.
       *
@@ -1391,6 +1392,37 @@ public:
         source->incForces( (-dx), (-dy), (-dz));
         source->incPotential( inv_distance * target->getPhysicalValue() );
 
+    }
+
+    /** P2P mutual interaction,
+      * this function computes the interaction for 2 particles.
+      *
+      * Formulas are:
+      * \f[
+      * F = q_1 * q_2 / r^2
+      * P_1 = q_2 / r ; P_2 = q_1 / r
+      * \f]
+      * In details :
+      * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
+      */
+    void particlesInteraction(ParticleClass*const FRestrict target, const ParticleClass& source) const {
+
+        FReal dx = source.getPosition().getX() - target->getPosition().getX();
+        FReal dy = source.getPosition().getY() - target->getPosition().getY();
+        FReal dz = source.getPosition().getZ() - target->getPosition().getZ();
+
+        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+        FReal inv_distance = FMath::Sqrt(inv_square_distance);
+
+        inv_square_distance *= inv_distance;
+        inv_square_distance *= target->getPhysicalValue() * source.getPhysicalValue();
+
+        dx *= inv_square_distance;
+        dy *= inv_square_distance;
+        dz *= inv_square_distance;
+
+        target->incForces( dx, dy, dz);
+        target->incPotential( inv_distance * source.getPhysicalValue() );
     }
 };
 
