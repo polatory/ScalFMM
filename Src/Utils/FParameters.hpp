@@ -79,6 +79,13 @@ namespace FParameters{
         return NotFound;
     }
 
+    /** To know if a parameter exist from user format char parameters
+      *
+      */
+    bool existParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
+        return NotFound != findParameter( argc, argv, inName, caseSensible);
+    }
+
     /** To get a value like :
       * getValue(argc,argv, "Toto", 0, false);
       * will return 55 if the command contains : -Toto 55
