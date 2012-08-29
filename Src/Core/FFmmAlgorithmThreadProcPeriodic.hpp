@@ -61,7 +61,8 @@ class FFmmAlgorithmThreadProcPeriodic : protected FAssertable {
     const FMpi::FComm& comm;                 //< MPI comm
 
     CellClass root;     //< root of tree needed by the periodicity
-    int periodicLimit;  //< the upper periodic limit
+    int nbLevelAboveRoot;  //< the upper periodic limit
+    int offsetHeight;
 
     typename OctreeClass::Iterator* iterArray;
     int numberOfLeafs;                          //< To store the size at the previous level
@@ -89,6 +90,33 @@ class FFmmAlgorithmThreadProcPeriodic : protected FAssertable {
 
 public:
 
+    /** To know how many times the box is repeated in each direction
+      * -x +x -y +y -z +z
+      */
+    int repeatedBox() const {
+        return nbLevelAboveRoot == -1 ? 3 : 7 * (1<<(nbLevelAboveRoot));
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the box seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalBoxWidth given in parameter
+      * @param originalBoxWidth the real system size
+      * @return the size the kernel should use
+      */
+    int boxwidthForKernel(const FReal originalBoxWidth) const {
+        return originalBoxWidth * ((1<<(offsetHeight+1)) - 1);
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalTreeHeight given in parameter
+      * @param originalTreeHeight the real tree heigh
+      * @return the heigh the kernel should use
+      */
+    int treeHeightForKernel(const FReal originalTreeHeight) const {
+        return OctreeHeight + offsetHeight;
+    }
+
     Interval& getWorkingInterval(const int level){
         return getWorkingInterval(level, idProcess);
     }
@@ -102,13 +130,14 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inPeriodicLimit = 5)
-        : tree(inTree) , kernels(0), comm(inComm), periodicLimit(inPeriodicLimit), numberOfLeafs(0),
+    FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inUpperLevel = 5)
+        : tree(inTree) , kernels(0), comm(inComm), nbLevelAboveRoot(inUpperLevel), offsetHeight(inUpperLevel+2), numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+        fassert(-1 <= inUpperLevel, "inUpperLevel cannot be < -1", __LINE__, __FILE__);
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -277,7 +306,7 @@ private:
         int firstProcThatSend = idProcess + 1;
 
         // for each levels
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 ; --idxLevel ){
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 0 ; --idxLevel ){
             // No more work for me
             if(idProcess != 0
                     && getWorkingInterval((idxLevel+1), idProcess).max <= getWorkingInterval((idxLevel+1), idProcess - 1).max){
@@ -1430,62 +1459,78 @@ private:
 
     /** Periodicity */
     void processPeriodicLevels(){
-        if( !periodicLimit ){
-            return;
-        }
-
-        CellClass upperCells[periodicLimit];
-        upperCells[0] = root;
-
-        // Then M2M from level 0 to level -LIMITE
-        {
-            CellClass* virtualChild[8];
-            for(int idxLevel = 1 ; idxLevel < periodicLimit ; ++idxLevel){
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    virtualChild[idxChild] = &upperCells[idxLevel-1];
-                }
-                kernels[0]->M2M( &upperCells[idxLevel], virtualChild, -idxLevel);
+            // If nb level == -1 nothing to do
+            if( nbLevelAboveRoot == -1 ){
+                return;
             }
-        }
-        // Then M2L at all level
-        {
-            // We say that we are in the child index 0
-            // So we can compute one time the relative indexes
-            const CellClass* neighbors[343];
-            memset(neighbors, 0, sizeof(CellClass*) * 343);
-            for(int idxX = -2 ; idxX <= 3 ; ++idxX){
-                for(int idxY = -2 ; idxY <= 3 ; ++idxY){
-                    for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
-                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                            neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = reinterpret_cast<const CellClass*>(~0);
+
+            // in other situation, we have to compute M2L a level 1
+            // but also
+            // the cell at level >= 0
+            CellClass upperCells[nbLevelAboveRoot+1];
+            upperCells[nbLevelAboveRoot] = root;
+
+
+            // Then M2M from level 0 to level -LIMITE
+            {
+                CellClass* virtualChild[8];
+                for(int idxLevel = nbLevelAboveRoot - 1 ; idxLevel >= 0  ; --idxLevel){
+                    FMemUtils::setall(virtualChild, &upperCells[idxLevel+1], 8);
+                    kernels[0]->M2M( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+                }
+            }
+            // Then M2L at all level
+            {
+                // We say that we are in the child index 0
+                // So we can compute one time the relative indexes
+                const CellClass* neighbors[343];
+                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                for(int idxX = -2 ; idxX <= 3 ; ++idxX){
+                    for(int idxY = -2 ; idxY <= 3 ; ++idxY){
+                        for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
+                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                                neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = reinterpret_cast<const CellClass*>(~0);
+                            }
                         }
                     }
                 }
-            }
-            const int counter = 189;
 
-            for(int idxLevel = 0 ; idxLevel < periodicLimit ; ++idxLevel ){
-                for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-                    if(neighbors[idxNeigh]){
-                        neighbors[idxNeigh] = &upperCells[idxLevel];
+                for(int idxLevel = nbLevelAboveRoot ; idxLevel > 0 ; --idxLevel ){
+                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+                        if(neighbors[idxNeigh]){
+                            neighbors[idxNeigh] = &upperCells[idxLevel];
+                        }
+                    }
+                    kernels[0]->M2L( &upperCells[idxLevel] , neighbors, 189, idxLevel + 2);
+                }
+
+                // We had the last level border
+                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                for(int idxX = -3 ; idxX <= 3 ; ++idxX){
+                    for(int idxY = -3 ; idxY <= 3 ; ++idxY){
+                        for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ){
+                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                                neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = &upperCells[0];
+                            }
+                        }
                     }
                 }
-                kernels[0]->M2L( &upperCells[idxLevel] , neighbors, counter, -idxLevel);
+                kernels->M2L( &upperCells[0] , neighbors, 343-27, 2);
             }
-        }
 
-        // Finally L2L until level 0
-        {
-            CellClass* virtualChild[8];
-            memset(virtualChild, 0, sizeof(CellClass*) * 8);
-            for(int idxLevel = periodicLimit - 1 ; idxLevel > 0  ; --idxLevel){
-                virtualChild[0] = &upperCells[idxLevel-1];
-                kernels[0]->L2L( &upperCells[idxLevel], virtualChild, -idxLevel);
+            // Finally L2L until level 0
+            {
+                CellClass* virtualChild[8];
+                memset(virtualChild, 0, sizeof(CellClass*) * 8);
+                for(int idxLevel = 0 ; idxLevel < nbLevelAboveRoot  ; ++idxLevel){
+                    virtualChild[0] = &upperCells[idxLevel+1];
+                    kernels[0]->L2L( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+                }
             }
-        }
 
-        root = upperCells[0];
-    }
+
+            root = upperCells[nbLevelAboveRoot];
+        }
 };
 
 

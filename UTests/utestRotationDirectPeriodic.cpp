@@ -11,9 +11,9 @@
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "../Src/Kernels/Rotation/FRotationParticle.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
@@ -28,7 +28,7 @@
 /*
   In this test we compare the fmm results and the direct results.
   */
-class IndexedParticle : public FSphericalParticle {
+class IndexedParticle : public FRotationParticle {
     int index;
 public:
     IndexedParticle(): index(-1){}
@@ -42,14 +42,15 @@ public:
 };
 
 /** The class to run the test */
-class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic> {
+class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
+        static const int P = 9;
         typedef IndexedParticle         ParticleClass;
-        typedef FSphericalCell            CellClass;
+        typedef FRotationCell<P>            CellClass;
         typedef FVector<ParticleClass>  ContainerClass;
 
-        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
+        typedef FRotationKernel<ParticleClass, CellClass, ContainerClass, P >   KernelClass;
 
         typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
         typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -59,12 +60,9 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         // Parameters
         const int NbLevels      = 3;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 3;
-        const int DevP = 9;
-        const int NbParticles = 1;
+        const int PeriodicDeep  = 2;
+        const int NbParticles   = 100;
         ParticleClass* const particles = new ParticleClass[NbParticles];
-
-        FSphericalCell::Init(DevP);
 
         FRandomLoader<ParticleClass> loader(NbParticles);
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -78,8 +76,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep);
-        KernelClass kernels( DevP, algo.treeHeightForKernel(),
-                             algo.boxwidthForKernel(loader.getBoxWidth()),
+        KernelClass kernels( algo.treeHeightForKernel(), algo.boxwidthForKernel(loader.getBoxWidth()),
                              algo.boxcenterForKernel(loader.getCenterOfBox(), loader.getBoxWidth()));
         algo.setKernel(&kernels);
         algo.execute();
@@ -91,12 +88,12 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const int maxRep = (nbRepetition-1)/2;
         for(int idxTarget = 0 ; idxTarget < NbParticles ; ++idxTarget){
             for(int idxSource = idxTarget + 1 ; idxSource < NbParticles ; ++idxSource){
-                kernels.directInteractionMutual(&particles[idxTarget], &particles[idxSource]);
+                kernels.particlesMutualInteraction(&particles[idxTarget], &particles[idxSource]);
             }
             for(int idxX = minRep ; idxX <= maxRep ; ++idxX){
                 for(int idxY = minRep ; idxY <= maxRep ; ++idxY){
                     for(int idxZ = minRep ; idxZ <= maxRep ; ++idxZ){
-                        if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
+                        if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
 
                         const FPoint offset(loader.getBoxWidth() * FReal(idxX),
                                             loader.getBoxWidth() * FReal(idxY),
@@ -105,7 +102,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                         for(int idxSource = 0 ; idxSource < NbParticles ; ++idxSource){
                             ParticleClass source = particles[idxSource];
                             source.incPosition(offset.getX(),offset.getY(),offset.getZ());
-                            kernels.directInteraction(&particles[idxTarget], source);
+                            kernels.particlesInteraction(&particles[idxTarget], source);
                         }
                     }
                 }
@@ -125,6 +122,15 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
                 while( leafIter.hasNotFinished() ){
                     const ParticleClass& other = particles[leafIter.data().getIndex()];
+
+                    /*printf("Tree x %e y %e z %e physical %e potential %e fx %e fy %e fz %e\n",
+                           leafIter.data().getPosition().getX(),leafIter.data().getPosition().getY(),leafIter.data().getPosition().getZ(),
+                           leafIter.data().getPhysicalValue(),leafIter.data().getPotential(),
+                           leafIter.data().getForces().getX(),leafIter.data().getForces().getY(),leafIter.data().getForces().getZ());// todo delete
+                    printf("Direct x %e y %e z %e physical %e potential %e fx %e fy %e fz %e\n",
+                           other.getPosition().getX(),other.getPosition().getY(),other.getPosition().getZ(),
+                           other.getPhysicalValue(),other.getPotential(),
+                           other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());*/
 
                     potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
 
@@ -176,13 +182,13 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
     // set test
     void SetTests(){        
-        AddTest(&TestSphericalDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
+        AddTest(&TestRotationDirectPeriodic::TestPeriodicFmm,"Test Simu and with direct compare to Test fmm periodic");
     }
 };
 
 
 // You must do this
-TestClass(TestSphericalDirectPeriodic)
+TestClass(TestRotationDirectPeriodic)
 
 
 

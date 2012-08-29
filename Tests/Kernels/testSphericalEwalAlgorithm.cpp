@@ -86,8 +86,8 @@ int main(int argc, char ** argv){
 
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 4);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 2);
-    const int DevP          = FParameters::getValue(argc,argv,"-P", 5);
-    const int BoundaryDeep  = FParameters::getValue(argc,argv,"-bd", 5);
+    const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
+    const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/testEwal417.dt");
     FTic counter;
 
@@ -119,6 +119,7 @@ int main(int argc, char ** argv){
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(particles[idxPart]);
         // reset forces and insert in the tree
+        particles[idxPart].setIndex(idxPart);
         ParticleClass part = particles[idxPart];
         part.setForces(0,0,0);
         part.setPotential(0);
@@ -130,46 +131,61 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Create kernel ..." << std::endl;
+    std::cout << "Create kernel & run simu ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(),loader.getCenterOfBox(), BoundaryDeep);
-
-    counter.tac();
-    std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
-
-    // -----------------------------------------------------
-
-    std::cout << "Working on particles ..." << std::endl;
-
-    FmmClass algo(&tree,&kernels,BoundaryDeep);
-
-    counter.tic();
+    FmmClass algo(&tree,PeriodicDeep);
+    KernelClass kernels( DevP, algo.treeHeightForKernel(),
+                         algo.boxwidthForKernel(loader.getBoxWidth()), loader.getCenterOfBox());
+    algo.setKernel(&kernels);
     algo.execute();
+
     counter.tac();
 
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
     // -----------------------------------------------------
     {
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
+
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
             ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
             while( iter.hasNotFinished() ){
-                std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
-                std::cout << "x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
-                std::cout << "fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
-                std::cout << "physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
 
                 const ParticleClass& part = particles[iter.data().getIndex()];
-                std::cout << "x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
-                std::cout << "fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
-                std::cout << "physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
+                std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
+                std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
+                std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
+                std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
+                std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
+                std::cout << "\n";
+
+                potentialDiff.add(part.getPotential(),iter.data().getPotential());
+                fx.add(part.getForces().getX(),iter.data().getForces().getX());
+                fy.add(part.getForces().getY(),iter.data().getForces().getY());
+                fz.add(part.getForces().getZ(),iter.data().getForces().getZ());
 
                 iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
+
+        printf("Potential diff is = \n");
+        printf("%f\n",potentialDiff.getL2Norm());
+        printf("%f\n",potentialDiff.getInfNorm());
+        printf("Fx diff is = \n");
+        printf("%f\n",fx.getL2Norm());
+        printf("%f\n",fx.getInfNorm());
+        printf("Fy diff is = \n");
+        printf("%f\n",fy.getL2Norm());
+        printf("%f\n",fy.getInfNorm());
+        printf("Fz diff is = \n");
+        printf("%f\n",fz.getL2Norm());
+        printf("%f\n",fz.getInfNorm());
     }
 
     // -----------------------------------------------------
