@@ -62,13 +62,13 @@ protected:
 
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
-        FReal treeWidthAtLevel = Parent::boxWidth * FReal( 1 << Parent::periodicLevels);
-        preM2LTransitions = new FComplexe**[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe**) * (Parent::treeHeight + Parent::periodicLevels));
+        FReal treeWidthAtLevel = Parent::boxWidth;
+        preM2LTransitions = new FComplexe**[Parent::treeHeight];
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe**) * (Parent::treeHeight));
 
-        for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
-            preM2LTransitions[idxLevel + Parent::periodicLevels] = new FComplexe*[(7 * 7 * 7)];
-            memset(preM2LTransitions[idxLevel + Parent::periodicLevels], 0, sizeof(FComplexe*) * (7*7*7));
+        for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+            preM2LTransitions[idxLevel] = new FComplexe*[(7 * 7 * 7)];
+            memset(preM2LTransitions[idxLevel], 0, sizeof(FComplexe*) * (7*7*7));
 
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
@@ -108,7 +108,7 @@ protected:
                                     matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] = workMatrix[idxCol + idxRow * FF_MATRIX_COLUMN_DIM];
                                 }
                             }
-                            preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)] = matrix;
+                            preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)] = matrix;
                         }
                     }
                 }
@@ -128,8 +128,8 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const int inBlockSize = 512, const int inPeriodicLevel = 0)
-        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
+    FSphericalBlockBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const int inBlockSize = 512)
+        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
           BlockSize(inBlockSize),
@@ -156,16 +156,16 @@ public:
         delete[] multipoleMatrix;
         delete[] localMatrix;
         if(preM2LTransitions.isLast()){
-            for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+            for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
                 for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                     for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                         for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
-                            delete[] preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)];
+                            delete[] preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)];
                         }
                     }
                 }
             }
-            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight + Parent::periodicLevels);
+            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight);
         }
     }
 
@@ -235,7 +235,7 @@ public:
     *
     *Remark: here we have always j+n >= |-k-l|
     *
-    * const FComplexe*const M2LTransfer = preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex];
+    * const FComplexe*const M2LTransfer = preM2LTransitions[inLevel][interactionIndex];
      *   for(int idxK = 0 ; idxK < interactions[interactionIndex].getSize() ; ++idxK){
      *       for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
      *           FComplexe compute;
@@ -263,7 +263,7 @@ public:
                     FF_MATRIX_COLUMN_DIM,
                     interactions[interactionIndex].getSize(),
                     one,
-                    FComplexe::ToFReal(preM2LTransitions[inLevel + Parent::periodicLevels][interactionIndex]),
+                    FComplexe::ToFReal(preM2LTransitions[inLevel][interactionIndex]),
                     FF_MATRIX_ROW_DIM,
                     FComplexe::ToFReal(multipoleMatrix),
                     FF_MATRIX_COLUMN_DIM,

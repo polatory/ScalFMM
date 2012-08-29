@@ -36,13 +36,13 @@ protected:
     void allocAndInit(){
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
-        preM2LTransitions = new FComplexe*[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
+        preM2LTransitions = new FComplexe*[Parent::treeHeight];
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight));
         // We start from the higher level
-        FReal treeWidthAtLevel = Parent::boxWidth * FReal(1 << Parent::periodicLevels);
-        for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+        FReal treeWidthAtLevel = Parent::boxWidth;
+        for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
             // Allocate data for this level
-            preM2LTransitions[idxLevel + Parent::periodicLevels] = new FComplexe[(7 * 7 * 7) * devM2lP];
+            preM2LTransitions[idxLevel] = new FComplexe[(7 * 7 * 7) * devM2lP];
             // Precompute transfer vector
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
@@ -50,7 +50,7 @@ protected:
                         if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
                             const FPoint relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
                             Parent::harmonic.computeOuter(FSpherical(relativePos));
-                            FMemUtils::copyall<FComplexe>(&preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)], Parent::harmonic.result(), Parent::harmonic.getExpSize());
+                            FMemUtils::copyall<FComplexe>(&preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)], Parent::harmonic.result(), Parent::harmonic.getExpSize());
                         }
                     }
                 }
@@ -68,8 +68,8 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const int inPeriodicLevel = 0)
-        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
+    FSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
           devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
           preM2LTransitions(0) {
         allocAndInit();
@@ -85,7 +85,7 @@ public:
     /** Destructor */
     ~FSphericalKernel(){
         if( preM2LTransitions.isLast() ){
-            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight + Parent::periodicLevels);
+            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight);
         }
     }
 
@@ -95,7 +95,7 @@ public:
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if( distantNeighbors[idxNeigh] ){
-                const FComplexe* const transitionVector = &preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh * devM2lP];
+                const FComplexe* const transitionVector = &preM2LTransitions[inLevel][idxNeigh * devM2lP];
                 multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
             }
         }

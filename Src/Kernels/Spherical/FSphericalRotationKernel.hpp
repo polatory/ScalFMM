@@ -352,22 +352,22 @@ protected:
     void allocAndInit(){
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
-        preM2LTransitions = new RotationM2LTransfer*[Parent::treeHeight + Parent::periodicLevels];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight + Parent::periodicLevels));
+        preM2LTransitions = new RotationM2LTransfer*[Parent::treeHeight];
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight));
         // We start from the higher level
-        FReal treeWidthAtLevel = Parent::boxWidth * FReal(1 << Parent::periodicLevels);
-        for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+        FReal treeWidthAtLevel = Parent::boxWidth;
+        for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
             // Allocate data for this level
-            preM2LTransitions[idxLevel + Parent::periodicLevels] = reinterpret_cast<RotationM2LTransfer*>(new char[(7 * 7 * 7) * sizeof(RotationM2LTransfer)]);
+            preM2LTransitions[idxLevel] = reinterpret_cast<RotationM2LTransfer*>(new char[(7 * 7 * 7) * sizeof(RotationM2LTransfer)]);
             // Precompute transfer vector
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                     for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
-                        new (&preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)]) RotationM2LTransfer(Parent::devP,devM2lP,Parent::harmonic.getExpSize());
+                        new (&preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)]) RotationM2LTransfer(Parent::devP,devM2lP,Parent::harmonic.getExpSize());
 
                         if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
                             const FPoint relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
-                            preM2LTransitions[idxLevel + Parent::periodicLevels][indexM2LTransition(idxX,idxY,idxZ)].transfer_M2L_rotation_Fill(FSpherical(relativePos), rotation_Info);
+                            preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)].transfer_M2L_rotation_Fill(FSpherical(relativePos), rotation_Info);
                         }
                     }
                 }
@@ -385,8 +385,8 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const int inPeriodicLevel = 0)
-        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter, inPeriodicLevel),
+    FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+        : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
           devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
           preM2LTransitions(0),
           rotation_Info(inDevP) {
@@ -404,11 +404,11 @@ public:
     /** Destructor */
     ~FSphericalRotationKernel(){
         if( preM2LTransitions.isLast() ){
-            for(int idxLevel = -Parent::periodicLevels ; idxLevel < Parent::treeHeight ; ++idxLevel ){
+            for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
                 for(int idx = 0 ; idx < 7*7*7 ; ++idx ){
-                    preM2LTransitions[idxLevel + Parent::periodicLevels][idx].~RotationM2LTransfer();
+                    preM2LTransitions[idxLevel][idx].~RotationM2LTransfer();
                 }
-                delete[] reinterpret_cast<char*>(preM2LTransitions[idxLevel + Parent::periodicLevels]);
+                delete[] reinterpret_cast<char*>(preM2LTransitions[idxLevel]);
             }
         }
     }
@@ -419,7 +419,7 @@ public:
         // For all neighbors compute M2L
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             if(distantNeighbors[idxNeigh]){
-                const RotationM2LTransfer& transitionVector = preM2LTransitions[inLevel + Parent::periodicLevels][idxNeigh];
+                const RotationM2LTransfer& transitionVector = preM2LTransitions[inLevel][idxNeigh];
                 multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
             }
         }
