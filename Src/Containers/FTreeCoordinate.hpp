@@ -208,6 +208,14 @@ public:
         return data[0] == other.data[0] && data[1] == other.data[1] && data[2] == other.data[2];
     }
 
+    /** Test equal operator
+          * @param other the coordinate to compare
+          * @return true if other & current object have same position
+          */
+    bool equals(const int inX, const int inY, const int inZ) const {
+        return data[0] == inX && data[1] == inY && data[2] == inZ;
+    }
+
     /** To test difference
       *
       */
