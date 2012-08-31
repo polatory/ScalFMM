@@ -1335,9 +1335,9 @@ public:
 
 
     /** Use mutual even if it not useful and call particlesMutualInteraction */
-    void P2PRemote(const FTreeCoordinate& inPosition,
-                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict inSources,
-                   ContainerClass* const inNeighbors[27], const int inSize){
+    void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+                   ContainerClass* const inNeighbors[27], const int /*inSize*/){
         for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
             if( inNeighbors[idxDirectNeighbors] ){
                 // For all particles in current leaf
@@ -1347,7 +1347,7 @@ public:
                     // For all the particles in the other leaf
                     typename ContainerClass::BasicIterator iterSource(*inNeighbors[idxDirectNeighbors]);
                     while( iterSource.hasNotFinished() ){
-                        particlesMutualInteraction(&target, &iterSource.data());
+                        particlesInteraction(&target, iterSource.data());
                         iterSource.gotoNext();
                     }
                     // Set data and progress
