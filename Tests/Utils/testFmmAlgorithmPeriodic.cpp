@@ -126,6 +126,9 @@ int main(int argc, char ** argv){
                      repetitions.getZ() << " there are " << totalRepeatedBox << " boxes in total\n";
         const long long NbParticlesEntireSystem = NbParticles * totalRepeatedBox;
         std::cout << "The total number of particles is "  << NbParticlesEntireSystem << "\n";
+        FTreeCoordinate min, max;
+        algo.repetitions(&min, &max);
+        std::cout << "Min is " << min << " Max is " << max << std::endl;
 
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();

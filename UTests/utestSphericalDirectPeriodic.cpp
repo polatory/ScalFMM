@@ -86,16 +86,16 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 
         // Run Direct
         Print("Run direct...");
-        const int nbRepetition = algo.repeatedBox();
-        const int minRep = -(nbRepetition-1)/2;
-        const int maxRep = (nbRepetition-1)/2;
+        FTreeCoordinate min, max;
+        algo.repetitions(&min, &max);
+
         for(int idxTarget = 0 ; idxTarget < NbParticles ; ++idxTarget){
             for(int idxSource = idxTarget + 1 ; idxSource < NbParticles ; ++idxSource){
                 kernels.directInteractionMutual(&particles[idxTarget], &particles[idxSource]);
             }
-            for(int idxX = minRep ; idxX <= maxRep ; ++idxX){
-                for(int idxY = minRep ; idxY <= maxRep ; ++idxY){
-                    for(int idxZ = minRep ; idxZ <= maxRep ; ++idxZ){
+            for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
+                for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
+                    for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
                         if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
                         const FPoint offset(loader.getBoxWidth() * FReal(idxX),

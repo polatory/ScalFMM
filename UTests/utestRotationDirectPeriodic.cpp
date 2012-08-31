@@ -58,9 +58,9 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
-        const int NbLevels      = 3;
+        const int NbLevels      = 4;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 2;
+        const int PeriodicDeep  = -1;
         const int NbParticles   = 100;
         ParticleClass* const particles = new ParticleClass[NbParticles];
 
@@ -69,13 +69,13 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         for( int idxPart = 0 ; idxPart < NbParticles ; ++idxPart ){
             loader.fillParticle(particles[idxPart]);
             particles[idxPart].setIndex(idxPart);
-            particles[idxPart].setPhysicalValue(FReal(0.10));
+            particles[idxPart].setPhysicalValue(FReal(0.80));
             tree.insert(particles[idxPart]);
         }
 
         // Run FMM
         Print("Fmm...");
-        FmmClass algo(&tree,PeriodicDeep);
+        FmmClass algo(&tree,PeriodicDeep, DirX | DirMinusY  | DirPlusZ);
         KernelClass kernels( algo.treeHeightForKernel(), algo.boxwidthForKernel(loader.getBoxWidth()),
                              algo.boxcenterForKernel(loader.getCenterOfBox(), loader.getBoxWidth()));
         algo.setKernel(&kernels);
@@ -83,17 +83,17 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
 
         // Run Direct
         Print("Run direct...");
-        const int nbRepetition = algo.repeatedBox();
-        const int minRep = -(nbRepetition-1)/2;
-        const int maxRep = (nbRepetition-1)/2;
+        FTreeCoordinate min, max;
+        algo.repetitions(&min, &max);
+
         for(int idxTarget = 0 ; idxTarget < NbParticles ; ++idxTarget){
             for(int idxSource = idxTarget + 1 ; idxSource < NbParticles ; ++idxSource){
                 kernels.particlesMutualInteraction(&particles[idxTarget], &particles[idxSource]);
             }
-            for(int idxX = minRep ; idxX <= maxRep ; ++idxX){
-                for(int idxY = minRep ; idxY <= maxRep ; ++idxY){
-                    for(int idxZ = minRep ; idxZ <= maxRep ; ++idxZ){
-                        if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
+            for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
+                for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
+                    for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
+                        if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
                         const FPoint offset(loader.getBoxWidth() * FReal(idxX),
                                             loader.getBoxWidth() * FReal(idxY),
@@ -130,7 +130,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                     printf("Direct x %e y %e z %e physical %e potential %e fx %e fy %e fz %e\n",
                            other.getPosition().getX(),other.getPosition().getY(),other.getPosition().getZ(),
                            other.getPhysicalValue(),other.getPotential(),
-                           other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());*/
+                           other.getForces().getX(),other.getForces().getY(),other.getForces().getZ());//*/
 
                     potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
 

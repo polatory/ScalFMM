@@ -67,8 +67,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         const int NbLevels      = 3;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 3;
-        const int NbParticles   = 10;
+        const int PeriodicDeep  = 2;
+        const int NbParticles   = 1;
 
         FRandomLoader<ParticleClass> loader(NbParticles);
 
@@ -87,7 +87,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         // Run FMM
         Print("Fmm...");
-        FmmClass algo(&tree,PeriodicDeep);
+        FmmClass algo(&tree,PeriodicDeep );
         KernelClass kernels(algo.treeHeightForKernel(), algo.boxcenterForKernel(loader.getCenterOfBox(), loader.getBoxWidth()),
                             algo.boxwidthForKernel(loader.getBoxWidth()), epsilon);
         algo.setKernel(&kernels);
@@ -96,9 +96,10 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         // Run direct computation
         const MatrixKernelClass MatrixKernel;
         Print("Direct...");
-        const int nbRepetition = algo.repeatedBox();
-        const int minRep = -(nbRepetition-1)/2;
-        const int maxRep = (nbRepetition-1)/2;
+
+        FTreeCoordinate min, max;
+        algo.repetitions(&min, &max);
+
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                 //kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
@@ -115,9 +116,9 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 particles[idxTarget].incForces(  force.getX(),  force.getY(),  force.getZ());
                 particles[idxOther ].incForces( -force.getX(), -force.getY(), -force.getZ());
             }
-            for(int idxX = minRep ; idxX <= maxRep ; ++idxX){
-                for(int idxY = minRep ; idxY <= maxRep ; ++idxY){
-                    for(int idxZ = minRep ; idxZ <= maxRep ; ++idxZ){
+            for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
+                for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
+                    for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
                         if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
                         // next lines for test
 
