@@ -857,12 +857,12 @@ public:
             // reset
             memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
-            const int startX = (testPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
-            const int endX = (testPeriodicCondition(inDirection, DirPlusX) || parentCell.getX() != boxLimite - 1 ?1:0);
-            const int startY = (testPeriodicCondition(inDirection, DirMinusY) || parentCell.getY() != 0 ?-1:0);
-            const int endY = (testPeriodicCondition(inDirection, DirPlusY) || parentCell.getY() != boxLimite - 1 ?1:0);
-            const int startZ = (testPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
-            const int endZ = (testPeriodicCondition(inDirection, DirPlusZ) || parentCell.getZ() != boxLimite - 1 ?1:0);
+            const int startX =  (testPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
+            const int endX =    (testPeriodicCondition(inDirection, DirPlusX)  || parentCell.getX() != boxLimite - 1 ?1:0);
+            const int startY =  (testPeriodicCondition(inDirection, DirMinusY) || parentCell.getY() != 0 ?-1:0);
+            const int endY =    (testPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
+            const int startZ =  (testPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
+            const int endZ =    (testPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
 
             int idxNeighbors = 0;
             // We test all cells around
@@ -913,7 +913,7 @@ public:
                                         // Test if it is a direct neighbor
                                         if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                             // add to neighbors
-                                            inNeighbors[((((xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3] = cells[idxCousin];
+                                            inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
                                             ++idxNeighbors;
                                         }
                                     }
@@ -1004,6 +1004,7 @@ public:
           */
     int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[27], FTreeCoordinate inOffsets[27], bool*const isPeriodic,
                                   const FTreeCoordinate& center, const int inLevel, const int inDirection){
+
         const int boxLimite = FMath::pow2(inLevel);
 
         if( center.getX() != 0 && center.getY() != 0 && center.getZ() != 0 &&
