@@ -88,8 +88,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep );
-        KernelClass kernels(algo.treeHeightForKernel(), algo.boxcenterForKernel(loader.getCenterOfBox(), loader.getBoxWidth()),
-                            algo.boxwidthForKernel(loader.getBoxWidth()), epsilon);
+        KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxCenter(),
+                            algo.extendedBoxWidth(), epsilon);
         algo.setKernel(&kernels);
         algo.execute();
 
@@ -98,7 +98,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         Print("Direct...");
 
         FTreeCoordinate min, max;
-        algo.repetitions(&min, &max);
+        algo.repetitionsIntervals(&min, &max);
 
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){

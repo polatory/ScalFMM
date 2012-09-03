@@ -113,7 +113,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     {
-        const int repeatedBox = algo.repeatedBox();
+        const int repeatedBox = algo.theoricalRepetition();
         const int totalRepeatedBox = FMath::pow(algo.repeatedBox() , 3);
         std::cout << "The box is repeated " << repeatedBox << " there are " << totalRepeatedBox << " boxes in total\n";
         const long long NbParticlesEntireSystem = app.global().processCount() * NbParticles * totalRepeatedBox;

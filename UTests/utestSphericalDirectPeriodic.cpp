@@ -78,16 +78,14 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep);
-        KernelClass kernels( DevP, algo.treeHeightForKernel(),
-                             algo.boxwidthForKernel(loader.getBoxWidth()),
-                             algo.boxcenterForKernel(loader.getCenterOfBox(), loader.getBoxWidth()));
+        KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
         algo.setKernel(&kernels);
         algo.execute();
 
         // Run Direct
         Print("Run direct...");
         FTreeCoordinate min, max;
-        algo.repetitions(&min, &max);
+        algo.repetitionsIntervals(&min, &max);
 
         for(int idxTarget = 0 ; idxTarget < NbParticles ; ++idxTarget){
             for(int idxSource = idxTarget + 1 ; idxSource < NbParticles ; ++idxSource){

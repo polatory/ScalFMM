@@ -135,8 +135,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     FmmClass algo(&tree,PeriodicDeep);
-    KernelClass kernels( DevP, algo.treeHeightForKernel(),
-                         algo.boxwidthForKernel(loader.getBoxWidth()), loader.getCenterOfBox());
+    KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
     algo.setKernel(&kernels);
     algo.execute();
 
