@@ -10,6 +10,7 @@
 // ===================================================================================
 
 #include <iostream>
+#include <iomanip>
 
 #include <cstdio>
 #include <cstdlib>
@@ -90,6 +91,7 @@ int main(int argc, char ** argv){
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/testEwal417.dt");
     FTic counter;
+    const FReal coeff_MD= 138935.4835 / 418.4 ;
 
     // -----------------------------------------------------
 
@@ -145,6 +147,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     {
+        FReal  potential = 0;
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
 
@@ -155,14 +158,17 @@ int main(int argc, char ** argv){
             while( iter.hasNotFinished() ){
 
                 const ParticleClass& part = particles[iter.data().getIndex()];
-                std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
-                std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
-                std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
-                std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
-                std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
-                std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
-                std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
-                std::cout << "\n";
+                // std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
+                // std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
+                // std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
+                // std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
+                // std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
+                // std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                // std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
+                // std::cout << "\n";
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+
+		std::cout << " " << iter.data().getIndex()+1 << " \t "<<  std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" << iter.data().getPosition().getY() << "  \t" << iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<< iter.data().getForces().getX() << "  \t " << iter.data().getForces().getY() << "  \t " << iter.data().getForces().getZ()<< std::endl;
 
                 potentialDiff.add(part.getPotential(),iter.data().getPotential());
                 fx.add(part.getForces().getX(),iter.data().getForces().getX());
@@ -172,7 +178,7 @@ int main(int argc, char ** argv){
                 iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
-
+	
         printf("Potential diff is = \n");
         printf("%f\n",potentialDiff.getL2Norm());
         printf("%f\n",potentialDiff.getInfNorm());
@@ -185,6 +191,8 @@ int main(int argc, char ** argv){
         printf("Fz diff is = \n");
         printf("%f\n",fz.getL2Norm());
         printf("%f\n",fz.getInfNorm());
+        std::cout << std::endl<< std::endl<< "Potential = " << potential*coeff_MD << std::endl;
+
     }
 
     // -----------------------------------------------------
