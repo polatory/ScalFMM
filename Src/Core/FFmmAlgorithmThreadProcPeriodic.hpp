@@ -17,6 +17,7 @@
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
+#include "../Utils/FMemUtils.hpp"
 
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
@@ -53,16 +54,17 @@
 template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProcPeriodic : protected FAssertable {
 
-    static const int MaxSizePerCell = 1024;
+    static const int MaxSizePerCell = 2048;
 
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels    
 
     const FMpi::FComm& comm;                 //< MPI comm
 
-    CellClass root;     //< root of tree needed by the periodicity
-    int nbLevelAboveRoot;  //< the upper periodic limit
-    int offsetHeight;
+    CellClass rootCellFromProc;     //< root of tree needed by the periodicity
+    const int nbLevelsAboveRoot;    //< The nb of level the user ask to go above the tree (>= -1)
+    const int offsetRealTree;       //< nbLevelsAboveRoot GetFackLevel
+    const int periodicDirections;
 
     typename OctreeClass::Iterator* iterArray;
     int numberOfLeafs;                          //< To store the size at the previous level
@@ -87,34 +89,20 @@ class FFmmAlgorithmThreadProcPeriodic : protected FAssertable {
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
 
+    static int GetFackLevel(const int inLevelAboveRequiered){
+        if( inLevelAboveRequiered == -1 ) return 1;
+        if( inLevelAboveRequiered == 0  ) return 2;
+        return inLevelAboveRequiered + 3;
+    }
+
 
 public:
 
-    /** To know how many times the box is repeated in each direction
-      * -x +x -y +y -z +z
-      */
-    int repeatedBox() const {
-        return nbLevelAboveRoot == -1 ? 3 : 7 * (1<<(nbLevelAboveRoot));
-    }
-
-    /** This function has to be used to init the kernel with correct args
-      * it return the box seen from a kernel point of view from the periodicity the user ask for
-      * this is computed using the originalBoxWidth given in parameter
-      * @param originalBoxWidth the real system size
-      * @return the size the kernel should use
-      */
-    int boxwidthForKernel(const FReal originalBoxWidth) const {
-        return originalBoxWidth * ((1<<(offsetHeight+1)) - 1);
-    }
-
-    /** This function has to be used to init the kernel with correct args
-      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
-      * this is computed using the originalTreeHeight given in parameter
-      * @param originalTreeHeight the real tree heigh
-      * @return the heigh the kernel should use
-      */
-    int treeHeightForKernel(const FReal originalTreeHeight) const {
-        return OctreeHeight + offsetHeight;
+    void setKernel(KernelClass*const inKernels){
+        this->kernels = new KernelClass*[MaxThreads];
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+            this->kernels[idxThread] = new KernelClass(*inKernels);
+        }
     }
 
     Interval& getWorkingInterval(const int level){
@@ -130,19 +118,16 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inUpperLevel = 5)
-        : tree(inTree) , kernels(0), comm(inComm), nbLevelAboveRoot(inUpperLevel), offsetHeight(inUpperLevel+2), numberOfLeafs(0),
+    FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree,
+                                    const int inUpperLevel = 2, const int inPeriodicDirections = AllDirs)
+        : tree(inTree) , kernels(0), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(GetFackLevel(inUpperLevel)),
+          periodicDirections(inPeriodicDirections), numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(-1 <= inUpperLevel, "inUpperLevel cannot be < -1", __LINE__, __FILE__);
-
-        this->kernels = new KernelClass*[MaxThreads];
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass(*inKernels);
-        }
 
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProcPeriodic\n");
         FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
@@ -307,6 +292,7 @@ private:
 
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 0 ; --idxLevel ){
+            const int fackLevel = idxLevel + offsetRealTree;
             // No more work for me
             if(idProcess != 0
                     && getWorkingInterval((idxLevel+1), idProcess).max <= getWorkingInterval((idxLevel+1), idProcess - 1).max){
@@ -398,7 +384,7 @@ private:
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                 #pragma omp for nowait
                 for( int idxCell = cellsToSend + 1 ; idxCell < endIndex ; ++idxCell){
-                    myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                    myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), fackLevel);
                 }
             }
             FDEBUG(computationCounter.tac());
@@ -438,7 +424,7 @@ private:
 
                     // Finally compute
                     FDEBUG(computationCounter.tic());
-                    (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
+                    (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, fackLevel);
                     FDEBUG(computationCounter.tac());
 
 
@@ -501,7 +487,7 @@ private:
                 }
             }
 
-            (*kernels[0]).M2M( &root , currentChild, 0);
+            (*kernels[0]).M2M( &rootCellFromProc , currentChild, offsetRealTree);
 
             processPeriodicLevels();
         }
@@ -602,7 +588,8 @@ private:
                 MortonIndex neighborsIndexes[189];
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // Find the M2L neigbors of a cell
-                    const int counter = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,neighborsIndexes, neighborsPosition);
+                    const int counter = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel,
+                                                                        neighborsIndexes, neighborsPosition, periodicDirections);
 
                     memset(alreadySent, false, sizeof(bool) * nbProcess);
                     bool needOther = false;
@@ -617,6 +604,7 @@ private:
                             while( procToReceive != nbProcess -1 && getWorkingInterval(idxLevel , procToReceive).max < neighborsIndexes[idxNeigh]){
                                 ++procToReceive;
                             }
+
                             // Maybe already sent to that proc?
                             if( !alreadySent[procToReceive]
                                     && getWorkingInterval(idxLevel , procToReceive).min <= neighborsIndexes[idxNeigh]
@@ -655,7 +643,6 @@ private:
         FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
         FDEBUG(gatherCounter.tac());
 
-
         //////////////////////////////////////////////////////////////////
         // Send and receive for real
         //////////////////////////////////////////////////////////////////
@@ -676,7 +663,7 @@ private:
         memset(recvBuffer, 0, sizeof(FBufferReader*) * nbProcess * OctreeHeight);
 
 
-        for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+        for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                 if(toSendAtProcAtLevel != 0){
@@ -690,6 +677,7 @@ private:
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(), sendBuffer[idxLevel * nbProcess + idxProc]->getSize()
                                                 , MPI_BYTE , idxProc, FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+
                 }
 
                 const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -713,7 +701,8 @@ private:
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
             // Now we can compute all the data
             // for each levels
-            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){                
+                const int fackLevel = idxLevel + offsetRealTree;
                 if(idProcess != 0
                         && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
 
@@ -743,11 +732,11 @@ private:
 
                     #pragma omp for  schedule(dynamic) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        const int counter = tree->getPeriodicInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
-                        if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                        const int counter = tree->getPeriodicInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel, periodicDirections);
+                        if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, fackLevel);
                     }
 
-                    myThreadkernels->finishedLevelM2L(idxLevel);
+                    myThreadkernels->finishedLevelM2L(fackLevel);
                 }
                 FDEBUG(computationCounter.tac());
             }
@@ -768,6 +757,7 @@ private:
             // compute the second time
             // for each levels
             for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                const int fackLevel = idxLevel + offsetRealTree;
                 if(idProcess != 0
                         && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
 
@@ -829,10 +819,11 @@ private:
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
                         const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel,
-                                                                         neighborsIndex, neighborsPosition);
+                                                                         neighborsIndex, neighborsPosition, periodicDirections);
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
+
                             if(neighborsIndex[idxNeig] < getWorkingInterval(idxLevel , idProcess).min
                                     || getWorkingInterval(idxLevel , idProcess).max < neighborsIndex[idxNeig]){
 
@@ -848,11 +839,11 @@ private:
 
                         // need to compute
                         if(counter){
-                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, fackLevel);
                         }
                     }
 
-                    myThreadkernels->finishedLevelM2L(idxLevel);
+                    myThreadkernels->finishedLevelM2L(fackLevel);
                 }
                 FDEBUG(computationCounter.tac());
             }
@@ -908,19 +899,25 @@ private:
 
         // Periodic
         if( idProcess == 0){
-            root.serializeDown(sendBuffer);
+            rootCellFromProc.serializeDown(sendBuffer);
+            int sizeOfSerialization = sendBuffer.getSize();
+            FMpi::MpiAssert( MPI_Bcast( &sizeOfSerialization, 1, MPI_INT, 0, comm.getComm() ), __LINE__ );
             FMpi::MpiAssert( MPI_Bcast( sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, 0, comm.getComm() ), __LINE__ );
             sendBuffer.reset();
         }
         else{
-            FMpi::MpiAssert( MPI_Bcast( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, 0, comm.getComm() ), __LINE__ );
-            root.deserializeDown(recvBuffer);
-            recvBuffer.reset();
+            int sizeOfSerialization = -1;
+            FMpi::MpiAssert( MPI_Bcast( &sizeOfSerialization, 1, MPI_INT, 0, comm.getComm() ), __LINE__ );
+            FMpi::MpiAssert( MPI_Bcast( recvBuffer.data(), sizeOfSerialization, MPI_BYTE, 0, comm.getComm() ), __LINE__ );
+            rootCellFromProc.deserializeDown(recvBuffer);
+            recvBuffer.seek(0);
         }
-        kernels[0]->L2L(&root, octreeIterator.getCurrentBox(), 0);
+
+        kernels[0]->L2L(&rootCellFromProc, octreeIterator.getCurrentBox(), offsetRealTree);
 
         // for each levels exepted leaf level
         for(int idxLevel = 1 ; idxLevel < heightMinusOne ; ++idxLevel ){
+            const int fackLevel = idxLevel + offsetRealTree;
             if(idProcess != 0
                     && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
 
@@ -954,7 +951,6 @@ private:
                     && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
                 needToRecv = true;
 
-
                 MPI_Irecv( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, MPI_ANY_SOURCE,
                            FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
             }
@@ -977,7 +973,6 @@ private:
                     iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
 
                     for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-
                         MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, idxProc,
                                   FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
                     }
@@ -992,14 +987,13 @@ private:
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                 #pragma omp for nowait
                 for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
-                    myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                    myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), fackLevel);
                 }
             }
             FDEBUG(computationCounter.tac());
 
             // are we sending or receiving?
             if(iterRequests){
-
                 // process
                 FDEBUG(waitCounter.tic());
                 MPI_Waitall( iterRequests, requests, status);
@@ -1010,13 +1004,13 @@ private:
                     FDEBUG(computationCounter.tic());
                     iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
 
-                    kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
+                    kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), fackLevel);
                     FDEBUG(computationCounter.tac());
                 }
             }
 
             sendBuffer.reset();
-            recvBuffer.reserve(MaxSizePerCell);
+            recvBuffer.seek(0);
         }
 
         delete[] requests;
@@ -1104,7 +1098,8 @@ private:
                 memset(alreadySent, 0, sizeof(int) * nbProcess);
                 bool needOther = false;
 
-                const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors, uselessIndexArray);
+                const int neighCount = getNeighborsIndexesPeriodic(iterArray[idxLeaf].getCurrentGlobalCoordinate(),
+                                                                   limite, indexesNeighbors, uselessIndexArray, AllDirs);
 
                 for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
@@ -1247,6 +1242,9 @@ private:
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[27];
+            FTreeCoordinate offsets[27];
+            const FReal boxWidth = tree->getBoxWidth();
+            bool hasPeriodicLeaves;
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
@@ -1258,9 +1256,48 @@ private:
                     myThreadkernels.L2P(currentIter.cell, currentIter.targets);
 
                     // need the current particles and neighbors particles
-                    const int counter = tree->getPeriodicLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                    const int counter = tree->getPeriodicLeafsNeighbors(neighbors, offsets, &hasPeriodicLeaves,
+                                           currentIter.cell->getCoordinate(), LeafIndex, periodicDirections);
+                    int periodicNeighborsCounter = 0;
+
+                    if(hasPeriodicLeaves){
+                        ContainerClass* periodicNeighbors[27];
+                        memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
+
+                        for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                            if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
+                                // Put periodic neighbors into other array
+                                periodicNeighbors[idxNeig] = neighbors[idxNeig];
+                                neighbors[idxNeig] = 0;
+                                ++periodicNeighborsCounter;
+                                typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
+                                while( iter.hasNotFinished() ){
+                                    iter.data().incPosition(boxWidth * FReal(offsets[idxNeig].getX()),
+                                                            boxWidth * FReal(offsets[idxNeig].getY()),
+                                                            boxWidth * FReal(offsets[idxNeig].getZ()));
+                                    iter.gotoNext();
+                                }
+                            }
+                        }
+
+                        myThreadkernels.P2PRemote(currentIter.cell->getCoordinate(),currentIter.targets,
+                                     currentIter.sources, periodicNeighbors, periodicNeighborsCounter);
+
+                        for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                            if( periodicNeighbors[idxNeig] ){
+                                typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
+                                while( iter.hasNotFinished() ){
+                                    iter.data().incPosition(-boxWidth * FReal(offsets[idxNeig].getX()),
+                                                            -boxWidth * FReal(offsets[idxNeig].getY()),
+                                                            -boxWidth * FReal(offsets[idxNeig].getZ()));
+                                    iter.gotoNext();
+                                }
+                            }
+                        }
+                    }
+
                     myThreadkernels.P2P( currentIter.cell->getCoordinate(), currentIter.targets,
-                                         currentIter.sources, neighbors, counter);
+                                         currentIter.sources, neighbors, counter - periodicNeighborsCounter);
                 }
 
                 previous = endAtThisShape;
@@ -1331,7 +1368,7 @@ private:
                 memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
                 // Take possible data
-                const int nbNeigh = getNeighborsIndexes(currentIter.cell->getCoordinate(), limite, indexesNeighbors, indexArray);
+                const int nbNeigh = getNeighborsIndexesPeriodic(currentIter.cell->getCoordinate(), limite, indexesNeighbors, indexArray, periodicDirections);
 
                 for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
                     if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
@@ -1370,24 +1407,35 @@ private:
 
 
 
-    int getNeighborsIndexes(const FTreeCoordinate& center, const int limite, MortonIndex indexes[26], int indexInArray[26]) const{
+    int getNeighborsIndexesPeriodic(const FTreeCoordinate& center, const int boxLimite, MortonIndex indexes[26], int indexInArray[26], const int inDirection) const{
+        if(center.getX() != 0 && center.getY() != 0 && center.getZ() != 0 &&
+                center.getX() != boxLimite -1 && center.getY() != boxLimite -1  && center.getZ() != boxLimite -1 ){
+            return getNeighborsIndexes(center, indexes, indexInArray);
+        }
+
         int idxNeig = 0;
+
+        const int startX = (testPeriodicCondition(inDirection, DirMinusX) || center.getX() != 0 ?-1:0);
+        const int endX = (testPeriodicCondition(inDirection, DirPlusX) || center.getX() != boxLimite - 1 ?1:0);
+        const int startY = (testPeriodicCondition(inDirection, DirMinusY) || center.getY() != 0 ?-1:0);
+        const int endY = (testPeriodicCondition(inDirection, DirPlusY) || center.getY() != boxLimite - 1 ?1:0);
+        const int startZ = (testPeriodicCondition(inDirection, DirMinusZ) || center.getZ() != 0 ?-1:0);
+        const int endZ = (testPeriodicCondition(inDirection, DirPlusZ) || center.getZ() != boxLimite - 1 ?1:0);
+
         // We test all cells around
-        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
-
-            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
-
-                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+        for(int idxX = startX ; idxX <= endX ; ++idxX){
+            for(int idxY = startY ; idxY <= endY ; ++idxY){
+                for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
 
-                        if( other.getX() < 0 ) other.setX( other.getX() + limite );
-                        else if( limite <= other.getX() ) other.setX( other.getX() - limite );
-                        if( other.getY() < 0 ) other.setY( other.getY() + limite );
-                        else if( limite <= other.getY() ) other.setY( other.getY() - limite );
-                        if( other.getZ() < 0 ) other.setZ( other.getZ() + limite );
-                        else if( limite <= other.getZ() ) other.setZ( other.getZ() - limite );
+                        if( other.getX() < 0 ) other.setX( other.getX() + boxLimite );
+                        else if( boxLimite <= other.getX() ) other.setX( other.getX() - boxLimite );
+                        if( other.getY() < 0 ) other.setY( other.getY() + boxLimite );
+                        else if( boxLimite <= other.getY() ) other.setY( other.getY() - boxLimite );
+                        if( other.getZ() < 0 ) other.setZ( other.getZ() + boxLimite );
+                        else if( boxLimite <= other.getZ() ) other.setZ( other.getZ() - boxLimite );
 
                         indexes[idxNeig] = other.getMortonIndex(this->OctreeHeight - 1);
                         indexInArray[idxNeig] = ((idxX+1)*3  + (idxY+1))*3 + (idxZ+1);
@@ -1399,15 +1447,109 @@ private:
         return idxNeig;
     }
 
+    int getNeighborsIndexes(const FTreeCoordinate& center, MortonIndex indexes[26], int indexInArray[26]) const{
+        int idxNeig = 0;
 
-    int getPeriodicInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
+        // We test all cells around
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    // if we are not on the current cell
+                    if( idxX || idxY || idxZ ){
+                        const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
+                        indexes[idxNeig] = other.getMortonIndex(this->OctreeHeight - 1);
+                        indexInArray[idxNeig] = ((idxX+1)*3  + (idxY+1))*3 + (idxZ+1);
+                        ++idxNeig;
+                    }
+                }
+            }
+        }
+        return idxNeig;
+    }
+
+
+    int getPeriodicInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189], const int inDirection) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         // Limite at parent level number of box (split by 2 by level)
-        const int limite = FMath::pow2(inLevel-1);
+        const int boxLimite = FMath::pow2(inLevel-1);
+
+        // This is not on a border we can use normal interaction list method
+        if( !(parentCell.getX() == 0 || parentCell.getY() == 0 || parentCell.getZ() == 0 ||
+              parentCell.getX() == boxLimite - 1 || parentCell.getY() == boxLimite - 1 || parentCell.getZ() == boxLimite - 1 ) ) {
+            return getInteractionNeighbors( workingCell, inLevel, inNeighbors, inNeighborsPosition);
+        }
+
+        const int startX =  (testPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
+        const int endX =    (testPeriodicCondition(inDirection, DirPlusX)  || parentCell.getX() != boxLimite - 1 ?1:0);
+        const int startY =  (testPeriodicCondition(inDirection, DirMinusY) || parentCell.getY() != 0 ?-1:0);
+        const int endY =    (testPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
+        const int startZ =  (testPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
+        const int endZ =    (testPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
+
+        int idxNeighbors = 0;
+        // We test all cells around
+        for(int idxX = startX ; idxX <= endX ; ++idxX){
+            for(int idxY = startY ; idxY <= endY ; ++idxY){
+                for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
+                    // if we are not on the current cell
+                    if( idxX || idxY || idxZ ){
+
+                        const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                        FTreeCoordinate otherParentInBox(otherParent);
+                        // periodic
+                        if( otherParentInBox.getX() < 0 ){
+                            otherParentInBox.setX( otherParentInBox.getX() + boxLimite );
+                        }
+                        else if( boxLimite <= otherParentInBox.getX() ){
+                            otherParentInBox.setX( otherParentInBox.getX() - boxLimite );
+                        }
+
+                        if( otherParentInBox.getY() < 0 ){
+                            otherParentInBox.setY( otherParentInBox.getY() + boxLimite );
+                        }
+                        else if( boxLimite <= otherParentInBox.getY() ){
+                            otherParentInBox.setY( otherParentInBox.getY() - boxLimite );
+                        }
+
+                        if( otherParentInBox.getZ() < 0 ){
+                            otherParentInBox.setZ( otherParentInBox.getZ() + boxLimite );
+                        }
+                        else if( boxLimite <= otherParentInBox.getZ() ){
+                            otherParentInBox.setZ( otherParentInBox.getZ() - boxLimite );
+                        }
+
+                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1);
+
+                        // For each child
+                        for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
+                            const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
+                            const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
+                            const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1))         - workingCell.getZ();
+
+                            // Test if it is a direct neighbor
+                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                                // add to neighbors
+                                inNeighborsPosition[idxNeighbors] = (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3;
+                                inNeighbors[idxNeighbors++] = (mortonOtherParent << 3) | idxCousin;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return idxNeighbors;
+    }
+
+    int getInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
+
+        // Then take each child of the parent's neighbors if not in directNeighbors
+        // Father coordinate
+        const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
 
         int idxNeighbors = 0;
         // We test all cells around
@@ -1418,19 +1560,8 @@ private:
                     if( idxX || idxY || idxZ ){
 
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        FTreeCoordinate otherParentInBox(otherParent);
-                        // periodic
-                        if( otherParentInBox.getX() < 0 ) otherParentInBox.setX( otherParentInBox.getX() + limite );
-                        else if( limite <= otherParentInBox.getX() ) otherParentInBox.setX( otherParentInBox.getX() - limite );
 
-                        if( otherParentInBox.getY() < 0 ) otherParentInBox.setY( otherParentInBox.getY() + limite );
-                        else if( limite <= otherParentInBox.getY() ) otherParentInBox.setY( otherParentInBox.getY() - limite );
-
-                        if( otherParentInBox.getZ() < 0 ) otherParentInBox.setZ( otherParentInBox.getZ() + limite );
-                        else if( limite <= otherParentInBox.getZ() ) otherParentInBox.setZ( otherParentInBox.getZ() - limite );
-
-
-                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
+                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1);
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
@@ -1456,81 +1587,842 @@ private:
     /////////////////////////////////////////////////////////////////////////////
     // Periodic levels = levels <= 0
     /////////////////////////////////////////////////////////////////////////////
+public:
 
-    /** Periodicity */
-    void processPeriodicLevels(){
-            // If nb level == -1 nothing to do
-            if( nbLevelAboveRoot == -1 ){
-                return;
-            }
+    /** This function process several M2M from level nbLevelsAboveRoot to level 0
+      * and give the final result
+      * @param result the cell at the last M2M
+      * @param root the starting cell
+      * @param startX the beginning of the index in x [0;endX]
+      * @param endX the end of the index in x [startX;1]
+      * @param startY the beginning of the index in y [0;endY]
+      * @param endY the end of the index in y [startY;1]
+      * @param startZ the beginning of the index in z [0;endZ]
+      * @param endZ the end of the index in z [startZ;1]
+      */
+    void processTopM2MInIntervals( CellClass*const result, const CellClass& root, const int startX,
+                              const int endX, const int startY, const int endY, const int startZ,
+                              const int endZ){
+        // allocate array
+        CellClass*const cellsAtLevel = new CellClass[nbLevelsAboveRoot+2];
+        // process by using other function
+        processM2MInIntervals(cellsAtLevel,root,startX,endX,startY,endY,startZ,endZ);
+        // copy result
+        *result = cellsAtLevel[0];
+        delete[] cellsAtLevel;
+    }
 
-            // in other situation, we have to compute M2L a level 1
-            // but also
-            // the cell at level >= 0
-            CellClass upperCells[nbLevelAboveRoot+1];
-            upperCells[nbLevelAboveRoot] = root;
-
-
-            // Then M2M from level 0 to level -LIMITE
-            {
-                CellClass* virtualChild[8];
-                for(int idxLevel = nbLevelAboveRoot - 1 ; idxLevel >= 0  ; --idxLevel){
-                    FMemUtils::setall(virtualChild, &upperCells[idxLevel+1], 8);
-                    kernels[0]->M2M( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+    /** This function process several M2M from level nbLevelsAboveRoot to level 0
+      * @param cellsAtLevel the intermediate results
+      * @param root the starting cell
+      * @param startX the beginning of the index in x [0;endX]
+      * @param endX the end of the index in x [startX;1]
+      * @param startY the beginning of the index in y [0;endY]
+      * @param endY the end of the index in y [startY;1]
+      * @param startZ the beginning of the index in z [0;endZ]
+      * @param endZ the end of the index in z [startZ;1]
+      */
+    void  processM2MInIntervals( CellClass cellsAtLevel[], const CellClass& root, const int startX,
+                              const int endX, const int startY, const int endY, const int startZ,
+                              const int endZ){
+        // start from the initial cell
+        cellsAtLevel[nbLevelsAboveRoot+1] = root;
+        // to create virtual children
+        CellClass* virtualChild[8];
+        // for all levels
+        for(int idxLevel = nbLevelsAboveRoot ; idxLevel >= 0  ; --idxLevel){
+            // reset children
+            memset(virtualChild, 0, sizeof(CellClass*)*8);
+            // fill the vector with previous result
+            for(int idxX = startX ; idxX <= endX ; ++idxX){
+                for(int idxY = startY ; idxY <= endY ; ++idxY){
+                    for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
+                        virtualChild[childIndex(idxX,idxY,idxZ)] = &cellsAtLevel[idxLevel+1];
+                    }
                 }
             }
-            // Then M2L at all level
-            {
-                // We say that we are in the child index 0
-                // So we can compute one time the relative indexes
+            // compute the M2M
+            kernels[0]->M2M( &cellsAtLevel[idxLevel], virtualChild, idxLevel + 2);
+        }
+    }
+
+    /** Fill an interactions neighbors with some intervals
+      * @param neighbors the vector to fill
+      * @param source the source cell to fill the vector
+      * @param startX the beginning of the index in x [-3;0]
+      * @param endX the end of the index in x  [0;3]
+      * @param startY the beginning of the index in y [-3;0]
+      * @param endY the end of the index in y [0;3]
+      * @param startZ the beginning of the index in z [-3;0]
+      * @param endZ the end of the index in z [0;3]
+      * @return the number of position filled
+      */
+    int  fillM2LVectorFromIntervals(const CellClass* neighbors[343], const CellClass& source,
+                     const int startX, const int endX, const int startY, const int endY,
+                     const int startZ, const int endZ){
+        int counter = 0;
+        // for all x in interval
+        for(int idxX = startX ; idxX <= endX ; ++idxX){
+            // for all y in interval
+            for(int idxY = startY ; idxY <= endY ; ++idxY){
+                // for all z in interval
+                for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
+                    // do not fill close neigbors
+                    if( FMath::Abs(idxX) > 1 && FMath::Abs(idxY) > 1 && FMath::Abs(idxZ) > 1 ){
+                        neighbors[neighIndex(idxX,idxY,idxZ)] = &source;
+                        ++counter;
+                    }
+                }
+            }
+        }
+        // return the number of position filled
+        return counter;
+    }
+
+    /** Get the index of a child (for the M2M and the L2L)
+      * @param x the x position in the children  (from 0 to +1)
+      * @param y the y position in the children  (from 0 to +1)
+      * @param z the z position in the children  (from 0 to +1)
+      * @return the index (from 0 to 7)
+      */
+    int childIndex(const int x, const int y, const int z) const {
+        return (x<<2) | (y<<1) | z;
+    }
+
+    /** Get the index of a interaction neighbors (for M2L)
+      * @param x the x position in the interactions (from -3 to +3)
+      * @param y the y position in the interactions (from -3 to +3)
+      * @param z the z position in the interactions (from -3 to +3)
+      * @return the index (from 0 to 342)
+      */
+    int neighIndex(const int x, const int y, const int z) const {
+        return (((x+3)*7) + (y+3))*7 + (z + 3);
+    }
+
+    /** To know how many times the box is repeated in each direction
+      * -x +x -y +y -z +z
+      * If the periodicy is not in all direction this number is unchanged
+      * because it contains the theorical periodic box width for the
+      * nbLevelsAboveRoot choosen
+      */
+    int theoricalRepetition() const {
+        return nbLevelsAboveRoot == -1 ? 3 : 3 * (1<<(nbLevelsAboveRoot+1)) + 1;
+    }
+
+    /** To know the number of box repeated in each direction
+      * @param min the number of repetition for -x,-y,-z
+      * @param max the number of repetition for x,y,z
+      * The mins value are contains between [-(theoricalRepetition-1 / 2); 0]
+      * The maxs value are contains between [0;(theoricalRepetition-1 / 2)]
+      */
+    void repetitionsIntervals(FTreeCoordinate*const min, FTreeCoordinate*const max) const {
+        const int halfRepeated = (theoricalRepetition()-1) /2;
+        min->setPosition(-ifDir(DirMinusX,halfRepeated,0),-ifDir(DirMinusY,halfRepeated,0),
+                         -ifDir(DirMinusZ,halfRepeated,0));
+        max->setPosition(ifDir(DirPlusX,halfRepeated,0),ifDir(DirPlusY,halfRepeated,0),
+                         ifDir(DirPlusZ,halfRepeated,0));
+    }
+
+    /** To get the number of repetition in all direction (x,y,z)
+      * @return the number of box in all directions
+      * Each value is between [1;theoricalRepetition]
+      */
+    FTreeCoordinate repetitions() const {
+        const int halfRepeated = (theoricalRepetition()-1) /2;
+        return FTreeCoordinate(ifDir(DirMinusX,halfRepeated,0) + ifDir(DirPlusX,halfRepeated,0) + 1,
+                               ifDir(DirMinusY,halfRepeated,0) + ifDir(DirPlusY,halfRepeated,0) + 1,
+                               ifDir(DirMinusZ,halfRepeated,0) + ifDir(DirPlusZ,halfRepeated,0) + 1);
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the box seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalBoxWidth given in parameter
+      * @param originalBoxWidth the real system size
+      * @return the size the kernel should use
+      */
+    FReal extendedBoxWidth() const {
+        return tree->getBoxWidth() * FReal(1<<offsetRealTree);
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the box cneter seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalBoxWidth and originalBoxCenter given in parameter
+      * @param originalBoxCenter the real system center
+      * @param originalBoxWidth the real system size
+      * @return the center the kernel should use
+      */
+    FPoint extendedBoxCenter() const {
+        const FReal originalBoxWidth = tree->getBoxWidth();
+        const FPoint originalBoxCenter = tree->getBoxCenter();
+        const FReal offset = originalBoxWidth * FReal(1<<(offsetRealTree-1)) - originalBoxWidth/FReal(2.0);
+        return FPoint( originalBoxCenter.getX() + offset,
+                       originalBoxCenter.getY() + offset,
+                       originalBoxCenter.getZ() + offset);
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalTreeHeight given in parameter
+      * @param originalTreeHeight the real tree heigh
+      * @return the heigh the kernel should use
+      */
+    int extendedTreeHeight() const {
+        // The real height
+        return OctreeHeight + offsetRealTree;
+    }
+
+    /** To know if a direction is used
+      * @param testDir a direction to test
+      * @return true if the direction is used else false
+      */
+    bool usePerDir(const int testDir) const{
+        return testPeriodicCondition(periodicDirections , PeriodicCondition(testDir));
+    }
+
+    /** To enable quick test of the direction
+      * @param testDir the direction to test
+      * @param correctValue the value to return if direction is use
+      * @param wrongValue the value to return if direction is not use
+      * @return correctValue if testDir is used, else wrongValue
+      */
+    template <class T>
+    int ifDir(const PeriodicCondition testDir, const T& correctValue, const T& wrongValue) const {
+        return (periodicDirections & testDir ? correctValue : wrongValue);
+    }
+
+    /** Periodicity Core
+      * This function is split in several part:
+      * 1 - special case managment
+      * There is nothing to do if nbLevelsAboveRoot == -1 and only
+      * a M2L if nbLevelsAboveRoot == 0
+      * 2 - if nbLevelsAboveRoot > 0
+      * First we compute M2M and special M2M if needed for the border
+      * Then the M2L by taking into account the periodicity directions
+      * Then the border by using the precomputed M2M
+      * Finally the L2L
+      */
+    void processPeriodicLevels(){
+        /////////////////////////////////////////////////////
+        // If nb level == -1 nothing to do
+        if( nbLevelsAboveRoot == -1 ){
+            return;
+        }
+        /////////////////////////////////////////////////////
+        // if nb level == 0 only M2L at real root level
+        if( nbLevelsAboveRoot == 0 ){
+            CellClass rootUp;
+            // compute the root
+            rootUp = rootCellFromProc;
+
+            // build fack M2L vector from -3/+3 x/y/z
+            const CellClass* neighbors[343];
+            memset(neighbors, 0, sizeof(CellClass*) * 343);
+            int counter = 0;
+            for(int idxX = ifDir(DirMinusX,-3,0) ; idxX <= ifDir(DirPlusX,3,0) ; ++idxX){
+                for(int idxY = ifDir(DirMinusY,-3,0) ; idxY <= ifDir(DirPlusY,3,0) ; ++idxY){
+                    for(int idxZ = ifDir(DirMinusZ,-3,0) ; idxZ <= ifDir(DirPlusZ,3,0) ; ++idxZ){
+                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            neighbors[neighIndex(idxX,idxY,idxZ)] = &rootUp;
+                            ++counter;
+                        }
+                    }
+                }
+            }
+            // compute M2L
+            CellClass rootDown;
+            kernels[0]->M2L( &rootDown , neighbors, counter, 2);
+
+            // put result in level 1
+            rootCellFromProc = rootDown;
+
+            return;
+        }
+        /////////////////////////////////////////////////////
+        // in other situation, we have to compute M2L from 0 to nbLevelsAboveRoot
+        // but also at nbLevelsAboveRoot +1 for the rest
+        CellClass*const upperCells = new CellClass[nbLevelsAboveRoot+2];
+
+        CellClass*const cellsXAxis = new CellClass[nbLevelsAboveRoot+2];
+        CellClass*const cellsYAxis = new CellClass[nbLevelsAboveRoot+2];
+        CellClass*const cellsZAxis = new CellClass[nbLevelsAboveRoot+2];
+        CellClass*const cellsXYAxis = new CellClass[nbLevelsAboveRoot+2];
+        CellClass*const cellsYZAxis = new CellClass[nbLevelsAboveRoot+2];
+        CellClass*const cellsXZAxis = new CellClass[nbLevelsAboveRoot+2];
+
+
+        // First M2M from level 1 to level 0
+        upperCells[nbLevelsAboveRoot+1] = rootCellFromProc;
+
+        // Then M2M from level 0 to level -LIMITE
+        {
+            CellClass* virtualChild[8];
+            for(int idxLevel = nbLevelsAboveRoot ; idxLevel > 0  ; --idxLevel){
+                FMemUtils::setall(virtualChild,&upperCells[idxLevel+1],8);
+                kernels[0]->M2M( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+            }
+
+            // Cells on the axis of the center should be computed separatly.
+
+            if( usePerDir(DirMinusX) && usePerDir(DirMinusY) ){
+                FMemUtils::copyall(cellsZAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+            else{
+                 processM2MInIntervals(cellsZAxis,upperCells[nbLevelsAboveRoot+1],
+                                    ifDir(DirMinusX,0,1),1,ifDir(DirMinusY,0,1),1,0,1);
+            }
+            if( usePerDir(DirMinusX) && usePerDir(DirMinusZ) ){
+                FMemUtils::copyall(cellsYAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+            else{
+                 processM2MInIntervals(cellsYAxis,upperCells[nbLevelsAboveRoot+1],
+                                    ifDir(DirMinusX,0,1),1,0,1,ifDir(DirMinusZ,0,1),1);
+            }
+            if( usePerDir(DirMinusY) && usePerDir(DirMinusZ) ){
+                FMemUtils::copyall(cellsXAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+            else{
+                 processM2MInIntervals(cellsXAxis,upperCells[nbLevelsAboveRoot+1],
+                                    0,1,ifDir(DirMinusY,0,1),1,ifDir(DirMinusZ,0,1),1);
+            }
+
+            // Then cells on the spaces should be computed separatly
+
+            if( !usePerDir(DirMinusX) ){
+                 processM2MInIntervals(cellsYZAxis,upperCells[nbLevelsAboveRoot+1],1,1,0,1,0,1);
+            }
+            else {
+                FMemUtils::copyall(cellsYZAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+            if( !usePerDir(DirMinusY) ){
+                 processM2MInIntervals(cellsXZAxis,upperCells[nbLevelsAboveRoot+1],0,1,1,1,0,1);
+            }
+            else {
+                FMemUtils::copyall(cellsXZAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+            if( !usePerDir(DirMinusZ) ){
+                 processM2MInIntervals(cellsXYAxis,upperCells[nbLevelsAboveRoot+1],0,1,0,1,1,1);
+            }
+            else {
+                FMemUtils::copyall(cellsXYAxis,upperCells,nbLevelsAboveRoot+2);
+            }
+
+        }
+
+        // Then M2L at all level
+        {
+            CellClass* positionedCells[343];
+            memset(positionedCells, 0, 343 * sizeof(CellClass**));
+
+            for(int idxX = ifDir(DirMinusX,-3,0) ; idxX <= ifDir(DirPlusX,3,0) ; ++idxX){
+                for(int idxY = ifDir(DirMinusY,-3,0) ; idxY <= ifDir(DirPlusY,3,0) ; ++idxY){
+                    for(int idxZ = ifDir(DirMinusZ,-3,0) ; idxZ <= ifDir(DirPlusZ,3,0) ; ++idxZ){
+                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            if(idxX == 0 && idxY == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsZAxis;
+                            }
+                            else if(idxX == 0 && idxZ == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsYAxis;
+                            }
+                            else if(idxY == 0 && idxZ == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsXAxis;
+                            }
+                            else if(idxX == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsYZAxis;
+                            }
+                            else if(idxY == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsXZAxis;
+                            }
+                            else if(idxZ == 0){
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = cellsXYAxis;
+                            }
+                            else{
+                                positionedCells[neighIndex(idxX,idxY,idxZ)] = upperCells;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // We say that we are in the child index 0
+            // So we can compute one time the relative indexes
+            const CellClass* neighbors[343];
+            memset(neighbors, 0, sizeof(CellClass*) * 343);
+            int counter = 0;
+            for(int idxX = ifDir(DirMinusX,-3,0) ; idxX <= ifDir(DirPlusX,2,0) ; ++idxX){
+                for(int idxY = ifDir(DirMinusY,-3,0) ; idxY <= ifDir(DirPlusY,2,0) ; ++idxY){
+                    for(int idxZ = ifDir(DirMinusZ,-3,0) ; idxZ <= ifDir(DirPlusZ,2,0) ; ++idxZ){
+                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            neighbors[neighIndex(idxX,idxY,idxZ)] = reinterpret_cast<const CellClass*>(~0);
+                            ++counter;
+                        }
+                    }
+                }
+            }
+
+            for(int idxLevel = nbLevelsAboveRoot + 1 ; idxLevel > 1 ; --idxLevel ){
+                for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+                    if(neighbors[idxNeigh]){
+                        neighbors[idxNeigh] = &positionedCells[idxNeigh][idxLevel];
+                    }
+                }
+                kernels[0]->M2L( &upperCells[idxLevel] , neighbors, counter , idxLevel + 2);
+            }
+
+            memset(neighbors, 0, sizeof(CellClass*) * 343);
+            counter = 0;
+            for(int idxX = ifDir(DirMinusX,-2,0) ; idxX <= ifDir(DirPlusX,3,0) ; ++idxX){
+                for(int idxY = ifDir(DirMinusY,-2,0) ; idxY <= ifDir(DirPlusY,3,0) ; ++idxY){
+                    for(int idxZ = ifDir(DirMinusZ,-2,0) ; idxZ <= ifDir(DirPlusZ,3,0) ; ++idxZ){
+                        if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                            const int index = neighIndex(idxX,idxY,idxZ);
+                            neighbors[index] = &positionedCells[index][1];
+                            ++counter;
+                        }
+                    }
+                }
+            }
+            kernels[0]->M2L( &upperCells[1] , neighbors, 189, 3);
+        }
+
+        { // compute the border
+            if( usePerDir(AllDirs) ){
+                CellClass leftborder, bottomborder, frontborder, angleborderlb,
+                        angleborderfb, angleborderlf, angleborder;
+
                 const CellClass* neighbors[343];
                 memset(neighbors, 0, sizeof(CellClass*) * 343);
-                for(int idxX = -2 ; idxX <= 3 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 3 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
-                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = reinterpret_cast<const CellClass*>(~0);
-                            }
-                        }
-                    }
-                }
+                int counter = 0;
 
-                for(int idxLevel = nbLevelAboveRoot ; idxLevel > 0 ; --idxLevel ){
-                    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-                        if(neighbors[idxNeigh]){
-                            neighbors[idxNeigh] = &upperCells[idxLevel];
-                        }
-                    }
-                    kernels[0]->M2L( &upperCells[idxLevel] , neighbors, 189, idxLevel + 2);
-                }
+                processTopM2MInIntervals( &leftborder, upperCells[nbLevelsAboveRoot+1],     1,1 , 0,1 , 0,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, leftborder,     -2,-2 , -1,1,  -1,1 );
+                processTopM2MInIntervals( &bottomborder, upperCells[nbLevelsAboveRoot+1],   0,1 , 0,1 , 1,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, bottomborder,   -1,1  , -1,1,  -2,-2);
+                processTopM2MInIntervals( &frontborder, upperCells[nbLevelsAboveRoot+1],    0,1 , 1,1 , 0,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, frontborder,    -1,1  , -2,-2, -1,1 );
+                processTopM2MInIntervals( &angleborderlb, upperCells[nbLevelsAboveRoot+1],  1,1 , 0,1 , 1,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, angleborderlb,  -2,-2 , -1,1,  -2,-2);
+                processTopM2MInIntervals( &angleborderfb, upperCells[nbLevelsAboveRoot+1],  0,1 , 1,1 , 1,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, angleborderfb,  -1,1 ,  -2,-2, -2,-2);
+                processTopM2MInIntervals( &angleborderlf, upperCells[nbLevelsAboveRoot+1],  1,1 , 1,1 , 0,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, angleborderlf,  -2,-2 , -2,-2, -1,1 );
+                processTopM2MInIntervals( &angleborder, upperCells[nbLevelsAboveRoot+1],    1,1 , 1,1 , 1,1);
+                counter +=  fillM2LVectorFromIntervals(neighbors, angleborder,    -2,-2 , -2,-2, -2,-2);
 
-                // We had the last level border
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
-                for(int idxX = -3 ; idxX <= 3 ; ++idxX){
-                    for(int idxY = -3 ; idxY <= 3 ; ++idxY){
-                        for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ){
-                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[(((idxX+3)*7) + (idxY+3))*7 + (idxZ + 3)] = &upperCells[0];
-                            }
-                        }
-                    }
-                }
-                kernels->M2L( &upperCells[0] , neighbors, 343-27, 2);
-            }
 
-            // Finally L2L until level 0
-            {
+                kernels[0]->M2L( &upperCells[0] , neighbors, counter, 2);
+
                 CellClass* virtualChild[8];
                 memset(virtualChild, 0, sizeof(CellClass*) * 8);
-                for(int idxLevel = 0 ; idxLevel < nbLevelAboveRoot  ; ++idxLevel){
-                    virtualChild[0] = &upperCells[idxLevel+1];
-                    kernels[0]->L2L( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+                virtualChild[childIndex(0,0,0)] = &upperCells[1];
+                kernels[0]->L2L( &upperCells[0], virtualChild, 2);
+            }
+            else {
+                CellClass*const leftborder = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const bottomborder = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const frontborder = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const angleborderlb = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const angleborderfb = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const angleborderlf = new CellClass[nbLevelsAboveRoot+2];
+                CellClass*const angleborder = new CellClass[nbLevelsAboveRoot+2];
+
+                 processM2MInIntervals( leftborder,   upperCells[nbLevelsAboveRoot+1],     1,1 , 0,1 , 0,1);
+                 processM2MInIntervals( bottomborder, upperCells[nbLevelsAboveRoot+1],   0,1 , 0,1 , 1,1);
+                 processM2MInIntervals( frontborder,  upperCells[nbLevelsAboveRoot+1],    0,1 , 1,1 , 0,1);
+                 processM2MInIntervals( angleborderlb,upperCells[nbLevelsAboveRoot+1],  1,1 , 0,1 , 1,1);
+                 processM2MInIntervals( angleborderfb,upperCells[nbLevelsAboveRoot+1],  0,1 , 1,1 , 1,1);
+                 processM2MInIntervals( angleborderlf,upperCells[nbLevelsAboveRoot+1],  1,1 , 1,1 , 0,1);
+                 processM2MInIntervals( angleborder,  upperCells[nbLevelsAboveRoot+1],    1,1 , 1,1 , 1,1);
+
+                const CellClass* neighbors[343];
+                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                int counter = 0;
+
+                if(usePerDir(DirMinusX) && usePerDir(DirMinusY) && usePerDir(DirMinusZ)){
+                    neighbors[neighIndex(-2,-1,-1)] = &leftborder[0];
+                    neighbors[neighIndex(-1,-2,-1)] = &frontborder[0];
+                    neighbors[neighIndex(-1,-1,-2)] = &bottomborder[0];
+                    neighbors[neighIndex(-2,-2,-1)] = &angleborderlf[0];
+                    neighbors[neighIndex(-2,-1,-2)] = &angleborderlb[0];
+                    neighbors[neighIndex(-1,-2,-2)] = &angleborderfb[0];
+                    neighbors[neighIndex(-2,-2,-2)] = &angleborder[0];
+                    counter += 7;
                 }
+                if(usePerDir(DirMinusX) && usePerDir(DirPlusY) && usePerDir(DirMinusZ)){
+                    neighbors[neighIndex(-2,1,-1)] = &leftborder[0];
+                    neighbors[neighIndex(-1,1,-2)] = &bottomborder[0];
+                    neighbors[neighIndex(-2,1,-2)] = &angleborderlb[0];
+                    counter += 3;
+                }
+                if(usePerDir(DirMinusX) && usePerDir(DirMinusY) && usePerDir(DirPlusZ)){
+                    neighbors[neighIndex(-2,-1,1)] = &leftborder[0];
+                    neighbors[neighIndex(-1,-2,1)] = &frontborder[0];
+                    neighbors[neighIndex(-2,-2,1)] = &angleborderlf[0];
+                    counter += 3;
+                }
+                if(usePerDir(DirMinusX) && usePerDir(DirPlusY) && usePerDir(DirPlusZ)){
+                    neighbors[neighIndex(-2,1,1)] = &leftborder[0];
+                    counter += 1;
+                }
+                if(usePerDir(DirPlusX) && usePerDir(DirMinusY) && usePerDir(DirMinusZ)){
+                    neighbors[neighIndex(1,-2,-1)] = &frontborder[0];
+                    neighbors[neighIndex(1,-1,-2)] = &bottomborder[0];
+                    neighbors[neighIndex(1,-2,-2)] = &angleborderfb[0];
+                    counter += 3;
+                }
+                if(usePerDir(DirPlusX) && usePerDir(DirMinusY) && usePerDir(DirPlusZ)){
+                    neighbors[neighIndex(1,-2,1)] = &frontborder[0];
+                    counter += 1;
+                }
+                if(usePerDir(DirPlusX) && usePerDir(DirPlusY) && usePerDir(DirMinusZ)){
+                    neighbors[neighIndex(1,1,-2)] = &bottomborder[0];
+                    counter += 1;
+                }
+
+                CellClass centerXFace;
+                CellClass centerYFace;
+                CellClass centerZFace;
+                CellClass centerXZFace;
+                CellClass centerXYFace;
+                CellClass centerYXFace;
+                CellClass centerYZFace;
+                CellClass centerZXFace;
+                CellClass centerZYFace;
+                CellClass angleXZFace;
+                CellClass angleXYFace;
+                CellClass angleYZFace;
+
+                if(usePerDir(DirMinusX)){
+                    {
+                        CellClass* virtualChild[8];
+                        memset(virtualChild, 0, 8*sizeof(CellClass*));
+                        if(usePerDir(DirPlusY) && usePerDir(DirPlusZ))  virtualChild[childIndex(1,1,1)] = &leftborder[1];
+                        if(usePerDir(DirMinusY) && usePerDir(DirPlusZ)) virtualChild[childIndex(1,0,1)] = &leftborder[1];
+                        else if( usePerDir(DirPlusZ))                   virtualChild[childIndex(1,0,1)] = &angleborderlf[1];
+                        if(usePerDir(DirPlusY) && usePerDir(DirMinusZ)) virtualChild[childIndex(1,1,0)] = &leftborder[1];
+                        else if(usePerDir(DirPlusY) )                   virtualChild[childIndex(1,1,0)] = &angleborderlb[1];
+
+                        if(usePerDir(DirMinusY) && usePerDir(DirMinusZ)) virtualChild[childIndex(1,0,0)] = &leftborder[1];
+                        else if(usePerDir(DirMinusZ))                    virtualChild[childIndex(1,0,0)] = &angleborderlf[1];
+                        else if(usePerDir(DirMinusY))                    virtualChild[childIndex(1,0,0)] = &angleborderlb[1];
+                        else                                             virtualChild[childIndex(1,0,0)] = &angleborder[1];
+
+                        kernels[0]->M2M( &centerXFace, virtualChild, 2);
+                        neighbors[neighIndex(-2,0,0)] = &centerXFace;
+                        counter += 1;
+                    }
+                    if(usePerDir(DirMinusZ) || usePerDir(DirPlusZ)){
+                        if(usePerDir(DirY)){
+                            centerXZFace = leftborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusY)){
+                                virtualChild[childIndex(1,1,0)] = &leftborder[1];
+                                virtualChild[childIndex(1,1,1)] = &leftborder[1];
+                            }
+                            if(usePerDir(DirMinusY)){
+                                virtualChild[childIndex(1,0,0)] = &leftborder[1];
+                                virtualChild[childIndex(1,0,1)] = &leftborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(1,0,0)] = &angleborderlf[1];
+                                virtualChild[childIndex(1,0,1)] = &angleborderlf[1];
+                            }
+                            kernels[0]->M2M( &centerXZFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusZ) ){
+                            neighbors[neighIndex(-2,0,1)] = &centerXZFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusZ) ){
+                            neighbors[neighIndex(-2,0,-1)] = &centerXZFace;
+                            counter += 1;
+
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusY)){
+                                virtualChild[childIndex(1,1,1)] = &angleborderlb[1];
+                            }
+                            if(usePerDir(DirMinusY)){
+                                virtualChild[childIndex(1,0,1)] = &angleborderlb[1];
+                            }
+                            else{
+                                virtualChild[childIndex(1,0,1)] = &angleborder[1];
+                            }
+                            kernels[0]->M2M( &angleXZFace, virtualChild, 2);
+
+                            neighbors[neighIndex(-2,0,-2)] = &angleXZFace;
+                            counter += 1;
+                        }
+                    }
+                    if(usePerDir(DirMinusY) || usePerDir(DirPlusY)){
+                        if(usePerDir(DirZ)){
+                            centerXYFace = leftborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusZ)){
+                                virtualChild[childIndex(1,0,1)] = &leftborder[1];
+                                virtualChild[childIndex(1,1,1)] = &leftborder[1];
+                            }
+                            if(usePerDir(DirMinusZ)){
+                                virtualChild[childIndex(1,0,0)] = &leftborder[1];
+                                virtualChild[childIndex(1,1,0)] = &leftborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(1,0,0)] = &angleborderlb[1];
+                                virtualChild[childIndex(1,1,0)] = &angleborderlb[1];
+                            }
+                            kernels[0]->M2M( &centerXYFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusY) ){
+                            neighbors[neighIndex(-2,1,0)] = &centerXYFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusY) ){
+                            neighbors[neighIndex(-2,-1,0)] = &centerXYFace;
+                            counter += 1;
+
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusZ)){
+                                virtualChild[childIndex(1,1,1)] = &angleborderlf[1];
+                            }
+                            if(usePerDir(DirMinusZ)){
+                                virtualChild[childIndex(1,1,0)] = &angleborderlf[1];
+                            }
+                            else{
+                                virtualChild[childIndex(1,1,0)] = &angleborder[1];
+                            }
+                            kernels[0]->M2M( &angleXYFace, virtualChild, 2);
+
+                            neighbors[neighIndex(-2,-2,0)] = &angleXYFace;
+                            counter += 1;
+                        }
+                    }
+                }
+                if(usePerDir(DirMinusY)){
+                    {
+                        CellClass* virtualChild[8];
+                        memset(virtualChild, 0, 8*sizeof(CellClass*));
+                        if(usePerDir(DirPlusX) && usePerDir(DirPlusZ))  virtualChild[childIndex(1,1,1)] = &frontborder[1];
+                        if(usePerDir(DirMinusX) && usePerDir(DirPlusZ)) virtualChild[childIndex(0,1,1)] = &frontborder[1];
+                        else if(usePerDir(DirPlusZ))                    virtualChild[childIndex(0,1,1)] = &angleborderlf[1];
+                        if(usePerDir(DirPlusX) && usePerDir(DirMinusZ)) virtualChild[childIndex(1,1,0)] = &frontborder[1];
+                        else if(usePerDir(DirPlusX))                    virtualChild[childIndex(1,1,0)] = &angleborderfb[1];
+
+                        if(usePerDir(DirMinusX) && usePerDir(DirMinusZ)) virtualChild[childIndex(0,1,0)] = &frontborder[1];
+                        else if(usePerDir(DirMinusZ))                    virtualChild[childIndex(0,1,0)] = &angleborderlf[1];
+                        else if(usePerDir(DirMinusX))                    virtualChild[childIndex(0,1,0)] = &angleborderfb[1];
+                        else                                             virtualChild[childIndex(0,1,0)] = &angleborder[1];
+
+                        kernels[0]->M2M( &centerYFace, virtualChild, 2);
+                        neighbors[neighIndex(0,-2,0)] = &centerYFace;
+                        counter += 1;
+                    }
+                    if(usePerDir(DirMinusZ) || usePerDir(DirPlusZ)){
+                        if(usePerDir(DirX)){
+                            centerYZFace = frontborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusX)){
+                                virtualChild[childIndex(1,1,0)] = &frontborder[1];
+                                virtualChild[childIndex(1,1,1)] = &frontborder[1];
+                            }
+                            if(usePerDir(DirMinusX)){
+                                virtualChild[childIndex(0,1,0)] = &frontborder[1];
+                                virtualChild[childIndex(0,1,1)] = &frontborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(0,1,0)] = &angleborderlf[1];
+                                virtualChild[childIndex(0,1,1)] = &angleborderlf[1];
+                            }
+                            kernels[0]->M2M( &centerYZFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusZ) ){
+                            neighbors[neighIndex(0,-2,1)] = &centerYZFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusZ) ){
+                            neighbors[neighIndex(0,-2,-1)] = &centerYZFace;
+                            counter += 1;
+
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusX)){
+                                virtualChild[childIndex(1,1,1)] = &angleborderfb[1];
+                            }
+                            if(usePerDir(DirMinusX)){
+                                virtualChild[childIndex(0,1,1)] = &angleborderfb[1];
+                            }
+                            else{
+                                virtualChild[childIndex(0,1,1)] = &angleborder[1];
+                            }
+                            kernels[0]->M2M( &angleYZFace, virtualChild, 2);
+
+                            neighbors[neighIndex(0,-2,-2)] = &angleYZFace;
+                            counter += 1;
+                        }
+                    }
+                    if(usePerDir(DirMinusX) || usePerDir(DirPlusX)){
+                        if(usePerDir(DirZ)){
+                            centerYXFace = frontborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusZ)){
+                                virtualChild[childIndex(0,1,1)] = &frontborder[1];
+                                virtualChild[childIndex(1,1,1)] = &frontborder[1];
+                            }
+                            if(usePerDir(DirMinusZ)){
+                                virtualChild[childIndex(0,1,0)] = &frontborder[1];
+                                virtualChild[childIndex(1,1,0)] = &frontborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(0,1,0)] = &angleborderfb[1];
+                                virtualChild[childIndex(1,1,0)] = &angleborderfb[1];
+                            }
+                            kernels[0]->M2M( &centerYXFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusX) ){
+                            neighbors[neighIndex(1,-2,0)] = &centerYXFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusX) ){
+                            neighbors[neighIndex(-1,-2,0)] = &centerYXFace;
+                            counter += 1;
+                        }
+                    }
+                }
+                if(usePerDir(DirMinusZ)){
+                    {
+                        CellClass* virtualChild[8];
+                        memset(virtualChild, 0, 8*sizeof(CellClass*));
+                        if(usePerDir(DirPlusX) && usePerDir(DirPlusY))  virtualChild[childIndex(1,1,1)] = &bottomborder[1];
+                        if(usePerDir(DirMinusX) && usePerDir(DirPlusY)) virtualChild[childIndex(0,1,1)] = &bottomborder[1];
+                        else if( usePerDir(DirPlusY))                   virtualChild[childIndex(0,1,1)] = &angleborderlb[1];
+                        if(usePerDir(DirPlusX) && usePerDir(DirMinusY)) virtualChild[childIndex(1,0,1)] = &bottomborder[1];
+                        else if(usePerDir(DirPlusX) )                   virtualChild[childIndex(1,0,1)] = &angleborderfb[1];
+
+                        if(usePerDir(DirMinusX) && usePerDir(DirMinusY)) virtualChild[childIndex(0,0,1)] = &bottomborder[1];
+                        else if(usePerDir(DirMinusY))                    virtualChild[childIndex(0,0,1)] = &angleborderfb[1];
+                        else if(usePerDir(DirMinusX))                    virtualChild[childIndex(0,0,1)] = &angleborderlb[1];
+                        else                                             virtualChild[childIndex(0,0,1)] = &angleborder[1];
+
+                        kernels[0]->M2M( &centerZFace, virtualChild, 2);
+                        neighbors[neighIndex(0,0,-2)] = &centerZFace;
+                        counter += 1;
+                    }
+                    if(usePerDir(DirMinusY) || usePerDir(DirPlusY)){
+                        if(usePerDir(DirX)){
+                            centerZYFace = bottomborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusX)){
+                                virtualChild[childIndex(1,0,1)] = &bottomborder[1];
+                                virtualChild[childIndex(1,1,1)] = &bottomborder[1];
+                            }
+                            if(usePerDir(DirMinusX)){
+                                virtualChild[childIndex(0,0,1)] = &bottomborder[1];
+                                virtualChild[childIndex(0,1,1)] = &bottomborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(0,0,1)] = &angleborderlb[1];
+                                virtualChild[childIndex(0,1,1)] = &angleborderlb[1];
+                            }
+                            kernels[0]->M2M( &centerZYFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusY) ){
+                            neighbors[neighIndex(0,1,-2)] = &centerZYFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusY) ){
+                            neighbors[neighIndex(0,-1,-2)] = &centerZYFace;
+                            counter += 1;
+                        }
+                    }
+                    if(usePerDir(DirMinusX) || usePerDir(DirPlusX)){
+                        if(usePerDir(DirY)){
+                            centerZXFace = bottomborder[0];
+                        }
+                        else{
+                            CellClass* virtualChild[8];
+                            memset(virtualChild, 0, 8*sizeof(CellClass*));
+                            if(usePerDir(DirPlusY)){
+                                virtualChild[childIndex(0,1,1)] = &bottomborder[1];
+                                virtualChild[childIndex(1,1,1)] = &bottomborder[1];
+                            }
+                            if(usePerDir(DirMinusY)){
+                                virtualChild[childIndex(0,0,1)] = &bottomborder[1];
+                                virtualChild[childIndex(1,0,1)] = &bottomborder[1];
+                            }
+                            else{
+                                virtualChild[childIndex(0,0,1)] = &angleborderlf[1];
+                                virtualChild[childIndex(0,1,1)] = &angleborderlf[1];
+                            }
+                            kernels[0]->M2M( &centerZXFace, virtualChild, 2);
+                        }
+                        if( usePerDir(DirPlusX) ){
+                            neighbors[neighIndex(1,0,-2)] = &centerZXFace;
+                            counter += 1;
+                        }
+                        if( usePerDir(DirMinusX) ){
+                            neighbors[neighIndex(-1,0,-2)] = &centerZXFace;
+                            counter += 1;
+                        }
+                    }
+                }
+
+                // M2L for border
+                kernels[0]->M2L( &upperCells[0] , neighbors, counter, 2);
+
+                // L2L from border M2L to top of tree
+                CellClass* virtualChild[8];
+                memset(virtualChild, 0, sizeof(CellClass*) * 8);
+                virtualChild[childIndex(0,0,0)] = &upperCells[1];
+                kernels[0]->L2L( &upperCells[0], virtualChild, 2);
+
+                // dealloc
+                delete[] leftborder;
+                delete[] bottomborder;
+                delete[] frontborder;
+                delete[] angleborderlb;
+                delete[] angleborderfb;
+                delete[] angleborderlf;
+                delete[] angleborder;
             }
 
-
-            root = upperCells[nbLevelAboveRoot];
         }
+
+        // Finally L2L until level 0
+        {
+            CellClass* virtualChild[8];
+            memset(virtualChild, 0, sizeof(CellClass*) * 8);
+            for(int idxLevel = 1 ; idxLevel <= nbLevelsAboveRoot  ; ++idxLevel){
+                virtualChild[childIndex(1,1,1)] = &upperCells[idxLevel+1];
+                kernels[0]->L2L( &upperCells[idxLevel], virtualChild, idxLevel + 2);
+            }
+        }
+
+        // L2L from 0 to level 1
+        rootCellFromProc = upperCells[nbLevelsAboveRoot+1];
+
+        delete[] upperCells;
+
+        delete[] cellsXAxis;
+        delete[] cellsYAxis;
+        delete[] cellsZAxis;
+        delete[] cellsXYAxis;
+        delete[] cellsYZAxis;
+        delete[] cellsXZAxis;
+    }
 };
 
 
