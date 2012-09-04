@@ -128,12 +128,12 @@ public:
         FReal x, y, z, fx, fy, fz, vx, vy, vz;
         int index;
         char type[2];
-	std::string line;
+        std::string line;
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       
         file.read(type, 2);
         file >> index;
-	std::getline(file, line); // needed to skip the end of the line in non periodic case
+        std::getline(file, line); // needed to skip the end of the line in non periodic case
 	
         file >> x >> y >> z;
         file >> vx >> vy >> vz;
