@@ -22,8 +22,6 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -88,8 +86,6 @@ int main(int argc, char ** argv){
     typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
-    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     std::cout << ">> You can pass -sequential or -task (thread by default).\n";
@@ -124,6 +120,16 @@ int main(int argc, char ** argv){
     counter.tic();
 
     loader.fillTree(tree);
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        ParticleClass particle;
+        loader.fillParticle(particle);
+        // reset forces and insert in the tree
+        particle.setIndex(idxPart);
+        particle.setForces(0,0,0);
+        particle.setPotential(0);
+        // insert in tree
+        tree.insert(part);
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -142,21 +148,9 @@ int main(int argc, char ** argv){
 
     std::cout << "Working on particles ..." << std::endl;
 
-    if( FParameters::findParameter(argc,argv,"-sequential") != FParameters::NotFound){
-        FmmClass algo(&tree,&kernels);
-        counter.tic();
-        algo.execute();
-    }
-    else if( FParameters::findParameter(argc,argv,"-task") != FParameters::NotFound){
-        FmmClassTask algo(&tree,&kernels);
-        counter.tic();
-        algo.execute();
-    }
-    else {
-        FmmClassThread algo(&tree,&kernels);
-        counter.tic();
-        algo.execute();
-    }
+    FmmClass algo(&tree,&kernels);
+    counter.tic();
+    algo.execute();
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
@@ -171,7 +165,13 @@ int main(int argc, char ** argv){
             while( iter.hasNotFinished() ){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
                 forces += iter.data().getForces();
-		std::cout << " " << iter.data().getIndex()+1 << " \t "<<  std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" << iter.data().getPosition().getY() << "  \t" << iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<< iter.data().getForces().getX()*coeff_MD << "  \t " << iter.data().getForces().getY()*coeff_MD << "  \t " << iter.data().getForces().getZ()*coeff_MD<< std::endl;
+                std::cout << " " << iter.data().getIndex()+1 << " \t "<<
+                             std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
+                             iter.data().getPosition().getY() << "  \t" <<
+                             iter.data().getPosition().getZ() << "   Forces: \t"<<
+                             std::setprecision(8) << iter.data().getForces().getX()*coeff_MD << "  \t " <<
+                             iter.data().getForces().getY()*coeff_MD << "  \t " <<
+                             iter.data().getForces().getZ()*coeff_MD << std::endl;
 		
                 iter.gotoNext();
             }
