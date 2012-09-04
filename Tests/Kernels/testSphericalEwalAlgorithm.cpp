@@ -22,6 +22,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Core/FFmmAlgorithmPeriodic.hpp"
+#include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -80,18 +81,23 @@ int main(int argc, char ** argv){
     typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
 
     typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoPer;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
+    std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose\n";
+    std::cout << ">> Recommanded files : ../Data/EwalForcesPositionOut.txt  ../Data/EwalNonPeriodic.txt  ../Data/EwalPeriodic.txt\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 4);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 2);
     const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/testEwal417.dt");
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/EwalPeriodic.txt");
+    // recommenda
+
     FTic counter;
-    const FReal coeff_MD= 138935.4835 / 418.4 ;
+    const FReal coeff_MD = FReal(138935.4835 / 418.4);
 
     // -----------------------------------------------------
 
@@ -136,10 +142,17 @@ int main(int argc, char ** argv){
     std::cout << "Create kernel & run simu ..." << std::endl;
     counter.tic();
 
-    FmmClass algo(&tree,PeriodicDeep);
-    KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
-    algo.setKernel(&kernels);
-    algo.execute();
+    if( FParameters::existParameter(argc, argv, "-noper") ){
+        KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+        FmmClassNoPer algo(&tree,&kernels);
+        algo.execute();
+    }
+    else{
+        FmmClass algo(&tree,PeriodicDeep);
+        KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
+        algo.setKernel(&kernels);
+        algo.execute();
+    }
 
     counter.tac();
 
@@ -158,17 +171,28 @@ int main(int argc, char ** argv){
             while( iter.hasNotFinished() ){
 
                 const ParticleClass& part = particles[iter.data().getIndex()];
-                // std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
-                // std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
-                // std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
-                // std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
-                // std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
-                // std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
-                // std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
-                // std::cout << "\n";
+
+                if(FParameters::existParameter(argc, argv, "-verbose")){
+                    std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
+                    std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
+                    std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
+                    std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
+                    std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
+                    std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                    std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
+                    std::cout << "\n";
+                }
+
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
 
-		std::cout << " " << iter.data().getIndex()+1 << " \t "<<  std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" << iter.data().getPosition().getY() << "  \t" << iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<< iter.data().getForces().getX() << "  \t " << iter.data().getForces().getY() << "  \t " << iter.data().getForces().getZ()<< std::endl;
+                if(FParameters::existParameter(argc, argv, "-verbose")){
+                    std::cout << " " << iter.data().getIndex()+1 << " \t "<<
+                                 std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
+                                 iter.data().getPosition().getY() << "  \t" <<
+                                 iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<<
+                                 iter.data().getForces().getX() << "  \t " << iter.data().getForces().getY() <<
+                                 "  \t " << iter.data().getForces().getZ()<< std::endl;
+                }
 
                 potentialDiff.add(part.getPotential(),iter.data().getPotential());
                 fx.add(part.getForces().getX(),iter.data().getForces().getX());
@@ -195,6 +219,37 @@ int main(int argc, char ** argv){
 
     }
 
+    // -----------------------------------------------------
+
+    { // get sum forces&potential
+        FReal  potential = 0;
+        FPoint forces;
+        OctreeClass::Iterator octreeIterator(&tree);
+        octreeIterator.gotoBottomLeft();
+        do{
+            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+            while( iter.hasNotFinished() ){
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+                forces += iter.data().getForces();
+
+                if(FParameters::existParameter(argc, argv, "-verbose")){
+                    std::cout << " " << iter.data().getIndex()+1 << " \t "<<
+                                 std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
+                                 iter.data().getPosition().getY() << "  \t" <<
+                                 iter.data().getPosition().getZ() << "   Forces: \t"<<
+                                 std::setprecision(8) << iter.data().getForces().getX()*coeff_MD << "  \t " <<
+                                 iter.data().getForces().getY()*coeff_MD << "  \t " <<
+                                 iter.data().getForces().getZ()*coeff_MD << std::endl;
+                }
+
+                iter.gotoNext();
+            }
+        } while(octreeIterator.moveRight());
+
+        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+        std::cout << "Potential = " << potential*coeff_MD << std::endl;
+        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
+    }
     // -----------------------------------------------------
 
     delete[] particles;
