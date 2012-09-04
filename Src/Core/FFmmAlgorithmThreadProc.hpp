@@ -908,7 +908,7 @@ private:
             }
 
             sendBuffer.reset();
-            recvBuffer.reserve(MaxSizePerCell);
+            recvBuffer.seek(0);
         }
 
         delete[] requests;
