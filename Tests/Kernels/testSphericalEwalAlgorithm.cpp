@@ -149,6 +149,7 @@ int main(int argc, char ** argv){
     }
     else{
         FmmClass algo(&tree,PeriodicDeep);
+        std::cout << "The simulation box is repeated " << algo.repetitions() << " in X/Y/Z" << std::endl;
         KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
         algo.setKernel(&kernels);
         algo.execute();
