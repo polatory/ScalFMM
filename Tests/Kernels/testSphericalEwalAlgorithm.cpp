@@ -85,15 +85,15 @@ int main(int argc, char ** argv){
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
-    std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose\n";
-    std::cout << ">> Recommanded files : ../Data/EwalForcesPositionOut.txt  ../Data/EwalNonPeriodic.txt  ../Data/EwalPeriodic.txt\n";
+    std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose -gen\n";
+    std::cout << ">> Recommanded files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 4);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 2);
     const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/EwalPeriodic.txt");
+    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/EwalTest_Periodic.run");
     // recommenda
 
     FTic counter;
@@ -251,6 +251,40 @@ int main(int argc, char ** argv){
         std::cout << "Potential = " << potential*coeff_MD << std::endl;
         std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
     }
+    // -----------------------------------------------------
+
+    // ReGenerate file
+    if( FParameters::existParameter(argc, argv, "-gen") ){
+        std::cout << "Generate ewal.out from input file" << std::endl;
+        std::ofstream fileout("ewal.out",std::ifstream::out);
+        std::ifstream file(filename,std::ifstream::in);
+        if(file.is_open()){
+            const int bufferSize = 512;
+            char buffer[bufferSize];
+            file.getline(buffer, bufferSize);
+            fileout << buffer << '\n';
+            file.getline(buffer, bufferSize);
+            fileout << buffer << '\n';
+            if( !FParameters::existParameter(argc, argv, "-noper") ){
+                file.getline(buffer, bufferSize);
+                fileout << buffer << '\n';
+                file.getline(buffer, bufferSize);
+                fileout << buffer << '\n';
+                file.getline(buffer, bufferSize);
+                fileout << buffer << '\n';
+            }
+            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+                file.getline(buffer, bufferSize);
+                fileout << buffer << '\n';
+                file.getline(buffer, bufferSize);
+                fileout << buffer << '\n';
+                file.getline(buffer, bufferSize);
+                file.getline(buffer, bufferSize);
+            }
+        }
+    }
+    // end generate
+
     // -----------------------------------------------------
 
     delete[] particles;

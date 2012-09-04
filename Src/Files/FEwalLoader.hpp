@@ -52,29 +52,29 @@ public:
             char buffer[bufferSize];
             file.getline(buffer, bufferSize);
 
-	    int imcon ; 
+            int imcon ;
             int tempi(0);
             FReal tempf(0);
-            file >> tempi >> imcon >> this->nbParticles >> tempf;
-	    if(imcon >0 ) {
-	      FReal widthx, widthy, widthz;
-	      file >> widthx >> tempf >> tempf;
-	      file >> tempf >> widthy >> tempf;
-	      file >> tempf >> tempf >> widthz;
+            file >> tempi >> imcon >> this->nbParticles;
+            // Periodic case
+            if( imcon > 0 ) {
+                FReal widthx, widthy, widthz;
+                file >> widthx >> tempf >> tempf;
+                file >> tempf >> widthy >> tempf;
+                file >> tempf >> tempf >> widthz;
 
-	      //	      this->centerOfBox.setPosition(0.0,0.0,0.0);
-	      this->boxWidth = widthx;
-	    }
-	    else{  // Non periodic case.
-	      this->boxWidth = tempf ;
-	    }
-	    this->centerOfBox.setPosition(0.0,0.0,0.0);
+                this->boxWidth = widthx;
+            }
+            // Non periodic case
+            else{
+                file >> this->boxWidth;
+            }
+            this->centerOfBox.setPosition(0.0,0.0,0.0);
         }
         else {
-             this->boxWidth = 0;
-             this->nbParticles = 0;
+            this->boxWidth = 0;
+            this->nbParticles = 0;
         }
-   std::cout << "boxWidth: "<< this->boxWidth <<std::endl ;
     }
     /**
     * Default destructor, simply close the file
@@ -130,15 +130,15 @@ public:
         char type[2];
         std::string line;
         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-      
+
         file.read(type, 2);
         file >> index;
         std::getline(file, line); // needed to skip the end of the line in non periodic case
-	
+
         file >> x >> y >> z;
         file >> vx >> vy >> vz;
         file >> fx >> fy >> fz;
-	//	std::cout << " x >> y >> z: " << x<< " " <<y<< " " <<z <<std::endl;
+        //	std::cout << " x >> y >> z: " << x<< " " <<y<< " " <<z <<std::endl;
         inParticle.setPosition(x,y,z);
         inParticle.setForces(fx,fy,fz);
         //inParticle.setForces(vx,vy,vz);
