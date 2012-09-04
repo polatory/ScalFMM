@@ -81,7 +81,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(particles[idxPart]);
             particles[idxPart].setIndex( idxPart );
-            particles[idxPart].setPhysicalValue(0.10);
+            particles[idxPart].setPhysicalValue(FReal(0.10));
             tree.insert(particles[idxPart]);
         }
 
