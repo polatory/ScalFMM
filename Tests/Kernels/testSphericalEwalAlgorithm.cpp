@@ -34,45 +34,12 @@
 /** Ewal particle is used in the gadget program
   * here we try to make the same simulation
   */
-class EwalParticle : public FSphericalParticle {
-public:
-    // Type of particle
-    enum Type{
-        OW,
-        HW,
-        Undefined,
-    };
 
-private:
-    Type type; //< current type
-    int index; //< current index in array
-
-public:
-    // Basic constructor
-    EwalParticle() : type(Undefined), index(-1) {
-    }
-
-    Type getType() const{
-        return type;
-    }
-
-    void setType(const Type inType) {
-        type = inType;
-    }
-
-    int getIndex() const{
-        return index;
-    }
-
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
-};
 
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef EwalParticle            ParticleClass;
+    typedef FEwalParticle<FSphericalParticle>    ParticleClass;
     typedef FSphericalCell          CellClass;
     typedef FVector<ParticleClass>  ContainerClass;
 
@@ -165,6 +132,8 @@ int main(int argc, char ** argv){
 
     // Do direct
     if(FParameters::existParameter(argc, argv, "-direct")){
+        printf("Compute direct:\n");
+        FMath::FAccurater fx, fy, fz;
         KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
@@ -177,15 +146,33 @@ int main(int argc, char ** argv){
                     kernels.directInteraction(&part, particles[idxOther]);
                 }
             }
+            fx.add(particles[idxTarget].getForces().getX(),-part.getForces().getX()*coeff_MD1);
+            fy.add(particles[idxTarget].getForces().getY(),-part.getForces().getY()*coeff_MD1);
+            fz.add(particles[idxTarget].getForces().getZ(),-part.getForces().getZ()*coeff_MD1);
+
             // print result
-            std::cout << " " << part.getIndex()+1 << " \t "<< part.getType() << "  \t " <<
-                         std::setprecision(5)<< part.getPosition().getX() << "  \t" <<
-                         part.getPosition().getY() << "  \t" <<
-                         part.getPosition().getZ() << "   Forces: \t"<<
-                         std::setprecision(8) << part.getForces().getX()*coeff_MD1 << "  \t " <<
-                         part.getForces().getY()*coeff_MD1 << "  \t " <<
-                         part.getForces().getZ()*coeff_MD1 << std::endl;
+            if(FParameters::existParameter(argc, argv, "-verbose")){
+                std::cout << ">> index " << part.getIndex() << " type " << part.getType() << std::endl;
+                std::cout << "Good x " << particles[idxTarget].getPosition().getX() << " y " << particles[idxTarget].getPosition().getY() << " z " << particles[idxTarget].getPosition().getZ() << std::endl;
+                std::cout << "FMM  x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
+                std::cout << "Good fx " <<particles[idxTarget].getForces().getX() << " fy " << particles[idxTarget].getForces().getY() << " fz " << particles[idxTarget].getForces().getZ() << std::endl;
+                std::cout << "FMM  fx " << part.getForces().getX()*coeff_MD1 << " fy " << part.getForces().getY()*coeff_MD1 << " fz " << part.getForces().getZ()*coeff_MD1 << std::endl;
+                std::cout << "GOOD physical value " << particles[idxTarget].getPhysicalValue() << " potential " << particles[idxTarget].getPotential() << std::endl;
+                std::cout << "FMM  physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                std::cout << "\n";
+            }
         }
+
+        printf("Difference between direct and poly:\n");
+        printf("Fx diff is = \n");
+        printf("%f\n",fx.getL2Norm());
+        printf("%f\n",fx.getInfNorm());
+        printf("Fy diff is = \n");
+        printf("%f\n",fy.getL2Norm());
+        printf("%f\n",fy.getInfNorm());
+        printf("Fz diff is = \n");
+        printf("%f\n",fz.getL2Norm());
+        printf("%f\n",fz.getInfNorm());
     }
 
     // -----------------------------------------------------
@@ -207,7 +194,7 @@ int main(int argc, char ** argv){
                     std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
                     std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
                     std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
-                    std::cout << "FMM  fx " << iter.data().getForces().getX() << " fy " << iter.data().getForces().getY() << " fz " << iter.data().getForces().getZ() << std::endl;
+                    std::cout << "FMM  fx " << iter.data().getForces().getX()*coeff_MD1 << " fy " << iter.data().getForces().getY()*coeff_MD1 << " fz " << iter.data().getForces().getZ()*coeff_MD1 << std::endl;
                     std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
                     std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
                     std::cout << "\n";
@@ -215,24 +202,17 @@ int main(int argc, char ** argv){
 
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
 
-                if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << " " << iter.data().getIndex()+1 << " \t "<< iter.data().getType() << "  \t " <<
-                                 std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
-                                 iter.data().getPosition().getY() << "  \t" <<
-                                 iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<<
-                                 iter.data().getForces().getX() << "  \t " << iter.data().getForces().getY() <<
-                                 "  \t " << iter.data().getForces().getZ()<< std::endl;
-                }
 
-                potentialDiff.add(part.getPotential(),iter.data().getPotential());
-                fx.add(part.getForces().getX(),iter.data().getForces().getX());
-                fy.add(part.getForces().getY(),iter.data().getForces().getY());
-                fz.add(part.getForces().getZ(),iter.data().getForces().getZ());
+                potentialDiff.add(part.getPotential(),-iter.data().getPotential());
+                fx.add(part.getForces().getX(),-iter.data().getForces().getX()*coeff_MD1);
+                fy.add(part.getForces().getY(),-iter.data().getForces().getY()*coeff_MD1);
+                fz.add(part.getForces().getZ(),-iter.data().getForces().getZ()*coeff_MD1);
 
                 iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
 	
+        printf("Difference between FMM and poly:\n");
         printf("Potential diff is = \n");
         printf("%f\n",potentialDiff.getL2Norm());
         printf("%f\n",potentialDiff.getInfNorm());

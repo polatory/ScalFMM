@@ -20,6 +20,45 @@
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
 
+
+template <class BaseClass>
+class FEwalParticle : public BaseClass {
+public:
+    // Type of particle
+    enum Type{
+        OW,
+        HW,
+        Undefined,
+    };
+
+private:
+    Type type; //< current type
+    int index; //< current index in array
+
+public:
+    // Basic constructor
+    FEwalParticle() : type(Undefined), index(-1) {
+    }
+
+    Type getType() const{
+        return type;
+    }
+
+    void setType(const Type inType) {
+        type = inType;
+    }
+
+    int getIndex() const{
+        return index;
+    }
+
+    void setIndex( const int inIndex ){
+        index = inIndex;
+    }
+};
+
+
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FEwalLoader
