@@ -97,7 +97,8 @@ int main(int argc, char ** argv){
     // recommenda
 
     FTic counter;
-    const FReal coeff_MD = FReal(138935.4835 / 418.4);
+    const FReal coeff_MD  = FReal(138935.4835 / 418.4);
+    const FReal coeff_MD1 = FReal(138935.4835);
 
     // -----------------------------------------------------
 
@@ -187,7 +188,7 @@ int main(int argc, char ** argv){
                 potential += iter.data().getPotential() * iter.data().getPhysicalValue();
 
                 if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << " " << iter.data().getIndex()+1 << " \t "<<
+                    std::cout << " " << iter.data().getIndex()+1 << " \t "<< iter.data().getType() << "  \t " <<
                                  std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
                                  iter.data().getPosition().getY() << "  \t" <<
                                  iter.data().getPosition().getZ() << "   Forces: \t"<< std::setprecision(8)<<
@@ -216,7 +217,7 @@ int main(int argc, char ** argv){
         printf("Fz diff is = \n");
         printf("%f\n",fz.getL2Norm());
         printf("%f\n",fz.getInfNorm());
-        std::cout << std::endl<< std::endl<< "Potential = " << potential*coeff_MD << std::endl;
+        std::cout << std::endl<< std::endl<< "Potential= " << potential*coeff_MD/2 << std::endl;
 
     }
 
@@ -234,13 +235,13 @@ int main(int argc, char ** argv){
                 forces += iter.data().getForces();
 
                 if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << " " << iter.data().getIndex()+1 << " \t "<<
+                    std::cout << " " << iter.data().getIndex()+1 << " \t "<< iter.data().getType() << "  \t " <<
                                  std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
                                  iter.data().getPosition().getY() << "  \t" <<
                                  iter.data().getPosition().getZ() << "   Forces: \t"<<
-                                 std::setprecision(8) << iter.data().getForces().getX()*coeff_MD << "  \t " <<
-                                 iter.data().getForces().getY()*coeff_MD << "  \t " <<
-                                 iter.data().getForces().getZ()*coeff_MD << std::endl;
+                                 std::setprecision(8) << iter.data().getForces().getX()*coeff_MD1 << "  \t " <<
+                                 iter.data().getForces().getY()*coeff_MD1 << "  \t " <<
+                                 iter.data().getForces().getZ()*coeff_MD1 << std::endl;
                 }
 
                 iter.gotoNext();
@@ -248,7 +249,7 @@ int main(int argc, char ** argv){
         } while(octreeIterator.moveRight());
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
-        std::cout << "Potential = " << potential*coeff_MD << std::endl;
+        std::cout << "Potential = " << potential*coeff_MD/2 << std::endl;
         std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
     }
     // -----------------------------------------------------

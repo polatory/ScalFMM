@@ -33,7 +33,7 @@ protected:
     FPoint centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
     int nbParticles;            //< the number of particles read from file
-
+    int levcfg  ;         //< DL_POLY CONFIG file key. 0,1 or 2
 public:
     /**
     * The constructor need the file name
@@ -55,7 +55,7 @@ public:
             int imcon ;
             int tempi(0);
             FReal tempf(0);
-            file >> tempi >> imcon >> this->nbParticles;
+            file >> levcfg >> imcon >> this->nbParticles;
             // Periodic case
             if( imcon > 0 ) {
                 FReal widthx, widthy, widthz;
@@ -134,10 +134,18 @@ public:
         file.read(type, 2);
         file >> index;
         std::getline(file, line); // needed to skip the end of the line in non periodic case
+        if ( levcfg == 0) {
+           file >> x >> y >> z;
+        }else if ( levcfg == 1) {
+            file >> x >> y >> z;
+            file >> vx >> vy >> vz;
+        }else {
+            file >> x >> y >> z;
+            file >> vx >> vy >> vz;
+            file >> fx >> fy >> fz;
+        }
 
-        file >> x >> y >> z;
-        file >> vx >> vy >> vz;
-        file >> fx >> fy >> fz;
+
         //	std::cout << " x >> y >> z: " << x<< " " <<y<< " " <<z <<std::endl;
         inParticle.setPosition(x,y,z);
         inParticle.setForces(fx,fy,fz);

@@ -128,7 +128,7 @@ int main(int argc, char ** argv){
         particle.setForces(0,0,0);
         particle.setPotential(0);
         // insert in tree
-        tree.insert(part);
+        tree.insert(particle);
     }
 
     counter.tac();
