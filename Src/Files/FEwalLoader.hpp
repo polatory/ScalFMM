@@ -8,8 +8,8 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#ifndef FFMALOADER_HPP
-#define FFMALOADER_HPP
+#ifndef FEWALLOADER_HPP
+#define FEWALLOADER_HPP
 
 
 #include <iostream>
