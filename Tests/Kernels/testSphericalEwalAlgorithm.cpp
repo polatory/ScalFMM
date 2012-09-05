@@ -85,7 +85,7 @@ int main(int argc, char ** argv){
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
-    std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose -gen\n";
+    std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose -gen -direct\n";
     std::cout << ">> Recommanded files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
     //////////////////////////////////////////////////////////////
 
@@ -159,6 +159,34 @@ int main(int argc, char ** argv){
     counter.tac();
 
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
+
+
+    // -----------------------------------------------------
+
+    // Do direct
+    if(FParameters::existParameter(argc, argv, "-direct")){
+        KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+
+        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+            ParticleClass part = particles[idxTarget];
+            part.setForces(0,0,0);
+            part.setPotential(0);
+            // compute with all other except itself
+            for(int idxOther = 0; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+                if( idxOther != idxTarget ){
+                    kernels.directInteraction(&part, particles[idxOther]);
+                }
+            }
+            // print result
+            std::cout << " " << part.getIndex()+1 << " \t "<< part.getType() << "  \t " <<
+                         std::setprecision(5)<< part.getPosition().getX() << "  \t" <<
+                         part.getPosition().getY() << "  \t" <<
+                         part.getPosition().getZ() << "   Forces: \t"<<
+                         std::setprecision(8) << part.getForces().getX()*coeff_MD1 << "  \t " <<
+                         part.getForces().getY()*coeff_MD1 << "  \t " <<
+                         part.getForces().getZ()*coeff_MD1 << std::endl;
+        }
+    }
 
     // -----------------------------------------------------
     {

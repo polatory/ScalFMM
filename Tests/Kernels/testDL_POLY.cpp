@@ -96,7 +96,7 @@ int main(int argc, char ** argv){
     FTic counter;
 
     //
-    const FReal coeff_MD= 138935.4835 / 418.4 ;
+    const FReal coeff_MD= FReal( 138935.4835 / 418.4 );
     //
 
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");

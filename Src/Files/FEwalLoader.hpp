@@ -53,7 +53,7 @@ public:
             file.getline(buffer, bufferSize);
 
             int imcon ;
-            int tempi(0);
+            //int tempi(0);
             FReal tempf(0);
             file >> levcfg >> imcon >> this->nbParticles;
             // Periodic case
