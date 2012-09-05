@@ -154,11 +154,11 @@ int main(int argc, char ** argv){
             if(FParameters::existParameter(argc, argv, "-verbose")){
                 std::cout << ">> index " << part.getIndex() << " type " << part.getType() << std::endl;
                 std::cout << "Good x " << particles[idxTarget].getPosition().getX() << " y " << particles[idxTarget].getPosition().getY() << " z " << particles[idxTarget].getPosition().getZ() << std::endl;
-                std::cout << "FMM  x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
+                std::cout << "DIRECT  x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
                 std::cout << "Good fx " <<particles[idxTarget].getForces().getX() << " fy " << particles[idxTarget].getForces().getY() << " fz " << particles[idxTarget].getForces().getZ() << std::endl;
-                std::cout << "FMM  fx " << part.getForces().getX()*coeff_MD1 << " fy " << part.getForces().getY()*coeff_MD1 << " fz " << part.getForces().getZ()*coeff_MD1 << std::endl;
+                std::cout << "DIRECT  fx " << part.getForces().getX()*coeff_MD1 << " fy " << part.getForces().getY()*coeff_MD1 << " fz " << part.getForces().getZ()*coeff_MD1 << std::endl;
                 std::cout << "GOOD physical value " << particles[idxTarget].getPhysicalValue() << " potential " << particles[idxTarget].getPotential() << std::endl;
-                std::cout << "FMM  physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
+                std::cout << "DIRECT  physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
                 std::cout << "\n";
             }
         }
