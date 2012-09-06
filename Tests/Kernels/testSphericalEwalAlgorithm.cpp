@@ -165,14 +165,14 @@ int main(int argc, char ** argv){
 
         printf("Difference between direct and poly:\n");
         printf("Fx diff is = \n");
-        printf("%f\n",fx.getL2Norm());
-        printf("%f\n",fx.getInfNorm());
+        printf("%e\n",fx.getL2Norm());
+        printf("%e\n",fx.getInfNorm());
         printf("Fy diff is = \n");
-        printf("%f\n",fy.getL2Norm());
-        printf("%f\n",fy.getInfNorm());
+        printf("%e\n",fy.getL2Norm());
+        printf("%e\n",fy.getInfNorm());
         printf("Fz diff is = \n");
-        printf("%f\n",fz.getL2Norm());
-        printf("%f\n",fz.getInfNorm());
+        printf("%e\n",fz.getL2Norm());
+        printf("%e\n",fz.getInfNorm());
     }
 
     // -----------------------------------------------------
@@ -214,17 +214,17 @@ int main(int argc, char ** argv){
 	
         printf("Difference between FMM and poly:\n");
         printf("Potential diff is = \n");
-        printf("%f\n",potentialDiff.getL2Norm());
-        printf("%f\n",potentialDiff.getInfNorm());
+        printf("%e\n",potentialDiff.getL2Norm());
+        printf("%e\n",potentialDiff.getInfNorm());
         printf("Fx diff is = \n");
-        printf("%f\n",fx.getL2Norm());
-        printf("%f\n",fx.getInfNorm());
+        printf("%e\n",fx.getL2Norm());
+        printf("%e\n",fx.getInfNorm());
         printf("Fy diff is = \n");
-        printf("%f\n",fy.getL2Norm());
-        printf("%f\n",fy.getInfNorm());
+        printf("%e\n",fy.getL2Norm());
+        printf("%e\n",fy.getInfNorm());
         printf("Fz diff is = \n");
-        printf("%f\n",fz.getL2Norm());
-        printf("%f\n",fz.getInfNorm());
+        printf("%e\n",fz.getL2Norm());
+        printf("%e\n",fz.getInfNorm());
         std::cout << std::endl<< std::endl<< "Potential= " << potential*coeff_MD/2 << std::endl;
 
     }
@@ -258,7 +258,7 @@ int main(int argc, char ** argv){
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Potential = " << potential*coeff_MD/2 << std::endl;
-        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
+	//        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
     }
     // -----------------------------------------------------
 
