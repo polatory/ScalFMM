@@ -110,6 +110,8 @@ int main(int argc, char ** argv){
     std::cout << "Create kernel & run simu ..." << std::endl;
     counter.tic();
 
+    FTreeCoordinate min, max;
+
     if( FParameters::existParameter(argc, argv, "-noper") ){
         KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClassNoPer algo(&tree,&kernels);
@@ -121,6 +123,7 @@ int main(int argc, char ** argv){
         KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
         algo.setKernel(&kernels);
         algo.execute();
+        algo.repetitionsIntervals(&min, &max);
     }
 
     counter.tac();
@@ -136,6 +139,8 @@ int main(int argc, char ** argv){
         FMath::FAccurater fx, fy, fz;
         KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
+        FReal potential = 0.0;
+
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             ParticleClass part = particles[idxTarget];
             part.setForces(0,0,0);
@@ -146,9 +151,30 @@ int main(int argc, char ** argv){
                     kernels.directInteraction(&part, particles[idxOther]);
                 }
             }
+            for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
+                for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
+                    for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
+                        if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
+
+                        const FPoint offset(loader.getBoxWidth() * FReal(idxX),
+                                            loader.getBoxWidth() * FReal(idxY),
+                                            loader.getBoxWidth() * FReal(idxZ));
+
+                        for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
+                            ParticleClass source = particles[idxSource];
+                            source.incPosition(offset.getX(),offset.getY(),offset.getZ());
+                            kernels.directInteraction(&particles[idxTarget], source);
+                        }
+                    }
+                }
+            }
+
+
             fx.add(particles[idxTarget].getForces().getX(),-part.getForces().getX()*coeff_MD1);
             fy.add(particles[idxTarget].getForces().getY(),-part.getForces().getY()*coeff_MD1);
             fz.add(particles[idxTarget].getForces().getZ(),-part.getForces().getZ()*coeff_MD1);
+
+            potential += part.getPotential() * part.getPhysicalValue();
 
             // print result
             if(FParameters::existParameter(argc, argv, "-verbose")){
@@ -173,6 +199,7 @@ int main(int argc, char ** argv){
         printf("Fz diff is = \n");
         printf("%e\n",fz.getL2Norm());
         printf("%e\n",fz.getInfNorm());
+        printf("Direct Potential= %e\n",potential*coeff_MD/2);
     }
 
     // -----------------------------------------------------
