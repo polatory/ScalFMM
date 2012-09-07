@@ -550,9 +550,13 @@ public:
       * Finally the L2L
       */
     void processPeriodicLevels(){
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FDEBUG( FDebug::Controller.write("\tStart Periodic Pass\n").write(FDebug::Flush); );
+        FDEBUG(FTic counterTime);
         /////////////////////////////////////////////////////
         // If nb level == -1 nothing to do
         if( nbLevelsAboveRoot == -1 ){
+            FDEBUG( FDebug::Controller << "\tFinished (@Periodic = "  << counterTime.tacAndElapsed() << "s)\n" );
             return;
         }
         /////////////////////////////////////////////////////
@@ -585,6 +589,7 @@ public:
             // put result in level 1
             kernels->L2L( &rootDown, octreeIterator.getCurrentBox(), 2);
 
+            FDEBUG( FDebug::Controller << "\tFinished (@Periodic = "  << counterTime.tacAndElapsed() << "s)\n" );
             return;
         }
         /////////////////////////////////////////////////////
@@ -1180,6 +1185,8 @@ public:
         delete[] cellsXYAxis;
         delete[] cellsYZAxis;
         delete[] cellsXZAxis;
+
+        FDEBUG( FDebug::Controller << "\tFinished (@Periodic = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
 
