@@ -36,6 +36,7 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(20000));
+    const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", FReal(0.1));
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -72,7 +73,7 @@ int main(int argc, char ** argv){
 
 
     FReal data[4];
-    data[3] = FReal(0.1);
+    data[3] = physicalValue;
 
     if( FParameters::findParameter(argc,argv,"-double") == FParameters::NotFound ){
         const FReal rayon = FReal(0.4);

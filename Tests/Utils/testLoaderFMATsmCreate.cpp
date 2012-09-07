@@ -33,6 +33,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
     // Nb of particles
     const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
+    const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", FReal(0.1));
+
     const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
@@ -70,7 +72,7 @@ int main(int argc, char ** argv){
 
         const int isTarget = rand() > RAND_MAX/2 ? 1 : 0;
 
-        myfile << "\n" << px << "\t" << py << "\t" <<  pz << "\t" << (0.01) << "\t" << isTarget;
+        myfile << "\n" << px << "\t" << py << "\t" <<  pz << "\t" << physicalValue << "\t" << isTarget;
     }
 
     myfile.close();

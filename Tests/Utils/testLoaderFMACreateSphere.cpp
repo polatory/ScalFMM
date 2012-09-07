@@ -38,6 +38,8 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
+    const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", FReal(0.1));
+
     const char* const Output = FParameters::getStr(argc,argv,"-f", "../Data/testSphere20k.fma");
     std::cout << "Creating : " << Output << "\n";
 
@@ -78,7 +80,7 @@ int main(int argc, char ** argv){
             const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
             const FReal pz = rayon * FMath::Cos(theta) + ZCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
 
-            myfile << " \n" << px << " " << py << " " <<  pz << " 0.01";
+            myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
     }
     else{
@@ -97,7 +99,7 @@ int main(int argc, char ** argv){
             const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
             const FReal pz = rayon * FMath::Cos(theta) + ZCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
 
-            myfile << " \n" << px << " " << py << " " <<  pz << " 0.01";
+            myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
 
         for( long idx = 0 ; idx < NbParticles/2 ; ++idx ){
@@ -108,7 +110,7 @@ int main(int argc, char ** argv){
             const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
             const FReal pz = rayon * FMath::Cos(theta) + ZCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
 
-            myfile << " \n" << px << " " << py << " " <<  pz << " 0.01";
+            myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
     }
 

@@ -34,7 +34,7 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(20000));
-
+    const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", FReal(0.1));
     // Center of the box
     const FReal XCenter = 0.5;
     const FReal YCenter = 0.5;
@@ -75,7 +75,7 @@ int main(int argc, char ** argv){
     const FReal LimitedBoxWidth = BoxWidth - Limite * 2;
 
     FReal data[4];
-    data[3] = FReal(0.1);
+    data[3] = physicalValue;
     // Generate particles
     for( FSize idx = 0 ; idx < NbParticles ; ++idx ){
         data[0] = ((FReal(rand())/FRandMax) * LimitedBoxWidth * 2) + XCenter - BoxWidth + Limite;
