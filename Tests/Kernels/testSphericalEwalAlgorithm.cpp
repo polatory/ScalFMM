@@ -225,7 +225,7 @@ int main(int argc, char ** argv){
         printf("Fz diff is = \n");
         printf("%e\n",fz.getL2Norm());
         printf("%e\n",fz.getInfNorm());
-        std::cout << std::endl<< std::endl<< "Potential= " << potential*coeff_MD/2 << std::endl;
+        std::cout << std::endl<< std::endl<< "Potential= " << std::setprecision(8) << potential*coeff_MD/2 << std::endl;
 
     }
 
@@ -257,7 +257,7 @@ int main(int argc, char ** argv){
         } while(octreeIterator.moveRight());
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
-        std::cout << "Potential = " << potential*coeff_MD/2 << std::endl;
+        std::cout << "Potential = " << std::setprecision(8) << potential*coeff_MD/2 << std::endl;
 	//        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
     }
     // -----------------------------------------------------
