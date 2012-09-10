@@ -70,7 +70,8 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     std::cout << "Opening : " << filename << "\n";
-    FEwalLoader<ParticleClass> loader(filename);
+    //FEwalLoader<ParticleClass> loader(filename);
+    FEwalBinLoader<ParticleClass> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -130,16 +131,21 @@ int main(int argc, char ** argv){
 
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
-
     // -----------------------------------------------------
+
+    ParticleClass* particlesDirect = 0;
 
     // Do direct
     if(FParameters::existParameter(argc, argv, "-direct")){
         printf("Compute direct:\n");
-        FMath::FAccurater fx, fy, fz;
+        printf("Box [%d;%d][%d;%d][%d;%d]\n", min.getX(), max.getX(), min.getY(),
+               max.getY(), min.getZ(), max.getZ());
         KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
-        FReal potential = 0.0;
+        particlesDirect = new ParticleClass[loader.getNumberOfParticles()];
+
+        FReal dpotential = 0.0;
+        FMath::FAccurater dfx, dfy, dfz;
 
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             ParticleClass part = particles[idxTarget];
@@ -163,43 +169,33 @@ int main(int argc, char ** argv){
                         for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
                             ParticleClass source = particles[idxSource];
                             source.incPosition(offset.getX(),offset.getY(),offset.getZ());
-                            kernels.directInteraction(&particles[idxTarget], source);
+                            kernels.directInteraction(&part, source);
                         }
                     }
                 }
             }
 
 
-            fx.add(particles[idxTarget].getForces().getX(),-part.getForces().getX()*coeff_MD1);
-            fy.add(particles[idxTarget].getForces().getY(),-part.getForces().getY()*coeff_MD1);
-            fz.add(particles[idxTarget].getForces().getZ(),-part.getForces().getZ()*coeff_MD1);
+            dfx.add(particles[idxTarget].getForces().getX(),-part.getForces().getX()*coeff_MD1);
+            dfy.add(particles[idxTarget].getForces().getY(),-part.getForces().getY()*coeff_MD1);
+            dfz.add(particles[idxTarget].getForces().getZ(),-part.getForces().getZ()*coeff_MD1);
 
-            potential += part.getPotential() * part.getPhysicalValue();
+            dpotential += part.getPotential() * part.getPhysicalValue();
 
-            // print result
-            if(FParameters::existParameter(argc, argv, "-verbose")){
-                std::cout << ">> index " << part.getIndex() << " type " << part.getType() << std::endl;
-                std::cout << "Good x " << particles[idxTarget].getPosition().getX() << " y " << particles[idxTarget].getPosition().getY() << " z " << particles[idxTarget].getPosition().getZ() << std::endl;
-                std::cout << "DIRECT  x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
-                std::cout << "Good fx " <<particles[idxTarget].getForces().getX() << " fy " << particles[idxTarget].getForces().getY() << " fz " << particles[idxTarget].getForces().getZ() << std::endl;
-                std::cout << "DIRECT  fx " << part.getForces().getX()*coeff_MD1 << " fy " << part.getForces().getY()*coeff_MD1 << " fz " << part.getForces().getZ()*coeff_MD1 << std::endl;
-                std::cout << "GOOD physical value " << particles[idxTarget].getPhysicalValue() << " potential " << particles[idxTarget].getPotential() << std::endl;
-                std::cout << "DIRECT  physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
-                std::cout << "\n";
-            }
+            particlesDirect[idxTarget] = part;
         }
 
         printf("Difference between direct and poly:\n");
         printf("Fx diff is = \n");
-        printf("%e\n",fx.getL2Norm());
-        printf("%e\n",fx.getInfNorm());
+        printf("%e\n",dfx.getL2Norm());
+        printf("%e\n",dfx.getInfNorm());
         printf("Fy diff is = \n");
-        printf("%e\n",fy.getL2Norm());
-        printf("%e\n",fy.getInfNorm());
+        printf("%e\n",dfy.getL2Norm());
+        printf("%e\n",dfy.getInfNorm());
         printf("Fz diff is = \n");
-        printf("%e\n",fz.getL2Norm());
-        printf("%e\n",fz.getInfNorm());
-        printf("Direct Potential= %e\n",potential*coeff_MD/2);
+        printf("%e\n",dfz.getL2Norm());
+        printf("%e\n",dfz.getInfNorm());
+        printf("Direct Potential= %e\n",dpotential*coeff_MD/2);
     }
 
     // -----------------------------------------------------
@@ -216,24 +212,37 @@ int main(int argc, char ** argv){
 
                 const ParticleClass& part = particles[iter.data().getIndex()];
 
+                // Check values ------------------------------------------------------------
+                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
+
+                potentialDiff.add(part.getPotential(),-iter.data().getPotential());
+                fx.add(part.getForces().getX(),-iter.data().getForces().getX()*coeff_MD1);
+                fy.add(part.getForces().getY(),-iter.data().getForces().getY()*coeff_MD1);
+                fz.add(part.getForces().getZ(),-iter.data().getForces().getZ()*coeff_MD1);
+
                 if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << ">> index " << iter.data().getIndex() << " type " << iter.data().getType() << std::endl;
+                    std::cout << ">> index " << iter.data().getIndexInFile() << std::endl;
                     std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
                     std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
                     std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
                     std::cout << "FMM  fx " << iter.data().getForces().getX()*coeff_MD1 << " fy " << iter.data().getForces().getY()*coeff_MD1 << " fz " << iter.data().getForces().getZ()*coeff_MD1 << std::endl;
                     std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
                     std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
+
+                    // print result
+                    if(FParameters::existParameter(argc, argv, "-verbose")
+                            && FParameters::existParameter(argc, argv, "-direct")){
+                        const int idxTarget = iter.data().getIndex();
+                        std::cout << ">> index in array " << idxTarget << std::endl;
+                        std::cout << "Direct x " << particlesDirect[idxTarget].getPosition().getX() << " y " << particlesDirect[idxTarget].getPosition().getY() << " z " << particles[idxTarget].getPosition().getZ() << std::endl;
+                        std::cout << "Direct fx " << particlesDirect[idxTarget].getForces().getX()*coeff_MD1 << " fy " << particlesDirect[idxTarget].getForces().getY()*coeff_MD1 << " fz " << particlesDirect[idxTarget].getForces().getZ()*coeff_MD1 << std::endl;
+                        std::cout << "Direct physical value " << particlesDirect[idxTarget].getPhysicalValue() << " potential " << particlesDirect[idxTarget].getPotential() << std::endl;
+                    }
+
                     std::cout << "\n";
                 }
 
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-
-
-                potentialDiff.add(part.getPotential(),-iter.data().getPotential());
-                fx.add(part.getForces().getX(),-iter.data().getForces().getX()*coeff_MD1);
-                fy.add(part.getForces().getY(),-iter.data().getForces().getY()*coeff_MD1);
-                fz.add(part.getForces().getZ(),-iter.data().getForces().getZ()*coeff_MD1);
+                // Progress ------------------------------------------------------------------
 
                 iter.gotoNext();
             }
@@ -285,6 +294,7 @@ int main(int argc, char ** argv){
 
         std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
         std::cout << "Potential = " << std::setprecision(8) << potential*coeff_MD/2 << std::endl;
+        std::cout << "Energy from file = " << std::setprecision(8) << loader.getEnergy() << std::endl;
 	//        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
     }
     // -----------------------------------------------------
@@ -324,6 +334,7 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     delete[] particles;
+    delete[] particlesDirect;
 
     return 0;
 }
