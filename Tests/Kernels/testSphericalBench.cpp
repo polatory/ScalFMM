@@ -68,8 +68,6 @@ typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeCl
 typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
 
 typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
-typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
 
 
 void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
