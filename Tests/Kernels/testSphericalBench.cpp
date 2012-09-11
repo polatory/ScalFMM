@@ -22,8 +22,6 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -161,11 +159,11 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
                 FMath::FAccurater fx, fy, fz;
                 FReal absoluteDiff = FReal(0.0);
                 { // Check that each particle has been summed with all other
-                    typename OctreeClass::Iterator octreeIterator(&tree);
+                    OctreeClass::Iterator octreeIterator(&tree);
                     octreeIterator.gotoBottomLeft();
 
                     do{
-                        typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                        ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                         while( leafIter.hasNotFinished() ){
                             const ParticleClass& other = particles[leafIter.data().getIndex()];
@@ -312,11 +310,11 @@ int main(int argc, char ** argv){
                 kernels.directInteractionMutual(&centeredParticle, &otherParticle);
 
                 { // Check that each particle has been summed with all other
-                    typename OctreeClass::Iterator octreeIterator(&tree);
+                    OctreeClass::Iterator octreeIterator(&tree);
                     octreeIterator.gotoBottomLeft();
 
                     do{
-                        typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                        ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
 
                         while( leafIter.hasNotFinished() ){
                             const ParticleClass& other = (leafIter.data().getIndex()==0?centeredParticle:otherParticle);
@@ -414,18 +412,16 @@ int main(int argc, char ** argv){
     if( FParameters::existParameter(argc,argv,"-test-time") ){
         std::cout << "Execute : test-time\n";
         const int DevsP[3] = {3, 8, 12};
-        const int NbSteps = 4;
-        const int ParticlesNumbers[NbSteps] = {100,1000,10000,100000};
-        const int AllLevels[NbSteps] = {2,2,3,4};
+        const int NbSteps = 7;
+        const int ParticlesNumbers[NbSteps] =   {100    ,1000   ,10000  ,100000     ,1000000    ,10000000   ,100000000};
+        const int AllLevels[NbSteps] =          {2      ,2      ,3      ,4          ,6          ,7          ,8};
 
         FReal timeCounter[3][NbSteps];
-        FMath::FAccurater potentialDiff[3][NbSteps];
-        FReal potentialAbsoluteDiff[3][NbSteps];
 
         for(int idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
              for(int idxP = 0 ; idxP < 3 ; ++idxP){
                  doATest(ParticlesNumbers[idxPart],DevsP[idxP],DevsP[idxP],AllLevels[idxPart],AllLevels[idxPart],
-                         physicalValue, neutral, potentialDiff[idxP]+idxPart, potentialAbsoluteDiff[idxP]+idxPart,
+                         physicalValue, neutral, 0, 0,
                          timeCounter[idxP]+idxPart, SizeSubLevels);
              }
         }
@@ -433,23 +429,13 @@ int main(int argc, char ** argv){
         {
             FILE* fres = fopen("test-np.res", "w");
             fprintf(fres, "# Particles");
-            for(int idxP = 0 ; idxP < 4 ; ++idxP){
-                fprintf(fres, "\t%d\t%d\t%d", DevsP[0],DevsP[1],DevsP[2]);
-            }
+            fprintf(fres, "\t%d\t%d\t%d", DevsP[0],DevsP[1],DevsP[2]);
+
             fprintf(fres, "\n");
             for(int idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
                 fprintf(fres, "%d", ParticlesNumbers[idxPart]);
                 for(int idxP = 0 ; idxP < 3 ; ++idxP){
                     fprintf(fres, "\t%e", timeCounter[idxP][idxPart]);
-                }
-                for(int idxP = 0 ; idxP < 3 ; ++idxP){
-                    fprintf(fres, "\t%e", potentialDiff[idxP][idxPart].getL2Norm());
-                }
-                for(int idxP = 0 ; idxP < 3 ; ++idxP){
-                    fprintf(fres, "\t%e", potentialDiff[idxP][idxPart].getInfNorm());
-                }
-                for(int idxP = 0 ; idxP < 3 ; ++idxP){
-                    fprintf(fres, "\t%e", potentialAbsoluteDiff[idxP][idxPart]);
                 }
                 fprintf(fres, "\n");
             }
@@ -472,34 +458,6 @@ int main(int argc, char ** argv){
             fprintf(fplot, "\"./test-np.res\" u 1:2 t \"Time for low precision (P = %d)\" @mystyle,\\\n",DevsP[0]);
             fprintf(fplot, "\"./test-np.res\" u 1:3 t \"Time for medium precision (P = %d)\" @mystyle,\\\n",DevsP[1]);
             fprintf(fplot, "\"./test-np.res\" u 1:4 t \"Time for high precision (P = %d)\" @mystyle;\n",DevsP[2]);
-
-            fprintf(fplot, "set terminal svg\n");
-            fprintf(fplot, "set output \"test-np-error.svg\"\n");
-            fprintf(fplot, "set title \"Error for three different P\"\n");
-            fprintf(fplot, "set xlabel \"Number of particles\"\n");
-            fprintf(fplot, "set ylabel \"Accuracy\"\n");
-            fprintf(fplot, "set y2label \"Absolute Error\"\n");
-            fprintf(fplot, "set size ratio 0.5\n");
-            fprintf(fplot, "set logscale y\n");
-            fprintf(fplot, "set logscale y2\n");
-            fprintf(fplot, "set ytics nomirror\n");
-            fprintf(fplot, "set y2tics nomirror\n");
-            fprintf(fplot, "set object 1 rectangle from screen 0,0 to screen 1,1 fillcolor rgb\"#ffffff\" behind\n");
-            fprintf(fplot, "set macros\n");
-            fprintf(fplot, "mystyle = \"with lines\"\n");
-            fprintf(fplot, "plot \\\n");
-
-            fprintf(fplot, "\"./test-np.res\" u 1:5 t \"L2 for low precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[0]);
-            fprintf(fplot, "\"./test-np.res\" u 1:6 t \"L2 for medium precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[1]);
-            fprintf(fplot, "\"./test-np.res\" u 1:7 t \"L2 for high precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[2]);
-
-            fprintf(fplot, "\"./test-np.res\" u 1:8 t \"Inf for low precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[0]);
-            fprintf(fplot, "\"./test-np.res\" u 1:9 t \"Inf for medium precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[1]);
-            fprintf(fplot, "\"./test-np.res\" u 1:10 t \"Inf for high precision (P = %d)\" @mystyle axes x1y1,\\\n",DevsP[2]);
-
-            fprintf(fplot, "\"./test-np.res\" u 1:11 t \"Erreur for low precision (P = %d)\" @mystyle axes x1y2,\\\n",DevsP[0]);
-            fprintf(fplot, "\"./test-np.res\" u 1:12 t \"Erreur for medium precision (P = %d)\" @mystyle axes x1y2,\\\n",DevsP[1]);
-            fprintf(fplot, "\"./test-np.res\" u 1:13 t \"Erreur for high precision (P = %d)\" @mystyle axes x1y2;\n",DevsP[2]);
 
             fclose(fplot);
         }
