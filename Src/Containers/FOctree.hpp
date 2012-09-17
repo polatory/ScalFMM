@@ -85,11 +85,12 @@ class FOctree : protected FAssertable, public FNoCopyable {
     int getTreeCoordinate(const FReal inRelativePosition) const {
         FDEBUG( fassert(inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box", __LINE__, __FILE__) );
         const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-        const int index = int(FMath::dfloor(indexFReal));
+        /*const int index = int(FMath::dfloor(indexFReal));
         if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * FReal(index) ) ){
             return index - 1;
         }
-        return index;
+        return index;*/
+        return static_cast<int>(indexFReal);
     }
 
 public:
