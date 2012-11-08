@@ -39,6 +39,13 @@ public:
         data[0] = data[1] = data[2] = FReal(0);
     }
 
+    /** Constructor from an array */
+    explicit FPoint(const FReal inPosition[3]){
+        data[0] = inPosition[0];
+        data[1] = inPosition[1];
+        data[2] = inPosition[2];
+    }
+
     /** Constructor from values */
     explicit FPoint(const FReal inX,const FReal inY,const FReal inZ){
         data[0] = inX;
