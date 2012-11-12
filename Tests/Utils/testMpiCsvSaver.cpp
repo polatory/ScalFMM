@@ -1,4 +1,3 @@
-
 // ===================================================================================
 // Logiciel initial: ScalFmm Version 0.5
 // Co-auteurs : Olivier Coulaud, Bérenger Bramas.

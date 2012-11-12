@@ -1,6 +1,15 @@
+// ===================================================================================
+// Logiciel initial: ScalFmm Version 0.5
+// Co-auteurs : Olivier Coulaud, Matthias Messner.
+// Propriétaires : INRIA.
+// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Initial software: ScalFmm Version 0.5
+// Co-authors: Olivier Coulaud, Matthias Messner.
+// Owners: INRIA.
+// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
+// ===================================================================================
 #ifndef FCHEBFLOPSSYMKERNEL_HPP
 #define FCHEBFLOPSSYMKERNEL_HPP
-// [--License--]
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FTrace.hpp"
