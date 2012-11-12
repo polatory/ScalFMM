@@ -26,7 +26,7 @@ namespace FMemUtils {
     static const FSize MaxSize_t = UINT_MAX; //std::numeric_limits<std::size_t>::max();
 
     /** memcpy */
-    void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
+    inline void* memcpy(void* const dest, const void* const source, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memcpy(dest, source, size_t(nbBytes));
         }
@@ -46,7 +46,7 @@ namespace FMemUtils {
     }
 
     /** memset */
-    void* memset(void* const dest, const int val, const FSize nbBytes){
+    inline void* memset(void* const dest, const int val, const FSize nbBytes){
         if( nbBytes < MaxSize_t){
             return ::memset(dest, val, size_t(nbBytes));
         }
@@ -65,7 +65,7 @@ namespace FMemUtils {
 
     /** copy all value from one vector to the other */
     template <class TypeClass>
-    void copyall(TypeClass* dest, const TypeClass* source, int nbElements){
+    inline void copyall(TypeClass* dest, const TypeClass* source, int nbElements){
         for(; 0 < nbElements ; --nbElements){
             (*dest++) = (*source++);
         }
@@ -73,7 +73,7 @@ namespace FMemUtils {
 
     /** copy all value from one vector to the other */
     template <class TypeClass>
-    void addall(TypeClass* dest, const TypeClass* source, int nbElements){
+    inline void addall(TypeClass* dest, const TypeClass* source, int nbElements){
         for(; 0 < nbElements ; --nbElements){
             (*dest++) += (*source++);
         }
@@ -81,7 +81,7 @@ namespace FMemUtils {
 
     /** copy all value from one vector to the other */
     template <class TypeClass>
-    void setall(TypeClass* dest, const TypeClass& source, int nbElements){
+    inline void setall(TypeClass* dest, const TypeClass& source, int nbElements){
         for(; 0 < nbElements ; --nbElements){
             (*dest++) = source;
         }
@@ -89,7 +89,7 @@ namespace FMemUtils {
 	
 	  /** swap values from a and b*/
 	  template <class TypeClass>
-		void swap(TypeClass& a, TypeClass& b){
+        inline void swap(TypeClass& a, TypeClass& b){
 			TypeClass c(a);
 			a=b;
 			b=c;
@@ -97,7 +97,7 @@ namespace FMemUtils {
 
     /** Delete all */
     template <class TypeClass>
-    void DeleteAll(TypeClass*const array[], const int size){
+    inline void DeleteAll(TypeClass*const array[], const int size){
         for(int idx = 0 ; idx < size ; ++idx){
             delete[] array[idx];
         }
