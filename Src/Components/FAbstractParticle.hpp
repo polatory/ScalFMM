@@ -17,7 +17,6 @@ class FPoint;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FAbstractBody
 * @brief
 * Please read the license
 *
