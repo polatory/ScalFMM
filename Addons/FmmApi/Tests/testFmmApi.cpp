@@ -14,9 +14,13 @@
 
 #include "../../Src/Utils/FParameters.hpp"
 #include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FMemUtils.hpp"
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Components/FBasicParticle.hpp"
+
+#include "../Src/FmmApi.h"
 
 /** This program show an example of use of the fmm api
   */
@@ -35,7 +39,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader<KernelParticleClass> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FBasicParticle> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
 
     void* FmmCoreHandle;
     FmmCore_init(&FmmCoreHandle);
@@ -44,8 +48,6 @@ int main(int argc, char ** argv){
     FReal boxWidth = loader.getBoxWidth();
     FmmCore_setParameter(FmmCoreHandle, FMMCORE_ROOT_BOX_WIDTH, &boxWidth);
     FmmCore_setParameter(FmmCoreHandle, FMMCORE_ROOT_BOX_CENTER, loader.getCenterOfBox().getDataValue());
-
-    FmmCore_finishInit(FmmCoreHandle);
 
     void* FmmKernelHandle;
     FmmKernel_init(FmmCoreHandle, &FmmKernelHandle);
@@ -64,13 +66,13 @@ int main(int argc, char ** argv){
     FReal* positions = new FReal[nbPart*3];
 
     {
-        KernelParticleClass part;
-        part.setPhysicalValue(0.1);
+        FBasicParticle part;
+        const FReal physicalValue = 0.1;
 
         for(int idx = 0 ; idx < nbPart ; ++idx){
             loader.fillParticle(part);
 
-            potentials[idx] = part.getPhysicalValue();
+            potentials[idx] = physicalValue;
             positions[3*idx] = part.getPosition().getX();
             positions[3*idx+1] = part.getPosition().getY();
             positions[3*idx+2] = part.getPosition().getZ();

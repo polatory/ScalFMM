@@ -8,14 +8,12 @@
 // Owners: INRIA.
 // Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
 // ===================================================================================
-#include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Utils/FTic.hpp"
-
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Components/FBasicParticle.hpp"
+#include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Utils/FPoint.hpp"
 
@@ -308,19 +306,6 @@ int FmmCore_init(void **fmmCore) {
     return FMMAPI_NO_ERROR;
 } /*alloue et initialise le FmmCore*/
 
-// !!! Added !!!
-int FmmCore_finishInit(void *fmmCore) {
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*) fmmCore;
-
-    corehandle->octree = new OctreeClass(corehandle->config.treeHeight, FMath::Min(3,corehandle->config.treeHeight-1),
-                                         corehandle->config.boxWidth, FPoint(corehandle->config.boxCenter));
-
-    if( corehandle->config.nbThreads != 0){
-        omp_set_num_threads(corehandle->config.nbThreads);
-    }
-
-    return FMMAPI_NO_ERROR;
-} /*alloue et initialise le FmmCore*/
 
 int FmmCore_free(void *fmmCore) {
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
@@ -561,14 +546,20 @@ int FmmCore_getKernelData(void*fmmCore, void **fmmKernel)  {
 
 int FmmCore_setPositions(void *fmmCore, int *nb, FReal *position)  {
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
-    OctreeClass* octree = corehandle->octree;
+
+    corehandle->octree = new OctreeClass(corehandle->config.treeHeight, FMath::Min(3,corehandle->config.treeHeight-1),
+                                         corehandle->config.boxWidth, FPoint(corehandle->config.boxCenter));
+
+    if( corehandle->config.nbThreads != 0){
+        omp_set_num_threads(corehandle->config.nbThreads);
+    }
 
     CoreParticleClass part;
     for(int idxPart = 0 ; idxPart < (*nb) ; ++idxPart){
         FReal* pos = &position[idxPart * 3];
         part.setPosition(pos[0], pos[1], pos[2]);
         part.setIndex(idxPart);
-        octree->insert(part);
+        corehandle->octree->insert(part);
     }
 
     return FMMAPI_NO_ERROR;

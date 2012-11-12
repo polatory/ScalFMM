@@ -193,9 +193,8 @@ int FmmKernel_getLocalArraySize(void */*fmmCore*/, int *size){
 
 /******* Opérateurs FMM : **/
 int FmmKernel_P2M(void *fmmCore, void* boxId){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
@@ -229,9 +228,8 @@ int FmmKernel_P2M(void *fmmCore, void* boxId){
 }
 
 int FmmKernel_L2P(void *fmmCore, void* boxId){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
@@ -281,9 +279,8 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
 }
 
 int FmmKernel_M2M(void *fmmCore, void *boxIdFather, void *boxIdSon){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
@@ -318,9 +315,8 @@ int FmmKernel_M2M(void *fmmCore, void *boxIdFather, void *boxIdSon){
 }
 
 int FmmKernel_L2L(void *fmmCore, void *boxIdFather, void *boxIdSon){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
@@ -355,9 +351,8 @@ int FmmKernel_L2L(void *fmmCore, void *boxIdFather, void *boxIdSon){
 }
 
 int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
@@ -394,9 +389,8 @@ int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
 }
 
 int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){
-    ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
     ScalFmmKernelHandle* kernelhandle;
-    FmmCore_getKernelData(corehandle, (void**)&kernelhandle);
+    FmmCore_getKernelData(fmmCore, (void**)&kernelhandle);
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
