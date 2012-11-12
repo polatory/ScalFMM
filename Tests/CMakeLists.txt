@@ -14,16 +14,6 @@ file(
 	./*.cpp
 	)
 
-# Find all cuda files
-if( SCALFMM_USE_CUDA )
-	file(
-		GLOB_RECURSE
-		source_cuda_files
-		./*.cu
-		)
-endif()
-
-
 
 # Adding the project sources dir as an include dir
 INCLUDE_DIRECTORIES(

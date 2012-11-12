@@ -32,6 +32,7 @@ OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
 OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
+OPTION( SCALFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
 
 
 # Test if openmp is here
@@ -119,6 +120,16 @@ endif()
 
 # Build - doc
 add_subdirectory(Doc)
+
+# Build - Addons
+if( SCALFMM_USE_ADDONS )
+	file(GLOB all_addons ./Addons/*)
+
+	foreach(addon_name ${all_addons}) 
+		MESSAGE(STATUS "Addons += ${addon_name}" )
+		add_subdirectory(${addon_name})
+	endforeach()
+endif()
 
 # Add custom clean command
 if("${CMAKE_GENERATOR}" MATCHES "Make")
