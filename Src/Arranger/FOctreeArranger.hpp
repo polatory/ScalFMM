@@ -21,6 +21,8 @@
 #include "../Containers/FVector.hpp"
 #include "../Utils/FAssertable.hpp"
 
+#include "../Utils/FGlobalPeriodic.hpp"
+
 
 /** This class is an arranger, it move the particles that need
   * to be hosted in a different leaf
@@ -41,7 +43,7 @@ public:
     }
 
     /** Arrange */
-    void rearrange(const bool isPeriodic = false){
+    void rearrange(const int isPeriodic = DirNone){
         // This vector is to keep the moving particles
         FVector<ParticleClass> tomove;
 
@@ -58,28 +60,67 @@ public:
 
                 typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 while( iter.hasNotFinished() ){
-                    if(isPeriodic){
-                        FPoint partPos = iter.data().getPosition();
-                        while(partPos.getX() < min.getX()){
-                            partPos.incX(boxWidth);
-                        }
+                    FPoint partPos = iter.data().getPosition();
+                    // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                    if( TestPeriodicCondition(isPeriodic, DirPlusX) ){
                         while(partPos.getX() >= max.getX()){
                             partPos.incX(-boxWidth);
                         }
-                        while(partPos.getY() < min.getY()){
-                            partPos.incY(boxWidth);
+                    }
+                    else if(partPos.getX() >= max.getX()){
+                        printf("Error, particle out of Box in +X, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    if( TestPeriodicCondition(isPeriodic, DirMinusX) ){
+                        while(partPos.getX() < min.getX()){
+                            partPos.incX(boxWidth);
                         }
+                    }
+                    else if(partPos.getX() < min.getX()){
+                        printf("Error, particle out of Box in -X, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    // YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+                    if( TestPeriodicCondition(isPeriodic, DirPlusY) ){
                         while(partPos.getY() >= max.getY()){
                             partPos.incY(-boxWidth);
                         }
-                        while(partPos.getZ() < min.getZ()){
-                            partPos.incZ(boxWidth);
+                    }
+                    else if(partPos.getY() >= max.getY()){
+                        printf("Error, particle out of Box in +Y, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    if( TestPeriodicCondition(isPeriodic, DirMinusY) ){
+                        while(partPos.getY() < min.getY()){
+                            partPos.incY(boxWidth);
                         }
+                    }
+                    else if(partPos.getY() < min.getY()){
+                        printf("Error, particle out of Box in -Y, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    // ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                    if( TestPeriodicCondition(isPeriodic, DirPlusX) ){
                         while(partPos.getZ() >= max.getZ()){
                             partPos.incZ(-boxWidth);
                         }
-                        iter.data().setPosition(partPos);
                     }
+                    else if(partPos.getZ() >= max.getZ()){
+                        printf("Error, particle out of Box in +Z, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    if( TestPeriodicCondition(isPeriodic, DirMinusX) ){
+                        while(partPos.getZ() < min.getZ()){
+                            partPos.incZ(boxWidth);
+                        }
+                    }
+                    else if(partPos.getZ() < min.getZ()){
+                        printf("Error, particle out of Box in -Z, index %lld\n", currentIndex);
+                        printf("Application is exiting...\n");
+                    }
+                    // set pos
+                    iter.data().setPosition(partPos);
+
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(iter.data().getPosition());
                     if(particuleIndex != currentIndex){
                         tomove.push(iter.data());

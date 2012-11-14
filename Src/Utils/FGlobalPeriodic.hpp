@@ -21,6 +21,8 @@
 ///////////////////////////////////////////////////////
 
 enum PeriodicCondition {
+    DirNone     = 0,
+
     DirPlusX    = 1 << 0,
     DirMinusX   = 1 << 1,
     DirPlusY    = 1 << 2,
@@ -35,7 +37,7 @@ enum PeriodicCondition {
     AllDirs     = (DirX | DirY | DirZ)
 };
 
-bool testPeriodicCondition(const int conditions, const PeriodicCondition testConditions) {
+bool TestPeriodicCondition(const int conditions, const PeriodicCondition testConditions) {
     return (conditions & testConditions) == testConditions;
 }
 

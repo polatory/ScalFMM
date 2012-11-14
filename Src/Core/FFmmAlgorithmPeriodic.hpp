@@ -529,7 +529,7 @@ public:
       * @return true if the direction is used else false
       */
     bool usePerDir(const int testDir) const{
-        return testPeriodicCondition(periodicDirections , PeriodicCondition(testDir));
+        return TestPeriodicCondition(periodicDirections , PeriodicCondition(testDir));
     }
 
     /** To enable quick test of the direction

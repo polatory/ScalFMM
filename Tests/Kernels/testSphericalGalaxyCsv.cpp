@@ -136,7 +136,7 @@ int main(int argc, char ** argv){
             } while(octreeIterator.moveRight());
         }
         // update tree and vtk
-        arranger.rearrange(true);
+        arranger.rearrange(AllDirs);
         saver.exportTree(&tree);
     }
 

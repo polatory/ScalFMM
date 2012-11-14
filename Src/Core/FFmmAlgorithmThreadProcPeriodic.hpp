@@ -1420,12 +1420,12 @@ private:
 
         int idxNeig = 0;
 
-        const int startX = (testPeriodicCondition(inDirection, DirMinusX) || center.getX() != 0 ?-1:0);
-        const int endX = (testPeriodicCondition(inDirection, DirPlusX) || center.getX() != boxLimite - 1 ?1:0);
-        const int startY = (testPeriodicCondition(inDirection, DirMinusY) || center.getY() != 0 ?-1:0);
-        const int endY = (testPeriodicCondition(inDirection, DirPlusY) || center.getY() != boxLimite - 1 ?1:0);
-        const int startZ = (testPeriodicCondition(inDirection, DirMinusZ) || center.getZ() != 0 ?-1:0);
-        const int endZ = (testPeriodicCondition(inDirection, DirPlusZ) || center.getZ() != boxLimite - 1 ?1:0);
+        const int startX = (TestPeriodicCondition(inDirection, DirMinusX) || center.getX() != 0 ?-1:0);
+        const int endX = (TestPeriodicCondition(inDirection, DirPlusX) || center.getX() != boxLimite - 1 ?1:0);
+        const int startY = (TestPeriodicCondition(inDirection, DirMinusY) || center.getY() != 0 ?-1:0);
+        const int endY = (TestPeriodicCondition(inDirection, DirPlusY) || center.getY() != boxLimite - 1 ?1:0);
+        const int startZ = (TestPeriodicCondition(inDirection, DirMinusZ) || center.getZ() != 0 ?-1:0);
+        const int endZ = (TestPeriodicCondition(inDirection, DirPlusZ) || center.getZ() != boxLimite - 1 ?1:0);
 
         // We test all cells around
         for(int idxX = startX ; idxX <= endX ; ++idxX){
@@ -1488,12 +1488,12 @@ private:
             return getInteractionNeighbors( workingCell, inLevel, inNeighbors, inNeighborsPosition);
         }
 
-        const int startX =  (testPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
-        const int endX =    (testPeriodicCondition(inDirection, DirPlusX)  || parentCell.getX() != boxLimite - 1 ?1:0);
-        const int startY =  (testPeriodicCondition(inDirection, DirMinusY) || parentCell.getY() != 0 ?-1:0);
-        const int endY =    (testPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
-        const int startZ =  (testPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
-        const int endZ =    (testPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
+        const int startX =  (TestPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
+        const int endX =    (TestPeriodicCondition(inDirection, DirPlusX)  || parentCell.getX() != boxLimite - 1 ?1:0);
+        const int startY =  (TestPeriodicCondition(inDirection, DirMinusY) || parentCell.getY() != 0 ?-1:0);
+        const int endY =    (TestPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
+        const int startZ =  (TestPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
+        const int endZ =    (TestPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
 
         int idxNeighbors = 0;
         // We test all cells around
@@ -1781,7 +1781,7 @@ public:
       * @return true if the direction is used else false
       */
     bool usePerDir(const int testDir) const{
-        return testPeriodicCondition(periodicDirections , PeriodicCondition(testDir));
+        return TestPeriodicCondition(periodicDirections , PeriodicCondition(testDir));
     }
 
     /** To enable quick test of the direction
