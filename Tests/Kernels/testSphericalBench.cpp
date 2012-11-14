@@ -76,7 +76,7 @@ typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, Ker
 
 void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
              const FReal physicalValue, const bool neutral ,
-             FMath::FAccurater* allPotentialDiff, FReal* allAbsoluteDiff, double* timing,
+             FMath::FAccurater* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
              const int SizeSubLevels = 3, FReal* timeForDirect = 0){
     FTic counter;
     FRandomLoader<ParticleClass> loader(NbParticles);
