@@ -357,7 +357,7 @@ public:
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
         this->leafs = new LeafClass*[cellsAtLeafLevel];
-        fassert(this->leafs, "Allocation failled", __LINE__, __FILE__);
+        Parent::fassert(this->leafs, "Allocation failled", __LINE__, __FILE__);
 
         memset(leafs, 0, sizeof(LeafClass*) * cellsAtLeafLevel);
     }
@@ -488,7 +488,7 @@ public:
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
         this->subleafs = new Parent*[cellsAtLeafLevel];
-        fassert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
+        Parent::fassert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
 
         memset(subleafs, 0, sizeof(Parent**) * cellsAtLeafLevel);
     }
