@@ -90,7 +90,7 @@ endif()
 # Compile option
 ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
 
-CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
 # Use Mem stats
