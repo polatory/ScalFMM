@@ -166,7 +166,7 @@ public:
 					 const ContainerClass* const SourceParticles)
 	{
 		// apply Sy
-		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 		AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter,
 																							AbstractBaseClass::BoxWidthLeaf,
 																							LeafCell->getMultipole(),
@@ -426,7 +426,7 @@ public:
 	void L2P(const CellClass* const LeafCell,
 					 ContainerClass* const TargetParticles)
 	{
-		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 
 //		// a) apply Sx
 //		AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,

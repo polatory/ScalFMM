@@ -80,7 +80,7 @@ public:
 					 const ContainerClass* const SourceParticles)
 	{
 		// 1) apply Sy
-		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 		AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter,
 																							AbstractBaseClass::BoxWidthLeaf,
 																							LeafCell->getMultipole(),
@@ -179,7 +179,7 @@ public:
 		M2LHandler->applyU(LeafCell->getLocal() + AbstractBaseClass::nnodes,
 											 const_cast<CellClass*>(LeafCell)->getLocal());
 		
-		const FPoint LeafCellCenter(getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 
 		//// 2.a) apply Sx
 		//AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
