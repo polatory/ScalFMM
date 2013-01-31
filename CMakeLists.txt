@@ -1,10 +1,23 @@
-cmake_minimum_required (VERSION 2.8.3)
+cmake_minimum_required (VERSION 2.8.3 FATAL_ERROR)
 
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
+
+# Project Infos
+project(ScalFMM)
+#===========================================================================
+# Version Number
+#===========================================================================
+
+# ScalFMM version number.  An even minor number corresponds to releases.
+SET(ScalFMM_MAJOR_VERSION 1)
+SET(ScalFMM_MINOR_VERSION 0)
+SET(ScalFMM_BUILD_VERSION 0)
+SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFMM_BUILD_VERSION}"
+  )
 
 # MPI option has to be set before project, cannot be changed in the cache!
 if( SCALFMM_USE_MPI )
@@ -14,16 +27,14 @@ if( SCALFMM_USE_MPI )
 else()
 	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
 endif(SCALFMM_USE_MPI)
-
-# Project Infos
-project(scalfmm)
-
+#
 # Active language
 # -----------------------
 ENABLE_LANGUAGE(CXX )
 MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 # Options
+OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( SCALFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" ON )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
@@ -33,7 +44,8 @@ OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
 OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
 OPTION( SCALFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
-
+#
+SET(SCALFMM_LIBRARIES "")
 
 # Test if openmp is here
 find_package (OpenMP) 
@@ -85,6 +97,7 @@ if( SCALFMM_USE_BLAS )
 	INCLUDE(FindBLAS)
 	INCLUDE(FindLAPACK)
   endif()
+SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}")
 endif()
 
 # Compile option
@@ -139,3 +152,18 @@ if("${CMAKE_GENERATOR}" MATCHES "Make")
 		COMMENT "Cleaning Build dir and CMake cache, then do cmake.."
 		)
 endif()
+#
+#
+#===========================================================================
+#    Build and export cmake files 
+#===========================================================================
+#
+MESSAGE(WARNING "ScalFMM_BINARY_DIR: "${Scalfmm_BINARY_DIR})
+CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
+               ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
+               @ONLY IMMEDIATE
+               )
+INSTALL(FILES 
+  ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake
+  DESTINATION lib/
+  )

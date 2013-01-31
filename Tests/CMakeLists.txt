@@ -58,8 +58,7 @@ foreach(exec ${source_tests_files})
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
-			${BLAS_LIBRARIES}
-			${LAPACK_LIBRARIES}
+			${SCALFMM_LIBRARIES}
 			)
 	endif()
 endforeach(exec)

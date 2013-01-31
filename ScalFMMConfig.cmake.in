@@ -1,0 +1,35 @@
+#-----------------------------------------------------------------------------
+#
+# ScalFMMConfig.cmake - ScalFMM CMake configuration file for external projects.
+#
+# This file is configured by ScalFMM and used by the ScalFMM.cmake module
+# to load ScalFMM's settings for an external project.
+#
+@ScalFMM_CONFIG_INSTALL_ONLY@
+#
+SET(ScalFMM_VERSION_MAJOR "@ScalFMM_MAJOR_VERSION@")
+SET(ScalFMM_VERSION_MINOR "@ScalFMM_MINOR_VERSION@")
+SET(ScalFMM_VERSION_BUILD  "@ScalFMM_BUILD_VERSION@")
+#
+SET(ScalFMM_INCLUDE_DIR   "@CMAKE_INSTALL_PREFIX@/include")
+SET(ScalFMM_LIBRARIES_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+SET(ScalFMM_LIBRARIES     "@SCALFMM_LIBRARIES@")
+SET(ScalFMM_LIBRARY_NAME  "@scalfmm_lib@")
+#
+SET(ScalFMM_SOURCE_DIR	   "@ScalFMM_SOURCE_DIR@")
+SET(ScalFMM_BUILD_SHARED_LIBS "@BUILD_SHARED_LIBS@")
+SET(ScalFMM_USE_FILE	   "@ScalFMM_USE_FILE@")
+#
+SET(ScalFMM_BUILD_TYPE     "@CMAKE_BUILD_TYPE@")
+#
+# ScalFMM Options
+#
+SET(ScalLFMM_USE_MPI "@SCALFMM_USE_MPI@")
+SET(ScalFMM_USE_BLAS "@SCALFMM_USE_BLAS@")
+SET(ScalFMM_USE_MKL "@SCALFMM_USE_MKL_AS_BLAS@")
+SET(ScalFMM_USE_DOUBLE_PRECISION "@SCALFMM_USE_DOUBLE_PRECISION@")
+SET(ScalFMM_USE_MEM_STATS "@SCALFMM_USE_MEM_STATS@") 
+
+
+#SCALFMM_BUILD_TESTS => OFF
+#SCALFMM_BUILD_UTESTS => OFF
