@@ -11,9 +11,10 @@ SET(ScalFMM_VERSION_MAJOR "@ScalFMM_MAJOR_VERSION@")
 SET(ScalFMM_VERSION_MINOR "@ScalFMM_MINOR_VERSION@")
 SET(ScalFMM_VERSION_BUILD  "@ScalFMM_BUILD_VERSION@")
 #
+SET(ScalFMM_PREFIX        "@CMAKE_INSTALL_PREFIX@")
 SET(ScalFMM_INCLUDE_DIR   "@CMAKE_INSTALL_PREFIX@/include")
 SET(ScalFMM_LIBRARIES_DIR "@CMAKE_INSTALL_PREFIX@/lib")
-SET(ScalFMM_LIBRARIES     "@SCALFMM_LIBRARIES@")
+SET(ScalFMM_LIBRARIES_ADD "@SCALFMM_LIBRARIES@")
 SET(ScalFMM_LIBRARY_NAME  "@scalfmm_lib@")
 #
 SET(ScalFMM_SOURCE_DIR	   "@ScalFMM_SOURCE_DIR@")
@@ -24,12 +25,25 @@ SET(ScalFMM_BUILD_TYPE     "@CMAKE_BUILD_TYPE@")
 #
 # ScalFMM Options
 #
-SET(ScalLFMM_USE_MPI "@SCALFMM_USE_MPI@")
+SET(ScalFMM_USE_MPI "@SCALFMM_USE_MPI@")
 SET(ScalFMM_USE_BLAS "@SCALFMM_USE_BLAS@")
 SET(ScalFMM_USE_MKL "@SCALFMM_USE_MKL_AS_BLAS@")
 SET(ScalFMM_USE_DOUBLE_PRECISION "@SCALFMM_USE_DOUBLE_PRECISION@")
 SET(ScalFMM_USE_MEM_STATS "@SCALFMM_USE_MEM_STATS@") 
-
+#
+#
+#
+SET(ScalFMM_LIBRARIES "-L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME} ${ScalFMM_LIBRARIES_ADD}" )
+SET(ScalFMM_INCLUDE_DIRS "${ScalFMM_INCLUDE_DIR}
+                          ${ScalFMM_INCLUDE_DIR}/Utils 
+                          ${ScalFMM_INCLUDE_DIR}/Components 
+                          ${ScalFMM_INCLUDE_DIR}/Arranger
+                          ${ScalFMM_INCLUDE_DIR}/Containers
+                          ${ScalFMM_INCLUDE_DIR}/Core
+                          ${ScalFMM_INCLUDE_DIR}/Extensions
+                          ${ScalFMM_INCLUDE_DIR}/Files
+                          ${ScalFMM_INCLUDE_DIR}/Kernels
+                          ${ScalFMM_INCLUDE_DIR}/Chebyshev")
 
 #SCALFMM_BUILD_TESTS => OFF
 #SCALFMM_BUILD_UTESTS => OFF

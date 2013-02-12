@@ -41,16 +41,16 @@ install( TARGETS scalfmm ARCHIVE DESTINATION lib )
 
 # Install header
 SET(my_include_dirs "."
-"Arranger"        "Core"           "Utils"
-"Chebyshev"       "Components"       "Extensions"  
-"Containers"       "Files"       "Kernels/Spherical")
+  "Arranger"        "Core"           "Utils"
+  "Chebyshev"       "Components"       "Extensions"  
+  "Containers"       "Files"       "Kernels/Spherical")
 
 FOREACH(my_dir ${my_include_dirs})	
 	file(GLOB 	 	 	 	
 	 	hpp_in_dir
-		${my_dir}/*.hpp
+		${my_dir}/*.hpp ${my_dir}/*.h
 	)
-	INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/${my_dir} )
+	INSTALL( FILES ${hpp_in_dir} DESTINATION include/${my_dir} )
 ENDFOREACH()
-INSTALL( FILES "${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/ScalFmm/Utils/${my_dir} )
+INSTALL( FILES "${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/Utils/${my_dir} )
 
