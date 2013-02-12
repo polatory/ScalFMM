@@ -37,7 +37,7 @@ enum PeriodicCondition {
     AllDirs     = (DirX | DirY | DirZ)
 };
 
-bool TestPeriodicCondition(const int conditions, const PeriodicCondition testConditions) {
+inline bool TestPeriodicCondition(const int conditions, const PeriodicCondition testConditions) {
     return (conditions & testConditions) == testConditions;
 }
 
