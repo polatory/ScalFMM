@@ -15,7 +15,7 @@ project(ScalFMM)
 # ScalFMM version number.  An even minor number corresponds to releases.
 SET(ScalFMM_MAJOR_VERSION 1)
 SET(ScalFMM_MINOR_VERSION 0)
-SET(ScalFMM_BUILD_VERSION 0)
+SET(ScalFMM_BUILD_VERSION 1)
 SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFMM_BUILD_VERSION}"
   )
 
