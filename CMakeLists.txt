@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.3 FATAL_ERROR)
+ cmake_minimum_required (VERSION 2.8.3 FATAL_ERROR)
 
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
@@ -37,8 +37,8 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( SCALFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" ON )
 OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
-OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" ON )
-OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" ON )
+OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
+OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
 OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
 OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
@@ -103,7 +103,7 @@ if( SCALFMM_USE_BLAS )
 endif()
 
 # Compile option
-ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
+ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic)
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
