@@ -13,10 +13,11 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifnedf FTAYLORCELL_HPP
+#ifndef FTAYLORCELL_HPP
 #define FTAYLORCELL_HPP
 
 #include "../../Components/FBasicCell.hpp"
+#include "../../Containers/FVector.hpp"
 
 /**
  *@author Cyrille Piacibello
@@ -28,8 +29,30 @@
  */
 template <int P>
 class FTaylorCell : public FBasicCell {
+protected:
+  //Size of Multipole Vector
+  static const int MultipoleSize = ((P+1)*(P+2)*(P+3))/6;
+  //Size of Local Vector
+  static const int LocalSize = ((P+1)*(P+2)*(P+3))/6;
+  
+  //Multipole vector
+  FVector<FReal> multipole_exp = FVector(MultipoleSize);
+  //Local vector
+  FVector<FReal> local_exp =  FVector(LocalSize);
 
+public:
+  /**
+   *Default Constructor
+   */
+  FTaylorCell(){
+  }
 
-}
+  //Get multipole Vector
+  FVector * getMultipole(void)
+  {
+    return multipole_exp;
+  }
+
+};
 
 #endif
