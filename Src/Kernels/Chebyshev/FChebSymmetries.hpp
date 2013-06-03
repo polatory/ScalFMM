@@ -120,9 +120,9 @@ class FChebSymmetries
 		const unsigned int qidx = getQuadIdx(i,j,k);
 
 		// store absolut values of (i,j,k) in (u[0],u[1],u[2]) 
-		const int imask = i >> (sizeof(int)*CHAR_BIT-1);
-		const int jmask = j >> (sizeof(int)*CHAR_BIT-1);
-		const int kmask = k >> (sizeof(int)*CHAR_BIT-1);
+        const unsigned int imask = i >> (sizeof(int)*CHAR_BIT-1);
+        const unsigned int jmask = j >> (sizeof(int)*CHAR_BIT-1);
+        const unsigned int kmask = k >> (sizeof(int)*CHAR_BIT-1);
 		const unsigned int u[3] = {(i+imask)^imask, (j+jmask)^jmask, (k+kmask)^kmask};
 
 		// find right cone index

@@ -38,6 +38,7 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  */
 struct FChebAbstractMatrixKernel : FNoCopyable
 {
+    virtual ~FChebAbstractMatrixKernel(){} // to remove warning
 	virtual FReal evaluate(const FPoint&, const FPoint&) const = 0;
 	// I need both functions because required arguments are not always given
 	virtual FReal getScaleFactor(const FReal, const int) const = 0;

@@ -226,7 +226,7 @@ protected:
     double boxWidth;             //< the box width read from file
     int nbParticles;            //< the number of particles read from file
     double energy;
-    int removeWarning;
+    size_t removeWarning;
 
     template<class Type>
     Type readValue(){
@@ -235,8 +235,8 @@ protected:
         removeWarning = fread(&sizeBefore, sizeof(int), 1, file);
         removeWarning = fread(&value, sizeof(Type), 1, file);
         removeWarning = fread(&sizeAfter, sizeof(int), 1, file);
-        if( sizeBefore != sizeof(Type) ) printf("Error in loader ewal Size before %d should be %d\n", sizeBefore, sizeof(Type));
-        if( sizeAfter != sizeof(Type) ) printf("Error in loader ewal Size after %d should be %d\n", sizeAfter, sizeof(Type));
+        if( sizeBefore != sizeof(Type) ) printf("Error in loader ewal Size before %d should be %lu\n", sizeBefore, sizeof(Type));
+        if( sizeAfter != sizeof(Type) ) printf("Error in loader ewal Size after %d should be %lu\n", sizeAfter, sizeof(Type));
         return value;
     }
 
@@ -246,8 +246,8 @@ protected:
         removeWarning = fread(&sizeBefore, sizeof(int), 1, file);
         removeWarning = fread(array, sizeof(Type), size, file);
         removeWarning = fread(&sizeAfter, sizeof(int), 1, file);
-        if( sizeBefore != int(sizeof(Type) * size) ) printf("Error in loader ewal Size before %d should be %d\n", sizeBefore, size*sizeof(Type));
-        if( sizeAfter != int(sizeof(Type) * size) ) printf("Error in loader ewal Size after %d should be %d\n", sizeAfter, size*sizeof(Type));
+        if( sizeBefore != int(sizeof(Type) * size) ) printf("Error in loader ewal Size before %d should be %lu\n", sizeBefore, size*sizeof(Type));
+        if( sizeAfter != int(sizeof(Type) * size) ) printf("Error in loader ewal Size after %d should be %lu\n", sizeAfter, size*sizeof(Type));
         return array;
     }
 

@@ -92,6 +92,10 @@ public:
 		/* empty */
 	}
 
+    virtual ~FAbstractChebKernel(){
+        // should not be used
+    }
+
 	const InterpolatorClass *const getPtrToInterpolator() const
 	{ return Interpolator.getPtr(); }
 
