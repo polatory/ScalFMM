@@ -160,7 +160,7 @@ endif()
 #    Build and export cmake files 
 #===========================================================================
 #
-MESSAGE(WARNING "ScalFMM_BINARY_DIR: "${Scalfmm_BINARY_DIR})
+MESSAGE(STATUS "ScalFMM_BINARY_DIR: "${Scalfmm_BINARY_DIR})
 CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
                ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
                @ONLY IMMEDIATE
