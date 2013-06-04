@@ -16,6 +16,7 @@
 #ifndef FOCTREE_HPP
 #define FOCTREE_HPP
 
+#include <functional>
 
 #include "FSubOctree.hpp"
 #include "FTreeCoordinate.hpp"
@@ -1082,6 +1083,43 @@ public:
         return idxNeighbors;
     }
 
+
+
+    /////////////////////////////////////////////////////////
+    // Lambda function to apply to all member
+    /////////////////////////////////////////////////////////
+
+    /**
+     * @brief forEachLeaf iterate on the leaf and apply the function
+     * @param function
+     */
+    void forEachLeaf(std::function<void(LeafClass*)> function){
+        Iterator octreeIterator(this);
+        octreeIterator.gotoBottomLeft();
+
+        do{
+            function(octreeIterator.getCurrentLeaf());
+        } while(octreeIterator.moveRight());
+    }
+
+    /**
+     * @brief forEachLeaf iterate on the cell and apply the function
+     * @param function
+     */
+    void forEachCell(std::function<void(CellClass*)> function){
+        Iterator octreeIterator(this);
+        octreeIterator.gotoBottomLeft();
+
+        Iterator avoidGoLeft(octreeIterator);
+
+        for(int idx = 0 ; idx < this->height - 1 ; ++idx ){
+            do{
+                function(octreeIterator.getCurrentCell());
+            } while(octreeIterator.moveRight());
+            avoidGoLeft.moveUp();
+            octreeIterator = avoidGoLeft;
+        }
+    }
 };
 
 #endif //FOCTREE_HPP
