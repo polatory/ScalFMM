@@ -24,9 +24,9 @@
 class FNoCopyable {
 private:
         /** Forbiden copy constructor */
-        FNoCopyable(const FNoCopyable&);
+        FNoCopyable(const FNoCopyable&) = delete;
         /** Forbiden copy operator */
-        FNoCopyable& operator=(const FNoCopyable&);
+        FNoCopyable& operator=(const FNoCopyable&) = delete;
 protected:
         /** Empty constructor */
         FNoCopyable(){}
@@ -39,7 +39,7 @@ protected:
 class FNoAssignement {
 private:
         /** Forbiden copy operator */
-        FNoAssignement& operator=(const FNoAssignement&);
+        FNoAssignement& operator=(const FNoAssignement&) = delete;
 protected:
         /** Empty constructor */
         FNoAssignement(){}
