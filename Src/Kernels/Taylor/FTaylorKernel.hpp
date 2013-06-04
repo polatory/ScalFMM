@@ -16,6 +16,9 @@
 #ifndef FTAYLORKERNEL_HPP
 #define FTAYLORKERNEL_HPP
 
+#include "../../Components/FAbstractKernels.hpp"
+
+
 /**
  * @author Cyrille Piacibello 
  * @class FTaylorKernel 
@@ -55,9 +58,9 @@ private:
   }
 
   /** 
-   * @brief Incrementation of powers in Taylor expansion
-   * Result : ...,[2,0,0],[1,1,0],[1,0,1]...
-   * 3-tuple are sorted by size and alphabetical order.
+   * @brief Incrementation of powers in Taylor expansion 
+   * Result : ...,[2,0,0],[1,1,0],[1,0,1]...  3-tuple are sorted 
+   * by size and alphabetical order.
    */
   void incPowers(int * const restrict a, int *const restrict b, int *const restict c)
   {
@@ -81,8 +84,8 @@ private:
   }
   
   /**
-   * @brief
-   * Give the index of array from the corresponding powers.
+   * @brief Give the index of array from the corresponding 3-tuple
+   * powers.
    */
   int powerToIdx(const int a,const int b,const int c)
   {
@@ -203,7 +206,7 @@ public:
   {
     //Powers of expansions
     int a=0,b=0,c=0;
-    int sum = 0;
+    int sum = 0; //a+b+c
     //Indexes of powers
     int idx_a,idx_b,idx_c;
 
@@ -257,6 +260,49 @@ public:
 	}
       }
   }
+  
+   /**
+   *@brief Convert the multipole expansion into local expansion
+   * The operator do not use symmetries.
+   * \f[
+   * L_{\mathbf{n}}^{c} = \frac{1}{\mathbf{n}!} \times \sum_{\mathbf{k}=0}^{p} \left [ \Psi_{\mathbf{n+k}}^{c}(\mathbf{x}\times M_{\mathbf{k}^c})\right ]
+   * \f]
+   */
+  void M2L(CellClass* const FRestrict local, 
+		   const CellClass* distantNeighbors[343],
+		   const int size, const int inLevel)
+  {
+    //Iteration over distantNeighbors
+    int idxNeigh;
+    for(idxNeigh=0 ; idxNeigh<343 ; idxNeigh++){
+      
+      //Need to test if current neighbor is one of the interaction list
+      if(inIteractions[idxNeigh]){
+	//Iteration over Multipole / Local
+	
+      }
+    }
+  }
+
+  
+  /**
+   *@brief Divide and translate the local expansion of parent cell to child cell
+   *
+   */
+  void L2L(const CellClass* const FRestrict local, CellClass* FRestrict * const FRestrict child, const int inLevel)
+  {
+    
+  }
+ 
+  
+  /**
+   *@brief Apply on the particles the force computed from the local expansion
+   *
+   */
+  void L2P(const CellClass* const local, ContainerClass* const particles)
+  {
+  }
+
   
 };
 
