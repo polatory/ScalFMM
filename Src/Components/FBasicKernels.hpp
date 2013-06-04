@@ -28,8 +28,8 @@
 *
 * This kernels is empty and does nothing.
 */
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class FBasicKernels : public FAbstractKernels<CellClass,ContainerClass> {
 public:
     /** Default destructor */
     virtual ~FBasicKernels(){

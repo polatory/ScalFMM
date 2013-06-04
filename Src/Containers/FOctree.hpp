@@ -1120,6 +1120,25 @@ public:
             octreeIterator = avoidGoLeft;
         }
     }
+
+    /**
+     * @brief forEachLeaf iterate on the cell and apply the function
+     * @param function
+     */
+    void forEachCellLeaf(std::function<void(CellClass*,LeafClass*)> function){
+        Iterator octreeIterator(this);
+        octreeIterator.gotoBottomLeft();
+
+        Iterator avoidGoLeft(octreeIterator);
+
+        for(int idx = 0 ; idx < this->height - 1 ; ++idx ){
+            do{
+                function(octreeIterator.getCurrentCell(),octreeIterator.getCurrentLeaf());
+            } while(octreeIterator.moveRight());
+            avoidGoLeft.moveUp();
+            octreeIterator = avoidGoLeft;
+        }
+    }
 };
 
 #endif //FOCTREE_HPP

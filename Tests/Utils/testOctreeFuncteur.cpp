@@ -78,6 +78,10 @@ int main(int argc, char ** argv){
     });
     std::cout << "There are " << nbCells << " cells " << std::endl;
 
+    // To get cell and particles at leaf level
+    tree.forEachCellLeaf([&](FBasicCell* /*cell*/, LeafClass* /*leaf*/){
+    });
+
     return 0;
 }
 

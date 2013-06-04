@@ -28,7 +28,7 @@
 *
 * If you want to create you own kernels you have to inherit from this class.
 */
-template< class ParticleClass, class CellClass, class ContainerClass >
+template< class CellClass, class ContainerClass >
 class FAbstractKernels{
 public:
     /** Default destructor */

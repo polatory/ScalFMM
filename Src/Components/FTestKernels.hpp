@@ -36,8 +36,8 @@
 * A the end of a computation, the particles should host then number of particles
 * in the simulation (-1).
 */
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FTestKernels  : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class FTestKernels  : public FAbstractKernels<CellClass,ContainerClass> {
 public:
     /** Default destructor */
     virtual ~FTestKernels(){
@@ -46,7 +46,7 @@ public:
     /** Before upward */
     void P2M(CellClass* const pole, const ContainerClass* const particles) {
         // the pole represents all particles under
-        pole->setDataUp(pole->getDataUp() + particles->getSize());
+        pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
     }
 
     /** During upward */
@@ -82,13 +82,11 @@ public:
 
     /** After Downward */
     void L2P(const CellClass* const  local, ContainerClass*const particles){
-        // The particles is impacted by the parent cell
-        typename ContainerClass::BasicIterator iter(*particles);
-        while( iter.hasNotFinished() ){
-            iter.data().setDataDown(iter.data().getDataDown() + local->getDataDown());
-            iter.gotoNext();
+        // The particles is impacted by the parent cell      
+        int*const particlesAttributes = targets->getDataDown();
+        for(int idxPart = 0 ; idxPart < targets ; ++idxPart){
+            particlesAttributes[idxPart] += local->getDataDown();
         }
-
     }
 
 
@@ -103,16 +101,14 @@ public:
         }
         for(int idx = 0 ; idx < 27 ; ++idx){
             if( directNeighborsParticles[idx] ){
-                inc += directNeighborsParticles[idx]->getSize();
+                inc += directNeighborsParticles[idx]->getNbParticles();
             }
         }
 
-        typename ContainerClass::BasicIterator iter(*targets);
-        while( iter.hasNotFinished() ){
-            iter.data().setDataDown(iter.data().getDataDown() + inc);
-            iter.gotoNext();
+        int*const particlesAttributes = targets->getDataDown();
+        for(int idxPart = 0 ; idxPart < targets ; ++idxPart){
+            particlesAttributes[idxPart] += inc;
         }
-
     }
 
     /** After Downward */
@@ -123,16 +119,14 @@ public:
         long long int inc = 0;
         for(int idx = 0 ; idx < 27 ; ++idx){
             if( directNeighborsParticles[idx] ){
-                inc += directNeighborsParticles[idx]->getSize();
+                inc += directNeighborsParticles[idx]->getNbParticles();
             }
         }
 
-        typename ContainerClass::BasicIterator iter(*targets);
-        while( iter.hasNotFinished() ){
-            iter.data().setDataDown(iter.data().getDataDown() + inc);
-            iter.gotoNext();
+        int*const particlesAttributes = targets->getDataDown();
+        for(int idxPart = 0 ; idxPart < targets ; ++idxPart){
+            particlesAttributes[idxPart] += inc;
         }
-
     }
 };
 
@@ -140,7 +134,7 @@ public:
 /** This function test the octree to be sure that the fmm algorithm
   * has worked completly.
   */
-template< class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
+template< class OctreeClass, class CellClass, class ContainerClass, class LeafClass>
 void ValidateFMMAlgo(OctreeClass* const tree){
     std::cout << "Check Result\n";
     const int TreeHeight = tree->getHeight();
