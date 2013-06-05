@@ -47,4 +47,4 @@ public:
   
 };
 
-#endif FTAYLORPARTICLE_HPP 
+#endif

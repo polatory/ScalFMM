@@ -17,7 +17,7 @@
 #define FTAYLORKERNEL_HPP
 
 #include "../../Components/FAbstractKernels.hpp"
-
+#include "../../Utils/FMemUtils.hpp"
 
 /**
  * @author Cyrille Piacibello 
@@ -29,8 +29,8 @@
  */
 
 
-template<class ParticleClass, class CellClass, class ContainerClass, int P>
-class FTaylorKernel : public FAbstractKernel<ParticleClass,CellClass,ContainerClass>{
+template< class ParticleClass, class CellClass, class ContainerClass, int P>
+class FTaylorKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
   
 private:
   //Size of the multipole and local vectors
@@ -62,7 +62,7 @@ private:
    * Result : ...,[2,0,0],[1,1,0],[1,0,1]...  3-tuple are sorted 
    * by size and alphabetical order.
    */
-  void incPowers(int * const restrict a, int *const restrict b, int *const restict c)
+  void incPowers(int * const FRestrict a, int *const FRestrict b, int *const FRestrict c)
   {
     int t = (*a)+(*b)+(*c);
     if(t==0)
@@ -144,9 +144,9 @@ private:
     
     tab[0]=1/(FMath::Sqrt(dx*dx+dy*dy+dz*dz));
     FReal R3 = tab[0]/(dx*dx+dy*dy+dz*dz);
-    tab[1]=temp*dx;
-    tab[2]=temp*dy;
-    tab[3]=temp*dz;
+    tab[1]=dx*R3;
+    tab[2]=dy*R3;
+    tab[3]=dz*R3;
     FReal R5 = R3/(dx*dx+dy*dy+dz*dz);
     tab[4] = R3-dx*dx*R5;
     tab[5] = (-dx)*dy*R5;
@@ -361,15 +361,15 @@ public:
   {
     //Iteration over distantNeighbors
     int idxNeigh;
-    FPoint locCenter = local.getLeafCenter();
+    FPoint locCenter = getLeafCenter(local.getCoordinate());
     for(idxNeigh=0 ; idxNeigh<343 ; idxNeigh++){
 
       //Need to test if current neighbor is one of the interaction list
-      if(inIteractions[idxNeigh]){
+      if(distantNeighbors[idxNeigh]){
 	//Derivatives are computed iteratively
-	FReal yetComputed[SizeVector]; //TODO C'est faux, k+n>p...
+	FReal yetComputed[(2*P+1)*(2*P+2)*(2*P+3)/6];
 	FMemUtils::memset(yetComputed,0,SizeVector*sizeof(FReal(0)));
-	initDerivative(locCenter,inIteractions[idxNeigh].getLeafCenter(),yetComputed);
+	initDerivative(locCenter,getLeafCenter(distantNeighbors[idxNeigh].getCoordinate),yetComputed);
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0;
@@ -384,9 +384,9 @@ public:
 	  
 	  //Iterating over multipole array : k
 	  while(iterMult.hasNotFinished()){
-	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,inIteractions[idxNeigh].getLeafCenter(),yetComputed);
+	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,getLeafCenter(distantNeighbors[idxNeigh].getCoordinate()),yetComputed);
 	    data *= iterMult.data()/fctl;
-	    iterLocal.setData();
+	    iterLocal.setData(data);
 	    
 	    //updating a,b,c and iterator
 	    incPowers(&am,&bm,&cm);
@@ -404,7 +404,7 @@ public:
 
   
   /**
-   *@brief Divide and translate the local expansion of parent cell to child cell
+   *@brief Translate the local expansion of parent cell to child cell
    *
    */
   void L2L(const CellClass* const FRestrict local, 
@@ -422,9 +422,43 @@ public:
   void L2P(const CellClass* const local, 
 	   ContainerClass* const particles)
   {
-  }
+    FPoint locCenter = getLeafCenter(local.getCoordinate());
+    //Iterator over particles
+    typename ContainerClass::ConstBasicIterator iterParticle(*particles);
+    while(iterParticle.hasNotFinished()){
+      
+      FPoint dist = iterParticle.getPosition()-locCenter;
+      FReal dx = dist.getX();
+      FReal dy = dist.getY();
+      FReal dz = dist.getZ();
 
-  
+      FReal forceX;
+      FReal forceY;
+      FReal forceZ;
+
+      int a=0,b=0,c=0;
+
+      //Iteration over Local array
+      typename ContainerClass::BasicIterator iterLocal(local.getLocal());
+      while(iterLocal.hasNotFinished()){
+	
+	int idx = powerToIdx(a,b,c);
+	//Computation of forces
+	FReal locForce = iterLocal.data();
+	
+	forceX = FMath::pow(dx,a)*locForce;
+	forceY = FMath::pow(dy,b)*locForce;
+	forceZ = FMath::pow(dz,c)*locForce;
+	
+	//Application of forces
+	(iterParticle.data()).incForces(forceX,forceY,forceZ);
+
+	incPowers(&a,&b,&c);
+	iterLocal.gotoNext();
+      }
+      iterParticle.gotoNext();
+    }
+  }
 };
 
-#endif FTAYLORKERNEL_HPP
+#endif
