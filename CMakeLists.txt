@@ -44,6 +44,7 @@ OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
 OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
 OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
 OPTION( SCALFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
+OPTION( SCALFMM_USE_SSE "Set to ON to compile with sse support" ON )
 #
 SET(SCALFMM_LIBRARIES "")
 
@@ -72,8 +73,9 @@ else()
 endif()
 
 # Attach source code to exec
+MESSAGE( STATUS "SCALFMM_ATTACHE_SOURCE = ${SCALFMM_ATTACHE_SOURCE}" )
 if( SCALFMM_ATTACHE_SOURCE )
-  MESSAGE( STATUS "Use -g in compiler flags" )
+  MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
   ADD_DEFINITIONS(-g)
 endif()
 
@@ -107,6 +109,16 @@ ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic -s
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
+
+# Compile optimization
+SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI})
+
+# Use SSE
+MESSAGE( STATUS "SCALFMM_USE_SSE = ${SCALFMM_USE_SSE}" )
+if( SCALFMM_USE_SSE )
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
+endif()
 
 # Use Mem stats
 MESSAGE( STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
