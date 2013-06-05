@@ -53,6 +53,12 @@ public:
     return multipole_exp;
   }
 
+  //Get local Vector
+  FVector * getLocal(void)
+  {
+    return local_exp;
+  }
+
 };
 
 #endif

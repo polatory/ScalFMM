@@ -114,7 +114,7 @@ private:
     }
     return result;
   }
-  
+
   /* Return the product of factorial of 3 numbers
    */
   FReal fact3int(const int a,const int b,const int c)
@@ -122,6 +122,91 @@ private:
     return (fact(a)*fact(b)*fact(c));
   }
   
+  /** @brief Init the derivative array for using of following formula
+   * from "A cartesian tree-code for screened coulomb interactions"
+   *
+   *\f[
+   * \Psi_{\mathbf{k}}^{c}\times \left [\left |\mathbf{k}\right |\times \left |
+   * \mathbf{x}_i-\mathbf{x}_c\right |^2 \times 
+   * \frac{1}{\mathbf{k}!} \right ]\				
+   * = (2\times \left |{\mathbf{k}}\right |-1)\times
+   * \sum_{j=0}^{3}\left [(x_{i_j}-x_{c_j})\times
+   * \Psi_{\mathbf{k}-e_j,i}^{c}\times \frac{1}{({\mathbf{k}}-e_j)!}\right ]\ 
+   * -(\left |\mathbf{k}\right |-1)\times  \sum_{j=0}^{3}\left
+   * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
+   * \f]
+   */
+  void initDerivative(const FPoint target, const FPoint src, FReal * tab)
+  {
+    FReal dx = target.getX()-src.getX();
+    FReal dy = target.getY()-src.getY();
+    FReal dz = target.getZ()-src.getZ();
+    
+    tab[0]=1/(FMath::Sqrt(dx*dx+dy*dy+dz*dz));
+    FReal R3 = tab[0]/(dx*dx+dy*dy+dz*dz);
+    tab[1]=temp*dx;
+    tab[2]=temp*dy;
+    tab[3]=temp*dz;
+    FReal R5 = R3/(dx*dx+dy*dy+dz*dz);
+    tab[4] = R3-dx*dx*R5;
+    tab[5] = (-dx)*dy*R5;
+    tab[6] = (-dx)*dz*R5;
+    tab[7] = R3-dy*dy*R5;
+    tab[8] = (-dy)*dz*R5;
+    tab[9] = R3-dz*dz*R5;
+  }
+  
+  /** @brief Compute and store the derivative for a given tuple.
+   *
+   */
+  FReal computeDerivative(const int a, const int b, const int c, 
+			  const FPoint target, 
+			  const FPoint src, 
+			  FReal * yetComputed)
+  {
+    int idx = powerToIdx(a,b,c);
+    if(yetComputed[idx] =! 0)
+      {return yetComputed[idx];}
+    else
+      {
+	FReal dx = target.getX()-src.getX();
+	FReal dy = target.getY()-src.getY();
+	FReal dz = target.getZ()-src.getZ();
+	FReal fct = fact3int(a,b,c);
+	FReal dist = FMath::Sqrt(dx*dx+dy*dy+dz*dz);
+	FReal temp_value = FReal(0);
+	int idxt;
+	if(a > 0){
+	    idxt = powerToIdx(a-1,b,c);
+	    temp_value += (2*(a+b+c)-1)*dx*yetComputed[idxt]*a/fct;
+	    if(a > 1){
+	      idxt = powerToIdx(a-2,b,c);
+	      temp_value -= (a+b+c-1)*yetComputed[idxt]*a*(a-1)/fct;
+	    }
+	}
+	if(b > 0){
+	    idxt = powerToIdx(a,b-1,c);
+	    temp_value += (2*(a+b+c)-1)*dy*yetComputed[idxt]*b/fct;
+	    if(b > 1){
+	      idxt = powerToIdx(a,b-2,c);
+	      temp_value -= (a+b+c-1)*yetComputed[idxt]*b*(b-1)/fct;
+	    }
+	}
+	if(c > 0){
+	    idxt = powerToIdx(a,b,c-1);
+	    temp_value += (2*(a+b+c)-1)*dz*yetComputed[idxt]*c/fct;
+	    if(c > 1){
+	      idxt = powerToIdx(a,b,c-2);
+	      temp_value -= (a+b+c-1)*yetComputed[idxt]*c*(c-1)/fct;
+	    }
+	}
+	FReal coeff = (a+b+c)*dist/fct;
+	temp_value = temp_value/coeff;
+	yetComputed[idx] = temp_value;
+	return temp_value;
+      }
+  }
+ 
 public:
   
   /*Constructor, need system information*/
@@ -261,25 +346,58 @@ public:
       }
   }
   
-   /**
-   *@brief Convert the multipole expansion into local expansion
-   * The operator do not use symmetries.
-   * \f[
-   * L_{\mathbf{n}}^{c} = \frac{1}{\mathbf{n}!} \times \sum_{\mathbf{k}=0}^{p} \left [ \Psi_{\mathbf{n+k}}^{c}(\mathbf{x}\times M_{\mathbf{k}^c})\right ]
-   * \f]
+  /**
+   *@brief Convert the multipole expansion into local expansion The
+   * operator do not use symmetries.  
+   * \f[ 
+   * L_{\mathbf{n}}^{c} =
+   * \frac{1}{\mathbf{n}!} \times \sum_{\mathbf{k}=0}^{p} \left [
+   * \Psi_{\mathbf{n+k}}^{c}(\mathbf{x}\times M_{\mathbf{k}^c})\right
+   * ] \f]
    */
   void M2L(CellClass* const FRestrict local, 
-		   const CellClass* distantNeighbors[343],
-		   const int size, const int inLevel)
+	   const CellClass* distantNeighbors[343],
+	   const int size, const int inLevel)
   {
     //Iteration over distantNeighbors
     int idxNeigh;
+    FPoint locCenter = local.getLeafCenter();
     for(idxNeigh=0 ; idxNeigh<343 ; idxNeigh++){
-      
+
       //Need to test if current neighbor is one of the interaction list
       if(inIteractions[idxNeigh]){
+	//Derivatives are computed iteratively
+	FReal yetComputed[SizeVector]; //TODO C'est faux, k+n>p...
+	FMemUtils::memset(yetComputed,0,SizeVector*sizeof(FReal(0)));
+	initDerivative(locCenter,inIteractions[idxNeigh].getLeafCenter(),yetComputed);
+
 	//Iteration over Multipole / Local
+	int al=0,bl=0,cl=0;
+	int am=0,bm=0,cm=0;
+	typename ContainerClass::BasicIterator iterLocal(local.getLocal());
 	
+	//Iterating over local array : n
+	while(iterLocal.hasNotFinished()){
+	  FReal fctl = fact3int(al,bl,cl);
+	  //Iterator over multipole array 
+	  typename ContainerClass::BasicIterator iterMult(local.getMultipole());
+	  
+	  //Iterating over multipole array : k
+	  while(iterMult.hasNotFinished()){
+	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,inIteractions[idxNeigh].getLeafCenter(),yetComputed);
+	    data *= iterMult.data()/fctl;
+	    iterLocal.setData();
+	    
+	    //updating a,b,c and iterator
+	    incPowers(&am,&bm,&cm);
+	    iterMult.gotoNext();
+	  }
+	  am=0;
+	  bm=0;
+	  cm=0;
+	  iterLocal.gotoNext();
+	  incPowers(&al,&bl,&cl);
+	}
       }
     }
   }
@@ -289,7 +407,9 @@ public:
    *@brief Divide and translate the local expansion of parent cell to child cell
    *
    */
-  void L2L(const CellClass* const FRestrict local, CellClass* FRestrict * const FRestrict child, const int inLevel)
+  void L2L(const CellClass* const FRestrict local, 
+	   CellClass* FRestrict * const FRestrict child, 
+	   const int inLevel)
   {
     
   }
@@ -299,7 +419,8 @@ public:
    *@brief Apply on the particles the force computed from the local expansion
    *
    */
-  void L2P(const CellClass* const local, ContainerClass* const particles)
+  void L2P(const CellClass* const local, 
+	   ContainerClass* const particles)
   {
   }
 
