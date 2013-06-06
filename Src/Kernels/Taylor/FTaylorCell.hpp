@@ -36,9 +36,9 @@ protected:
   static const int LocalSize = ((P+1)*(P+2)*(P+3))/6;
   
   //Multipole vector
-  FVector<FReal> multipole_exp = FVector(MultipoleSize);
+  FVector<FReal> multipole_exp = FVector<FReal>(MultipoleSize);
   //Local vector
-  FVector<FReal> local_exp =  FVector(LocalSize);
+  FVector<FReal> local_exp =  FVector<FReal>(LocalSize);
 
 public:
   /**
@@ -48,9 +48,15 @@ public:
   }
 
   //Get multipole Vector
-  FVector * getMultipole(void)
+  FVector<FReal> * getMultipole(void)
   {
     return multipole_exp;
+  }
+
+  //Get local Vector
+  FVector<FReal> * getLocal(void)
+  {
+    return local_exp;
   }
 
 };
