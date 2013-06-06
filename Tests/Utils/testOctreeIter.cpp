@@ -30,7 +30,7 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FBasicParticle.hpp"
+#include "../../Src/Components/FBasicParticleContainer.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Utils/FTic.hpp"
@@ -41,9 +41,9 @@
 */
 
 int main(int argc, char ** argv){
-    typedef FVector<FBasicParticle>      ContainerClass;
-    typedef FSimpleLeaf<FBasicParticle, ContainerClass >                     LeafClass;
-    typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicParticleContainer<0>     ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -66,7 +66,7 @@ int main(int argc, char ** argv){
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
     counterTime.tic();
     {
-        FBasicParticle particle;
+        FPoint particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
             tree.insert(particle);
@@ -77,7 +77,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     {
-        std::cout << "Itering on particles ..." << std::endl;
+        std::cout << "Itering on Cells ..." << std::endl;
         counterTime.tic();
 
         OctreeClass::Iterator octreeIterator(&tree);
@@ -87,7 +87,7 @@ int main(int argc, char ** argv){
             do{
                 ++counter;
                 //counter += octreeIterator.getCurrentList()->getSize();
-            } while(octreeIterator.moveRight());
+            } while(octreeIterator.moveRight());           
             octreeIterator.moveUp();
             octreeIterator.gotoLeft();
             std::cout << "Cells at this level " << counter << " ...\n";

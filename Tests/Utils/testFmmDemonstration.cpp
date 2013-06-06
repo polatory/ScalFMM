@@ -30,7 +30,6 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
@@ -38,6 +37,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 
+#include "../../Src/Components/FAbstractParticleContainer.hpp"
 #include "../../Src/Components/FBasicKernels.hpp"
 
 #include "../../Src/Files/FRandomLoader.hpp"
@@ -46,51 +46,61 @@
 class MyCell : public FBasicCell {
 };
 
-// My fack particle is a basic particle and! a index
-// that correspond to the index in the user particles array
-class MyFackParticle : public FBasicParticle {
-    int myIndex;
+// My fack Container is simply saving the indexes of each
+// particles (nothing more!)
+class MyContainer : public FAbstractParticleContainer {
+    FVector<int> indexes;
 public:
-    MyFackParticle() : myIndex(0) {
+    template<typename... Args>
+    void push(const FPoint& /*inParticlePosition*/, const int newParticleIndex, Args ... /*args*/){
+        indexes.push(newParticleIndex);
     }
-    void setIndex(const int inIndex){
-        this->myIndex = inIndex;
+
+    int getSize() const {
+        return indexes.getSize();
     }
-    int getIndex() const{
-        return this->myIndex;
+
+    const FVector<int>& getIndexes() const{
+        return indexes;
     }
 };
 
-// My leaf store the indexes of the particles it receives
-// in a vector
-class MyLeaf : public FAbstractLeaf<MyFackParticle, FVector<int> > {
-    FVector<int> indexes;
+// My leaf process the particles and save only
+// those where keepIt is true (during the push method)
+class MyLeaf : public FAbstractLeaf< MyContainer > {
+    MyContainer particles;
+
 public:
-    void push(const MyFackParticle& particle){
-        indexes.push( particle.getIndex() );
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const bool keepIt, Args ... args){
+        if(keepIt) particles.push(inParticlePosition, args...);
     }
-    FVector<int>* getSrc(){
-        return &indexes;
+    MyContainer* getSrc(){
+        return &particles;
     }
-    FVector<int>* getTargets(){
-        return &indexes;
+    MyContainer* getTargets(){
+        return &particles;
     }
 };
 
 // My kernel actually does nothing except showing how to retreive data from an
 // array from the indexes vector giving by the leaf in the P2M
-template< class ParticleClass, class CellClass, class ContainerClass>
-class MyKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass>{
-    FBasicParticle*const realParticles;
+template< class CellClass, class ContainerClass>
+class MyKernel : public FAbstractKernels<CellClass,ContainerClass>{
+    MortonIndex* indexForEachParticle;
 public:
-    MyKernel(FBasicParticle*const inRealParticles): realParticles(inRealParticles) {
+    MyKernel(const int inNbParticles): indexForEachParticle(new MortonIndex[inNbParticles]) {
+        memset(indexForEachParticle,0,sizeof(MortonIndex)*inNbParticles);
     }
 
-    void P2M(CellClass* const , const ContainerClass* const particlesIndexes) {
-        typename ContainerClass::ConstBasicIterator iter(*particlesIndexes);
-        while( iter.hasNotFinished() ){
-            realParticles[iter.data()].getPosition();
-            iter.gotoNext();
+    ~MyKernel(){
+        delete[] indexForEachParticle;
+    }
+
+    void P2M(CellClass* const cell, const ContainerClass* const particles) {
+        for(int idxPart = 0 ; idxPart < particles->getSize() ; ++idxPart){
+            // save the current morton index for each particles
+            indexForEachParticle[ particles->getIndexes()[idxPart] ] = cell->getMortonIndex();
         }
     }
 
@@ -121,14 +131,15 @@ public:
 
 
 int main(int argc, char ** argv){
-    typedef MyFackParticle    ParticleClass;
+    // Custom data structure here
     typedef MyCell            CellClass;
-    typedef FVector<int>      ContainerClass;
+    typedef MyContainer       ContainerClass;
     typedef MyLeaf            LeafClass;
 
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef MyKernel<ParticleClass, CellClass, ContainerClass >         KernelClass;
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    // Standard things here
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef MyKernel< CellClass, ContainerClass >         KernelClass;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
     //////////////////////////////////////////////////////////////
     ///////////////////////What we do/////////////////////////////
@@ -146,9 +157,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader<ParticleClass> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
-    FBasicParticle*const realsParticles = new FBasicParticle[NbPart];
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -157,17 +167,19 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
+    FPoint*const realsParticlesPositions = new FPoint[NbPart];
     {
-        ParticleClass particleToFill;
+        FPoint particlePosition;
+        bool keepIt;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             // get a random position
-            loader.fillParticle(particleToFill);
-            // put the index inside
-            particleToFill.setIndex(idxPart);
+            loader.fillParticle(&particlePosition);
+            // let say we remove 1/5 particles
+            keepIt = (idxPart%5);
             // insert in the tree
-            tree.insert(particleToFill);
-            // copy in the array
-            realsParticles[idxPart].setPosition(particleToFill.getPosition());
+            tree.insert(particlePosition, keepIt, idxPart);
+            // save the position
+            realsParticlesPositions[idxPart] = particlePosition;
         }
     }
 
@@ -183,15 +195,13 @@ int main(int argc, char ** argv){
     OctreeClass::Iterator octreeIterator(&tree);
     octreeIterator.gotoBottomLeft();
     do{
-        ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
+        FVector<int>::ConstBasicIterator iter(octreeIterator.getCurrentListTargets()->getIndexes());
         const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
 
         while( iter.hasNotFinished() ){
-            std::cout << "Particles with index " << iter.data() << " has a morton index of " << indexAtThisLeaf << std::endl;
-
-            const FPoint& particlePosition = realsParticles[iter.data()].getPosition();
-            std::cout << "\t The real position of this particle is (" << particlePosition.getX() << ";" << particlePosition.getY() << ";" << particlePosition.getZ() << ")" << std::endl;
-
+            std::cout << "Particles with index " << iter.data() <<
+                         " has a morton index of " << indexAtThisLeaf << std::endl;
+            std::cout << " it real position was " << realsParticlesPositions[iter.data()] << std::endl;
             iter.gotoNext();
         }
     } while(octreeIterator.moveRight());
@@ -205,7 +215,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(realsParticles);
+    KernelClass kernels(NbPart);
     FmmClass algo(&tree,&kernels);
     algo.execute();
 
@@ -215,7 +225,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    delete [] realsParticles;
+    delete [] realsParticlesPositions;
 
     return 0;
 }

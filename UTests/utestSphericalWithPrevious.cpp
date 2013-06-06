@@ -18,7 +18,6 @@
 
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
 #include "../Src/Files/FFmaBinLoader.hpp"
@@ -27,23 +26,22 @@
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
-
+#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /**
   * This test compare a previous FMM result with a previous simulation result.
   */
 
 
-typedef FSphericalParticle       ParticleClass;
 typedef FSphericalCell           CellClass;
-typedef FVector<ParticleClass>  ContainerClass;
+typedef FP2PParticleContainerIndexed  ContainerClass;
 
-typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 /** To check if a value is correct */
 bool IsSimilar(const FReal good, const FReal other){
@@ -68,7 +66,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
         const int DevP = 9;
 
         // Load the particles file
-        FFmaBinLoader<ParticleClass> loader(ParticleFile);
+        FFmaBinLoader loader(ParticleFile);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -78,7 +76,13 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
         // Create octree
         FSphericalCell::Init(DevP);
         OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        loader.fillTree(testTree);
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            FPoint position;
+            FReal physicalValue = 0.0;
+            loader.fillParticle(&position,&physicalValue);
+            // put in tree
+            testTree.insert(position, idxPart, physicalValue);
+        }
 
         // Run simulation
         KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -86,11 +90,11 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
         algo.execute();
 
         // If needed save the result
-        // FTreeIO::Save<OctreeClass, CellClass, ParticleClass, ContainerClass >(DataFile, testTree);
+        // FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile, testTree);
 
         // Load previous result
         OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >(DataFile, goodTree);
+        FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile, goodTree);
 
         // Compare the two simulations
         Print("Check the particles...");
@@ -107,24 +111,20 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
                     break;
                 }
 
-                if(testOctreeIterator.getCurrentListSrc()->getSize() != goodOctreeIterator.getCurrentListSrc()->getSize()){
+                if(testOctreeIterator.getCurrentListSrc()->getNbParticles() != goodOctreeIterator.getCurrentListSrc()->getNbParticles()){
                     uassert(false);
                     break;
                 }
 
-                ContainerClass::BasicIterator goodIter(*goodOctreeIterator.getCurrentListTargets());
-                ContainerClass::BasicIterator testIter(*testOctreeIterator.getCurrentListTargets());
+                const ContainerClass* testLeaf = testOctreeIterator.getCurrentListSrc();
+                const ContainerClass* goodLeaf = goodOctreeIterator.getCurrentListSrc();
 
-                while( goodIter.hasNotFinished() ){
-                    uassert( IsSimilar(goodIter.data().getPotential(), testIter.data().getPotential()) );
-                    uassert( IsSimilar(goodIter.data().getPosition().getX(), testIter.data().getPosition().getX()) );
-                    uassert( IsSimilar(goodIter.data().getPosition().getY(), testIter.data().getPosition().getY()) );
-                    uassert( IsSimilar(goodIter.data().getPosition().getZ(), testIter.data().getPosition().getZ()) );
-
-                    goodIter.gotoNext();
-                    testIter.gotoNext();
+                for(int idxPart = 0 ; idxPart < testLeaf->getNbParticles() ; ++idxPart ){
+                    uassert( IsSimilar(goodLeaf->getPotentials()[idxPart], testLeaf->getPotentials()[idxPart]) );
+                    uassert( IsSimilar(goodLeaf->getForcesX()[idxPart], testLeaf->getForcesX()[idxPart]) );
+                    uassert( IsSimilar(goodLeaf->getForcesY()[idxPart], testLeaf->getForcesY()[idxPart]) );
+                    uassert( IsSimilar(goodLeaf->getForcesZ()[idxPart], testLeaf->getForcesZ()[idxPart]) );
                 }
-
 
                 if(!testOctreeIterator.moveRight()){
                     if(goodOctreeIterator.moveRight()){

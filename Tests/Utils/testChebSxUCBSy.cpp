@@ -33,11 +33,12 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
@@ -76,9 +77,8 @@ FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 
 int main(int argc, char* argv[])
 {
-	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
-	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+    typedef FP2PParticleContainer ContainerClass;
+    typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
 
 	///////////////////////What we do/////////////////////////////
@@ -102,14 +102,12 @@ int main(int argc, char* argv[])
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=[" << cx.getX() << "," << cx.getY() << "," << cx.getZ()
 						<< "] with M=" << M << " target particles" << std::endl;
-	{
-		FChebParticle particle;
+    {
 		for(long i=0; i<M; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
-			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-			particle.setPosition(x, y, z);
-			X.push(particle);
+            FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
+            X.push(FPoint(x,y,z));
 		}
 	}
 
@@ -121,15 +119,12 @@ int main(int argc, char* argv[])
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=[" << cy.getX() << "," << cy.getY() << "," << cy.getZ()
 						<< "] with N=" << N << " target particles" << std::endl;
-	{
-		FChebParticle particle;
+    {
 		for(long i=0; i<N; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-			particle.setPosition(x, y, z);
-			particle.setPhysicalValue(FReal(rand())/FRandMax);
-			Y.push(particle);
+            Y.push(FPoint(x, y, z),FReal(rand())/FRandMax);
 		}
 	}
 
@@ -197,30 +192,36 @@ int main(int argc, char* argv[])
 
 	FReal* approx_f = new FReal[M];
 	FReal*        f = new FReal[M];
-	for (unsigned int i=0; i<M; ++i) f[i] = FReal(0.);
-	ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
-	while(iterY.hasNotFinished()){
-		const FPoint& y = iterY.data().getPosition();
-		const FReal        w = iterY.data().getPhysicalValue();
-		unsigned int counter = 0;
-		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
-		while(iterX.hasNotFinished()){
-			const FPoint& x = iterX.data().getPosition();
-			f[counter++] += MatrixKernel.evaluate(x,y) * w;
-			iterX.gotoNext();
-		}
-		iterY.gotoNext();
-	}
+    {
+        for (unsigned int i=0; i<M; ++i) f[i] = FReal(0.);
+
+        const FReal*const positionsX = Y.getSrc()->getPositions()[0];
+        const FReal*const positionsY = Y.getSrc()->getPositions()[1];
+        const FReal*const positionsZ = Y.getSrc()->getPositions()[2];
+        const FReal*const physicalValues = Y.getSrc()->getPhysicalValues();
+
+        for(int idxPart = 0 ; idxPart < Y.getSrc()->getNbParticles() ; ++idxPart){
+            const FPoint y = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FReal        w = physicalValues[idxPart];
+
+            const FReal*const xpositionsX = X.getSrc()->getPositions()[0];
+            const FReal*const xpositionsY = X.getSrc()->getPositions()[1];
+            const FReal*const xpositionsZ = X.getSrc()->getPositions()[2];
+
+            for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+                const FPoint x = FPoint(xpositionsX[idxPart],xpositionsY[idxPart],xpositionsZ[idxPart]);
+                f[idxPartX] += MatrixKernel.evaluate(x,y) * w;
+            }
+        }
+    }
 	time.tac();
 	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
 
 
 	////////////////////////////////////////////////////////////////////
-	ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
-	unsigned int counter = 0;
-	while(iterX.hasNotFinished()) {
-		approx_f[counter++] = iterX.data().getPotential();
-		iterX.gotoNext();
+    const FReal*const potentials = X.getSrc()->getPotentials();
+    for(int idxPart = 0 ; idxPart < X.getSrc()->getNbParticles() ; ++idxPart){
+        approx_f[idxPart] = potentials[idxPart];
 	}
 
 	

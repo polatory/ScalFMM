@@ -16,7 +16,8 @@
 #ifndef FABSTRACTLEAF_HPP
 #define FABSTRACTLEAF_HPP
 
-
+#include "../Utils/FPoint.hpp"
+#include "../Utils/FDebug.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -26,7 +27,7 @@
 * This class is used to enable the use of typed particles
 * (source XOR target) or simple system (source AND target)
 */
-template< class ParticleClass, class ContainerClass >
+template< class ContainerClass >
 class FAbstractLeaf {
 public:
     /** Default destructor */
@@ -39,7 +40,10 @@ public:
         * Depending on the system to use the class that inherit
         * this interface can sort the particle as they like.
         */
-    virtual void push(const ParticleClass& particle) = 0;
+    template<typename... Args>
+    void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
+        FDEBUG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );
+    }
 
     /**
         * To get all the sources in a leaf

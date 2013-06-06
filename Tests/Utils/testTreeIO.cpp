@@ -30,20 +30,18 @@
 #include "../../Src/Files/FTreeIO.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
     typedef FSphericalCell                 CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
+    typedef FP2PParticleContainer         ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to load or retrieve an entier tree.\n";
@@ -55,7 +53,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaLoader<ParticleClass> loader(filename);
+    FFmaLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -71,7 +69,12 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    loader.fillTree(tree);
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        loader.fillParticle(&particlePosition,&physicalValue);
+        tree.insert(particlePosition, physicalValue );
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -80,13 +83,13 @@ int main(int argc, char ** argv){
 
     std::cout << "Save tree ..." << std::endl;
 
-    FTreeIO::Save<OctreeClass, CellClass, ParticleClass, ContainerClass >("/tmp/tree.data", tree);
+    FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >("/tmp/tree.data", tree);
 
     // -----------------------------------------------------
 
     std::cout << "Load tree ..." << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >("/tmp/tree.data", tree);
+    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >("/tmp/tree.data", tree);
 
     return 0;
 }

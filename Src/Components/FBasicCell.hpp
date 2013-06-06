@@ -17,7 +17,6 @@
 #define FBASICCELL_HPP
 
 
-#include "../Extensions/FExtendPosition.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
 #include "../Extensions/FExtendCoordinate.hpp"
 

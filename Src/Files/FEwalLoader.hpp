@@ -26,61 +26,13 @@
 #include "../Utils/FPoint.hpp"
 
 
-template <class BaseClass>
-class FEwalParticle : public BaseClass {
-public:
-    // Type of particle
-    enum Type{
-        OW,
-        HW,
-        Undefined,
-    };
-
-private:
-    Type type; //< current type
-    int index; //< current index in array
-    int indexInFile; //< current index in array
-
-public:
-    // Basic constructor
-    FEwalParticle() : type(Undefined), index(-1), indexInFile(-1) {
-    }
-
-    Type getType() const{
-        return type;
-    }
-
-    void setType(const Type inType) {
-        type = inType;
-    }
-
-    int getIndex() const{
-        return index;
-    }
-
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
-
-    int getIndexInFile() const{
-        return indexInFile;
-    }
-
-    void setIndexInFile( const int inIndex ){
-        indexInFile = inIndex;
-    }
-};
-
-
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FEwalLoader
 * Please read the license
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-template <class ParticleClass>
-class FEwalLoader : public FAbstractLoader<ParticleClass> {
+class FEwalLoader : public FAbstractLoader {
 protected:
     std::ifstream file;         //< The file to read
     FPoint centerOfBox;    //< The center of box read from file
@@ -88,6 +40,12 @@ protected:
     int nbParticles;            //< the number of particles read from file
     int levcfg  ;         //< DL_POLY CONFIG file key. 0,1 or 2
 public:
+    enum Type{
+        OW,
+        HW,
+        Undefined,
+    };
+
     /**
     * The constructor need the file name
     * @param filename the name of the file to open
@@ -177,7 +135,7 @@ public:
            7.64746800518      -1.34490700206      -2.81036521708
           -4406.48579000       6815.52906417       10340.2577024
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FReal inParticle[7], int inIndex [1], Type inType[1]){
         FReal x, y, z, fx, fy, fz, vx, vy, vz;
         int index;
         char type[2];
@@ -198,28 +156,28 @@ public:
             file >> fx >> fy >> fz;
         }
 
-
-        //	std::cout << " x >> y >> z: " << x<< " " <<y<< " " <<z <<std::endl;
-        inParticle.setPosition(x,y,z);
-        inParticle.setForces(fx,fy,fz);
-        //inParticle.setForces(vx,vy,vz);
-        inParticle.setIndexInFile(index);
+        inParticle[0] = x;
+        inParticle[1] = y;
+        inParticle[2] = z;
+        inParticle[3] = fx;
+        inParticle[4] = fy;
+        inParticle[5] = fz;
+        inIndex[0] = index;
 
         if( strncmp(type, "OW", 2) == 0){
-            inParticle.setPhysicalValue(FReal(-0.82));
-            inParticle.setType(ParticleClass::OW);
+            inParticle[6] = FReal(-0.82);
+            inType[0] = OW;
         }
         else{
-            inParticle.setPhysicalValue(FReal(0.41));
-            inParticle.setType(ParticleClass::HW);
+            inParticle[6] = FReal(-0.41);
+            inType[0] = HW;
         }
     }
 
 };
 
 
-template <class ParticleClass>
-class FEwalBinLoader : public FAbstractLoader<ParticleClass> {
+class FEwalBinLoader : public FAbstractLoader {
 protected:
     FILE* const file;         //< The file to read
     FPoint centerOfBox;    //< The center of box read from file
@@ -324,7 +282,7 @@ public:
       * @param the particle to fill
         [index charge x y z fx fy fz]
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
         double x, y, z, fx, fy, fz, charge;
         int index;
 
@@ -346,10 +304,12 @@ public:
         removeWarning = fread(&size, sizeof(int), 1, file);
         if(size != 60) printf("Error in loader ewal Size %d should be %d\n", size, 60);
 
-        inParticle.setPosition(x,y,z);
-        inParticle.setForces(fx,fy,fz);
-        inParticle.setIndexInFile(index);
-        inParticle.setPhysicalValue(charge);
+        inPosition->setPosition( x, y ,z);
+        inForces[0] = fx;
+        inForces[1] = fy;
+        inForces[2] = fz;
+        *inPhysicalValue = charge;
+        *inIndex = index;
     }
 
 };

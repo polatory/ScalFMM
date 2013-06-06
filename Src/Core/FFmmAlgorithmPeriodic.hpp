@@ -40,7 +40,7 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmPeriodic : protected FAssertable{
 
     OctreeClass* const tree;        //< The octree to work on
@@ -294,12 +294,15 @@ public:
                         periodicNeighbors[idxNeig] = neighbors[idxNeig];
                         neighbors[idxNeig] = 0;
                         ++periodicNeighborsCounter;
-                        typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
-                        while( iter.hasNotFinished() ){
-                            iter.data().incPosition(boxWidth * FReal(offsets[idxNeig].getX()),
-                                                    boxWidth * FReal(offsets[idxNeig].getY()),
-                                                    boxWidth * FReal(offsets[idxNeig].getZ()));
-                            iter.gotoNext();
+
+                        FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                        FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                        FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                        for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                            positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
+                            positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
+                            positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                         }
                     }
                 }
@@ -310,13 +313,15 @@ public:
                 FDEBUG(computationCounterP2P.tac());
 
                 for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                    if( periodicNeighbors[idxNeig] ){
-                        typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
-                        while( iter.hasNotFinished() ){
-                            iter.data().incPosition(-boxWidth * FReal(offsets[idxNeig].getX()),
-                                                    -boxWidth * FReal(offsets[idxNeig].getY()),
-                                                    -boxWidth * FReal(offsets[idxNeig].getZ()));
-                            iter.gotoNext();
+                    if( periodicNeighbors[idxNeig] ){                        
+                        FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                        FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                        FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                        for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                            positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                            positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                            positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
                         }
                     }
                 }

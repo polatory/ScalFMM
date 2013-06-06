@@ -27,8 +27,8 @@
 * This class is used as a leaf in simple system (source AND target)
 * here there is only one list that store all particles.
 */
-template< class ParticleClass , class ContainerClass>
-class FSimpleLeaf : public FAbstractLeaf<ParticleClass,ContainerClass> {
+template< class ContainerClass>
+class FSimpleLeaf : public FAbstractLeaf<ContainerClass> {
     ContainerClass particles;
 
 public:
@@ -40,8 +40,9 @@ public:
         * To add a new particle in the leaf
         * @param particle the new particle to store in the current leaf
         */
-    void push(const ParticleClass& particle){
-        this->particles.push(particle);
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, Args ...  args){
+        this->particles.push(inParticlePosition, args...);
     }
 
     /**

@@ -22,7 +22,7 @@
 #include "../Src/Utils/FAssertable.hpp"
 #include "../Src/Utils/FPoint.hpp"
 
-#include "../Src/Components/FBasicParticle.hpp"
+#include "../Src/Components/FBasicParticleContainer.hpp"
 #include "../Src/Components/FBasicCell.hpp"
 
 #include "../Src/Utils/FTic.hpp"
@@ -36,12 +36,11 @@
 
 /** this class test the octree container */
 class TestOctree : public FUTester<TestOctree> {
-    typedef FBasicParticle               ParticleClass;
     typedef FBasicCell                   CellClass;
-    typedef FVector<ParticleClass>      ContainerClass;
+    typedef FBasicParticleContainer<0>      ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree<CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     // test size
     void TestAll(){
@@ -64,14 +63,13 @@ class TestOctree : public FUTester<TestOctree> {
                 OctreeClass tree(idxHeight, idxSub, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
 
                 // fill the tree
-                ParticleClass particleToFill;
                 for(int idxX = 0 ; idxX < NbSmallBoxesPerSide ; ++idxX){
                     for(int idxY = 0 ; idxY < NbSmallBoxesPerSide ; ++idxY){
                         for(int idxZ = 0 ; idxZ < NbSmallBoxesPerSide ; ++idxZ){
-                            particleToFill.setPosition(FReal(idxX)*SmallBoxWidth + SmallBoxWidthDiv2,
+                            const FPoint pos(FReal(idxX)*SmallBoxWidth + SmallBoxWidthDiv2,
                                                        FReal(idxY)*SmallBoxWidth + SmallBoxWidthDiv2,
                                                        FReal(idxZ)*SmallBoxWidth + SmallBoxWidthDiv2);
-                            tree.insert(particleToFill);
+                            tree.insert(pos);
                         }
                     }
                 }

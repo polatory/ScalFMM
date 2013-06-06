@@ -35,21 +35,20 @@ class FTreeCoordinate;
  * implements all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are required by
  * the FFmmAlgorithm and FFmmAlgorithmThread.
  *
- * @tparam ParticleClass Type of particle
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template <class ParticleClass, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
 class FChebKernel
-	: public FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
+    : public FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>
 {
 	// private types
 	typedef FChebM2LHandler<ORDER,MatrixKernelClass> M2LHandlerClass;
 
 	// using from 
-	typedef FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
+    typedef FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>
 	AbstractBaseClass;
 
 	/// Needed for M2L operator
@@ -65,7 +64,7 @@ public:
 							const FPoint& inBoxCenter,
 							const FReal inBoxWidth,
 							const FReal Epsilon)
-		: FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>(inTreeHeight,
+        : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>(inTreeHeight,
 																																															inBoxCenter,
 																																															inBoxWidth),
 			M2LHandler(new M2LHandlerClass(Epsilon))

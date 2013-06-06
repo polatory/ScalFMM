@@ -49,8 +49,7 @@
 *    } <br>
 * @endcode
 */
-template <class ParticleClass>
-class FBasicLoader : public FAbstractLoader<ParticleClass> {
+class FBasicLoader : public FAbstractLoader {
 protected:
     std::ifstream file;         //< The file to read
     FPoint centerOfBox;         //< The center of box read from file
@@ -120,10 +119,10 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FPoint*const inParticlePosition){
         FReal x,y,z;
         this->file >> x >> y >> z;
-        inParticle.setPosition(FPoint(x,y,z));
+        inParticlePosition->setPosition(x,y,z);
     }
 
 };

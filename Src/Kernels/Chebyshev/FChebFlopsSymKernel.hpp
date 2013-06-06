@@ -16,6 +16,8 @@
 #ifndef FCHEBFLOPSSYMKERNEL_HPP
 #define FCHEBFLOPSSYMKERNEL_HPP
 
+#include <stdexcept>
+
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FTrace.hpp"
 #include "../../Utils/FSmartPointer.hpp"
@@ -40,15 +42,14 @@ class FTreeCoordinate;
  * (P2P, P2M, M2M, M2L, L2L, L2P) which are required by the FFmmAlgorithm and
  * FFmmAlgorithmThread.
  *
- * @tparam ParticleClass Type of particle
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template <class ParticleClass, class CellClass,	class ContainerClass, class MatrixKernelClass, int ORDER>
+template < class CellClass,	class ContainerClass, class MatrixKernelClass, int ORDER>
 class FChebFlopsSymKernel
-	: public FAbstractKernels<ParticleClass, CellClass, ContainerClass>
+    : public FAbstractKernels<CellClass, ContainerClass>
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes};
 public:
@@ -176,7 +177,7 @@ public:
 	
 	void P2M(CellClass* const /* not needed */, const ContainerClass* const SourceParticles)
 	{
-		flopsP2M += countFlopsP2M(SourceParticles->getSize());
+        flopsP2M += countFlopsP2M(SourceParticles->getNbParticles());
 	}
 
 
@@ -231,14 +232,14 @@ public:
 					 ContainerClass* const TargetParticles)
 	{
 		//// 1.a) apply Sx
-		//flopsL2P += countFlopsP2MorL2P(TargetParticlesParticles->getSize()) + TargetParticles->getSize();
+        //flopsL2P += countFlopsP2MorL2P(TargetParticlesParticles->getNbParticles()) + TargetParticles->getNbParticles();
 		//// 1.b) apply Px (grad Sx)
-		//flopsL2P += countFlopsL2PGradient(TargetParticlesParticles->getSize()) + 3 * TargetParticles->getSize();
+        //flopsL2P += countFlopsL2PGradient(TargetParticlesParticles->getNbParticles()) + 3 * TargetParticles->getNbParticles();
 
 		// or
 
 		// 2) apply Sx and Px (grad Sx)
-		flopsL2P += countFlopsL2PTotal(TargetParticles->getSize()) + 4 * TargetParticles->getSize();
+        flopsL2P += countFlopsL2PTotal(TargetParticles->getNbParticles()) + 4 * TargetParticles->getNbParticles();
 	}
 
 
@@ -250,15 +251,15 @@ public:
 					 const int /* size */)
 	{
 		if (TargetParticles != SourceParticles) {
-			flopsP2P += countFlopsP2P() * TargetParticles->getSize() * SourceParticles->getSize();
+            flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * SourceParticles->getNbParticles();
 			for (unsigned int idx=0; idx<27; ++idx)
 				if (NeighborSourceParticles[idx])
-					flopsP2P += countFlopsP2P() * TargetParticles->getSize() * NeighborSourceParticles[idx]->getSize();
+                    flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		} else {
-			flopsP2P += countFlopsP2Pmutual() * ((TargetParticles->getSize()*TargetParticles->getSize()+TargetParticles->getSize()) / 2); 
+            flopsP2P += countFlopsP2Pmutual() * ((TargetParticles->getNbParticles()*TargetParticles->getNbParticles()+TargetParticles->getNbParticles()) / 2);
 			for (unsigned int idx=0; idx<=13; ++idx)
 				if (NeighborSourceParticles[idx])
-					flopsP2P += countFlopsP2Pmutual() * TargetParticles->getSize() * NeighborSourceParticles[idx]->getSize();
+                    flopsP2P += countFlopsP2Pmutual() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		}
 	}
 
@@ -278,12 +279,11 @@ public:
  * Handler to deal with all symmetries: Stores permutation indices and vectors
  * to reduce 343 different interactions to 16 only.
  */
-template <class ParticleClass,
-					class CellClass,
+template <			class CellClass,
 					class ContainerClass,
 					class MatrixKernelClass,
 					int ORDER>
-struct FChebFlopsSymKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
+struct FChebFlopsSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
 ::SymmetryHandler
 {
 	// M2L operators
@@ -307,7 +307,7 @@ struct FChebFlopsSymKernel<ParticleClass, CellClass, ContainerClass, MatrixKerne
 			nrm2k += singular_values[k-1] * singular_values[k-1];
 			if (nrm2k > eps*eps * nrm2)	return k;
 		}
-		throw std::runtime_error("rank cannot be larger than nnodes");
+        throw std::runtime_error("rank cannot be larger than nnodes");
 		return 0;
 	}
 	

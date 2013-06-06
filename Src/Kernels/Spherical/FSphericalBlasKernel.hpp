@@ -25,10 +25,10 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This class is a spherical harmonic kernels using blas
 */
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FSphericalBlasKernel : public FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class FSphericalBlasKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
 protected:
-    typedef FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
 
     const int FF_MATRIX_ROW_DIM;     //< The blas matrix number of rows
     const int FF_MATRIX_COLUMN_DIM;  //< The blas matrix number of columns

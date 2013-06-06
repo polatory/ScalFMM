@@ -31,8 +31,7 @@
 * @class FRandomLoader
 * Please read the license
 */
-template <class ParticleClass>
-class FRandomLoader : public FAbstractLoader<ParticleClass> {
+class FRandomLoader : public FAbstractLoader {
 protected:
     const size_t nbParticles;            //< the number of particles
     const FReal boxWidth;             //< the box width
@@ -90,8 +89,8 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
-        inParticle.setPosition(
+    void fillParticle(FPoint*const inParticlePositions){
+        inParticlePositions->setPosition(
                     (getRandom() * boxWidth) + centerOfBox.getX() - boxWidth/2,
                     (getRandom() * boxWidth) + centerOfBox.getY() - boxWidth/2,
                     (getRandom() * boxWidth) + centerOfBox.getZ() - boxWidth/2);
@@ -107,18 +106,17 @@ public:
 /** This class is a random loader but it also generate
   * randomly the particles type (target or source)
   */
-template <class ParticleClass>
-class FRandomLoaderTsm : public FRandomLoader<ParticleClass> {
+class FRandomLoaderTsm : public FRandomLoader {
 public:
     FRandomLoaderTsm(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
                   const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
-        : FRandomLoader<ParticleClass>(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
+        : FRandomLoader(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
     }
 
-    void fillParticle(ParticleClass& inParticle){
-        FRandomLoader<ParticleClass>::fillParticle(inParticle);
-        if(FRandomLoader<ParticleClass>::getRandom() > 0.5 ) inParticle.setAsTarget();
-        else inParticle.setAsSource();
+
+    void fillParticle(FPoint*const inParticlePositions, bool*const isTarget){
+        FRandomLoader::fillParticle(inParticlePositions);
+        (*isTarget) = (FRandomLoader::getRandom() > 0.5 );
     }
 };
 

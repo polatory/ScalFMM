@@ -13,33 +13,33 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBPARTICLE_HPP
-#define FCHEBPARTICLE_HPP
+#ifndef FFMAPARTICLECONTAINER_HPP
+#define FFMAPARTICLECONTAINER_HPP
 
-#include <stdexcept>
-#include <cassert>
-
-#include "../../Extensions/FExtendPosition.hpp"
-#include "../../Extensions/FExtendPhysicalValue.hpp"
-#include "../../Extensions/FExtendPotential.hpp"
-#include "../../Extensions/FExtendForces.hpp"
+#include "FBasicParticleContainer.hpp"
 
 /**
- * @author Matthias Messner (matthias.matthias@inria.fr)
- * @class FChebParticle
- * Please read the license
- *
- * The class @p FChebParticle defines the particle used for the Chebyshev FMM
- * approach.
- */
-class FChebParticle : public FExtendPosition,
-											public FExtendPhysicalValue,
-											public FExtendPotential,
-											public FExtendForces
-{
+* @author Berenger Bramas (berenger.bramas@inria.fr)
+* @class FFmaParticle
+* Please read the license
+*
+* This class defines a particle for FMA loader.
+* As defined in FFmaLoader it needs
+*/
+class FFmaParticleContainer : public FBasicParticleContainer<1> {
+    typedef FBasicParticleContainer<1> Parent;
+
 public:
-	~FChebParticle() {}
+    FReal* getPhysicalValues(){
+        return Parent::getAttribute(0);
+    }
+
+    const FReal* getPhysicalValues() const {
+        return Parent::getAttribute(0);
+    }
 };
 
 
-#endif
+#endif //FFMAPARTICLECONTAINER_HPP
+
+

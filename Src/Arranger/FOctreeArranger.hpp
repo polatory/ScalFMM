@@ -32,7 +32,7 @@
   * to move the particles in the tree instead of building a new
   * tree.
   */
-template <class OctreeClass, class ContainerClass, class ParticleClass>
+template <class OctreeClass, class ContainerClass, class ExtractorClass>
 class FOctreeArranger : FAssertable {
     OctreeClass* const tree; //< The tree to work on
 
@@ -45,7 +45,7 @@ public:
     /** Arrange */
     void rearrange(const int isPeriodic = DirNone){
         // This vector is to keep the moving particles
-        FVector<ParticleClass> tomove;
+        ExtractorClass extractor;
 
         // For periodic
         const FReal boxWidth = tree->getBoxWidth();
@@ -53,14 +53,17 @@ public:
         const FPoint max(tree->getBoxCenter(),boxWidth/2);
 
         { // iterate on the leafs and found particle to remove
+            FVector<int> indexesToExtract;
+
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
                 const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
-
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                while( iter.hasNotFinished() ){
-                    FPoint partPos = iter.data().getPosition();
+                ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
+                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); ++idxPart){
+                    FPoint partPos( particles->getPositions()[0][idxPart],
+                            particles->getPositions()[1][idxPart],
+                            particles->getPositions()[2][idxPart] );
                     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                     if( TestPeriodicCondition(isPeriodic, DirPlusX) ){
                         while(partPos.getX() >= max.getX()){
@@ -119,24 +122,25 @@ public:
                         printf("Application is exiting...\n");
                     }
                     // set pos
-                    iter.data().setPosition(partPos);
+                    particles->getWPositions()[0][idxPart] = partPos.getX();
+                    particles->getWPositions()[1][idxPart] = partPos.getY();
+                    particles->getWPositions()[2][idxPart] = partPos.getZ();
 
-                    const MortonIndex particuleIndex = tree->getMortonFromPosition(iter.data().getPosition());
+                    const MortonIndex particuleIndex = tree->getMortonFromPosition(partPos);
                     if(particuleIndex != currentIndex){
-                        tomove.push(iter.data());
-                        iter.remove();
-                    }
-                    else {
-                        iter.gotoNext();
+                        indexesToExtract.push(idxPart);
                     }
                 }
+                // remove from leaf
+                extractor.extractParticles(particles, indexesToExtract.data(), indexesToExtract.getSize());
+                particles->removeParticles(indexesToExtract.data(), indexesToExtract.getSize());
+                indexesToExtract.clear();
+
             } while(octreeIterator.moveRight());
         }
 
         { // insert particles that moved
-            for(int idxPart = 0 ; idxPart < tomove.getSize() ; ++idxPart){
-                tree->insert(tomove[idxPart]);
-            }
+            extractor.reinsertInTree(tree);
         }
 
         { // Remove empty leaves
@@ -145,7 +149,7 @@ public:
             bool workOnNext = true;
             do{
                 // Empty leaf
-                if( octreeIterator.getCurrentListTargets()->getSize() == 0 ){
+                if( octreeIterator.getCurrentListTargets()->getNbParticles() == 0 ){
                     const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                     workOnNext = octreeIterator.moveRight();
                     tree->removeLeaf( currentIndex );

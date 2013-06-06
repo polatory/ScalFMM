@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FOCTREE_HPP
@@ -50,10 +50,12 @@
  * If the octree as an height H, then it goes from 0 to H-1
  * at level 0 the space is not split
  */
-template< class ParticleClass, class CellClass, class ContainerClass, class LeafClass>
+template< class CellClass, class ContainerClass, class LeafClass>
 class FOctree : protected FAssertable, public FNoCopyable {
+    typedef FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass> SubOctreeWithLeaves;
+    typedef FSubOctree< CellClass , ContainerClass, LeafClass> SubOctree;
 
-    FAbstractSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
+    FAbstractSubOctree< CellClass , ContainerClass, LeafClass>* root;   //< root suboctree
 
     FReal*const boxWidthAtLevel;	//< to store the width of each boxs at all levels
 
@@ -116,10 +118,10 @@ public:
         fassert(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
         if(subHeight == height - 1){
-            root = new FSubOctreeWithLeafs< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
+            root = new FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
         }
         else {// if(subHeight < height - 1)
-            root = new FSubOctree< ParticleClass, CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
+            root = new FSubOctree< CellClass , ContainerClass, LeafClass>(0, 0, this->subHeight, 1);
         }
 
         FReal tempWidth = this->boxWidth;
@@ -185,10 +187,29 @@ public:
      * ask node to insert this particle
      * @param inParticle the particle to insert (must inherite from FAbstractParticle)
      */
-    void insert(const ParticleClass& inParticle){
-        const FTreeCoordinate host = getCoordinateFromPosition( inParticle.getPosition() );
+    template<typename... Args>
+    void insert(const FPoint& inParticlePosition, Args... args){
+        const FTreeCoordinate host = getCoordinateFromPosition( inParticlePosition );
         const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
-        root->insert( particleIndex, host, inParticle, this->height);
+        if(root->isLeafPart()){
+            ((SubOctreeWithLeaves*)root)->insert( particleIndex, host, this->height, inParticlePosition, args... );
+        }
+        else{
+            ((SubOctree*)root)->insert( particleIndex, host, this->height, inParticlePosition, args... );
+        }
+    }
+
+    /** Remove a leaf from its morton index
+      * @param indexToRemove the index of the leaf to remove
+      */
+    LeafClass* createLeaf(const MortonIndex indexToCreate ){
+        const FTreeCoordinate host(indexToCreate,this->height-1);
+        if(root->isLeafPart()){
+            return ((SubOctreeWithLeaves*)root)->createLeaf( indexToCreate, host, this->height );
+        }
+        else{
+            return ((SubOctree*)root)->createLeaf( indexToCreate, host, this->height );
+        }
     }
 
     /** Remove a leaf from its morton index
@@ -214,18 +235,18 @@ public:
           * depending if we are working on the bottom of the tree.
           */
     union SubOctreeTypes {
-        FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>* tree;     //< Usual pointer to work
-        FSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>* middleTree;       //< To access to sub-octree under
-        FSubOctreeWithLeafs<ParticleClass,CellClass,ContainerClass,LeafClass>* leafTree;//< To access to particles lists
+        FAbstractSubOctree<CellClass,ContainerClass,LeafClass>* tree;     //< Usual pointer to work
+        FSubOctree<CellClass,ContainerClass,LeafClass>* middleTree;       //< To access to sub-octree under
+        FSubOctreeWithLeafs<CellClass,ContainerClass,LeafClass>* leafTree;//< To access to particles lists
     };
 
     /**
           * This class is a const SubOctreeTypes
           */
     union SubOctreeTypesConst {
-        const FAbstractSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>* tree;     //< Usual pointer to work
-        const FSubOctree<ParticleClass,CellClass,ContainerClass,LeafClass>* middleTree;       //< To access to sub-octree under
-        const FSubOctreeWithLeafs<ParticleClass,CellClass,ContainerClass,LeafClass>* leafTree;//< To access to particles lists
+        const FAbstractSubOctree<CellClass,ContainerClass,LeafClass>* tree;     //< Usual pointer to work
+        const FSubOctree<CellClass,ContainerClass,LeafClass>* middleTree;       //< To access to sub-octree under
+        const FSubOctreeWithLeafs<CellClass,ContainerClass,LeafClass>* leafTree;//< To access to particles lists
     };
 
     /**
@@ -1129,15 +1150,9 @@ public:
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
 
-        Iterator avoidGoLeft(octreeIterator);
-
-        for(int idx = 0 ; idx < this->height - 1 ; ++idx ){
-            do{
-                function(octreeIterator.getCurrentCell(),octreeIterator.getCurrentLeaf());
-            } while(octreeIterator.moveRight());
-            avoidGoLeft.moveUp();
-            octreeIterator = avoidGoLeft;
-        }
+        do{
+            function(octreeIterator.getCurrentCell(),octreeIterator.getCurrentLeaf());
+        } while(octreeIterator.moveRight());
     }
 };
 

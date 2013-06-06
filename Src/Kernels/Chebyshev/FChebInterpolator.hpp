@@ -567,9 +567,9 @@ public:
 template <int ORDER>
 template <class ContainerClass>
 inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
-																							 const FReal width,
-																							 FReal *const multipoleExpansion,
-																							 const ContainerClass *const sourceParticles) const
+                                             const FReal width,
+                                             FReal *const multipoleExpansion,
+                                             const ContainerClass *const inParticles) const
 {
 	// set all multipole expansions to zero
 	FBlas::setzero(nnodes, multipoleExpansion);
@@ -587,11 +587,13 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 	for(unsigned int i=0; i<(ORDER-1)*(ORDER-1)*(ORDER-1); ++i)	W8[i] = FReal(0.);
 	
 	// loop over source particles
-	typename ContainerClass::ConstBasicIterator iter(*sourceParticles);
-	while(iter.hasNotFinished()){
-		
+    const FReal*const physicalValues = inParticles->getPhysicalValues();
+    const FReal*const positionsX = inParticles->getPositions()[0];
+    const FReal*const positionsY = inParticles->getPositions()[1];
+    const FReal*const positionsZ = inParticles->getPositions()[2];
+    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
 		// map global position to [-1,1]
-		map(iter.data().getPosition(), localPosition); // 15 flops
+        map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
 		
 		FReal T_of_x[3][ORDER];
 		T_of_x[0][0] = FReal(1.); T_of_x[0][1] = localPosition.getX();
@@ -606,7 +608,7 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 			T_of_x[2][j] = z2 * T_of_x[2][j-1] - T_of_x[2][j-2]; // 2 flops
 		}
 		
-		const FReal weight = iter.data().getPhysicalValue();
+        const FReal weight = physicalValues[idxPart];
 		W1 += weight; // 1 flop
 		for (unsigned int i=1; i<ORDER; ++i) {
 			const FReal wx = weight * T_of_x[0][i]; // 1 flop
@@ -628,10 +630,7 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 				} // flops: (ORDER-1) * 2
 			} // flops: (ORDER-1) * (6 + (ORDER-1) * 2) 
 		} // flops: (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1) * 2))
-		
-		
-		// increment source iterator
-		iter.gotoNext();
+
 	} // flops: N * (18 + (ORDER-2) * 6 + (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1) * 2)))
 
 	////////////////////////////////////////////////////////////////////
@@ -758,9 +757,9 @@ inline void FChebInterpolator<ORDER>::applyP2M(const FPoint& center,
 template <int ORDER>
 template <class ContainerClass>
 inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
-																							 const FReal width,
-																							 const FReal *const localExpansion,
-																							 ContainerClass *const localParticles) const
+                                             const FReal width,
+                                             const FReal *const localExpansion,
+                                             ContainerClass *const inParticles) const
 {
 	FReal f1;
 	FReal W2[3][ ORDER-1];
@@ -807,11 +806,20 @@ inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 	// loop over particles
 	const map_glob_loc map(center, width);
 	FPoint localPosition;
-	typename ContainerClass::BasicIterator iter(*localParticles);
-	while(iter.hasNotFinished()){
+
+    //const FReal*const physicalValues = inParticles->getPhysicalValues();
+    const FReal*const positionsX = inParticles->getPositions()[0];
+    const FReal*const positionsY = inParticles->getPositions()[1];
+    const FReal*const positionsZ = inParticles->getPositions()[2];
+    //FReal*const forcesX = inParticles->getForcesX();
+    //FReal*const forcesY = inParticles->getForcesY();
+    //FReal*const forcesZ = inParticles->getForcesZ();
+    FReal*const potentials = inParticles->getPotentials();
+
+    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 			
 		// map global position to [-1,1]
-		map(iter.data().getPosition(), localPosition); // 15 flops
+        map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
 
 		FReal T_of_x[3][ORDER];
 		{
@@ -829,7 +837,7 @@ inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 		}
 
 		// interpolate and increment target value
-		FReal targetValue = iter.data().getPotential();
+        FReal targetValue = potentials[idxPart];
 		{
 			FReal f2, f4, f8;
 			{
@@ -856,10 +864,7 @@ inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 		} // 7 + ORDER * (ORDER * (9 + ORDER * 4)) flops
 
 		// set potential
-		iter.data().setPotential(targetValue);
-
-		// increment target iterator
-		iter.gotoNext();
+        potentials[idxPart] += (targetValue);
 	} // N * (7 + ORDER * (ORDER * (9 + ORDER * 4))) flops
 }
 
@@ -959,9 +964,9 @@ inline void FChebInterpolator<ORDER>::applyL2P(const FPoint& center,
 template <int ORDER>
 template <class ContainerClass>
 inline void FChebInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
-																											 const FReal width,
-																											 const FReal *const localExpansion,
-																											 ContainerClass *const localParticles) const
+                                                     const FReal width,
+                                                     const FReal *const localExpansion,
+                                                     ContainerClass *const inParticles) const
 {
 	////////////////////////////////////////////////////////////////////
 	// TENSOR-PRODUCT INTERPOLUTION NOT IMPLEMENTED YET HERE!!! ////////
@@ -977,11 +982,19 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
 	FReal U_of_x[ORDER][3];
 	FReal P[3];
 
-	typename ContainerClass::BasicIterator iter(*localParticles);
-	while(iter.hasNotFinished()){
+    const FReal*const physicalValues = inParticles->getPhysicalValues();
+    const FReal*const positionsX = inParticles->getPositions()[0];
+    const FReal*const positionsY = inParticles->getPositions()[1];
+    const FReal*const positionsZ = inParticles->getPositions()[2];
+    FReal*const forcesX = inParticles->getForcesX();
+    FReal*const forcesY = inParticles->getForcesY();
+    FReal*const forcesZ = inParticles->getForcesZ();
+    //FReal*const potentials = inParticles->getPotentials();
+
+    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 			
 		// map global position to [-1,1]
-		map(iter.data().getPosition(), localPosition);
+        map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition);
 			
 		// evaluate chebyshev polynomials of source particle
 		// T_0(x_i) and T_1(x_i)
@@ -1066,12 +1079,9 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
 		forces[2] *= jacobian[2] / nnodes;
 
 		// set computed forces
-		iter.data().incForces(forces[0] * iter.data().getPhysicalValue(),
-													forces[1] * iter.data().getPhysicalValue(),
-													forces[2] * iter.data().getPhysicalValue());
-
-		// increment iterator
-		iter.gotoNext();
+        forcesX[idxPart] += forces[0] * physicalValues[idxPart];
+        forcesY[idxPart] += forces[1] * physicalValues[idxPart];
+        forcesZ[idxPart] += forces[2] * physicalValues[idxPart];
 	}
 }
 
@@ -1083,9 +1093,9 @@ inline void FChebInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
 template <int ORDER>
 template <class ContainerClass>
 inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
-																										const FReal width,
-																										const FReal *const localExpansion,
-																										ContainerClass *const localParticles) const
+                                                    const FReal width,
+                                                    const FReal *const localExpansion,
+                                                    ContainerClass *const inParticles) const
 {
 	FReal f1;
 	FReal W2[3][ ORDER-1];
@@ -1196,11 +1206,19 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 	const FReal jacobian[3] = {Jacobian.getX(), Jacobian.getY(), Jacobian.getZ()}; 
 	FPoint localPosition;
 
-	typename ContainerClass::BasicIterator iter(*localParticles);
-	while(iter.hasNotFinished()){
+    const FReal*const physicalValues = inParticles->getPhysicalValues();
+    const FReal*const positionsX = inParticles->getPositions()[0];
+    const FReal*const positionsY = inParticles->getPositions()[1];
+    const FReal*const positionsZ = inParticles->getPositions()[2];
+    FReal*const forcesX = inParticles->getForcesX();
+    FReal*const forcesY = inParticles->getForcesY();
+    FReal*const forcesZ = inParticles->getForcesZ();
+    FReal*const potentials = inParticles->getPotentials();
+
+    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 			
 		// map global position to [-1,1]
-		map(iter.data().getPosition(), localPosition); // 15 flops
+        map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
 
 		FReal U_of_x[3][ORDER];
 		FReal T_of_x[3][ORDER];
@@ -1270,15 +1288,13 @@ inline void FChebInterpolator<ORDER>::applyL2PTotal(const FPoint& center,
 		} // 28 + (ORDER-1) * ((ORDER-1) * (27 + (ORDER-1) * 16)) flops
 
 		// set computed potential
-		iter.data().incPotential(potential); // 1 flop
+        potentials[idxPart] += (potential); // 1 flop
 
 		// set computed forces
-		iter.data().incForces(forces[0] * iter.data().getPhysicalValue(),
-													forces[1] * iter.data().getPhysicalValue(),
-													forces[2] * iter.data().getPhysicalValue()); // 6 flops
+        forcesX[idxPart] += forces[0] * physicalValues[idxPart];
+        forcesY[idxPart] += forces[1] * physicalValues[idxPart];
+        forcesZ[idxPart] += forces[2] * physicalValues[idxPart]; // 6 flops
 
-		// increment target iterator
-		iter.gotoNext();
 	} // N * (38 + (ORDER-2)*15 + (ORDER-1)*((ORDER-1) * (27 + (ORDER-1) * 16))) + 6 flops
 }
 

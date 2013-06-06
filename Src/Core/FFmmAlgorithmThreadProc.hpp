@@ -55,7 +55,7 @@
 * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : protected FAssertable {
 
     static const int MaxSizePerCell = 1024;

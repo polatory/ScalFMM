@@ -29,16 +29,16 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
+
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -48,19 +48,16 @@
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     {
-        //typedef FTestParticle               ParticleClass;
-        //typedef FTestCell                   CellClass;
-        typedef FSphericalParticle             ParticleClass;
         typedef FSphericalCell                 CellClass;
 
-        typedef FVector<ParticleClass>      ContainerClass;
+        typedef FP2PParticleContainer      ContainerClass;
 
-        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-        //typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
-        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        //typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
+        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
         ///////////////////////What we do/////////////////////////////
         std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
         //////////////////////////////////////////////////////////////
@@ -90,10 +87,11 @@ int main(int argc, char ** argv){
         counter.tic();
 
         {
-            ParticleClass particleToFill;
+            FPoint particlePosition;
+            FReal physicalValue = 0.10;
             for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-                particleToFill.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
-                tree.insert(particleToFill);
+                particlePosition.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
+                tree.insert(particlePosition, physicalValue);
             }
         }
 

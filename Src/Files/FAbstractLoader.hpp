@@ -18,6 +18,8 @@
 
 
 #include "../Utils/FGlobal.hpp"
+
+
 class FPoint;
 
 /**
@@ -34,7 +36,6 @@ class FPoint;
 *
 * @warning Inherite from this class when defining a loader class
 */
-template <class ParticleClass>
 class FAbstractLoader {
 public:	
     /** Default destructor */
@@ -64,24 +65,6 @@ public:
         * @return true if file is open
         */
     virtual bool isOpen() const = 0;
-
-    /**
-        * Fill the next particle
-        * @param inParticle the particle to fill
-        */
-    virtual void fillParticle(ParticleClass& inParticle) = 0;
-
-    /** Fill a tree with all the particle of the current loader
-      * @param tree the tree to fill
-      */
-    template <class OctreeClass>
-    void fillTree(OctreeClass& tree){
-        ParticleClass particleToFill;
-        for(int idxPart = 0 ; idxPart < getNumberOfParticles() ; ++idxPart){
-            fillParticle(particleToFill);
-            tree.insert(particleToFill);
-        }
-    }
 };
 
 

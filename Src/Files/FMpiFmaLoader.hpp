@@ -52,8 +52,7 @@
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-template <class ParticleClass>
-class FMpiFmaLoader : public FAbstractLoader<ParticleClass> {
+class FMpiFmaLoader : public FAbstractLoader {
 protected:
     FPoint centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
@@ -226,9 +225,9 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
-        inParticle.setPosition(particles[idxParticles],particles[idxParticles+1],particles[idxParticles+2]);
-        inParticle.setPhysicalValue(particles[idxParticles+3]);
+    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
+        inParticlePositions->setPosition(particles[idxParticles],particles[idxParticles+1],particles[idxParticles+2]);
+        (*inPhysicalValue) = (particles[idxParticles+3]);
         idxParticles += 4;
     }
 

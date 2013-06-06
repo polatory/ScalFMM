@@ -35,9 +35,16 @@
   * ...
   */
 class FTreeIO{
+
+    enum TargetSourceDiff{
+        TsmUndef,
+        TsmUsed,
+        TsmUnused
+    };
+
 public:
     /** To save in memory */
-    template <class OctreeClass, class CellClass, class ParticleClass , class ContainerClass >
+    template <class OctreeClass, class CellClass, class LeafClass, class ContainerClass >
     static bool Save(const char filename[], OctreeClass& tree){
         std::ofstream file(filename, std::ofstream::binary | std::ofstream::out );
         FBufferWriter buffer;
@@ -70,22 +77,16 @@ public:
             octreeIterator.gotoBottomLeft();
             const bool useTargetSource = (octreeIterator.getCurrentListSrc() != octreeIterator.getCurrentListTargets());
             if( useTargetSource ){
+                TargetSourceDiff tsm = TsmUsed;
+                file.write((const char*)&tsm,sizeof(tsm));
+
                 do{
-                    const int nbParticlesInLeaf = (octreeIterator.getCurrentListSrc()->getSize() + octreeIterator.getCurrentListTargets()->getSize());
-                    file.write((const char*)&nbParticlesInLeaf,sizeof(int));
+                    const MortonIndex mindex = octreeIterator.getCurrentGlobalIndex();
+                    file.write((const char*)&mindex,sizeof(mindex));
 
                     buffer.reset();
-                    typename ContainerClass::BasicIterator iterSrc(*octreeIterator.getCurrentListSrc());
-                    while( iterSrc.hasNotFinished() ){
-                        iterSrc.data().save(buffer);
-                        iterSrc.gotoNext();
-                    }
-
-                    typename ContainerClass::BasicIterator iterTarget(*octreeIterator.getCurrentListTargets());
-                    while( iterTarget.hasNotFinished() ){
-                        iterTarget.data().save(buffer);
-                        iterTarget.gotoNext();
-                    }
+                    octreeIterator.getCurrentListSrc()->save(buffer);
+                    octreeIterator.getCurrentListTargets()->save(buffer);
 
                     const int sizeOfLeaf = buffer.getSize();
                     file.write((const char*) &sizeOfLeaf, sizeof(int));
@@ -95,16 +96,14 @@ public:
                 } while(octreeIterator.moveRight());
             }
             else{
+                TargetSourceDiff tsm = TsmUnused;
+                file.write((const char*)&tsm,sizeof(tsm));
                 do{
-                    const int nbParticlesInLeaf = octreeIterator.getCurrentListSrc()->getSize();
-                    file.write((const char*)&nbParticlesInLeaf,sizeof(int));
+                    const MortonIndex mindex = octreeIterator.getCurrentGlobalIndex();
+                    file.write((const char*)&mindex,sizeof(mindex));
 
                     buffer.reset();
-                    typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListSrc());
-                    while( iter.hasNotFinished() ){
-                        iter.data().save(buffer);
-                        iter.gotoNext();
-                    }
+                    octreeIterator.getCurrentListSrc()->save(buffer);
 
                     const int sizeOfLeaf = buffer.getSize();
                     file.write((const char*) &sizeOfLeaf, sizeof(int));
@@ -163,7 +162,7 @@ public:
 
 
     /** To load from memory */
-    template <class OctreeClass, class CellClass, class ParticleClass , class ContainerClass  >
+    template <class OctreeClass, class CellClass, class LeafClass, class ContainerClass  >
     static bool Load(const char filename[], OctreeClass& tree){
         std::ifstream file(filename, std::ifstream::binary | std::ifstream::in );
         FBufferReader buffer;
@@ -196,11 +195,12 @@ public:
             int nbLeaf = 0;
             file.read((char*)&nbLeaf, sizeof(int));
 
-            ParticleClass particle;
+            TargetSourceDiff tsm = TsmUndef;
+            file.read((char*)&tsm,sizeof(tsm));
 
             for(int idxLeaf = 0 ; idxLeaf < nbLeaf ; ++idxLeaf){
-                int particlesInLeaf = 0;
-                file.read((char*)&particlesInLeaf, sizeof(int));
+                MortonIndex mindex = 0;
+                file.read((char*)&mindex, sizeof(mindex));
 
                 int sizeOfLeaf = 0;
                 file.read((char*)&sizeOfLeaf, sizeof(int));
@@ -208,9 +208,11 @@ public:
                 buffer.reserve(sizeOfLeaf);
                 file.read((char*)buffer.data(), sizeOfLeaf);
 
-                for(int idxParticle = 0 ; idxParticle < particlesInLeaf ; ++idxParticle){
-                    particle.restore(buffer);
-                    tree.insert(particle);
+                LeafClass*const leaf = tree.createLeaf(mindex);
+                leaf->getSrc()->restore(buffer);
+
+                if( tsm == TsmUsed ){
+                    leaf->getTargets()->restore(buffer);
                 }
             }
         }

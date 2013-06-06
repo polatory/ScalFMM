@@ -28,10 +28,11 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 /**
 * In this file we show how to use octree
@@ -41,11 +42,10 @@ int main(int, char **){
 
 	const int ORDER = 5;
 
-	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
-	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+    typedef FP2PParticleContainer ContainerClass;
+    typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FChebCell<ORDER> CellClass;
-	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 	
 	///////////////////////What we do/////////////////////////////
 	std::cout << ">> This executable is useless to execute.\n";
@@ -67,11 +67,9 @@ int main(int, char **){
 	// -----------------------------------------------------
 	std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
 	counter.tic();
-	{
-		FChebParticle particle;
-		for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-			particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
-			tree.insert(particle);
+    {
+        for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+            tree.insert(FPoint(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax));
 		}
 	}
 	counter.tac();
@@ -83,30 +81,28 @@ int main(int, char **){
 	// Check if particles are strictly within its containing leaf cells
 	{
 		const FReal BoxWidthLeaf = BoxWidth / FReal(FMath::pow(2, TreeHeight-1));
-		OctreeClass::Iterator octreeIterator(&tree);
-		octreeIterator.gotoBottomLeft();
-		do{
-			const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-
+        tree.forEachCellLeaf([&](CellClass* LeafCell, LeafClass* leaf){
 			const FPoint Origin(BoxCenter - BoxWidth / FReal(2.));
 			const FPoint LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getY() + (FReal(LeafCell->getCoordinate().getY()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getZ() + (FReal(LeafCell->getCoordinate().getZ()) + FReal(.5)) * BoxWidthLeaf);
 
-			const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
-			ContainerClass::ConstBasicIterator particleIterator(*Particles);
-			while(particleIterator.hasNotFinished()) {
-				const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
+            const ContainerClass *const Particles = leaf->getSrc();
+            const FReal*const positionsX = Particles->getPositions()[0];
+            const FReal*const positionsY = Particles->getPositions()[1];
+            const FReal*const positionsZ = Particles->getPositions()[2];
+
+            for(int idxPart = 0 ; idxPart < Particles->getNbParticles() ; ++idxPart){
+                const FPoint distance(LeafCellCenter-FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]));
 				if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
 					std::cout << "Particle (center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << ") is out of cell. STOP"
 										<< std::endl;
 					//exit(-1);
-				}
-				particleIterator.gotoNext();
+                }
 			}
-		} while(octreeIterator.moveRight());
+        });
 	}
 
 	return 0;

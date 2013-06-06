@@ -290,7 +290,7 @@ void print(OctreeClass* const valideTree){
 
 
 
-/** class has to extend {FExtendForces,FExtendPotential,FExtendPhysicalValue}
+/**
   * Because we use fma loader it needs {FExtendPhysicalValue}
   */
 class TestParticle : public FTestParticle, public FExtendPhysicalValue {

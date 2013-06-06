@@ -38,7 +38,7 @@
 *
 * Of course this class does not deallocate pointer given in arguements.
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithm : protected FAssertable{
 
     OctreeClass* const tree;       //< The octree to work on

@@ -18,7 +18,7 @@
 
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalParticle.hpp"
+#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
@@ -28,38 +28,22 @@
 
 #include "../Src/Components/FTestCell.hpp"
 #include "../Src/Components/FTestKernels.hpp"
-#include "../Src/Components/FTestParticle.hpp"
 
-/*
-  In this test we compare the fmm results and the direct results.
-  */
-class IndexedParticle : public FSphericalParticle {
-    int index;
-public:
-    IndexedParticle(): index(-1){}
 
-    int getIndex() const{
-        return index;
-    }
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
-};
 
 /** The class to run the test */
 class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic> {
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
-        typedef IndexedParticle         ParticleClass;
         typedef FSphericalCell            CellClass;
-        typedef FVector<ParticleClass>  ContainerClass;
+        typedef FP2PParticleContainerIndexed  ContainerClass;
 
-        typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
+        typedef FSphericalKernel<CellClass, ContainerClass >   KernelClass;
 
-        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-        typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
         const int NbLevels      = 3;
@@ -67,17 +51,30 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const int PeriodicDeep  = 3;
         const int DevP = 9;
         const int NbParticles = 1;
-        ParticleClass* const particles = new ParticleClass[NbParticles];
 
         FSphericalCell::Init(DevP);
 
-        FRandomLoader<ParticleClass> loader(NbParticles);
+        FRandomLoader loader(NbParticles);
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        for( int idxPart = 0 ; idxPart < NbParticles ; ++idxPart ){
-            loader.fillParticle(particles[idxPart]);
-            particles[idxPart].setIndex(idxPart);
-            particles[idxPart].setPhysicalValue(FReal(0.10));
-            tree.insert(particles[idxPart]);
+        struct TestParticle{
+            FPoint position;
+            FReal forces[3];
+            FReal physicalValue;
+            FReal potential;
+        };
+        TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            FPoint position;
+            loader.fillParticle(&position);
+            // put in tree
+            tree.insert(position, idxPart, 0.10);
+            // get copy
+            particles[idxPart].position = position;
+            particles[idxPart].physicalValue = 0.10;
+            particles[idxPart].potential = 0.0;
+            particles[idxPart].forces[0] = 0.0;
+            particles[idxPart].forces[1] = 0.0;
+            particles[idxPart].forces[2] = 0.0;
         }
 
         // Run FMM
@@ -92,23 +89,38 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         FTreeCoordinate min, max;
         algo.repetitionsIntervals(&min, &max);
 
-        for(int idxTarget = 0 ; idxTarget < NbParticles ; ++idxTarget){
-            for(int idxSource = idxTarget + 1 ; idxSource < NbParticles ; ++idxSource){
-                kernels.directInteractionMutual(&particles[idxTarget], &particles[idxSource]);
+        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+            for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                      particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                      &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                      &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                &particles[idxOther].forces[2],&particles[idxOther].potential);
             }
             for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
                 for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
                     for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
-                        if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
+                        if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
+                        // next lines for test
 
                         const FPoint offset(loader.getBoxWidth() * FReal(idxX),
                                             loader.getBoxWidth() * FReal(idxY),
                                             loader.getBoxWidth() * FReal(idxZ));
 
                         for(int idxSource = 0 ; idxSource < NbParticles ; ++idxSource){
-                            ParticleClass source = particles[idxSource];
-                            source.incPosition(offset.getX(),offset.getY(),offset.getZ());
-                            kernels.directInteraction(&particles[idxTarget], source);
+                            TestParticle source = particles[idxSource];
+                            source.position += offset;
+
+                            FP2P::NonMutualParticles(
+                                        source.position.getX(), source.position.getY(),
+                                        source.position.getZ(),source.physicalValue,
+                                        particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential);
                         }
                     }
                 }
@@ -120,26 +132,23 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
-            OctreeClass::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
 
-            do{
-                ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                while( leafIter.hasNotFinished() ){
-                    const ParticleClass& other = particles[leafIter.data().getIndex()];
-
-                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-
-                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
-
-                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
-
-                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
-
-                    leafIter.gotoNext();
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const int indexPartOrig = indexes[idxPart];
+                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
                 }
-            } while(octreeIterator.moveRight());
+            });
         }
 
         Print("Potential diff is = ");

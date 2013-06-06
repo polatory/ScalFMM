@@ -13,9 +13,11 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FABSTRACTPARTICLE_HPP
-#define FABSTRACTPARTICLE_HPP
+#ifndef FABSTRACTPARTICLECONTAINER_HPP
+#define FABSTRACTPARTICLECONTAINER_HPP
 
+#include "../Utils/FGlobal.hpp"
+#include "../Utils/FDebug.hpp"
 
 /* forward declaration to avoid include */
 class FPoint;
@@ -36,20 +38,19 @@ class FPoint;
 *
 * @warning Inherite from this class when implement a specific particle type
 */
-class FAbstractParticle{
-public:	
-	/** Default destructor */
-	virtual ~FAbstractParticle(){
-	}
+class FAbstractParticleContainer {
+public:
+    /** Default destructor */
+    virtual ~FAbstractParticleContainer(){
+    }
 
-	/**
-	* Must be implemented by each user Particle class
-	* @return the position of the current cell
-	*/
-        virtual const FPoint& getPosition() const = 0;
+    template<typename... Args>
+    void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
+        FDEBUG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );
+    }
 };
 
 
-#endif //FABSTRACTPARTICLE_HPP
+#endif //FABSTRACTPARTICLECONTAINER_HPP
 
 

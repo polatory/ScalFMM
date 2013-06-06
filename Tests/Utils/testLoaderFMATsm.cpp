@@ -28,31 +28,22 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FFmaParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
 
-#include "../../Src/Extensions/FExtendParticleType.hpp"
-
-#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FTypedLeaf.hpp"
 
 #include "../../Src/Files/FFmaTsmLoader.hpp"
 
+#include "../../Src/Components/FBasicParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameters.hpp"
-
-/**
-  * In this file we show an example of FFmaLoader use
-  */
-
-class ParticleTsm : public FFmaParticle, public FExtendParticleType {
-};
 
 
 
 int main(int argc, char ** argv ){
-    typedef FVector<ParticleTsm>      ContainerClass;
-    typedef FSimpleLeaf<ParticleTsm, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleTsm, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicParticleContainer<1>     ContainerClass;
+    typedef FTypedLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -65,7 +56,7 @@ int main(int argc, char ** argv ){
     std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
-    FFmaTsmLoader<ParticleTsm> loader(filename);
+    FFmaTsmLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
@@ -79,7 +70,13 @@ int main(int argc, char ** argv ){
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
 
-        loader.fillTree(tree);
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        bool isTarget;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition,&physicalValue, &isTarget);
+            tree.insert(particlePosition, isTarget, physicalValue);
+        }
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

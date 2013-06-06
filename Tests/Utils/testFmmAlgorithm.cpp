@@ -28,7 +28,7 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
+#include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
@@ -47,16 +47,15 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FTestParticle               ParticleClass;
     typedef FTestCell                   CellClass;
-    typedef FVector<ParticleClass>      ContainerClass;
+    typedef FTestParticleContainer      ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -70,7 +69,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader<ParticleClass> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +79,13 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    loader.fillTree(tree);
+    {
+        FPoint particlePosition;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition);
+            tree.insert(particlePosition);
+        }
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -101,7 +106,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgo<OctreeClass, ParticleClass, CellClass, ContainerClass, LeafClass>(&tree);
+    ValidateFMMAlgo<OctreeClass, CellClass, ContainerClass, LeafClass>(&tree);
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

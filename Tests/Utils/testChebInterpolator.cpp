@@ -33,11 +33,12 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
+#include "../../Src/Components/FSimpleLeaf.hpp"
 
 
 
@@ -73,11 +74,9 @@ FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
 * In this file we show how to use octree
 */
 
-int main(int, char **){    
-
-	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
-	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+int main(int, char **){
+    typedef FP2PParticleContainer ContainerClass;
+    typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
 
 
@@ -101,15 +100,12 @@ int main(int, char **){
 	const unsigned long M = 20000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
-	{
-		FChebParticle particle;
+    {
 		for(unsigned long i=0; i<M; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-			particle.setPosition(x, y, z);
-			particle.setPhysicalValue(FReal(rand())/FRandMax);
-			X.push(particle);
+            X.push(FPoint(x, y, z), FReal(rand())/FRandMax);
 		}
 	}
 
@@ -120,15 +116,12 @@ int main(int, char **){
 	const unsigned long N = 20000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
-	{
-		FChebParticle particle;
+    {
 		for(unsigned long i=0; i<N; ++i){
 			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
 			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
 			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-			particle.setPosition(x, y, z);
-			particle.setPhysicalValue(FReal(rand())/FRandMax);
-			Y.push(particle);
+            Y.push(FPoint(x, y, z), FReal(rand())/FRandMax);
 		}
 	}
 
@@ -194,15 +187,18 @@ int main(int, char **){
 	{ // start direct computation
 		unsigned int counter = 0;
 		
-		ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
-		while(iterX.hasNotFinished()){
-			const FPoint& x = iterX.data().getPosition();
-			const FReal  wx = iterX.data().getPhysicalValue();
+        for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+            const FPoint x = FPoint(X.getSrc()->getPositions()[0][idxPartX],
+                                     X.getSrc()->getPositions()[1][idxPartX],
+                                     X.getSrc()->getPositions()[2][idxPartX]);
+            const FReal  wx = X.getSrc()->getPhysicalValues()[idxPartX];
 			
-			ContainerClass::ConstBasicIterator iterY(*(Y.getSrc()));
-			while(iterY.hasNotFinished()){
-				const FPoint& y = iterY.data().getPosition();
-				const FReal  wy = iterY.data().getPhysicalValue();
+            for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
+                const FPoint y = FPoint(Y.getSrc()->getPositions()[0][idxPartY],
+                                         Y.getSrc()->getPositions()[1][idxPartY],
+                                         Y.getSrc()->getPositions()[2][idxPartY]);
+                const FReal  wy = Y.getSrc()->getPhysicalValues()[idxPartY];
+
 				const FReal one_over_r = MatrixKernel.evaluate(x, y);
 				// potential
 				p[counter] += one_over_r * wy;
@@ -212,11 +208,9 @@ int main(int, char **){
 				f[counter*3 + 0] += force.getX() * wx * wy;
 				f[counter*3 + 1] += force.getY() * wx * wy;
 				f[counter*3 + 2] += force.getZ() * wx * wy;
-				iterY.gotoNext();
 			}
 			
-			counter++;
-			iterX.gotoNext();
+            counter++;
 		}
 	} // end direct computation
 
@@ -225,18 +219,18 @@ int main(int, char **){
 	std::cout << "Done in " << time.elapsed() << "sec." << std::endl;
 
 
-	////////////////////////////////////////////////////////////////////
-	ContainerClass::ConstBasicIterator iterX(*(X.getSrc()));
+    ////////////////////////////////////////////////////////////////////
 	unsigned int counter = 0;
-	while(iterX.hasNotFinished()) {
-		approx_p[counter] = iterX.data().getPotential();
-		const FPoint& force = iterX.data().getForces();
+    for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+        approx_p[counter] = X.getSrc()->getPotentials()[idxPartX];
+        const FPoint force = FPoint(X.getSrc()->getForcesX()[idxPartX],
+                                    X.getSrc()->getForcesY()[idxPartX],
+                                    X.getSrc()->getForcesZ()[idxPartX]);
 		approx_f[counter*3 + 0] = force.getX();
 		approx_f[counter*3 + 1] = force.getY();
 		approx_f[counter*3 + 2] = force.getZ();
 
-		counter++;
-		iterX.gotoNext();
+        counter++;
 	}
 
 	std::cout << "\nPotential error:" << std::endl;

@@ -25,10 +25,6 @@
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Components/FFmaParticle.hpp"
-#include "../../Src/Extensions/FExtendForces.hpp"
-#include "../../Src/Extensions/FExtendPotential.hpp"
-
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
@@ -41,6 +37,8 @@
 
 #include "../../Src/Files/FFmaLoader.hpp"
 
+#include "../../Src/Components/FBasicParticleContainer.hpp"
+
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -51,9 +49,9 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FVector<FFmaParticle>      ContainerClass;
-    typedef FSimpleLeaf<FFmaParticle, ContainerClass >                     LeafClass;
-    typedef FOctree<FFmaParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
     //////////////////////////////////////////////////////////////
@@ -65,7 +63,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaLoader<FFmaParticle> loader(filename);
+    FFmaLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -81,8 +79,12 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-
-    loader.fillTree(tree);
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        FPoint particlePosition;
+        FReal physicalValue;
+        loader.fillParticle(&particlePosition,&physicalValue);
+        tree.insert(particlePosition );
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -101,7 +103,7 @@ int main(int argc, char ** argv){
                 OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
-                    averageParticles += FReal(octreeIterator.getCurrentListTargets()->getSize());
+                    averageParticles += FReal(octreeIterator.getCurrentListTargets()->getNbParticles());
                     ++nbLeafs;
                 } while(octreeIterator.moveRight());
                 averageParticles /= FReal(nbLeafs);
@@ -116,7 +118,7 @@ int main(int argc, char ** argv){
                 OctreeClass::Iterator octreeIterator(&tree);
                 octreeIterator.gotoBottomLeft();
                 do{
-                    varianceParticles += FReal(octreeIterator.getCurrentListTargets()->getSize() * octreeIterator.getCurrentListTargets()->getSize());
+                    varianceParticles += FReal(octreeIterator.getCurrentListTargets()->getNbParticles() * octreeIterator.getCurrentListTargets()->getNbParticles());
                     ++nbLeafs;
                 } while(octreeIterator.moveRight());
                 varianceParticles /= FReal(nbLeafs);

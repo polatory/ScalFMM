@@ -30,30 +30,19 @@
 
 #include "FUTester.hpp"
 
-#include "../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
+#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+
 /*
   In this test we compare the spherical fmm results and the direct results.
 */
 
-/** We need to know the position of the particle in the array */
-class IndexedParticle : public FChebParticle {
-	int index;
-public:
-	IndexedParticle(): index(-1){}
-
-	int getIndex() const{
-		return index;
-	}
-	void setIndex( const int inIndex ){
-		index = inIndex;
-	}
-};
 
 /** the test class
  *
@@ -64,7 +53,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	// The tests!
 	///////////////////////////////////////////////////////////
 	
-	template <class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
 						class LeafClass, class OctreeClass, class FmmClass>
 	void RunTest(const FReal epsilon)	{
 		// Warning in make test the exec dir it Build/UTests
@@ -75,19 +64,33 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const int PeriodicDeep  = 2;
         const int NbParticles   = 1;
 
-        FRandomLoader<ParticleClass> loader(NbParticles);
+        FRandomLoader loader(NbParticles);
 
         Print("Number of particles:");
         Print(loader.getNumberOfParticles());
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        ParticleClass* const particles = new ParticleClass[loader.getNumberOfParticles()];
+
+        struct TestParticle{
+            FPoint position;
+            FReal forces[3];
+            FReal physicalValue;
+            FReal potential;
+        };
+        TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(particles[idxPart]);
-            particles[idxPart].setIndex( idxPart );
-            particles[idxPart].setPhysicalValue(FReal(0.10));
-            tree.insert(particles[idxPart]);
+            FPoint position;
+            loader.fillParticle(&position);
+            // put in tree
+            tree.insert(position, idxPart, 0.10);
+            // get copy
+            particles[idxPart].position = position;
+            particles[idxPart].physicalValue = 0.10;
+            particles[idxPart].potential = 0.0;
+            particles[idxPart].forces[0] = 0.0;
+            particles[idxPart].forces[1] = 0.0;
+            particles[idxPart].forces[2] = 0.0;
         }
 
         // Run FMM
@@ -107,19 +110,14 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                //kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
-                const FReal wt = particles[idxTarget].getPhysicalValue();
-                const FReal ws = particles[idxOther ].getPhysicalValue();
-                const FReal one_over_r = MatrixKernel.evaluate(particles[idxTarget].getPosition(),
-                            particles[idxOther].getPosition());
-                // potential
-                particles[idxTarget].incPotential(one_over_r * ws);
-                particles[idxOther ].incPotential(one_over_r * wt);
-                // force
-                FPoint force(particles[idxOther].getPosition() - particles[idxTarget].getPosition());
-                force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-                particles[idxTarget].incForces(  force.getX(),  force.getY(),  force.getZ());
-                particles[idxOther ].incForces( -force.getX(), -force.getY(), -force.getZ());
+                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                      particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                      &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                      &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                &particles[idxOther].forces[2],&particles[idxOther].potential);
             }
             for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
                 for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
@@ -132,20 +130,16 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                                             loader.getBoxWidth() * FReal(idxZ));
 
                         for(int idxSource = 0 ; idxSource < NbParticles ; ++idxSource){
-                            ParticleClass source = particles[idxSource];
-                            source.incPosition(offset.getX(),offset.getY(),offset.getZ());
+                            TestParticle source = particles[idxSource];
+                            source.position += offset;
 
-                            const FReal wt = particles[idxTarget].getPhysicalValue();
-                            const FReal ws = source.getPhysicalValue();
-                            const FReal one_over_r = MatrixKernel.evaluate(particles[idxTarget].getPosition(),
-                                        source.getPosition());
-                            // potential
-                            particles[idxTarget].incPotential(one_over_r * ws);
-                            source.incPotential(one_over_r * wt);
-                            // force
-                            FPoint force(source.getPosition() - particles[idxTarget].getPosition());
-                            force *= ((ws*wt) * (one_over_r*one_over_r*one_over_r));
-                            particles[idxTarget].incForces(  force.getX(),  force.getY(),  force.getZ());
+                            FP2P::NonMutualParticles(
+                                        source.position.getX(), source.position.getY(),
+                                        source.position.getZ(),source.physicalValue,
+                                        particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential);
                         }
                     }
                 }
@@ -157,26 +151,23 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
 
-            do{
-                typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                while( leafIter.hasNotFinished() ){
-                    const ParticleClass& other = particles[leafIter.data().getIndex()];
-
-                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-
-                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
-
-                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
-
-                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
-
-                    leafIter.gotoNext();
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const int indexPartOrig = indexes[idxPart];
+                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
                 }
-            } while(octreeIterator.moveRight());
+            });
         }
 
         delete[] particles;
@@ -231,33 +222,31 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	/** TestChebKernel */
 	void TestChebKernel(){
 		const unsigned int ORDER = 5;
-		const FReal epsilon = FReal(1e-5);
-		typedef IndexedParticle ParticleClass;
-		typedef FVector<ParticleClass> ContainerClass;
-		typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+        const FReal epsilon = FReal(1e-5);
+        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FChebMatrixKernelR MatrixKernelClass;
 		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        typedef FFmmAlgorithmPeriodic<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-		RunTest<ParticleClass,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
 	}
 
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
 		const unsigned int ORDER = 5;
-		const FReal epsilon = FReal(1e-5);
-		typedef IndexedParticle ParticleClass;
-		typedef FVector<ParticleClass> ContainerClass;
-		typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+        const FReal epsilon = FReal(1e-5);
+        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FChebMatrixKernelR MatrixKernelClass;
 		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        typedef FFmmAlgorithmPeriodic<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-		RunTest<ParticleClass,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
 	}
 
 

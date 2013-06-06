@@ -25,7 +25,7 @@
 /** This class is to export a tree in csv file
   *
   */
-template <class OctreeClass, class ContainerClass , class ParticleClass>
+template <class OctreeClass, class ContainerClass >
 class FTreeCsvSaver {
     const bool includeHeader;   //< To include a line of header
     int nbFrames;               //< The current frame
@@ -66,33 +66,28 @@ public:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-            while( iter.hasNotFinished() ){
-                file << iter.data().getPosition().getX() << "," << iter.data().getPosition().getY() << "," <<
-                        iter.data().getPosition().getZ() << "," << getValue(&iter.data()) << "\n";
-                iter.gotoNext();
+            FReal values[4];
+            {
+                const ContainerClass* container = octreeIterator.getCurrentListTargets();
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    container->fillToCsv(idxPart, values);
+                    file << values[0] << "," << values[1] << "," <<
+                            values[2] << "," << values[3] << "\n";
+                }
             }
 
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
             if( isUsingTsm ){
-                typename ContainerClass::BasicIterator iterSources(*octreeIterator.getCurrentListSrc());
-
-                while( iterSources.hasNotFinished() ){
-                    file << iterSources.data().getPosition().getX() << "," << iterSources.data().getPosition().getY() << "," <<
-                            iterSources.data().getPosition().getZ() << "," << getValue(&iterSources.data()) << "\n";
-                    iterSources.gotoNext();
+                const ContainerClass* container = octreeIterator.getCurrentListSrc();
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    container->fillToCsv(idxPart, values);
+                    file << values[0] << "," << values[1] << "," <<
+                            values[2] << "," << values[3] << "\n";
                 }
             }
         } while(octreeIterator.moveRight());
 
         file.close();
-    }
-
-    /** Inherit from this class and customize this function if you need it
-      */
-    virtual FReal getValue(ParticleClass*const part){
-        return FReal(0);
     }
 };
 

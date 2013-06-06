@@ -23,10 +23,10 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This class is the basic spherical harmonic kernel
 */
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FSphericalKernel : public FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class FSphericalKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
 protected:
-    typedef FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
 
     const int devM2lP;               //< A secondary P
 

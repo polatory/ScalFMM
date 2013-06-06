@@ -29,14 +29,13 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FFmaParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Files/FFmaLoader.hpp"
 
-// Compile by : g++ testLoaderFMA.cpp ../../Src/Utils/FDebug.cpp ../../Src/Utils/FTrace.cpp -O2 -o testLoaderFMA.exe
+#include "../../Src/Components/FBasicParticleContainer.hpp"
 
 
 /**
@@ -48,9 +47,9 @@
   */
 
 int main(int argc, char ** argv ){
-    typedef FVector<FFmaParticle>      ContainerClass;
-    typedef FSimpleLeaf<FFmaParticle, ContainerClass >                     LeafClass;
-    typedef FOctree<FFmaParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicParticleContainer<1>      ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -63,7 +62,7 @@ int main(int argc, char ** argv ){
     std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
-    FFmaLoader<FFmaParticle> loader(filename);
+    FFmaLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;
@@ -78,7 +77,12 @@ int main(int argc, char ** argv ){
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
 
-        loader.fillTree(tree);
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition,&physicalValue);
+            tree.insert(particlePosition,physicalValue);
+        }
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;

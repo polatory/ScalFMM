@@ -22,6 +22,7 @@
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FSpherical.hpp"
 
+#include "../P2P/FP2P.hpp"
 
 /** This is a recursion to get the minimal size of the matrix dlmk
   */
@@ -43,8 +44,8 @@ template<> struct NumberOfValuesInDlmk<0>{
 * Here is the optimizated kernel, please refer to FRotationOriginalKernel
 * to see the non optimized easy to understand kernel.
 */
-template< class ParticleClass, class CellClass, class ContainerClass, int P>
-class FRotationKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass, int P>
+class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
 
     //< Size of the data array computed using a suite relation
     static const int SizeArray = ((P+2)*(P+1))/2;
@@ -918,14 +919,18 @@ public:
         FReal angles[P+1][2];
 
         // For all particles in the leaf box
-        typename ContainerClass::ConstBasicIterator iterParticle(*inParticles);
-        while( iterParticle.hasNotFinished()){
+        const FReal*const physicalValues = inParticles->getPhysicalValues();
+        const FReal*const positionsX = inParticles->getPositions()[0];
+        const FReal*const positionsY = inParticles->getPositions()[1];
+        const FReal*const positionsZ = inParticles->getPositions()[2];
+
+        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // P2M
-            const ParticleClass& particle = iterParticle.data();
-            const FSpherical sph(particle.getPosition() - cellPosition);
+            const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FSpherical sph(position - cellPosition);
 
             // The physical value (charge, mass)
-            const FReal q = particle.getPhysicalValue();
+            const FReal q = physicalValues[idxPart];
             // The distance between the SH and the particle
             const FReal a = sph.getR();
 
@@ -950,9 +955,6 @@ public:
                 }
                 q_aPowL *= a;
             }
-
-            // Goto next particle
-            iterParticle.gotoNext();
         }
     }
 
@@ -1152,11 +1154,19 @@ public:
         const FPoint cellPosition = getLeafCenter(inLocal->getCoordinate());
 
         // For all particles in the leaf box
-        typename ContainerClass::BasicIterator iterParticle(*inParticles);
-        while( iterParticle.hasNotFinished()){
+        const FReal*const physicalValues = inParticles->getPhysicalValues();
+        const FReal*const positionsX = inParticles->getPositions()[0];
+        const FReal*const positionsY = inParticles->getPositions()[1];
+        const FReal*const positionsZ = inParticles->getPositions()[2];
+        FReal*const forcesX = inParticles->getForcesX();
+        FReal*const forcesY = inParticles->getForcesY();
+        FReal*const forcesZ = inParticles->getForcesZ();
+        FReal*const potentials = inParticles->getPotentials();
+
+        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // L2P
-            ParticleClass& particle = iterParticle.data();
-            const FSpherical sph(particle.getPosition() - cellPosition);
+            const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FSpherical sph(position - cellPosition);
 
             // The distance between the SH and the particle
             const FReal r = sph.getR();
@@ -1242,7 +1252,7 @@ public:
                 // copy variable from spherical position
                 const FReal cosPhi     = FMath::Cos(sph.getPhi());
                 const FReal sinPhi     = FMath::Sin(sph.getPhi());
-                const FReal physicalValue = particle.getPhysicalValue();
+                const FReal physicalValue = physicalValues[idxPart];
 
                 // compute forces
                 const FReal forceX = (
@@ -1260,7 +1270,9 @@ public:
                         (-sph.getSinTheta()) * FO) * physicalValue;
 
                 // inc particles forces
-                particle.incForces( forceX, forceY, forceZ );
+                forcesX[idxPart] += forceX;
+                forcesY[idxPart] += forceY;
+                forcesZ[idxPart] += forceZ;
             }
             // compute the potential
             {
@@ -1281,10 +1293,8 @@ public:
                     }
                 }
                 // inc potential
-                particle.incPotential(magnitude);
+                potentials[idxPart] += magnitude;
             }
-            // progress
-            iterParticle.gotoNext();
         }
     }
 
@@ -1298,44 +1308,7 @@ public:
     void P2P(const FTreeCoordinate& /*inPosition*/,
                      ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                      ContainerClass* const inNeighbors[27], const int /*inSize*/){
-
-        {
-            typename ContainerClass::BasicIterator iterTarget(*inTargets);
-            while( iterTarget.hasNotFinished() ){
-                // We copy the target particle to work with a particle in the heap
-                ParticleClass target( iterTarget.data() );
-
-                // For all particles after the current one
-                typename ContainerClass::BasicIterator iterSameBox = iterTarget;
-                iterSameBox.gotoNext();
-                while( iterSameBox.hasNotFinished() ){
-                    particlesMutualInteraction(&target, &iterSameBox.data());
-                    iterSameBox.gotoNext();
-                }
-                // Set data and progress
-                iterTarget.setData(target);
-                iterTarget.gotoNext();
-            }
-        }
-        // For all the neigbors leaves
-        for(int idxDirectNeighbors = 0 ; idxDirectNeighbors <= 13 ; ++idxDirectNeighbors){
-            if( inNeighbors[idxDirectNeighbors] ){
-                // For all particles in current leaf
-                typename ContainerClass::BasicIterator iterTarget(*inTargets);
-                while( iterTarget.hasNotFinished() ){
-                    ParticleClass target( iterTarget.data() );
-                    // For all the particles in the other leaf
-                    typename ContainerClass::BasicIterator iterSource(*inNeighbors[idxDirectNeighbors]);
-                    while( iterSource.hasNotFinished() ){
-                        particlesMutualInteraction(&target, &iterSource.data());
-                        iterSource.gotoNext();
-                    }
-                    // Set data and progress
-                    iterTarget.setData(target);
-                    iterTarget.gotoNext();
-                }
-            }
-        }
+        FP2P::FullMutual(inTargets,inNeighbors,14);
     }
 
 
@@ -1343,91 +1316,7 @@ public:
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        for(int idxDirectNeighbors = 0 ; idxDirectNeighbors < 27 ; ++idxDirectNeighbors){
-            if( inNeighbors[idxDirectNeighbors] ){
-                // For all particles in current leaf
-                typename ContainerClass::BasicIterator iterTarget(*inTargets);
-                while( iterTarget.hasNotFinished() ){
-                    ParticleClass target( iterTarget.data() );
-                    // For all the particles in the other leaf
-                    typename ContainerClass::BasicIterator iterSource(*inNeighbors[idxDirectNeighbors]);
-                    while( iterSource.hasNotFinished() ){
-                        particlesInteraction(&target, iterSource.data());
-                        iterSource.gotoNext();
-                    }
-                    // Set data and progress
-                    iterTarget.setData(target);
-                    iterTarget.gotoNext();
-                }
-            }
-        }
-    }
-
-public:
-    /** P2P mutual interaction,
-      * this function computes the interaction for 2 particles.
-      *
-      * Formulas are:
-      * \f[
-      * F = q_1 * q_2 / r^2
-      * P_1 = q_2 / r ; P_2 = q_1 / r
-      * \f]
-      * In details :
-      * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
-      */
-    void particlesMutualInteraction(ParticleClass*const FRestrict target, ParticleClass*const FRestrict source) const {
-
-        FReal dx = source->getPosition().getX() - target->getPosition().getX();
-        FReal dy = source->getPosition().getY() - target->getPosition().getY();
-        FReal dz = source->getPosition().getZ() - target->getPosition().getZ();
-
-        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-        FReal inv_distance = FMath::Sqrt(inv_square_distance);
-
-        inv_square_distance *= inv_distance;
-        inv_square_distance *= target->getPhysicalValue() * source->getPhysicalValue();
-
-        dx *= inv_square_distance;
-        dy *= inv_square_distance;
-        dz *= inv_square_distance;
-
-        target->incForces( dx, dy, dz);
-        target->incPotential( inv_distance * source->getPhysicalValue() );
-
-        source->incForces( (-dx), (-dy), (-dz));
-        source->incPotential( inv_distance * target->getPhysicalValue() );
-
-    }
-
-    /** P2P mutual interaction,
-      * this function computes the interaction for 2 particles.
-      *
-      * Formulas are:
-      * \f[
-      * F = q_1 * q_2 / r^2
-      * P_1 = q_2 / r ; P_2 = q_1 / r
-      * \f]
-      * In details :
-      * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
-      */
-    void particlesInteraction(ParticleClass*const FRestrict target, const ParticleClass& source) const {
-
-        FReal dx = source.getPosition().getX() - target->getPosition().getX();
-        FReal dy = source.getPosition().getY() - target->getPosition().getY();
-        FReal dz = source.getPosition().getZ() - target->getPosition().getZ();
-
-        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-        FReal inv_distance = FMath::Sqrt(inv_square_distance);
-
-        inv_square_distance *= inv_distance;
-        inv_square_distance *= target->getPhysicalValue() * source.getPhysicalValue();
-
-        dx *= inv_square_distance;
-        dy *= inv_square_distance;
-        dz *= inv_square_distance;
-
-        target->incForces( dx, dy, dz);
-        target->incPotential( inv_distance * source.getPhysicalValue() );
+        FP2P::FullRemote(inTargets,inNeighbors,27);
     }
 };
 

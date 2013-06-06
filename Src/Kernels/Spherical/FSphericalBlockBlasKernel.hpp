@@ -26,10 +26,10 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This class is a spherical harmonic kernels using block blas
 */
-template< class ParticleClass, class CellClass, class ContainerClass>
-class FSphericalBlockBlasKernel : public FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class FSphericalBlockBlasKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
 protected:
-    typedef FAbstractSphericalKernel<ParticleClass,CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
 
     /** A interaction properties */
     struct ComputationPair {

@@ -29,13 +29,12 @@
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Files/FFmaLoader.hpp"
 #include "../../Src/Files/FRandomLoader.hpp"
 
-
+#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -43,19 +42,12 @@
   * related that each other
   */
 
-class IndexedParticle : public FSphericalParticle {
-    int index;
-public:
-    IndexedParticle(): index(-1){}
-
-    int getIndex() const{
-        return index;
-    }
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
+struct Particle{
+    FPoint position;
+    FReal physicalValue;
+    FReal forces[3];
+    FReal potential;
 };
-
 
 int restultIndex(const int idxP, const int idxH, const int minP,
                  const int maxP, const int minH){
@@ -63,15 +55,14 @@ int restultIndex(const int idxP, const int idxH, const int minP,
 }
 
 
-typedef IndexedParticle                ParticleClass;
 typedef FSphericalCell                 CellClass;
-typedef FVector<ParticleClass>         ContainerClass;
+typedef FP2PParticleContainerIndexed   ContainerClass;
 
-typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >     KernelClass;
+typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
 
-typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 
 void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
@@ -79,28 +70,38 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
              FMath::FAccurater* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
              const int SizeSubLevels = 3, FReal* timeForDirect = 0){
     FTic counter;
-    FRandomLoader<ParticleClass> loader(NbParticles);
-    ParticleClass*const particles = new ParticleClass[loader.getNumberOfParticles()];
+    FRandomLoader loader(NbParticles);
+
+
+
+    Particle*const particles = new Particle[loader.getNumberOfParticles()];
 
     const bool computeDirectAndDiff = timeForDirect || allAbsoluteDiff || allPotentialDiff;
     {
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(particles[idxPart]);
-            particles[idxPart].setIndex( idxPart );
+            loader.fillParticle(&particles[idxPart].position);
             if((idxPart & 1) && neutral){
-                particles[idxPart].setPhysicalValue( -physicalValue );
+                particles[idxPart].physicalValue = -physicalValue;
             }
-            else particles[idxPart].setPhysicalValue( physicalValue );
+            else{
+                particles[idxPart].physicalValue = physicalValue;
+            }
         }
 
         // Compute direct
         if(computeDirectAndDiff){
             printf("Compute direct!\n");
-            KernelClass kernels(minP, minH, loader.getBoxWidth(), loader.getCenterOfBox());
             counter.tic();
             for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
                 for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                    kernels.directInteractionMutual(&particles[idxTarget], &particles[idxOther]);
+                    FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                    &particles[idxOther].forces[2],&particles[idxOther].potential);
                 }
             }
             if(timeForDirect) *timeForDirect = counter.tacAndElapsed();
@@ -123,10 +124,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
             counter.tic();
 
             for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
-                ParticleClass part = particles[idxPart];
-                part.setPotential(0.0);
-                part.setForces(0.0,0.0,0.0);
-                tree.insert(part);
+                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
 
             counter.tac();
@@ -160,29 +158,23 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
                 FMath::FAccurater potentialDiff;
                 FMath::FAccurater fx, fy, fz;
                 FReal absoluteDiff = FReal(0.0);
-                { // Check that each particle has been summed with all other
-                    OctreeClass::Iterator octreeIterator(&tree);
-                    octreeIterator.gotoBottomLeft();
 
-                    do{
-                        ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                tree.forEachLeaf([&](LeafClass* leaf){
+                    const FReal*const potentials = leaf->getTargets()->getPotentials();
+                    const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                    const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                    const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                        while( leafIter.hasNotFinished() ){
-                            const ParticleClass& other = particles[leafIter.data().getIndex()];
-
-                            potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-                            absoluteDiff = FMath::Max(absoluteDiff,FMath::Abs(other.getPotential()-leafIter.data().getPotential()));
-
-                            fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
-
-                            fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
-
-                            fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
-
-                            leafIter.gotoNext();
-                        }
-                    } while(octreeIterator.moveRight());
-                }
+                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                        const int indexPartOrig = indexes[idxPart];
+                        potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                        fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                        fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                        fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                    }
+                });
 
                 // Print for information
                 printf("Potential diff is = %e \t %e\n",potentialDiff.getL2Norm(),potentialDiff.getInfNorm());
@@ -289,47 +281,50 @@ int main(int argc, char ** argv){
 
         for(int idxP = 1 ; idxP <= DevP ; ++idxP){
             for(int idxStep = 0 ; idxStep <= nbStep ; ++idxStep){
-                ParticleClass centeredParticle;
-                centeredParticle.setPosition(0.0,0.0,0.5);
-                centeredParticle.setPhysicalValue(physicalValue);
-                centeredParticle.setIndex(0);
+                Particle centeredParticle;
+                centeredParticle.position.setPosition(0.0,0.0,0.5);
+                centeredParticle.physicalValue  = physicalValue;
 
-                ParticleClass otherParticle;
-                otherParticle.setPosition(0.0,0.0,startPosition + (idxStep*stepValue));
-                otherParticle.setPhysicalValue(physicalValue);
-                otherParticle.setIndex(1);
+                Particle otherParticle;
+                otherParticle.position.setPosition(0.0,0.0,startPosition + (idxStep*stepValue));
+                otherParticle.physicalValue = physicalValue;
 
                 CellClass::Init(idxP);
                 OctreeClass tree(NbLevels, 2, boxWidth, boxCenter);
 
-                tree.insert(centeredParticle);
-                tree.insert(otherParticle);
+                tree.insert(centeredParticle.position, 0, centeredParticle.physicalValue);
+                tree.insert(otherParticle.position, 1, otherParticle.physicalValue);
 
                 KernelClass kernels(idxP, NbLevels, boxWidth, boxCenter);
                 FmmClass algo(&tree,&kernels);
                 algo.execute();
 
-                kernels.directInteractionMutual(&centeredParticle, &otherParticle);
+                FP2P::MutualParticles(centeredParticle.position.getX(), centeredParticle.position.getY(),
+                                      centeredParticle.position.getZ(),centeredParticle.physicalValue,
+                                      &centeredParticle.forces[0],&centeredParticle.forces[1],
+                                      &centeredParticle.forces[2],&centeredParticle.potential,
+                                otherParticle.position.getX(), otherParticle.position.getY(),
+                                otherParticle.position.getZ(),otherParticle.physicalValue,
+                                &otherParticle.forces[0],&otherParticle.forces[1],
+                                &otherParticle.forces[2],&otherParticle.potential);
 
                 { // Check that each particle has been summed with all other
-                    OctreeClass::Iterator octreeIterator(&tree);
-                    octreeIterator.gotoBottomLeft();
 
-                    do{
-                        ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+                    tree.forEachLeaf([&](LeafClass* leaf){
+                        const FReal*const potentials = leaf->getTargets()->getPotentials();
+                        const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                        const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                        while( leafIter.hasNotFinished() ){
-                            const ParticleClass& other = (leafIter.data().getIndex()==0?centeredParticle:otherParticle);
-
-                            potentialDiff[idxP].add(other.getPotential(),leafIter.data().getPotential());
-
-                            leafIter.gotoNext();
+                        for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                            const int indexPartOrig = indexes[idxPart];
+                            const Particle& other = (indexPartOrig==0?centeredParticle:otherParticle);
+                            potentialDiff[idxP].add(other.potential,potentials[idxPart]);
                         }
-                    } while(octreeIterator.moveRight());
+                    });
                 }
 
                 // Print for information
-                printf("For P %d, particle pos %lf\n", idxP, otherParticle.getPosition().getZ());
+                printf("For P %d, particle pos %lf\n", idxP, otherParticle.position.getZ());
                 printf("Potential diff is = %e \t %e\n",
                        potentialDiff[idxP].getL2Norm(),
                        potentialDiff[idxP].getInfNorm());

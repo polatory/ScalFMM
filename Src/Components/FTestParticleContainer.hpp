@@ -13,36 +13,37 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FBASICPARTICLE_HPP
-#define FBASICPARTICLE_HPP
+#ifndef FTESTPARTICLECONTAINER_HPP
+#define FTESTPARTICLECONTAINER_HPP
 
 
-#include "../Extensions/FExtendPosition.hpp"
+#include "FBasicParticleContainer.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FBasicParticle
+* @class FTestParticle
 * Please read the license
 *
-* This class defines a basic particle used for examples. It extends
-* the mininum, only what is needed by FOctree and FFmmAlgorithm
-* to make the things working.
-* By using this extension it will implement the FAbstractParticle without
-* inheriting from it.
+* This class is used in the FTestKernels, please
+* look at this class to know whit it is.
+*
+* Particles just need the data down (after and run with FTestKernel the
+* value shoud be NB PARTICLES (-1)).
 */
-class FBasicParticle : public FExtendPosition{
+class FTestParticleContainer : public FBasicParticleContainer<1, long long int> {
+    typedef FBasicParticleContainer<1, long long int> Parent;
+
 public:
-    /** Save the current cell in a buffer */
-    void save(FBufferWriter& buffer) const{
-        FExtendPosition::save(buffer);
+    long long int* getDataDown(){
+        return Parent::getAttribute(0);
     }
-    /** Restore the current cell from a buffer */
-    void restore(FBufferReader& buffer){
-        FExtendPosition::restore(buffer);
+
+    const long long int* getDataDown() const {
+        return Parent::getAttribute(0);
     }
 };
 
 
-#endif //FBASICPARTICLE_HPP
+#endif //FTESTPARTICLECONTAINER_HPP
 
 

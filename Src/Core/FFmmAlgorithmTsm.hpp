@@ -38,7 +38,7 @@
 *
 * The differences with FmmAlgorithm is that it used target source model.
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmTsm : protected FAssertable{
 
     OctreeClass* const tree;                                                     //< The octree to work on
@@ -103,11 +103,11 @@ public:
             // and the list of particles
             FDEBUG(computationCounter.tic());
             ContainerClass* const sources = octreeIterator.getCurrentListSrc();
-            if(sources->getSize()){
+            if(sources->getNbParticles()){
                 octreeIterator.getCurrentCell()->setSrcChildTrue();
                 kernels->P2M( octreeIterator.getCurrentCell() , sources);
             }
-            if(octreeIterator.getCurrentListTargets()->getSize()){
+            if(octreeIterator.getCurrentListTargets()->getNbParticles()){
                 octreeIterator.getCurrentCell()->setTargetsChildTrue();
             }
             FDEBUG(computationCounter.tac());

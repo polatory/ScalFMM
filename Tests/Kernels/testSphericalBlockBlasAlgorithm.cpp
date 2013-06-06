@@ -37,10 +37,11 @@
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
+
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -52,17 +53,16 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
     typedef FSphericalCell                 CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
+    typedef FP2PParticleContainer         ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
 
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
-    typedef FFmmAlgorithmTask<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
+    typedef FFmmAlgorithmTask<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical Block Blas algorithm.\n";
     std::cout << ">> You can pass -sequential or -task (thread by default).\n";
@@ -75,7 +75,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaScanfLoader<ParticleClass> loader(filename);
+    FFmaScanfLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -91,7 +91,12 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    loader.fillTree(tree);
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        loader.fillParticle(&particlePosition,&physicalValue);
+        tree.insert(particlePosition, physicalValue );
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -131,20 +136,25 @@ int main(int argc, char ** argv){
 
     { // get sum forces&potential
         FReal potential = 0;
-        FPoint forces;
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished() ){
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-                forces += iter.data().getForces();
+        FReal fx = 0.0, fy = 0.0, fz = 0.0;
 
-                iter.gotoNext();
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                potential += potentials[idxPart] * physicalValues[idxPart];
+                fx += forcesX[idxPart];
+                fy += forcesY[idxPart];
+                fz += forcesZ[idxPart];
             }
-        } while(octreeIterator.moveRight());
+        });
 
-        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
         std::cout << "Potential = " << potential << std::endl;
     }
 

@@ -51,8 +51,7 @@
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-template <class ParticleClass>
-class FFmaScanfLoader : public FAbstractLoader<ParticleClass> {
+class FFmaScanfLoader : public FAbstractLoader {
 protected:
     FILE* file;                 //< The file to read
     FPoint centerOfBox;    //< The center of box read from file
@@ -130,13 +129,13 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
         if(this->file){
             float x,y,z,data;
             const int nbReadElements = fscanf(this->file,"%f %f %f %f",&x,&y,&z,&data);
             if(nbReadElements == 4){
-                inParticle.setPosition(x,y,z);
-                inParticle.setPhysicalValue(data);
+                inParticlePositions->setPosition(x,y,z);
+                (*inPhysicalValue) = data;
             }
             else{
                 fclose(this->file);

@@ -36,10 +36,11 @@
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
+
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 /** This program find the best block blas size
   */
@@ -48,15 +49,14 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
     typedef FSphericalCell                 CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
+    typedef FP2PParticleContainer         ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlockBlasKernel<ParticleClass, CellClass, ContainerClass > KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
 
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -69,15 +69,13 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-
-
     // -----------------------------------------------------
     double minTime = 999999999999999999.0;
     int bestSize = -1;
 
     CellClass::Init(DevP, true);
     for(int idxBlockSize = 1 ; idxBlockSize < MaxBlockSize ; idxBlockSize *= 2){
-        FFmaScanfLoader<ParticleClass> loader(filename);
+        FFmaScanfLoader loader(filename);
         if(!loader.isOpen()){
             std::cout << "Loader Error, " << filename << " is missing\n";
             return 1;
@@ -87,7 +85,12 @@ int main(int argc, char ** argv){
 
         // -----------------------------------------------------
 
-        loader.fillTree(tree);
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            FPoint particlePosition;
+            FReal physicalValue = 0.0;
+            loader.fillParticle(&particlePosition,&physicalValue);
+            tree.insert(particlePosition, physicalValue );
+        }
 
         // -----------------------------------------------------
 

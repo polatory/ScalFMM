@@ -42,6 +42,11 @@ public:
         data[0] = data[1] = data[2] = 0;
     }
 
+    /** Default constructor (position = {0,0,0})*/
+    explicit FTreeCoordinate(const MortonIndex mindex, const int indexLevel) {
+        setPositionFromMorton(mindex, indexLevel);
+    }
+
     /**
         * Default constructor
         * @param inX the x
@@ -248,6 +253,23 @@ public:
     /** Retrieve current object */
     void restore(FBufferReader& buffer) {
         buffer >> data[0] >> data[1] >> data[2];
+    }
+
+    static std::string MortonToBinary(MortonIndex index, int level){
+        std::string str;
+        int bits = 1 << ((level * 3) - 1);
+        int dim = 0;
+        while(bits){
+            if(index & bits) str.append("1");
+            else str.append("0");
+            bits >>= 1;
+            // we put a dot each 3 values
+            if(++dim == 3){
+                str.append(".");
+                dim = 0;
+            }
+        }
+        return str;
     }
 };
 

@@ -22,6 +22,8 @@
 
 #include "../../Components/FAbstractKernels.hpp"
 
+#include "../P2P/FP2P.hpp"
+
 #include "./FChebInterpolator.hpp"
 
 class FTreeCoordinate;
@@ -35,14 +37,13 @@ template <KERNEL_FUNCCTION_IDENTIFIER Identifier> struct DirectInteactionCompute
  * implements all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are required by
  * the FFmmAlgorithm and FFmmAlgorithmThread.
  *
- * @tparam ParticleClass Type of particle
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template <class ParticleClass, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
-class FAbstractChebKernel : public FAbstractKernels<ParticleClass, CellClass, ContainerClass>
+template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
@@ -127,86 +128,11 @@ public:
 
 	void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
 					 ContainerClass* const FRestrict TargetParticles,
-					 const ContainerClass* const FRestrict SourceParticles,
+                     const ContainerClass* const FRestrict /*SourceParticles*/,
 					 ContainerClass* const NeighborSourceParticles[27],
 					 const int /* size */)
 	{
-		// loop: target particles
-		typename ContainerClass::BasicIterator iTargets(*TargetParticles);
-
-		if (TargetParticles != SourceParticles) {
-
-			while (iTargets.hasNotFinished()) {
-				ParticleClass& Target = iTargets.data();
-				
-				{ // loop: source particles (target leaf cell == source leaf cell)
-					typename ContainerClass::ConstBasicIterator iSources(*SourceParticles);
-					while (iSources.hasNotFinished()) {
-						const ParticleClass& Source = iSources.data();
-						// only if target and source are not identical
-						DirectInteactionComputer<MatrixKernelClass::Identifier>::compute(Target, Source);
-						// progress sources
-						iSources.gotoNext();
-					}
-				}
-				
-				{ // loop: source particles (target leaf cell != source leaf cell)
-					for (unsigned int idx=0; idx<27; ++idx) {
-						if (NeighborSourceParticles[idx]) {
-							typename ContainerClass::ConstBasicIterator	iSources(*NeighborSourceParticles[idx]);
-							while (iSources.hasNotFinished()) {
-								const ParticleClass& Source = iSources.data();
-								// target and source cannot be identical
-								DirectInteactionComputer<MatrixKernelClass::Identifier>::compute(Target, Source);
-								// progress sources
-								iSources.gotoNext();
-							}
-						}
-					}
-				}
-		
-				// progress targets
-				iTargets.gotoNext();
-			}
-
-		} else {
-
-			while (iTargets.hasNotFinished()) {
-				ParticleClass& Target = iTargets.data();
-				
-				{ // loop: source particles  (target leaf cell == source leaf cell)
-					typename ContainerClass::BasicIterator iSources = iTargets;
-					iSources.gotoNext();
-					while (iSources.hasNotFinished()) {
-						ParticleClass& Source = iSources.data();
-						// only if target and source are not identical
-						DirectInteactionComputer<MatrixKernelClass::Identifier>::computeMutual(Target, Source);
-						// progress sources
-						iSources.gotoNext();
-					}
-				}
-				
-				{ // loop: source particles (target leaf cell != source leaf cell)
-					for (unsigned int idx=0; idx<=13; ++idx) {
-						if (NeighborSourceParticles[idx]) {
-							typename ContainerClass::BasicIterator iSources(*NeighborSourceParticles[idx]);
-							while (iSources.hasNotFinished()) {
-								ParticleClass& Source = iSources.data();
-								// target and source cannot be identical
-								DirectInteactionComputer<MatrixKernelClass::Identifier>::computeMutual(Target, Source);
-								// progress sources
-								iSources.gotoNext();
-							}
-						}
-					}
-				}
-		
-				// progress targets
-				iTargets.gotoNext();
-			}
-
-		}
-
+        DirectInteactionComputer<MatrixKernelClass::Identifier>::P2P(TargetParticles,NeighborSourceParticles);
 	}
 
 };
@@ -216,43 +142,11 @@ public:
 template <>
 struct DirectInteactionComputer<ONE_OVER_R>
 {
-	template <typename ParticleClass>
-	static void compute(ParticleClass& Target, const ParticleClass& Source) // 34 overall flops
-	{
-		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
-		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
-																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
-		const FReal wt = Target.getPhysicalValue();
-		const FReal ws = Source.getPhysicalValue();
-
-		// laplace potential
-		Target.incPotential(one_over_r * ws); // 2 flops
-
-		// force
-		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
-		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
-	}
-
-	template <typename ParticleClass>
-	static void computeMutual(ParticleClass& Target, ParticleClass& Source) // 39 overall flops
-	{
-		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
-		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
-																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
-		const FReal wt = Target.getPhysicalValue();
-		const FReal ws = Source.getPhysicalValue();
-
-		// laplace potential
-		Target.incPotential(one_over_r * ws); // 2 flops
-		Source.incPotential(one_over_r * wt); // 2 flops
-
-		// force
-		xy *= ((ws*wt) * (one_over_r*one_over_r*one_over_r)); // 5 flops
-		Target.incForces(  xy.getX(),    xy.getY(),    xy.getZ());  // 3 flops 
-		Source.incForces((-xy.getX()), (-xy.getY()), (-xy.getZ())); // 3 flops
-	}
+    template <typename ContainerClass>
+    static void P2P(		 ContainerClass* const FRestrict TargetParticles,
+                     ContainerClass* const NeighborSourceParticles[27]){
+        FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
+    }
 };
 
 
@@ -260,49 +154,11 @@ struct DirectInteactionComputer<ONE_OVER_R>
 template <>
 struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL>
 {
-	template <typename ParticleClass>
-	static void compute(ParticleClass& Target, const ParticleClass& Source) // 39 overall flops
-	{
-		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
-		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
-																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
-		const FReal wt = Target.getPhysicalValue();
-		const FReal ws = Source.getPhysicalValue();
-
-		// lenard-jones potential
-		const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
-		const FReal one_over_r6 = one_over_r3 * one_over_r3;
-		Target.incPotential((one_over_r6*one_over_r6 - one_over_r6) * ws); // 2 flops
-
-		// force
-		const FReal one_over_r4 = one_over_r3 * one_over_r; // 1 flop
-		xy *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4)); // 9 flops
-		Target.incForces(xy.getX(), xy.getY(), xy.getZ()); // 3 flops
-	}
-
-	template <typename ParticleClass>
-	static void computeMutual(ParticleClass& Target, ParticleClass& Source) // 44 overall flops
-	{
-		FPoint xy(Source.getPosition() - Target.getPosition()); // 3 flops
-		const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
-																										 xy.getY()*xy.getY() +
-																										 xy.getZ()*xy.getZ()); // 1 + 15 + 5 = 21 flops
-		const FReal wt = Target.getPhysicalValue();
-		const FReal ws = Source.getPhysicalValue();
-
-		// lenard-jones potential
-		const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
-		const FReal one_over_r6 = one_over_r3 * one_over_r3;
-		Target.incPotential((one_over_r6*one_over_r6 - one_over_r6) * ws); // 2 flops
-		Source.incPotential((one_over_r6*one_over_r6 - one_over_r6) * wt); // 2 flops
-
-		// force
-		const FReal one_over_r4 = one_over_r3 * one_over_r; // 1 flop
-		xy *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4)); // 9 flops
-		Target.incForces(  xy.getX(),    xy.getY(),    xy.getZ());  // 3 flops 
-		Source.incForces((-xy.getX()), (-xy.getY()), (-xy.getZ())); // 3 flops
-	}
+    template <typename ContainerClass>
+    static void P2P(		 ContainerClass* const FRestrict TargetParticles,
+                     ContainerClass* const NeighborSourceParticles[27]){
+        FP2P::FullMutualLJ(TargetParticles,NeighborSourceParticles,14);
+    }
 };
 
 

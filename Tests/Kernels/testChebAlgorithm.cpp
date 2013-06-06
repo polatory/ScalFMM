@@ -26,12 +26,14 @@
 #include "../../Src/Files/FFmaScanfLoader.hpp"
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameters.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -87,25 +89,24 @@ int main(int argc, char* argv[])
 	FTic time;
 
 
-	// typedefs
-	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
-	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+    // typedefs
+    typedef FP2PParticleContainer ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >  LeafClass;
 	//typedef FChebMatrixKernelLJ MatrixKernelClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
-	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 	//typedef FChebKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FChebSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	//typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	typedef FFmmAlgorithmThread<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
 	// What we do //////////////////////////////////////////////////////
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 	
 	// open particle file
-	FFmaScanfLoader<ParticleClass> loader(filename);
+    FFmaScanfLoader loader(filename);
 	//FFmaBinLoader<ParticleClass> loader(filename);
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 	
@@ -117,7 +118,16 @@ int main(int argc, char* argv[])
 						<< " particles in a octree of height " << TreeHeight
 						<< " ..." << std::endl;
 	time.tic();
-	loader.fillTree(tree);
+
+    {
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition,&physicalValue);
+            tree.insert(particlePosition, physicalValue);
+        }
+    }
+
 	std::cout << "Done  " << "(" << time.tacAndElapsed() << ")." << std::endl;
 	// -----------------------------------------------------
 
@@ -208,7 +218,7 @@ int main(int argc, char* argv[])
 
 	// -----------------------------------------------------
 	// find first non empty leaf cell 
-	if (FParameters::findParameter(argc,argv,"-dont_check_accuracy") == FParameters::NotFound) {
+    /*if (FParameters::findParameter(argc,argv,"-dont_check_accuracy") == FParameters::NotFound) {
 		OctreeClass::Iterator iLeafs(&tree);
 		iLeafs.gotoBottomLeft();
 	
@@ -298,7 +308,7 @@ int main(int argc, char* argv[])
 		delete [] ApproxPotential;
 		delete [] Force;
 		delete [] ApproxForce;
-	}
+    }*/
 
 	/*
 	// Check if particles are strictly within its containing cells

@@ -30,9 +30,6 @@
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
-
-#include "../../Src/Extensions/FExtendVelocity.hpp"
 
 #include "../../Src/Files/FTreeCsvSaver.hpp"
 #include "../../Src/Files/FFmaLoader.hpp"
@@ -40,48 +37,109 @@
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-class FmmVeloParticle : public FSphericalParticle, public FExtendVelocity {
-};
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
-template <class ParticleClass>
-class GalaxyLoader : public FFmaLoader<ParticleClass> {
+
+class VelocityContainer : public FP2PParticleContainer {
+    typedef FP2PParticleContainer Parent;
+
+    FVector<FPoint> velocities;
+
 public:
-    GalaxyLoader(const char* const filename) : FFmaLoader<ParticleClass>(filename) {
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const FPoint& velocity, Args... args){
+        Parent::push(inParticlePosition, args... );
+        velocities.push(velocity);
     }
 
-    void fillParticle(ParticleClass& inParticle){
+    const FVector<FPoint>& getVelocities() const{
+        return velocities;
+    }
+
+    FVector<FPoint>& getVelocities() {
+        return velocities;
+    }
+
+    void fillToCsv(const int partIdx, FReal values[4]) const {
+        values[0] = Parent::getPositions()[0][partIdx];
+        values[1] = Parent::getPositions()[1][partIdx];
+        values[2] = Parent::getPositions()[2][partIdx];
+        values[3] = Parent::getPotentials()[partIdx];
+    }
+};
+
+
+class GalaxyLoader : public FFmaLoader {
+public:
+    GalaxyLoader(const char* const filename) : FFmaLoader(filename) {
+    }
+
+    void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
         FReal x,y,z,data, vx, vy, vz;
         this->file >> x >> y >> z >> data >> vx >> vy >> vz;
-        inParticle.setPosition(x,y,z);
-        inParticle.setPhysicalValue(data);
-        inParticle.setVelocity(vx,vy,vz);
+        position->setPosition(x,y,z);
+        *physivalValue = (data);
+        velocity->setPosition(vx,vy,vz);
     }
 };
 
+template <class ContainerClass>
+class GalaxyExtractor {
+    struct Particle{
+        FPoint position;
+        FReal physicalValue;
+        FReal forces[3];
+        FReal potential;
+        FPoint velocity;
+    };
 
-template <class OctreeClass, class ContainerClass , class ParticleClass>
-class MassSaver : public FTreeCsvSaver<OctreeClass,ContainerClass, ParticleClass> {
+    FVector<Particle> savedParticles;
+
 public:
-    MassSaver(const char inBasefile[], const bool inIncludeHeader = false)
-        : FTreeCsvSaver<OctreeClass,ContainerClass, ParticleClass> (inBasefile,inIncludeHeader) {
+    void extractParticles(const ContainerClass* containers, const int indexesToExtract[], const int nbToExtract){
+        const FReal*const positionsX = containers->getPositions()[0];
+        const FReal*const positionsY = containers->getPositions()[1];
+        const FReal*const positionsZ = containers->getPositions()[2];
+        const FReal*const forcesX = containers->getForcesX();
+        const FReal*const forcesY = containers->getForcesY();
+        const FReal*const forcesZ = containers->getForcesZ();
+        const FReal*const physicalValues = containers->getPhysicalValues();
+        const FReal*const potentials = containers->getPotentials();
+        FVector<FPoint> velocites = containers->getVelocities();
+
+        for(int idxPart = 0 ; idxPart < nbToExtract ; ++ idxPart){
+            const int idxExtract = indexesToExtract[idxPart];
+            Particle part;
+            part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
+            part.physicalValue = physicalValues[idxExtract];
+            part.forces[0] = forcesX[idxExtract];
+            part.forces[1] = forcesY[idxExtract];
+            part.forces[2] = forcesZ[idxExtract];
+            part.potential = potentials[idxExtract];
+            part.velocity  = velocites[idxExtract];
+        }
     }
 
-    virtual FReal getValue(ParticleClass*const part){
-        return part->getPhysicalValue();
+    template <class OctreeClass>
+    void reinsertInTree(OctreeClass* tree){
+        for(int idxPart = 0 ; idxPart < savedParticles.getSize() ; ++idxPart){
+            const Particle part = savedParticles[idxPart];
+            tree->insert(part.position, part.velocity, part.physicalValue, part.forces[0],
+                    part.forces[1],part.forces[2],part.potential);
+        }
     }
 };
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmmVeloParticle         ParticleClass;
     typedef FSphericalCell          CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef VelocityContainer  ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel< CellClass, ContainerClass >   KernelClass;
 
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -93,7 +151,7 @@ int main(int argc, char ** argv){
 
     FSphericalCell::Init(DevP);
 
-    GalaxyLoader<ParticleClass> loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
+    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
 
     // -----------------------------------------------------
 
@@ -105,12 +163,12 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
     {
-        ParticleClass particleToFill;
-        particleToFill.setPhysicalValue(FReal(0.10));
+        FPoint position, velocity;
+        FReal physicalValue;
 
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(particleToFill);
-            tree.insert(particleToFill);
+            loader.fillParticle(&position, &physicalValue, &velocity);
+            tree.insert(position, velocity, physicalValue);
         }
     }
 
@@ -118,8 +176,8 @@ int main(int argc, char ** argv){
 
     KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
-    FOctreeArranger<OctreeClass, ContainerClass, ParticleClass> arranger(&tree);
-    MassSaver<OctreeClass, ContainerClass, ParticleClass> saver("./out/test%d.csv");
+    FOctreeArranger<OctreeClass, ContainerClass, GalaxyExtractor<ContainerClass> > arranger(&tree);
+    FTreeCsvSaver<OctreeClass, ContainerClass> saver("./out/test%d.csv");
 
     for(int idx = 0; idx < 100 ; ++idx){
         algo.execute();
@@ -127,12 +185,8 @@ int main(int argc, char ** argv){
             OctreeClass::Iterator octreeIterator(&tree);
             octreeIterator.gotoBottomLeft();
             do{
-                ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                while( iter.hasNotFinished() ){
-                    kernels.computeVelocity(&iter.data(), DT);
-                    kernels.updatePosition(&iter.data(), DT);
-                    iter.gotoNext();
-                }
+                kernels.computeVelocity(octreeIterator.getCurrentListTargets(), DT);
+                kernels.updatePosition(octreeIterator.getCurrentListTargets(), DT);
             } while(octreeIterator.moveRight());
         }
         // update tree and vtk

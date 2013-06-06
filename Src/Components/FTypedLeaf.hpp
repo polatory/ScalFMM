@@ -30,8 +30,8 @@
 *
 * Particles should be typed to enable targets/sources difference.
 */
-template< class ParticleClass , class ContainerClass>
-class FTypedLeaf  : public FAbstractLeaf<ParticleClass,ContainerClass>, public FAssertable {
+template< class ContainerClass>
+class FTypedLeaf  : public FAbstractLeaf<ContainerClass>, public FAssertable {
     ContainerClass sources; //< The sources containers
     ContainerClass targets; //< The targets containers
 
@@ -44,11 +44,10 @@ public:
         * To add a new particle in the leaf
         * @param particle the new particle
         */
-    void push(const ParticleClass& particle){
-        // Test if is source or target particle
-        if(particle.isTarget()) this->targets.push(particle);
-        else if(particle.isSource()) this->sources.push(particle);
-        else fassert(false, "Error particle has undefined type.", __LINE__, __FILE__);
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const bool isTarget, Args ... args){
+        if(isTarget) targets.push(inParticlePosition, args...);
+        else sources.push(inParticlePosition, args...);
     }
 
     /**

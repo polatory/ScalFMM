@@ -29,11 +29,9 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
-#include "../../Src/Extensions/FExtendParticleType.hpp"
 #include "../../Src/Extensions/FExtendCellType.hpp"
 
 #include "../../Src/Core/FFmmAlgorithmTsm.hpp"
@@ -43,29 +41,25 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Components/FTestParticleContainer.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
   */
-
-class FTestParticleTsm : public FTestParticle, public FExtendParticleType {
-};
-
 class FTestCellTsm: public FTestCell , public FExtendCellType{
 };
 
-
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FTestParticleTsm             ParticleClassTyped;
     typedef FTestCellTsm                 CellClassTyped;
-    typedef FVector<ParticleClassTyped>  ContainerClassTyped;
+    typedef FTestParticleContainer       ContainerClassTyped;
 
-    typedef FTypedLeaf<ParticleClassTyped, ContainerClassTyped >                      LeafClassTyped;
-    typedef FOctree<ParticleClassTyped, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
-    typedef FTestKernels<ParticleClassTyped, CellClassTyped, ContainerClassTyped >          KernelClassTyped;
+    typedef FTypedLeaf< ContainerClassTyped >                      LeafClassTyped;
+    typedef FOctree< CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
+    typedef FTestKernels< CellClassTyped, ContainerClassTyped >          KernelClassTyped;
 
-    typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
+    typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -78,7 +72,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoaderTsm<ParticleClassTyped> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoaderTsm loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClassTyped tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +81,14 @@ int main(int argc, char ** argv){
     std::cout << "Creating " << NbPart << " particles ..." << std::endl;
     counter.tic();
 
-    loader.fillTree(tree);
+    {
+        FPoint particlePosition;
+        bool isTarget;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition, &isTarget);
+            tree.insert(particlePosition, isTarget);
+        }
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -110,8 +111,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    ValidateFMMAlgo<OctreeClassTyped, ParticleClassTyped, CellClassTyped, ContainerClassTyped, LeafClassTyped>(&tree);
-
+    ValidateFMMAlgo<OctreeClassTyped, CellClassTyped, ContainerClassTyped, LeafClassTyped>(&tree);
 
     return 0;
 }

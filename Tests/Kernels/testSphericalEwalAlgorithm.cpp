@@ -31,29 +31,35 @@
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../../Src/Files/FEwalLoader.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
+
+#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /** Ewal particle is used in the gadget program
   * here we try to make the same simulation
   */
 
-
+struct EwalParticle {
+    FPoint position;
+    FReal forces[3];
+    FReal physicalValue;
+    FReal potential;
+    int index;
+};
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FEwalParticle<FSphericalParticle>    ParticleClass;
     typedef FSphericalCell          CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef FP2PParticleContainerIndexed  ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >   KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel< CellClass, ContainerClass >   KernelClass;
 
-    typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoPer;
+    typedef FFmmAlgorithmPeriodic<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoPer;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
@@ -75,8 +81,8 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     std::cout << "Opening : " << filename << "\n";
-    //FEwalLoader<ParticleClass> loader(filename);
-    FEwalBinLoader<ParticleClass> loader(filename);
+    //FEwalLoader loader(filename);
+    FEwalBinLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -96,16 +102,14 @@ int main(int argc, char ** argv){
 
     counter.tic();
 
-    ParticleClass * const particles = new ParticleClass[loader.getNumberOfParticles()];
+    EwalParticle * const particles = new EwalParticle[loader.getNumberOfParticles()];
+    memset(particles, 0, sizeof(EwalParticle) * loader.getNumberOfParticles());
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(particles[idxPart]);
+        loader.fillParticle(&particles[idxPart].position, particles[idxPart].forces,
+                            &particles[idxPart].physicalValue,&particles[idxPart].index);
         // reset forces and insert in the tree
-        particles[idxPart].setIndex(idxPart);
-        ParticleClass part = particles[idxPart];
-        part.setForces(0,0,0);
-        part.setPotential(0);
-        tree.insert(part);
+        tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
     }
 
     counter.tac();
@@ -138,28 +142,33 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    ParticleClass* particlesDirect = 0;
+    EwalParticle* particlesDirect = 0;
 
     // Do direct
     if(FParameters::existParameter(argc, argv, "-direct")){
         printf("Compute direct:\n");
         printf("Box [%d;%d][%d;%d][%d;%d]\n", min.getX(), max.getX(), min.getY(),
                max.getY(), min.getZ(), max.getZ());
-        KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
-        particlesDirect = new ParticleClass[loader.getNumberOfParticles()];
+        particlesDirect = new EwalParticle[loader.getNumberOfParticles()];
 
         FReal dpotential = 0.0;
         FMath::FAccurater dfx, dfy, dfz;
 
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-            ParticleClass part = particles[idxTarget];
-            part.setForces(0,0,0);
-            part.setPotential(0);
+            EwalParticle part = particles[idxTarget];
+            part.forces[0] = part.forces[1] = part.forces[2] = 0.0;
+            part.potential = 0.0;
             // compute with all other except itself
             for(int idxOther = 0; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                 if( idxOther != idxTarget ){
-                    kernels.directInteraction(&part, particles[idxOther]);
+                    FP2P::NonMutualParticles(
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                part.position.getX(), part.position.getY(),
+                                part.position.getZ(),part.physicalValue,
+                                &part.forces[0],&part.forces[1],
+                                &part.forces[2],&part.potential);
                 }
             }
             for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
@@ -172,20 +181,26 @@ int main(int argc, char ** argv){
                                             loader.getBoxWidth() * FReal(idxZ));
 
                         for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
-                            ParticleClass source = particles[idxSource];
-                            source.incPosition(offset.getX(),offset.getY(),offset.getZ());
-                            kernels.directInteraction(&part, source);
+                            EwalParticle source = particles[idxSource];
+                            source.position += offset;
+                            FP2P::NonMutualParticles(
+                                        source.position.getX(), source.position.getY(),
+                                        source.position.getZ(),source.physicalValue,
+                                        part.position.getX(), part.position.getY(),
+                                                  part.position.getZ(),part.physicalValue,
+                                                  &part.forces[0],&part.forces[1],
+                                                  &part.forces[2],&part.potential
+                                            );
                         }
                     }
                 }
             }
 
+            dfx.add(particles[idxTarget].forces[0],-part.forces[0]*coeff_MD1);
+            dfy.add(particles[idxTarget].forces[1],-part.forces[1]*coeff_MD1);
+            dfz.add(particles[idxTarget].forces[2],-part.forces[2]*coeff_MD1);
 
-            dfx.add(particles[idxTarget].getForces().getX(),-part.getForces().getX()*coeff_MD1);
-            dfy.add(particles[idxTarget].getForces().getY(),-part.getForces().getY()*coeff_MD1);
-            dfz.add(particles[idxTarget].getForces().getZ(),-part.getForces().getZ()*coeff_MD1);
-
-            dpotential += part.getPotential() * part.getPhysicalValue();
+            dpotential += part.potential * part.physicalValue;
 
             particlesDirect[idxTarget] = part;
         }
@@ -209,49 +224,39 @@ int main(int argc, char ** argv){
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
 
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished() ){
 
-                const ParticleClass& part = particles[iter.data().getIndex()];
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+            const FReal*const positionsX = leaf->getTargets()->getPositions()[0];
+            const FReal*const positionsY = leaf->getTargets()->getPositions()[1];
+            const FReal*const positionsZ = leaf->getTargets()->getPositions()[2];
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                // Check values ------------------------------------------------------------
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-
-                potentialDiff.add(part.getPotential(),-iter.data().getPotential());
-                fx.add(part.getForces().getX(),-iter.data().getForces().getX()*coeff_MD1);
-                fy.add(part.getForces().getY(),-iter.data().getForces().getY()*coeff_MD1);
-                fz.add(part.getForces().getZ(),-iter.data().getForces().getZ()*coeff_MD1);
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                const int indexPartOrig = indexes[idxPart];
+                potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
 
                 if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << ">> index " << iter.data().getIndexInFile() << std::endl;
-                    std::cout << "Good x " << part.getPosition().getX() << " y " << part.getPosition().getY() << " z " << part.getPosition().getZ() << std::endl;
-                    std::cout << "FMM  x " << iter.data().getPosition().getX() << " y " << iter.data().getPosition().getY() << " z " << iter.data().getPosition().getZ() << std::endl;
-                    std::cout << "Good fx " <<part.getForces().getX() << " fy " << part.getForces().getY() << " fz " << part.getForces().getZ() << std::endl;
-                    std::cout << "FMM  fx " << iter.data().getForces().getX()*coeff_MD1 << " fy " << iter.data().getForces().getY()*coeff_MD1 << " fz " << iter.data().getForces().getZ()*coeff_MD1 << std::endl;
-                    std::cout << "GOOD physical value " << part.getPhysicalValue() << " potential " << part.getPotential() << std::endl;
-                    std::cout << "FMM  physical value " << iter.data().getPhysicalValue() << " potential " << iter.data().getPotential() << std::endl;
-
-                    // print result
-                    if(FParameters::existParameter(argc, argv, "-verbose")
-                            && FParameters::existParameter(argc, argv, "-direct")){
-                        const int idxTarget = iter.data().getIndex();
-                        std::cout << ">> index in array " << idxTarget << std::endl;
-                        std::cout << "Direct x " << particlesDirect[idxTarget].getPosition().getX() << " y " << particlesDirect[idxTarget].getPosition().getY() << " z " << particles[idxTarget].getPosition().getZ() << std::endl;
-                        std::cout << "Direct fx " << particlesDirect[idxTarget].getForces().getX()*coeff_MD1 << " fy " << particlesDirect[idxTarget].getForces().getY()*coeff_MD1 << " fz " << particlesDirect[idxTarget].getForces().getZ()*coeff_MD1 << std::endl;
-                        std::cout << "Direct physical value " << particlesDirect[idxTarget].getPhysicalValue() << " potential " << particlesDirect[idxTarget].getPotential() << std::endl;
-                    }
+                    std::cout << ">> index " << particles[indexPartOrig].index << std::endl;
+                    std::cout << "Good x " << particles[indexPartOrig].position.getX() << " y " << particles[indexPartOrig].position.getY() << " z " << particles[indexPartOrig].position.getZ() << std::endl;
+                    std::cout << "FMM  x " << positionsX[idxPart] << " y " << positionsY[idxPart] << " z " << positionsZ[idxPart] << std::endl;
+                    std::cout << "Good fx " <<particles[indexPartOrig].forces[0] << " fy " << particles[indexPartOrig].forces[1] << " fz " << particles[indexPartOrig].forces[2] << std::endl;
+                    std::cout << "FMM  fx " << forcesX[idxPart]*coeff_MD1 << " fy " << forcesY[idxPart]*coeff_MD1 << " fz " << forcesZ[idxPart]*coeff_MD1 << std::endl;
+                    std::cout << "GOOD physical value " << particles[indexPartOrig].physicalValue << " potential " << particles[indexPartOrig].potential << std::endl;
+                    std::cout << "FMM  physical value " << physicalValues[idxPart] << " potential " << potentials[idxPart] << std::endl;
 
                     std::cout << "\n";
                 }
-
-                // Progress ------------------------------------------------------------------
-
-                iter.gotoNext();
             }
-        } while(octreeIterator.moveRight());
+        });
 	
         printf("Difference between FMM and poly:\n");
         printf("Potential diff is = \n");
@@ -274,30 +279,24 @@ int main(int argc, char ** argv){
 
     { // get sum forces&potential
         FReal  potential = 0;
-        FPoint forces;
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished() ){
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-                forces += iter.data().getForces();
+        FReal fx = 0.0, fy = 0.0, fz = 0.0;
 
-                if(FParameters::existParameter(argc, argv, "-verbose")){
-                    std::cout << " " << iter.data().getIndex()+1 << " \t "<< iter.data().getType() << "  \t " <<
-                                 std::setprecision(5)<< iter.data().getPosition().getX() << "  \t" <<
-                                 iter.data().getPosition().getY() << "  \t" <<
-                                 iter.data().getPosition().getZ() << "   Forces: \t"<<
-                                 std::setprecision(8) << iter.data().getForces().getX()*coeff_MD1 << "  \t " <<
-                                 iter.data().getForces().getY()*coeff_MD1 << "  \t " <<
-                                 iter.data().getForces().getZ()*coeff_MD1 << std::endl;
-                }
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-                iter.gotoNext();
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                potential += potentials[idxPart];
+                fx += forcesX[idxPart];
+                fy += forcesY[idxPart];
+                fz += forcesZ[idxPart];
             }
-        } while(octreeIterator.moveRight());
+        });
 
-        std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
         std::cout << "Potential = " << std::setprecision(8) << potential*coeff_MD/2 << std::endl;
         std::cout << "Energy from file = " << std::setprecision(8) << loader.getEnergy() << std::endl;
 	//        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;

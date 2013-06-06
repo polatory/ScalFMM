@@ -20,7 +20,7 @@
 #include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/Rotation/FRotationParticle.hpp"
+#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/Rotation/FRotationKernel.hpp"
@@ -33,30 +33,13 @@
 
 #include "FUTester.hpp"
 
-/*
-  In this test we compare the spherical fmm results and the direct results.
-  */
-
-/** We need to know the position of the particle in the array */
-class IndexedParticle : public FRotationParticle {
-    int index;
-public:
-    IndexedParticle(): index(-1){}
-
-    int getIndex() const{
-        return index;
-    }
-    void setIndex( const int inIndex ){
-        index = inIndex;
-    }
-};
 
 /** the test class
   *
   */
 class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** The test method to factorize all the test based on different kernels */
-    template <class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+    template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
     void RunTest(){
         // Warning in make test the exec dir it Build/UTests
@@ -64,7 +47,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         const char* const filename = (sizeof(FReal) == sizeof(float))?
                                         "../../Data/utestDirect.bin.fma.single":
                                         "../../Data/utestDirect.bin.fma.double";
-        FFmaBinLoader<ParticleClass> loader(filename);
+        FFmaBinLoader loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -76,13 +59,31 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
 
+
+        struct TestParticle{
+            FPoint position;
+            FReal forces[3];
+            FReal physicalValue;
+            FReal potential;
+        };
+
+        TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
+
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        ParticleClass* const particles = new ParticleClass[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(particles[idxPart]);
-            particles[idxPart].setIndex( idxPart );
-            tree.insert(particles[idxPart]);
+            FPoint position;
+            FReal physicalValue;
+            loader.fillParticle(&position,&physicalValue);
+            // put in tree
+            tree.insert(position, idxPart, physicalValue);
+            // get copy
+            particles[idxPart].position = position;
+            particles[idxPart].physicalValue = physicalValue;
+            particles[idxPart].potential = 0.0;
+            particles[idxPart].forces[0] = 0.0;
+            particles[idxPart].forces[1] = 0.0;
+            particles[idxPart].forces[2] = 0.0;
         }
 
 
@@ -97,7 +98,14 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         Print("Direct...");
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                kernels.particlesMutualInteraction(&particles[idxTarget], &particles[idxOther]);
+                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                      particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                      &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                      &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                &particles[idxOther].forces[2],&particles[idxOther].potential);
             }
         }
 
@@ -106,26 +114,23 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
         { // Check that each particle has been summed with all other
-            typename OctreeClass::Iterator octreeIterator(&tree);
-            octreeIterator.gotoBottomLeft();
 
-            do{
-                typename ContainerClass::BasicIterator leafIter(*octreeIterator.getCurrentListTargets());
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-                while( leafIter.hasNotFinished() ){
-                    const ParticleClass& other = particles[leafIter.data().getIndex()];
-
-                    potentialDiff.add(other.getPotential(),leafIter.data().getPotential());
-
-                    fx.add(other.getForces().getX(),leafIter.data().getForces().getX());
-
-                    fy.add(other.getForces().getY(),leafIter.data().getForces().getY());
-
-                    fz.add(other.getForces().getZ(),leafIter.data().getForces().getZ());
-
-                    leafIter.gotoNext();
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const int indexPartOrig = indexes[idxPart];
+                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
                 }
-            } while(octreeIterator.moveRight());
+            });
         }
 
         delete[] particles;
@@ -173,19 +178,17 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
     /** Rotation */
     void TestRotation(){
-        typedef IndexedParticle         ParticleClass;
-        typedef FRotationCell<P>            CellClass;
-        typedef FVector<ParticleClass>  ContainerClass;
+        typedef FRotationCell<P>              CellClass;
+        typedef FP2PParticleContainerIndexed  ContainerClass;
 
-        typedef FRotationKernel<ParticleClass, CellClass, ContainerClass, P >          KernelClass;
+        typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-        typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-        typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-        typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        RunTest<ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass,
-                OctreeClass, FmmClass>();
+        RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
     }
 
     ///////////////////////////////////////////////////////////

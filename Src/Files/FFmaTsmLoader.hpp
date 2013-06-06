@@ -51,8 +51,7 @@
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-template <class ParticleClass>
-class FFmaTsmLoader : public FAbstractLoader<ParticleClass> {
+class FFmaTsmLoader : public FAbstractLoader {
 protected:
     std::ifstream file;         //< The file to read
     FPoint centerOfBox;    //< The center of box read from file
@@ -123,14 +122,14 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue, bool*const inIsTarget){
         FReal x,y,z,data;
         int isTarget;
         this->file >> x >> y >> z >> data >> isTarget;
-        inParticle.setPosition(x,y,z);
-        inParticle.setPhysicalValue(data);
-        if(isTarget) inParticle.setAsTarget();
-        else inParticle.setAsSource();
+
+        inParticlePositions->setPosition(x,y,z);
+        *inPhysicalValue = data;
+        *inIsTarget = isTarget;
     }
 
 };

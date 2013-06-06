@@ -30,9 +30,10 @@
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
+#include "../../Src/Components/FTestParticleContainer.hpp"
+
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
@@ -46,15 +47,14 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FTestParticle               ParticleClass;
     typedef FTestCell                   CellClass;
-    typedef FVector<ParticleClass>      ContainerClass;
+    typedef FTestParticleContainer      ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
-    typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -81,9 +81,16 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    FRandomLoader<ParticleClass> loader(NbParticles);
+    FRandomLoader loader(NbParticles);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-    loader.fillTree(tree);
+
+    {
+        FPoint particlePosition;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition);
+            tree.insert(particlePosition);
+        }
+    }
 
     counter.tac();
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
@@ -108,17 +115,14 @@ int main(int argc, char ** argv){
     { // Check that each particle has been summed with all other
         long long int counterNbPart = 0;
 
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            // on each leaf we should have the same number of particles
-            if(octreeIterator.getCurrentCell()->getDataUp() != octreeIterator.getCurrentListSrc()->getSize() ){
-                    std::cout << "Problem P2M Data up = " << octreeIterator.getCurrentCell()->getDataUp() <<
-                                 " Size = " << octreeIterator.getCurrentListSrc()->getSize() << "\n";
+        tree.forEachCellLeaf([&](CellClass* cell, LeafClass* leaf){
+            if(cell->getDataUp() != leaf->getSrc()->getNbParticles() ){
+                    std::cout << "Problem P2M Data up = " << cell->getDataUp() <<
+                                 " Size = " << leaf->getSrc()->getNbParticles() << "\n";
             }
             // we also count the number of particles.
-            counterNbPart += octreeIterator.getCurrentListSrc()->getSize();
-        } while(octreeIterator.moveRight());
+            counterNbPart += leaf->getSrc()->getNbParticles();
+        });
 
         if( counterNbPart != NbParticles){
             std::cout << "Problem global nb part, counter = " << counterNbPart << " created = " << NbParticles << std::endl;
@@ -135,20 +139,14 @@ int main(int argc, char ** argv){
         algo.repetitionsIntervals(&min, &max);
         std::cout << "Min is " << min << " Max is " << max << std::endl;
 
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-            while( iter.hasNotFinished() ){
-                if( NbParticlesEntireSystem - 1 != iter.data().getDataDown()){
+        tree.forEachLeaf([&](LeafClass* leaf){
+            for(int idxPart = 0 ; idxPart < leaf->getSrc()->getNbParticles() ; ++idxPart ){
+                if( NbParticlesEntireSystem - 1 != leaf->getSrc()->getDataDown()[idxPart]){
                     std::cout << "P2P probleme, should be " << NbParticlesEntireSystem - 1 <<
-                                 " iter.data().getDataDown() "<< iter.data().getDataDown() << std::endl;
+                                 " iter.data().getDataDown() "<< leaf->getSrc()->getDataDown()[idxPart] << std::endl;
                 }
-
-                iter.gotoNext();
             }
-        } while(octreeIterator.moveRight());
+        });
     }
 
     //////////////////////////////////////////////////////////////////////////////////

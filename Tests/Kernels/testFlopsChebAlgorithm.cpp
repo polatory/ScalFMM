@@ -26,8 +26,6 @@
 #include "../../Src/Files/FFmaScanfLoader.hpp"
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebParticle.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
@@ -40,8 +38,8 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
-
-
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 
 
@@ -58,15 +56,14 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
-	// typedefs
-	typedef FChebParticle ParticleClass;
-	typedef FVector<FChebParticle> ContainerClass;
-	typedef FChebLeaf<ParticleClass,ContainerClass> LeafClass;
+    // typedefs
+    typedef FP2PParticleContainer ContainerClass;
+    typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FChebMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
-	typedef FOctree<ParticleClass,CellClass,ContainerClass,LeafClass> OctreeClass;
-	typedef FChebFlopsSymKernel<ParticleClass,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	typedef FFmmAlgorithm<OctreeClass,ParticleClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FChebFlopsSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
 	// What we do //////////////////////////////////////////////////////
@@ -74,7 +71,7 @@ int main(int argc, char* argv[])
 	
 	// open particle file
 	//FFmaScanfLoader<ParticleClass> loader(filename);
-	FFmaBinLoader<ParticleClass> loader(filename);
+    FFmaBinLoader loader(filename);
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 	
 	// init oct-tree
@@ -84,7 +81,16 @@ int main(int argc, char* argv[])
 	std::cout << "Creating and inserting " << loader.getNumberOfParticles()
 						<< " particles in a octree of height " << TreeHeight << " ..." << std::endl;
 	time.tic();
-	loader.fillTree(tree);
+
+    {
+        FPoint particlePosition;
+        FReal physicalValue = 0.0;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition,&physicalValue);
+            tree.insert(particlePosition, physicalValue);
+        }
+    }
+
 	std::cout << "Done  " << "(" << time.tacAndElapsed() << ")." << std::endl;
 	// -----------------------------------------------------
 
@@ -98,9 +104,6 @@ int main(int argc, char* argv[])
 	std::cout << "completed in " << time.tacAndElapsed() << "sec." << std::endl;
 	// -----------------------------------------------------
 	
-
-
-
     return 0;
 }
 

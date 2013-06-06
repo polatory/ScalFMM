@@ -45,17 +45,16 @@ class FTreeCoordinate;
  * (P2P, P2M, M2M, M2L, L2L, L2P) which are required by the FFmmAlgorithm and
  * FFmmAlgorithmThread.
  *
- * @tparam ParticleClass Type of particle
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template <class ParticleClass, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
 class FChebSymKernel
-	: public FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>
+    : public FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
 {
-	typedef FAbstractChebKernel<ParticleClass, CellClass, ContainerClass, MatrixKernelClass, ORDER>	AbstractBaseClass;
+    typedef FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>	AbstractBaseClass;
 	typedef SymmetryHandler<ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
   enum {nnodes = AbstractBaseClass::nnodes};
 

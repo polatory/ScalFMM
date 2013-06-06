@@ -30,19 +30,18 @@
 #include "../../Src/Files/FTreeIO.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle             ParticleClass;
     typedef FSphericalCell                 CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
+    typedef FP2PParticleContainer         ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to compare two trees.\n";
     //////////////////////////////////////////////////////////////
@@ -58,8 +57,8 @@ int main(int argc, char ** argv){
     const char* const filename2 = FParameters::getStr(argc,argv,"-f1", "dtree.data");
     std::cout << "Compare tree " << filename1 << " and " << filename2 << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >(filename1, tree1);
-    FTreeIO::Load<OctreeClass, CellClass, ParticleClass, ContainerClass >(filename2, tree2);
+    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename1, tree1);
+    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename2, tree2);
 
     // -----------------------------------------------------
     std::cout << "Check Result\n";
@@ -78,10 +77,10 @@ int main(int argc, char ** argv){
                 break;
             }
 
-            if( octreeIterator1.getCurrentListSrc()->getSize() != octreeIterator2.getCurrentListSrc()->getSize()){
+            if( octreeIterator1.getCurrentListSrc()->getNbParticles() != octreeIterator2.getCurrentListSrc()->getNbParticles()){
                 std::cout << "Number of particles different on leaf " << octreeIterator1.getCurrentGlobalIndex() <<
-                             " tree1 " << octreeIterator1.getCurrentListSrc()->getSize() <<
-                             " tree2 " << octreeIterator2.getCurrentListSrc()->getSize() << std::endl;
+                             " tree1 " << octreeIterator1.getCurrentListSrc()->getNbParticles() <<
+                             " tree2 " << octreeIterator2.getCurrentListSrc()->getNbParticles() << std::endl;
             }
 
             nbLeaves += 1;

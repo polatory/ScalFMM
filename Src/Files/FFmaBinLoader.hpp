@@ -51,8 +51,7 @@
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-template <class ParticleClass>
-class FFmaBinLoader : public FAbstractLoader<ParticleClass> {
+class FFmaBinLoader : public FAbstractLoader {
 protected:
     FILE* const file;            //< The file to read
     FPoint centerOfBox;     //< The center of box read from file
@@ -137,7 +136,7 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(ParticleClass& inParticle){
+    void fillParticle(FPoint*const inParticlePosition, FReal*const physicalValue){
         FReal x,y,z,data;
 
         removeWarning += fread(&x, sizeof(FReal), 1, file);
@@ -145,8 +144,8 @@ public:
         removeWarning += fread(&z, sizeof(FReal), 1, file);
         removeWarning += fread(&data, sizeof(FReal), 1, file);
 
-        inParticle.setPosition(x,y,z);
-        inParticle.setPhysicalValue(data);
+        inParticlePosition->setPosition(x,y,z);
+        (*physicalValue) = data;
     }
 
 };

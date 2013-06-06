@@ -29,7 +29,7 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FBasicParticle.hpp"
+#include "../../Src/Components/FBasicParticleContainer.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
@@ -40,9 +40,10 @@
 */
 
 int main(int argc, char ** argv){
-    typedef FVector<FBasicParticle>      ContainerClass;
-    typedef FSimpleLeaf<FBasicParticle, ContainerClass >                     LeafClass;
-    typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicCell CellClass;
+    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree<CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -51,14 +52,20 @@ int main(int argc, char ** argv){
     const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000);
     FTic counter;
 
-    FRandomLoader<FBasicParticle> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(10, 3, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
     counter.tic();
 
-    loader.fillTree(tree);
+    {
+        FPoint particlePosition;
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particlePosition);
+            tree.insert(particlePosition);
+        }
+    }
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << ")." << std::endl;
@@ -67,19 +74,19 @@ int main(int argc, char ** argv){
     // Call a function on each leaf
     long nbParticles = 0;
     tree.forEachLeaf([&](LeafClass* leaf){
-        nbParticles += leaf->getSrc()->getSize();
+        nbParticles += leaf->getSrc()->getNbParticles();
     });
     std::cout << "There are " << nbParticles << " particles " << std::endl;
 
     // Call a function on each cell
     long nbCells = 0;
-    tree.forEachCell([&nbCells](FBasicCell* /*cell*/){
+    tree.forEachCell([&nbCells](CellClass* /*cell*/){
         nbCells += 1;
     });
     std::cout << "There are " << nbCells << " cells " << std::endl;
 
     // To get cell and particles at leaf level
-    tree.forEachCellLeaf([&](FBasicCell* /*cell*/, LeafClass* /*leaf*/){
+    tree.forEachCellLeaf([&](CellClass* /*cell*/, LeafClass* /*leaf*/){
     });
 
     return 0;

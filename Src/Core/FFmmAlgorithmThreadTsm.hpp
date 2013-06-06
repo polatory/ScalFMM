@@ -44,7 +44,7 @@
 * Because this is a Target source model you do not need the P2P to be safe.
 * You should not write on sources in the P2P method!
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadTsm : protected FAssertable{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
@@ -140,11 +140,11 @@ public:
                 // We need the current cell that represent the leaf
                 // and the list of particles
                 ContainerClass* const sources = iterArray[idxLeafs].getCurrentListSrc();
-                if(sources->getSize()){
+                if(sources->getNbParticles()){
                     iterArray[idxLeafs].getCurrentCell()->setSrcChildTrue();
                     myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , sources);
                 }
-                if(iterArray[idxLeafs].getCurrentListTargets()->getSize()){
+                if(iterArray[idxLeafs].getCurrentListTargets()->getNbParticles()){
                     iterArray[idxLeafs].getCurrentCell()->setTargetsChildTrue();
                 }
             }
