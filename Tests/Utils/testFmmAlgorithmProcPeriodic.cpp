@@ -34,7 +34,7 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
+#include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
 
@@ -54,16 +54,15 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FTestParticle               ParticleClass;
     typedef FTestCell                   CellClass;
-    typedef FVector<ParticleClass>      ContainerClass;
+    typedef FTestParticleContainer      ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
-    typedef FFmmAlgorithmThreadProcPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-    typedef FFmmAlgorithmPeriodic<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassSeq;
+    typedef FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassSeq;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -93,18 +92,30 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    FRandomLoader<ParticleClass> loader(NbParticles,FReal(1.0),FPoint(0,0,0), app.global().processId());
+    FRandomLoader loader(NbParticles,FReal(1.0),FPoint(0,0,0), app.global().processId());
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     {
-        FTestParticle*const particles = new FTestParticle[NbParticles];
+        struct TestParticle{
+            FPoint position;
+            const FPoint& getPosition(){
+                return position;
+            }
+        };
+
+        TestParticle*const particles = new TestParticle[NbParticles];
 
         for(int idx = 0 ; idx < NbParticles ; ++idx){
-            loader.fillParticle(particles[idx]);
+            loader.fillParticle(&particles[idx].position);
         }
 
-        FMpiTreeBuilder<ParticleClass>::ArrayToTree(app.global(), particles, NbParticles, loader.getCenterOfBox(),
-                                                    loader.getBoxWidth(), tree);
+        FVector<TestParticle> finalParticles;
+        FMpiTreeBuilder<TestParticle>::ArrayToTree(app.global(), particles, NbParticles, loader.getCenterOfBox(),
+                                                    loader.getBoxWidth(), tree.getHeight(), &finalParticles);
+
+        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+            tree.insert(finalParticles[idx].position);
+        }
         delete[] particles;
     }
 
@@ -142,15 +153,14 @@ int main(int argc, char ** argv){
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
         do{
-            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass* container = (octreeIterator.getCurrentListTargets());
+            const long long int*const dataDown = container->getDataDown();
 
-            while( iter.hasNotFinished() ){
-                if( NbParticlesEntireSystem - 1 != iter.data().getDataDown()){
+            for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                if( NbParticlesEntireSystem - 1 != dataDown[idxPart]){
                     std::cout << "P2P probleme, should be " << NbParticlesEntireSystem - 1 <<
-                                 " iter.data().getDataDown() "<< iter.data().getDataDown() << std::endl;
+                                 " iter.data().getDataDown() "<< dataDown[idxPart] << std::endl;
                 }
-
-                iter.gotoNext();
             }
         } while(octreeIterator.moveRight());
     }
@@ -161,8 +171,12 @@ int main(int argc, char ** argv){
     {
         OctreeClass treeSeq(NbLevels, SizeSubLevels, FReal(1.0), FPoint(0,0,0));
         for(int idx = 0 ; idx < app.global().processCount() ; ++idx ){
-            FRandomLoader<ParticleClass> loaderSeq(NbParticles,FReal(1.0),FPoint(0,0,0), idx);
-            loaderSeq.fillTree(treeSeq);
+            FPoint position;
+            FRandomLoader loaderSeq(NbParticles,FReal(1.0),FPoint(0,0,0), idx);
+            for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+                loaderSeq.fillParticle(&position);
+                treeSeq.insert(position);
+            }
         }
 
         FmmClassSeq algoSeq( &treeSeq, PeriodicDeep, PeriodicDirs);
@@ -222,20 +236,24 @@ int main(int argc, char ** argv){
             }
 
             do{
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                typename ContainerClass::BasicIterator iterSeq(*octreeIteratorSeq.getCurrentListTargets());
+                ContainerClass* container = (octreeIterator.getCurrentListTargets());
+                const long long int*const dataDown = container->getDataDown();
 
-                while( iter.hasNotFinished() ){
+                ContainerClass* containerValide = (octreeIteratorSeq.getCurrentListTargets());
+                const long long int*const dataDownValide = containerValide->getDataDown();
+
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
-                    if( iter.data().getDataDown() != iterSeq.data().getDataDown() ){
-                        std::cout << "Problem L2P + P2P at " << octreeIterator.getCurrentGlobalIndex() <<
-                                     " Good is " << iterSeq.data().getDataDown() <<
-                                     " Bad is " << iter.data().getDataDown() << std::endl;
+                    if( dataDown[idxPart] != dataDownValide[idxPart]){
+                        std::cout << "Problem on leaf " << octreeIterator.getCurrentGlobalIndex() <<
+                                     " part " << idxPart << " valide data down " << dataDownValide[idxPart] <<
+                                     " invalide " << dataDown[idxPart] << "\n";
+                        std::cout << "Data down for leaf is: valide " << octreeIteratorSeq.getCurrentCell()->getDataDown()
+                                  << " invalide " << octreeIterator.getCurrentCell()->getDataDown()
+                                  << " size is: valide " <<  octreeIteratorSeq.getCurrentListTargets()->getNbParticles()
+                                  << " invalide " << octreeIterator.getCurrentListTargets()->getNbParticles() << std::endl;
                     }
-
-                    iter.gotoNext();
-                    iterSeq.gotoNext();
                 }
             } while(octreeIterator.moveRight());
         }

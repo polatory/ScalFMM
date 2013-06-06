@@ -56,7 +56,7 @@
 * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
-template<class OctreeClass, class ParticleClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProcPeriodic : protected FAssertable {
 
     static const int MaxSizePerCell = 2048;
@@ -1124,7 +1124,8 @@ private:
 
                             alreadySent[procToReceive] = 1;
                             toSend[procToReceive].push( iterArray[idxLeaf] );
-                            partsToSend[procToReceive] += iterArray[idxLeaf].getCurrentListSrc()->getSize();
+                            partsToSend[procToReceive] += iterArray[idxLeaf].getCurrentListSrc()->getSavedSize();
+                            partsToSend[procToReceive] += int(sizeof(MortonIndex));
                         }
                     }
                 }
@@ -1132,6 +1133,12 @@ private:
                 if(needOther){
                     leafsNeedOther.set(idxLeaf,true);
                     ++countNeedOther;
+                }
+            }
+
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                if(partsToSend[idxProc]){
+                    partsToSend[idxProc] += int(sizeof(int));
                 }
             }
 
@@ -1143,7 +1150,7 @@ private:
             // Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                    recvBuffer[idxProc] = new FBufferReader(int(sizeof(ParticleClass)) * globalReceiveMap[idxProc * nbProcess + idProcess]);
+                    recvBuffer[idxProc] = new FBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
                                                idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                 }
@@ -1153,14 +1160,13 @@ private:
             // Prepare send
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(toSend[idxProc].getSize() != 0){
-                    sendBuffer[idxProc] = new FBufferWriter(int(sizeof(ParticleClass)) * partsToSend[idxProc]);
+                    sendBuffer[idxProc] = new FBufferWriter(partsToSend[idxProc]);
+
+                    (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
 
                     for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
-                        typename ContainerClass::BasicIterator iterSource(*toSend[idxProc][idxLeaf].getCurrentListSrc());
-                        while( iterSource.hasNotFinished() ){
-                            iterSource.data().save(*sendBuffer[idxProc]);
-                            iterSource.gotoNext();
-                        }
+                        (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
+                        toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
                     }
 
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
@@ -1275,12 +1281,15 @@ private:
                                 periodicNeighbors[idxNeig] = neighbors[idxNeig];
                                 neighbors[idxNeig] = 0;
                                 ++periodicNeighborsCounter;
-                                typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
-                                while( iter.hasNotFinished() ){
-                                    iter.data().incPosition(boxWidth * FReal(offsets[idxNeig].getX()),
-                                                            boxWidth * FReal(offsets[idxNeig].getY()),
-                                                            boxWidth * FReal(offsets[idxNeig].getZ()));
-                                    iter.gotoNext();
+
+                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                                for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                    positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
+                                    positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
+                                    positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                                 }
                             }
                         }
@@ -1289,13 +1298,15 @@ private:
                                      currentIter.sources, periodicNeighbors, periodicNeighborsCounter);
 
                         for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                            if( periodicNeighbors[idxNeig] ){
-                                typename ContainerClass::BasicIterator iter(*periodicNeighbors[idxNeig]);
-                                while( iter.hasNotFinished() ){
-                                    iter.data().incPosition(-boxWidth * FReal(offsets[idxNeig].getX()),
-                                                            -boxWidth * FReal(offsets[idxNeig].getY()),
-                                                            -boxWidth * FReal(offsets[idxNeig].getZ()));
-                                    iter.gotoNext();
+                            if( periodicNeighbors[idxNeig] ){                                
+                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                                for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                    positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                                    positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                                    positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
                                 }
                             }
                         }
@@ -1334,10 +1345,12 @@ private:
             for(int idxRcv = 0 ; idxRcv < countMessages ; ++idxRcv){
                 if( indexMessage[idxRcv] < nbMessagesToRecv ){
                     const int idxProc = status[idxRcv].MPI_SOURCE;
-                    ParticleClass tempoParticle;
-                    for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
-                        tempoParticle.restore(*recvBuffer[idxProc]);
-                        otherP2Ptree.insert(tempoParticle);
+                    int nbLeaves;
+                    (*recvBuffer[idxProc]) >> nbLeaves;
+                    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                        MortonIndex leafIndex;
+                        (*recvBuffer[idxProc]) >> leafIndex;
+                        otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
                     }
                     delete recvBuffer[idxProc];
                     recvBuffer[idxProc] = 0;

@@ -83,20 +83,22 @@ public:
     }
 };
 
-template <class ContainerClass>
-class GalaxyExtractor {
-    struct Particle{
-        FPoint position;
-        FReal physicalValue;
-        FReal forces[3];
-        FReal potential;
-        FPoint velocity;
-    };
+struct TestParticle{
+    FPoint position;
+    FReal physicalValue;
+    FReal forces[3];
+    FReal potential;
+    FPoint velocity;
+    const FPoint& getPosition(){
+        return position;
+    }
+};
 
-    FVector<Particle> savedParticles;
-
+template <class ParticleClass>
+class Converter {
 public:
-    void extractParticles(const ContainerClass* containers, const int indexesToExtract[], const int nbToExtract){
+    template <class ContainerClass>
+    static ParticleClass GetParticle(ContainerClass* containers, const int idxExtract){
         const FReal*const positionsX = containers->getPositions()[0];
         const FReal*const positionsY = containers->getPositions()[1];
         const FReal*const positionsZ = containers->getPositions()[2];
@@ -107,26 +109,22 @@ public:
         const FReal*const potentials = containers->getPotentials();
         FVector<FPoint> velocites = containers->getVelocities();
 
-        for(int idxPart = 0 ; idxPart < nbToExtract ; ++ idxPart){
-            const int idxExtract = indexesToExtract[idxPart];
-            Particle part;
-            part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
-            part.physicalValue = physicalValues[idxExtract];
-            part.forces[0] = forcesX[idxExtract];
-            part.forces[1] = forcesY[idxExtract];
-            part.forces[2] = forcesZ[idxExtract];
-            part.potential = potentials[idxExtract];
-            part.velocity  = velocites[idxExtract];
-        }
+        TestParticle part;
+        part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
+        part.physicalValue = physicalValues[idxExtract];
+        part.forces[0] = forcesX[idxExtract];
+        part.forces[1] = forcesY[idxExtract];
+        part.forces[2] = forcesZ[idxExtract];
+        part.potential = potentials[idxExtract];
+        part.velocity  = velocites[idxExtract];
+
+        return part;
     }
 
     template <class OctreeClass>
-    void reinsertInTree(OctreeClass* tree){
-        for(int idxPart = 0 ; idxPart < savedParticles.getSize() ; ++idxPart){
-            const Particle part = savedParticles[idxPart];
-            tree->insert(part.position, part.velocity, part.physicalValue, part.forces[0],
-                    part.forces[1],part.forces[2],part.potential);
-        }
+    static void Insert(OctreeClass* tree, const ParticleClass& part){
+        tree->insert(part.position , part.velocity, part.physicalValue, part.forces[0],
+                part.forces[1],part.forces[2],part.potential);
     }
 };
 
@@ -176,7 +174,7 @@ int main(int argc, char ** argv){
 
     KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
-    FOctreeArranger<OctreeClass, ContainerClass, GalaxyExtractor<ContainerClass> > arranger(&tree);
+    FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arranger(&tree);
     FTreeCsvSaver<OctreeClass, ContainerClass> saver("./out/test%d.csv");
 
     for(int idx = 0; idx < 100 ; ++idx){

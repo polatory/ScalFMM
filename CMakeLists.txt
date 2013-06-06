@@ -6,6 +6,15 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
+# MPI option has to be set before project, cannot be changed in the cache!
+if( SCALFMM_USE_MPI )
+	include(CMakeForceCompiler)
+	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
+    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
+else()
+	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
+endif(SCALFMM_USE_MPI)
+
 # Project Infos
 project(ScalFMM)
 #===========================================================================
@@ -19,14 +28,6 @@ SET(ScalFMM_BUILD_VERSION 1)
 SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFMM_BUILD_VERSION}"
   )
 
-# MPI option has to be set before project, cannot be changed in the cache!
-if( SCALFMM_USE_MPI )
-	include(CMakeForceCompiler)
-	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
-    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
-else()
-	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
-endif(SCALFMM_USE_MPI)
 #
 # Active language
 # -----------------------

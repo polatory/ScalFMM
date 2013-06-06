@@ -65,7 +65,7 @@ public:
             // sort QsLocal part of the outputArray
             const CompareType pivot = currentComm.reduceAverageAll( CompareType(outputArray[size/2]) );
             Fix myFix;
-            QsLocal(outputArray, pivot, 0, size - 1, myFix.pre, myFix.suf);
+            FQuickSort< SortType, CompareType, IndexType>::QsLocal(outputArray, pivot, 0, size - 1, myFix.pre, myFix.suf);
 
             // exchange fixes
             FMpi::Assert( MPI_Allgather( &myFix, sizeof(Fix), MPI_BYTE, fixes, sizeof(Fix), MPI_BYTE, currentComm.getComm()),  __LINE__ );
@@ -233,7 +233,7 @@ public:
         delete[] buffer;
 
         // Normal Quick sort
-        QsOmp(outputArray, size);
+        FQuickSort< SortType, CompareType, IndexType>::QsOmp(outputArray, size);
         outputSize = size;
     }
 

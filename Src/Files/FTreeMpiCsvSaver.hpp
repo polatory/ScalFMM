@@ -27,7 +27,7 @@
 /** This class is to export a tree in csv file
   *
   */
-template <class OctreeClass, class ContainerClass , class ParticleClass>
+template <class OctreeClass, class ContainerClass>
 class FTreeMpiCsvSaver {
     FMpi::FComm comm;           //< Communicator
     const bool includeHeader;   //< To include a line of header
@@ -96,10 +96,11 @@ public:
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
-                mypart += octreeIterator.getCurrentListTargets()->getSize();
+                mypart += octreeIterator.getCurrentListTargets()->getNbParticles();
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-                if( isUsingTsm ) mypart += octreeIterator.getCurrentListSrc()->getSize();
+                if( isUsingTsm ) mypart += octreeIterator.getCurrentListSrc()->getNbParticles();
             } while(octreeIterator.moveRight());
+
             // Gather particles number
             int*const particlesPerProcs = new int[comm.processCount()];
             MPI_Allgather(&mypart, 1, MPI_INT, particlesPerProcs, 1, MPI_INT, comm.getComm());
@@ -131,41 +132,36 @@ public:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         do{
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-            while( iter.hasNotFinished() ){
-                sprintf(line, lineFormat, iter.data().getPosition().getX(),iter.data().getPosition().getY(),
-                        iter.data().getPosition().getZ(),getValue(&iter.data()));
-
-                MPI_File_write_at( file, offset, line, SizeOfLine, MPI_BYTE, MPI_STATUS_IGNORE);
-                offset += SizeOfLine;
-
-                iter.gotoNext();
-            }
-
-            const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-            if( isUsingTsm ){
-                typename ContainerClass::BasicIterator iterSource(*octreeIterator.getCurrentListSrc());
-
-                while( iterSource.hasNotFinished() ){
-                    sprintf(line, lineFormat, iterSource.data().getPosition().getX(),iterSource.data().getPosition().getY(),
-                            iterSource.data().getPosition().getZ(),getValue(&iterSource.data()));
+            {
+                const ContainerClass* container = octreeIterator.getCurrentListTargets();
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    FReal values[4];
+                    container->fillToCsv(idxPart, values);
+                    sprintf(line, lineFormat, values[0],values[1],
+                            values[2],values[3]);
 
                     MPI_File_write_at( file, offset, line, SizeOfLine, MPI_BYTE, MPI_STATUS_IGNORE);
                     offset += SizeOfLine;
+                }
+            }
 
-                    iterSource.gotoNext();
+
+            const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
+            if( isUsingTsm ){
+                const ContainerClass* container = octreeIterator.getCurrentListSrc();
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    FReal values[4];
+                    container->fillToCsv(idxPart, values);
+                    sprintf(line, lineFormat, values[0],values[1],
+                            values[2],values[3]);
+
+                    MPI_File_write_at( file, offset, line, SizeOfLine, MPI_BYTE, MPI_STATUS_IGNORE);
+                    offset += SizeOfLine;
                 }
             }
         } while(octreeIterator.moveRight());
 
         MPI_File_close( &file );
-    }
-
-    /** Inherit from this class and customize this function if you need it
-      */
-    virtual FReal getValue(ParticleClass*const part){
-        return FReal(0);
     }
 };
 

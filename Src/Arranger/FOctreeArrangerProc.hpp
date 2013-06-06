@@ -33,7 +33,7 @@
   * to move the particles in the tree instead of building a new
   * tree.
   */
-template <class OctreeClass, class ContainerClass, class ParticleClass>
+template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
 class FOctreeArrangerProc : FAssertable {
     /** Interval is the min/max morton index
       * for a proc
@@ -105,14 +105,17 @@ public:
             const FPoint min(tree->getBoxCenter(),-boxWidth/2);
             const FPoint max(tree->getBoxCenter(),boxWidth/2);
 
+            FVector<int> indexesToExtract;
+
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
                 const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
-
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                while( iter.hasNotFinished() ){
-                    FPoint partPos = iter.data().getPosition();
+                ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
+                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); ++idxPart){
+                    FPoint partPos( particles->getPositions()[0][idxPart],
+                            particles->getPositions()[1][idxPart],
+                            particles->getPositions()[2][idxPart] );
                     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                     if( TestPeriodicCondition(isPeriodic, DirPlusX) ){
                         while(partPos.getX() >= max.getX()){
@@ -171,20 +174,23 @@ public:
                         printf("Application is exiting...\n");
                     }
                     // set pos
-                    iter.data().setPosition(partPos);
+                    particles->getWPositions()[0][idxPart] = partPos.getX();
+                    particles->getWPositions()[1][idxPart] = partPos.getY();
+                    particles->getWPositions()[2][idxPart] = partPos.getZ();
 
-                    const MortonIndex particuleIndex = tree->getMortonFromPosition(iter.data().getPosition());
+                    const MortonIndex particuleIndex = tree->getMortonFromPosition(partPos);
                     // is this particle need to be changed from its leaf
                     if(particuleIndex != currentIndex){
                         // find the right interval
                         const int procConcerned = getInterval( particuleIndex, comm.processCount(), intervals);
-                        toMove[procConcerned].push(iter.data());
-                        iter.remove();
-                    }
-                    else {
-                        iter.gotoNext();
+                        toMove[procConcerned].push(ConverterClass::GetParticle(particles,idxPart));
+                        indexesToExtract.push(idxPart);
                     }
                 }
+
+                particles->removeParticles(indexesToExtract.data(), indexesToExtract.getSize());
+                indexesToExtract.clear();
+
             } while(octreeIterator.moveRight());
         }
 
@@ -246,7 +252,7 @@ public:
 
         { // insert particles that moved
             for(int idxPart = 0 ; idxPart < toMove[comm.processId()].getSize() ; ++idxPart){
-                tree->insert(toMove[comm.processId()][idxPart]);
+                ConverterClass::Insert( tree , toMove[comm.processId()][idxPart]);
             }
         }
 
@@ -259,7 +265,7 @@ public:
                 if( done < limitRecvSend ){
                     const int source = status.MPI_SOURCE;
                     for(long long int idxPart = indexToReceive[source] ; idxPart < indexToReceive[source+1] ; ++idxPart){
-                        tree->insert(toReceive[idxPart]);
+                        ConverterClass::Insert( tree , toReceive[idxPart]);
                     }
                     hasToRecvFrom -= 1;
                 }
@@ -274,20 +280,13 @@ public:
 
             do{
                 // Empty leaf
-                if( octreeIterator.getCurrentListTargets()->getSize() == 0 ){
+                if( octreeIterator.getCurrentListTargets()->getNbParticles() == 0 ){
                     const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                     workOnNext = octreeIterator.moveRight();
                     tree->removeLeaf( currentIndex );
                 }
                 // Not empty, just continue
                 else {
-                    // todo remove
-                    if( octreeIterator.getCurrentGlobalIndex() < intervals[comm.processId()].min
-                            || intervals[comm.processId()].max <= octreeIterator.getCurrentGlobalIndex()){
-                        std::cout << comm.processId() << " Must delete this leaf at " << octreeIterator.getCurrentGlobalIndex()
-                                  <<  " size " << octreeIterator.getCurrentListTargets()->getSize()  <<std::endl;
-                    }
-
                     workOnNext = octreeIterator.moveRight();
                     counterLeavesAlive += 1;                    
                 }

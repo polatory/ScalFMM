@@ -199,6 +199,11 @@ struct FMath{
     public:
         FAccurater() : l2Dot(0), l2Diff(0), max(0), maxDiff(0) {
         }
+        /** with inital values */
+        FAccurater(const FReal inGood[], const FReal inBad[], const int nbValues)
+            : l2Dot(0), l2Diff(0), max(0), maxDiff(0) {
+            add(inGood, inBad, nbValues);
+        }
         /** Add value to the current list */
         void add(const FReal inGood, const FReal inBad){
             l2Diff += (inBad - inGood) * (inBad - inGood);
@@ -207,6 +212,12 @@ struct FMath{
             max = Max(max , Abs(inGood));
             maxDiff = Max(maxDiff, Abs(inGood-inBad));
         }
+        /** Add array of values */
+        void add(const FReal inGood[], const FReal inBad[], const int nbValues){
+            for(int idx = 0 ; idx < nbValues ; ++idx){
+                add(inGood[idx],inBad[idx]);
+            }
+        }
         /** Get the L2 norm */
         FReal getL2Norm() const{
             return Sqrt(l2Diff / l2Dot);
@@ -214,6 +225,12 @@ struct FMath{
         /** Get the inf norm */
         FReal getInfNorm() const{
             return maxDiff / max;
+        }
+        /** Print */
+        template <class StreamClass>
+        friend StreamClass& operator<<(StreamClass& output, const FAccurater& inAccurater){
+            output << "[Error] L2Norm = " << inAccurater.getL2Norm() << " \t Inf = " << inAccurater.getInfNorm();
+            return output;
         }
     };
 };

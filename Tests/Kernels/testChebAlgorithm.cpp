@@ -26,7 +26,7 @@
 #include "../../Src/Files/FFmaScanfLoader.hpp"
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
@@ -43,34 +43,6 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
-
-
-
-FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      dot = FReal(0.);
-	FReal diff_dot = FReal(0.);
-	for (unsigned int i=0; i<N; ++i) {
-		FReal w = v[i] - u[i];
-		diff_dot += w    * w;
-		dot      += u[i] * u[i];
-	}
-	return FMath::Sqrt(diff_dot / dot);
-}
-
-
-
-FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      max = FReal(0.);
-	FReal diff_max = FReal(0.);
-	for (unsigned int n=0; n<N; ++n) {
-		if (     max<std::abs(u[n]))           max = std::abs(u[n]);
-		if (diff_max<std::abs(u[n]-v[n])) diff_max = std::abs(u[n]-v[n]);
-	}
-	return diff_max / max;
-}
-
 
 
 

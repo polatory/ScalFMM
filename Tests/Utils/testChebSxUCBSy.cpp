@@ -33,7 +33,7 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
@@ -42,33 +42,6 @@
 
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
-
-
-FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      dot = FReal(0.);
-	FReal diff_dot = FReal(0.);
-	for (unsigned int i=0; i<N; ++i) {
-		FReal w = v[i] - u[i];
-		diff_dot += w    * w;
-		dot      += u[i] * u[i];
-	}
-	return FMath::Sqrt(diff_dot / dot);
-}
-
-
-
-FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      max = FReal(0.);
-	FReal diff_max = FReal(0.);
-	for (unsigned int n=0; n<N; ++n) {
-		if (     max<std::abs(u[n]))           max = std::abs(u[n]);
-		if (diff_max<std::abs(u[n]-v[n])) diff_max = std::abs(u[n]-v[n]);
-	}
-	return diff_max / max;
-}
-
 
 
 /**
@@ -229,8 +202,8 @@ int main(int argc, char* argv[])
 	//	std::cout << f[i] << "\t" << approx_f[i] << "\t" << approx_f[i]/f[i] << std::endl;
 	
 
-	std::cout << "\nRelative L2 error  = " << computeL2norm( M, f, approx_f) << std::endl;
-	std::cout << "Relative Lmax error = "  << computeINFnorm(M, f, approx_f) << "\n" << std::endl;
+    std::cout << "\nRelative L2 error  = " << FMath::FAccurater( f, approx_f, M) << std::endl;
+    std::cout << "Relative Lmax error = "  << FMath::FAccurater( f, approx_f, M) << "\n" << std::endl;
 
 	// free memory
 	delete [] approx_f;

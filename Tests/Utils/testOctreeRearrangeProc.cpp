@@ -33,21 +33,49 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 
 #include "../../Src/Arranger/FOctreeArrangerProc.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
+#include "../../Src/Components/FBasicParticleContainer.hpp"
+
+
+struct TestParticle{
+    FPoint position;
+    const FPoint& getPosition(){
+        return position;
+    }
+};
+
+template <class ParticleClass>
+class Converter {
+public:
+    template <class ContainerClass>
+    static ParticleClass GetParticle(ContainerClass* container, const int idxExtract){
+        TestParticle part;
+        part.position.setPosition(
+                    container->getPositions()[0][idxExtract],
+                    container->getPositions()[1][idxExtract],
+                    container->getPositions()[2][idxExtract]);
+        return part;
+    }
+
+    template <class OctreeClass>
+    static void Insert(OctreeClass* tree, const ParticleClass& part){
+        tree->insert(part.position);
+    }
+};
+
+
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FTestParticle               ParticleClass;
     typedef FTestCell                   CellClass;
-    typedef FVector<ParticleClass>      ContainerClass;
+    typedef FBasicParticleContainer<0>      ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -55,12 +83,10 @@ int main(int argc, char ** argv){
 
     FMpi app(argc, argv);
 
-
     const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
     const int NbPart            = FParameters::getValue(argc,argv,"-nb", 20000);
     const FReal FRandMax        = FReal(RAND_MAX);
-
 
     FTic counter;
 
@@ -82,15 +108,24 @@ int main(int argc, char ** argv){
 
 
     {
-        FTestParticle particles[NbPart];
+        TestParticle* particles = new TestParticle[NbPart];
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particles[idxPart].setPosition(
+            particles[idxPart].position.setPosition(
                         (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
                         (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
                         (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))));
         }
 
-        FMpiTreeBuilder<ParticleClass>::ArrayToTree(app.global(), particles, NbPart, FPoint(BoxCenter,BoxCenter,BoxCenter), BoxWidth, tree);
+        FVector<TestParticle> finalParticles;
+        FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, NbPart,
+                                                                           FPoint(BoxCenter,BoxCenter,BoxCenter),
+                                                                           BoxWidth, tree.getHeight(), &finalParticles);
+
+        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+            tree.insert(finalParticles[idx].position);
+        }
+
+        delete[] particles;
     }
 
     counter.tac();
@@ -105,18 +140,12 @@ int main(int argc, char ** argv){
     { // Check that each particle has been summed with all other
         OctreeClass::Iterator octreeIterator(&tree);
         octreeIterator.gotoBottomLeft();
-
         do{
-            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-
-            while( iter.hasNotFinished() ){
-                if(FReal(rand())/FRandMax > 0.5){
-                    iter.data().setPosition(
-                                (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)),
-                                (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)),
-                                (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2)));
-                }
-                iter.gotoNext();
+            ContainerClass* particles = octreeIterator.getCurrentListTargets();
+            for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
+                particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
+                particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
+                particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
             }
         } while(octreeIterator.moveRight());
     }
@@ -130,7 +159,7 @@ int main(int argc, char ** argv){
     std::cout << "Arrange ..." << std::endl;
     counter.tic();
 
-    FOctreeArrangerProc<OctreeClass, ContainerClass, ParticleClass> arrange(&tree);
+    FOctreeArrangerProc<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
     arrange.rearrange(app.global());
 
     counter.tac();
@@ -153,19 +182,23 @@ int main(int argc, char ** argv){
 
         do{
             const MortonIndex leafIndex = octreeIterator.getCurrentGlobalIndex();
-            ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
 
-            while( iter.hasNotFinished() ){
-                const MortonIndex particleIndex = tree.getMortonFromPosition( iter.data().getPosition() );
+            ContainerClass* particles = octreeIterator.getCurrentListTargets();
+            for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
+                const FPoint particlePosition( particles->getWPositions()[0][idxPart],
+                                               particles->getWPositions()[1][idxPart],
+                                               particles->getWPositions()[2][idxPart]);
+
+                const MortonIndex particleIndex = tree.getMortonFromPosition( particlePosition );
                 if( leafIndex != particleIndex){
                     std::cout << "Index problem, should be " << leafIndex <<
                                  " particleIndex "<< particleIndex << std::endl;
                 }
 
-                iter.gotoNext();
             }
-            counterPart += octreeIterator.getCurrentListTargets()->getSize();
-            if(octreeIterator.getCurrentListTargets()->getSize() == 0){
+
+            counterPart += octreeIterator.getCurrentListTargets()->getNbParticles();
+            if(octreeIterator.getCurrentListTargets()->getNbParticles() == 0){
                 std::cout << "Problem, leaf is empty at index " << leafIndex << std::endl;
             }
         } while(octreeIterator.moveRight());

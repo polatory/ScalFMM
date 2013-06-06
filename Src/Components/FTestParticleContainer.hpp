@@ -26,20 +26,26 @@
 *
 * This class is used in the FTestKernels, please
 * look at this class to know whit it is.
-*
-* Particles just need the data down (after and run with FTestKernel the
-* value shoud be NB PARTICLES (-1)).
+* We store the positions + 1 long long int
 */
 class FTestParticleContainer : public FBasicParticleContainer<1, long long int> {
     typedef FBasicParticleContainer<1, long long int> Parent;
 
 public:
+    /**
+     * @brief getDataDown
+     * @return
+     */
     long long int* getDataDown(){
-        return Parent::getAttribute(0);
+        return Parent::getAttribute<0>();
     }
 
+    /**
+     * @brief getDataDown
+     * @return
+     */
     const long long int* getDataDown() const {
-        return Parent::getAttribute(0);
+        return Parent::getAttribute<0>();
     }
 };
 

@@ -102,7 +102,7 @@ private:
         }
     }
 
-    static void SortParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass array[], const int size, const SortingType type,
+    static void SortParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass array[], const FSize size, const SortingType type,
                                        const FPoint& centerOfBox, const FReal boxWidth,
                         const int TreeHeight, IndexedParticle**const outputArray, FSize* const outputSize){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__ , "Loader to Tree" , __FILE__ , __LINE__) );
@@ -277,8 +277,8 @@ private:
     //////////////////////////////////////////////////////////////////////////
 
     /** Put the interval into a tree */
-    template <class OctreeClass>
-    static void EqualizeAndFillTree(const FMpi::FComm& communicator,  OctreeClass& realTree,
+    template <class ContainerClass>
+    static void EqualizeAndFillTree(const FMpi::FComm& communicator,  ContainerClass* particlesSaver,
                              char*& leavesArray, FSize& nbLeavesInIntervals ){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int rank = communicator.processId();
@@ -459,7 +459,7 @@ private:
                 ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&recvbuf[recvBufferPosition] + sizeof(int));
 
                 for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
-                    realTree.insert(particles[idxPart]);
+                    particlesSaver->push(particles[idxPart]);
                 }
                 recvBufferPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
 
@@ -483,7 +483,7 @@ private:
                 ParticleClass* const particles = reinterpret_cast<ParticleClass*>(&leavesArray[currentIntervalPosition] + sizeof(int));
 
                 for(int idxPart = 0 ; idxPart < nbPartInLeaf ; ++idxPart){
-                    realTree.insert(particles[idxPart]);
+                    particlesSaver->push(particles[idxPart]);
                 }
                 currentIntervalPosition += (nbPartInLeaf * sizeof(ParticleClass)) + sizeof(int);
 
@@ -501,35 +501,21 @@ public:
     // The builder function
     //////////////////////////////////////////////////////////////////////////
 
-    template <class LoaderClass, class OctreeClass>
-    static void LoaderToTree(const FMpi::FComm& communicator, LoaderClass& loader,
-                             OctreeClass& realTree, const SortingType type = QuickSort){
+    template <class ContainerClass>
+    static void ArrayToTree(const FMpi::FComm& communicator, const ParticleClass array[], const FSize size,
+                            const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
+                             ContainerClass* particleSaver, const SortingType type = QuickSort){
 
         IndexedParticle* particlesArray = 0;
         FSize particlesSize = 0;
-        SortParticles(communicator, loader, type, realTree.getHeight(), &particlesArray, &particlesSize);
+        SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, treeHeight,
+                               &particlesArray, &particlesSize);
 
         char* leavesArray = 0;
         FSize leavesSize = 0;
         MergeLeaves(communicator, particlesArray, particlesSize, &leavesArray, &leavesSize);
 
-        EqualizeAndFillTree(communicator, realTree, leavesArray, leavesSize);
-    }
-
-    template <class OctreeClass>
-    static void ArrayToTree(const FMpi::FComm& communicator, const ParticleClass array[], const int size,
-                            const FPoint& boxCenter, const FReal boxWidth,
-                             OctreeClass& realTree, const SortingType type = QuickSort){
-
-        IndexedParticle* particlesArray = 0;
-        FSize particlesSize = 0;
-        SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, realTree.getHeight(), &particlesArray, &particlesSize);
-
-        char* leavesArray = 0;
-        FSize leavesSize = 0;
-        MergeLeaves(communicator, particlesArray, particlesSize, &leavesArray, &leavesSize);
-
-        EqualizeAndFillTree(communicator, realTree, leavesArray, leavesSize);
+        EqualizeAndFillTree(communicator, particleSaver, leavesArray, leavesSize);
     }
 
 

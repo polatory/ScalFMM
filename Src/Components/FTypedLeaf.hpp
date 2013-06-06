@@ -42,26 +42,28 @@ public:
 
     /**
         * To add a new particle in the leaf
-        * @param particle the new particle
+        * @param inParticlePosition the position of the new particle
+        * @param isTarget bool to know if it is a target
+        * followed by other param given by the user
         */
     template<typename... Args>
     void push(const FPoint& inParticlePosition, const bool isTarget, Args ... args){
-        if(isTarget) targets.push(inParticlePosition, args...);
-        else sources.push(inParticlePosition, args...);
+        if(isTarget) targets.push(inParticlePosition, isTarget, args...);
+        else sources.push(inParticlePosition, isTarget, args...);
     }
 
     /**
-        * To get all the sources in a leaf
-        * @return a pointer to the list of particles that are sources
-        */
+    * To get all the sources in a leaf
+    * @return a pointer to the list of particles that are sources
+    */
     ContainerClass* getSrc() {
         return &this->sources;
     }
 
     /**
-        * To get all the target in a leaf
-        * @return a pointer to the list of particles that are targets
-        */
+    * To get all the target in a leaf
+    * @return a pointer to the list of particles that are targets
+    */
     ContainerClass* getTargets() {
         return &this->targets;
     }

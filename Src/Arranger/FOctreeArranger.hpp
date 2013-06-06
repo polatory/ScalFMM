@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FOCTREEARRANGER_HPP
@@ -32,7 +32,7 @@
   * to move the particles in the tree instead of building a new
   * tree.
   */
-template <class OctreeClass, class ContainerClass, class ExtractorClass>
+template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
 class FOctreeArranger : FAssertable {
     OctreeClass* const tree; //< The tree to work on
 
@@ -45,7 +45,7 @@ public:
     /** Arrange */
     void rearrange(const int isPeriodic = DirNone){
         // This vector is to keep the moving particles
-        ExtractorClass extractor;
+        FVector<ParticleClass> tomove;
 
         // For periodic
         const FReal boxWidth = tree->getBoxWidth();
@@ -128,19 +128,16 @@ public:
 
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(partPos);
                     if(particuleIndex != currentIndex){
-                        indexesToExtract.push(idxPart);
+                        tomove.push(ConverterClass::GetParticle(particles,idxPart));
                     }
                 }
-                // remove from leaf
-                extractor.extractParticles(particles, indexesToExtract.data(), indexesToExtract.getSize());
-                particles->removeParticles(indexesToExtract.data(), indexesToExtract.getSize());
-                indexesToExtract.clear();
-
             } while(octreeIterator.moveRight());
         }
 
         { // insert particles that moved
-            extractor.reinsertInTree(tree);
+            for(int idxPart = 0 ; idxPart < tomove.getSize() ; ++idxPart){
+                ConverterClass::Insert( tree , tomove[idxPart]);
+            }
         }
 
         { // Remove empty leaves

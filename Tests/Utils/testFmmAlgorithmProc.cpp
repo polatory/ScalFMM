@@ -31,11 +31,9 @@
 #include "../../Src/Utils/FPoint.hpp"
 #include "../../Src/Components/FAbstractSendable.hpp"
 
-#include "../../Src/Components/FFmaParticle.hpp"
-#include "../../Src/Components/FTestParticle.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
-#include "../../Src/Extensions/FExtendPhysicalValue.hpp"
+#include "../../Src/Components/FTestParticleContainer.hpp"
 
 
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
@@ -96,9 +94,9 @@ void ValidateTree(OctreeClass& realTree,
                    octreeIterator.getCurrentGlobalIndex());
             break;
         }
-        if(octreeIteratorValide.getCurrentListSrc()->getSize() != octreeIterator.getCurrentListSrc()->getSize()){
+        if(octreeIteratorValide.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentListSrc()->getNbParticles()){
             printf("Error leafs do not have the same number of particles, valide %d, invalide %d\n",
-                   octreeIteratorValide.getCurrentListSrc()->getSize(), octreeIterator.getCurrentListSrc()->getSize() );
+                   octreeIteratorValide.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentListSrc()->getNbParticles() );
         }
 
         //printf("index %lld with %d particles\n", octreeIteratorValide.getCurrentGlobalIndex(), octreeIteratorValide.getCurrentListSrc()->getSize());
@@ -179,7 +177,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             typename OctreeClass::Iterator octreeIterator(valideTree);
             octreeIterator.gotoBottomLeft();
             do{
-                NbPart += octreeIterator.getCurrentListSrc()->getSize();
+                NbPart += octreeIterator.getCurrentListSrc()->getNbParticles();
                 ++NbLeafs;
             } while(octreeIterator.moveRight());
         }
@@ -189,17 +187,19 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             octreeIterator.gotoBottomLeft();
 
             do {
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
                 const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-                for(FSize idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getSize() ; ++idxPart){
+
+                ContainerClass* container = (octreeIterator.getCurrentListTargets());
+                const long long int*const dataDown = container->getDataDown();
+
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
-                    if( (!isUsingTsm && iter.data().getDataDown() != NbPart - 1) ||
-                        (isUsingTsm && iter.data().getDataDown() != NbPart) ){
-                        std::cout << "Problem L2P + P2P, value on particle is : " << iter.data().getDataDown() <<
+                    if( (!isUsingTsm && dataDown[idxPart] != NbPart - 1) ||
+                        (isUsingTsm && dataDown[idxPart] != NbPart) ){
+                        std::cout << "Problem L2P + P2P, value on particle is : " << dataDown[idxPart] <<
                                      " at pos " << idxPart << " index is " << octreeIterator.getCurrentGlobalIndex() << "\n";
                     }
-                    iter.gotoNext();
                 }
             } while( octreeIterator.moveRight());
         }
@@ -211,9 +211,9 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             octreeIterator.gotoBottomLeft();
 
             do {
-                if(octreeIterator.getCurrentListSrc()->getSize() != octreeIterator.getCurrentCell()->getDataUp()){
+                if(octreeIterator.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentCell()->getDataUp()){
                     printf("P2M problem nb part %d data up %lld \n",
-                           octreeIterator.getCurrentListSrc()->getSize(), octreeIterator.getCurrentCell()->getDataUp());
+                           octreeIterator.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentCell()->getDataUp());
                 }
             } while( octreeIterator.moveRight() );
         }
@@ -237,28 +237,30 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 break;
             }
 
-            if(octreeIterator.getCurrentListTargets()->getSize() != valideOctreeIterator.getCurrentListTargets()->getSize()){
+            if(octreeIterator.getCurrentListTargets()->getNbParticles() != valideOctreeIterator.getCurrentListTargets()->getNbParticles()){
                 printf("Do not have the same number of particle at leaf id %lld, valide %d invalide %d \n",
-                       octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getSize(), octreeIterator.getCurrentListTargets()->getSize());
+                       octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getNbParticles(),
+                       octreeIterator.getCurrentListTargets()->getNbParticles());
             }
             else {
-                typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
-                typename ContainerClass::BasicIterator iterValide(*valideOctreeIterator.getCurrentListTargets());
+                ContainerClass* container = (octreeIterator.getCurrentListTargets());
+                const long long int*const dataDown = container->getDataDown();
 
-                for(int idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getSize() ; ++idxPart){
+                ContainerClass* containerValide = (valideOctreeIterator.getCurrentListTargets());
+                const long long int*const dataDownValide = containerValide->getDataDown();
+
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
-                    if( iter.data().getDataDown() != iterValide.data().getDataDown()){
+                    if( dataDown[idxPart] != dataDownValide[idxPart]){
                         std::cout << "Problem on leaf " << octreeIterator.getCurrentGlobalIndex() <<
-                                     " part " << idxPart << " valide data down " << iterValide.data().getDataDown() <<
-                                     " invalide " << iter.data().getDataDown() << "\n";
+                                     " part " << idxPart << " valide data down " << dataDownValide[idxPart] <<
+                                     " invalide " << dataDown[idxPart] << "\n";
                         std::cout << "Data down for leaf is: valide " << valideOctreeIterator.getCurrentCell()->getDataDown()
                                   << " invalide " << octreeIterator.getCurrentCell()->getDataDown()
-                                  << " size is: valide " <<  valideOctreeIterator.getCurrentListTargets()->getSize()
-                                  << " invalide " << octreeIterator.getCurrentListTargets()->getSize() << std::endl;
+                                  << " size is: valide " <<  valideOctreeIterator.getCurrentListTargets()->getNbParticles()
+                                  << " invalide " << octreeIterator.getCurrentListTargets()->getNbParticles() << std::endl;
                     }
-                    iter.gotoNext();
-                    iterValide.gotoNext();
                 }
             }
 
@@ -284,43 +286,20 @@ void print(OctreeClass* const valideTree){
     }
 }
 
-/////////////////////////////////////////////////////////////////////
-// Types
-/////////////////////////////////////////////////////////////////////
-
-
-
-/**
-  * Because we use fma loader it needs {FExtendPhysicalValue}
-  */
-class TestParticle : public FTestParticle, public FExtendPhysicalValue {
-public:
-    /** Save current object */
-    void save(FBufferWriter& buffer) const {
-        FTestParticle::save(buffer);
-        FExtendPhysicalValue::save(buffer);
-    }
-    /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
-        FTestParticle::restore(buffer);
-        FExtendPhysicalValue::restore(buffer);
-    }
-};
 
 /////////////////////////////////////////////////////////////////////
 // Define the classes to use
 /////////////////////////////////////////////////////////////////////
 
-typedef TestParticle               ParticleClass;
 typedef FTestCell                  CellClass;
-typedef FVector<ParticleClass>     ContainerClass;
+typedef FTestParticleContainer     ContainerClass;
 
-typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
-typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassProc;
+typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+typedef FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassProc;
 
 /////////////////////////////////////////////////////////////////////
 // Main
@@ -343,7 +322,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
     std::cout << "Opening : " << filename << "\n";
 
-    FMpiFmaLoader<ParticleClass> loader(filename,app.global());
+    FMpiFmaLoader loader(filename,app.global());
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -359,7 +338,31 @@ int main(int argc, char ** argv){
         std::cout << "Build Tree ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ParticleClass>::LoaderToTree(app.global(), loader, realTree);
+        struct TestParticle{
+            FPoint position;
+            const FPoint& getPosition(){
+                return position;
+            }
+        };
+
+        TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
+        memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
+        FReal physicalValue; //unused
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particles[idxPart].position,&physicalValue);
+        }
+
+        FVector<TestParticle> finalParticles;
+        FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+                                                                           realTree.getBoxCenter(),
+                                                                           realTree.getBoxWidth(),
+                                                     realTree.getHeight(), &finalParticles);
+
+        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+            realTree.insert(finalParticles[idx].position);
+        }
+
+        delete[] particles;
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -367,7 +370,12 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }    
     else{
-        loader.fillTree(realTree);
+        FPoint position;
+        FReal physicalValue;
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&position,&physicalValue);
+            realTree.insert(position);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -376,8 +384,13 @@ int main(int argc, char ** argv){
 
     OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     {
-        FFmaBinLoader<ParticleClass> loaderSeq(filename);
-        loaderSeq.fillTree(treeValide);
+        FFmaBinLoader loaderSeq(filename);
+        FPoint position;
+        FReal physicalValue;
+        for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&position,&physicalValue);
+            treeValide.insert(position);
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////

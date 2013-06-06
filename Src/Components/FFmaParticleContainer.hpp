@@ -23,19 +23,27 @@
 * @class FFmaParticle
 * Please read the license
 *
-* This class defines a particle for FMA loader.
-* As defined in FFmaLoader it needs
+* This class defines a particle container for FMA loader.
+* position + 1 real for the physical value
 */
 class FFmaParticleContainer : public FBasicParticleContainer<1> {
     typedef FBasicParticleContainer<1> Parent;
 
 public:
+    /**
+     * @brief getPhysicalValues to get the array of physical values
+     * @return
+     */
     FReal* getPhysicalValues(){
-        return Parent::getAttribute(0);
+        return Parent::getAttribute<0>();
     }
 
+    /**
+     * @brief getPhysicalValues to get the array of physical values
+     * @return
+     */
     const FReal* getPhysicalValues() const {
-        return Parent::getAttribute(0);
+        return Parent::getAttribute<0>();
     }
 };
 

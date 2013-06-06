@@ -30,7 +30,7 @@
 
 #include "FUTester.hpp"
 
-#include "../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+
 #include "../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebKernel.hpp"

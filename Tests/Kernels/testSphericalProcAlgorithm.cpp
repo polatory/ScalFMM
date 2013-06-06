@@ -28,12 +28,12 @@
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Files/FMpiFmaLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
@@ -137,51 +137,67 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
         }
 
         do {
-            if( octreeIterator.getCurrentListSrc()->getSize() != octreeIteratorValide.getCurrentListSrc()->getSize()){
+
+            if( octreeIterator.getCurrentListSrc()->getNbParticles() != octreeIteratorValide.getCurrentListSrc()->getNbParticles()){
                 std::cout << " Particules numbers is different " << std::endl;
             }
             if( octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
                 std::cout << " Index are differents " << std::endl;
             }
 
-            typename ContainerClass::BasicIterator iter(*octreeIterator.getCurrentListTargets());
+            ContainerClass* firstLeaf = octreeIterator.getCurrentListTargets();
+            ContainerClass* valideLeaf = octreeIteratorValide.getCurrentListTargets();
 
-            while( iter.hasNotFinished() ){
+            const FReal*const potentials = firstLeaf->getPotentials();
+            const FReal*const forcesX = firstLeaf->getForcesX();
+            const FReal*const forcesY = firstLeaf->getForcesY();
+            const FReal*const forcesZ = firstLeaf->getForcesZ();
+            const FReal*const positionX = firstLeaf->getPositions()[0];
+            const FReal*const positionY = firstLeaf->getPositions()[1];
+            const FReal*const positionZ = firstLeaf->getPositions()[2];
+            const FReal*const validePositionX = valideLeaf->getPositions()[0];
+            const FReal*const validePositionY = valideLeaf->getPositions()[1];
+            const FReal*const validePositionZ = valideLeaf->getPositions()[2];
+            const FReal*const validePotentials = valideLeaf->getPotentials();
+            const FReal*const valideForcesX = valideLeaf->getForcesX();
+            const FReal*const valideForcesY = valideLeaf->getForcesY();
+            const FReal*const valideForcesZ = valideLeaf->getForcesZ();
 
-                typename ContainerClass::BasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-                while( iterValide.hasNotFinished() ){
-                    if( FMath::LookEqual(iterValide.data().getPosition().getX(),iter.data().getPosition().getX()) &&
-                        FMath::LookEqual(iterValide.data().getPosition().getY(),iter.data().getPosition().getY()) &&
-                        FMath::LookEqual(iterValide.data().getPosition().getZ(),iter.data().getPosition().getZ()) ){
+            for(int idxLeaf = 0 ; idxLeaf < firstLeaf->getNbParticles() ; ++idxLeaf){
+
+                int idxValideLeaf = 0;
+                for(; idxValideLeaf < valideLeaf->getNbParticles() ; ++idxValideLeaf){
+                    if( FMath::LookEqual(validePositionX[idxValideLeaf],positionX[idxLeaf]) &&
+                        FMath::LookEqual(validePositionY[idxValideLeaf],positionY[idxLeaf]) &&
+                        FMath::LookEqual(validePositionZ[idxValideLeaf],positionZ[idxLeaf]) ){
                         break;
                     }
-                    iterValide.gotoNext();
                 }
 
-                if( iterValide.hasNotFinished() ){
+                if( idxValideLeaf < valideLeaf->getNbParticles() ){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
                     bool error = false;
-                    if( FMath::RelatifDiff(iterValide.data().getPotential() , iter.data().getPotential())  > Epsilon ){
-                        std::cout << " Potential error : " << iterValide.data().getPotential()  << " " << iter.data().getPotential() << "\n";
+                    if( FMath::RelatifDiff(validePotentials[idxValideLeaf] , potentials[idxLeaf])  > Epsilon ){
+                        std::cout << " Potential error : " << validePotentials[idxValideLeaf] << " " << potentials[idxLeaf] << "\n";
                         error = true;
                     }
-                    if( FMath::RelatifDiff(iterValide.data().getForces().getX(),iter.data().getForces().getX()) > Epsilon
-                            || FMath::RelatifDiff(iterValide.data().getForces().getY(),iter.data().getForces().getY()) > Epsilon
-                            || FMath::RelatifDiff(iterValide.data().getForces().getZ(),iter.data().getForces().getZ()) > Epsilon){
-                        std::cout << " Forces error : x " << iterValide.data().getForces().getX() << " " << iter.data().getForces().getX()
-                                  << " y " << iterValide.data().getForces().getY()  << " " << iter.data().getForces().getY()
-                                  << " z " << iterValide.data().getForces().getZ()  << " " << iter.data().getForces().getZ() << "\n";
+                    if( FMath::RelatifDiff(valideForcesX[idxValideLeaf],forcesX[idxLeaf]) > Epsilon
+                            || FMath::RelatifDiff(valideForcesY[idxValideLeaf],forcesY[idxLeaf]) > Epsilon
+                            || FMath::RelatifDiff(valideForcesZ[idxValideLeaf],forcesZ[idxLeaf]) > Epsilon){
+                        std::cout << " Forces error : x " << valideForcesX[idxValideLeaf] << " " << forcesX[idxLeaf]
+                                  << " y " << valideForcesY[idxValideLeaf]  << " " << forcesY[idxLeaf]
+                                  << " z " << valideForcesZ[idxValideLeaf]  << " " << forcesZ[idxLeaf] << "\n";
                         error = true;
                     }
                     if( error ){
-                        std::cout << "At position " << iterValide.data().getPosition() << " == " << iter.data().getPosition() << std::endl;
+                        std::cout << "At position " << FPoint(validePositionX[idxValideLeaf],validePositionY[idxValideLeaf],validePositionZ[idxValideLeaf])
+                                  << " == " << FPoint(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
                     }
                 }
                 else{
-                    std::cout << "Particle not found " << iter.data().getPosition() << std::endl;
+                    std::cout << "Particle not found " << FPoint(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
                 }
-                iter.gotoNext();
             }
 
         } while(octreeIterator.moveRight() && octreeIteratorValide.moveRight());
@@ -194,16 +210,15 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalParticle     ParticleClass;
     typedef FSphericalCell         CellClass;
-    typedef FVector<ParticleClass>         ContainerClass;
+    typedef FP2PParticleContainer         ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel<ParticleClass, CellClass, ContainerClass >          KernelClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-    typedef FFmmAlgorithmThreadProc<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
+    typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -221,7 +236,7 @@ int main(int argc, char ** argv){
 
     std::cout << "Opening : " << filename << "\n";
 
-    FMpiFmaLoader<ParticleClass> loader(filename, app.global());
+    FMpiFmaLoader loader(filename, app.global());
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -244,7 +259,32 @@ int main(int argc, char ** argv){
         std::cout << "Build Tree ..." << std::endl;
         counter.tic();
 
-        FMpiTreeBuilder<ParticleClass>::LoaderToTree(app.global(), loader, tree);
+        struct TestParticle{
+            FPoint position;
+            FReal physicalValue;
+            const FPoint& getPosition(){
+                return position;
+            }
+        };
+
+        TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
+        memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
+
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
+        }
+
+        FVector<TestParticle> finalParticles;
+        FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+                                                                           tree.getBoxCenter(),
+                                                                           tree.getBoxWidth(),
+                                                     tree.getHeight(), &finalParticles);
+
+        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+            tree.insert(finalParticles[idx].position);
+        }
+
+        delete[] particles;
 
         counter.tac();
         std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
@@ -252,10 +292,11 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }
     else{
-        ParticleClass partToInsert;
+        FPoint position;
+        FReal physicalValue;
         for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(partToInsert);
-            tree.insert(partToInsert);
+            loader.fillParticle(&position,&physicalValue);
+            tree.insert(position, physicalValue);
         }
     }
 
@@ -285,30 +326,33 @@ int main(int argc, char ** argv){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Sum Result" , __FILE__ , __LINE__) );
 
         FReal potential = 0;
-        FPoint forces;
+        FReal fx = 0.0, fy = 0.0, fz = 0.0;
 
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-					ContainerClass::ConstBasicIterator iter(*octreeIterator.getCurrentListTargets());
-            while( iter.hasNotFinished()){
-                potential += iter.data().getPotential() * iter.data().getPhysicalValue();
-                forces += iter.data().getForces();
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-                iter.gotoNext();
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                potential += potentials[idxPart];
+                fx += forcesX[idxPart];
+                fy += forcesY[idxPart];
+                fz += forcesZ[idxPart];
             }
-        } while(octreeIterator.moveRight());
+        });
 
         std::cout << "My potential is " << potential << std::endl;
 
         potential = app.global().reduceSum(potential);
-        forces.setX(app.global().reduceSum(forces.getX()));
-        forces.setY(app.global().reduceSum(forces.getY()));
-        forces.setZ(app.global().reduceSum(forces.getZ()));
+        fx = app.global().reduceSum(fx);
+        fy = app.global().reduceSum(fy);
+        fz = app.global().reduceSum(fz);
 
 
         if(app.global().processId() == 0){
-            std::cout << "Foces Sum  x = " << forces.getX() << " y = " << forces.getY() << " z = " << forces.getZ() << std::endl;
+            std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
             std::cout << "Potential Sum = " << potential << std::endl;
         }
     }
@@ -317,11 +361,12 @@ int main(int argc, char ** argv){
     {
         OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
         {
-            FFmaBinLoader<ParticleClass> loaderSeq(filename);
-            ParticleClass partToInsert;
+            FFmaBinLoader loaderSeq(filename);
+            FPoint position;
+            FReal physicalValue;
             for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-                loaderSeq.fillParticle(partToInsert);
-                treeValide.insert(partToInsert);
+                loaderSeq.fillParticle(&position,&physicalValue);
+                treeValide.insert(position,physicalValue);
             }
         }
 
@@ -332,25 +377,26 @@ int main(int argc, char ** argv){
         counter.tac();
         std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
-        FReal potentialValide = 0;
-        FPoint forcesValide;
+        FReal potential = 0;
+        FReal fx = 0.0, fy = 0.0, fz = 0.0;
 
-        OctreeClass::Iterator octreeIteratorValide(&treeValide);
-        octreeIteratorValide.gotoBottomLeft();
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-        do{
-            ContainerClass::ConstBasicIterator iterValide(*octreeIteratorValide.getCurrentListTargets());
-            while( iterValide.hasNotFinished()){
-                potentialValide += iterValide.data().getPotential() * iterValide.data().getPhysicalValue();
-                forcesValide += iterValide.data().getForces();
-
-                iterValide.gotoNext();
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                potential += potentials[idxPart];
+                fx += forcesX[idxPart];
+                fy += forcesY[idxPart];
+                fz += forcesZ[idxPart];
             }
+        });
 
-        } while(octreeIteratorValide.moveRight());
-
-        std::cout << "Valide Foces Sum  x = " << forcesValide.getX() << " y = " << forcesValide.getY() << " z = " << forcesValide.getZ() << std::endl;
-        std::cout << "Valide Potential = " << potentialValide << std::endl;
+        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
+        std::cout << "Potential = " << potential << std::endl;
 
         ValidateFMMAlgoProc<OctreeClass,ContainerClass>(&tree,&treeValide);
     }

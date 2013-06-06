@@ -27,14 +27,8 @@ class FPoint;
 * @brief
 * Please read the license
 *
-* This class define the method that every particle class
+* This class define the method that every particle container
 * has to implement.
-*
-* In fact FOctree & FFmmAlgorithm need this function to be implemented.
-* But you cannot use this interface with the extension (as an example :
-* because the compiler will faill to know if getPosition is coming
-* from this interface or from the extension)
-*
 *
 * @warning Inherite from this class when implement a specific particle type
 */
@@ -44,6 +38,11 @@ public:
     virtual ~FAbstractParticleContainer(){
     }
 
+    /**
+     * This method should be inherited (or your leaf will do nothing)
+     * the point is coming from the tree and is fallowed by what let the leaf
+     * pass throught its push method.
+     */
     template<typename... Args>
     void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
         FDEBUG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );

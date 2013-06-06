@@ -1018,7 +1018,8 @@ private:
 
                             alreadySent[procToReceive] = 1;
                             toSend[procToReceive].push( iterArray[idxLeaf] );
-                            partsToSend[procToReceive] += iterArray[idxLeaf].getCurrentListSrc()->getSize();
+                            partsToSend[procToReceive] += iterArray[idxLeaf].getCurrentListSrc()->getSavedSize();
+                            partsToSend[procToReceive] += int(sizeof(MortonIndex));
                         }
                     }
                 }
@@ -1029,6 +1030,12 @@ private:
                 }
             }
 
+            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                if(partsToSend[idxProc]){
+                    partsToSend[idxProc] += int(sizeof(int));
+                }
+            }
+
             FDEBUG(gatherCounter.tic());
             FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
             FDEBUG(gatherCounter.tac());
@@ -1036,7 +1043,7 @@ private:
             // Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(globalReceiveMap[idxProc * nbProcess + idProcess]){
-                    recvBuffer[idxProc] = new FBufferReader(int(sizeof(ParticleClass)) * globalReceiveMap[idxProc * nbProcess + idProcess]);
+                    recvBuffer[idxProc] = new FBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
                     FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
                                                idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                 }
@@ -1046,16 +1053,20 @@ private:
             // Prepare send
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                 if(toSend[idxProc].getSize() != 0){
-                    sendBuffer[idxProc] = new FBufferWriter(int(sizeof(ParticleClass)) * partsToSend[idxProc]);
+                    sendBuffer[idxProc] = new FBufferWriter(partsToSend[idxProc]);
+
+                    (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
 
                     for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
-                        typename ContainerClass::BasicIterator iterSource(*toSend[idxProc][idxLeaf].getCurrentListSrc());
-                        while( iterSource.hasNotFinished() ){
-                            iterSource.data().save(*sendBuffer[idxProc]);
-                            iterSource.gotoNext();
-                        }
+                        (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
+                        toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
                     }
-
+#ifdef FUSE_DEBUG
+                    // TODO clean test
+                    if(sendBuffer[idxProc]->getSize() != partsToSend[idxProc]){
+                        printf("Error 1056 fmm algo proc\n");
+                    }
+#endif
                     FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
                                                 idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 
@@ -1185,10 +1196,12 @@ private:
             for(int idxRcv = 0 ; idxRcv < countMessages ; ++idxRcv){
                 if( indexMessage[idxRcv] < nbMessagesToRecv ){
                     const int idxProc = status[idxRcv].MPI_SOURCE;
-                    ParticleClass tempoParticle;
-                    for(int idxPart = 0 ; idxPart < globalReceiveMap[idxProc * nbProcess + idProcess] ; ++idxPart){
-                        tempoParticle.restore(*recvBuffer[idxProc]);
-                        otherP2Ptree.insert(tempoParticle);
+                    int nbLeaves;
+                    (*recvBuffer[idxProc]) >> nbLeaves;
+                    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                        MortonIndex leafIndex;
+                        (*recvBuffer[idxProc]) >> leafIndex;
+                        otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
                     }
                     delete recvBuffer[idxProc];
                     recvBuffer[idxProc] = 0;

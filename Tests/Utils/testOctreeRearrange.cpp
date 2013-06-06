@@ -34,47 +34,29 @@
 
 #include "../../Src/Arranger/FOctreeArranger.hpp"
 
-template <class ContainerClass>
-class Extractor {
-    struct Particle{
-        FPoint position;
-        FReal physicalValue;
-        FReal forces[3];
-        FReal potential;
-    };
+struct TestParticle{
+    FPoint position;
+    const FPoint& getPosition(){
+        return position;
+    }
+};
 
-    FVector<Particle> savedParticles;
-
+template <class ParticleClass>
+class Converter {
 public:
-    void extractParticles(const ContainerClass* containers, const int indexesToExtract[], const int nbToExtract){
-        //const FReal*const physicalValues = containers->getPhysicalValues();
-        const FReal*const positionsX = containers->getPositions()[0];
-        const FReal*const positionsY = containers->getPositions()[1];
-        const FReal*const positionsZ = containers->getPositions()[2];
-        //const FReal*const forcesX = containers->getForcesX();
-        //const FReal*const forcesY = containers->getForcesY();
-        //const FReal*const forcesZ = containers->getForcesZ();
-        //const FReal*const potentials = containers->getPotentials();
-
-        for(int idxPart = 0 ; idxPart < nbToExtract ; ++ idxPart){
-            const int idxExtract = indexesToExtract[idxPart];
-            Particle part;
-            part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
-            //part.physicalValue = physicalValues[idxExtract];
-            //part.forces[0] = forcesX[idxExtract];
-            //part.forces[1] = forcesY[idxExtract];
-            //part.forces[2] = forcesZ[idxExtract];
-            //part.potential = potentials[idxExtract];
-        }
+    template <class ContainerClass>
+    static ParticleClass GetParticle(ContainerClass* container, const int idxExtract){
+        TestParticle part;
+        part.position.setPosition(
+                    container->getPositions()[0][idxExtract],
+                    container->getPositions()[1][idxExtract],
+                    container->getPositions()[2][idxExtract]);
+        return part;
     }
 
     template <class OctreeClass>
-    void reinsertInTree(OctreeClass* tree){
-        for(int idxPart = 0 ; idxPart < savedParticles.getSize() ; ++idxPart){
-            const Particle part = savedParticles[idxPart];
-            tree->insert(part.position/*, part.physicalValue, part.forces[0],
-                    part.forces[1],part.forces[2],part.potential*/);
-        }
+    static void Insert(OctreeClass* tree, const ParticleClass& part){
+        tree->insert(part.position);
     }
 };
 
@@ -159,7 +141,7 @@ int main(int argc, char ** argv){
     std::cout << "Arrange ..." << std::endl;
     counter.tic();
 
-    FOctreeArranger<OctreeClass, ContainerClass, Extractor<ContainerClass> > arrange(&tree);
+    FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
     arrange.rearrange();
 
     counter.tac();

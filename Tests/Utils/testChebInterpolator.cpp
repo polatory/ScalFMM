@@ -33,39 +33,12 @@
 #include "../../Src/Utils/FAssertable.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
-
-
-
-FReal computeL2norm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      dot = FReal(0.);
-	FReal diff_dot = FReal(0.);
-	for (unsigned int i=0; i<N; ++i) {
-		FReal w = v[i] - u[i];
-		diff_dot += w    * w;
-		dot      += u[i] * u[i];
-	}
-	return FMath::Sqrt(diff_dot / dot);
-}
-
-
-
-FReal computeINFnorm(unsigned int N, FReal *const u, FReal *const v)
-{
-	FReal      max = FReal(0.);
-	FReal diff_max = FReal(0.);
-	for (unsigned int n=0; n<N; ++n) {
-		if (     max<std::abs(u[n]))           max = std::abs(u[n]);
-		if (diff_max<std::abs(u[n]-v[n])) diff_max = std::abs(u[n]-v[n]);
-	}
-	return diff_max / max;
-}
 
 
 
@@ -234,12 +207,10 @@ int main(int, char **){
 	}
 
 	std::cout << "\nPotential error:" << std::endl;
-	std::cout << "Relative L2 error   = " << computeL2norm( M, p, approx_p) << std::endl;
-	std::cout << "Relative Lmax error = " << computeINFnorm(M, p, approx_p) << std::endl;
+    std::cout << "Relative error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
 
 	std::cout << "\nForce error:" << std::endl;
-	std::cout << "Relative L2 error   = " << computeL2norm( M*3, f, approx_f) << std::endl;
-	std::cout << "Relative Lmax error = " << computeINFnorm(M*3, f, approx_f) << std::endl;
+    std::cout << "Relative L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
 	std::cout << std::endl;
 
 	// free memory

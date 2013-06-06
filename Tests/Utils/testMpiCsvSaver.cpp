@@ -30,56 +30,109 @@
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Extensions/FExtendVelocity.hpp"
-
 #include "../../Src/Files/FTreeMpiCsvSaver.hpp"
 #include "../../Src/Files/FFmaLoader.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
-#include "../../Src/Kernels/Spherical/FSphericalParticle.hpp"
 
-class FmmVeloParticle : public FSphericalParticle, public FExtendVelocity {
+class VelocityContainer : public FP2PParticleContainer {
+    typedef FP2PParticleContainer Parent;
+
+    FVector<FPoint> velocities;
+
+public:
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const FPoint& velocity, Args... args){
+        Parent::push(inParticlePosition, args... );
+        velocities.push(velocity);
+    }
+
+    const FVector<FPoint>& getVelocities() const{
+        return velocities;
+    }
+
+    FVector<FPoint>& getVelocities() {
+        return velocities;
+    }
+
+    void fillToCsv(const int partIdx, FReal values[4]) const {
+        values[0] = Parent::getPositions()[0][partIdx];
+        values[1] = Parent::getPositions()[1][partIdx];
+        values[2] = Parent::getPositions()[2][partIdx];
+        values[3] = Parent::getPotentials()[partIdx];
+    }
+};
+
+
+class GalaxyLoader : public FFmaLoader {
+public:
+    GalaxyLoader(const char* const filename) : FFmaLoader(filename) {
+    }
+
+    void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
+        FReal x,y,z,data, vx, vy, vz;
+        this->file >> x >> y >> z >> data >> vx >> vy >> vz;
+        position->setPosition(x,y,z);
+        *physivalValue = (data);
+        velocity->setPosition(vx,vy,vz);
+    }
+};
+
+struct TestParticle{
+    FPoint position;
+    FReal physicalValue;
+    FReal forces[3];
+    FReal potential;
+    FPoint velocity;
+    const FPoint& getPosition(){
+        return position;
+    }
 };
 
 template <class ParticleClass>
-class GalaxyLoader : public FFmaLoader<ParticleClass> {
+class Converter {
 public:
-    GalaxyLoader(const char* const filename) : FFmaLoader<ParticleClass>(filename) {
+    template <class ContainerClass>
+    static ParticleClass GetParticle(ContainerClass* containers, const int idxExtract){
+        const FReal*const positionsX = containers->getPositions()[0];
+        const FReal*const positionsY = containers->getPositions()[1];
+        const FReal*const positionsZ = containers->getPositions()[2];
+        const FReal*const forcesX = containers->getForcesX();
+        const FReal*const forcesY = containers->getForcesY();
+        const FReal*const forcesZ = containers->getForcesZ();
+        const FReal*const physicalValues = containers->getPhysicalValues();
+        const FReal*const potentials = containers->getPotentials();
+        FVector<FPoint> velocites = containers->getVelocities();
+
+        TestParticle part;
+        part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
+        part.physicalValue = physicalValues[idxExtract];
+        part.forces[0] = forcesX[idxExtract];
+        part.forces[1] = forcesY[idxExtract];
+        part.forces[2] = forcesZ[idxExtract];
+        part.potential = potentials[idxExtract];
+        part.velocity  = velocites[idxExtract];
+
+        return part;
     }
 
-    void fillParticle(ParticleClass& inParticle){
-        FReal x,y,z,data, vx, vy, vz;
-        this->file >> x >> y >> z >> data >> vx >> vy >> vz;
-        inParticle.setPosition(x,y,z);
-        inParticle.setPhysicalValue(data);
-        inParticle.setVelocity(vx,vy,vz);
-        inParticle.setPhysicalValue(FReal(0.10));
-    }
-};
-
-
-template <class OctreeClass, class ContainerClass , class ParticleClass>
-class MassSaver : public FTreeMpiCsvSaver<OctreeClass,ContainerClass, ParticleClass> {
-public:
-    MassSaver(const char inBasefile[], const FMpi::FComm& inComm, const bool inIncludeHeader = false)
-        : FTreeMpiCsvSaver<OctreeClass,ContainerClass, ParticleClass>(inBasefile, inComm, inIncludeHeader) {
-    }
-
-    virtual FReal getValue(ParticleClass*const part){
-        return part->getPhysicalValue();
+    template <class OctreeClass>
+    static void Insert(OctreeClass* tree, const ParticleClass& part){
+        tree->insert(part.position , part.velocity, part.physicalValue, part.forces[0],
+                part.forces[1],part.forces[2],part.potential);
     }
 };
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FmmVeloParticle         ParticleClass;
     typedef FBasicCell              CellClass;
-    typedef FVector<ParticleClass>  ContainerClass;
+    typedef VelocityContainer  ContainerClass;
 
-    typedef FSimpleLeaf<ParticleClass, ContainerClass >                     LeafClass;
-    typedef FOctree<ParticleClass, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -88,7 +141,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 6);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
 
-    GalaxyLoader<ParticleClass> loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
+    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
 
     // -----------------------------------------------------
 
@@ -100,24 +153,26 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
     {
-        ParticleClass particleToFill;
+        FPoint position, velocity;
+        FReal physicalValue;
+
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(particleToFill);
-            if( (idxPart+1) % (app.global().processId()+1) == 0) tree.insert(particleToFill);
+            loader.fillParticle(&position, &physicalValue, &velocity);
+            if( (idxPart+1) % (app.global().processId()+1) == 0) tree.insert(position,velocity,physicalValue);
         }
     }
 
     // -----------------------------------------------------
 
     {
-        MassSaver<OctreeClass, ContainerClass, ParticleClass> saver("./out/test%d.csv", app.global() , false);
+        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("./out/test%d.csv", app.global() , false);
         saver.exportTree(&tree);
     }
 
     // -----------------------------------------------------
 
     {
-        MassSaver<OctreeClass, ContainerClass, ParticleClass> saver("./out/htest%d.csv", app.global() , true);
+        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("./out/htest%d.csv", app.global() , true);
         saver.exportTree(&tree);
     }
 

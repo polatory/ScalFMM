@@ -35,7 +35,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 // chebyshev kernel
-#include "../../Src/Kernels/Chebyshev/FChebLeaf.hpp"
+
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
@@ -49,39 +49,12 @@
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with
  * the SphericalBlas kernel.
  */
-
-
-
-FReal computeL2norm(const unsigned int N, const FReal *const u, const FReal *const v)
-{
-    FReal      dot = FReal(0.);
-    FReal diff_dot = FReal(0.);
-    for (unsigned int i=0; i<N; ++i) {
-        FReal w = v[i] - u[i];
-        diff_dot += w    * w;
-        dot      += u[i] * u[i];
-    }
-    return FMath::Sqrt(diff_dot / dot);
-}
-
-
-
-FReal computeINFnorm(const unsigned int N, const FReal *const u, const FReal *const v)
-{
-    FReal      max = FReal(0.);
-    FReal diff_max = FReal(0.);
-    for (unsigned int n=0; n<N; ++n) {
-        if (     max<std::abs(u[n]))           max = std::abs(u[n]);
-        if (diff_max<std::abs(u[n]-v[n])) diff_max = std::abs(u[n]-v[n]);
-    }
-    return diff_max / max;
-}
 
 
 // Simply create particles and try the kernels
@@ -100,10 +73,43 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
-    // only for direct computation of nt1 target particles
-    unsigned int nt1 = 0;
-    FReal* p10; p10 = NULL;
-    FReal* f10; p10 = NULL;
+    struct TestParticle{
+        FPoint position;
+        FReal forces[3];
+        FReal physicalValue;
+        FReal potential;
+    };
+    // open particle file
+    FFmaScanfLoader loader(filename);
+    if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
+
+    TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        FPoint position;
+        FReal physicalValue = 0.0;
+        loader.fillParticle(&position,&physicalValue);
+        // get copy
+        particles[idxPart].position = position;
+        particles[idxPart].physicalValue = physicalValue;
+        particles[idxPart].potential = 0.0;
+        particles[idxPart].forces[0] = 0.0;
+        particles[idxPart].forces[1] = 0.0;
+        particles[idxPart].forces[2] = 0.0;
+    }
+    {
+        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+            for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                      particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                      &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                      &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                &particles[idxOther].forces[2],&particles[idxOther].potential);
+            }
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////
     {	// begin Chebyshef kernel
@@ -112,11 +118,8 @@ int main(int argc, char* argv[])
         const unsigned int ORDER = 7;
         const FReal epsilon = FReal(1e-7);
 
-        FReal* p1;  p1  = NULL;
-        FReal* f1;  p1  = NULL;
-
         // typedefs
-        typedef FP2PParticleContainer ContainerClass;
+        typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FChebMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
@@ -128,10 +131,6 @@ int main(int argc, char* argv[])
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
-        // open particle file
-        FFmaScanfLoader loader(filename);
-        if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
-
         // init oct-tree
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
@@ -141,11 +140,12 @@ int main(int argc, char* argv[])
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
             time.tic();
 
-            FPoint particlePosition;
-            FReal physicalValue = 0.0;
             for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                loader.fillParticle(&particlePosition,&physicalValue);
-                tree.insert(particlePosition, physicalValue);
+                FPoint position;
+                FReal physicalValue;
+                loader.fillParticle(&position,&physicalValue);
+                // put in tree
+                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
 
             time.tac();
@@ -163,43 +163,35 @@ int main(int argc, char* argv[])
             std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
         } // -----------------------------------------------------
 
-        /*{ // -----------------------------------------------------
-            // read potential from particles and write to array p1
-            p1 = new FReal [loader.getNumberOfParticles()];
-            f1 = new FReal [loader.getNumberOfParticles() * 3];
-            OctreeClass::Iterator iLeafs(&tree);
-            iLeafs.gotoBottomLeft();
-            unsigned int counter = 0;
-            do {
-                ContainerClass *const Targets = iLeafs.getCurrentListSrc();
-                ContainerClass::BasicIterator iTarget(*Targets);
-                while(iTarget.hasNotFinished()) {
-                    p1[counter] = iTarget.data().getPotential();
-                    f1[counter*3 + 0] = iTarget.data().getForces().getX();
-                    f1[counter*3 + 1] = iTarget.data().getForces().getY();
-                    f1[counter*3 + 2] = iTarget.data().getForces().getZ();
-                    counter++;
-                    iTarget.gotoNext();
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
+        { // Check that each particle has been summed with all other
+
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const int indexPartOrig = indexes[idxPart];
+                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
                 }
-            } while(iLeafs.moveRight());
-        } // -----------------------------------------------------*/
+            });
+        }
 
-        // compute direct interaction
-        const unsigned int NumTargetCells = 3;
-        //DirectInteractionComputer<OctreeClass,MatrixKernelClass,ContainerClass> direct;
-        //nt1 = direct(tree, NumTargetCells, p10, f10);
+        delete[] particles;
 
-        std::cout << "\nPotential error:" << std::endl;
-        std::cout << "Relative L2 error  = " << computeL2norm( nt1, p10, p1) << std::endl;
-        std::cout << "Relative Lmax error = "  << computeINFnorm(nt1, p10, p1) << std::endl;
-
-        std::cout << "\nForce error:" << std::endl;
-        std::cout << "Relative L2 error  = " << computeL2norm( nt1*3, f10, f1) << std::endl;
-        std::cout << "Relative Lmax error = "  << computeINFnorm(nt1*3, f10, f1) << std::endl << std::endl;
-
-
-        if (p1 !=NULL) delete [] p1;
-        if (f1 !=NULL) delete [] f1;
+        // Print for information
+        std::cout << "Potential " << potentialDiff << std::endl;
+        std::cout << "Fx " << potentialDiff << std::endl;
+        std::cout << "Fy " << potentialDiff << std::endl;
+        std::cout << "Fz " << potentialDiff << std::endl;
 
     } // end Chebyshev kernel
 
@@ -212,7 +204,7 @@ int main(int argc, char* argv[])
 
         // typedefs
         typedef FSphericalCell                 CellClass;
-        typedef FP2PParticleContainer         ContainerClass;
+        typedef FP2PParticleContainerIndexed         ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                     LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
         //typedef FSphericalBlasKernel< CellClass, ContainerClass > KernelClass;
@@ -222,10 +214,6 @@ int main(int argc, char* argv[])
         //typedef FSphericalRotationKernel< CellClass, ContainerClass > KernelClass;
         //typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
         typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-        // open particle file
-        FFmaScanfLoader loader(filename);
-        if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
         // init cell class and oct-tree
         CellClass::Init(DevP, true); // only for blas
@@ -239,11 +227,12 @@ int main(int argc, char* argv[])
                       << SubTreeHeight << std::endl;
             time.tic();
 
-            FPoint particlePosition;
-            FReal physicalValue = 0.0;
             for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                loader.fillParticle(&particlePosition,&physicalValue);
-                tree.insert(particlePosition, physicalValue);
+                FPoint position;
+                FReal physicalValue;
+                loader.fillParticle(&position,&physicalValue);
+                // put in tree
+                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
 
             time.tac();
@@ -261,54 +250,38 @@ int main(int argc, char* argv[])
         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
-        FReal*const fmmParticlesPotential = new FReal[loader.getNumberOfParticles()];
-        FReal*const fmmParticlesForces = new FReal [loader.getNumberOfParticles() * 3];
-        /*{ // -----------------------------------------------------
-            // read potential from particles and write to array p2
-            OctreeClass::Iterator leavesIterator(&tree);
-            leavesIterator.gotoBottomLeft();
-            unsigned int particlePosition = 0;
-            do {
-                ContainerClass *const Targets = leavesIterator.getCurrentListSrc();
-                ContainerClass::BasicIterator particlesIterator(*Targets);
-                while(particlesIterator.hasNotFinished()) {
-                    // Copy current data into array
-                    fmmParticlesPotential[particlePosition]    = particlesIterator.data().getPotential();
-                    fmmParticlesForces[particlePosition*3 + 0] = particlesIterator.data().getForces().getX();
-                    fmmParticlesForces[particlePosition*3 + 1] = particlesIterator.data().getForces().getY();
-                    fmmParticlesForces[particlePosition*3 + 2] = particlesIterator.data().getForces().getZ();
-                    ++particlePosition;
-                    // Reset particle
-                    particlesIterator.data().setPotential(FReal(0.));
-                    particlesIterator.data().setForces(FReal(0.), FReal(0.), FReal(0.));
-                    particlesIterator.gotoNext();
+        FMath::FAccurater potentialDiff;
+        FMath::FAccurater fx, fy, fz;
+        { // Check that each particle has been summed with all other
+
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const int indexPartOrig = indexes[idxPart];
+                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
                 }
-            } while(leavesIterator.moveRight());
-        } // -----------------------------------------------------*/
+            });
+        }
 
-        std::cout << "\nPotential error:" << std::endl;
-        std::cout << "Relative L2 error   = "
-                  << computeL2norm( nt1, p10, fmmParticlesPotential) << std::endl;
-        std::cout << "Relative Lmax error = "
-                  << computeINFnorm(nt1, p10, fmmParticlesPotential) << std::endl;
+        delete[] particles;
 
-        std::cout << "\nForces error:" << std::endl;
-        std::cout << "Relative L2 error   = "
-                  << computeL2norm( nt1*3, f10, fmmParticlesForces) << std::endl;
-        std::cout << "Relative Lmax error = "
-                  << computeINFnorm(nt1*3, f10, fmmParticlesForces) << std::endl;
-
-
-
-        delete [] fmmParticlesPotential;
-        delete [] fmmParticlesForces;
-
+        // Print for information
+        std::cout << "Potential " << potentialDiff << std::endl;
+        std::cout << "Fx " << potentialDiff << std::endl;
+        std::cout << "Fy " << potentialDiff << std::endl;
+        std::cout << "Fz " << potentialDiff << std::endl;
     } // end FFmaBlas kernel
 
-
-    // free memory
-    if (p10!=NULL) delete [] p10;
-    if (f10!=NULL) delete [] f10;
+    delete[] particles;
 
     return 0;
 }
