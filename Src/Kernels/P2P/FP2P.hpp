@@ -2,6 +2,7 @@
 #define FP2P_HPP
 
 #include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FMath.hpp"
 
 /**
  * @brief The FP2P class
@@ -39,12 +40,12 @@ public:
                     FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
 
                     for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-                        double dx = sourcesX[idxSource] - targetsX[idxTarget];
-                        double dy = sourcesY[idxSource] - targetsY[idxTarget];
-                        double dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                        FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                        FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                        FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-                        double inv_square_distance = 1.0 / (dx*dx + dy*dy + dz*dz);
-                        const double inv_distance = sqrt(inv_square_distance);
+                        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+                        const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
                         inv_square_distance *= inv_distance;
                         inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
@@ -69,12 +70,12 @@ public:
 
         for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
-                double dx = targetsX[idxSource] - targetsX[idxTarget];
-                double dy = targetsY[idxSource] - targetsY[idxTarget];
-                double dz = targetsZ[idxSource] - targetsZ[idxTarget];
+                FReal dx = targetsX[idxSource] - targetsX[idxTarget];
+                FReal dy = targetsY[idxSource] - targetsY[idxTarget];
+                FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-                double inv_square_distance = 1.0 / (dx*dx + dy*dy + dz*dz);
-                const double inv_distance = sqrt(inv_square_distance);
+                FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+                const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
                 inv_square_distance *= inv_distance;
                 inv_square_distance *= targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource];
@@ -122,12 +123,12 @@ public:
                     const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
                     for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-                        double dx = sourcesX[idxSource] - targetsX[idxTarget];
-                        double dy = sourcesY[idxSource] - targetsY[idxTarget];
-                        double dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                        FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                        FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                        FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-                        double inv_square_distance = 1.0 / (dx*dx + dy*dy + dz*dz);
-                        const double inv_distance = sqrt(inv_square_distance);
+                        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+                        const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
                         inv_square_distance *= inv_distance;
                         inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
