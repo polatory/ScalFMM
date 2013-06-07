@@ -141,9 +141,6 @@ int main(int argc, char* argv[])
             time.tic();
 
             for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                FPoint position;
-                FReal physicalValue;
-                loader.fillParticle(&position,&physicalValue);
                 // put in tree
                 tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
@@ -185,8 +182,6 @@ int main(int argc, char* argv[])
             });
         }
 
-        delete[] particles;
-
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
         std::cout << "Fx " << potentialDiff << std::endl;
@@ -200,7 +195,7 @@ int main(int argc, char* argv[])
     {	// begin FFmaBlas kernel
 
         // accuracy
-        const int DevP = FParameters::getValue(argc, argv, "-p", 5);
+        const int DevP = FParameters::getValue(argc, argv, "-p", 6);
 
         // typedefs
         typedef FSphericalCell                 CellClass;
@@ -228,9 +223,6 @@ int main(int argc, char* argv[])
             time.tic();
 
             for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                FPoint position;
-                FReal physicalValue;
-                loader.fillParticle(&position,&physicalValue);
                 // put in tree
                 tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
@@ -271,8 +263,6 @@ int main(int argc, char* argv[])
                 }
             });
         }
-
-        delete[] particles;
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;

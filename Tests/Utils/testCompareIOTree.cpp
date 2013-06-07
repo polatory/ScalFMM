@@ -54,7 +54,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     const char* const filename1 = FParameters::getStr(argc,argv,"-f1", "tree.data");
-    const char* const filename2 = FParameters::getStr(argc,argv,"-f1", "dtree.data");
+    const char* const filename2 = FParameters::getStr(argc,argv,"-f2", "dtree.data");
     std::cout << "Compare tree " << filename1 << " and " << filename2 << std::endl;
 
     FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename1, tree1);
@@ -111,50 +111,49 @@ int main(int argc, char ** argv){
 
         for(int idxLevel = tree1.getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
             int nbCells = 0;
-            if( idxLevel == 2 ){
-                do{
-                    if( octreeIterator1.getCurrentGlobalIndex() != octreeIterator2.getCurrentGlobalIndex()){
-                        std::cout << "Index is different\n";
+            do{
+                if( octreeIterator1.getCurrentGlobalIndex() != octreeIterator2.getCurrentGlobalIndex()){
+                    std::cout << "Index is different\n";
+                    break;
+                }
+
+                const CellClass*const cell1 = octreeIterator1.getCurrentCell();
+                const CellClass*const cell2 = octreeIterator2.getCurrentCell();
+
+                FReal cumul = 0;
+                for(int idx = 0; idx < FSphericalCell::GetPoleSize(); ++idx){
+                    cumul += FMath::Abs( cell1->getMultipole()[idx].getImag() - cell2->getMultipole()[idx].getImag() );
+                    cumul += FMath::Abs( cell1->getMultipole()[idx].getReal() - cell2->getMultipole()[idx].getReal() );
+                }
+                if( cumul > 0.00001 || FMath::IsNan(cumul)){
+                    std::cout << "Pole Data are different. Cumul " << cumul << " at level " << idxLevel
+                              << " index is " << octreeIterator1.getCurrentGlobalIndex() << std::endl;
+                }
+                cumul = 0;
+                for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
+                    cumul += FMath::Abs( cell1->getLocal()[idx].getImag() - cell2->getLocal()[idx].getImag() );
+                    cumul += FMath::Abs( cell1->getLocal()[idx].getReal() - cell2->getLocal()[idx].getReal() );
+                }
+                if( cumul > 0.00001 || FMath::IsNan(cumul)){
+                    std::cout << "Local Data are different. Cumul " << cumul << " at level " << idxLevel
+                              << " index is " << octreeIterator1.getCurrentGlobalIndex() << std::endl;
+                }
+
+                nbCells += 1;
+                if( octreeIterator1.moveRight() ){
+                    if( !octreeIterator2.moveRight() ){
+                        std::cout << "Not the same number of leaf, tree2 end before tree1\n";
                         break;
                     }
+                }
+                else {
+                    if( octreeIterator2.moveRight() ){
+                        std::cout << "Not the same number of leaf, tree1 end before tree2\n";
+                    }
+                    break;
+                }
+            } while(true);
 
-                    const CellClass*const cell1 = octreeIterator1.getCurrentCell();
-                    const CellClass*const cell2 = octreeIterator2.getCurrentCell();
-
-                    FReal cumul = 0;
-                    for(int idx = 0; idx < FSphericalCell::GetPoleSize(); ++idx){
-                        cumul += FMath::Abs( cell1->getMultipole()[idx].getImag() - cell2->getMultipole()[idx].getImag() );
-                        cumul += FMath::Abs( cell1->getMultipole()[idx].getReal() - cell2->getMultipole()[idx].getReal() );
-                    }
-                    if( cumul > 0.00001 || FMath::IsNan(cumul)){
-                        std::cout << "Pole Data are different. Cumul " << cumul << " at level " << idxLevel
-                                  << " index is " << octreeIterator1.getCurrentGlobalIndex() << std::endl;
-                    }
-                    cumul = 0;
-                    for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
-                        cumul += FMath::Abs( cell1->getLocal()[idx].getImag() - cell2->getLocal()[idx].getImag() );
-                        cumul += FMath::Abs( cell1->getLocal()[idx].getReal() - cell2->getLocal()[idx].getReal() );
-                    }
-                    if( cumul > 0.00001 || FMath::IsNan(cumul)){
-                        std::cout << "Local Data are different. Cumul " << cumul << " at level " << idxLevel
-                                  << " index is " << octreeIterator1.getCurrentGlobalIndex() << std::endl;
-                    }
-
-                    nbCells += 1;
-                    if( octreeIterator1.moveRight() ){
-                        if( !octreeIterator2.moveRight() ){
-                            std::cout << "Not the same number of leaf, tree2 end before tree1\n";
-                            break;
-                        }
-                    }
-                    else {
-                        if( octreeIterator2.moveRight() ){
-                            std::cout << "Not the same number of leaf, tree1 end before tree2\n";
-                        }
-                        break;
-                    }
-                } while(true);
-            }
             octreeIterator1.moveUp();
             octreeIterator1.gotoLeft();
 

@@ -1146,6 +1146,25 @@ public:
      * @brief forEachLeaf iterate on the cell and apply the function
      * @param function
      */
+    void forEachCellWithLevel(std::function<void(CellClass*,const int)> function){
+        Iterator octreeIterator(this);
+        octreeIterator.gotoBottomLeft();
+
+        Iterator avoidGoLeft(octreeIterator);
+
+        for(int idx = this->height-1 ; idx >= 1 ; --idx ){
+            do{
+                function(octreeIterator.getCurrentCell(),idx);
+            } while(octreeIterator.moveRight());
+            avoidGoLeft.moveUp();
+            octreeIterator = avoidGoLeft;
+        }
+    }
+
+    /**
+     * @brief forEachLeaf iterate on the cell and apply the function
+     * @param function
+     */
     void forEachCellLeaf(std::function<void(CellClass*,LeafClass*)> function){
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();

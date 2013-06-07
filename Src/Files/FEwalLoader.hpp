@@ -126,6 +126,10 @@ public:
         return this->boxWidth;
     }
 
+    FReal getEnergy() const{
+        return 0.0;
+    }
+
     /**
       * Fill a particle
       * @warning to work with the loader, particles has to expose a setPosition method
@@ -135,7 +139,7 @@ public:
            7.64746800518      -1.34490700206      -2.81036521708
           -4406.48579000       6815.52906417       10340.2577024
       */
-    void fillParticle(FReal inParticle[7], int inIndex [1], Type inType[1]){
+    void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
         FReal x, y, z, fx, fy, fz, vx, vy, vz;
         int index;
         char type[2];
@@ -156,21 +160,20 @@ public:
             file >> fx >> fy >> fz;
         }
 
-        inParticle[0] = x;
-        inParticle[1] = y;
-        inParticle[2] = z;
-        inParticle[3] = fx;
-        inParticle[4] = fy;
-        inParticle[5] = fz;
         inIndex[0] = index;
 
+        inPosition->setPosition( x, y ,z);
+        inForces[0] = fx;
+        inForces[1] = fy;
+        inForces[2] = fz;
+
         if( strncmp(type, "OW", 2) == 0){
-            inParticle[6] = FReal(-0.82);
-            inType[0] = OW;
+            *inPhysicalValue = FReal(-0.82);
+            *inIndex = OW;
         }
         else{
-            inParticle[6] = FReal(-0.41);
-            inType[0] = HW;
+            *inPhysicalValue = FReal(-0.41);
+            *inIndex = HW;
         }
     }
 

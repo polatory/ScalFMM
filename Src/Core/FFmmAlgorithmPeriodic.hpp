@@ -426,7 +426,7 @@ public:
                 // for all z in interval
                 for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
                     // do not fill close neigbors
-                    if( FMath::Abs(idxX) > 1 && FMath::Abs(idxY) > 1 && FMath::Abs(idxZ) > 1 ){
+                    if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1 ){
                         neighbors[neighIndex(idxX,idxY,idxZ)] = &source;
                         ++counter;
                     }
@@ -776,7 +776,6 @@ public:
                 counter +=  fillM2LVectorFromIntervals(neighbors, angleborderlf,  -2,-2 , -2,-2, -1,1 );
                 processTopM2MInIntervals( &angleborder, upperCells[nbLevelsAboveRoot+1],    1,1 , 1,1 , 1,1);
                 counter +=  fillM2LVectorFromIntervals(neighbors, angleborder,    -2,-2 , -2,-2, -2,-2);
-
 
                 kernels->M2L( &upperCells[0] , neighbors, counter, 2);
 

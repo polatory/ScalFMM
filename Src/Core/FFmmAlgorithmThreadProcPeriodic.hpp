@@ -1686,7 +1686,7 @@ public:
                 // for all z in interval
                 for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
                     // do not fill close neigbors
-                    if( FMath::Abs(idxX) > 1 && FMath::Abs(idxY) > 1 && FMath::Abs(idxZ) > 1 ){
+                    if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1 ){
                         neighbors[neighIndex(idxX,idxY,idxZ)] = &source;
                         ++counter;
                     }

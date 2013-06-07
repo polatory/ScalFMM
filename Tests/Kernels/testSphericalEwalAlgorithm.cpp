@@ -81,8 +81,8 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     std::cout << "Opening : " << filename << "\n";
-    //FEwalLoader loader(filename);
-    FEwalBinLoader loader(filename);
+    FEwalLoader loader(filename);
+    //FEwalBinLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

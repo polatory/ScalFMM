@@ -25,6 +25,8 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Files/FPerLeafLoader.hpp"
+
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
@@ -59,7 +61,7 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
+    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbParticles      = FParameters::getValue(argc,argv,"-nb", 1000);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
@@ -77,11 +79,13 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Creating & Inserting " << NbParticles << " particles ..." << std::endl;
+    FRandomLoader loader(NbParticles);
+    //FPerLeafLoader loader(NbLevels);
+
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    FRandomLoader loader(NbParticles);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     {
@@ -124,8 +128,9 @@ int main(int argc, char ** argv){
             counterNbPart += leaf->getSrc()->getNbParticles();
         });
 
-        if( counterNbPart != NbParticles){
-            std::cout << "Problem global nb part, counter = " << counterNbPart << " created = " << NbParticles << std::endl;
+        if( counterNbPart != loader.getNumberOfParticles()){
+            std::cout << "Problem global nb part, counter = " << counterNbPart << " created = " <<
+                         loader.getNumberOfParticles() << std::endl;
         }
     }
     {
@@ -133,8 +138,9 @@ int main(int argc, char ** argv){
         const int totalRepeatedBox = repetitions.getX() * repetitions.getY() * repetitions.getZ();
         std::cout << "The box is repeated " << repetitions.getX() <<" "<< repetitions.getY()<<" "<<
                      repetitions.getZ() << " there are " << totalRepeatedBox << " boxes in total\n";
-        const long long NbParticlesEntireSystem = NbParticles * totalRepeatedBox;
+        const long long NbParticlesEntireSystem = loader.getNumberOfParticles() * totalRepeatedBox;
         std::cout << "The total number of particles is "  << NbParticlesEntireSystem << "\n";
+
         FTreeCoordinate min, max;
         algo.repetitionsIntervals(&min, &max);
         std::cout << "Min is " << min << " Max is " << max << std::endl;
@@ -148,6 +154,8 @@ int main(int argc, char ** argv){
             }
         });
     }
+
+    std::cout << "Test done..." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
