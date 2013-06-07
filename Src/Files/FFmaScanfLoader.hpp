@@ -130,18 +130,11 @@ public:
       * @param the particle to fill
       */
     void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
-        if(this->file){
             float x,y,z,data;
-            const int nbReadElements = fscanf(this->file,"%f %f %f %f",&x,&y,&z,&data);
-            if(nbReadElements == 4){
-                inParticlePositions->setPosition(x,y,z);
-                (*inPhysicalValue) = data;
-            }
-            else{
-                fclose(this->file);
-                this->file = NULL;
-            }
-        }
+            int unusedReturn = fscanf(this->file,"%f %f %f %f",&x,&y,&z,&data);
+            unusedReturn += unusedReturn; // just to remove warning
+            inParticlePositions->setPosition(x,y,z);
+            (*inPhysicalValue) = data;
     }
 };
 
