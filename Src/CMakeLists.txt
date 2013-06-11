@@ -42,8 +42,9 @@ install( TARGETS scalfmm ARCHIVE DESTINATION lib )
 # Install header
 SET(my_include_dirs "."
   "Arranger"        "Core"           "Utils"
-  "Chebyshev"       "Components"       "Extensions"  
-  "Containers"       "Files"       "Kernels/Spherical")
+  "Kernels/Chebyshev"       "Components"       "Extensions"  
+  "Containers"       "Files"       "Kernels/Spherical"
+  "Kernels/P2P" "Kernels/Taylor" "Kernels/ROtation")
 
 FOREACH(my_dir ${my_include_dirs})	
 	file(GLOB 	 	 	 	

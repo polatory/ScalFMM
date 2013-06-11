@@ -17,7 +17,8 @@
 #define FBASICPARTICLECONTAINER_HPP
 
 #include "FAbstractParticleContainer.hpp"
-
+#include "FMath.hpp"
+#include "FPoint.hpp"
 #include <type_traits>
 
 /**
@@ -104,7 +105,7 @@ public:
      * @brief getPositions
      * @return a FReal*[3] to get access to the positions
      */
-    const FReal*const*const getPositions() const {
+    const FReal* getPositions() const {
         return positions;
     }
 
@@ -112,7 +113,7 @@ public:
      * @brief getWPositions
      * @return get the position in write mode
      */
-    FReal*const*const getWPositions() {
+    FReal*const* getWPositions() {
         return positions;
     }
 

@@ -33,8 +33,8 @@ SET(ScalFMM_USE_MEM_STATS "@SCALFMM_USE_MEM_STATS@")
 #
 #
 #
-SET(ScalFMM_LIBRARIES "-L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME} ${ScalFMM_LIBRARIES_ADD}" )
-SET(ScalFMM_INCLUDE_DIRS "${ScalFMM_INCLUDE_DIR}
+SET(ScalFMM_LIBRARIES -L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME} ${ScalFMM_LIBRARIES_ADD} )
+SET(ScalFMM_INCLUDE_DIRS ${ScalFMM_INCLUDE_DIR}
                           ${ScalFMM_INCLUDE_DIR}/Utils 
                           ${ScalFMM_INCLUDE_DIR}/Components 
                           ${ScalFMM_INCLUDE_DIR}/Arranger
@@ -43,7 +43,7 @@ SET(ScalFMM_INCLUDE_DIRS "${ScalFMM_INCLUDE_DIR}
                           ${ScalFMM_INCLUDE_DIR}/Extensions
                           ${ScalFMM_INCLUDE_DIR}/Files
                           ${ScalFMM_INCLUDE_DIR}/Kernels
-                          ${ScalFMM_INCLUDE_DIR}/Chebyshev")
+                          ${ScalFMM_INCLUDE_DIR}/Chebyshev)
 
 #SCALFMM_BUILD_TESTS => OFF
 #SCALFMM_BUILD_UTESTS => OFF
