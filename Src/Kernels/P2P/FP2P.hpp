@@ -27,45 +27,45 @@ public:
         FReal*const targetsPotentials = inTargets->getPotentials();
 
         for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-                if( inNeighbors[idxNeighbors] ){
-                    const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-                    const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-                    const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-                    const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-                    const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-                    FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
-                    FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
-                    FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
-                    FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
+		if( inNeighbors[idxNeighbors] ){
+		    const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+		    const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
+		    const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+		    const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+		    const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+		    FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
+		    FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
+		    FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
+		    FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
 
-                    for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-                        FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-                        FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-                        FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+		    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+		            for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+		                FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+		                FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+		                FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-                        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-                        const FReal inv_distance = FMath::Sqrt(inv_square_distance);
+		                FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+		                const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
-                        inv_square_distance *= inv_distance;
-                        inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
+		                inv_square_distance *= inv_distance;
+		                inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
 
-                        dx *= inv_square_distance;
-                        dy *= inv_square_distance;
-                        dz *= inv_square_distance;
+		                dx *= inv_square_distance;
+		                dy *= inv_square_distance;
+		                dz *= inv_square_distance;
 
-                        targetsForcesX[idxTarget] += dx;
-                        targetsForcesY[idxTarget] += dy;
-                        targetsForcesZ[idxTarget] += dz;
-                        targetsPotentials[idxTarget] += inv_distance * sourcesPhysicalValues[idxSource];
+		                targetsForcesX[idxTarget] += dx;
+		                targetsForcesY[idxTarget] += dy;
+		                targetsForcesZ[idxTarget] += dz;
+		                targetsPotentials[idxTarget] += inv_distance * sourcesPhysicalValues[idxSource];
 
-                        sourcesForcesX[idxSource] -= dx;
-                        sourcesForcesY[idxSource] -= dy;
-                        sourcesForcesZ[idxSource] -= dz;
-                        sourcesPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
-                    }
-                }
-            }
+		                sourcesForcesX[idxSource] -= dx;
+		                sourcesForcesY[idxSource] -= dy;
+		                sourcesForcesZ[idxSource] -= dz;
+		                sourcesPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
+	                   }
+	            }
+	      }
         }
 
         for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
@@ -114,13 +114,14 @@ public:
         FReal*const targetsPotentials = inTargets->getPotentials();
 
         for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
                 if( inNeighbors[idxNeighbors] ){
                     const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
                     const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
                     const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
                     const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
                     const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+
+                for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
 
                     for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
                         FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
