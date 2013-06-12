@@ -127,7 +127,7 @@ public:
     }
 
     FReal getEnergy() const{
-        return 0.0;
+      return static_cast<FReal>(0.0);
     }
 
     /**
@@ -272,11 +272,11 @@ public:
       * @return box width
       */
     FReal getBoxWidth() const{
-        return this->boxWidth;
+      return static_cast<FReal>(this->boxWidth);
     }
 
     FReal getEnergy() const{
-        return this->energy;
+      return static_cast<FReal>(this->energy);
     }
 
     /**
@@ -307,11 +307,11 @@ public:
         removeWarning = fread(&size, sizeof(int), 1, file);
         if(size != 60) printf("Error in loader ewal Size %d should be %d\n", size, 60);
 
-        inPosition->setPosition( x, y ,z);
-        inForces[0] = fx;
-        inForces[1] = fy;
-        inForces[2] = fz;
-        *inPhysicalValue = charge;
+        inPosition->setPosition( static_cast<FReal>(x), static_cast<FReal>(y) ,static_cast<FReal>(z));
+        inForces[0] = static_cast<FReal>(fx);
+	inForces[1] = static_cast<FReal>(fy);
+	inForces[2] = static_cast<FReal>(fz);
+        *inPhysicalValue = static_cast<FReal>(charge);
         *inIndex = index;
     }
 

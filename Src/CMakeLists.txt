@@ -32,6 +32,7 @@ target_link_libraries(
 
 # Adding the entire project dir as an include dir
 INCLUDE_DIRECTORIES(
+     ${CMAKE_SOURCE_DIR}/Src 
      ${CMAKE_BINARY_DIR}/Src 
 )
 

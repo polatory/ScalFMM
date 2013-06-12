@@ -51,7 +51,7 @@
 // Types
 ///////////////////////////////////////////////////////
 
-#ifdef SCALFMM_USE_DOUBLE_PRECISION
+#ifdef ScalFMM_USE_DOUBLE_PRECISION
     typedef double FReal;
 #else
     typedef float FReal;
@@ -88,11 +88,11 @@ typedef long long MortonIndex;
 ///////////////////////////////////////////////////////
 
 #ifdef __GNUC__
-    #define Prefetch_Read(X) __builtin_prefetch(X)
+    #define Prefetch_Read(X)  __builtin_prefetch(X)
     #define Prefetch_Write(X) __builtin_prefetch(X,1,1)
 #else
     #ifdef __INTEL_COMPILER
-        #define Prefetch_Read(X) _mm_prefetch(X,_MM_HINT_T0)
+        #define Prefetch_Read(X)  _mm_prefetch(X,_MM_HINT_T0)
         #define Prefetch_Write(X) _mm_prefetch(X,_MM_HINT_T0)
     #else
         #warning compiler is not defined

@@ -5,16 +5,7 @@ STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
-
-# MPI option has to be set before project, cannot be changed in the cache!
-if( SCALFMM_USE_MPI )
-	include(CMakeForceCompiler)
-	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
-    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
-else()
-	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
-endif(SCALFMM_USE_MPI)
-
+#
 # Project Infos
 project(ScalFMM)
 #===========================================================================
@@ -33,33 +24,42 @@ SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFM
 # -----------------------
 ENABLE_LANGUAGE(CXX )
 MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
-
+#
+# MPI option has to be set before project, cannot be changed in the cache!
+if( ScalFMM_USE_MPI )
+	include(CMakeForceCompiler)
+	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
+    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
+else()
+	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
+endif(ScalFMM_USE_MPI)
+#
 # Options
-OPTION( SCALFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
-OPTION( SCALFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
-OPTION( SCALFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
-OPTION( SCALFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
-OPTION( SCALFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
-OPTION( SCALFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
-OPTION( SCALFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
-OPTION( SCALFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
-OPTION( SCALFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
-OPTION( SCALFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
-OPTION( SCALFMM_USE_SSE "Set to ON to compile with sse support" ON )
+OPTION( ScalFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
+OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
+OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
+OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
+OPTION( ScalFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
+OPTION( ScalFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
+OPTION( ScalFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
+OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
+OPTION( ScalFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
+OPTION( ScalFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
+OPTION( ScalFMM_USE_SSE "Set to ON to compile with sse support" ON )
 #
 SET(SCALFMM_LIBRARIES "")
 
 # Test if openmp is here
 find_package (OpenMP) 
 if(OPENMP_FOUND)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+	set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 # Debug
-MESSAGE( STATUS "SCALFMM_BUILD_DEBUG = ${SCALFMM_BUILD_DEBUG}" )
-if( SCALFMM_BUILD_DEBUG )
+MESSAGE( STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
+if( ScalfMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
 else()
@@ -74,28 +74,28 @@ else()
 endif()
 
 # Attach source code to exec
-MESSAGE( STATUS "SCALFMM_ATTACHE_SOURCE = ${SCALFMM_ATTACHE_SOURCE}" )
-if( SCALFMM_ATTACHE_SOURCE )
+MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
+if( ScalFMM_ATTACHE_SOURCE )
   MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
   ADD_DEFINITIONS(-g)
 endif()
 
 # Trace
-MESSAGE( STATUS "SCALFMM_USE_TRACE = ${SCALFMM_USE_TRACE}" )
-if( SCALFMM_USE_TRACE )
-  OPTION( SCALFMM_USE_ITAC "Set to ON to use itac trace" OFF )
-  if( SCALFMM_USE_ITAC )
+MESSAGE( STATUS "ScalFMM_USE_TRACE            = ${ScalFMM_USE_TRACE}" )
+if( ScalFMM_USE_TRACE )
+  OPTION( ScalFMM_USE_ITAC "Set to ON to use itac trace" OFF )
+  if( ScaLFMM_USE_ITAC )
     ADD_DEFINITIONS(-I$VT_ROOT/include -trace)
   endif()
 endif()
 
 # Blas option
-if( SCALFMM_USE_BLAS )
-  OPTION( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
-  if( SCALFMM_USE_MKL_AS_BLAS )
+if( ScalFMM_USE_BLAS )
+  OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
+  if( ScalFMM_USE_MKL_AS_BLAS )
      SET(BLAS_LIBRARIES "-L$ENV{MKLROOT}/lib  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" CACHE STRING "Set your MKL flags")
-  elseif(SCALFMM_USE_EXTERNAL_BLAS) 
-     MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
+  elseif(ScalFMM_USE_EXTERNAL_BLAS) 
+         MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
   else()
 	#INCLUDE(FindBLAS)
 	#INCLUDE(FindLAPACK)
@@ -112,17 +112,21 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
 # Compile optimization
-SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+IF( APPLE ) 
+  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+ELSE()
+  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+ENDIF()
 ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI})
 
 # Use SSE
-MESSAGE( STATUS "SCALFMM_USE_SSE = ${SCALFMM_USE_SSE}" )
-if( SCALFMM_USE_SSE )
+MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
+if( ScalFMM_USE_SSE )
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
 endif()
 
 # Use Mem stats
-MESSAGE( STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
+MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
@@ -134,14 +138,14 @@ add_subdirectory(Src)
 set(scalfmm_lib scalfmm)
 
 # Build - Tests
-MESSAGE( STATUS "SCALFMM_BUILD_TESTS = ${SCALFMM_BUILD_TESTS}" )
-if( SCALFMM_BUILD_TESTS )
+MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
+if( ScalFMM_BUILD_TESTS )
 	add_subdirectory(Tests)
 endif()
 
 # Build - UTests
-MESSAGE( STATUS "SCALFMM_BUILD_UTESTS = ${SCALFMM_BUILD_UTESTS}" )
-if( SCALFMM_BUILD_UTESTS )
+MESSAGE( STATUS "ScalFMM_BUILD_UTESTS         = ${ScalFMM_BUILD_UTESTS}" )
+if( ScalFMM_BUILD_UTESTS )
 	ENABLE_TESTING()
 	add_subdirectory(UTests)
 endif()
@@ -150,7 +154,7 @@ endif()
 add_subdirectory(Doc)
 
 # Build - Addons
-if( SCALFMM_USE_ADDONS )
+if( ScalFMM_USE_ADDONS )
 	file(GLOB all_addons ./Addons/*)
 
 	foreach(addon_name ${all_addons}) 
@@ -173,7 +177,7 @@ endif()
 #    Build and export cmake files 
 #===========================================================================
 #
-MESSAGE(STATUS "ScalFMM_BINARY_DIR: "${Scalfmm_BINARY_DIR})
+MESSAGE(STATUS "ScalFMM_BINARY_DIR:          " ${ScalFMM_BINARY_DIR})
 CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
                ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
                @ONLY IMMEDIATE
