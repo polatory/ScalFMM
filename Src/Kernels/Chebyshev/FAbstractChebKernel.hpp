@@ -135,6 +135,13 @@ public:
         DirectInteactionComputer<MatrixKernelClass::Identifier>::P2P(TargetParticles,NeighborSourceParticles);
 	}
 
+
+    void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+                   ContainerClass* const inNeighbors[27], const int /*inSize*/){
+        DirectInteactionComputer<MatrixKernelClass::Identifier>::P2PRemote(inTargets,inNeighbors,27);
+    }
+
 };
 
 
@@ -147,6 +154,13 @@ struct DirectInteactionComputer<ONE_OVER_R>
                      ContainerClass* const NeighborSourceParticles[27]){
         FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
     }
+
+    template <typename ContainerClass>
+    static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                           ContainerClass* const inNeighbors[27],
+                           const int inSize){
+        FP2P::FullRemote(inTargets,inNeighbors,inSize);
+    }
 };
 
 
@@ -158,6 +172,13 @@ struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL>
     static void P2P(		 ContainerClass* const FRestrict TargetParticles,
                      ContainerClass* const NeighborSourceParticles[27]){
         FP2P::FullMutualLJ(TargetParticles,NeighborSourceParticles,14);
+    }
+
+    template <typename ContainerClass>
+    static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                           ContainerClass* const inNeighbors[27],
+                           const int inSize){
+        FP2P::FullRemoteLJ(inTargets,inNeighbors,inSize);
     }
 };
 
