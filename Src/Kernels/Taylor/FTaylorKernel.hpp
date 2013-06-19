@@ -175,7 +175,7 @@ private:
 			  FReal * yetComputed)
   {
     int idx = powerToIdx(a,b,c);
-    if(yetComputed[idx] =! 0)
+    if((yetComputed[idx] =! 0))
       {return yetComputed[idx];}
     else
       {
@@ -188,29 +188,29 @@ private:
 	int idxt;
 	if(a > 0){
 	    idxt = powerToIdx(a-1,b,c);
-	    temp_value += (2*(a+b+c)-1)*dx*yetComputed[idxt]*a/fct;
+	    temp_value += ((FReal)(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a)/fct;
 	    if(a > 1){
 	      idxt = powerToIdx(a-2,b,c);
-	      temp_value -= (a+b+c-1)*yetComputed[idxt]*a*(a-1)/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1))/fct;
 	    }
 	}
 	if(b > 0){
 	    idxt = powerToIdx(a,b-1,c);
-	    temp_value += (2*(a+b+c)-1)*dy*yetComputed[idxt]*b/fct;
+	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b)/fct;
 	    if(b > 1){
 	      idxt = powerToIdx(a,b-2,c);
-	      temp_value -= (a+b+c-1)*yetComputed[idxt]*b*(b-1)/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1))/fct;
 	    }
 	}
 	if(c > 0){
 	    idxt = powerToIdx(a,b,c-1);
-	    temp_value += (2*(a+b+c)-1)*dz*yetComputed[idxt]*c/fct;
+	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c)/fct;
 	    if(c > 1){
 	      idxt = powerToIdx(a,b,c-2);
-	      temp_value -= (a+b+c-1)*yetComputed[idxt]*c*(c-1)/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1))/fct;
 	    }
 	}
-	FReal coeff = (a+b+c)*dist/fct;
+	FReal coeff = FReal(a+b+c)*dist/fct;
 	temp_value = temp_value/coeff;
 	yetComputed[idx] = temp_value;
 	return temp_value;
@@ -276,13 +276,13 @@ public:
 	coeff=fact(a+b+c)/(facto*facto);
 	
 	//Iterating over Particles
-	for(int i=0 ; i<nbPart ; i++){
+	for(int idPart=0 ; idPart<nbPart ; idPart++){
 	  
-	  FReal dx = cellCenter.getX()-posX[i];
-	  FReal dy = cellCenter.getY()-posY[i];
-	  FReal dz = cellCenter.getZ()-posZ[i];
+	  FReal dx = cellCenter.getX()-posX[idPart];
+	  FReal dy = cellCenter.getY()-posY[idPart];
+	  FReal dz = cellCenter.getZ()-posZ[idPart];
 	  
-	  const FReal potential = phyValue[i];
+	  const FReal potential = phyValue[idPart];
 	  
 	  //Computation
 	  FReal value = FReal(0);
@@ -317,7 +317,7 @@ public:
     FReal dy = 0;
     FReal dz = 0;
     //Center point of parent cell
-    const FPoint cellCenter = getLeafCenter(pole->getCoordinate());
+    //const FPoint cellCenter = getLeafCenter(pole->getCoordinate());
     
     
     //Iteration over the eight children
@@ -326,9 +326,9 @@ public:
       {
 	if(child[idxChild]){
 	  //Set the distance between centers of cells
-	  dz = (2*(1 & idxChild)-1)*boxSize;
-	  dy = (2*((1 << 1) & idxChild)-1)*boxSize;
-	  dx = (2*((1 << 2) & idxChild)-1)*boxSize;
+	  dz = ((FReal )(2*(1 & idxChild)-1))*boxSize;
+	  dy = ((FReal )(2*((1 << 1) & idxChild)-1))*boxSize;
+	  dx = ((FReal )(2*((1 << 2) & idxChild)-1))*boxSize;
 	  
 	  //Iteration over parent multipole array
 	  FReal * mult = pole->getMultipole();
@@ -344,7 +344,7 @@ public:
 	      //involved in the computation of the parent multipole
 	      for(idx_a=0 ; idx_a<=sum ; ++idx_a){
 		for(idx_b=0 ; idx_b<=sum-a ; ++idx_b){
-		  for(idx_a=0 ; idx_a<sum-(a+b) ; ++idx_a){
+		  for(idx_c=0 ; idx_c<sum-(a+b) ; ++idx_c){
 		    //Computation
 		    //Child multipole involved
 		    idMultiChild=powerToIdx(idx_a,idx_b,idx_c);
@@ -372,7 +372,7 @@ public:
    */
   void M2L(CellClass* const FRestrict local, 
 	   const CellClass* distantNeighbors[343],
-	   const int size, const int inLevel)
+	   const int /*size*/, const int /*inLevel*/)
   {
     //Iteration over distantNeighbors
     int idxNeigh;
@@ -427,7 +427,7 @@ public:
    */
   void L2L(const CellClass* const FRestrict local, 
 	   CellClass* FRestrict * const FRestrict child, 
-	   const int inLevel)
+	   const int /*inLevel*/)
   {
     FPoint locCenter = getLeafCenter(local->getCoordinate());
     FReal dx;
@@ -493,8 +493,7 @@ public:
 	const FReal * iterLocal = local->getLocal();
 	for(int j=0 ; j<SizeVector ; j++){
 	  
-	  int idx = powerToIdx(a,b,c);
-	  
+	  	  
 	  FReal locForce = iterLocal[j];
 	  //Application of forces
 	  forceX[i] = FMath::pow(dx,a)*locForce;
@@ -515,9 +514,9 @@ public:
    * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
    * @param size the number of direct neighbors
    */
-  void P2P(const FTreeCoordinate& inLeafPosition,
-		   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-		   ContainerClass* const directNeighborsParticles[27], const int size)
+  void P2P(const FTreeCoordinate& /*inLeafPosition*/,
+	   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
+	   ContainerClass* const directNeighborsParticles[27], const int /*size*/)
   {
     FP2P::FullMutual(targets,directNeighborsParticles,14);
   }
