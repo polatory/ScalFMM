@@ -18,6 +18,9 @@
 
 #include "../../Components/FAbstractKernels.hpp"
 #include "../../Utils/FMemUtils.hpp"
+#include "../../Utils/FDebug.hpp"
+
+#include "../P2P/FP2P.hpp"
 
 /**
  * @author Cyrille Piacibello 
@@ -29,12 +32,12 @@
  */
 
 
-template< class ParticleClass, class CellClass, class ContainerClass, int P>
-class FTaylorKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass, int P, int order>
+class FTaylorKernel : public FAbstractKernels<CellClass,ContainerClass> {
   
 private:
   //Size of the multipole and local vectors
-  static const int SizeVector = ((P+1)*(P+2)*(P+3))/6;
+  static const int SizeVector = ((P+1)*(P+2)*(P+3))*order/6;
 
   ////////////////////////////////////////////////////
   // Object Attributes
@@ -121,6 +124,13 @@ private:
   {
     return (fact(a)*fact(b)*fact(c));
   }
+  /* Return the combine of a paire of number
+   */
+  FReal combin(const int& a, const int& b){
+    if(a-b<0) printf("Error combin negative!! a=%d b=%d\n",a,b);
+    return fact(a) / (fact(b)*fact(a-b));
+  }
+
   
   /** @brief Init the derivative array for using of following formula
    * from "A cartesian tree-code for screened coulomb interactions"
@@ -207,6 +217,10 @@ private:
       }
   }
  
+  /////////////////////////////////
+  ///////// Public Methods ////////
+  /////////////////////////////////
+
 public:
   
   /*Constructor, need system information*/
@@ -241,41 +255,43 @@ public:
     FReal facto;
     FReal coeff; 
     //Copying cell center position once and for all
-    const FPoint cellCenter = getLeafCenter(pole->getCoordinate());
+    const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
     
-    
-    //Iterator over the Multipole Vector
-    typename ContainerClass::BasicIterator iterMultipole(pole->getMultipole());
+    FReal * multipole = pole->getMultipole();
     
     //Iterating over MutlipoleVector
-    while(iterMultipole.hasNotFinished())
+    for(int i=0 ; i<SizeVector ; i++)
       {
 	// Iterator over Particles
-	// TODO : should be exited from the loop but BasicOperator
-	// class do not implement a reinit method
-	typename ContainerClass::ConstBasicIterator iterParticle(*particles);
-	
+	int nbPart = particles->getNbParticles();
+	const FReal* const * positions = particles->getPositions();
+	const FReal* posX = positions[0];
+	const FReal* posY = positions[1];
+	const FReal* posZ = positions[2];
+
+	const FReal* phyValue = particles->getPhysicalValues();
+
 	//update needed values
 	facto=fact3int(a,b,c);
 	coeff=fact(a+b+c)/(facto*facto);
 	
 	//Iterating over Particles
-	while(iterParticle.hasNotFinished())
-	  {
-	    const ParticleClass& particle = iterParticle.data();
-	    const FPoint dist = (particle.getPosition()-cellCenter);
-	    const FReal potential = particle.getPhysicalValue();
-	    
-	    //Computation
-	    FReal value = FReal(0);
-	    value+=potential*FMath::pow(dist.getX(),a)*FMath::pow(dist.getY(),b)*FMath::pow(dist.getZ(),c)*coeff;
-	    iterMultipole.setData(value);
-	    
-	    //Go to next particle
-	    iterParticle.gotoNext();
-	  }
-	//Go to next multipole coefficient
-	iterMultipole.gotoNext();
+	for(int i=0 ; i<nbPart ; i++){
+	  
+	  FReal dx = cellCenter.getX()-posX[i];
+	  FReal dy = cellCenter.getY()-posY[i];
+	  FReal dz = cellCenter.getZ()-posZ[i];
+	  
+	  const FReal potential = phyValue[i];
+	  
+	  //Computation
+	  FReal value = FReal(0);
+	  value+=potential*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c)*coeff;
+	  multipole[i] = value;
+	  
+	 
+	}
+	//inc powers of expansion
 	incPowers(&a,&b,&c);
       }
   }
@@ -315,14 +331,14 @@ public:
 	  dx = (2*((1 << 2) & idxChild)-1)*boxSize;
 	  
 	  //Iteration over parent multipole array
-	  typename ContainerClass::BasicIterator iterMultipole(pole->getMultipole());	  
+	  FReal * mult = pole->getMultipole();
 	  a=0;
 	  b=0;
 	  c=0;
 	  sum=0;
-	  while(iterMultipole.hasNotFinished())
+	  for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
 	    {
-	      FReal value = iterMultipole.getData();
+	      FReal value = mult[idxMult];
 	      int idMultiChild;
 	      //Iteration over the powers to find the cell multipole
 	      //involved in the computation of the parent multipole
@@ -332,13 +348,12 @@ public:
 		    //Computation
 		    //Child multipole involved
 		    idMultiChild=powerToIdx(idx_a,idx_b,idx_c);
-		    value+=child[idxChild].getMultipole()[idMultiChild]
+		    value+=child[idxChild]->getMultipole()[idMultiChild]
 		      *FMath::pow(dx,idx_a)*FMath::pow(dy,idx_b)*FMath::pow(dz,idx_c)/fact3int(idx_a,idx_b,idx_c);
 		  }
 		}
 	      }
-	      iterMultipole.setData(value);
-	      iterMultipole.gotoNext();
+	      mult[idxMult] = value;
 	      incPowers(&a,&b,&c);
 	      sum=a+b+c;
 	    }
@@ -361,7 +376,7 @@ public:
   {
     //Iteration over distantNeighbors
     int idxNeigh;
-    FPoint locCenter = getLeafCenter(local.getCoordinate());
+    FPoint locCenter = getLeafCenter(local->getCoordinate());
     for(idxNeigh=0 ; idxNeigh<343 ; idxNeigh++){
 
       //Need to test if current neighbor is one of the interaction list
@@ -369,33 +384,34 @@ public:
 	//Derivatives are computed iteratively
 	FReal yetComputed[(2*P+1)*(2*P+2)*(2*P+3)/6];
 	FMemUtils::memset(yetComputed,0,SizeVector*sizeof(FReal(0)));
-	initDerivative(locCenter,getLeafCenter(distantNeighbors[idxNeigh].getCoordinate),yetComputed);
+	FPoint curDistCenter = getLeafCenter(distantNeighbors[idxNeigh]->getCoordinate());
+	initDerivative(locCenter, curDistCenter, yetComputed);
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0;
 	int am=0,bm=0,cm=0;
-	typename ContainerClass::BasicIterator iterLocal(local.getLocal());
+	FReal * iterLocal = local->getLocal();
+	
 	
 	//Iterating over local array : n
-	while(iterLocal.hasNotFinished()){
+	for(int i=0 ; i< SizeVector ; i++){
 	  FReal fctl = fact3int(al,bl,cl);
+	  
 	  //Iterator over multipole array 
-	  typename ContainerClass::BasicIterator iterMult(local.getMultipole());
+	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole(); 
 	  
 	  //Iterating over multipole array : k
-	  while(iterMult.hasNotFinished()){
-	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,getLeafCenter(distantNeighbors[idxNeigh].getCoordinate()),yetComputed);
-	    data *= iterMult.data()/fctl;
-	    iterLocal.setData(data);
+	  for(int j = 0 ; j < SizeVector ; j++){
+	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,getLeafCenter(distantNeighbors[idxNeigh]->getCoordinate()),yetComputed);
+	    data *= multipole[j]/fctl;
+	    iterLocal[i]+=data;
 	    
 	    //updating a,b,c and iterator
 	    incPowers(&am,&bm,&cm);
-	    iterMult.gotoNext();
 	  }
 	  am=0;
 	  bm=0;
 	  cm=0;
-	  iterLocal.gotoNext();
 	  incPowers(&al,&bl,&cl);
 	}
       }
@@ -405,13 +421,42 @@ public:
   
   /**
    *@brief Translate the local expansion of parent cell to child cell
-   *
+   * \f[
+   * L_{son} = \sum_{i=k}^{l} L_{i} (x_{son}-x_{father})^{i-k} \binom{i}{k}
+   *\f]
    */
   void L2L(const CellClass* const FRestrict local, 
 	   CellClass* FRestrict * const FRestrict child, 
 	   const int inLevel)
   {
-    
+    FPoint locCenter = getLeafCenter(local->getCoordinate());
+    FReal dx;
+    FReal dy;
+    FReal dz;
+    int a, b, c;
+    // For all children
+    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+      // if child exists
+      if(child[idxChild]){
+	a=0;
+	b=0;
+	c=0;
+	FPoint childCenter = getLeafCenter(child[idxChild]->getCoordinate());
+	//Set the distance between centers of cells
+	dx = childCenter.getX()-locCenter.getX();
+	dy = childCenter.getY()-locCenter.getY();
+	dz = childCenter.getZ()-locCenter.getZ();
+	//iterator over child's local expansion (to be filled)
+	for(int k=0 ; k<SizeVector ; k++){
+	  
+	  //Iterator over parent's local array
+	  for(int i=k ; i<SizeVector ; i++){
+	    (child[idxChild]->getLocal())[k] = (local->getLocal())[i]*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c)*combin(i,k);
+	  }
+	  incPowers(&a,&b,&c);
+	}	
+      }
+    }
   }
  
   
@@ -419,46 +464,64 @@ public:
    *@brief Apply on the particles the force computed from the local expansion
    *
    */
-  void L2P(const CellClass* const local, 
+    void L2P(const CellClass* const local, 
 	   ContainerClass* const particles)
-  {
-    FPoint locCenter = getLeafCenter(local.getCoordinate());
-    //Iterator over particles
-    typename ContainerClass::ConstBasicIterator iterParticle(*particles);
-    while(iterParticle.hasNotFinished()){
+    {
+      FPoint locCenter = getLeafCenter(local->getCoordinate());
+      //Iterator over particles
+      int nbPart = particles->getNbParticles();
       
-      FPoint dist = iterParticle.getPosition()-locCenter;
-      FReal dx = dist.getX();
-      FReal dy = dist.getY();
-      FReal dz = dist.getZ();
-
-      FReal forceX;
-      FReal forceY;
-      FReal forceZ;
-
-      int a=0,b=0,c=0;
-
-      //Iteration over Local array
-      typename ContainerClass::BasicIterator iterLocal(local.getLocal());
-      while(iterLocal.hasNotFinished()){
+      const FReal * const * positions = particles->getPositions();
+      const FReal * posX = positions[0];
+      const FReal * posY = positions[1];
+      const FReal * posZ = positions[2];
+      
+      FReal * const forceX = particles->getForcesX();
+      FReal * const forceY = particles->getForcesY();
+      FReal * const forceZ = particles->getForcesZ();
+      
+      //Iteration over particles
+      for(int i=0 ; i<nbPart ; i++){
 	
-	int idx = powerToIdx(a,b,c);
-	//Computation of forces
-	FReal locForce = iterLocal.data();
+	FReal dx = locCenter.getX() - posX[0];
+	FReal dy = locCenter.getY() - posY[1];
+	FReal dz = locCenter.getZ() - posZ[2];
 	
-	forceX = FMath::pow(dx,a)*locForce;
-	forceY = FMath::pow(dy,b)*locForce;
-	forceZ = FMath::pow(dz,c)*locForce;
+	int a=0,b=0,c=0;
 	
-	//Application of forces
-	(iterParticle.data()).incForces(forceX,forceY,forceZ);
-
-	incPowers(&a,&b,&c);
-	iterLocal.gotoNext();
+	//Iteration over Local array
+	const FReal * iterLocal = local->getLocal();
+	for(int j=0 ; j<SizeVector ; j++){
+	  
+	  int idx = powerToIdx(a,b,c);
+	  
+	  FReal locForce = iterLocal[j];
+	  //Application of forces
+	  forceX[i] = FMath::pow(dx,a)*locForce;
+	  forceY[i] = FMath::pow(dy,b)*locForce;
+	  forceZ[i] = FMath::pow(dz,c)*locForce;
+	  
+	  
+	  incPowers(&a,&b,&c);
+	}
       }
-      iterParticle.gotoNext();
     }
+  /**
+   * P2P
+   * Particles to particles
+   * @param inLeafPosition tree coordinate of the leaf
+   * @param targets current boxe targets particles
+   * @param sources current boxe sources particles (can be == to targets)
+   * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
+   * @param size the number of direct neighbors
+   */
+  void P2P(const FTreeCoordinate& inLeafPosition,
+		   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+		   ContainerClass* const directNeighborsParticles[27], const int size)
+  {
+    FP2P::FullMutual(targets,directNeighborsParticles,14);
   }
+
 };
 
 #endif

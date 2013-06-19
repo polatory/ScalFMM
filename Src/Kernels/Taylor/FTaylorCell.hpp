@@ -27,18 +27,18 @@
  *
  *
  */
-template <int P>
+template <int P, int order>
 class FTaylorCell : public FBasicCell {
 protected:
   //Size of Multipole Vector
-  static const int MultipoleSize = ((P+1)*(P+2)*(P+3))/6;
+  static const int MultipoleSize = ((P+1)*(P+2)*(P+3))*order/6;
   //Size of Local Vector
-  static const int LocalSize = ((P+1)*(P+2)*(P+3))/6;
+  static const int LocalSize = ((P+1)*(P+2)*(P+3))*order/6;
   
   //Multipole vector
-  FVector<FReal> multipole_exp = FVector<FReal>(MultipoleSize);
+  FReal multipole_exp[MultipoleSize];
   //Local vector
-  FVector<FReal> local_exp =  FVector<FReal>(LocalSize);
+  FReal local_exp[LocalSize];
 
 public:
   /**
@@ -47,14 +47,26 @@ public:
   FTaylorCell(){
   }
 
-  //Get multipole Vector
-  FVector<FReal> * getMultipole(void)
+  //Get multipole Vector for setting
+  FReal * getMultipole(void)
+  {
+    return multipole_exp;
+  }
+
+  //Get multipole Vector for reading
+  const FReal * getMultipole(void) const
   {
     return multipole_exp;
   }
 
   //Get local Vector
-  FVector<FReal> * getLocal(void)
+  FReal * getLocal(void)
+  {
+    return local_exp;
+  }
+
+  //Get local Vector for reading
+  const FReal * getLocal(void) const
   {
     return local_exp;
   }
