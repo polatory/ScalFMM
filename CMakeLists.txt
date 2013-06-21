@@ -112,9 +112,14 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 
 # Compile optimization
 IF( APPLE ) 
-  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
 ELSE()
-  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags.")
+  # Test if not apple and 64bits
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+     SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
+  else()
+     SET(SCALFMM_FLAGS_OPTI "-Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
+  endif()
 ENDIF()
 ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI})
 
