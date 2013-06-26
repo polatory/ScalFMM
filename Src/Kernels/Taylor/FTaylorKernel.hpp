@@ -49,10 +49,27 @@ private:
   const FReal widthAtLeafLevelDiv2;   //< width of box at leaf leve div 2
   const FPoint boxCorner;             //< position of the box corner
   
+  FReal factorials[2*P+1];             //< This contains the factorial until P
+  FReal arrayDX[P+1],arrayDY[P+1],arrayDZ[P+1] ; //< Working arrays
   ////////////////////////////////////////////////////
   // Private method
   ////////////////////////////////////////////////////
 
+  ///////////////////////////////////////////////////////
+  // Precomputation
+  ///////////////////////////////////////////////////////
+
+  /** Compute the factorial from 0 to P
+   * Then the data is accessible in factorials array:
+   * factorials[n] = n! with n <= P
+   */
+  void precomputeFactorials(){
+    factorials[0] = 1.0;
+    FReal fidx = 1.0;
+    for(int idx = 1 ; idx <= 2*P ; ++idx, ++fidx){
+      factorials[idx] = fidx * factorials[idx-1];
+    }
+  }
   /** Return the position of a leaf from its tree coordinate */
   FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
     return FPoint(
@@ -123,13 +140,14 @@ private:
    */
   FReal fact3int(const int a,const int b,const int c)
   {
-    return (fact(a)*fact(b)*fact(c));
+    return ( factorials[a]*factorials[b]* factorials[c]) ; 
   }
   /* Return the combine of a paire of number
    */
   FReal combin(const int& a, const int& b){
-    if(a-b<0) printf("Error combin negative!! a=%d b=%d\n",a,b);
-    return fact(a) / (fact(b)*fact(a-b));
+    if(a-b<0)  {printf("Error combin negative!! a=%d b=%d\n",a,b); exit(-1) ;  }
+        return  factorials[a]/  (factorials[b]* factorials[a-b]) ; 
+	//    return fact(a) / (fact(b)*fact(a-b));
   }
 
   
@@ -233,6 +251,7 @@ public:
     widthAtLeafLevelDiv2(widthAtLeafLevel/2),
     boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2))
   {
+    this->precomputeFactorials() ;
   }
   
   /* Default destructor
@@ -246,14 +265,14 @@ public:
    * 
    * Formula :
    * \f[
-   *   M_{k} = \sum_{j=0}^{nb_particule} q_j * (x_c-x_j)^{k}*|k|!/k!
+   *   M_{k} = \sum_{j=0}^{nb_{particule}}{ q_j * \frac{|k|!}{k! k!} (x_j-x_c)^{k}}
    * \f]
    */
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
   { 
     //Variables computed for each power of Multipole
-    int a=0,b=0,c=0;
+    int a = 0, b = 0, c = 0;
     FReal facto;
     FReal coeff; 
     //Copying cell center position once and for all
@@ -261,46 +280,64 @@ public:
     printf("pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*FReal(0));
-    //Iterating over MutlipoleVector
+    //    
+    // Iterator over Particles
+    //
+    int nbPart = particles->getNbParticles();
+    const FReal* const * positions = particles->getPositions();
+    const FReal* posX = positions[0];
+    const FReal* posY = positions[1];
+    const FReal* posZ = positions[2];
+	
+    const FReal* phyValue = particles->getPhysicalValues();
+    //
+    // Iterating over Particles
+    //
+    for(int idPart=0 ; idPart<nbPart ; idPart++){
+      // compute the distance to the centre	  
+      FReal dx = posX[idPart] - cellCenter.getX();
+      FReal dy = posY[idPart] - cellCenter.getY();
+      FReal dz = posZ[idPart] - cellCenter.getZ();
+      const FReal potential = phyValue[idPart];
+      //
+      // Precompute the an arrays of dx^i
+      arrayDX[0] = 1.0 ;
+      arrayDY[0] = 1.0 ;
+      arrayDZ[0] = 1.0 ;
+      for (int i = 1 ; i <= P ; ++i) 	{
+	arrayDX[i] = dx * arrayDX[i-1] ;
+	arrayDY[i] = dy * arrayDY[i-1] ; 
+	arrayDZ[i] = dz * arrayDZ[i-1] ;
+      }
+      //
+      //Iterating over MutlipoleVector
+      //
+      for(int i=0 ; i<SizeVector ; ++i)
+	{
+	  //
+	  // update needed values
+	  //
+	  facto = fact3int(a,b,c);
+	  coeff = fact(a+b+c)/(facto*facto);
+	  //
+	  //Computation
+	  //
+	  //	  FReal value = FReal(0.0);
+	  //	  value += potential*arrayDX[a]*arrayDY[b]*arrayDZ[c];
+	  //	  value += potential*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c);
+	  multipole[i] += coeff*potential*arrayDX[a]*arrayDY[b]*arrayDZ[c];	   
+	  incPowers(&a,&b,&c);       //inc powers of expansion
+	}  // end loop on multipoles
+    }  // end loop on particles
+    // Print the multipoles 
+    a = b = c = 0; 
     for(int i=0 ; i<SizeVector ; ++i)
       {
+	printf("cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
+	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
+	incPowers(&a,&b,&c);   
+      } 	
 
-	// Iterator over Particles
-	int nbPart = particles->getNbParticles();
-	const FReal* const * positions = particles->getPositions();
-	const FReal* posX = positions[0];
-	const FReal* posY = positions[1];
-	const FReal* posZ = positions[2];
-
-	const FReal* phyValue = particles->getPhysicalValues();
-
-	//update needed values
-	facto=fact3int(a,b,c);
-	coeff=fact(a+b+c)/(facto*facto);
-	
-	//Iterating over Particles
-	for(int idPart=0 ; idPart<nbPart ; idPart++){
-	  
-	  FReal dx = posX[idPart]-cellCenter.getX();
-	  FReal dy = posY[idPart]-cellCenter.getY();
-	  FReal dz = posZ[idPart]-cellCenter.getZ();
-	  //printf("dx : %f, dy : %f, dz : %f\n",dx,dy,dz);
-	  //printf("coeff %f\n",coeff);
-
-	  const FReal potential = phyValue[idPart];
-	  
-	  //Computation
-	  FReal value = FReal(0);
-	  value+=potential*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c);
-	  multipole[i] += value*coeff;
-	  
-	   
-	}
-	printf("cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f  coeff : %f\n",
-	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a,b,c,multipole[i],coeff);
-	//inc powers of expansion
-	incPowers(&a,&b,&c);
-      }
   }
   
 
