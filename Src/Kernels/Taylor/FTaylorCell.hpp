@@ -18,6 +18,7 @@
 
 #include "../../Components/FBasicCell.hpp"
 #include "../../Containers/FVector.hpp"
+#include "../../Utils/FMemUtils.hpp"
 
 /**
  *@author Cyrille Piacibello
@@ -45,6 +46,8 @@ public:
    *Default Constructor
    */
   FTaylorCell(){
+    FMemUtils::memset(multipole_exp,0,MultipoleSize*sizeof(FReal(0)));
+    FMemUtils::memset(local_exp,0,LocalSize*sizeof(FReal(0)));
   }
 
   //Get multipole Vector for setting

@@ -29,6 +29,13 @@ class FTaylorParticleContainer : public FBasicParticleContainer<4>{
   typedef FBasicParticleContainer<5> Parent;
   
 public:
+  
+  
+  FTaylorParticleContainer()
+  {
+    Parent();
+  }
+
   const FReal * getPhysicalValues() const {
     return Parent::getAttribute(0)[];
   }
