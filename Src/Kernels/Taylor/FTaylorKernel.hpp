@@ -32,6 +32,7 @@
  */
 
 
+//TODO spécifier les arguments.
 template< class CellClass, class ContainerClass, int P, int order>
 class FTaylorKernel : public FAbstractKernels<CellClass,ContainerClass> {
   
@@ -70,6 +71,8 @@ private:
       factorials[idx] = fidx * factorials[idx-1];
     }
   }
+
+
   /** Return the position of a leaf from its tree coordinate */
   FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
     return FPoint(
@@ -79,9 +82,39 @@ private:
   }
 
   /** 
+   * @brief Return the position of the center of a cell from its tree
+   *  coordinate 
+   * @param FTreeCoordinate
+   * @param inLevel the current level of Cell
+   */
+  FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
+  {
+    //Set the boxes width needed
+    FReal widthAtCurrentLevel = widthAtLeafLevel*FReal(1 << (treeHeight-inLevel));   
+    FReal widthAtCurrentLevelDiv2 = widthAtCurrentLevel/FReal(2);
+
+    //Get the coordinate
+    int a = coordinate.getX();
+    int b = coordinate.getY();
+    int c = coordinate.getZ();
+    
+    //Set the center real coordinates from box corner and widths.
+    FReal X = boxCorner.getX() + FReal(a)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    FReal Y = boxCorner.getY() + FReal(b)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    FReal Z = boxCorner.getZ() + FReal(c)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    
+    FPoint cCenter = FPoint(X,Y,Z);
+
+    //For debug purpose
+    //printf("%f,%f,%f\n",cCenter.getX(),cCenter.getY(),cCenter.getZ());
+    return cCenter;
+  }
+
+
+  /** 
    * @brief Incrementation of powers in Taylor expansion 
-   * Result : ...,[2,0,0],[1,1,0],[1,0,1]...  3-tuple are sorted 
-   * by size and alphabetical order.
+   * Result : ...,[2,0,0],[1,1,0],[1,0,1],[0,2,0]...  3-tuple are sorted 
+   * by size then alphabetical order.
    */
   void incPowers(int * const FRestrict a, int *const FRestrict b, int *const FRestrict c)
   {
@@ -126,7 +159,7 @@ private:
    */
   FReal fact(const int a){
     if(a<0) {
-      printf("Error factorial negative!! a=%d\n",a);
+      printf("fact :: Error factorial negative!! a=%d\n",a);
       return FReal(0);
     }
     FReal result = 1;
@@ -145,9 +178,8 @@ private:
   /* Return the combine of a paire of number
    */
   FReal combin(const int& a, const int& b){
-    if(a-b<0)  {printf("Error combin negative!! a=%d b=%d\n",a,b); exit(-1) ;  }
+    if(a-b<0)  {printf("combin :: Error combin negative!! a=%d b=%d\n",a,b); exit(-1) ;  }
         return  factorials[a]/  (factorials[b]* factorials[a-b]) ; 
-	//    return fact(a) / (fact(b)*fact(a-b));
   }
 
   
@@ -203,7 +235,7 @@ private:
 	FReal dy = target.getY()-src.getY();
 	FReal dz = target.getZ()-src.getZ();
 	FReal fct = fact3int(a,b,c);
-	FReal dist = FMath::Sqrt(dx*dx+dy*dy+dz*dz);
+	FReal dist2 = dx*dx+dy*dy+dz*dz;
 	FReal temp_value = FReal(0);
 	int idxt;
 	if(a > 0){
@@ -230,7 +262,7 @@ private:
 	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1))/fct;
 	    }
 	}
-	FReal coeff = FReal(a+b+c)*dist/fct;
+	FReal coeff = FReal(a+b+c)*dist2/fct;
 	temp_value = temp_value/coeff;
 	yetComputed[idx] = temp_value;
 	return temp_value;
@@ -277,7 +309,7 @@ public:
     FReal coeff; 
     //Copying cell center position once and for all
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    printf("pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    printf("P2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*FReal(0));
     //    
@@ -330,13 +362,13 @@ public:
 	}  // end loop on multipoles
     }  // end loop on particles
     // Print the multipoles 
-    a = b = c = 0; 
-    for(int i=0 ; i<SizeVector ; ++i)
-      {
-	printf("cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
-	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
-	incPowers(&a,&b,&c);   
-      } 	
+    // a = b = c = 0; 
+    // for(int i=0 ; i<SizeVector ; ++i)
+    //   {
+    // 	printf("P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
+    // 	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
+    // 	incPowers(&a,&b,&c);   
+    //   } 	
 
   }
   
@@ -364,7 +396,7 @@ public:
     FReal dz = 0.0;
     //Center point of parent cell
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    printf("pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    printf("M2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * mult = pole->getMultipole();
     FMemUtils::memset(pole,0,SizeVector*FReal(0));
     
@@ -411,7 +443,7 @@ public:
 		  }
 		}
 	      }
-	      printf("cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
+	      printf("M2M :: cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
 	      	     cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a,b,c,value);
 
 	      mult[idxMult] += value;
@@ -465,15 +497,16 @@ public:
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; i++){
 	  FReal fctl = fact3int(al,bl,cl);
+	  FReal coeffN = factorials[al+bl+cl]/(fctl*fctl);
 	  
 	  //Iterator over multipole array 
 	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole(); 
 	  
 	  //Iterating over multipole array : k
 	  for(int j = 0 ; j < SizeVector ; j++){
-	    FReal data = computeDerivative(al+am,bl+bm,cl+cm,locCenter,curDistCenter,yetComputed);
-	    data *= multipole[j]/fctl;
-	    iterLocal[i]+=data;
+	    FReal psi = computeDerivative(al+am,bl+bm,cl+cm,locCenter,curDistCenter,yetComputed); //psi is the derivative of 1/R.
+	    psi *= multipole[j]*coeffN;
+	    iterLocal[i]+=psi;
 	    count++;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
@@ -490,7 +523,7 @@ public:
 	for(int dby=0 ; dby<SizeVector ; dby++)
 	  {
 	    tot+=yetComputed[dby];
-	    printf("cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
@@ -563,7 +596,7 @@ public:
       
       printf("L2P : Cell : %f, fx = %f, fy = %f, fz = %f\n\n",locCenter.getX(),forceX[0],forceY[0],forceZ[0]);
 
-      //FReal * const phyValues = particles->getPhysicalValues();
+      FReal * const phyValues = particles->getPhysicalValues();
 
       //Iteration over particles
       for(int i=0 ; i<nbPart ; i++){
@@ -573,23 +606,40 @@ public:
 	FReal dz = locCenter.getZ() - posZ[i];
 	printf("dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
 	int a=0,b=0,c=0;
-	
+
+	//
+	// Precompute the an arrays of dx^i
+	arrayDX[0] = 1.0 ;
+	arrayDY[0] = 1.0 ;
+	arrayDZ[0] = 1.0 ;
+	for (int d = 1 ; d <= P ; ++d) 	{
+	  arrayDX[d] = dx * arrayDX[d-1] ;
+	  arrayDY[d] = dy * arrayDY[d-1] ; 
+	  arrayDZ[d] = dz * arrayDZ[d-1] ;
+	}
 	
 	//Iteration over Local array
 	const FReal * iterLocal = local->getLocal();
-	for(int j=0 ; j<SizeVector ; j++){
+	for(int j=0 ; j<SizeVector ; ++j){
 	  
-	  //	  FReal partPhyValue = phyValues[i]; 
+	  FReal partPhyValue = phyValues[i]; 
 	  FReal locForce = iterLocal[j];
+
 	  //Application of forces
-	  
-	  forceX[i] += FReal(a)*locForce*FMath::pow(dx,a-1)*FMath::pow(dy,b)*FMath::pow(dz,c);
-	  forceY[i] += FReal(b)*locForce*FMath::pow(dx,a)*FMath::pow(dy,b-1)*FMath::pow(dz,c);
-	  forceZ[i] += FReal(c)*locForce*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c-1);
+	  forceX[i] += -partPhyValue*FReal(a)*locForce*arrayDX[a-1]*arrayDY[b]*arrayDZ[c];
+	  forceY[i] += -partPhyValue*FReal(b)*locForce*arrayDX[a]*arrayDY[b-1]*arrayDZ[c];
+	  forceZ[i] += -partPhyValue*FReal(c)*locForce*arrayDX[a]*arrayDY[b]*arrayDZ[c-1];
 	  incPowers(&a,&b,&c);
 	}
       }
+      getCellCenter(local->getCoordinate(),treeHeight);
+      printf("Coordonnées Leaf : %f, %f, %f \n",
+	     locCenter.getX(),
+	     locCenter.getY(),
+	     locCenter.getZ());
+      printf("widthatleaflevel : %f\n",widthAtLeafLevel);
     }
+
   /**
    * P2P
    * Particles to particles
