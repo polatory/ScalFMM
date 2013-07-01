@@ -37,6 +37,8 @@ SET(ScalFMM_USE_ADDONS           "@ScalFMM_USE_ADDONS@")
 #SET(ScalFMM_FLAGS   "@@")
 #SET(ScalFMM_FLAGS   "@@")
 #
+SET(ScalFMM_DOC_TAGS           "@CMAKE_BINARY_DIR@/Doc/scalfmm.tag")
+
 #
 IF(ScalFMM_USE_ADDONS) 
   SET(ScalFMM_LIBRARIES "-L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME} ${ScalFMM_LIBRARIES_ADD}" )

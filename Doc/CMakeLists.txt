@@ -10,5 +10,11 @@ IF(ScalFMM_BUILD_DOC)
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating API documentation with Doxygen" VERBATIM
       )
+#    INSTALL(FILES   ${ScalFMM_BINARY_DIR}/Doc/scalfmm.tag
+#      DESTINATION doc/
+#      )
+#    INSTALL(DIRECTORY   ${ScalFMM_BINARY_DIR}/Doc/html
+#      DESTINATION doc/
+#      )
   endif(DOXYGEN_FOUND)
 endif(ScalFMM_BUILD_DOC)

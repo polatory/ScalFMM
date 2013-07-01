@@ -196,6 +196,9 @@ private:
    * -(\left |\mathbf{k}\right |-1)\times  \sum_{j=0}^{3}\left
    * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
    * \f]
+   *
+   *  @todo METTRE les fonctions pour intialiser la recurrence.
+   *
    */
   void initDerivative(const FPoint target, const FPoint src, FReal * tab)
   {
@@ -295,11 +298,12 @@ public:
   /**P2M 
    * @brief Fill the Multipole with the field created by the cell
    * particles.
-   * 
+   *  
    * Formula :
    * \f[
    *   M_{k} = \sum_{j=0}^{nb_{particule}}{ q_j * \frac{|k|!}{k! k!} (x_j-x_c)^{k}}
    * \f]
+   * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
@@ -355,9 +359,6 @@ public:
 	  //
 	  //Computation
 	  //
-	  //	  FReal value = FReal(0.0);
-	  //	  value += potential*arrayDX[a]*arrayDY[b]*arrayDZ[c];
-	  //	  value += potential*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c);
 	  multipole[i] += coeff*potential*arrayDX[a]*arrayDY[b]*arrayDZ[c];	   
 	  incPowers(&a,&b,&c);       //inc powers of expansion
 	}  // end loop on multipoles
@@ -370,6 +371,22 @@ public:
     // 	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
     // 	incPowers(&a,&b,&c);   
     //   } 	
+  //   std::cout << std::endl;
+  //   for(int l=0 , idx = 0; l<= P ; ++l) // length of i + j + k = l
+  //     {    
+  //   	for( c=0 ; c <= l ; ++c)  
+  //   	  {
+  //   	    for( b = 0 ; b<= l-c ; ++b)
+  //   	      {
+  //   		for( a = l-c-b ;  a+b+c==l; --a, ++idx)
+  //   		  {
+  //   		    std::cout << "P2M>> "<< idx << " = (i,j,k) = ("<< a << " , " <<b << " , " << c << " ) " <<std::endl;
+  //   		  } 
+  //   	      } 
+  //   	  } 
+  //     } 
+  // } 
+  
 
   }
   
@@ -457,11 +474,17 @@ public:
   /**
    *@brief Convert the multipole expansion into local expansion The
    * operator do not use symmetries.  
-   * \f[ 
-   * L_{\mathbf{n}}^{c} =
-   * \frac{1}{\mathbf{n}!} \times \sum_{\mathbf{k}=0}^{p} \left [
-   * \Psi_{\mathbf{n+k}}^{c}(\mathbf{x}\times M_{\mathbf{k}^c})\right
+    * \f[ 
+   * L_{\mathbf{n}}^{c} = 
+   * \frac{|n|!}{n! n!} \sum_{\mathbf{k}=0}^{p} \left [M_\mathbf{k}^c  \,
+   * \Psi_{\mathbf{n+k}}(  \mathbf{x_c^{target}})\right
    * ] \f]
+   * and
+  * \f[ 
+   * \Psi_{\mathbf{i}}^{c}(\mathbf{x}) = \frac{\partial^i}{\partial x^i} \frac{1}{|x-x_c^{src}|}
+   * \f]
+   *Where \f$x_c^{src}\f$ is the centre of the cell where the multiplole are considered,\f$x_c^{target}\f$ is the centre of the current celle. The celle where we compute the local expansion.
+   *
    */
   void M2L(CellClass* const FRestrict local, 
 	   const CellClass* distantNeighbors[343],
@@ -477,7 +500,7 @@ public:
     FReal * iterLocal = local->getLocal();
     FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0)));
 
-    for(idxNeigh=0 ; idxNeigh<343 ; idxNeigh++){
+    for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
 
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
@@ -492,8 +515,7 @@ public:
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; //For local array
 	int am=0,bm=0,cm=0; //For distant array
-	
-	
+	//	
 	int count=0;
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; i++){
@@ -574,9 +596,15 @@ public:
   }
  
   
-  /**
-   *@brief Apply on the particles the force computed from the local expansion
+  /**L2P
+   *@brief Apply on the particles the force computed from the local expansion to all particles in the cell
    *
+   *  
+   * Formula :
+   * \f[
+   *   Potential = \sum_{j=0}^{nb_{particles}}{q_j \sum_{l=0}^{P}{ L_k * (x_j-x_c)^{k}}}
+   * \f]
+   * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
     void L2P(const CellClass* const local, 
 	   ContainerClass* const particles)
@@ -594,13 +622,15 @@ public:
       FReal * const forceX = particles->getForcesX();
       FReal * const forceY = particles->getForcesY();
       FReal * const forceZ = particles->getForcesZ();
+      //
+      FReal * const targetsPotentials = particles->getPotentials();
       
       printf("L2P : Cell : %f, fx = %f, fy = %f, fz = %f\n\n",locCenter.getX(),forceX[0],forceY[0],forceZ[0]);
 
       FReal * const phyValues = particles->getPhysicalValues();
 
       //Iteration over particles
-      for(int i=0 ; i<nbPart ; i++){
+      for(int i=0 ; i<nbPart ; ++i){
 	
 	FReal dx = posX[i]-locCenter.getX();
 	FReal dy = posY[i]-locCenter.getY();
@@ -628,12 +658,14 @@ public:
 	for(int j=0 ; j<SizeVector ; ++j){
 	  
 	  FReal partPhyValue = phyValues[i]; 
-	  FReal locForce = iterLocal[j];
-
+	  FReal locForce     = iterLocal[j];
+	  // compute the potential
+	  targetsPotentials[i] += partPhyValue*iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
 	  //Application of forces
-	  forceX[i] += -partPhyValue*FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
-	  forceY[i] += -partPhyValue*FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
-	  forceZ[i] += -partPhyValue*FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+	  forceX[i] -= partPhyValue*FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+	  forceY[i] -= partPhyValue*FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+	  forceZ[i] -= partPhyValue*FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+	  //
 	  incPowers(&a,&b,&c);
 	}
       }

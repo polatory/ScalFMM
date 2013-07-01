@@ -58,7 +58,8 @@ int main(int argc,char* argv[]){
 
   KernelClass kernels(NbLevels, boxWidth, rootCenter);
 
-  FmmClassThread algo(&tree,&kernels);
+  FmmClass algo(&tree,&kernels);
+  //  FmmClassThread algo(&tree,&kernels);
   algo.execute();
   
   { // get sum forces&potential
@@ -82,7 +83,7 @@ int main(int argc,char* argv[]){
 	}
 	
       }); 
-    
+    printf("potential : %f\n",potential);
   }
 
   return 0;
