@@ -26,7 +26,7 @@
 int main(int argc,char* argv[]){
   static const int P = 3;
   static const int order = 1;
-  FPoint rootCenter(FReal(0),FReal(0),FReal(0));
+  FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
 
   typedef FTaylorCell<P,order> CellClass;
@@ -76,14 +76,21 @@ int main(int argc,char* argv[]){
 	
 	for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 	  potential += potentials[idxPart];
-	  fx += forcesX[idxPart];
-	  fy += forcesY[idxPart];
-	  fz += forcesZ[idxPart];
+	  fx        += forcesX[idxPart];
+	  fy        += forcesY[idxPart];
+	  fz        += forcesZ[idxPart];
 	  printf("part : %f, fx = %f, fy = %f, fz = %f\n",leaf->getTargets()->getPositions()[0][0],fx,fy,fz);
 	}
 	
       }); 
-    printf("potential : %f\n",potential);
+    //
+    FReal dx = part1Pos.getX() - part2Pos.getX();
+    FReal dy = part1Pos.getY() - part2Pos.getY();
+    FReal dz = part1Pos.getZ() - part2Pos.getZ();
+    //
+    FReal potTheo = physVal2*physVal1*FMath::Sqrt(1.0 / (dx*dx + dy*dy + dz*dz));
+    printf("Exact potential : %f     Computed  potential : %f  Error: %f \n",potTheo, potential,potTheo- potential);
+
   }
 
   return 0;

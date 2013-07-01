@@ -607,7 +607,7 @@ public:
    * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
     void L2P(const CellClass* const local, 
-	   ContainerClass* const particles)
+	     ContainerClass* const particles)
     {
       
       FPoint locCenter = getLeafCenter(local->getCoordinate());
@@ -631,13 +631,16 @@ public:
 
       //Iteration over particles
       for(int i=0 ; i<nbPart ; ++i){
-	
-	FReal dx = posX[i]-locCenter.getX();
-	FReal dy = posY[i]-locCenter.getY();
-	FReal dz = posZ[i]-locCenter.getZ();
+	//	
+	FReal dx =  posX[i] - locCenter.getX();
+	FReal dy =  posY[i] - locCenter.getY();
+	FReal dz =  posZ[i] - locCenter.getZ();
 	printf("dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
 	int a=0,b=0,c=0;
 
+	forceX[i]            = 0.0 ;
+	forceY[i]            = 0.0 ;
+	forceZ[i]            = 0.0 ;
 	//
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
@@ -655,19 +658,24 @@ public:
 	
 	//Iteration over Local array
 	const FReal * iterLocal = local->getLocal();
+	FReal partPhyValue = phyValues[i]; 
+	//
+	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
 	for(int j=0 ; j<SizeVector ; ++j){
-	  
-	  FReal partPhyValue = phyValues[i]; 
 	  FReal locForce     = iterLocal[j];
 	  // compute the potential
-	  targetsPotentials[i] += partPhyValue*iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
+	  locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
 	  //Application of forces
-	  forceX[i] -= partPhyValue*FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
-	  forceY[i] -= partPhyValue*FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
-	  forceZ[i] -= partPhyValue*FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+	  locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  //
 	  incPowers(&a,&b,&c);
 	}
+	targetsPotentials[i]  = partPhyValue*locPot ;
+	forceX[i]            -= partPhyValue*locForceX ;
+	forceY[i]            -= partPhyValue*locForceY ;
+	forceZ[i]            -= partPhyValue*locForceZ ;
       }
     }
 
