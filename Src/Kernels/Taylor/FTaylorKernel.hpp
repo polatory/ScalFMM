@@ -197,8 +197,8 @@ private:
    * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
    * \f]
    *
-   *  @todo METTRE les fonctions pour intialiser la recurrence.
-   *
+   *  @todo METTRE les fonctions pour intialiser la recurrence. \f$x_i\f$ ?? \f$x_i\f$ ?? 
+   *  @todo LA formule ci-dessous n'utilise pas k! 
    */
   void initDerivative(const FPoint target, const FPoint src, FReal * tab)
   {
@@ -207,11 +207,11 @@ private:
     FReal dz = target.getZ()-src.getZ();
     FReal R2 = dx*dx+dy*dy+dz*dz;
     printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
-    tab[0]=FReal(1)/FMath::Sqrt(R2);
+    tab[0]=FReal(1)/FMath::Sqrt(R2);   
     FReal R3 = tab[0]/(R2);
-    tab[1]=dx*R3;
-    tab[2]=dy*R3;
-    tab[3]=dz*R3;
+    tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
+    tab[2]= -dy*R3;                 //Derivative in (0,1,0)
+    tab[3]= -dz*R3;                 //Derivative in (0,0,1)
     FReal R5 = R3/R2;
     tab[4] = FReal(3)*dx*dx*R5-R3;  //Derivative in (2,0,0)
     tab[5] = FReal(3)*dx*dy*R5;     //Derivative in (1,1,0)
@@ -240,36 +240,36 @@ private:
 	FReal dz = target.getZ()-src.getZ();
 	FReal fct = fact3int(a,b,c);
 	FReal dist2 = dx*dx+dy*dy+dz*dz;
-	FReal temp_value = FReal(0);
+	FReal temp_value = FReal(0.0);
 	int idxt;
 	if(a > 0){
 	    idxt = powerToIdx(a-1,b,c);
-	    temp_value += ((FReal)(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a)/fct;
+	    temp_value += ((FReal)(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
 	    if(a > 1){
 	      idxt = powerToIdx(a-2,b,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1))/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1));
 	    }
 	}
 	if(b > 0){
 	    idxt = powerToIdx(a,b-1,c);
-	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b)/fct;
+	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b);
 	    if(b > 1){
 	      idxt = powerToIdx(a,b-2,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1))/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1));
 	    }
 	}
 	if(c > 0){
 	    idxt = powerToIdx(a,b,c-1);
-	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c)/fct;
+	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c);
 	    if(c > 1){
 	      idxt = powerToIdx(a,b,c-2);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1))/fct;
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1));
 	    }
 	}
-	FReal coeff = FReal(a+b+c)*dist2/fct;
-	temp_value = temp_value/coeff;
-	yetComputed[idx] = temp_value;
-	return temp_value;
+	FReal coeff = FReal(a+b+c)*dist2 ; 
+	// 	temp_value = temp_value/coeff;
+	yetComputed[idx] = temp_value/coeff;
+	return yetComputed[idx];
 	}
   }
  
@@ -545,7 +545,7 @@ public:
 	int x=0,y=0,z=0;
 	FReal tot = FReal(0);
 	for(int dby=0 ; dby<SizeVector ; dby++)
-	  {
+	  {	
 	    tot+=yetComputed[dby];
 	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	    incPowers(&x,&y,&z);

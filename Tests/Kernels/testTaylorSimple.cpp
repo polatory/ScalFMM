@@ -24,7 +24,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 3;
+  static const int P = 7;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
