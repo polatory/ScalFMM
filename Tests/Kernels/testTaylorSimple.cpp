@@ -89,7 +89,8 @@ int main(int argc,char* argv[]){
     FReal dz = part1Pos.getZ() - part2Pos.getZ();
     //
     FReal potTheo = physVal2*physVal1*FMath::Sqrt(1.0 / (dx*dx + dy*dy + dz*dz));
-    printf("Exact potential : %f     Computed  potential : %f  Error: %f \n",potTheo, potential,potTheo- potential);
+    potential *=0.5 ;
+    printf("Exact potential : %f     Computed  potential : %f  Error: %f \n",potTheo, potential,std::abs(potTheo- potential));
 
   }
 

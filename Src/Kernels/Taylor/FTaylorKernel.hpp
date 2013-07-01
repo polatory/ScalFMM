@@ -301,7 +301,7 @@ public:
    *  
    * Formula :
    * \f[
-   *   M_{k} = \sum_{j=0}^{nb_{particule}}{ q_j * \frac{|k|!}{k! k!} (x_j-x_c)^{k}}
+   *   M_{k} = \sum_{j=0}^{nb_{particule}}{ q_j * \frac{|k|!}{k! k!} (x_c-x_j)^{k}}
    * \f]
    * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
@@ -332,9 +332,9 @@ public:
     //
     for(int idPart=0 ; idPart<nbPart ; idPart++){
       // compute the distance to the centre	  
-      FReal dx = posX[idPart] - cellCenter.getX();
-      FReal dy = posY[idPart] - cellCenter.getY();
-      FReal dz = posZ[idPart] - cellCenter.getZ();
+      FReal dx = cellCenter.getX() - posX[idPart] ;
+      FReal dy = cellCenter.getY() - posY[idPart] ;
+      FReal dz = cellCenter.getZ() - posZ[idPart] ;
       const FReal potential = phyValue[idPart];
       //
       // Precompute the an arrays of dx^i
@@ -514,30 +514,31 @@ public:
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; //For local array
-	int am=0,bm=0,cm=0; //For distant array
+	int am,bm,cm; //For distant array
 	//	
 	int count=0;
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; i++){
-	  FReal fctl = fact3int(al,bl,cl);
-	  FReal coeffN = factorials[al+bl+cl]/(fctl*fctl);
-	  
+	  FReal fctl   = fact3int(al,bl,cl);
+	  FReal coeffL = factorials[al+bl+cl]/(fctl*fctl);
+	  //
+	  am=0;	  bm=0;  cm=0;
+	  //
 	  //Iterator over multipole array 
 	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole(); 
-	  
+	  FReal psi, tmp = 0.0 ;
 	  //Iterating over multipole array : k
-	  for(int j = 0 ; j < SizeVector ; j++){ //corresponding powers am,bm,cm
-	    FReal psi = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //psi is the derivative of 1/R.
-	    psi *= multipole[j]*coeffN; //Psi = M[am,bm,cm] * N(al,bl,cl)/(al,bl,cl)!
-	    iterLocal[i]+=psi;
-	    count++;
+	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/(al,bl,cl)!
+	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
+	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
+	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed);
+	    tmp += psi*multipole[j]; 
+	    ++count;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
 	  }
-	  am=0;
-	  bm=0;
-	  cm=0;
+	  iterLocal[i] = tmp*coeffL ;
 	  incPowers(&al,&bl,&cl);
 	}
 	// For Debugging ..........................................................
@@ -637,10 +638,6 @@ public:
 	FReal dz =  posZ[i] - locCenter.getZ();
 	printf("dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
 	int a=0,b=0,c=0;
-
-	forceX[i]            = 0.0 ;
-	forceY[i]            = 0.0 ;
-	forceZ[i]            = 0.0 ;
 	//
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
@@ -655,8 +652,9 @@ public:
 	  arrayDY[d] = dy * arrayDY[d-1] ; 
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
 	}
-	
+	//	
 	//Iteration over Local array
+	//
 	const FReal * iterLocal = local->getLocal();
 	FReal partPhyValue = phyValues[i]; 
 	//
