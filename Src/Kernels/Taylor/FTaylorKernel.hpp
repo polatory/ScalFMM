@@ -202,19 +202,20 @@ private:
     FReal dx = target.getX()-src.getX();
     FReal dy = target.getY()-src.getY();
     FReal dz = target.getZ()-src.getZ();
-    
-    tab[0]=1/(FMath::Sqrt(dx*dx+dy*dy+dz*dz));
-    FReal R3 = tab[0]/(dx*dx+dy*dy+dz*dz);
+    FReal R2 = dx*dx+dy*dy+dz*dz;
+    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
+    tab[0]=FReal(1)/FMath::Sqrt(R2);
+    FReal R3 = tab[0]/(R2);
     tab[1]=dx*R3;
     tab[2]=dy*R3;
     tab[3]=dz*R3;
-    FReal R5 = R3/(dx*dx+dy*dy+dz*dz);
-    tab[4] = R3-dx*dx*R5;
-    tab[5] = (-dx)*dy*R5;
-    tab[6] = (-dx)*dz*R5;
-    tab[7] = R3-dy*dy*R5;
-    tab[8] = (-dy)*dz*R5;
-    tab[9] = R3-dz*dz*R5;
+    FReal R5 = R3/R2;
+    tab[4] = FReal(3)*dx*dx*R5-R3;  //Derivative in (2,0,0)
+    tab[5] = FReal(3)*dx*dy*R5;     //Derivative in (1,1,0)
+    tab[6] = FReal(3)*dx*dz*R5;     //Derivative in (1,0,1)
+    tab[7] = FReal(3)*dy*dy*R5-R3;  //Derivative in (0,2,0)
+    tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
+    tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
   }
   
   /** @brief Compute and store the derivative for a given tuple.
@@ -443,8 +444,8 @@ public:
 		  }
 		}
 	      }
-	      printf("M2M :: cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
-	      	     cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a,b,c,value);
+	      //	      printf("M2M :: cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
+	      //     cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a,b,c,value);
 
 	      mult[idxMult] += value;
 	      incPowers(&a,&b,&c);
@@ -486,7 +487,7 @@ public:
 	
 	// WARNING, won't work at upper level than leaf.
 	FPoint curDistCenter = getLeafCenter(distantNeighbors[idxNeigh]->getCoordinate());
-	initDerivative(locCenter, curDistCenter, yetComputed);
+	initDerivative(curDistCenter, locCenter, yetComputed);
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0;
@@ -504,8 +505,8 @@ public:
 	  
 	  //Iterating over multipole array : k
 	  for(int j = 0 ; j < SizeVector ; j++){
-	    FReal psi = computeDerivative(al+am,bl+bm,cl+cm,locCenter,curDistCenter,yetComputed); //psi is the derivative of 1/R.
-	    psi *= multipole[j]*coeffN;
+	    FReal psi = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //psi is the derivative of 1/R.
+	    psi *= multipole[j]*coeffN; //Psi = Mj * N/n!
 	    iterLocal[i]+=psi;
 	    count++;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
@@ -520,10 +521,10 @@ public:
 	// For Debugging ..........................................................
 	int x=0,y=0,z=0;
 	FReal tot = FReal(0);
-	for(int dby=0 ; dby<SizeVector ; dby++)
+	for(int dby=0 ; dby<(2*P+1)*(P+1)*(2*P+3)/3 ; dby++)
 	  {
 	    tot+=yetComputed[dby];
-	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
@@ -632,12 +633,6 @@ public:
 	  incPowers(&a,&b,&c);
 	}
       }
-      getCellCenter(local->getCoordinate(),treeHeight);
-      printf("Coordonnées Leaf : %f, %f, %f \n",
-	     locCenter.getX(),
-	     locCenter.getY(),
-	     locCenter.getZ());
-      printf("widthatleaflevel : %f\n",widthAtLeafLevel);
     }
 
   /**
