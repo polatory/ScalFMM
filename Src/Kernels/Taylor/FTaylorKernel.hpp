@@ -51,7 +51,7 @@ private:
   const FPoint boxCorner;             //< position of the box corner
   
   FReal factorials[2*P+1];             //< This contains the factorial until P
-  FReal arrayDX[P+1],arrayDY[P+1],arrayDZ[P+1] ; //< Working arrays
+  FReal arrayDX[P+2],arrayDY[P+2],arrayDZ[P+2] ; //< Working arrays
   ////////////////////////////////////////////////////
   // Private method
   ////////////////////////////////////////////////////
@@ -490,8 +490,8 @@ public:
 	initDerivative(curDistCenter, locCenter, yetComputed);
 
 	//Iteration over Multipole / Local
-	int al=0,bl=0,cl=0;
-	int am=0,bm=0,cm=0;
+	int al=0,bl=0,cl=0; //For local array
+	int am=0,bm=0,cm=0; //For distant array
 	
 	
 	int count=0;
@@ -504,9 +504,9 @@ public:
 	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole(); 
 	  
 	  //Iterating over multipole array : k
-	  for(int j = 0 ; j < SizeVector ; j++){
+	  for(int j = 0 ; j < SizeVector ; j++){ //corresponding powers am,bm,cm
 	    FReal psi = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //psi is the derivative of 1/R.
-	    psi *= multipole[j]*coeffN; //Psi = Mj * N/n!
+	    psi *= multipole[j]*coeffN; //Psi = M[am,bm,cm] * N(al,bl,cl)/(al,bl,cl)!
 	    iterLocal[i]+=psi;
 	    count++;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
@@ -521,10 +521,10 @@ public:
 	// For Debugging ..........................................................
 	int x=0,y=0,z=0;
 	FReal tot = FReal(0);
-	for(int dby=0 ; dby<(2*P+1)*(P+1)*(2*P+3)/3 ; dby++)
+	for(int dby=0 ; dby<SizeVector ; dby++)
 	  {
 	    tot+=yetComputed[dby];
-	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
+	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
@@ -602,18 +602,22 @@ public:
       //Iteration over particles
       for(int i=0 ; i<nbPart ; i++){
 	
-	FReal dx = locCenter.getX() - posX[i];
-	FReal dy = locCenter.getY() - posY[i];
-	FReal dz = locCenter.getZ() - posZ[i];
+	FReal dx = posX[i]-locCenter.getX();
+	FReal dy = posY[i]-locCenter.getY();
+	FReal dz = posZ[i]-locCenter.getZ();
 	printf("dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
 	int a=0,b=0,c=0;
 
 	//
-	// Precompute the an arrays of dx^i
-	arrayDX[0] = 1.0 ;
-	arrayDY[0] = 1.0 ;
-	arrayDZ[0] = 1.0 ;
-	for (int d = 1 ; d <= P ; ++d) 	{
+	// Precompute an arrays of Array[i] = dx^(i-1)
+	arrayDX[0] = 0.0 ; 
+	arrayDY[0] = 0.0 ;
+	arrayDZ[0] = 0.0 ;
+	
+	arrayDX[1] = 1.0 ;
+	arrayDY[1] = 1.0 ;
+	arrayDZ[1] = 1.0 ;
+	for (int d = 2 ; d <= P+1 ; ++d){ //Array is staggered : Array[i] = dx^(i-1)
 	  arrayDX[d] = dx * arrayDX[d-1] ;
 	  arrayDY[d] = dy * arrayDY[d-1] ; 
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
@@ -627,9 +631,9 @@ public:
 	  FReal locForce = iterLocal[j];
 
 	  //Application of forces
-	  forceX[i] += -partPhyValue*FReal(a)*locForce*arrayDX[a-1]*arrayDY[b]*arrayDZ[c];
-	  forceY[i] += -partPhyValue*FReal(b)*locForce*arrayDX[a]*arrayDY[b-1]*arrayDZ[c];
-	  forceZ[i] += -partPhyValue*FReal(c)*locForce*arrayDX[a]*arrayDY[b]*arrayDZ[c-1];
+	  forceX[i] += -partPhyValue*FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+	  forceY[i] += -partPhyValue*FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+	  forceZ[i] += -partPhyValue*FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  incPowers(&a,&b,&c);
 	}
       }
