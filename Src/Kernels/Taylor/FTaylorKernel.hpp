@@ -350,7 +350,9 @@ public:
       FReal dy = cellCenter.getY() - posY[idPart] ;
       FReal dz = cellCenter.getZ() - posZ[idPart] ;
       const FReal potential = phyValue[idPart];
-      //
+      
+      printf("P2M : distance : %f,%f,%f\n",dx,dy,dz);
+
       // Precompute the an arrays of dx^i
       arrayDX[0] = 1.0 ;
       arrayDY[0] = 1.0 ;
@@ -378,13 +380,13 @@ public:
 	}  // end loop on multipoles
     }  // end loop on particles
     // Print the multipoles 
-    // a = b = c = 0; 
-    // for(int i=0 ; i<SizeVector ; ++i)
-    //   {
-    // 	printf("P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
-    // 	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
-    // 	incPowers(&a,&b,&c);   
-    //   } 	
+    a = b = c = 0; 
+    for(int i=0 ; i<SizeVector ; ++i)
+      {
+    	printf("P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
+    	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
+    	incPowers(&a,&b,&c);   
+      } 	
   //   std::cout << std::endl;
   //   for(int l=0 , idx = 0; l<= P ; ++l) // length of i + j + k = l
   //     {    
@@ -414,7 +416,7 @@ public:
 	   const CellClass*const FRestrict *const FRestrict child, 
 	   const int inLevel)
   {
-    printf("M2M\n");
+    printf("M2M %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Powers of expansions
     int a=0,b=0,c=0;
     
@@ -487,17 +489,17 @@ public:
   
   /**
    *@brief Convert the multipole expansion into local expansion The
-   * operator do not use symmetries.  
-    * \f[ 
-   * L_{\mathbf{n}}^{c} = 
-   * \frac{|n|!}{n! n!} \sum_{\mathbf{k}=0}^{p} \left [M_\mathbf{k}^c  \,
-   * \Psi_{\mathbf{n+k}}(  \mathbf{x_c^{target}})\right
-   * ] \f]
-   * and
-  * \f[ 
-   * \Psi_{\mathbf{i}}^{c}(\mathbf{x}) = \frac{\partial^i}{\partial x^i} \frac{1}{|x-x_c^{src}|}
-   * \f]
-   *Where \f$x_c^{src}\f$ is the centre of the cell where the multiplole are considered,\f$x_c^{target}\f$ is the centre of the current celle. The celle where we compute the local expansion.
+   * operator do not use symmetries.
+   *
+   * Formula : \f[ L_{\mathbf{n}}^{c} = \frac{|n|!}{n! n!}
+   * \sum_{\mathbf{k}=0}^{p} \left [ M_\mathbf{k}^c \,
+   * \Psi_{\mathbf{n+k}}^{source}( \mathbf{x}_c^{target})\right ] \f]
+   * and \f[ \Psi_^{source}{\mathbf{i}}^{c}(\mathbf{x}) =
+   * \frac{\partial^i}{\partial x^i} \frac{1}{|x-x_c^{src}|} \f] 
+   *
+   * Where \f$x_c^{src}\f$ is the centre of the cell where the
+   * multiplole are considered,\f$x_c^{target}\f$ is the centre of the
+   * current cell. The cell where we compute the local expansion.
    *
    */
   void M2L(CellClass* const FRestrict local,             // Target cell
@@ -508,9 +510,9 @@ public:
     //Iteration over distantNeighbors
     int idxNeigh;
     
-    // WARNING, won't work at upper level than leaf.
+
     FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
-    printf("M2M :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
+    printf("M2l :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
     FReal * iterLocal = local->getLocal();
     FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0)));
 
@@ -523,9 +525,9 @@ public:
 	FReal yetComputed[sizeDerivative];
 	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0)));
 	
-	// WARNING, won't work at upper level than leaf.
+
 	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
-	printf("M2M :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
+	printf("M2l :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
 	initDerivative(locCenter, curDistCenter, yetComputed); //(target,source,yetComputed)
 
 	//Iteration over Multipole / Local
@@ -541,14 +543,17 @@ public:
 	  am=0;	  bm=0;  cm=0;
 	  //
 	  //Iterator over multipole array 
-	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole(); 
+	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
 	  FReal psi, tmp = 0.0 ;
 	  //Iterating over multipole array : k
-	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/(al,bl,cl)!
+	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!)
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
 	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //(order of derivative, target, source, yetComputed)
-	    tmp += psi*multipole[j]; 
+	    if(al+bl+cl >= 3){
+	      printf("Source : %f, expand L : %d,%d,%d --> %d, expand M : %d,%d,%d, indiceMul : %d PSI : %f, mult[j] = %f\n",curDistCenter.getX(),al,bl,cl,i,am,bm,cm,j,psi,multipole[j]);
+		}
+	    tmp += psi*multipole[j];
 	    //++count;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
@@ -560,10 +565,10 @@ public:
 	// For Debugging ..........................................................
 	int x=0,y=0,z=0;
 	FReal tot = FReal(0);
-	for(int dby=0 ; dby<sizeDerivative ; dby++)
+	for(int dby=0 ; dby<SizeVector ; dby++)
 	  {	
 	    tot+=yetComputed[dby];
-	    printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
+	    // printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
@@ -619,9 +624,11 @@ public:
    *  
    * Formula :
    * \f[
-   *   Potential = \sum_{j=0}^{nb_{particles}}{q_j \sum_{l=0}^{P}{ L_k * (x_j-x_c)^{k}}}
+   *   Potential = \sum_{j=0}^{nb_{particles}}{q_j \sum_{k=0}^{P}{ L_k * (x_j-x_c)^{k}}}
    * \f]
-   * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
+   *
+   * where \f$x_c\f$ is the centre of the local cell and \f$x_j\f$ the
+   * \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
     void L2P(const CellClass* const local, 
 	     ContainerClass* const particles)
@@ -631,6 +638,11 @@ public:
       //Iterator over particles
       int nbPart = particles->getNbParticles();
       
+      //	
+      //Iteration over Local array
+      //
+      const FReal * iterLocal = local->getLocal();
+
       const FReal * const * positions = particles->getPositions();
       const FReal * posX = positions[0];
       const FReal * posY = positions[1];
@@ -652,7 +664,7 @@ public:
 	FReal dx =  posX[i] - locCenter.getX();
 	FReal dy =  posY[i] - locCenter.getY();
 	FReal dz =  posZ[i] - locCenter.getZ();
-	printf("dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
+	printf("L2P: dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
 	int a=0,b=0,c=0;
 	//
 	// Precompute an arrays of Array[i] = dx^(i-1)
@@ -668,10 +680,7 @@ public:
 	  arrayDY[d] = dy * arrayDY[d-1] ; 
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
 	}
-	//	
-	//Iteration over Local array
-	//
-	const FReal * iterLocal = local->getLocal();
+	
 	FReal partPhyValue = phyValues[i]; 
 	//
 	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
@@ -684,12 +693,13 @@ public:
 	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
 	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  //
+	  printf("expand : %d,%d,%d,j : %d, locForce : %f\n",a,b,c,j,locForce);
 	  incPowers(&a,&b,&c);
 	}
 	targetsPotentials[i]  = partPhyValue*locPot ;
-	forceX[i]            -= partPhyValue*locForceX ;
-	forceY[i]            -= partPhyValue*locForceY ;
-	forceZ[i]            -= partPhyValue*locForceZ ;
+	forceX[i]            = partPhyValue*locForceX ;
+	forceY[i]            = partPhyValue*locForceY ;
+	forceZ[i]            = partPhyValue*locForceZ ;
       }
     }
 

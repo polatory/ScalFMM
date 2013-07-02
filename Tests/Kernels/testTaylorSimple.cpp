@@ -24,7 +24,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 7;
+  static const int P = 3;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
@@ -46,7 +46,8 @@ int main(int argc,char* argv[]){
   FTic counter;
   
   OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, rootCenter);
-  
+  //OctreeClass tree_P2P(2, SizeSubLevels, boxWidth, rootCenter);
+
   FPoint part1Pos = FPoint(FReal(3.75),FReal(0.25),FReal(0.25));
   FReal physVal1 = 1;
 
@@ -56,12 +57,20 @@ int main(int argc,char* argv[]){
   tree.insert(part1Pos,physVal1);
   tree.insert(part2Pos,physVal2);
 
+  // tree_P2P.insert(part1Pos,physVal1);
+  //tree_P2P.insert(part2Pos,physVal2);
+
+
   KernelClass kernels(NbLevels, boxWidth, rootCenter);
+  //  KernelClass kernels_P2P(2, boxWidth, rootCenter);
 
   FmmClass algo(&tree,&kernels);
   //  FmmClassThread algo(&tree,&kernels);
   algo.execute();
   
+  //  FmmClass algo_P2P(&tree_P2P,&kernels_P2P);
+  // algo_P2P.execute();
+
   { // get sum forces&potential
     FReal potential = 0;
     
@@ -88,11 +97,12 @@ int main(int argc,char* argv[]){
     FReal dy = part1Pos.getY() - part2Pos.getY();
     FReal dz = part1Pos.getZ() - part2Pos.getZ();
     //
-    FReal potTheo = physVal2*physVal1*FMath::Sqrt(1.0 / (dx*dx + dy*dy + dz*dz));
-    potential *=0.5 ;
+    FReal potTheo = physVal2*physVal1*FMath::Sqrt(FReal(1) / (dx*dx + dy*dy + dz*dz));
+    potential *=FReal(0.5) ;
     printf("Exact potential : %f     Computed  potential : %f  Error: %f \n",potTheo, potential,std::abs(potTheo- potential));
 
   }
+
 
   return 0;
 }
