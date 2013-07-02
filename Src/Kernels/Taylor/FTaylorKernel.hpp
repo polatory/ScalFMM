@@ -89,8 +89,9 @@ private:
    */
   FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
   {
+
     //Set the boxes width needed
-    FReal widthAtCurrentLevel = widthAtLeafLevel*FReal(1 << (treeHeight-inLevel));   
+    FReal widthAtCurrentLevel = widthAtLeafLevel*FReal(1 << (treeHeight-(inLevel+1)));   
     FReal widthAtCurrentLevelDiv2 = widthAtCurrentLevel/FReal(2);
 
     //Get the coordinate
@@ -200,7 +201,9 @@ private:
    *  @todo METTRE les fonctions pour intialiser la recurrence. \f$x_i\f$ ?? \f$x_i\f$ ?? 
    *  @todo LA formule ci-dessous n'utilise pas k! 
    */
-  void initDerivative(const FPoint target, const FPoint src, FReal * tab)
+  void initDerivative(const FPoint target, //  Center of local cell
+		      const FPoint src,    //  Center of distant cell
+		      FReal * tab)
   {
     FReal dx = target.getX()-src.getX();
     FReal dy = target.getY()-src.getY();
@@ -222,11 +225,23 @@ private:
   }
   
   /** @brief Compute and store the derivative for a given tuple.
+   *  Derivative are used for the M2L
    *
+   *\f[
+   * \Psi_{\mathbf{k}}^{c}\times \left [\left |\mathbf{k}\right |\times \left |
+   * \mathbf{x}_i-\mathbf{x}_c\right |^2 \times 
+   * \frac{1}{\mathbf{k}!} \right ]\				
+   * = (2\times \left |{\mathbf{k}}\right |-1)\times
+   * \sum_{j=0}^{3}\left [(x_{i_j}-x_{c_j})\times
+   * \Psi_{\mathbf{k}-e_j,i}^{c}\times \frac{1}{({\mathbf{k}}-e_j)!}\right ]\ 
+   * -(\left |\mathbf{k}\right |-1)\times  \sum_{j=0}^{3}\left
+   * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
+   * \f]
+   *  
    */
-  FReal computeDerivative(const int a, const int b, const int c, 
-			  const FPoint target, 
-			  const FPoint src, 
+  FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
+			  const FPoint target,                     // Center of local cell
+			  const FPoint src,                        // Center of distant cell
 			  FReal * yetComputed)
   {
     int idx = powerToIdx(a,b,c);
@@ -238,13 +253,12 @@ private:
 	FReal dx = target.getX()-src.getX();
 	FReal dy = target.getY()-src.getY();
 	FReal dz = target.getZ()-src.getZ();
-	FReal fct = fact3int(a,b,c);
 	FReal dist2 = dx*dx+dy*dy+dz*dz;
 	FReal temp_value = FReal(0.0);
 	int idxt;
 	if(a > 0){
 	    idxt = powerToIdx(a-1,b,c);
-	    temp_value += ((FReal)(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
+	    temp_value += (FReal(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
 	    if(a > 1){
 	      idxt = powerToIdx(a-2,b,c);
 	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1));
@@ -414,7 +428,7 @@ public:
     FReal dz = 0.0;
     //Center point of parent cell
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    printf("M2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    printf("M2M :: pole_target : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * mult = pole->getMultipole();
     FMemUtils::memset(pole,0,SizeVector*FReal(0));
     
@@ -486,17 +500,17 @@ public:
    *Where \f$x_c^{src}\f$ is the centre of the cell where the multiplole are considered,\f$x_c^{target}\f$ is the centre of the current celle. The celle where we compute the local expansion.
    *
    */
-  void M2L(CellClass* const FRestrict local, 
-	   const CellClass* distantNeighbors[343],
-	   const int /*size*/, const int /*inLevel*/)
+  void M2L(CellClass* const FRestrict local,             // Target cell
+	   const CellClass* distantNeighbors[343],       // Sources to be read     
+	   const int /*size*/, const int inLevel)
   {
     printf("M2L\n");
     //Iteration over distantNeighbors
     int idxNeigh;
     
     // WARNING, won't work at upper level than leaf.
-    FPoint locCenter = getLeafCenter(local->getCoordinate());
-    
+    FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
+    printf("M2M :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
     FReal * iterLocal = local->getLocal();
     FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0)));
 
@@ -505,18 +519,20 @@ public:
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
 	//Derivatives are computed iteratively
-	FReal yetComputed[(2*P+1)*(P+1)*(2*P+3)/3];
-	FMemUtils::memset(yetComputed,0,((2*P+1)*(P+1)*(2*P+3)/3)*sizeof(FReal(0)));
+	int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
+	FReal yetComputed[sizeDerivative];
+	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0)));
 	
 	// WARNING, won't work at upper level than leaf.
-	FPoint curDistCenter = getLeafCenter(distantNeighbors[idxNeigh]->getCoordinate());
-	initDerivative(curDistCenter, locCenter, yetComputed);
+	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
+	printf("M2M :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
+	initDerivative(locCenter, curDistCenter, yetComputed); //(target,source,yetComputed)
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; //For local array
 	int am,bm,cm; //For distant array
-	//	
-	int count=0;
+	
+	
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; i++){
 	  FReal fctl   = fact3int(al,bl,cl);
@@ -531,9 +547,9 @@ public:
 	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/(al,bl,cl)!
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
-	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed);
+	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //(order of derivative, target, source, yetComputed)
 	    tmp += psi*multipole[j]; 
-	    ++count;
+	    //++count;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
@@ -544,10 +560,10 @@ public:
 	// For Debugging ..........................................................
 	int x=0,y=0,z=0;
 	FReal tot = FReal(0);
-	for(int dby=0 ; dby<SizeVector ; dby++)
+	for(int dby=0 ; dby<sizeDerivative ; dby++)
 	  {	
 	    tot+=yetComputed[dby];
-	    printf("M2L :: cell %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	    printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
