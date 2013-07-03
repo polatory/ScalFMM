@@ -550,10 +550,10 @@ public:
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
 	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //(order of derivative, target, source, yetComputed)
-	    if(al+bl+cl >= 3){
-	      printf("Source : %f, expand L : %d,%d,%d --> %d, expand M : %d,%d,%d, indiceMul : %d PSI : %f, mult[j] = %f\n",curDistCenter.getX(),al,bl,cl,i,am,bm,cm,j,psi,multipole[j]);
-		}
 	    tmp += psi*multipole[j];
+	    if(al+bl+cl >= 3){
+	      //printf("Source : %f, expand_sum: %d,%d,%d, PSI : %f, mult[j] = %f, iterLocal[i] = %f\n",curDistCenter.getX(),al+am,bl+bm,cl+cm,psi,multipole[j],tmp);
+		}
 	    //++count;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
@@ -568,7 +568,7 @@ public:
 	for(int dby=0 ; dby<SizeVector ; dby++)
 	  {	
 	    tot+=yetComputed[dby];
-	    // printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	    printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	    incPowers(&x,&y,&z);
 	  }
 	printf("tot : %f\n",tot);
