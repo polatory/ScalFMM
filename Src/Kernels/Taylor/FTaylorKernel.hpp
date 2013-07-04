@@ -52,6 +52,11 @@ private:
   
   FReal factorials[2*P+1];             //< This contains the factorial until P
   FReal arrayDX[P+2],arrayDY[P+2],arrayDZ[P+2] ; //< Working arrays
+
+
+  // For debugging purpose
+  FILE * out;
+
   ////////////////////////////////////////////////////
   // Private method
   ////////////////////////////////////////////////////
@@ -307,6 +312,7 @@ public:
   /* Default destructor
    */
   virtual ~FTaylorKernel(){
+    fclose(out);
   }
 
   /**P2M 
@@ -322,6 +328,9 @@ public:
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
   { 
+    out = fopen("./res_3.data","a+");
+
+
     //Variables computed for each power of Multipole
     int a = 0, b = 0, c = 0;
     FReal facto;
@@ -350,9 +359,9 @@ public:
       FReal dy = cellCenter.getY() - posY[idPart] ;
       FReal dz = cellCenter.getZ() - posZ[idPart] ;
       const FReal potential = phyValue[idPart];
-      
-      printf("P2M : distance : %f,%f,%f\n",dx,dy,dz);
-
+      if(cellCenter.getX() == FReal(3)){
+	fprintf(out,"P2M : distance : %f,%f,%f\n",dx,dy,dz);
+      }
       // Precompute the an arrays of dx^i
       arrayDX[0] = 1.0 ;
       arrayDY[0] = 1.0 ;
@@ -380,13 +389,15 @@ public:
 	}  // end loop on multipoles
     }  // end loop on particles
     // Print the multipoles 
-    a = b = c = 0; 
-    for(int i=0 ; i<SizeVector ; ++i)
-      {
-    	printf("P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
-    	       cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
-    	incPowers(&a,&b,&c);   
-      } 	
+    if(cellCenter.getX() == FReal(3)){
+      a = b = c = 0; 
+      for(int i=0 ; i<SizeVector ; ++i)
+	{
+	  fprintf(out,"P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
+		 cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
+	  incPowers(&a,&b,&c);   
+	} 	
+    }
   //   std::cout << std::endl;
   //   for(int l=0 , idx = 0; l<= P ; ++l) // length of i + j + k = l
   //     {    
@@ -512,7 +523,9 @@ public:
     
 
     FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
-    printf("M2l :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
+    if(locCenter.getX() == FReal(-3)){
+      fprintf(out,"M2l :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
+    }
     FReal * iterLocal = local->getLocal();
     FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0)));
 
@@ -527,7 +540,9 @@ public:
 	
 
 	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
-	printf("M2l :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
+	if(locCenter.getX() == FReal(-3)){
+	  fprintf(out,"M2l :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
+	}
 	initDerivative(locCenter, curDistCenter, yetComputed); //(target,source,yetComputed)
 
 	//Iteration over Multipole / Local
@@ -551,9 +566,7 @@ public:
 	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
 	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //(order of derivative, target, source, yetComputed)
 	    tmp += psi*multipole[j];
-	    if(al+bl+cl >= 3){
-	      //printf("Source : %f, expand_sum: %d,%d,%d, PSI : %f, mult[j] = %f, iterLocal[i] = %f\n",curDistCenter.getX(),al+am,bl+bm,cl+cm,psi,multipole[j],tmp);
-		}
+	    
 	    //++count;
 	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
 	    //updating a,b,c
@@ -563,15 +576,24 @@ public:
 	  incPowers(&al,&bl,&cl);
 	}
 	// For Debugging ..........................................................
-	int x=0,y=0,z=0;
-	FReal tot = FReal(0);
-	for(int dby=0 ; dby<SizeVector ; dby++)
-	  {	
-	    tot+=yetComputed[dby];
-	    printf("M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
-	    incPowers(&x,&y,&z);
-	  }
-	printf("tot : %f\n",tot);
+	if(locCenter.getX() == FReal(-3)){
+	  int x=0,y=0,z=0;
+	  FReal tot = FReal(0);
+	  for(int dby=0 ; dby<SizeVector ; dby++)
+	    {	
+	      tot+=yetComputed[dby];
+	      fprintf(out,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	      incPowers(&x,&y,&z);
+	    }
+	  fprintf(out,"tot : %f\n\n\n",tot);
+	  x = y = z = 0;
+	  for(int dby=0 ; dby<sizeDerivative ; dby++)
+	    {	
+	      tot+=yetComputed[dby];
+	      fprintf(stdout,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
+	      incPowers(&x,&y,&z);
+	    }
+	}
       }
     }
   }
