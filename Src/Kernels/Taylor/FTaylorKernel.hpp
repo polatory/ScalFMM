@@ -193,14 +193,6 @@ private:
    * from "A cartesian tree-code for screened coulomb interactions"
    *
    *\f[
-   * \Psi_{\mathbf{k}}^{c}\times \left [\left |\mathbf{k}\right |\times \left |
-   * \mathbf{x}_i-\mathbf{x}_c\right |^2 \times 
-   * \frac{1}{\mathbf{k}!} \right ]\				
-   * = (2\times \left |{\mathbf{k}}\right |-1)\times
-   * \sum_{j=0}^{3}\left [(x_{i_j}-x_{c_j})\times
-   * \Psi_{\mathbf{k}-e_j,i}^{c}\times \frac{1}{({\mathbf{k}}-e_j)!}\right ]\ 
-   * -(\left |\mathbf{k}\right |-1)\times  \sum_{j=0}^{3}\left
-   * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
    * \f]
    *
    *  @todo METTRE les fonctions pour intialiser la recurrence. \f$x_i\f$ ?? \f$x_i\f$ ?? 
@@ -228,23 +220,39 @@ private:
     tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
     tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
   }
-  
+  void initDerivative(const FReal & dx ,const FReal & dy ,const FReal & dz  ,   FReal * tab)
+  {
+    FReal R2 = dx*dx+dy*dy+dz*dz;
+    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
+    tab[0]=FReal(1)/FMath::Sqrt(R2);   
+    FReal R3 = tab[0]/(R2);
+    tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
+    tab[2]= -dy*R3;                 //Derivative in (0,1,0)
+    tab[3]= -dz*R3;                 //Derivative in (0,0,1)
+    FReal R5 = R3/R2;
+    tab[4] = FReal(3)*dx*dx*R5-R3;  //Derivative in (2,0,0)
+    tab[5] = FReal(3)*dx*dy*R5;     //Derivative in (1,1,0)
+    tab[6] = FReal(3)*dx*dz*R5;     //Derivative in (1,0,1)
+    tab[7] = FReal(3)*dy*dy*R5-R3;  //Derivative in (0,2,0)
+    tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
+    tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
+  }
+ 
   /** @brief Compute and store the derivative for a given tuple.
    *  Derivative are used for the M2L
    *
    *\f[
-   * \Psi_{\mathbf{k}}^{c}\times \left [\left |\mathbf{k}\right |\times \left |
-   * \mathbf{x}_i-\mathbf{x}_c\right |^2 \times 
-   * \frac{1}{\mathbf{k}!} \right ]\				
-   * = (2\times \left |{\mathbf{k}}\right |-1)\times
-   * \sum_{j=0}^{3}\left [(x_{i_j}-x_{c_j})\times
-   * \Psi_{\mathbf{k}-e_j,i}^{c}\times \frac{1}{({\mathbf{k}}-e_j)!}\right ]\ 
-   * -(\left |\mathbf{k}\right |-1)\times  \sum_{j=0}^{3}\left
-   * [\Psi_{\mathbf{k}-2\times e_j,i}^{c}\times \frac{1}{(\mathbf{k}-2\times e_j)!}\right]
+   * \Psi_{\mathbf{k}}^{c} \left [\left |\mathbf{k}\right |\times \left |
+   * \mathbf{x}_i-\mathbf{x}_c\right |^2  \right ]\				
+   * = (2\times \left |{\mathbf{k}}\right |-1)
+   * \sum_{j=0}^{3}\left [ k_j (x_{i_j}-x_{c_j})
+   * \Psi_{\mathbf{k}-e_j,i}^{c}\right ]\ 
+   * -(\left |\mathbf{k}\right |-1)   \sum_{j=0}^{3}\left
+   * [ k_j(k_j-1) \Psi_{\mathbf{k}-2 e_j,i}^{c} \right]
    * \f]
-   *  
+   *  where    \f$ \mathbf{k} = (k_1,k_2,k_3) \f$ 
    */
-  FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
+   FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
 			  const FPoint target,                     // Center of local cell
 			  const FPoint src,                        // Center of distant cell
 			  FReal * yetComputed)
@@ -258,6 +266,49 @@ private:
 	FReal dx = target.getX()-src.getX();
 	FReal dy = target.getY()-src.getY();
 	FReal dz = target.getZ()-src.getZ();
+	FReal dist2 = dx*dx+dy*dy+dz*dz;
+	FReal temp_value = FReal(0.0);
+	int idxt;
+	if(a > 0){
+	    idxt = powerToIdx(a-1,b,c);
+	    temp_value += (FReal(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
+	    if(a > 1){
+	      idxt = powerToIdx(a-2,b,c);
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1));
+	    }
+	}
+	if(b > 0){
+	    idxt = powerToIdx(a,b-1,c);
+	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b);
+	    if(b > 1){
+	      idxt = powerToIdx(a,b-2,c);
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1));
+	    }
+	}
+	if(c > 0){
+	    idxt = powerToIdx(a,b,c-1);
+	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c);
+	    if(c > 1){
+	      idxt = powerToIdx(a,b,c-2);
+	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1));
+	    }
+	}
+	FReal coeff = FReal(a+b+c)*dist2 ; 
+	// 	temp_value = temp_value/coeff;
+	yetComputed[idx] = temp_value/coeff;
+	return yetComputed[idx];
+	}
+  }
+  FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
+			  const FReal & dx, const FReal & dy, const FReal & dz, 
+			  FReal * yetComputed)
+  {
+    int idx = powerToIdx(a,b,c);
+    if((yetComputed[idx] != FReal(0)))
+      {
+	return yetComputed[idx];}
+    else
+      {
 	FReal dist2 = dx*dx+dy*dy+dz*dz;
 	FReal temp_value = FReal(0.0);
 	int idxt;
@@ -321,9 +372,9 @@ public:
    *  
    * Formula :
    * \f[
-   *   M_{k} = \sum_{j=0}^{nb_{particule}}{ q_j * \frac{|k|!}{k! k!} (x_c-x_j)^{k}}
+   *   M_{k} = \sum_{j=0}^{N}{ q_j * \frac{|k|!}{k! k!} (x_c-x_j)^{k}}
    * \f]
-   * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
+   * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge and  \f$N\f$ the particle number.
    */
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
@@ -332,14 +383,13 @@ public:
 
 
     //Variables computed for each power of Multipole
-    int a = 0, b = 0, c = 0;
-    FReal facto;
-    FReal coeff; 
+    int a,b,c ;
+    FReal facto, coeff; 
     //Copying cell center position once and for all
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
     printf("P2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
-    FMemUtils::memset(multipole,0,SizeVector*FReal(0));
+    FMemUtils::memset(multipole,FReal(0.0),SizeVector*FReal(0.0));
     //    
     // Iterator over Particles
     //
@@ -353,13 +403,14 @@ public:
     //
     // Iterating over Particles
     //
-    for(int idPart=0 ; idPart<nbPart ; idPart++){
+    FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
+    for(int idPart=0 ; idPart<nbPart ; ++idPart){
       // compute the distance to the centre	  
-      FReal dx = cellCenter.getX() - posX[idPart] ;
-      FReal dy = cellCenter.getY() - posY[idPart] ;
-      FReal dz = cellCenter.getZ() - posZ[idPart] ;
-      const FReal potential = phyValue[idPart];
-      if(cellCenter.getX() == FReal(3)){
+      FReal dx =  xc - posX[idPart] ;
+      FReal dy =  yc - posY[idPart] ;
+      FReal dz =  zc - posZ[idPart] ;
+      //      
+      if(xc == FReal(3)){
 	fprintf(out,"P2M : distance : %f,%f,%f\n",dx,dy,dz);
       }
       // Precompute the an arrays of dx^i
@@ -374,6 +425,7 @@ public:
       //
       //Iterating over MutlipoleVector
       //
+      a = 0, b = 0, c = 0;
       for(int i=0 ; i<SizeVector ; ++i)
 	{
 	  //
@@ -384,12 +436,12 @@ public:
 	  //
 	  //Computation
 	  //
-	  multipole[i] += coeff*potential*arrayDX[a]*arrayDY[b]*arrayDZ[c];	   
+	  multipole[i] += coeff*phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];	   
 	  incPowers(&a,&b,&c);       //inc powers of expansion
 	}  // end loop on multipoles
     }  // end loop on particles
     // Print the multipoles 
-    if(cellCenter.getX() == FReal(3)){
+    if(xc == FReal(3)){
       a = b = c = 0; 
       for(int i=0 ; i<SizeVector ; ++i)
 	{
@@ -443,7 +495,7 @@ public:
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
     printf("M2M :: pole_target : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * mult = pole->getMultipole();
-    FMemUtils::memset(pole,0,SizeVector*FReal(0));
+    FMemUtils::memset(pole,FReal(0.0),SizeVector*FReal(0.0));
     
     //Iteration over the eight children
     int idxChild;
@@ -504,9 +556,9 @@ public:
    *
    * Formula : \f[ L_{\mathbf{n}}^{c} = \frac{|n|!}{n! n!}
    * \sum_{\mathbf{k}=0}^{p} \left [ M_\mathbf{k}^c \,
-   * \Psi_{\mathbf{n+k}}^{source}( \mathbf{x}_c^{target})\right ] \f]
-   * and \f[ \Psi_^{source}{\mathbf{i}}^{c}(\mathbf{x}) =
-   * \frac{\partial^i}{\partial x^i} \frac{1}{|x-x_c^{src}|} \f] 
+   * \Psi_{\mathbf{,n+k}}( \mathbf{x}_c^{target})\right ] \f]
+   * and \f[ \Psi_{\mathbf{,i}}^{c}(\mathbf{x}) =
+   * \frac{\partial^i}{\partial x^i} \frac{1}{|x-x_c^{src}|} =  \frac{\partial^{i_1}}{\partial x_1^{i_1}} \frac{\partial^{i_2}}{\partial x_2^{i_2}} \frac{\partial^{i_3}}{\partial x_3^{i_3}} \frac{1}{|x-x_c^{src}|}\f] 
    *
    * Where \f$x_c^{src}\f$ is the centre of the cell where the
    * multiplole are considered,\f$x_c^{target}\f$ is the centre of the
@@ -520,6 +572,7 @@ public:
     printf("M2L\n");
     //Iteration over distantNeighbors
     int idxNeigh;
+    int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
     
 
     FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
@@ -527,14 +580,13 @@ public:
       fprintf(out,"M2l :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
     }
     FReal * iterLocal = local->getLocal();
-    FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0)));
+    FMemUtils::memset(iterLocal,FReal(0.0),SizeVector*sizeof(FReal(0.0)));
 
     for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
 
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
 	//Derivatives are computed iteratively
-	int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
 	FReal yetComputed[sizeDerivative];
 	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0)));
 	
@@ -543,28 +595,32 @@ public:
 	if(locCenter.getX() == FReal(-3)){
 	  fprintf(out,"M2l :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
 	}
-	initDerivative(locCenter, curDistCenter, yetComputed); //(target,source,yetComputed)
+	FReal dx = locCenter.getX()-curDistCenter.getX();
+	FReal dy = locCenter.getY()-curDistCenter.getY();
+	FReal dz = locCenter.getZ()-curDistCenter.getZ();
+
+	initDerivative(dx,dy,dz, yetComputed); //(target,source,yetComputed)
 
 	//Iteration over Multipole / Local
-	int al=0,bl=0,cl=0; //For local array
-	int am,bm,cm; //For distant array
-	
-	
+	int al=0,bl=0,cl=0; // For local array
+	int am,bm,cm;       // For distant array
+	//	
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; i++){
 	  FReal fctl   = fact3int(al,bl,cl);
 	  FReal coeffL = factorials[al+bl+cl]/(fctl*fctl);
-	  //
-	  am=0;	  bm=0;  cm=0;
 	  //
 	  //Iterator over multipole array 
 	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
 	  FReal psi, tmp = 0.0 ;
 	  //Iterating over multipole array : k
 	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!)
+	  //
+	  am=0;	  bm=0;  cm=0;
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
-	    psi  = computeDerivative(al+am,bl+bm,cl+cm,curDistCenter,locCenter,yetComputed); //(order of derivative, target, source, yetComputed)
+	    //	    psi  = computeDerivative(al+am,bl+bm,cl+cm,locCenter,curDistCenter,yetComputed); //(order of derivative, target, source, yetComputed)
+	    psi  = computeDerivative(al+am,bl+bm,cl+cm,dx,dy,dz,yetComputed); //(order of derivative, target, source, yetComputed)
 	    tmp += psi*multipole[j];
 	    
 	    //++count;
@@ -581,7 +637,7 @@ public:
 	  FReal tot = FReal(0);
 	  for(int dby=0 ; dby<SizeVector ; dby++)
 	    {	
-	      tot+=yetComputed[dby];
+	      tot += yetComputed[dby];
 	      fprintf(out,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	      incPowers(&x,&y,&z);
 	    }
@@ -687,7 +743,6 @@ public:
 	FReal dy =  posY[i] - locCenter.getY();
 	FReal dz =  posZ[i] - locCenter.getZ();
 	printf("L2P: dx = %f, dy = %f, dz = %f\n",dx,dy,dz);
-	int a=0,b=0,c=0;
 	//
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
@@ -701,11 +756,11 @@ public:
 	  arrayDX[d] = dx * arrayDX[d-1] ;
 	  arrayDY[d] = dy * arrayDY[d-1] ; 
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
-	}
-	
+	}	
 	FReal partPhyValue = phyValues[i]; 
 	//
 	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
+	int a=0,b=0,c=0;
 	for(int j=0 ; j<SizeVector ; ++j){
 	  FReal locForce     = iterLocal[j];
 	  // compute the potential
