@@ -181,6 +181,7 @@ private:
   {
     return ( factorials[a]*factorials[b]* factorials[c]) ; 
   }
+
   /* Return the combine of a paire of number
    */
   FReal combin(const int& a, const int& b){
@@ -188,38 +189,14 @@ private:
         return  factorials[a]/  (factorials[b]* factorials[a-b]) ; 
   }
 
-  
+
   /** @brief Init the derivative array for using of following formula
    * from "A cartesian tree-code for screened coulomb interactions"
-   *
-   *\f[
-   * \f]
    *
    *  @todo METTRE les fonctions pour intialiser la recurrence. \f$x_i\f$ ?? \f$x_i\f$ ?? 
    *  @todo LA formule ci-dessous n'utilise pas k! 
    */
-  void initDerivative(const FPoint target, //  Center of local cell
-		      const FPoint src,    //  Center of distant cell
-		      FReal * tab)
-  {
-    FReal dx = target.getX()-src.getX();
-    FReal dy = target.getY()-src.getY();
-    FReal dz = target.getZ()-src.getZ();
-    FReal R2 = dx*dx+dy*dy+dz*dz;
-    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
-    tab[0]=FReal(1)/FMath::Sqrt(R2);   
-    FReal R3 = tab[0]/(R2);
-    tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
-    tab[2]= -dy*R3;                 //Derivative in (0,1,0)
-    tab[3]= -dz*R3;                 //Derivative in (0,0,1)
-    FReal R5 = R3/R2;
-    tab[4] = FReal(3)*dx*dx*R5-R3;  //Derivative in (2,0,0)
-    tab[5] = FReal(3)*dx*dy*R5;     //Derivative in (1,1,0)
-    tab[6] = FReal(3)*dx*dz*R5;     //Derivative in (1,0,1)
-    tab[7] = FReal(3)*dy*dy*R5-R3;  //Derivative in (0,2,0)
-    tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
-    tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
-  }
+
   void initDerivative(const FReal & dx ,const FReal & dy ,const FReal & dz  ,   FReal * tab)
   {
     FReal R2 = dx*dx+dy*dy+dz*dz;
@@ -252,97 +229,236 @@ private:
    * \f]
    *  where    \f$ \mathbf{k} = (k_1,k_2,k_3) \f$ 
    */
-   FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
-			  const FPoint target,                     // Center of local cell
-			  const FPoint src,                        // Center of distant cell
-			  FReal * yetComputed)
+  void computeFullDerivative( FReal  dx,  FReal  dy,  FReal  dz, // Distance from distant center to local center
+			      FReal * yetComputed)
   {
-    int idx = powerToIdx(a,b,c);
-    if((yetComputed[idx] != FReal(0)))
-      {
-	return yetComputed[idx];}
-    else
-      {
-	FReal dx = target.getX()-src.getX();
-	FReal dy = target.getY()-src.getY();
-	FReal dz = target.getZ()-src.getZ();
-	FReal dist2 = dx*dx+dy*dy+dz*dz;
-	FReal temp_value = FReal(0.0);
-	int idxt;
-	if(a > 0){
-	    idxt = powerToIdx(a-1,b,c);
-	    temp_value += (FReal(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
-	    if(a > 1){
-	      idxt = powerToIdx(a-2,b,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1));
+   
+    initDerivative(dx,dy,dz,yetComputed);
+    FReal dist2 =  dx*dx+dy*dy+dz*dz;
+    int idxTarget;                      //Index of current yetComputed entry
+    int idxSrc1, idxSrc2, idxSrc3,      //Indexes of needed yetComputed entries
+      idxSrc4, idxSrc5, idxSrc6;        
+    int a=0,b=0,c=0;                    //Powers of expansions
+    
+    for(c=3 ; c<=2*P ; ++c){
+      //Computation of derivatives Psi_{0,0,c}
+      // |x-y|^2 * Psi_{0,0,c} + (2*c-1) * dz *Psi_{0,0,c-1} + (c-1)^2 * Psi_{0,0,c-2} = 0
+      idxTarget = powerToIdx(0,0,c);
+      idxSrc1 = powerToIdx(0,0,c-1);
+      idxSrc2 = powerToIdx(0,0,c-2);
+      yetComputed[idxTarget] = -(FReal(2*c-1)*dz*yetComputed[idxSrc1] + FReal((c-1)*(c-1))*yetComputed[idxSrc2])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+    }
+    //printf(" Psi_{0,0,c} computed \n");
+    b=1;
+    for(c=2 ; c<=2*P-1 ; ++c){
+      //Computation of derivatives Psi_{0,1,c}
+      // |x-y|^2 * Psi_{0,1,c} + (2*c) * dz *Psi_{0,1,c-1} + c*(c-1) * Psi_{0,1,c-2} + dy*Psi_{0,0,c} = 0
+      idxTarget = powerToIdx(0,1,c);
+      idxSrc1 = powerToIdx(0,1,c-1);
+      idxSrc2 = powerToIdx(0,1,c-2);
+      idxSrc3 = powerToIdx(0,0,c);
+      yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2]+ dy*yetComputed[idxSrc3])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+    }
+    //printf(" Psi_{0,1,c} computed \n");
+    b=2;
+    for(c=1 ; c<= 2*P-b ; ++c){
+      //Computation of derivatives Psi_{0,2,c}
+      //|x-y|^2 * Psi_{0,2,c} + (2*c) * dz *Psi_{0,2,c-1} + (c*(c-1)) * Psi_{0,2,c-2} + 3*dy * Psi_{0,1,c} + Psi_{0,0,c}  = 0
+      idxTarget = powerToIdx(0,2,c);
+      idxSrc1 = powerToIdx(0,2,c-1);
+      idxSrc2 = powerToIdx(0,2,c-2);
+      idxSrc3 = powerToIdx(0,1,c);
+      idxSrc4 = powerToIdx(0,0,c);
+      yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2]
+				 + FReal(3)*dy*yetComputed[idxSrc3] + yetComputed[idxSrc4])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+    }
+    //printf(" Psi_{0,2,c} computed \n");
+  
+    for(b=3 ; b<= 2*P ; ++b){
+      //Computation of derivatives Psi_{0,b,0}
+      // |x-y|^2 * Psi_{0,b,0} + (2*b-1) * dy *Psi_{0,b-1,0} + (b-1)^2 * Psi_{0,b-2,c} = 0
+      idxTarget = powerToIdx(0,b,0);
+      idxSrc1 = powerToIdx(0,b-1,0);
+      idxSrc2 = powerToIdx(0,b-2,0);
+      yetComputed[idxTarget] = -(FReal(2*b-1)*dy*yetComputed[idxSrc1] + FReal((b-1)*(b-1))*yetComputed[idxSrc2])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,0,idxTarget,yetComputed[idxTarget]);
+   
+      for(c=1 ; c<= 2*P-b ; ++c) {
+	//Computation of derivatives Psi_{0,b,c}
+	//|x-y|^2*Psi_{0,b,c} + (2*c)*dz*Psi_{0,b,c-1} + (c*(c-1))*Psi_{0,b,c-2} + (2*b-1)*dy*Psi_{0,b-1,c} + (b-1)^2 * Psi_{0,b-2,c}  = 0
+	idxTarget = powerToIdx(0,b,c);
+	idxSrc1 = powerToIdx(0,b,c-1);
+	idxSrc2 = powerToIdx(0,b,c-2);
+	idxSrc3 = powerToIdx(0,b-1,c);
+	idxSrc4 = powerToIdx(0,b-2,c);
+	yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2]
+				   + FReal(2*b-1)*dy*yetComputed[idxSrc3] + FReal((b-1)*(b-1))*yetComputed[idxSrc4])/dist2;
+	printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+      }
+    }
+    //printf(" Psi_{0,b,c} computed \n");
+  
+    a=1;
+    b=0;
+    for(c=2 ; c<= 2*P-1 ; ++c){
+      //Computation of derivatives Psi_{1,0,c}
+      //|x-y|^2 * Psi_{1,0,c} + (2*c)*dz*Psi_{1,0,c-1} + c*(c-1)*Psi_{1,0,c-2} + dx*Psi_{0,0,c}
+      idxTarget = powerToIdx(1,0,c);
+      idxSrc1 = powerToIdx(1,0,c-1);
+      idxSrc2 = powerToIdx(1,0,c-2);
+      idxSrc3 = powerToIdx(0,0,c);
+      yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2] + dx*yetComputed[idxSrc3])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+    }
+    //printf(" Psi_{1,0,c} computed \n");
+    b=1;
+    //Computation of derivatives Psi_{1,1,1}
+    //|x-y|^2 * Psi_{1,1,1} + 2*dz*Psi_{1,1,0} + 2*dy*Psi_{1,0,1} + dx*Psi_{0,1,1}
+    idxTarget = powerToIdx(1,1,1);
+    idxSrc1 = powerToIdx(1,1,0);
+    idxSrc2 = powerToIdx(1,0,1);
+    idxSrc3 = powerToIdx(0,1,1);
+    yetComputed[idxTarget] = -(FReal(2)*dz*yetComputed[idxSrc1] + FReal(2)*dy*yetComputed[idxSrc2] + dx*yetComputed[idxSrc3])/dist2;
+    printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,1,1,1,idxTarget,yetComputed[idxTarget]);
+    for(c=2 ; c<= 2*P-2 ; ++c){
+      //Computation of derivatives Psi_{1,1,c}
+      //|x-y|^2 * Psi_{1,1,c} + (2*c)*dz*Psi_{1,1,c-1} + c*(c-1)*Psi_{1,1,c-2} + 2*dy*Psi_{1,0,c} + dx*Psi_{0,1,c}
+      idxTarget = powerToIdx(1,1,c);
+      idxSrc1 = powerToIdx(1,1,c-1);
+      idxSrc2 = powerToIdx(1,1,c-2);
+      idxSrc3 = powerToIdx(1,0,c);
+      idxSrc4 = powerToIdx(0,1,c);
+      yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2] 
+				 + FReal(2)*dy*yetComputed[idxSrc3]+ dx*yetComputed[idxSrc4])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+    }
+    //printf(" Psi_{1,1,c} computed \n");
+  
+    for(b=2 ; b<= 2*P-a ; ++b){
+      for(c=0 ; c<= 2*P-b-1 ; ++c){
+	//Computation of derivatives Psi_{1,b,c}
+	//|x-y|^2 * Psi_{1,b,c} + (2*b)*dy*Psi_{1,b-1,c} + b*(b-1)*Psi_{1,b-2,c} + (2*c)*dz*Psi_{1,b,c-1} + c*(c-1)*Psi_{1,b,c-2} + dx*Psi_{0,b,c}
+	idxTarget = powerToIdx(1,b,c);
+	idxSrc1 = powerToIdx(1,b-1,c);
+	idxSrc2 = powerToIdx(1,b-2,c);
+	idxSrc3 = powerToIdx(1,b,c-1);
+	idxSrc4 = powerToIdx(1,b,c-2);
+	idxSrc5 = powerToIdx(0,b,c);
+	yetComputed[idxTarget] = -(FReal(2*b)*dy*yetComputed[idxSrc1] + FReal(b*(b-1))*yetComputed[idxSrc2] 
+				   + FReal(2*c)*dz*yetComputed[idxSrc3]+ FReal(c*(c-1))*yetComputed[idxSrc4]
+				   + dx*yetComputed[idxSrc5])/dist2;
+	printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
+      }
+    }
+    //printf(" Psi_{1,b,c} computed \n");
+  
+    for(a=2 ; a<=2*P ; ++a){
+      //Computation of derivatives Psi_{a,0,0}
+      // |x-y|^2 * Psi_{a,0,0} + (2*a-1) * dx *Psi_{a-1,0,0} + (a-1)^2 * Psi_{a-2,0,0} = 0
+      idxTarget = powerToIdx(a,0,0);
+      idxSrc1 = powerToIdx(a-1,0,0);
+      idxSrc2 = powerToIdx(a-2,0,0);
+      yetComputed[idxTarget] = -(FReal(2*a-1)*dx*yetComputed[idxSrc1] + FReal((a-1)*(a-1))*yetComputed[idxSrc2])/dist2;
+      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,0,0,idxTarget,yetComputed[idxTarget]);
+      if(a <= 2*P-1){
+	//Computation of derivatives Psi_{a,0,1}
+	// |x-y|^2 * Psi_{a,0,1} + 2*dz*Psi_{a,0,0} + (2*a-1)*dx*Psi_{a-1,0,1} + (a-1)^2*Psi_{a-2,0,1} = 0
+	idxSrc1 = idxTarget;
+	idxTarget = powerToIdx(a,0,1);
+	idxSrc2 = powerToIdx(a-1,0,1);
+	idxSrc3 = powerToIdx(a-2,0,1);
+	yetComputed[idxTarget] = -(FReal(2)*dz*yetComputed[idxSrc1] + FReal(2*a-1)*dx*yetComputed[idxSrc2] + FReal((a-1)*(a-1))*yetComputed[idxSrc3])/dist2;
+	printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,0,1,idxTarget,yetComputed[idxTarget]);
+	//Computation of derivatives Psi_{a,1,0}
+	// |x-y|^2 * Psi_{a,1,0} + 2*dy*Psi_{a,0,0} + (2*a-1)*dx*Psi_{a-1,1,0} + (a-1)^2*Psi_{a-2,1,0} = 0
+	idxTarget = powerToIdx(a,1,0);
+	idxSrc2 = powerToIdx(a-1,1,0);
+	idxSrc3 = powerToIdx(a-2,1,0);
+	yetComputed[idxTarget] = -(FReal(2)*dy*yetComputed[idxSrc1] + FReal(2*a-1)*dx*yetComputed[idxSrc2] + FReal((a-1)*(a-1))*yetComputed[idxSrc3])/dist2;
+	printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,1,0,idxTarget,yetComputed[idxTarget]);
+	if(a <= 2*P-2){
+	  b=0;
+	  for(c=2 ; c <= 2*P-a ; ++c){
+	    //Computation of derivatives Psi_{a,0,c}
+	    // |x-y|^2 * Psi_{a,0,c} + 2*c*dz*Psi_{a,0,c-1} + c*(c-1)*Psi_{a,0,c-2} + (2*a-1)*dx*Psi_{a-1,0,c} + (a-1)^2*Psi_{a-2,0,c} = 0
+	    idxTarget = powerToIdx(a,0,c);
+	    idxSrc1 = powerToIdx(a,0,c-1);
+	    idxSrc2 = powerToIdx(a,0,c-2);
+	    idxSrc3 = powerToIdx(a-1,0,c);
+	    idxSrc4 = powerToIdx(a-2,0,c);
+	    yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2] 
+				       + FReal(2*a-1)*dx*yetComputed[idxSrc3] + FReal((a-1)*(a-1))*yetComputed[idxSrc4])/dist2;
+	    printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,0,c,idxTarget,yetComputed[idxTarget]);
+	  }
+	  b=1;
+	  for(c=1 ; c <= 2*P-a-1 ; ++c){
+	    //Computation of derivatives Psi_{a,1,c}
+	    // |x-y|^2 * Psi_{a,1,c} + 2*c*dz*Psi_{a,1,c-1} + c*(c-1)*Psi_{a,1,c-2} + 2*a*dx*Psi_{a-1,1,c} + a*(a-1)*Psi_{a-2,1,c} + dy*Psi_{a,0,c}= 0
+	    idxTarget = powerToIdx(a,1,c);
+	    idxSrc1 = powerToIdx(a,1,c-1);
+	    idxSrc2 = powerToIdx(a,1,c-2);
+	    idxSrc3 = powerToIdx(a-1,1,c);
+	    idxSrc4 = powerToIdx(a-2,1,c);
+	    idxSrc5 = powerToIdx(a,0,c);
+	    yetComputed[idxTarget] = -(FReal(2*c)*dz*yetComputed[idxSrc1] + FReal(c*(c-1))*yetComputed[idxSrc2] 
+				       + FReal(2*a)*dx*yetComputed[idxSrc3] + FReal(a*(a-1))*yetComputed[idxSrc4]
+				       + dy*yetComputed[idxSrc5])/dist2;
+	    printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,1,c,idxTarget,yetComputed[idxTarget]);
+	  }
+	
+	  for(b=2 ; b <= 2*P-a ; ++b){
+	    //Computation of derivatives Psi_{a,b,0}
+	    // |x-y|^2 * Psi_{a,b,0} + 2*b*dy*Psi_{a,b-1,0} + b*(b-1)*Psi_{a,b-2,0} + (2*a-1)*dx*Psi_{a-1,b,0} + (a-1)^2*Psi_{a-2,b,0} = 0
+	    idxTarget = powerToIdx(a,b,0);
+	    idxSrc1 = powerToIdx(a,b-1,0);
+	    idxSrc2 = powerToIdx(a,b-2,0);
+	    idxSrc3 = powerToIdx(a-1,b,0);
+	    idxSrc4 = powerToIdx(a-2,b,0);
+	    yetComputed[idxTarget] = -(FReal(2*b)*dy*yetComputed[idxSrc1] + FReal(b*(b-1))*yetComputed[idxSrc2]
+				       + FReal(2*a-1)*dx*yetComputed[idxSrc3] + FReal((a-1)*(a-1))*yetComputed[idxSrc4])/dist2;
+	    printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,0,idxTarget,yetComputed[idxTarget]);
+	  
+	    if(a+b < 2*P){
+	      //Computation of derivatives Psi_{a,b,1}
+	      // |x-y|^2 * Psi_{a,b,1} + 2*b*dy*Psi_{a,b-1,1} + b*(b-1)*Psi_{a,b-2,1} + 2*a*dx*Psi_{a-1,b,1} + a*(a-1)*Psi_{a-2,b,1} + dz*Psi_{a,b,0}= 0
+	      idxTarget = powerToIdx(a,b,1);
+	      idxSrc1 = powerToIdx(a,b-1,1);
+	      idxSrc2 = powerToIdx(a,b-2,1);
+	      idxSrc3 = powerToIdx(a-1,b,1);
+	      idxSrc4 = powerToIdx(a-2,b,1);
+	      idxSrc5 = powerToIdx(a,b,0);
+	      yetComputed[idxTarget] = -(FReal(2*b)*dy*yetComputed[idxSrc1] + FReal(b*(b-1))*yetComputed[idxSrc2]
+					 + FReal(2*a)*dx*yetComputed[idxSrc3] + FReal(a*(a-1))*yetComputed[idxSrc4]
+					 + dz*yetComputed[idxSrc5])/dist2;
+	      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,1,idxTarget,yetComputed[idxTarget]);
 	    }
-	}
-	if(b > 0){
-	    idxt = powerToIdx(a,b-1,c);
-	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b);
-	    if(b > 1){
-	      idxt = powerToIdx(a,b-2,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1));
+	    for(c=2 ; c <= 2*P-b-a ; ++c){
+	      //Computation of derivatives Psi_{a,b,c} with a >= 2
+	      // |x-y|^2*Psi_{a,b,c} + (2*a-1)*dx*Psi_{a-1,b,c} + a*(a-2)*Psi_{a-2,b,c} + 2*b*dy*Psi_{a,b-1,c} + b*(b-1)*Psi_{a,b-2,c} + 2*c= 0
+	      idxTarget = powerToIdx(a,b,c);
+	      idxSrc1 = powerToIdx(a-1,b,c);
+	      idxSrc2 = powerToIdx(a,b-1,c);
+	      idxSrc3 = powerToIdx(a,b,c-1);
+	      idxSrc4 = powerToIdx(a-2,b,c);
+	      idxSrc5 = powerToIdx(a,b-2,c);
+	      idxSrc6 = powerToIdx(a,b,c-2);
+	      yetComputed[idxTarget] = -(FReal(2*a-1)*dx*yetComputed[idxSrc1] + FReal((a-1)*(a-1))*yetComputed[idxSrc4]
+					 + FReal(2*b)*dy*yetComputed[idxSrc2] + FReal(b*(b-1))*yetComputed[idxSrc5]
+					 + FReal(2*c)*dz*yetComputed[idxSrc3] + FReal(c*(c-1))*yetComputed[idxSrc6])/dist2;
+	    
+	      printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,a,b,c,idxTarget,yetComputed[idxTarget]);
 	    }
+	  }
 	}
-	if(c > 0){
-	    idxt = powerToIdx(a,b,c-1);
-	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c);
-	    if(c > 1){
-	      idxt = powerToIdx(a,b,c-2);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1));
-	    }
-	}
-	FReal coeff = FReal(a+b+c)*dist2 ; 
-	// 	temp_value = temp_value/coeff;
-	yetComputed[idx] = temp_value/coeff;
-	return yetComputed[idx];
-	}
+      }
+    }
+    //printf(" Psi_{a,b,c} computed \n");
   }
-  FReal computeDerivative(const int a, const int b, const int c,   // Powers of derivatives
-			  const FReal & dx, const FReal & dy, const FReal & dz, 
-			  FReal * yetComputed)
-  {
-    int idx = powerToIdx(a,b,c);
-    if((yetComputed[idx] != FReal(0)))
-      {
-	return yetComputed[idx];}
-    else
-      {
-	FReal dist2 = dx*dx+dy*dy+dz*dz;
-	FReal temp_value = FReal(0.0);
-	int idxt;
-	if(a > 0){
-	    idxt = powerToIdx(a-1,b,c);
-	    temp_value += (FReal(2*(a+b+c)-1))*dx*yetComputed[idxt]*FReal(a);
-	    if(a > 1){
-	      idxt = powerToIdx(a-2,b,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(a*(a-1));
-	    }
-	}
-	if(b > 0){
-	    idxt = powerToIdx(a,b-1,c);
-	    temp_value += FReal(2*(a+b+c)-1)*dy*yetComputed[idxt]*FReal(b);
-	    if(b > 1){
-	      idxt = powerToIdx(a,b-2,c);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(b*(b-1));
-	    }
-	}
-	if(c > 0){
-	    idxt = powerToIdx(a,b,c-1);
-	    temp_value += FReal(2*(a+b+c)-1)*dz*yetComputed[idxt]*FReal(c);
-	    if(c > 1){
-	      idxt = powerToIdx(a,b,c-2);
-	      temp_value -= FReal(a+b+c-1)*yetComputed[idxt]*FReal(c*(c-1));
-	    }
-	}
-	FReal coeff = FReal(a+b+c)*dist2 ; 
-	// 	temp_value = temp_value/coeff;
-	yetComputed[idx] = temp_value/coeff;
-	return yetComputed[idx];
-	}
-  }
- 
+
+
   /////////////////////////////////
   ///////// Public Methods ////////
   /////////////////////////////////
@@ -389,7 +505,7 @@ public:
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
     printf("P2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
-    FMemUtils::memset(multipole,FReal(0.0),SizeVector*FReal(0.0));
+    FMemUtils::memset(multipole,0,SizeVector*FReal(0.0));
     //    
     // Iterator over Particles
     //
@@ -398,7 +514,7 @@ public:
     const FReal* posX = positions[0];
     const FReal* posY = positions[1];
     const FReal* posZ = positions[2];
-	
+    
     const FReal* phyValue = particles->getPhysicalValues();
     //
     // Iterating over Particles
@@ -409,10 +525,7 @@ public:
       FReal dx =  xc - posX[idPart] ;
       FReal dy =  yc - posY[idPart] ;
       FReal dz =  zc - posZ[idPart] ;
-      //      
-      if(xc == FReal(3)){
-	fprintf(out,"P2M : distance : %f,%f,%f\n",dx,dy,dz);
-      }
+
       // Precompute the an arrays of dx^i
       arrayDX[0] = 1.0 ;
       arrayDY[0] = 1.0 ;
@@ -445,7 +558,7 @@ public:
       a = b = c = 0; 
       for(int i=0 ; i<SizeVector ; ++i)
 	{
-	  fprintf(out,"P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
+	  fprintf(stdout,"P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
 		 cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
 	  incPowers(&a,&b,&c);   
 	} 	
@@ -465,8 +578,7 @@ public:
   //   	  } 
   //     } 
   // } 
-  
-
+    
   }
   
 
@@ -479,6 +591,7 @@ public:
 	   const CellClass*const FRestrict *const FRestrict child, 
 	   const int inLevel)
   {
+    exit(0);
     printf("M2M %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Powers of expansions
     int a=0,b=0,c=0;
@@ -580,26 +693,25 @@ public:
       fprintf(out,"M2l :: pole_target : X: %f, Y: %f, Z:%f\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
     }
     FReal * iterLocal = local->getLocal();
-    FMemUtils::memset(iterLocal,FReal(0.0),SizeVector*sizeof(FReal(0.0)));
-
+    FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0.0)));
+    FReal yetComputed[sizeDerivative];
+    
     for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
 
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
 	//Derivatives are computed iteratively
-	FReal yetComputed[sizeDerivative];
-	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0)));
 	
-
+	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0.0)));
+	
 	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
-	if(locCenter.getX() == FReal(-3)){
-	  fprintf(out,"M2l :: pole_source : X: %f, Y: %f, Z:%f\n",curDistCenter.getX(),curDistCenter.getY(),curDistCenter.getZ());
-	}
 	FReal dx = locCenter.getX()-curDistCenter.getX();
 	FReal dy = locCenter.getY()-curDistCenter.getY();
 	FReal dz = locCenter.getZ()-curDistCenter.getZ();
 
-	initDerivative(dx,dy,dz, yetComputed); //(target,source,yetComputed)
+	
+	//Computation of all the derivatives needed
+	computeFullDerivative(dx,dy,dz,yetComputed);
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; // For local array
@@ -612,19 +724,22 @@ public:
 	  //
 	  //Iterator over multipole array 
 	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
-	  FReal psi, tmp = 0.0 ;
+	  
+	  //For debugging purposes
+	  //FReal multipole[SizeVector];
+	  //FMemUtils::memset(multipole,0,SizeVector*sizeof(FReal(0.0)));
+	  //multipole[3]=FReal(1);
+
+	  FReal tmp = 0.0 ;
 	  //Iterating over multipole array : k
 	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!)
 	  //
 	  am=0;	  bm=0;  cm=0;
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
-	    //psi is the derivative of 1/R,al+am,bl+bm,cl+cm.
-	    //	    psi  = computeDerivative(al+am,bl+bm,cl+cm,locCenter,curDistCenter,yetComputed); //(order of derivative, target, source, yetComputed)
-	    psi  = computeDerivative(al+am,bl+bm,cl+cm,dx,dy,dz,yetComputed); //(order of derivative, target, source, yetComputed)
-	    tmp += psi*multipole[j];
+	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
+	    tmp += yetComputed[idxPsi]*multipole[j];
 	    
-	    //++count;
-	    //printf("count : %d, al+am = %d, bl+bm=%d, cl+cm=%d\n",count,al+am,bl+bm,cl+cm);
+	    printf("al= %d, bl=%d, cl=%d ==> %d, am=%d, bm=%d, cm=%d ==> %d, psi[%d]=%f\n",al,bl,cl,i,am,bm,cm,j,powerToIdx(al+am,bl+bm,cl+cm),yetComputed[powerToIdx(al+am,bl+bm,cl+cm)]);
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
 	  }
@@ -632,13 +747,13 @@ public:
 	  incPowers(&al,&bl,&cl);
 	}
 	// For Debugging ..........................................................
-	if(locCenter.getX() == FReal(-3)){
+	//if(locCenter.getX() == FReal(-3)){
 	  int x=0,y=0,z=0;
 	  FReal tot = FReal(0);
 	  for(int dby=0 ; dby<SizeVector ; dby++)
 	    {	
-	      tot += yetComputed[dby];
-	      fprintf(out,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
+	      //tot += yetComputed[dby];
+	      fprintf(stdout,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
 	      incPowers(&x,&y,&z);
 	    }
 	  fprintf(out,"tot : %f\n\n\n",tot);
@@ -646,10 +761,10 @@ public:
 	  for(int dby=0 ; dby<sizeDerivative ; dby++)
 	    {	
 	      tot+=yetComputed[dby];
-	      fprintf(stdout,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
+	      //fprintf(stdout,"M2L :: source %f, (%d,%d,%d) ==> derive : %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
 	      incPowers(&x,&y,&z);
 	    }
-	}
+	  //}
       }
     }
   }
@@ -665,6 +780,7 @@ public:
 	   CellClass* FRestrict * const FRestrict child, 
 	   const int /*inLevel*/)
   {
+    exit(0);
     FPoint locCenter = getLeafCenter(local->getCoordinate());
     FReal dx;
     FReal dy;
@@ -770,7 +886,7 @@ public:
 	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
 	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  //
-	  printf("expand : %d,%d,%d,j : %d, locForce : %f\n",a,b,c,j,locForce);
+	  //printf("expand : %d,%d,%d,j : %d, locForce : %f\n",a,b,c,j,locForce);
 	  incPowers(&a,&b,&c);
 	}
 	targetsPotentials[i]  = partPhyValue*locPot ;

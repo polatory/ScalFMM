@@ -10,6 +10,7 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FTypedLeaf.hpp"
 
 #include "../../Src/Containers/FVector.hpp"
 #include "../../Src/Containers/FOctree.hpp"
@@ -24,7 +25,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 3;
+  static const int P = 2;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
@@ -48,29 +49,46 @@ int main(int argc,char* argv[]){
   OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, rootCenter);
   //OctreeClass tree_P2P(2, SizeSubLevels, boxWidth, rootCenter);
 
-  FPoint part1Pos = FPoint(FReal(3.75),FReal(0.25),FReal(0.25));
+  // FReal tab[(2*P+1)*(2*P+3)*(P+1)/3];
+  // FReal dx=FReal(-6.0);
+  // FReal dy=FReal(0.0);
+  // FReal dz=FReal(0.0);
+  
+  // KernelClass ker2(NbLevels, boxWidth, rootCenter);
+  // ker2.initDerivative(dx,dy,dz,tab);
+  // //ker2.computeDerivative(0,3,0,dx,dy,dz,tab);
+  
+  // for(int a=0 ; a<2*P ; ++a){
+  //   printf("a : %d, a : %d, a: %d\n",a,a,a);
+  //   for(int b=0 ; b<2*P-a ; ++b){
+  //     printf("a : %d, b : %d, b: %d\n",a,b,b);
+  //     for(int c=0 ; (a+b+c == 2*P) ; ++c){
+  // 	printf("a : %d, b : %d, c: %d\n",a,b,c);
+  // 	ker2.computeDerivative(a,b,c,dx,dy,dz,tab);
+  //     }
+  //   }
+  // }
+  // exit(-1);
+  
+
+  FPoint part1Pos = FPoint(FReal(3.0),FReal(1.0),FReal(1.5));
   FReal physVal1 = 1;
 
-  FPoint part2Pos = FPoint(FReal(-3.75),FReal(0.25),FReal(0.25));
+  FPoint part2Pos = FPoint(FReal(-3.0),FReal(1),FReal(1));
   FReal physVal2 = 100;
   
   tree.insert(part1Pos,physVal1);
   tree.insert(part2Pos,physVal2);
 
-  // tree_P2P.insert(part1Pos,physVal1);
-  //tree_P2P.insert(part2Pos,physVal2);
-
 
   KernelClass kernels(NbLevels, boxWidth, rootCenter);
-  //  KernelClass kernels_P2P(2, boxWidth, rootCenter);
+
 
   FmmClass algo(&tree,&kernels);
-  //  FmmClassThread algo(&tree,&kernels);
   algo.execute();
   
-  //  FmmClass algo_P2P(&tree_P2P,&kernels_P2P);
-  // algo_P2P.execute();
 
+ 
   { // get sum forces&potential
     FReal potential = 0;
     
