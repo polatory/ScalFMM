@@ -614,7 +614,7 @@ public:
     FReal dz = 0.0;
     //Center point of parent cell
     const FPoint& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
-    printf("M2M :: pole_target : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    printf("M2M ::  fatherCell : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * mult = pole->getMultipole();
     FMemUtils::memset(pole,FReal(0.0),SizeVector*FReal(0.0));
     
@@ -627,11 +627,11 @@ public:
 	if(child[idxChild]){
 	  
 	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
-	  printf("M2M :: cells sources : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
+	  printf("M2M ::  child cells : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
 	  //const FReal * const multChild = child[idxChild]->getMultipole();
 	  FReal multChild[SizeVector];
-	  FMemUtils::memset(multChild,FReal(0.0),SizeVector*FReal(0.0));
-	  multChild[16]=1;
+	  FMemUtils::memset(multChild,0,SizeVector*sizeof(FReal(0.0)));
+	  multChild[1]=1;
 	  //Set the distance between centers of cells
 	  dx = cellCenter.getX() - childCenter.getX();
 	  dy = cellCenter.getY() - childCenter.getY();
@@ -650,8 +650,12 @@ public:
 	    arrayDX[i] = dx * arrayDX[i-1] ;
 	    arrayDY[i] = dy * arrayDY[i-1] ; 
 	    arrayDZ[i] = dz * arrayDZ[i-1] ;
-	    printf(" M2M arrayD? ,i : %d, locForce : %f  %f  %f\n",i-1, arrayDX[i-1], arrayDY[i-1], arrayDZ[i-1] );
+	    //	    printf(" M2M arrayD? ,i : %d, locForce : %f  %f  %f\n",i-1, arrayDX[i-1], arrayDY[i-1], arrayDZ[i-1] );
 	  }
+	  // for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
+	  //   {
+	  //     printf("     Mf %d %f\n",idxMult,multChild[idxMult]);
+	  //   }   
 	  
 	  a=0;
 	  b=0;
@@ -660,26 +664,31 @@ public:
 	  //Iteration over parent multipole array
 	  for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
 	    {
-	      value = mult[idxMult];
+	      value = 0.0;
 	      Nk    = factorials[a+b+c]/fact3int(a,b,c) ;
+	      //	      printf("M2M  a = %d, b = %d, c = %d, i  %d \n",a,b,c,idxMult);
 	      int idMultiChild;
 	      //Iteration over the powers to find the cell multipole
 	      //involved in the computation of the parent multipole
 	      for(idx_a=0 ; idx_a <= a ; ++idx_a){
 		for(idx_b=0 ; idx_b <= b ; ++idx_b){
 		  for(idx_c=0 ; idx_c <= c ; ++idx_c){
+
 		    //Computation
 		    //Child multipole involved
 		    idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+		    //    printf("     a = %d, b = %d, c = %d, A-IDX %d %d %d i  %d \n",idx_a,idx_b,idx_c,a-idx_a,b-idx_b,c-idx_c,idMultiChild);
 		    // coeff = 1/( n_{k-r} r!)	   
 		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(factorials[a+b+c-idx_a-idx_b-idx_c]*fact3int(idx_a,idx_b,idx_c));
 		    //
 		    value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+		    //		    printf("         value %f  Mp %f coeff %f  dx %f dy %f dz %f \n",value,multChild[idMultiChild],coeff,arrayDX[idx_a],arrayDY[idx_b],arrayDZ[idx_c]);
 		  }
 		}
 	      }
+	      std::cout << std::endl;
 	      //printf("M2M :: cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
-	      mult[idxMult] = Nk*value;
+	      mult[idxMult] += Nk*value;
 	      incPowers(&a,&b,&c);
 	    }
 	  
@@ -693,7 +702,7 @@ public:
 	}
       }
   }
-  
+ 
   /**
    *@brief Convert the multipole expansion into local expansion The
    * operator do not use symmetries.
@@ -811,31 +820,12 @@ public:
    * avec 
    * \f[ L_\mathbf{n} = \sum_{\mathbf{k}=\mathbf{n}}^{\mathbf{p}}{C^\mathbf{n}_\mathbf{k}  O_\mathbf{k-n}\;(\mathbf{x}_f-\mathbf{x}_p)^\mathbf{k-n}}.\f] 
    */
-<<<<<<< HEAD
-  void L2L(const CellClass* const FRestrict local, 
-	   CellClass* FRestrict * const FRestrict child, 
-	   const int inLevel)
-  {
 
-    FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
-    FReal dx;
-    FReal dy;
-    FReal dz;
-    int a, b, c;
-    // For all children
-    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-      // if child exists
-      if(child[idxChild]){
-	a=0;
-	b=0;
-	c=0;
-	FPoint childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
-=======
   void L2L(const CellClass* const FRestrict fatherCell, 
 	   CellClass* FRestrict * const FRestrict childCell, 
-	   const int /*inLevel*/)
+	   const int inLevel)
   {
-    FPoint locCenter = getLeafCenter(fatherCell->getCoordinate());
+    FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     // Get father local expansion
     const FReal*   fatherExpansion = fatherCell->getLocal()  ;
     FReal dx,  dy,  dz, coeff;
@@ -846,8 +836,8 @@ public:
       // if child exists
       if(childCell[idxChild]){
 	FReal*   childExpansion = childCell[idxChild]->getLocal() ;
-	FPoint childCenter = getLeafCenter(childCell[idxChild]->getCoordinate());
->>>>>>> 36e56db26445e1f6668fde3fc25c87666917299d
+	FPoint childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+
 	//Set the distance between centers of cells
 	// Child - father
 	dx = childCenter.getX()-locCenter.getX();
@@ -870,7 +860,7 @@ public:
 	  //Iterator over parent's local array
 	  ap=0;	bp=0;	cp=0;
 	  for(int i=k ; i<SizeVector ; ++i){
-	    coeff = combin(ap,af)* combin(bp,bf)* combin(cp,cf);
+	    coeff = combin(af,ap)* combin(bf,bp)* combin(cf,cp);
 	    childExpansion[k] += coeff*fatherExpansion[i-k]*arrayDX[ap]*arrayDY[bp]*arrayDZ[cp] ;
 	    incPowers(&ap,&bp,&cp);
 	  }
