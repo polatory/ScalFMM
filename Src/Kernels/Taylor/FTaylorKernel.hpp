@@ -819,24 +819,27 @@ public:
    * \f[ V(x) = \sum_{\mathbf{n}=0}^{P}{L_\mathbf{n} (\mathbf{x}-\mathbf{x}_f)^\mathbf{n}} \f]
    * avec 
    * \f[ L_\mathbf{n} = \sum_{\mathbf{k}=\mathbf{n}}^{\mathbf{p}}{C^\mathbf{n}_\mathbf{k}  O_\mathbf{k-n}\;(\mathbf{x}_f-\mathbf{x}_p)^\mathbf{k-n}}.\f] 
+   * La formule est implémentée en introduisant un changement d'indice \f$\mathbf{r}=\mathbf{k}-\mathbf{n}\f$. On obtient alors :
+   * \f[ L_\mathbf{n} = \sum_{\mathbf{r}=0}^{\mathbf{p}-\mathbf{n}}{C^\mathbf{n}_\mathbf{r+n}  O_\mathbf{r}\;(\mathbf{x}_f-\mathbf{x}_p)^\mathbf{r}}.\f] 
+   *
    */
 
   void L2L(const CellClass* const FRestrict fatherCell, 
 	   CellClass* FRestrict * const FRestrict childCell, 
 	   const int inLevel)
   {
-    FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
+    FPoint &locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     // Get father local expansion
-    const FReal*   fatherExpansion = fatherCell->getLocal()  ;
+    const FReal* fatherExpansion = fatherCell->getLocal()  ;
     FReal dx,  dy,  dz, coeff;
-    int ap, bp, cp,af, bf, cf ;
+    int ap, bp, cp, af, bf, cf;
     //
     // For all children
     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
       // if child exists
       if(childCell[idxChild]){
-	FReal*   childExpansion = childCell[idxChild]->getLocal() ;
-	FPoint childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+	FReal* childExpansion = childCell[idxChild]->getLocal() ;
+	FPoint & childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
 
 	//Set the distance between centers of cells
 	// Child - father
@@ -859,7 +862,7 @@ public:
 	  //	  
 	  //Iterator over parent's local array
 	  ap=0;	bp=0;	cp=0;
-	  for(int i=k ; i<SizeVector ; ++i){
+	  //HERE : for( for( for( ... ) ) )
 	    coeff = combin(af,ap)* combin(bf,bp)* combin(cf,cp);
 	    childExpansion[k] += coeff*fatherExpansion[i-k]*arrayDX[ap]*arrayDY[bp]*arrayDZ[cp] ;
 	    incPowers(&ap,&bp,&cp);
