@@ -797,40 +797,58 @@ public:
   
   /**
    *@brief Translate the local expansion of parent cell to child cell
+
+   * Sur une cellule,  \f$\mathcal{C}_l\f$, du niveau \f$l\f$ de centre \f$\mathbf{x}_p\f$, on a le développement local du potentiel suivant
    * \f[
-   * L_{son} = \sum_{i=k}^{l} L_{i} (x_{son}-x_{father})^{i-k} \binom{i}{k}
-   *\f]
+   * V(x) = \sum_{\mathbf{k}=0}^{P}{O_\mathbf{k}\; (\mathbf{x}-\mathbf{x}_p)^\mathbf{k}}.\f]
+   *Soit \f$\mathbf{x}_f\f$ le centre d'une cellule fille de  \f$\mathcal{C}_l\f$, le potentiel s'écrit alors
+   * \f[ V(x) = \sum_{\mathbf{n}=0}^{P}{L_\mathbf{n} (\mathbf{x}-\mathbf{x}_f)^\mathbf{n}} \f]
+   * avec 
+   * \f[ L_\mathbf{n} = \sum_{\mathbf{k}=\mathbf{n}}^{\mathbf{p}}{C^\mathbf{n}_\mathbf{k}  O_\mathbf{k-n}\;(\mathbf{x}_f-\mathbf{x}_p)^\mathbf{k-n}}.\f] 
    */
-  void L2L(const CellClass* const FRestrict local, 
-	   CellClass* FRestrict * const FRestrict child, 
+  void L2L(const CellClass* const FRestrict fatherCell, 
+	   CellClass* FRestrict * const FRestrict childCell, 
 	   const int /*inLevel*/)
   {
-    exit(0);
-    FPoint locCenter = getLeafCenter(local->getCoordinate());
-    FReal dx;
-    FReal dy;
-    FReal dz;
-    int a, b, c;
+    FPoint locCenter = getLeafCenter(fatherCell->getCoordinate());
+    // Get father local expansion
+    const FReal*   fatherExpansion = fatherCell->getLocal()  ;
+    FReal dx,  dy,  dz, coeff;
+    int ap, bp, cp,af, bf, cf ;
+    //
     // For all children
     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
       // if child exists
-      if(child[idxChild]){
-	a=0;
-	b=0;
-	c=0;
-	FPoint childCenter = getLeafCenter(child[idxChild]->getCoordinate());
+      if(childCell[idxChild]){
+	FReal*   childExpansion = childCell[idxChild]->getLocal() ;
+	FPoint childCenter = getLeafCenter(childCell[idxChild]->getCoordinate());
 	//Set the distance between centers of cells
+	// Child - father
 	dx = childCenter.getX()-locCenter.getX();
 	dy = childCenter.getY()-locCenter.getY();
 	dz = childCenter.getZ()-locCenter.getZ();
+	// Precompute the  arrays of dx^i
+	arrayDX[0] = 1.0 ;
+	arrayDY[0] = 1.0 ;
+	arrayDZ[0] = 1.0 ;
+	for (int i = 1 ; i <= P ; ++i) 	{
+	  arrayDX[i] = dx * arrayDX[i-1] ;
+	  arrayDY[i] = dy * arrayDY[i-1] ; 
+	  arrayDZ[i] = dz * arrayDZ[i-1] ;
+	}
+	//
 	//iterator over child's local expansion (to be filled)
-	for(int k=0 ; k<SizeVector ; k++){
-	  
+	af=0;	bf=0;	cf=0;
+	for(int k=0 ; k<SizeVector ; ++k){
+	  //	  
 	  //Iterator over parent's local array
-	  for(int i=k ; i<SizeVector ; i++){
-	    (child[idxChild]->getLocal())[k] = (local->getLocal())[i]*FMath::pow(dx,a)*FMath::pow(dy,b)*FMath::pow(dz,c)*combin(i,k);
+	  ap=0;	bp=0;	cp=0;
+	  for(int i=k ; i<SizeVector ; ++i){
+	    coeff = combin(ap,af)* combin(bp,bf)* combin(cp,cf);
+	    childExpansion[k] += coeff*fatherExpansion[i-k]*arrayDX[ap]*arrayDY[bp]*arrayDZ[cp] ;
+	    incPowers(&ap,&bp,&cp);
 	  }
-	  incPowers(&a,&b,&c);
+	  incPowers(&af,&bf,&cf);
 	}	
       }
     }
