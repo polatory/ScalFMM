@@ -25,7 +25,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 2;
+  static const int P = 7;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
@@ -117,7 +117,7 @@ int main(int argc,char* argv[]){
     //
     FReal potTheo = physVal2*physVal1*FMath::Sqrt(FReal(1) / (dx*dx + dy*dy + dz*dz));
     potential *=FReal(0.5) ;
-    printf("Exact potential : %f     Computed  potential : %f  Error: %f \n",potTheo, potential,std::abs(potTheo- potential));
+    printf("Exact potential : %f     Computed  potential : %f  Error: %e \n",potTheo, potential,std::abs(potTheo- potential));
 
   }
 

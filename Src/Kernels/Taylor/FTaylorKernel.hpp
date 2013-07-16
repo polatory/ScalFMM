@@ -213,6 +213,9 @@ private:
     tab[7] = FReal(3)*dy*dy*R5-R3;  //Derivative in (0,2,0)
     tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
     tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
+     for(int c=0 ; c<=9 ; ++c){
+       printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,0,0,0,c,tab[c]);
+       }
   }
  
   /** @brief Compute and store the derivative for a given tuple.
@@ -503,7 +506,7 @@ public:
     FReal facto, coeff; 
     //Copying cell center position once and for all
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    printf("P2M :: pole : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    printf("P2M :: pole : X: %f, Y: %f, Z:%f  \n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*FReal(0.0));
     //    
@@ -521,6 +524,8 @@ public:
     //
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
     for(int idPart=0 ; idPart<nbPart ; ++idPart){
+      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
+
       // compute the distance to the centre	  
       FReal dx =  xc - posX[idPart] ;
       FReal dy =  yc - posY[idPart] ;
@@ -534,7 +539,10 @@ public:
 	arrayDX[i] = dx * arrayDX[i-1] ;
 	arrayDY[i] = dy * arrayDY[i-1] ; 
 	arrayDZ[i] = dz * arrayDZ[i-1] ;
+	printf("arrayD? ,i : %d, locForce : %f  %f  %f\n",i-1, arrayDX[i-1], arrayDY[i-1], arrayDZ[i-1] );
       }
+      printf("arrayD? ,i : %d, locForce : %f  %f  %f\n",P, arrayDX[P], arrayDY[P], arrayDZ[P] );
+
       //
       //Iterating over MutlipoleVector
       //
@@ -545,25 +553,26 @@ public:
 	  // update needed values
 	  //
 	  facto = fact3int(a,b,c);
-	  coeff = fact(a+b+c)/(facto*facto);
+	  coeff = factorials[a+b+c]/(facto*facto);
 	  //
 	  //Computation
 	  //
-	  multipole[i] += coeff*phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];	   
+	  multipole[i] += coeff*phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];
+	  
 	  incPowers(&a,&b,&c);       //inc powers of expansion
 	}  // end loop on multipoles
     }  // end loop on particles
     // Print the multipoles 
-    if(xc == FReal(3)){
+    //    if(xc == FReal(3)){
       a = b = c = 0; 
       for(int i=0 ; i<SizeVector ; ++i)
 	{
-	  fprintf(stdout,"P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> %f \n ",
-		 cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,multipole[i]);
+	  fprintf(stdout," P2M :: cell : X = %f, Y = %f, Z = %f, %d = (%d,%d,%d) --> coeff %f   M= %f\n ",
+		  cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a+b+c,a,b,c,factorials[a+b+c]/fact3int(a,b,c),multipole[i]);
 	  incPowers(&a,&b,&c);   
 	} 	
-    }
-  //   std::cout << std::endl;
+      //    }
+    std::cout << std::endl;
   //   for(int l=0 , idx = 0; l<= P ; ++l) // length of i + j + k = l
   //     {    
   //   	for( c=0 ; c <= l ; ++c)  
@@ -703,7 +712,9 @@ public:
 	//Derivatives are computed iteratively
 	
 	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0.0)));
-	
+	// 
+	// Compute derivatives on  locCenter - curDistCenter
+	//                           target       source
 	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
 	FReal dx = locCenter.getX()-curDistCenter.getX();
 	FReal dy = locCenter.getY()-curDistCenter.getY();
@@ -718,7 +729,7 @@ public:
 	int am,bm,cm;       // For distant array
 	//	
 	//Iterating over local array : n
-	for(int i=0 ; i< SizeVector ; i++){
+	for(int i=0 ; i< SizeVector ; ++i){
 	  FReal fctl   = fact3int(al,bl,cl);
 	  FReal coeffL = factorials[al+bl+cl]/(fctl*fctl);
 	  //
@@ -732,14 +743,17 @@ public:
 
 	  FReal tmp = 0.0 ;
 	  //Iterating over multipole array : k
-	  //  Loc(al,bl,cl) = sum_ Psi* M[am,bm,cm] * N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!)
+	  //  Loc(al,bl,cl) = N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!) sum_(am,bm,cm) Psi[am+al,bm+bl,cm+cl] * M[am,bm,cm]  
 	  //
 	  am=0;	  bm=0;  cm=0;
+	  printf("al= %d, bl=%d, cl=%d ==>    i =%d \n",al,bl,cl,i);
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
 	    tmp += yetComputed[idxPsi]*multipole[j];
 	    
-	    printf("al= %d, bl=%d, cl=%d ==> %d, am=%d, bm=%d, cm=%d ==> %d, psi[%d]=%f\n",al,bl,cl,i,am,bm,cm,j,powerToIdx(al+am,bl+bm,cl+cm),yetComputed[powerToIdx(al+am,bl+bm,cl+cm)]);
+
+	    printf(" j= %d, am=%d, bm=%d, cm=%d,, aml=%d, bml=%d, cml=%d, psi[%d]=%f\n",j,am,bm,cm,am+al,bm+bl,cm+cl,powerToIdx(al+am,bl+bm,cl+cm),yetComputed[powerToIdx(al+am,bl+bm,cl+cm)]);
+
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
 	  }
@@ -868,11 +882,16 @@ public:
 	arrayDX[1] = 1.0 ;
 	arrayDY[1] = 1.0 ;
 	arrayDZ[1] = 1.0 ;
+	std::cout<< std::endl;
+	printf("  ,(dx,dy,dz)  %f  %f  %f\n" ,dx, dy, dz);
 	for (int d = 2 ; d <= P+1 ; ++d){ //Array is staggered : Array[i] = dx^(i-1)
 	  arrayDX[d] = dx * arrayDX[d-1] ;
 	  arrayDY[d] = dy * arrayDY[d-1] ; 
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
-	}	
+	  printf("arrayD? ,j : %d, dx^j : %f  %f  %f\n",d-1, arrayDX[d-1], arrayDY[d-1], arrayDZ[d-1] );
+
+	}
+	std::cout<< std::endl;	
 	FReal partPhyValue = phyValues[i]; 
 	//
 	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
@@ -886,14 +905,16 @@ public:
 	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
 	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  //
-	  //printf("expand : %d,%d,%d,j : %d, locForce : %f\n",a,b,c,j,locForce);
+	  printf("  force X : %d,%d,%d,j : %d, locForceZ : %f  L_j  %f  %f  %f  %f \n",a,b,c,j,locForceZ,locForce,arrayDX[a],arrayDY[b+1],arrayDZ[c+1]);
 	  incPowers(&a,&b,&c);
 	}
 	targetsPotentials[i]  = partPhyValue*locPot ;
 	forceX[i]            = partPhyValue*locForceX ;
 	forceY[i]            = partPhyValue*locForceY ;
 	forceZ[i]            = partPhyValue*locForceZ ;
+      printf("  Part %d,  Pot %f FX : %f  FY : %f   FZ : %f \n",i,	targetsPotentials[i],forceX[i] ,forceY[i] ,forceZ[i] );
       }
+
     }
 
   /**
