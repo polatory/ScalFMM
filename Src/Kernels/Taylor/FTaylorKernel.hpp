@@ -669,7 +669,7 @@ public:
 		    //Child multipole involved
 		    idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
 		    // coeff = 1/( n_{k-r} r!)	   
-		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(factorials[a+b+c-idx_a-idx_b-iL2Lx_c]*fact3int(idx_a,idx_b,idx_c));
+		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(factorials[a+b+c-idx_a-idx_b-idx_c]*fact3int(idx_a,idx_b,idx_c));
 		    //
 		    value += coeff*multChild[idMultiChild]*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
 		  }
