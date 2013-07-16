@@ -25,7 +25,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 7;
+  static const int P = 10;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
@@ -71,11 +71,11 @@ int main(int argc,char* argv[]){
   // exit(-1);
   
 
-  FPoint part1Pos = FPoint(FReal(3.0),FReal(1.0),FReal(1.5));
-  FReal physVal1 = 1;
+  FPoint part1Pos = FPoint(FReal(3.1),FReal(1.1),FReal(1.1));
+  FReal physVal1 = -2;
 
-  FPoint part2Pos = FPoint(FReal(-3.0),FReal(1),FReal(1));
-  FReal physVal2 = 100;
+  FPoint part2Pos = FPoint(FReal(-3.0),FReal(1.1),FReal(0.9));
+  FReal physVal2 = 2;
   
   tree.insert(part1Pos,physVal1);
   tree.insert(part2Pos,physVal2);
@@ -115,9 +115,13 @@ int main(int argc,char* argv[]){
     FReal dy = part1Pos.getY() - part2Pos.getY();
     FReal dz = part1Pos.getZ() - part2Pos.getZ();
     //
+
+
     FReal potTheo = physVal2*physVal1*FMath::Sqrt(FReal(1) / (dx*dx + dy*dy + dz*dz));
+    FReal coeffa   = physVal2*physVal1*(FMath::Sqrt(FReal(1.0) / (dx*dx + dy*dy + dz*dz)) ) / (dx*dx + dy*dy + dz*dz);
     potential *=FReal(0.5) ;
     printf("Exact potential : %f     Computed  potential : %f  Error: %e \n",potTheo, potential,std::abs(potTheo- potential));
+   printf("Exact Force : %f  %f : %f  \n",dx*coeffa,dy*coeffa,dz*coeffa);
 
   }
 

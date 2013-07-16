@@ -531,7 +531,7 @@ public:
       FReal dy =  yc - posY[idPart] ;
       FReal dz =  zc - posZ[idPart] ;
 
-      // Precompute the an arrays of dx^i
+      // Precompute the  arrays of dx^i
       arrayDX[0] = 1.0 ;
       arrayDY[0] = 1.0 ;
       arrayDZ[0] = 1.0 ;
@@ -628,25 +628,37 @@ public:
 	  
 	  const FPoint& childCenter = getLeafCenter(child[idxChild]->getCoordinate());
 	  const FReal * const multChild = child[idxChild]->getMultipole();
-
+	  
 	  //Set the distance between centers of cells
-	  dx = childCenter.getX()-cellCenter.getX();
-	  dy = childCenter.getY()-cellCenter.getY();
-	  dz = childCenter.getZ()-cellCenter.getZ();
+	  dx = cellCenter.getX() - childCenter.getX();
+	  dy = cellCenter.getY() - childCenter.getY();
+	  dz = cellCenter.getZ() - childCenter.getZ();
+	  
 
 	  // dz = ((FReal )(2*(1 & idxChild)-1))*boxSize;
 	  // dy = ((FReal )(2*((1 << 1) & idxChild)-1))*boxSize;
 	  // dx = ((FReal )(2*((1 << 2) & idxChild)-1))*boxSize;
 	  // printf("Distances dans le M2M : %f %f %f boxSize : %f \n",dx,dy,dz,boxSize);
+	  // Precompute the  arrays of dx^i
+	  arrayDX[0] = 1.0 ;
+	  arrayDY[0] = 1.0 ;
+	  arrayDZ[0] = 1.0 ;
+	  for (int i = 1 ; i <= P ; ++i) 	{
+	    arrayDX[i] = dx * arrayDX[i-1] ;
+	    arrayDY[i] = dy * arrayDY[i-1] ; 
+	    arrayDZ[i] = dz * arrayDZ[i-1] ;
+	    printf(" M2M arrayD? ,i : %d, locForce : %f  %f  %f\n",i-1, arrayDX[i-1], arrayDY[i-1], arrayDZ[i-1] );
+	  }
 	  
 	  a=0;
 	  b=0;
 	  c=0;
+	  FReal value, Nk ;
 	  //Iteration over parent multipole array
 	  for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
 	    {
-	      FReal value = mult[idxMult];
-	      
+	      value = mult[idxMult];
+	      Nk    = factorials[a+b+c]/fact3int(a,b,c) ;
 	      int idMultiChild;
 	      //Iteration over the powers to find the cell multipole
 	      //involved in the computation of the parent multipole
@@ -655,17 +667,16 @@ public:
 		  for(idx_c=0 ; idx_c <= c ; ++idx_c){
 		    //Computation
 		    //Child multipole involved
-		    idMultiChild=powerToIdx(a-idx_a,b-idx_b,c-idx_c);
-		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(fact(a-idx_a+b-idx_b+c-idx_c)*fact3int(idx_a,idx_b,idx_c));
-		    
-		    value+=multChild[idMultiChild]*FMath::pow(dx,idx_a)*FMath::pow(dy,idx_b)*FMath::pow(dz,idx_c)*coeff;
+		    idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+		    // coeff = 1/( n_{k-r} r!)	   
+		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(factorials[a+b+c-idx_a-idx_b-idx_c]*fact3int(idx_a,idx_b,idx_c));
+		    //
+		    value += coeff*multChild[idMultiChild]*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
 		  }
 		}
 	      }
 	      //	      printf("M2M :: cell : X = %f, Y = %f, Z = %f,  %d,%d,%d --> %f\n",
-	      //     cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),a,b,c,value);
-
-	      mult[idxMult] += value;
+	      mult[idxMult] += Nk*value;
 	      incPowers(&a,&b,&c);
 	    }
 	}
@@ -905,7 +916,7 @@ public:
 	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
 	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
 	  //
-	  printf("  force X : %d,%d,%d,j : %d, locForceZ : %f  L_j  %f  %f  %f  %f \n",a,b,c,j,locForceZ,locForce,arrayDX[a],arrayDY[b+1],arrayDZ[c+1]);
+	  printf("  force X : %d,%d,%d,j : %d, locForceX : %f  L_j  %f  %f  %f  %f \n",a,b,c,j,locForceX,locForce,arrayDX[a],arrayDY[b+1],arrayDZ[c+1]);
 	  incPowers(&a,&b,&c);
 	}
 	targetsPotentials[i]  = partPhyValue*locPot ;
