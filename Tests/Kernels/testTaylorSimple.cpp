@@ -25,7 +25,7 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  static const int P = 3;
+  static const int P = 8;
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
   FReal boxWidth = FReal(8);
@@ -48,10 +48,10 @@ int main(int argc,char* argv[]){
   
   OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, rootCenter);
 
-  FPoint part1Pos = FPoint(FReal(3.75),FReal(0.25),FReal(0.25));
+  FPoint part1Pos = FPoint(FReal(3.25),FReal(0.75),FReal(0.75));
   FReal physVal1 = 2;
 
-  FPoint part2Pos = FPoint(FReal(-3.75),FReal(0.25),FReal(0.25));
+  FPoint part2Pos = FPoint(FReal(-3.25),FReal(0.75),FReal(0.75));
   FReal physVal2 = 2;
   
   tree.insert(part1Pos,physVal1);
