@@ -52,7 +52,8 @@ private:
   
   FReal factorials[2*P+1];             //< This contains the factorial until P
   FReal arrayDX[P+2],arrayDY[P+2],arrayDZ[P+2] ; //< Working arrays
-
+  static const int  sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
+  FReal _PsiVector[sizeDerivative];         
 
   // For debugging purpose
   FILE * out;
@@ -556,20 +557,19 @@ public:
     //Center point of parent cell
     const FPoint& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
     //    printf("M2M ::  fatherCell : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
-    FReal * mult = pole->getMultipole();
-    FMemUtils::memset(pole,FReal(0.0),SizeVector*FReal(0.0));
+    FReal * FRestrict mult = pole->getMultipole();
+    //    FMemUtils::memset(mult,FReal(0.0),SizeVector*FReal(0.0));
     
     //Iteration over the eight children
     int idxChild;
     FReal coeff;
     for(idxChild=0 ; idxChild<8 ; ++idxChild)
       {
-	
 	if(child[idxChild]){
-	  
+	  //	  
 	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
 	  //	  printf("M2M ::  child cells : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
-	  const FReal * const multChild = child[idxChild]->getMultipole();
+	  const FReal * FRestrict multChild = child[idxChild]->getMultipole();
 	  
 	  //Set the distance between centers of cells
 	  dx = cellCenter.getX() - childCenter.getX();
@@ -649,14 +649,14 @@ public:
     //    printf("M2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Iteration over distantNeighbors
     int idxNeigh;
-    int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
+    //    int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
     
 
     FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
     
-    FReal * iterLocal = local->getLocal();
+    FReal * FRestrict iterLocal = local->getLocal();
     FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0.0)));
-    FReal yetComputed[sizeDerivative];
+    //    FReal yetComputed[sizeDerivative];
     
     for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
 
@@ -664,18 +664,18 @@ public:
       if(distantNeighbors[idxNeigh]){
 	//Derivatives are computed iteratively
 	
-	FMemUtils::memset(yetComputed,0,sizeDerivative*sizeof(FReal(0.0)));
+	FMemUtils::memset(this->_PsiVector,0,sizeDerivative*sizeof(FReal(0.0)));
 	// 
 	// Compute derivatives on  locCenter - curDistCenter
 	//                           target       source
-	FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
+	const FPoint& curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
 	FReal dx = locCenter.getX()-curDistCenter.getX();
 	FReal dy = locCenter.getY()-curDistCenter.getY();
 	FReal dz = locCenter.getZ()-curDistCenter.getZ();
 
 	
 	//Computation of all the derivatives needed
-	computeFullDerivative(dx,dy,dz,yetComputed);
+	computeFullDerivative(dx,dy,dz,this->_PsiVector);
 
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; // For local array
@@ -697,7 +697,7 @@ public:
 	  //printf("al= %d, bl=%d, cl=%d ==>    i =%d \n",al,bl,cl,i);
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
-	    tmp += yetComputed[idxPsi]*multipole[j];
+	    tmp += this->_PsiVector[idxPsi]*multipole[j];
 	    
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
@@ -745,7 +745,7 @@ public:
     FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     
     // Get father local expansion
-    const FReal* fatherExpansion = fatherCell->getLocal()  ;
+    const FReal* FRestrict fatherExpansion = fatherCell->getLocal()  ;
     int idxFatherLoc;               //index of Father local expansion to be read.
     FReal dx,  dy,  dz, coeff;      
     int ap, bp, cp, af, bf, cf;     //Indexes of expansion for father and child.
@@ -754,8 +754,8 @@ public:
     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
       // if child exists
       if(childCell[idxChild]){
-	FReal* childExpansion = childCell[idxChild]->getLocal() ;
-	FPoint childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+	FReal* FRestrict childExpansion = childCell[idxChild]->getLocal() ;
+	const FPoint& childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
 
 	//Set the distance between centers of cells
 	// Child - father
