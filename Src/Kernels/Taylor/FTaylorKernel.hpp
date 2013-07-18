@@ -201,7 +201,7 @@ private:
   void initDerivative(const FReal & dx ,const FReal & dy ,const FReal & dz  ,   FReal * tab)
   {
     FReal R2 = dx*dx+dy*dy+dz*dz;
-    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
+    //    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
     tab[0]=FReal(1)/FMath::Sqrt(R2);   
     FReal R3 = tab[0]/(R2);
     tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
@@ -468,13 +468,13 @@ public:
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
   {
-    printf("P2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //    printf("P2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Variables computed for each power of Multipole
     int a,b,c ;
     FReal facto, coeff; 
     //Copying cell center position once and for all
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    printf("P2M :: pole : X: %f, Y: %f, Z:%f  \n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    //    printf("P2M :: pole : X: %f, Y: %f, Z:%f  \n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*sizeof(FReal(0.0)));
     //    
@@ -492,7 +492,7 @@ public:
     //
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
     for(int idPart=0 ; idPart<nbPart ; ++idPart){
-      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
+      //      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
 
       // compute the distance to the centre	  
       FReal dx =  xc - posX[idPart] ;
@@ -528,7 +528,7 @@ public:
 	  incPowers(&a,&b,&c);       //inc powers of expansion
 	}  // end loop on multipoles
     }  // end loop on particles
-    std::cout << std::endl;
+    //    std::cout << std::endl;
   }
   
 
@@ -541,7 +541,7 @@ public:
 	   const CellClass*const FRestrict *const FRestrict child, 
 	   const int inLevel)
   {
-    printf("M2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //    printf("M2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Powers of expansions
     int a=0,b=0,c=0;
     
@@ -555,7 +555,7 @@ public:
     FReal dz = 0.0;
     //Center point of parent cell
     const FPoint& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
-    printf("M2M ::  fatherCell : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
+    //    printf("M2M ::  fatherCell : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * mult = pole->getMultipole();
     FMemUtils::memset(pole,FReal(0.0),SizeVector*FReal(0.0));
     
@@ -568,14 +568,14 @@ public:
 	if(child[idxChild]){
 	  
 	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
-	  printf("M2M ::  child cells : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
+	  //	  printf("M2M ::  child cells : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
 	  const FReal * const multChild = child[idxChild]->getMultipole();
 	  
 	  //Set the distance between centers of cells
 	  dx = cellCenter.getX() - childCenter.getX();
 	  dy = cellCenter.getY() - childCenter.getY();
 	  dz = cellCenter.getZ() - childCenter.getZ();
-	  printf("M2M :: dx=%f, dy=%f, dz=%f\n",dx,dy,dz);
+	  //	  printf("M2M :: dx=%f, dy=%f, dz=%f\n",dx,dy,dz);
 
 	  // Precompute the  arrays of dx^i
 	  arrayDX[0] = 1.0 ;
@@ -646,7 +646,7 @@ public:
 	   const CellClass* distantNeighbors[343],       // Sources to be read     
 	   const int /*size*/, const int inLevel)
   {
-    printf("M2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //    printf("M2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Iteration over distantNeighbors
     int idxNeigh;
     int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
@@ -741,7 +741,7 @@ public:
 	   CellClass* FRestrict * const FRestrict childCell, 
 	   const int inLevel)
   {
-    printf("L2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //    printf("L2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     
     // Get father local expansion
@@ -813,7 +813,7 @@ public:
     void L2P(const CellClass* const local, 
 	     ContainerClass* const particles)
     {
-      printf("L2P %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+      //      printf("L2P %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
       FPoint locCenter = getLeafCenter(local->getCoordinate());
       //Iterator over particles
       int nbPart = particles->getNbParticles();
@@ -893,7 +893,7 @@ public:
 	   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
 	   ContainerClass* const directNeighborsParticles[27], const int /*size*/)
   {
-    printf("P2P %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //    printf("P2P %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     FP2P::FullMutual(targets,directNeighborsParticles,14);
   }
 
