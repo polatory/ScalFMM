@@ -26,7 +26,7 @@
 
 int main(int argc,char* argv[]){
   const int P             = 10;
-  const int NbLevels      = FParameters::getValue(argc, argv, "-h",  3);
+  const int NbLevels      = FParameters::getValue(argc, argv, "-h",  4);
   const int SizeSubLevels = FParameters::getValue(argc, argv, "-sh", 2);
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
@@ -47,21 +47,70 @@ int main(int argc,char* argv[]){
   FTic counter;
   
   OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, rootCenter);
-
-  FPoint part1Pos = FPoint(FReal(3.25),FReal(0.75),FReal(0.75));
-  FReal physVal1 = -1;
-  FPoint part3Pos = FPoint(FReal(2.25),FReal(1.75),FReal(0.75));
-  FReal physVal3 = -1;
-
-  FPoint part2Pos = FPoint(FReal(-3.25),FReal(1.75),FReal(0.5));
-  FReal physVal2 = 2;
   
-  tree.insert(part1Pos,physVal1);
-  tree.insert(part3Pos,physVal3);
-  tree.insert(part2Pos,physVal2);
-
-
+  int nbPart = 4;
+  
+  FPoint tabPart[nbPart];
+  tabPart[0] = FPoint(FReal(-1.9),FReal(-1.9),FReal(1.6));
+  tabPart[1] = FPoint(FReal(1.9),FReal(1.9),FReal(1.6));
+  tabPart[2] = FPoint(FReal(1.9),FReal(0.1),FReal(1.6));
+  tabPart[3] = FPoint(FReal(0.1),FReal(1.9),FReal(1.6));
+  //tabPart[4] = FPoint(FReal(0.1),FReal(0.1),FReal(1.6));
+  
+  FReal tabPhyValue[nbPart];
+  tabPhyValue[0] = FReal(0);
+  tabPhyValue[1] = FReal(1);
+  tabPhyValue[2] = FReal(1);
+  tabPhyValue[3] = FReal(1);
+  //tabPhyValue[4] = FReal(1);
+  
+  for(int l=0 ; l<nbPart ; ++l){
+    tree.insert(tabPart[l],tabPhyValue[l]);
+  }
+  
   KernelClass kernels(NbLevels, boxWidth, rootCenter);
+  FReal tabResDirect[nbPart*3];
+  
+  for(int r=0 ; r<nbPart ; ++r){
+    tabResDirect[r*3]   = FReal(0);
+    tabResDirect[r*3+1] = FReal(0);
+    tabResDirect[r*3+2] = FReal(0);
+  }
+
+  FReal potTheoric = FReal(0.0);
+
+  //iteration over particles src
+  for(int t=0 ; t<nbPart ; ++t)
+    {   
+      for(int u=t+1 ; u<nbPart ; ++u)
+	{
+	  //Calcul of interaction between particules
+	  FReal dx = tabPart[t].getX()-tabPart[u].getX();
+	  FReal dy = tabPart[t].getY()-tabPart[u].getY();
+	  FReal dz = tabPart[t].getZ()-tabPart[u].getZ();
+	  
+	  FReal dist =  FMath::Sqrt(dx*dx+dy*dy+dz*dz);
+	  FReal dist2 = dx*dx+dy*dy+dz*dz;
+	  
+	  FReal fx = tabPhyValue[t]*tabPhyValue[u]*dx/(dist2*dist);
+	  FReal fy = tabPhyValue[t]*tabPhyValue[u]*dy/(dist2*dist);
+	  FReal fz = tabPhyValue[t]*tabPhyValue[u]*dz/(dist2*dist);
+	  
+	  
+	  //Computation of force on part[t]
+	  tabResDirect[t*3]   += fx;
+	  tabResDirect[t*3+1] += fy;
+	  tabResDirect[t*3+2] += fz;
+	  
+	  //Computation of force on part[u]
+	  tabResDirect[u*3]   += -fx;
+	  tabResDirect[u*3+1] += -fy;
+	  tabResDirect[u*3+2] += -fz;
+	
+	  //Computation of potential
+	  potTheoric += tabPhyValue[t]*tabPhyValue[u]/dist;
+	}
+    }
 
 
   FmmClass algo(&tree,&kernels);
@@ -74,45 +123,51 @@ int main(int argc,char* argv[]){
     
     
     tree.forEachLeaf([&](LeafClass* leaf){
-	FReal fx = 0.0, fy = 0.0, fz = 0.0;
-	const FReal * FRestrict charges = leaf->getTargets()->getPhysicalValues();
-	const FReal*const potentials = leaf->getTargets()->getPotentials();
-	const FReal*const forcesX = leaf->getTargets()->getForcesX();
-	const FReal*const forcesY = leaf->getTargets()->getForcesY();
-	const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-	const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+    	FReal fx = 0.0, fy = 0.0, fz = 0.0;
+    	const FReal * FRestrict charges = leaf->getTargets()->getPhysicalValues();
+    	const FReal*const potentials = leaf->getTargets()->getPotentials();
+    	const FReal*const forcesX = leaf->getTargets()->getForcesX();
+    	const FReal*const forcesY = leaf->getTargets()->getForcesY();
+    	const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+    	const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 	
-	for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-	  Energy   += charges[idxPart]*potentials[idxPart];
-	  fx        += forcesX[idxPart];
-	  fy        += forcesY[idxPart];
-	  fz        += forcesZ[idxPart];
-	  printf(" part : %f, p= %f fx = %f, fy = %f, fz = %f\n",leaf->getTargets()->getPositions()[0][0],Energy,fx,fy,fz);
-	}
+    	for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+    	  Energy   += charges[idxPart]*potentials[idxPart];
+    	  fx        += forcesX[idxPart];
+    	  fy        += forcesY[idxPart];
+    	  fz        += forcesZ[idxPart];
+    	  printf(" part : (%f,%F,%F), p= %f fx = %f, fy = %f, fz = %f\n",leaf->getTargets()->getPositions()[0][0],leaf->getTargets()->getPositions()[1][0],leaf->getTargets()->getPositions()[2][0],Energy,fx,fy,fz);
+    	}
 	
       }); 
     //
     FReal potTheo ;
     //
-    FReal dx = part1Pos.getX() - part2Pos.getX();
-    FReal dy = part1Pos.getY() - part2Pos.getY();
-    FReal dz = part1Pos.getZ() - part2Pos.getZ();
-    FReal dx1 = part3Pos.getX() - part2Pos.getX();
-    FReal dy1 = part3Pos.getY() - part2Pos.getY();
-    FReal dz1 = part3Pos.getZ() - part2Pos.getZ();
-    FReal dx2 = part1Pos.getX() - part3Pos.getX();
-    FReal dy2 = part1Pos.getY() - part3Pos.getY();
-    FReal dz2 = part1Pos.getZ() - part3Pos.getZ();
+    FReal dx =tabPart[0].getX() -tabPart[1].getX();
+    FReal dy =tabPart[0].getY() -tabPart[1].getY();
+    FReal dz =tabPart[0].getZ() -tabPart[1].getZ();
+    FReal dx1 =tabPart[2].getX() -tabPart[1].getX();
+    FReal dy1 =tabPart[2].getY() -tabPart[1].getY();
+    FReal dz1 =tabPart[2].getZ() -tabPart[1].getZ();
+    FReal dx2 =tabPart[0].getX() -tabPart[2].getX();
+    FReal dy2 =tabPart[0].getY() -tabPart[2].getY();
+    FReal dz2 =tabPart[0].getZ() -tabPart[2].getZ();
     std::cout << dx  <<"  " <<dy  <<"  "<< dz <<"  " <<std::endl;
     std::cout << dx1 <<"  " <<dy1 <<"  "<< dz1 <<"  " <<std::endl;
     std::cout << dx2 <<"  " <<dy2 <<"  "<< dz2 <<"  " <<std::endl;
     //
-    potTheo = physVal2*physVal1 / FMath::Sqrt(dx*dx + dy*dy + dz*dz)+ physVal2*physVal3 / FMath::Sqrt(dx1*dx1 + dy1*dy1 + dz1*dz1) + physVal1*physVal3/ FMath::Sqrt(dx2*dx2 + dy2*dy2 + dz2*dz2);
-    FReal coeffa   = physVal2*physVal1*(FMath::Sqrt(FReal(1.0) / (dx*dx + dy*dy + dz*dz)) ) / (dx*dx + dy*dy + dz*dz);
+    potTheo = tabPhyValue[1]*tabPhyValue[0] / FMath::Sqrt(dx*dx + dy*dy + dz*dz)+ tabPhyValue[1]*tabPhyValue[2] / FMath::Sqrt(dx1*dx1 + dy1*dy1 + dz1*dz1) + tabPhyValue[0]*tabPhyValue[2]/ FMath::Sqrt(dx2*dx2 + dy2*dy2 + dz2*dz2);
+    //FReal coeffa   = phys;
     Energy *=FReal(0.5) ;
-    printf("Exact potential : %f     Computed  potential : %f  Error: %e \n",potTheo, Energy,std::abs(potTheo- Energy));
-    printf("Exact Force : %f  %f : %f  \n",dx*coeffa,dy*coeffa,dz*coeffa);
+    printf("Exact potential : %f     Computed  potential : %f  Error: %e \n",potTheoric, Energy,std::abs(potTheoric- Energy));
+    //printf("Exact Force : %f  %f : %f  \n",dx*coeffa,dy*coeffa,dz*coeffa);
     std::cout << Energy/potTheo << std::endl;
+    for (int j =0; j<nbPart ; ++j)
+      {
+	printf("particule : (%f,%f,%f) fx = %f, fy = %f, fz = %f\n",tabPart[j].getX(),tabPart[j].getY(),tabPart[j].getZ(),
+	       tabResDirect[j*3],tabResDirect[j*3+1],tabResDirect[j*3+2]);
+      }
+    
   }
   return 0;
 }
