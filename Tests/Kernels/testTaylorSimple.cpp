@@ -25,12 +25,12 @@
 #include "../../Src/Files/FFmaLoader.hpp"
 
 int main(int argc,char* argv[]){
-  const int P             = 10;
+  const int P             = 3;
   const int NbLevels      = FParameters::getValue(argc, argv, "-h",  4);
   const int SizeSubLevels = FParameters::getValue(argc, argv, "-sh", 2);
   static const int order = 1;
   FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
-  FReal boxWidth = FReal(8);
+  FReal boxWidth = FReal(4);
 
   typedef FTaylorCell<P,order> CellClass;
   typedef FP2PParticleContainer ContainerClass;
@@ -48,20 +48,20 @@ int main(int argc,char* argv[]){
   
   OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, rootCenter);
   
-  int nbPart = 4;
+  int nbPart = 3;
   
   FPoint tabPart[nbPart];
   tabPart[0] = FPoint(FReal(-1.9),FReal(-1.9),FReal(1.6));
-  tabPart[1] = FPoint(FReal(1.9),FReal(1.9),FReal(1.6));
+  tabPart[1] = FPoint(FReal(0.9),FReal(1.1),FReal(1.6));
   tabPart[2] = FPoint(FReal(1.9),FReal(0.1),FReal(1.6));
-  tabPart[3] = FPoint(FReal(0.1),FReal(1.9),FReal(1.6));
+  //tabPart[2] = FPoint(FReal(0.1),FReal(1.9),FReal(1.6));
   //tabPart[4] = FPoint(FReal(0.1),FReal(0.1),FReal(1.6));
   
   FReal tabPhyValue[nbPart];
-  tabPhyValue[0] = FReal(0);
+  tabPhyValue[0] = FReal(1);
   tabPhyValue[1] = FReal(1);
   tabPhyValue[2] = FReal(1);
-  tabPhyValue[3] = FReal(1);
+  // tabPhyValue[3] = FReal(1);
   //tabPhyValue[4] = FReal(1);
   
   for(int l=0 ; l<nbPart ; ++l){
@@ -161,7 +161,7 @@ int main(int argc,char* argv[]){
     Energy *=FReal(0.5) ;
     printf("Exact potential : %f     Computed  potential : %f  Error: %e \n",potTheoric, Energy,std::abs(potTheoric- Energy));
     //printf("Exact Force : %f  %f : %f  \n",dx*coeffa,dy*coeffa,dz*coeffa);
-    std::cout << Energy/potTheo << std::endl;
+    //std::cout << Energy/potTheo << std::endl;
     for (int j =0; j<nbPart ; ++j)
       {
 	printf("particule : (%f,%f,%f) fx = %f, fy = %f, fz = %f\n",tabPart[j].getX(),tabPart[j].getY(),tabPart[j].getZ(),
