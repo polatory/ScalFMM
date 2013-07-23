@@ -666,7 +666,7 @@ public:
 	    }
 	  
 	  //For debugging purposes
-	  int x=0,y=0,z=0;
+	  //  int x=0,y=0,z=0;
 	  // for(int idxChk=0 ; idxChk<SizeVector ; ++idxChk)
 	  //   {
 	  //     //    printf("M2M in (%f,%f,%f) child (%f,%f,%f) MF %f and MP %f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),childCenter.getX(),childCenter.getY(),childCenter.getZ(), multChild[idxChk],mult[idxChk]);
@@ -951,10 +951,10 @@ public:
 	  //
 	  incPowers(&a,&b,&c);
 	}
-	targetsPotentials[i]  =/* partPhyValue*/locPot ;
-	forceX[i]            = partPhyValue*locForceX ;
-	forceY[i]            = partPhyValue*locForceY ;
-	forceZ[i]            = partPhyValue*locForceZ ;
+	targetsPotentials[i]  +=/* partPhyValue*/locPot ;
+	forceX[i]             += partPhyValue*locForceX ;
+	forceY[i]             += partPhyValue*locForceY ;
+	forceZ[i]             += partPhyValue*locForceZ ;
 	//	printf(" L2P  part %d %f  %f  %f  %f\n",i,targetsPotentials[i],forceX[i],forceY[i],	forceZ[i]);
       }
       //      printf(" L2P  end\n");
