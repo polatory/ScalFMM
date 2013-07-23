@@ -510,48 +510,13 @@ public:
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
     FReal dx[3] ; 
     for(int idPart=0 ; idPart<nbPart ; ++idPart){
-      // //      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
-      // //#ifndef OC      
-      // // compute the distance to the centre	  
-      // FReal dx =  xc - posX[idPart] ;
-      // FReal dy =  yc - posY[idPart] ;
-      // FReal dz =  zc - posZ[idPart] ;
-
-      // // Precompute the  arrays of dx^i
-      // arrayDX[0] = 1.0 ;
-      // arrayDY[0] = 1.0 ;
-      // arrayDZ[0] = 1.0 ;
-      // for (int i = 1 ; i <= P ; ++i) 	{
-      // 	arrayDX[i] = dx * arrayDX[i-1] ;
-      // 	arrayDY[i] = dy * arrayDY[i-1] ; 
-      // 	arrayDZ[i] = dz * arrayDZ[i-1] ;
-      // }
-      // //
-      // //Iterating over MutlipoleVector
-      // //
-      // //      a = 0, b = 0, c = 0;
-      // for(int i=0,a = 0, b = 0, c = 0 ; i<SizeVector ; ++i)
-      // 	{
-      // 	  //
-      // 	  // update needed values
-      // 	  //
-      // 	  	  facto = fact3int(a,b,c);
-      // 	  	  coeff = factorials[a+b+c]/(facto*facto);
-      // 	  //
-      // 	  //Computation
-      // 	  //
-      // 	  multipole[i] += coeff*phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];
-      // 	  //	  multipole[i] += phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];
-	  
-      // 	  //	  std::cout << " (a,b,c),  ("<<a<<" , " << b << " , "<< c << " ) - j " << i <<std::endl;
-      // 	  incPowers(&a,&b,&c);       //inc powers of expansion
-      // 	}  // end loop on multipoles
-
-      // //
+      //      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
+      // 
       dx[0]         = xc - posX[idPart] ;
       dx[1]         = yc - posY[idPart] ;   
       dx[2]         = zc - posZ[idPart] ;
-      multipole2[0] = phyValue[idPart]  ;
+      //      printf("    : DX: %f, DY: %f, DZ:%f   \n",dx[0]  ,dx[01]  ,dx[2]  );
+     multipole2[0] = phyValue[idPart]  ;
       //
       int leading[3] = {0,0,0 } ;
       for (int k=1, t=1, tail=1; k <= P; ++k, tail=t)
@@ -571,12 +536,15 @@ public:
       for( i=0 ; i < SizeVector ; ++i) 
 	{
 	  multipole[i] +=  multipole2[i] ;
+	  multipole2[i] = 0.0;
 	} 
     }  // end loop on particles
     // Multiply by the coefficient
     for( i=0 ; i < SizeVector ; ++i) 
       {
 	multipole[i] *=_coeffPoly[i] ;
+	//	printf(" M[%d]   %f\n", i,multipole[i] );
+      
       } 
     // //
     // // Nouveau parcours graded lexicographic order. 
@@ -760,12 +728,12 @@ public:
 	this->computeFullDerivative(dx,dy,dz,this->_PsiVector);
 	const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
 	
-	FReal res  = FReal(0);
-	for(int k=0; k<SizeVector ; ++k)
-	  {
-	    res  += _PsiVector[k]*multipole[k];
-	  }
-	printf("res : %.10f size : %d\n",res,sizeof(res));
+	// FReal res  = FReal(0);
+	// for(int k=0; k<SizeVector ; ++k)
+	//   {
+	//     res  += _PsiVector[k]*multipole[k];
+	//   }
+	// printf("res : %.10f size : %d\n",res,sizeof(res));
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; // For local array
 	int am,bm,cm;       // For distant array
@@ -787,7 +755,7 @@ public:
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
 	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
 	    tmp += this->_PsiVector[idxPsi]*multipole[j];
-	    if((al+bl+cl)==0) {printf("coeffL:%f (%d,%d,%d)--> mult x psi ::> %f * %f tmp: %f\n",coeffL,am,bm,cm,multipole[j],_PsiVector[idxPsi],tmp);}
+	    //	    if((al+bl+cl)==0) {printf("coeffL:%f (%d,%d,%d)--> mult x psi ::> %f * %f tmp: %f\n",coeffL,am,bm,cm,multipole[j],_PsiVector[idxPsi],tmp);}
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
 	  }
@@ -808,10 +776,10 @@ public:
 	//     incPowers(&x,&y,&z);
 	//   }
 	int x=0,y=0,z=0;
-	printf("Cell in (%f,%f,%f), leading to (dx,dy,dz) = (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ(),dx,dy,dz);
+	//	printf("Cell in (%f,%f,%f), leading to (dx,dy,dz) = (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ(),dx,dy,dz);
 	for(int m=0 ; m < SizeVector ; ++m)
 	  {
-	    printf("Cell in (%f,%f,%f) :: (%d,%d,%d) coeffL:%f  ::> %.8f \n",dx,dy,dz,x,y,z,factorials[x+y+z]/(fact3int(x,y,z)*fact3int(x,y,z)),iterLocal[m]);
+	    //	    printf("Cell in (%f,%f,%f) :: (%d,%d,%d) coeffL:%f  ::> %.8f \n",dx,dy,dz,x,y,z,factorials[x+y+z]/(fact3int(x,y,z)*fact3int(x,y,z)),iterLocal[m]);
 	    incPowers(&x,&y,&z);
 	  }
       }
@@ -851,7 +819,7 @@ public:
       // if child exists
       if(childCell[idxChild]){
 	FReal* FRestrict childExpansion = childCell[idxChild]->getLocal() ;
-	const FPoint& childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+	const FPoint& childCenter = getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
 
 	//Set the distance between centers of cells
 	// Child - father
@@ -911,7 +879,7 @@ public:
     {
       //      printf("L2P %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
       FPoint locCenter = getLeafCenter(local->getCoordinate());
-      printf("L2P :: locCenter (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
+      //      printf("L2P :: locCenter (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ());
       //Iterator over particles
       int nbPart = particles->getNbParticles();
       
@@ -942,7 +910,7 @@ public:
 	FReal dx =  posX[i] - locCenter.getX();
 	FReal dy =  posY[i] - locCenter.getY();
 	FReal dz =  posZ[i] - locCenter.getZ();
-	printf("Distance : (%f,%f,%f)\n",dx,dy,dz);
+	//	printf("Distance : (%f,%f,%f)\n",dx,dy,dz);
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
 	arrayDY[0] = 0.0 ;
@@ -972,12 +940,13 @@ public:
 	  //
 	  incPowers(&a,&b,&c);
 	}
-	targetsPotentials[i]  = partPhyValue*locPot ;
+	targetsPotentials[i]  =/* partPhyValue*/locPot ;
 	forceX[i]            = partPhyValue*locForceX ;
 	forceY[i]            = partPhyValue*locForceY ;
 	forceZ[i]            = partPhyValue*locForceZ ;
+	//	printf(" L2P  part %d %f  %f  %f  %f\n",i,targetsPotentials[i],forceX[i],forceY[i],	forceZ[i]);
       }
-
+      //      printf(" L2P  end\n");
     }
 
   /**

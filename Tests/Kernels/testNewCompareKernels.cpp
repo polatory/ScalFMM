@@ -55,7 +55,7 @@
 //
 // taylor kernel
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
+#include "../../Src/Kernels/Taylor/FTaylorKernel_Opt.hpp"
 //
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
     const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
-    const int DevP                   = FParameters::getValue(argc, argv, "-p", 6);
+    const int DevP                   = FParameters::getValue(argc, argv, "-p", 7);
 #ifdef _OPENMP
     omp_set_num_threads(NbThreads);
     std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
@@ -197,14 +197,14 @@ int main(int argc, char* argv[])
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
 
     } // end Chebyshev kernel
     //
     ////////////////////////////////////////////////////////////////////
-    /:
+    //
     {	// begin FFmaBlas kernel
 
         // accuracy
@@ -276,15 +276,15 @@ int main(int argc, char* argv[])
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
     } // end FFmaBlas kernel
 #endif
     ////////////////////////////////////////////////////////////////////
     {	// begin SphericalRotation kernel
 
-        // accuracy
+        // accuracy  
       //        const int DevP = FParameters::getValue(argc, argv, "-p", 6);
 
         // typedefs
@@ -352,9 +352,9 @@ int main(int argc, char* argv[])
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
     } // end FFSphericalRotation kernel
     //
     ////////////////////////////////////////////////////////////////////
@@ -414,22 +414,21 @@ int main(int argc, char* argv[])
                 const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
                 const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
                 const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-
                 for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                     const int indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
+               }
             });
         }
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
     } // end FFTaylor kernel
     delete[] particles;
 
