@@ -737,54 +737,48 @@ public:
 	this->computeFullDerivative(dx,dy,dz,this->_PsiVector);
 	const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
 	
-	// FReal res  = FReal(0);
-	// for(int k=0; k<SizeVector ; ++k)
-	//   {
-	//     res  += _PsiVector[k]*multipole[k];
-	//   }
-	// printf("res : %.10f size : %d\n",res,sizeof(res));
 	//Iteration over Multipole / Local
 	int al=0,bl=0,cl=0; // For local array
-	int am,bm,cm;       // For distant array
+	int am,bm /*,cm*/;       // For distant array
 	//	
 	//Iterating over local array : n
 	for(int i=0 ; i< SizeVector ; ++i){
 	  FReal fctl   = fact3int(al,bl,cl);
 	  FReal coeffL = FReal(1.0)/(fctl);
-	  
+	  	  	  
 	  FReal tmp = 0.0 ;
-	  //Iterating over multipole array : k
-	  //
-	  am=0;	  bm=0;  cm=0;
-	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
-	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
-	    tmp += this->_PsiVector[idxPsi]*multipole[j];
-	    //updating a,b,c
-	    incPowers(&am,&bm,&cm);
+	  am=0;	  bm=0;
+	  //Case (am,bm,cm) --> (0,0,0)
+	  tmp += this->_PsiVector[i]*multipole[0];
+	  
+	  for(int ord=1,id=1 ; ord<=P ; ++ord){
+	    //Case (am,bm,cm) --> (ord,0,0)
+	    int idxPsi = powerToIdx(ord+al,bl,cl);
+	    tmp += this->_PsiVector[idxPsi]*multipole[id];
+
+	    //Case (am,bm,cm) --> (ord-1,1,0)
+	    idxPsi = powerToIdx((ord-1)+al,1+bl,cl);
+	    tmp += this->_PsiVector[idxPsi]*multipole[++id];
+
+	    //Case (am,bm,cm) --> (ord-1,0,1)
+	    idxPsi = powerToIdx((ord-1)+al,bl,1+cl);
+	    tmp += this->_PsiVector[idxPsi]*multipole[++id];
+	    	    
+	    //End of specific case
+	    //Start of general case :
+	    ++id;
+	    for(am=ord-2 ; am>=0 ; --am)
+	      {
+		for(bm = ord-am ; bm>=0 ; --bm,++id)
+		  {
+		    idxPsi = powerToIdx(al+am,bl+bm,cl+(ord-(am+bm)));
+		    tmp += this->_PsiVector[idxPsi]*multipole[id];
+		  }
+	      }
 	  }
-	  iterLocal[i] += tmp*coeffL ; // a mettre plus loin.
+	  iterLocal[i] += tmp*coeffL;
 	  incPowers(&al,&bl,&cl);
 	}
-	// For Debugging ..........................................................
-	// int x=0,y=0,z=0;
-	// for(int dby=0 ; dby<SizeVector ; dby++)
-	//   {	
-	//     //fprintf(stdout,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
-	//     incPowers(&x,&y,&z);
-	//   }
-	// x = y = z = 0;
-	// for(int dby=0 ; dby<sizeDerivative ; dby++)
-	//   {	
-	//     //fprintf(stdout,"M2L :: source %f, (%d,%d,%d) ==> derive : %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
-	//     incPowers(&x,&y,&z);
-	//   }
-	int x=0,y=0,z=0;
-	//	printf("Cell in (%f,%f,%f), leading to (dx,dy,dz) = (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ(),dx,dy,dz);
-	for(int m=0 ; m < SizeVector ; ++m)
-	  {
-	    //	    printf("Cell in (%f,%f,%f) :: (%d,%d,%d) coeffL:%f  ::> %.8f \n",dx,dy,dz,x,y,z,factorials[x+y+z]/(fact3int(x,y,z)*fact3int(x,y,z)),iterLocal[m]);
-	    incPowers(&x,&y,&z);
-	  }
       }
     }
   }

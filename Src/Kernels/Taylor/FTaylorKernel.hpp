@@ -469,7 +469,6 @@ public:
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
   {
-    //    printf("P2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     //Variables computed for each power of Multipole
     int a,b,c ;
     FReal facto, coeff; 
@@ -815,7 +814,7 @@ public:
     {
       //      printf("L2P %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
       FPoint locCenter = getLeafCenter(local->getCoordinate());
-      //Iterator over particles
+     
       int nbPart = particles->getNbParticles();
       
       //	
@@ -842,6 +841,7 @@ public:
 	FReal dx =  posX[i] - locCenter.getX();
 	FReal dy =  posY[i] - locCenter.getY();
 	FReal dz =  posZ[i] - locCenter.getZ();
+	
 	//
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
@@ -859,7 +859,10 @@ public:
 	}
 	FReal partPhyValue = phyValues[i]; 
 	//
-	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
+	FReal  locPot = 0.0; 
+	FReal locForceX = 0.0;
+	FReal locForceY = 0.0;
+	FReal locForceZ = 0.0;
 	int a=0,b=0,c=0;
 	for(int j=0 ; j<SizeVector ; ++j){
 	  FReal locForce     = iterLocal[j];
@@ -869,7 +872,7 @@ public:
 	  locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
 	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
 	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
-	  //
+	 	  
 	  incPowers(&a,&b,&c);
 	}
 	targetsPotentials[i]  = partPhyValue*locPot ;

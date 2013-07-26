@@ -152,15 +152,15 @@ private:
   int powerToIdx(const int a,const int b,const int c)
   {
     int t,res,p = a+b+c;
-    // if(p==0)  // si p=0 alors res=1/3=0 donc on peut l'enlever
-    //   {return 0;}
-    // else
-    //   {
-    res = p*(p+1)*(p+2)/6;
-    t    = p - a;
-    res += t*(t+1)/2+c;
-    return res;
-    //  }
+    if(p==0)  // si p=0 alors res=1/3=0 donc on peut l'enlever
+      {return 0;}
+    else
+      {
+	res = p*(p+1)*(p+2)/6;
+	t    = p - a;
+	res += t*(t+1)/2+c;
+	return res;
+      }
   }
   
   /* Return the factorial of a number
@@ -737,35 +737,87 @@ public:
 	this->computeFullDerivative(dx,dy,dz,this->_PsiVector);
 	const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
 	
-	// FReal res  = FReal(0);
-	// for(int k=0; k<SizeVector ; ++k)
-	//   {
-	//     res  += _PsiVector[k]*multipole[k];
-	//   }
-	// printf("res : %.10f size : %d\n",res,sizeof(res));
-	//Iteration over Multipole / Local
-	int al=0,bl=0,cl=0; // For local array
-	int am,bm,cm;       // For distant array
-	//	
+	int al=0,bl=0 /*,cl=0*/ ;   // For local array
+	int am,bm,cm;               // For distant array
+	int id=0;                   // Index of iterLocal 	
+	int i;
 	//Iterating over local array : n
-	for(int i=0 ; i< SizeVector ; ++i){
-	  FReal fctl   = fact3int(al,bl,cl);
+
+	//Case (al,bl,cl) == (0,0,0)
+	for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
+	  iterLocal[0] += this->_PsiVector[j]*multipole[j]; //it's a dot product !!
+	}
+	
+	
+	for(i=1, id=1 ; i<=P ; ++i){
+	  //Case (i,0,0) :
+	  FReal fctl   = factorials[i];
 	  FReal coeffL = FReal(1.0)/(fctl);
-	  
-	  FReal tmp = 0.0 ;
-	  //Iterating over multipole array : k
-	  //
+	  //Iterator over multipole array 
+	  FReal tmp = 0.0;
 	  am=0;	  bm=0;  cm=0;
 	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
-	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
+	    int idxPsi = powerToIdx(i+am,bm,cm);
+	    tmp += this->_PsiVector[idxPsi]*multipole[j];
+	    incPowers(&am,&bm,&cm);
+	  }
+	  iterLocal[id] += tmp*coeffL ; //access to iterLoacl[ (i,0,0) ] is inlined.
+	  printf("i==%d iterLocal[i]:: %f\n",id,iterLocal[id]);
+
+	  //Case (i-1,1,0) :
+	  fctl = factorials[i-1];
+	  coeffL = FReal(1.0)/(fctl);
+	  //Iterator over multipole array
+	  tmp = 0.0;
+	  am=0;	  bm=0;  cm=0;
+	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
+	    int idxPsi = powerToIdx((i-1)+am,1+bm,cm);
 	    tmp += this->_PsiVector[idxPsi]*multipole[j];
 	    //updating a,b,c
 	    incPowers(&am,&bm,&cm);
 	  }
-	  iterLocal[i] += tmp*coeffL ; // a mettre plus loin.
-	  incPowers(&al,&bl,&cl);
-	}
-	// For Debugging ..........................................................
+	  iterLocal[++id] += tmp*coeffL; //access to iterLocal[ (i-1,1,0) ] is inlined
+	  printf("i==%d iterLocal[i]:: %f\n",id,iterLocal[id]);
+	  
+	  //Case (i-1,0,1) :
+	  //Values of fctl and coeffL are the same for (i-1,1,0) and (i-1,0,1)
+	  //Iterator over multipole array
+	  tmp = 0.0;
+	  am=0;	  bm=0;  cm=0;
+	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
+	    int idxPsi = powerToIdx((i-1)+am,bm,1+cm);
+	    tmp += this->_PsiVector[idxPsi]*multipole[j];
+	    //updating a,b,c
+	    incPowers(&am,&bm,&cm);
+	  }
+	  iterLocal[++id] += tmp*coeffL; //access to iterLocal[ (i-1,0,1) ] is inlined
+	  printf("i==%d iterLocal[i]:: %f\n",id,iterLocal[id]);
+	  
+	  //End of specific case
+	  //Start of general case :
+	  ++id;
+	  for(al=i-2 ; al>= 0 ; --al)
+	    {
+	      for(bl=i-al ; bl>=0 ; --bl, ++id)
+		{
+		  am = 0 ;
+		  bm = 0 ;
+		  cm = 0 ;
+		  tmp = FReal(0);
+		  fctl = fact3int(al,bl,i-(al+bl));
+		  coeffL = FReal(1.0)/(fctl);
+		  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
+		    int idxPsi = powerToIdx(al+am,bl+bm,(i-al-bl)+cm);
+		    tmp += this->_PsiVector[idxPsi]*multipole[j];
+		    //updating a,b,c
+		    incPowers(&am,&bm,&cm);
+		  }
+		  iterLocal[id] += tmp*coeffL;
+		  printf("i==%d iterLocal[i]:: %f\n",id,iterLocal[id]);
+		}
+	      
+	    }
+	 // For Debugging ..........................................................
 	// int x=0,y=0,z=0;
 	// for(int dby=0 ; dby<SizeVector ; dby++)
 	//   {	
@@ -778,17 +830,13 @@ public:
 	//     //fprintf(stdout,"M2L :: source %f, (%d,%d,%d) ==> derive : %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
 	//     incPowers(&x,&y,&z);
 	//   }
-	int x=0,y=0,z=0;
 	//	printf("Cell in (%f,%f,%f), leading to (dx,dy,dz) = (%f,%f,%f)\n",locCenter.getX(),locCenter.getY(),locCenter.getZ(),dx,dy,dz);
-	for(int m=0 ; m < SizeVector ; ++m)
-	  {
-	    //	    printf("Cell in (%f,%f,%f) :: (%d,%d,%d) coeffL:%f  ::> %.8f \n",dx,dy,dz,x,y,z,factorials[x+y+z]/(fact3int(x,y,z)*fact3int(x,y,z)),iterLocal[m]);
-	    incPowers(&x,&y,&z);
-	  }
+	
+	}
       }
     }
   }
-
+  
   
   /**
    *@brief Translate the local expansion of parent cell to child cell
