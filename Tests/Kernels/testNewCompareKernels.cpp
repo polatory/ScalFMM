@@ -46,8 +46,6 @@
 //
 // spherical kernel
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
 #ifdef ScalFMM_USE_BLAS
 #include "../../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
@@ -55,10 +53,15 @@
 //
 // taylor kernel
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel_OptPre.hpp"
+#include "../../Src/Kernels/Taylor/FTaylorKernel_OptPreInd.hpp"
 //
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+
+//Rotation kernel
+#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with
@@ -107,6 +110,7 @@ int main(int argc, char* argv[])
         particles[idxPart].forces[1] = 0.0;
         particles[idxPart].forces[2] = 0.0;
     }
+    time.tic();
     {
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
@@ -121,6 +125,8 @@ int main(int argc, char* argv[])
             }
         }
     }
+    time.tac();
+    printf("Elapsed Time for direct computation: %f\n",time.elapsed());
     //
     ////////////////////////////////////////////////////////////////////
     //
@@ -138,10 +144,8 @@ int main(int argc, char* argv[])
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
-        //typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-        // typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
         // init oct-tree
@@ -207,22 +211,17 @@ int main(int argc, char* argv[])
     //
     {	// begin FFmaBlas kernel
 
-        // accuracy
-
         // typedefs
         typedef FSphericalCell                 CellClass;
         typedef FP2PParticleContainerIndexed         ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                     LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-        //typedef FSphericalBlasKernel< CellClass, ContainerClass > KernelClass;
-        //typedef FSphericalKernel< CellClass, ContainerClass > KernelClass;
         typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
         typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-        //typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // init cell class and oct-tree
         CellClass::Init(DevP, true); // only for blas
-        CellClass::Init(DevP, false);
+        //CellClass::Init(DevP, false);
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
         { // -----------------------------------------------------
@@ -281,27 +280,20 @@ int main(int argc, char* argv[])
         std::cout << "Fz " << fz << std::endl;
     } // end FFmaBlas kernel
 #endif
-    ////////////////////////////////////////////////////////////////////
-    {	// begin SphericalRotation kernel
 
-        // accuracy  
-      //        const int DevP = FParameters::getValue(argc, argv, "-p", 6);
-
-        // typedefs
-        typedef FSphericalCell                                        CellClass;
-        typedef FP2PParticleContainerIndexed                          ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                         LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
-        typedef FSphericalRotationKernel< CellClass, ContainerClass > KernelClass;
-        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-	//  typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-        // init cell class and oct-tree
-        CellClass::Init(DevP, true); // only for blas
-        CellClass::Init(DevP, false);
-        OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-
+{
+  const static int P = 7;
+  typedef FRotationCell<P>               CellClass;
+  typedef FP2PParticleContainerIndexed          ContainerClass;
+  typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+  typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+  typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+  typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+  
+  OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+  
         { // -----------------------------------------------------
+	  printf("Rotation kernel\n");
             std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
                       << " particles ..." << std::endl;
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
@@ -319,9 +311,9 @@ int main(int argc, char* argv[])
         } // -----------------------------------------------------
 
         // -----------------------------------------------------
-        std::cout << "\nFFmaSphericalRotation FMM ..." << std::endl;
+        std::cout << "\nFFmaRotation FMM ..." << std::endl;
         time.tic();
-        KernelClass kernels(DevP, TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algorithm(&tree, &kernels);
         algorithm.execute();
         time.tac();
@@ -339,14 +331,13 @@ int main(int argc, char* argv[])
                 const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
                 const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
                 const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-
                 for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                     const int indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
+               }
             });
         }
 
@@ -355,8 +346,7 @@ int main(int argc, char* argv[])
         std::cout << "Fx " << fx << std::endl;
         std::cout << "Fy " << fy << std::endl;
         std::cout << "Fz " << fz << std::endl;
-    } // end FFSphericalRotation kernel
-    //
+    }
     ////////////////////////////////////////////////////////////////////
     {	// begin Taylor kernel
 
@@ -371,13 +361,13 @@ int main(int argc, char* argv[])
         typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
 	typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;
         typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-	//  typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // init cell class and oct-tree
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-
+	
         { // -----------------------------------------------------
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+          printf("TAylor Kernel\n");
+	  std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
                       << " particles ..." << std::endl;
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
                       << SubTreeHeight << std::endl;
