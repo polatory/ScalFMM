@@ -1,6 +1,6 @@
 
 Please follow those rules when developing:
-
+==========================================
 Static (variables, members, attributes) should start with a capital letter
 Class name should start with a capital letter
 Mix capital and normal letter to write names (IAmAName) no underscore
@@ -11,3 +11,23 @@ If an parameter is changed by a function use pointer else use const ref
 Please do not name variables with one letter (except it is related to a mathematical formula but then this one should be in the comment in latex format)
 Try not to have function bigger than 100 lines
 Be consistent
+Methods should start with a verb or an action (get, compute, print, etc...)
+
+
+
+Why everything is inside the HPP!? A discussion about why scalfmm should stay like this for now
+===============================================================================================
+First of all, many classes are Templates and so, even if it is possible to split declaration and implementation
+of templates in different files such approach is not supported by all compiler, it then better
+for templates to stay in their hpp.
+For other class the debate is more open.
+Even if it is not a argument, it is interesting to notice that all modern languages are one file per class (C#, Java, Ruby, Python, ...).
+
+Cons:
+It takes much time to compile since you need to generate almost all the program every time (and the generation is hardly parallelized).
+It is impossible to have cross references.
+It looks strange for a new guy that discover the project (is it really a con?).
+It is "more" standard.
+
+Assets:
+
