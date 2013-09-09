@@ -3,9 +3,10 @@ Please follow those rules when developing:
 ==========================================
 Static (variables, members, attributes) should start with a capital letter
 Class name should start with a capital letter
-Mix capital and normal letter to write names (IAmAName) no underscore
+Mix capital and normal letter to write names (IAmAName) no underscore (but if you have several variables that looks the same be careful: thisIsAXVariable thisIsAYVariable)
 Put const every where it is possible (method, value, pointer etc.)
 Declare variables usually as late as possible (we are not in C so do not declare every thing at the beginning of a function)
+Declare index in the for loop where they are used
 Use pre-inc if possible
 If an parameter is changed by a function use pointer else use const ref
 Please do not name variables with one letter (except it is related to a mathematical formula but then this one should be in the comment in latex format)
@@ -27,7 +28,21 @@ Cons:
 It takes much time to compile since you need to generate almost all the program every time (and the generation is hardly parallelized).
 It is impossible to have cross references.
 It looks strange for a new guy that discover the project (is it really a con?).
-It is "more" standard.
+It is "less" standard.
+You do not have an header to know what a class is proposing.
 
-Assets:
+Pros:
+It is closed to recent languages.
+It is easy to maintains (you do not have to change the cpp and then the hpp).
+You do not have to put you comment twice or to have an header with comments and a implementation without some.
+It is directly global optimizations to object file and inline is performed directly.
+It is more usual to use all in hpp template class.
+It is more easy to get into the code, and once you feel usual to it you finally prefer like this.
 
+Now if we look to cons and pros, we can notice that in our project we do not have a big UML diagram at the beginning that let us generate all the classes and methods,
+We are working in small iterations, and all the code (even the one that looks stable may change tomorrow or in a year).
+And is it more easy to maintains because we do not have to change two files every time we re-factor something.
+Of course it takes more time to compile, but for now this is not a consideration.
+In our project we have plenty of templates.
+Our project is not that big and many people arrived to work on it, and for now, all of them finally like to have all in the hpp when they discovered the project.
+It someone wants to know what a class is proposing, then it can do as it is usual, he looks to the doc (who is looking to Qt header to know QVector methods??).
