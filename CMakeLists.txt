@@ -61,6 +61,19 @@ MESSAGE( STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
 if( ScalfMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
+
+  # Compile optimization
+  IF( APPLE ) 
+    SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64 -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+  ELSE()
+    # Test if not apple and 64bits
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+       SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64 -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+    else()
+       SET(SCALFMM_FLAGS_OPTI_DEBUG "-march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+    endif()
+  ENDIF()
+  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
 else()
   SET(CMAKE_BUILD_TYPE Release)
   # force -O2 in release
@@ -70,6 +83,19 @@ else()
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     ADD_DEFINITIONS(-ip)
   ENDIF()
+
+  # Compile optimization
+  IF( APPLE ) 
+    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+  ELSE()
+    # Test if not apple and 64bits
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+    else()
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+    endif()
+  ENDIF()
+  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
 endif()
 
 # Attach source code to exec
@@ -110,18 +136,6 @@ ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic -s
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
-# Compile optimization
-IF( APPLE ) 
-  SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
-ELSE()
-  # Test if not apple and 64bits
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-     SET(SCALFMM_FLAGS_OPTI "-m64 -Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
-  else()
-     SET(SCALFMM_FLAGS_OPTI "-Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags.")
-  endif()
-ENDIF()
-ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI})
 
 # Use SSE
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
