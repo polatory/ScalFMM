@@ -39,12 +39,12 @@ OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
 OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
-OPTION( ScalFMM_BUILD_DEBUG "Set to ON to build in Debug" OFF )
-OPTION( ScalFMM_USE_MEM_STATS "Set to ON to profile memory" OFF )
-OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON )
-OPTION( ScalFMM_ATTACHE_SOURCE "Set to ON to compile with -g" OFF )
-OPTION( ScalFMM_USE_ADDONS "Set to ON to compile add ons" OFF )
-OPTION( ScalFMM_USE_SSE "Set to ON to compile with sse support" ON )
+OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"              OFF )
+OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"              OFF )
+OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON  )
+OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"             OFF )
+OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"             OFF )
+OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"    ON  )
 #
 SET(SCALFMM_LIBRARIES "")
 
@@ -64,7 +64,7 @@ if( ScalfMM_BUILD_DEBUG )
 
   # Compile optimization
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64 -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+    SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ELSE()
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -86,7 +86,7 @@ else()
 
   # Compile optimization
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE()
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -131,7 +131,13 @@ if( ScalFMM_USE_BLAS )
 endif()
 
 # Compile option
-ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic -std=c++11)
+ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
+# 
+# C++ 2011
+ADD_DEFINITIONS(-std=c++11)
+IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" AND APPLE)
+  ADD_DEFINITIONS(-stdlib=libstdc++)
+endif()
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
@@ -140,7 +146,11 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 # Use SSE
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
 if( ScalFMM_USE_SSE )
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
+  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -axAVX")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
+  ENDIF()
 endif()
 
 # Use Mem stats
