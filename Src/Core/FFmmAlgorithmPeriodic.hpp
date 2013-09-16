@@ -28,6 +28,7 @@
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
 
+#include "FCoreCommon.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -51,11 +52,6 @@ class FFmmAlgorithmPeriodic : protected FAssertable{
     const int offsetRealTree;       //< nbLevelsAboveRoot GetFackLevel
     const int periodicDirections;
 
-    static int GetFackLevel(const int inLevelAboveRequiered){
-        if( inLevelAboveRequiered == -1 ) return 1;
-        if( inLevelAboveRequiered == 0  ) return 2;
-        return inLevelAboveRequiered + 3;
-    }
 
 public:
     /** The constructor need the octree and the kernels used for computation
@@ -67,7 +63,7 @@ public:
       */
     FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0, const int inPeriodicDirections = AllDirs)
         : tree(inTree) , kernels(0), OctreeHeight(tree->getHeight()),
-          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(GetFackLevel(inUpperLevel)),
+          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3),
           periodicDirections(inPeriodicDirections) {
 
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
@@ -88,21 +84,23 @@ public:
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(){
+    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
+        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );       
 
-        bottomPass();
+        if(operationsToProceed & FFmmP2M) bottomPass();
 
-        upwardPass();
+        if(operationsToProceed & FFmmM2M) upwardPass();
 
-        transferPass();
-        // before downward pass we have to perform the periodicity
-        processPeriodicLevels();
+        if(operationsToProceed & FFmmM2L){
+            transferPass();
+            // before downward pass we have to perform the periodicity
+            processPeriodicLevels();
+        }
 
-        downardPass();
+        if(operationsToProceed & FFmmL2L) downardPass();
 
-        directPass();
+        if(operationsToProceed & FFmmP2P || operationsToProceed & FFmmL2P) directPass();
     }
 
 
@@ -166,7 +164,7 @@ public:
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
-            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << "(" << fackLevel << ") = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
 
@@ -208,7 +206,7 @@ public:
             FDEBUG(computationCounter.tic());
             kernels->finishedLevelM2L(fackLevel);
             FDEBUG(computationCounter.tac());
-            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << "(" << fackLevel << ") = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
@@ -243,7 +241,7 @@ public:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FDEBUG( FDebug::Controller << "\t\t>> Level " << idxLevel << "(" << fackLevel << ") = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
@@ -463,8 +461,8 @@ public:
       * because it contains the theorical periodic box width for the
       * nbLevelsAboveRoot choosen
       */
-    int theoricalRepetition() const {
-        return nbLevelsAboveRoot == -1 ? 3 : 3 * (1<<(nbLevelsAboveRoot+1)) + 1;
+    long long int theoricalRepetition() const {
+        return nbLevelsAboveRoot == -1 ? 3 : 3LL * (1LL<<(nbLevelsAboveRoot+1)) + 1LL;
     }
 
     /** To know the number of box repeated in each direction
@@ -474,7 +472,7 @@ public:
       * The maxs value are contains between [0;(theoricalRepetition-1 / 2)]
       */
     void repetitionsIntervals(FTreeCoordinate*const min, FTreeCoordinate*const max) const {
-        const int halfRepeated = (theoricalRepetition()-1) /2;
+        const int halfRepeated = int((theoricalRepetition()-1)/2);
         min->setPosition(-ifDir(DirMinusX,halfRepeated,0),-ifDir(DirMinusY,halfRepeated,0),
                          -ifDir(DirMinusZ,halfRepeated,0));
         max->setPosition(ifDir(DirPlusX,halfRepeated,0),ifDir(DirPlusY,halfRepeated,0),
@@ -486,7 +484,7 @@ public:
       * Each value is between [1;theoricalRepetition]
       */
     FTreeCoordinate repetitions() const {
-        const int halfRepeated = (theoricalRepetition()-1) /2;
+        const int halfRepeated = int((theoricalRepetition()-1)/2);
         return FTreeCoordinate(ifDir(DirMinusX,halfRepeated,0) + ifDir(DirPlusX,halfRepeated,0) + 1,
                                ifDir(DirMinusY,halfRepeated,0) + ifDir(DirPlusY,halfRepeated,0) + 1,
                                ifDir(DirMinusZ,halfRepeated,0) + ifDir(DirPlusZ,halfRepeated,0) + 1);
@@ -511,11 +509,13 @@ public:
       */
     FPoint extendedBoxCenter() const {
         const FReal originalBoxWidth = tree->getBoxWidth();
+        const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
         const FPoint originalBoxCenter = tree->getBoxCenter();
-        const FReal offset = originalBoxWidth * FReal(1<<(offsetRealTree-1)) - originalBoxWidth/FReal(2.0);
-        return FPoint( originalBoxCenter.getX() + offset,
-                       originalBoxCenter.getY() + offset,
-                       originalBoxCenter.getZ() + offset);
+
+        const FReal offset = extendedBoxWidth()/2;
+        return FPoint( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+                       originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
+                       originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
     }
 
     /** This function has to be used to init the kernel with correct args
@@ -544,7 +544,7 @@ public:
       * @return correctValue if testDir is used, else wrongValue
       */
     template <class T>
-    int ifDir(const PeriodicCondition testDir, const T& correctValue, const T& wrongValue) const {
+    const T& ifDir(const PeriodicCondition testDir, const T& correctValue, const T& wrongValue) const {
         return (periodicDirections & testDir ? correctValue : wrongValue);
     }
 
@@ -576,7 +576,7 @@ public:
             // compute the root
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoLeft();
-            kernels->M2M( &rootUp, octreeIterator.getCurrentBox(), 2);
+            kernels->M2M( &rootUp, octreeIterator.getCurrentBox(), 3);
 
             // build fack M2L vector from -3/+3 x/y/z
             const CellClass* neighbors[343];
@@ -594,10 +594,10 @@ public:
             }
             // compute M2L
             CellClass rootDown;
-            kernels->M2L( &rootDown , neighbors, counter, 2);
+            kernels->M2L( &rootDown , neighbors, counter, 3);
 
             // put result in level 1
-            kernels->L2L( &rootDown, octreeIterator.getCurrentBox(), 2);
+            kernels->L2L( &rootDown, octreeIterator.getCurrentBox(), 3);
 
             FDEBUG( FDebug::Controller << "\tFinished (@Periodic = "  << counterTime.tacAndElapsed() << "s)\n" );
             return;

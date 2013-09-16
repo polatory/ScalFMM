@@ -26,6 +26,7 @@
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
 
+#include "FCoreCommon.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -82,18 +83,18 @@ public:
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(){
+    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        bottomPass();
+        if(operationsToProceed & FFmmP2M) bottomPass();
 
-        upwardPass();
+        if(operationsToProceed & FFmmM2M) upwardPass();
 
-        transferPass();
+        if(operationsToProceed & FFmmM2L) transferPass();
 
-        downardPass();
+        if(operationsToProceed & FFmmL2L) downardPass();
 
-        directPass();
+        if(operationsToProceed & FFmmP2P || operationsToProceed & FFmmL2P) directPass();
     }
 
 private:
