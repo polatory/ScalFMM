@@ -25,6 +25,7 @@
 
 #include "../Containers/FOctree.hpp"
 
+#include "FCoreCommon.hpp"
 
 #include <omp.h>
 
@@ -90,7 +91,7 @@ public:
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(){
+    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
@@ -110,15 +111,15 @@ public:
         iterArray = new typename OctreeClass::Iterator[leafsNumber];
         fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
 
-        bottomPass();
+        if(operationsToProceed & FFmmP2M) bottomPass();
 
-        upwardPass();
+        if(operationsToProceed & FFmmM2M) upwardPass();
 
-        transferPass();
+        if(operationsToProceed & FFmmM2L) transferPass();
 
-        downardPass();
+        if(operationsToProceed & FFmmL2L) downardPass();
 
-        directPass();
+        if(operationsToProceed & FFmmP2P || operationsToProceed & FFmmL2P) directPass();
 
         delete [] iterArray;
         iterArray = 0;         
