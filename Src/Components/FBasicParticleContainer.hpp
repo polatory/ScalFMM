@@ -19,7 +19,6 @@
 #include "FAbstractParticleContainer.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FPoint.hpp"
-#include <type_traits>
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -75,7 +74,7 @@ public:
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
-    FBasicParticleContainer(const FBasicParticleContainer&) = delete;
+    FBasicParticleContainer(const FBasicParticleContainer&)            = delete;
     FBasicParticleContainer& operator=(const FBasicParticleContainer&) = delete;
 
     /////////////////////////////////////////////////////

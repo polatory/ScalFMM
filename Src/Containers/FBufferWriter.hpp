@@ -56,7 +56,7 @@ public:
     /** Write data by mem cpy */
     template <class ClassType>
     void write(const ClassType& object){
-        buffer.memocopy(reinterpret_cast<const char*>(&object), sizeof(ClassType));
+        buffer.memocopy(reinterpret_cast<const char*>(&object), int(sizeof(ClassType)));
     }
 
     /** Write back, position + sizeof(object) has to be < size */

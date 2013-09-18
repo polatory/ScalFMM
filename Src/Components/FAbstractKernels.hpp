@@ -115,9 +115,9 @@ public:
         * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors
         */
-    virtual void P2PRemote(const FTreeCoordinate& inLeafPosition,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-                           ContainerClass* const directNeighborsParticles[27], const int size) {
+  virtual void P2PRemote(const FTreeCoordinate& /*inLeafPosition*/,
+			 ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
+                           ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/) {
         FDEBUG( FDebug::Controller.write("Warning, P2P remote is used but not implemented!").write(FDebug::Flush) );
     }
 
