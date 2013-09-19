@@ -16,6 +16,7 @@
 #ifndef FTREECOORDINATE_HPP
 #define FTREECOORDINATE_HPP
 
+#include <string>
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FBufferReader.hpp"
