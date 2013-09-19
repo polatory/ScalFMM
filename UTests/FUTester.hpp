@@ -38,6 +38,9 @@ int main(void){\
 *
 * Please refer to testUTest.cpp to see an example
 * @warning Create a derived class that implement SetTests() and use TestClass() macro
+*
+* We recommand to have a look to a unit test to better understand how it works,
+* as for example @example TestList
 */
 template <class TestClass>
 class FUTester{
