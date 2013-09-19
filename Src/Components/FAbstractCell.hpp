@@ -22,17 +22,14 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractCell
-* @brief
+* @brief This class define the methods that every cell class has to implement to be insertable in the tree.
 *
-* This class define the methods that every cell class
-* has to implement to be insertable in the tree.
-* \n
 * In fact FOctree & FFmmAlgorithm need this functions to be implemented.
 * But you cannot use this interface with the extension (as an example :
 * because the compiler will faill to know if getMortonIndex is coming
 * from this interface or from the extension)
 *
-* @warning Inherite from this class when implement a specific cell type
+* You can look to FBasicCell to have an idea of implementation.
 */
 class FAbstractCell{
 public:	

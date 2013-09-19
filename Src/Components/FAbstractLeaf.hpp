@@ -22,10 +22,10 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractLeaf
-* @brief
-* Please read the license
-* This class is used to enable the use of typed particles
-* (source XOR target) or simple system (source AND target)
+* @brief This class is used to enable the use of typed particles (source XOR target) or simple system (source AND target).
+*
+* It has to be implemented has show in FSimpleLeaf.
+* Leaf are stored in the octree.
 */
 template< class ContainerClass >
 class FAbstractLeaf {

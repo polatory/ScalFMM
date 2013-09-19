@@ -21,13 +21,11 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FBasicCell
-* Please read the license
+* @class FBasicCell*
+* @brief This class is used in the FTestKernels, please look at this class to know how to customize a cell.
 *
-* This class is used in the FTestKernels, please
-* look at this class to know how to customize a cell.
-*
-* This cell simply store the data when up/down
+* This cell simply store the data when up/down.
+* It also shows how to be restored and saved, etc.
 */
 class FTestCell : public FBasicCell  {
 protected:

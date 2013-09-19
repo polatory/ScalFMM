@@ -22,10 +22,9 @@ class FBufferWriter;
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractSendable
-* Please read the license
+* To make your cells are usable in the mpi fmm, they must provide this interface.
 *
-* To make your cells are usable in the mpi fmm,
-* they must provide this interface
+* If used during M2M or M2L they will be serialize up (multipole) if for the L2L serialize down is used.
 */
 class FAbstractSendable {
 protected:

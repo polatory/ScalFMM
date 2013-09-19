@@ -23,10 +23,9 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class AbstractKernels
-* @brief
-* Please read the license
+* @brief This kernels is empty and does nothing.
 *
-* This kernels is empty and does nothing.
+* It can be inherited to define only what you want.
 */
 template< class CellClass, class ContainerClass>
 class FBasicKernels : public FAbstractKernels<CellClass,ContainerClass> {

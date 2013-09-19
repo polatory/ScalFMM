@@ -24,17 +24,20 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FTrace.hpp"
 
+
+/**
+ * @example testFmmAlgorithm
+ * It illustrates how the FTestKernels to validate a FMM core algorithm.
+ */
+
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class AbstractKernels
-* @brief
-* Please read the license
+* @brief This kernels is a virtual kernels to validate that the fmm algorithm is correctly done on particles.
 *
-* This kernels is a virtual kernels to validate that the fmm algorithm is
-* correctly done on particles.
 * It should use FTestCell and FTestParticle.
-* A the end of a computation, the particles should host then number of particles
-* in the simulation (-1).
+* A the end of a computation, the particles should host then number of particles in the simulation (-1).
 */
 template< class CellClass, class ContainerClass>
 class FTestKernels  : public FAbstractKernels<CellClass,ContainerClass> {

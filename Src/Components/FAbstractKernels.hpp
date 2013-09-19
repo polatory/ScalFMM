@@ -23,10 +23,14 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractKernels
-* @brief
-* Please read the license
+* @brief This class defines what any kernel has to implement.
 *
-* If you want to create you own kernels you have to inherit from this class.
+* Please notice that P2PRemote is optional and should be implemented in case of
+* MPI usage.
+* It is better to inherit from this class even if it is not obligatory thanks to
+* the templates. But inheriting will force your class to have the correct parameters.
+*
+* You can find an example of implementation in FBasicKernels.
 */
 template< class CellClass, class ContainerClass >
 class FAbstractKernels{
@@ -114,6 +118,10 @@ public:
         * @param sources current boxe sources particles (can be == to targets)
         * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
         * @param size the number of direct neighbors
+        *
+        * This method is called by the MPI algorithm with leaves from other hosts.
+        * Notice that directNeighborsParticles will be destroyed once all P2P remote have been
+        * performed.
         */
   virtual void P2PRemote(const FTreeCoordinate& /*inLeafPosition*/,
 			 ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,

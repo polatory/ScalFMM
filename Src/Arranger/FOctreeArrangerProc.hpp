@@ -23,11 +23,13 @@
 
 #include "../Utils/FGlobalPeriodic.hpp"
 
+/**
+* This example show how to use the FOctreeArrangerProc.
+* @example testOctreeRearrangeProc.cpp
+*/
 
-/** This class is an arranger, it move the particles that need
-  * to be hosted in a different leaf
-  * This is the parallel version that use MPI.
-  * \n
+/** @brief This class is an arranger, it move the particles that need to be hosted in a different leaf. This is the parallel version that use MPI.
+  *
   * For example, if a simulation has been executed and the position
   * of the particles have been changed, then it may be better
   * to move the particles in the tree instead of building a new

@@ -23,15 +23,19 @@
 
 #include "../Utils/FGlobalPeriodic.hpp"
 
+/**
+* This example show how to use the FOctreeArranger.
+* @example testOctreeRearrange.cpp
+*/
 
-/** This class is an arranger, it move the particles that need
-  * to be hosted in a different leaf
-  * \n
-  * For example, if a simulation has been executed and the position
-  * of the particles have been changed, then it may be better
-  * to move the particles in the tree instead of building a new
-  * tree.
-  */
+/**
+* @brief This class is an arranger, it move the particles that need to be hosted in a different leaf.
+*
+* For example, if a simulation has been executed and the position
+* of the particles have been changed, then it may be better
+* to move the particles in the tree instead of building a new
+* tree.
+*/
 template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
 class FOctreeArranger : FAssertable {
     OctreeClass* const tree; //< The tree to work on

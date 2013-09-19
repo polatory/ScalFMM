@@ -22,14 +22,12 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FSimpleLeaf
-* @brief
-* Please read the license
-* This class is used as a leaf in simple system (source AND target)
-* here there is only one list that store all particles.
+* @brief This class is used as a leaf in simple system (source AND target).
+* Here there only one container stores all particles.
 */
 template< class ContainerClass>
 class FSimpleLeaf : public FAbstractLeaf<ContainerClass> {
-    ContainerClass particles;
+    ContainerClass particles; //! The container to store all the particles
 
 public:
     /** Default destructor */
