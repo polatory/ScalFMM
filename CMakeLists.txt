@@ -5,6 +5,17 @@ STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
+
+#
+# MPI option has to be set before project, cannot be changed in the cache!
+if( ScalFMM_USE_MPI )
+	include(CMakeForceCompiler)
+	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
+    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
+else()
+	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DScalFMM_USE_MPI=ON to enable MPI" )
+endif(ScalFMM_USE_MPI)
+
 #
 # Project Infos
 project(ScalFMM)
@@ -23,18 +34,9 @@ SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFM
 # -----------------------
 ENABLE_LANGUAGE(CXX )
 MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
-#
-# MPI option has to be set before project, cannot be changed in the cache!
-if( ScalFMM_USE_MPI )
-	include(CMakeForceCompiler)
-	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
-    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
-else()
-	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DSCALFMM_USE_MPI=ON to enable MPI" )
-endif(ScalFMM_USE_MPI)
+
 #
 # Options
-OPTION( ScalFMM_USE_MPI "Set to ON to build ScaFMM with MPI" OFF )
 OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
 OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
