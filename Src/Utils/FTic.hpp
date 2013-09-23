@@ -17,15 +17,17 @@
 #define FTIC_HPP
 
 #include "FGlobal.hpp"
-#include <time.h>
 
-// We need an os specific function
-#if defined(WINDOWS)
+#ifdef _OPENMP
+    #include <omp.h>
+#elif defined(WINDOWS) // We need an os specific function
+    #include <time.h>
     #include <windows.h>
 #else
     #ifndef POSIX
         #warning Posix used withoug being explicitly defined
     #endif
+    #include <time.h>
     #include <sys/time.h>
     #include <unistd.h>
     #include <stdint.h>
@@ -94,13 +96,14 @@ public:
       * gettimeofday on linux or a direct ASM method
       */
     static double GetTime(){
-#ifdef WINDOWS
+#ifdef _OPENMP
+        return omp_get_wtime();
+#elif defined(WINDOWS)
         return static_cast<double>(GetTickCount())/1000.0;
 #else // We are in linux/posix
-        // better than gettimeofday but need -lrt
-        struct timespec tp;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-        return double(tp.tv_sec) + (double(tp.tv_nsec)/1000000000.0);
+        timeval t;
+        gettimeofday(&t, NULL);
+        return double(t.tv_sec) + (double(t.tv_usec)/1000000.0);
 #endif
     }
 };

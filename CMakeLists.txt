@@ -50,7 +50,7 @@ OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"             
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"    ON  )
 
 # Set scalfmm to default libraries
-SET(SCALFMM_LIBRARIES "-lrt")
+SET(SCALFMM_LIBRARIES "")
 
 # Test if openmp is here
 find_package (OpenMP) 
