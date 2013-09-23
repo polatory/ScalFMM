@@ -45,8 +45,9 @@ OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" 
 OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"             OFF )
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"             OFF )
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"    ON  )
-#
-SET(SCALFMM_LIBRARIES "")
+
+# Set scalfmm to default libraries
+SET(SCALFMM_LIBRARIES "-lrt")
 
 # Test if openmp is here
 find_package (OpenMP) 

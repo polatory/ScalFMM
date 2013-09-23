@@ -97,9 +97,10 @@ public:
 #ifdef WINDOWS
         return static_cast<double>(GetTickCount())/1000.0;
 #else // We are in linux/posix
-        timeval t;
-        gettimeofday(&t, NULL);
-        return double(t.tv_sec) + (double(t.tv_usec)/1000000.0);
+        // better than gettimeofday but need -lrt
+        struct timespec tp;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+        return double(tp.tv_sec) + (double(tp.tv_nsec)/1000000000.0);
 #endif
     }
 };
