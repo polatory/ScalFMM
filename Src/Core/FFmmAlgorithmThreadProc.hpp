@@ -89,7 +89,7 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
     Interval*const workingIntervalsPerLevel;
 
     /** Get an interval from proc id and level */
-    Interval& getWorkingInterval(const int level, const int proc){
+    Interval& getWorkingInterval( int level,  int proc){
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
 
@@ -97,13 +97,13 @@ class FFmmAlgorithmThreadProc : protected FAssertable {
 public:
 
     /** Get current proc interval at level */
-    Interval& getWorkingInterval(const int level){
+    Interval& getWorkingInterval( int level){
         return getWorkingInterval(level, idProcess);
     }
 
     /** Does the current proc has some work at this level */
-    bool hasWorkAtLevel(const int level){
-        return idProcess == 0 || getWorkingInterval(level, idProcess - 1).max < getWorkingInterval(level, idProcess).max;
+    bool hasWorkAtLevel( int level){
+        return idProcess == 0 || (getWorkingInterval(level, idProcess - 1).max) < (getWorkingInterval(level, idProcess).max);
     }
 
     /** The constructor need the octree and the kernels used for computation
@@ -112,7 +112,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
-      : tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr), numberOfLeafs(0),
+        : tree(inTree) , kernels(0), comm(inComm), numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]){
@@ -205,7 +205,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass();
+        if(operationsToProceed & FFmmP2P || operationsToProceed & FFmmL2P) directPass();
 
         // delete array
         delete [] iterArray;
@@ -342,7 +342,7 @@ private:
 
             if(idProcess != nbProcess - 1){
                 while(firstProcThatSend < nbProcess
-                      && getWorkingInterval((idxLevel+1), firstProcThatSend).max < getWorkingInterval((idxLevel+1), idProcess).max){
+                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) < (getWorkingInterval((idxLevel+1), idProcess).max)){
                     ++firstProcThatSend;
                 }
 
@@ -469,7 +469,7 @@ private:
 
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG(prepareCounter.tic());            
+            FDEBUG(prepareCounter.tic());
 
             // To know if a leaf has been already sent to a proc
             bool*const alreadySent = new bool[nbProcess];
@@ -518,12 +518,12 @@ private:
                     // Test each negibors to know which one do not belong to us
                     for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
                         if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
-                                || getWorkingInterval(idxLevel , idProcess).max < neighborsIndexes[idxNeigh]){
+                                || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndexes[idxNeigh]){
                             int procToReceive = idProcess;
                             while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
                                 --procToReceive;
                             }
-                            while( procToReceive != nbProcess -1 && getWorkingInterval(idxLevel , procToReceive).max < neighborsIndexes[idxNeigh]){
+                            while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).max) < neighborsIndexes[idxNeigh]){
                                 ++procToReceive;
                             }
                             // Maybe already sent to that proc?
@@ -744,8 +744,8 @@ private:
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                            if(neighborsIndex[idxNeig] < getWorkingInterval(idxLevel , idProcess).min
-                                    || getWorkingInterval(idxLevel , idProcess).max < neighborsIndex[idxNeig]){
+                            if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).min)
+                                    || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndex[idxNeig]){
 
                                 CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
 
@@ -758,7 +758,7 @@ private:
                         }
                         // need to compute
                         if(counter){
-                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);                            
+                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                         }
                     }
 
@@ -872,7 +872,7 @@ private:
                 }
 
                 if(firstProcThatRecv != endProcThatRecv){
-                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);                   
+                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
 
                     for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
 
@@ -1002,7 +1002,7 @@ private:
                 const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, indexesNeighbors, uselessIndexArray);
 
                 for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
-                    if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
+                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
                         needOther = true;
 
                         // find the proc that need this information
@@ -1011,7 +1011,7 @@ private:
                             --procToReceive;
                         }
 
-                        while( procToReceive != nbProcess - 1 && intervals[procToReceive].max < indexesNeighbors[idxNeigh]){
+                        while( procToReceive != nbProcess - 1 && (intervals[procToReceive].max) < indexesNeighbors[idxNeigh]){
                             ++procToReceive;
                         }
 
@@ -1241,7 +1241,7 @@ private:
                 const int nbNeigh = getNeighborsIndexes(currentIter.coord, limite, indexesNeighbors, indexArray);
 
                 for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
-                    if(indexesNeighbors[idxNeigh] < intervals[idProcess].min || intervals[idProcess].max < indexesNeighbors[idxNeigh]){
+                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
                         ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                         if(hypotheticNeighbor){
                             neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
