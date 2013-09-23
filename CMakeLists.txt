@@ -42,13 +42,13 @@ OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
 OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
 OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
-OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"              OFF )
-OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"              OFF )
-OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" ON  )
-OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"             OFF )
-OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"             OFF )
-OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"    ON  )
-
+OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
+OPTION( ScalFMM_USE_LOG              "Set to ON to print output debug information" OFF )
+OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"                 OFF )
+OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision"    ON  )
+OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
+OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
+OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"       ON  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 
@@ -62,7 +62,7 @@ endif()
 
 # Debug
 MESSAGE( STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
-if( ScalfMM_BUILD_DEBUG )
+if( ScalFMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
 

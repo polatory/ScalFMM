@@ -15,12 +15,13 @@
 // ===================================================================================
 #ifndef FDEBUG_HPP
 #define FDEBUG_HPP
+#include <iostream>
 
 
 #include "FGlobal.hpp"
 #include "FNoCopyable.hpp"
 
-#ifndef SCALFMM_USE_DEBUG
+#ifndef ScalFMM_USE_LOG
 
 #define FDEBUG( X )
 
