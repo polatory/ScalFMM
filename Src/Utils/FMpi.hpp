@@ -201,7 +201,7 @@ public:
 
         /** Change the group size */
         void groupReduce(const int from , const int to){
-            int procsIdArray[to - from + 1];
+            int * procsIdArray = new int [to - from + 1];
             for(int idxProc = from ;idxProc <= to ; ++idxProc){
                 procsIdArray[idxProc - from] = idxProc;
             }
@@ -216,6 +216,7 @@ public:
             MPI_Group_free(&previousGroup);
 
             reset();
+	    delete  procsIdArray ;
         }
     };
 
