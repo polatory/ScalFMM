@@ -83,7 +83,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if(operationsToProceed & FFmmP2P || operationsToProceed & FFmmL2P) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
     }
 
     /** P2M */
