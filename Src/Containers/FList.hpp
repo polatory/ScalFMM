@@ -122,6 +122,18 @@ public:
         ++this->size;
     }
 
+    /**
+     * @brief pushEmpty
+     * use default constructor
+     */
+    void pushEmpty(){
+        Node* newNode   = new Node;
+        newNode->next 	= this->root;
+
+        this->root 	= newNode;
+        ++this->size;
+    }
+
 
     /**
         * To get head value (last pushed value)
