@@ -28,31 +28,41 @@
 * Please read the license
 *
 * This class defines a cell used in the Chebyshev based FMM.
+* @param NVALS is the number of right hand side.
 */
-template <int ORDER>
-class FChebCell : public FExtendMortonIndex,
-									public FExtendCoordinate
+template <int ORDER, int NVALS = 1>
+class FChebCell : public FExtendMortonIndex, public FExtendCoordinate
 {
-	FReal multipole_exp[TensorTraits<ORDER>::nnodes * 2]; //< Multipole expansion
-	FReal     local_exp[TensorTraits<ORDER>::nnodes * 2]; //< Local expansion
+    static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
+
+    FReal multipole_exp[NVALS * VectorSize]; //< Multipole expansion
+    FReal     local_exp[NVALS * VectorSize]; //< Local expansion
 	
 public:
 	~FChebCell() {}
 	
 	/** Get Multipole */
-	const FReal* getMultipole() const
-	{	return this->multipole_exp;	}
+    const FReal* getMultipole(const int inRhs) const
+    {	return this->multipole_exp + inRhs*VectorSize;
+    }
 	/** Get Local */
-	const FReal* getLocal() const
-	{	return this->local_exp;	}
+    const FReal* getLocal(const int inRhs) const{
+        return this->local_exp + inRhs*VectorSize;
+    }
 	
 	/** Get Multipole */
-	FReal* getMultipole()
-	{	return this->multipole_exp;	}
+    FReal* getMultipole(const int inRhs){
+        return this->multipole_exp + inRhs*VectorSize;
+    }
 	/** Get Local */
-	FReal* getLocal()
-	{	return this->local_exp;	}
-	
+    FReal* getLocal(const int inRhs){
+        return this->local_exp + inRhs*VectorSize;
+    }
+
+    /** To get the leading dim of a vec */
+    int getVectorSize() const{
+        return VectorSize;
+    }
 };
 
 

@@ -40,15 +40,15 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebKernel
-    : public FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>
+    : public FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
 	// private types
 	typedef FChebM2LHandler<ORDER,MatrixKernelClass> M2LHandlerClass;
 
 	// using from 
-    typedef FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>
+    typedef FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 	AbstractBaseClass;
 
 	/// Needed for M2L operator
@@ -64,7 +64,7 @@ public:
 							const FPoint& inBoxCenter,
 							const FReal inBoxWidth,
 							const FReal Epsilon)
-        : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER>(inTreeHeight,
+        : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
 																																															inBoxCenter,
 																																															inBoxWidth),
 			M2LHandler(new M2LHandlerClass(Epsilon))
@@ -78,32 +78,33 @@ public:
 	void P2M(CellClass* const LeafCell,
 					 const ContainerClass* const SourceParticles)
 	{
-		// 1) apply Sy
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-		AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter,
-																							AbstractBaseClass::BoxWidthLeaf,
-																							LeafCell->getMultipole(),
-																							SourceParticles);
-		// 2) apply B
-		M2LHandler->applyB(LeafCell->getMultipole(),
-											 LeafCell->getMultipole() + AbstractBaseClass::nnodes);
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            // 1) apply Sy
+            AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                      LeafCell->getMultipole(idxRhs), SourceParticles);
+            // 2) apply B
+            M2LHandler->applyB(LeafCell->getMultipole(idxRhs), LeafCell->getMultipole(idxRhs) + AbstractBaseClass::nnodes);
+        }
 	}
 
 
 	void M2M(CellClass* const FRestrict ParentCell,
 					 const CellClass*const FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel)
+                     const int /*TreeLevel*/)
 	{
-		// 1) apply Sy
-		FBlas::scal(AbstractBaseClass::nnodes*2, FReal(0.), ParentCell->getMultipole());
-		for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
-			if (ChildCells[ChildIndex])
-				AbstractBaseClass::Interpolator->applyM2M(ChildIndex,
-																									ChildCells[ChildIndex]->getMultipole(),
-																									ParentCell->getMultipole());
-		// 2) apply B
-		M2LHandler->applyB(ParentCell->getMultipole(),
-											 ParentCell->getMultipole() + AbstractBaseClass::nnodes);
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            // 1) apply Sy
+            FBlas::scal(AbstractBaseClass::nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
+            for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
+                if (ChildCells[ChildIndex]){
+                    AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs),
+                                                              ParentCell->getMultipole(idxRhs));
+                }
+            }
+            // 2) apply B
+            M2LHandler->applyB(ParentCell->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs) + AbstractBaseClass::nnodes);
+        }
 	}
 
 
@@ -127,16 +128,19 @@ public:
 
 	void M2L(CellClass* const FRestrict TargetCell,
 					 const CellClass* SourceCells[343],
-					 const int NumSourceCells,
+                     const int /*NumSourceCells*/,
 					 const int TreeLevel)
 	{
-		FReal *const CompressedLocalExpansion = TargetCell->getLocal() + AbstractBaseClass::nnodes;
-		const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-		for (int idx=0; idx<343; ++idx)
-			if (SourceCells[idx])
-				M2LHandler->applyC(idx, CellWidth,
-													 SourceCells[idx]->getMultipole() + AbstractBaseClass::nnodes,
-													 CompressedLocalExpansion);
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            FReal *const CompressedLocalExpansion = TargetCell->getLocal(idxRhs) + AbstractBaseClass::nnodes;
+            const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
+            for (int idx=0; idx<343; ++idx){
+                if (SourceCells[idx]){
+                    M2LHandler->applyC(idx, CellWidth, SourceCells[idx]->getMultipole(idxRhs) + AbstractBaseClass::nnodes,
+                                       CompressedLocalExpansion);
+                }
+            }
+        }
 	}
 
 //	void M2L(CellClass* const FRestrict TargetCell,
@@ -158,44 +162,45 @@ public:
 
 	void L2L(const CellClass* const FRestrict ParentCell,
 					 CellClass* FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel)
+                     const int /*TreeLevel*/)
 	{
-		// 1) apply U
-		M2LHandler->applyU(ParentCell->getLocal() + AbstractBaseClass::nnodes,
-											 const_cast<CellClass*>(ParentCell)->getLocal());
-		// 2) apply Sx
-		for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
-			if (ChildCells[ChildIndex])
-				AbstractBaseClass::Interpolator->applyL2L(ChildIndex,
-																									ParentCell->getLocal(),
-																									ChildCells[ChildIndex]->getLocal());
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            // 1) apply U
+            M2LHandler->applyU(ParentCell->getLocal(idxRhs) + AbstractBaseClass::nnodes,
+                                                 const_cast<CellClass*>(ParentCell)->getLocal(idxRhs));
+            // 2) apply Sx
+            for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
+                if (ChildCells[ChildIndex]){
+                    AbstractBaseClass::Interpolator->applyL2L(ChildIndex, ParentCell->getLocal(idxRhs), ChildCells[ChildIndex]->getLocal(idxRhs));
+                }
+            }
+        }
 	}
 
 	void L2P(const CellClass* const LeafCell,
 					 ContainerClass* const TargetParticles)
 	{
-		// 1) apply U
-		M2LHandler->applyU(LeafCell->getLocal() + AbstractBaseClass::nnodes,
-											 const_cast<CellClass*>(LeafCell)->getLocal());
-		
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 
-		//// 2.a) apply Sx
-		//AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
-		//																					AbstractBaseClass::BoxWidthLeaf,
-		//																					LeafCell->getLocal(),
-		//																					TargetParticles);
-		//// 2.b) apply Px (grad Sx)
-		//AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
-		//																									AbstractBaseClass::BoxWidthLeaf,
-		//																									LeafCell->getLocal(),
-		//																									TargetParticles);
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            // 1) apply U
+            M2LHandler->applyU(LeafCell->getLocal(idxRhs) + AbstractBaseClass::nnodes, const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
 
-		// 2.c) apply Sx and Px (grad Sx)
-		AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter,
-																									 AbstractBaseClass::BoxWidthLeaf,
-																									 LeafCell->getLocal(),
-																									 TargetParticles);
+            //// 2.a) apply Sx
+            //AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
+            //																					AbstractBaseClass::BoxWidthLeaf,
+            //																					LeafCell->getLocal(),
+            //																					TargetParticles);
+            //// 2.b) apply Px (grad Sx)
+            //AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
+            //																									AbstractBaseClass::BoxWidthLeaf,
+            //																									LeafCell->getLocal(),
+            //																									TargetParticles);
+
+            // 2.c) apply Sx and Px (grad Sx)
+            AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                            LeafCell->getLocal(idxRhs), TargetParticles);
+        }
 	}
 
 };

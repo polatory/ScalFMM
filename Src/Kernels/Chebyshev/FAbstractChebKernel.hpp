@@ -27,7 +27,7 @@
 #include "./FChebInterpolator.hpp"
 
 class FTreeCoordinate;
-template <KERNEL_FUNCCTION_IDENTIFIER Identifier> struct DirectInteactionComputer;
+template <KERNEL_FUNCCTION_IDENTIFIER Identifier, int NVALS> struct DirectInteactionComputer;
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
@@ -42,7 +42,7 @@ template <KERNEL_FUNCCTION_IDENTIFIER Identifier> struct DirectInteactionCompute
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER>
+template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
@@ -132,22 +132,26 @@ public:
 					 ContainerClass* const NeighborSourceParticles[27],
 					 const int /* size */)
 	{
-        DirectInteactionComputer<MatrixKernelClass::Identifier>::P2P(TargetParticles,NeighborSourceParticles);
+        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
 	}
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteactionComputer<MatrixKernelClass::Identifier>::P2PRemote(inTargets,inNeighbors,27);
+        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
     }
 
 };
 
 
+///////////////////////////////////////////////////////
+// P2P Wrappers
+///////////////////////////////////////////////////////
+
 /*! Specialization for Laplace potential */
 template <>
-struct DirectInteactionComputer<ONE_OVER_R>
+struct DirectInteactionComputer<ONE_OVER_R, 1>
 {
     template <typename ContainerClass>
     static void P2P(		 ContainerClass* const FRestrict TargetParticles,
@@ -166,7 +170,7 @@ struct DirectInteactionComputer<ONE_OVER_R>
 
 /*! Specialization for Leonard-Jones potential */
 template <>
-struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL>
+struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL, 1>
 {
     template <typename ContainerClass>
     static void P2P(		 ContainerClass* const FRestrict TargetParticles,
@@ -179,6 +183,54 @@ struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL>
                            ContainerClass* const inNeighbors[27],
                            const int inSize){
         FP2P::FullRemoteLJ(inTargets,inNeighbors,inSize);
+    }
+};
+
+///////////////////////////////////////////////////////
+// In case of multi right hand side
+///////////////////////////////////////////////////////
+
+template <int NVALS>
+struct DirectInteactionComputer<ONE_OVER_R, NVALS>
+{
+    template <typename ContainerClass>
+    static void P2P(		 ContainerClass* const FRestrict TargetParticles,
+                     ContainerClass* const NeighborSourceParticles[27]){
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
+        }
+    }
+
+    template <typename ContainerClass>
+    static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                           ContainerClass* const inNeighbors[27],
+                           const int inSize){
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            FP2P::FullRemote(inTargets,inNeighbors,inSize);
+        }
+    }
+};
+
+
+/*! Specialization for Leonard-Jones potential */
+template <int NVALS>
+struct DirectInteactionComputer<LEONARD_JONES_POTENTIAL, NVALS>
+{
+    template <typename ContainerClass>
+    static void P2P(		 ContainerClass* const FRestrict TargetParticles,
+                     ContainerClass* const NeighborSourceParticles[27]){
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            FP2P::FullMutualLJ(TargetParticles,NeighborSourceParticles,14);
+        }
+    }
+
+    template <typename ContainerClass>
+    static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                           ContainerClass* const inNeighbors[27],
+                           const int inSize){
+        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+            FP2P::FullRemoteLJ(inTargets,inNeighbors,inSize);
+        }
     }
 };
 
