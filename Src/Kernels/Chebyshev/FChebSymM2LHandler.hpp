@@ -262,8 +262,8 @@ template <int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
 											 const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
-	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
-						<< ") for cells of width w = " << CellWidth << std::endl;
+  //	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
+  //						<< ") for cells of width w = " << CellWidth << std::endl;
 
 	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -420,8 +420,8 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				elapsed_time = time.tacAndElapsed(); 
 				overall_time += elapsed_time;
 				overall_rank += rank;
-				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-					", low rank = " << rank << " (" << aca_rank << ") in " << elapsed_time << "s" << std::endl;
+				// std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
+				// 	", low rank = " << rank << " (" << aca_rank << ") in " << elapsed_time << "s" << std::endl;
 
 				//////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
@@ -451,8 +451,8 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				elapsed_time = time.tacAndElapsed(); 
 				overall_time += elapsed_time;
 				overall_rank += rank;
-				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
-					", low rank = " << rank << " in " << elapsed_time << "s" << std::endl;
+				//				std::cout << "(" << i << "," << j << "," << k << ") " << idx <<
+				//	", low rank = " << rank << " in " << elapsed_time << "s" << std::endl;
 #else
 #error Either fully-, partially pivoted ACA or only SVD must be defined!
 #endif ///////////////////////////////////////////////////////////////
@@ -479,9 +479,9 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-	std::cout << "The approximation of the " << counter
-						<< " far-field interactions (overall rank " << overall_rank << ") took "
-						<< overall_time << "s\n" << std::endl;
+	//	std::cout << "The approximation of the " << counter
+	//					<< " far-field interactions (overall rank " << overall_rank << ") took "
+	//					<< overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;
@@ -714,8 +714,8 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	} else throw std::runtime_error("File could not be opened to write");
 	stream.close();
 	// write info
-	std::cout << "Compressed M2L operators stored in binary file " << filename
-						<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
+	//	std::cout << "Compressed M2L operators stored in binary file " << filename
+	//					<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
 
 	// free memory /////////////////////
 	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
