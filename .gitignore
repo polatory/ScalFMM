@@ -16,6 +16,7 @@ tmp/
 *~
 *TAGS
 *#*#
+*nogit*
 
 #ignore latex temporary files
 *.out
