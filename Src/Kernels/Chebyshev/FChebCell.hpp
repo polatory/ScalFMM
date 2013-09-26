@@ -39,6 +39,11 @@ class FChebCell : public FExtendMortonIndex, public FExtendCoordinate
     FReal     local_exp[NVALS * VectorSize]; //< Local expansion
 	
 public:
+    FChebCell(){
+        memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+        memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    }
+
 	~FChebCell() {}
 	
 	/** Get Multipole */
