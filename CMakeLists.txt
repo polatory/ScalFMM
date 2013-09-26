@@ -90,13 +90,13 @@ else()
 
   # Compile optimization
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE()
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
     else()
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF()
   ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
