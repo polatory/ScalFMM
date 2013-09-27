@@ -38,10 +38,10 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 #
 # Options
-OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
-OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
-OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
-OPTION( ScalFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
+OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
+OPTION( ScalFMM_USE_TRACE 		"Set to ON to print trace or use itac trace" OFF )
+OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build fonctionnalities Tests" OFF )
+OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
 OPTION( ScalFMM_USE_LOG              "Set to ON to print output debug information" OFF )
 OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"                 OFF )
