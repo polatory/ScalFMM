@@ -18,7 +18,7 @@
 
 #include "../../Components/FAbstractKernels.hpp"
 #include "../../Utils/FMemUtils.hpp"
-#include "../../Utils/FDebug.hpp"
+#include "../../Utils/FLog.hpp"
 #include "../../Utils/FSmartPointer.hpp"
 #include "../P2P/FP2P.hpp"
 

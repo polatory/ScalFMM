@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -126,7 +126,7 @@ public:
   virtual void P2PRemote(const FTreeCoordinate& /*inLeafPosition*/,
 			 ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
                            ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/) {
-        FLOG( FDebug::Controller.write("Warning, P2P remote is used but not implemented!").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("Warning, P2P remote is used but not implemented!").write(FLog::Flush) );
     }
 
 };

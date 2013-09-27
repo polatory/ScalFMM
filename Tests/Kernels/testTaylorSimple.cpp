@@ -3,7 +3,7 @@
 #include <string>
 
 #include "../../Src/Utils/FPoint.hpp"
-#include "../../Src/Utils/FDebug.hpp"
+#include "../../Src/Utils/FLog.hpp"
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FParameters.hpp"
 

@@ -22,7 +22,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -72,7 +72,7 @@ public:
             int sizeOfElement(0);
             removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
             FLOG(if(sizeOfElement != int(sizeof(FReal)) ){)
-                FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     printf("%d sizeofelement\n",sizeOfElement);
             FLOG(})
             removeWarning += fread(&this->nbParticles, sizeof(FSize), 1, file);

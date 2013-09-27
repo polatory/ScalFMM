@@ -19,7 +19,7 @@
 #include "FGlobal.hpp"
 #include "FMath.hpp"
 #include "FPoint.hpp"
-#include "FDebug.hpp"
+#include "FLog.hpp"
 
 /**
 * This class is a Spherical position
@@ -59,7 +59,7 @@ public:
         this->sinTheta = FMath::Sqrt(x2y2) / r;
         this->theta    = FMath::ACos(this->cosTheta);
         // if r == 0 we cannot divide!
-        FLOG(if( r < FMath::Epsilon ) FDebug::Controller << "!!! In FSpherical, r == 0!\n"; )
+        FLOG(if( r < FMath::Epsilon ) FLog::Controller << "!!! In FSpherical, r == 0!\n"; )
     }
 
     /** Get the radius */

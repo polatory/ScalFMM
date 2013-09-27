@@ -19,7 +19,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssertable.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 
@@ -68,7 +68,7 @@ public:
             this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
-        FLOG(FDebug::Controller << "FFmmAlgorithmSectionTask (Max Thread " << omp_get_max_threads() << ")\n");
+        FLOG(FLog::Controller << "FFmmAlgorithmSectionTask (Max Thread " << omp_get_max_threads() << ")\n");
     }
 
     /** Default destructor */
@@ -120,7 +120,7 @@ private:
     /** P2M */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG(FTic counterTime);
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -139,7 +139,7 @@ private:
         #pragma omp taskwait
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ private:
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
         // Start from leal level - 1
@@ -176,11 +176,11 @@ private:
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
             #pragma omp taskwait
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -191,7 +191,7 @@ private:
     void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
         const CellClass* neighbors[343];
@@ -230,10 +230,10 @@ private:
             }
 
             #pragma omp taskwait
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -242,7 +242,7 @@ private:
 
     void downardPass(){ // second L2L
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -267,10 +267,10 @@ private:
             octreeIterator = avoidGotoLeftIterator;
 
             #pragma omp taskwait
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
 
@@ -281,7 +281,7 @@ private:
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
 
@@ -325,13 +325,13 @@ private:
         FLOG( computationCounter.tac() );
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation P2P : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation P2P : " << computationCounter.cumulated() << " s\n" );
     }
 
     void L2PPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart L2P Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart L2P Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -347,7 +347,7 @@ private:
 
         #pragma omp taskwait
 
-        FLOG( FDebug::Controller << "\tFinished (@Direct Pass (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
 };

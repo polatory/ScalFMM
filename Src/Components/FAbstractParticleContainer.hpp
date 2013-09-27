@@ -17,7 +17,7 @@
 #define FABSTRACTPARTICLECONTAINER_HPP
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 
 /* forward declaration to avoid include */
 class FPoint;
@@ -45,7 +45,7 @@ public:
      */
     template<typename... Args>
     void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
-        FLOG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("Warning, push is not implemented!").write(FLog::Flush) );
     }
 };
 

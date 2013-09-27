@@ -35,27 +35,27 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FDebug
+* @class FLog
 * Please read the license
 *
 * This class is used to print debug data durint processing.
 * You have to use the DEBUG macro as shown in the example.
 *
 * <code>
-* FLOG( FDebug::Controller.writeFromLine("hello World", __LINE__, __FILE__); ) <br>
-* FLOG( FDebug::Controller << "I want to debug " << toto << "\n"; )
+* FLOG( FLog::Controller.writeFromLine("hello World", __LINE__, __FILE__); ) <br>
+* FLOG( FLog::Controller << "I want to debug " << toto << "\n"; )
 * </code>
 */
-class FDebug : public FNoCopyable {
+class FLog : public FNoCopyable {
 private:
 	std::ostream* stream;	//< Standart c++ ostream
 
 	/** Default constructor forbiden */
-        FDebug() : stream(&std::cout) {
+        FLog() : stream(&std::cout) {
 	}
 
 	/** Default destructor forbiden */
-	virtual ~FDebug(){
+    virtual ~FLog(){
 		close();
 	}
 
@@ -70,7 +70,7 @@ private:
 	}
 
 public:
-	static FDebug Controller; 	//< Singleton
+    static FLog Controller; 	//< Singleton
 
 	/**
 	* To set the debug stream to write into a file
@@ -96,20 +96,20 @@ public:
 	/**
 	* stream operator to print debug data
 	* @param inMessage a message - from any type - to print
-	* @return current FDebug
+    * @return current FLog
 	*/
 	template <class T>
-	FDebug& operator<<(const T& inMessage){
+    FLog& operator<<(const T& inMessage){
                 return write(inMessage);
 	}
 
 	/**
 	* to write debug data
 	* @param inMessage a message - from any type - to print
-	* @return current FDebug
+    * @return current FLog
 	*/
 	template <class T>
-	FDebug& write(const T& inMessage){
+    FLog& write(const T& inMessage){
                 (*this->stream) << inMessage;
 		return *this;
 	}
@@ -127,9 +127,9 @@ public:
         /**
         * stream operator to flush debug data
         * @param inType flush type
-        * @return current FDebug
+        * @return current FLog
         */
-        FDebug& write(const FlushType inType){
+        FLog& write(const FlushType inType){
             if(inType == FlushWithLine) (*this->stream) << '\n';
             flush();
             return *this;
@@ -140,14 +140,14 @@ public:
 	* @param inMessage a message - from any type - to print
 	* @param inLinePosition line number
 	* @param inFilePosition file name
-	* @return current FDebug
+    * @return current FLog
 	*
-        * <code> FDebug::Controller.writeFromLine("hello World", __LINE__, __FILE__); </code>
+        * <code> FLog::Controller.writeFromLine("hello World", __LINE__, __FILE__); </code>
 	*
 	* To prevent use from multiple thread we use a ostringstream before printing
 	*/
 	template <class T, class Tline, class Tfile>
-	FDebug& writeFromLine(const T& inMessage, const Tline& inLinePosition, const Tfile& inFilePosition){
+    FLog& writeFromLine(const T& inMessage, const Tline& inLinePosition, const Tfile& inFilePosition){
 		std::ostringstream oss;
 		oss << "Message from " << inFilePosition << " (at line " << inLinePosition <<")\n";
 		oss << ">> " << inMessage << "\n";
@@ -162,14 +162,14 @@ public:
 	* @param inValue variable value
 	* @param inLinePosition line number
 	* @param inFilePosition file name
-	* @return current FDebug
+    * @return current FLog
 	*
-        * <code> FDebug::Controller.writeVariableFromLine( "toto", toto, __LINE__, __FILE__); </code>
+        * <code> FLog::Controller.writeVariableFromLine( "toto", toto, __LINE__, __FILE__); </code>
 	*
 	* To prevent use from multiple thread we use a ostringstream before printing
 	*/
 	template <class T, class Tline, class Tfile>
-	FDebug& writeVariableFromLine(const char* const inVariable, const T& inValue, const Tline& inLinePosition, const Tfile& inFilePosition){
+    FLog& writeVariableFromLine(const char* const inVariable, const T& inValue, const Tline& inLinePosition, const Tfile& inFilePosition){
 		std::ostringstream oss;
 		oss << "[Value] " << inVariable << " = " << inValue << " at line " << inLinePosition <<" (file " << inFilePosition << ")\n";
 

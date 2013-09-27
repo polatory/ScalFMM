@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FAssertable.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
@@ -72,7 +72,7 @@ public:
             this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
-        FLOG(FDebug::Controller << "FFmmAlgorithmThreadTsm\n");
+        FLOG(FLog::Controller << "FFmmAlgorithmThreadTsm\n");
     }
 
     /** Default destructor */
@@ -119,7 +119,7 @@ public:
     /** P2M */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG( FTic counterTime );
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -152,15 +152,15 @@ public:
         FLOG(computationCounter.tac());
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
 
     }
 
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
 
@@ -209,12 +209,12 @@ public:
                 }
             }
             FLOG(computationCounter.tac());
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
 
     }
 
@@ -222,7 +222,7 @@ public:
     void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-            FLOG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+            FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
             FLOG(FTic counterTime);
             FLOG(FTic computationCounter);
 
@@ -275,17 +275,17 @@ public:
                     FLOG(computationCounter.tac());
                 }
                 FLOG(computationCounter.tac());
-                FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
             }
-            FLOG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+            FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+            FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
         /* L2L */
         void downardPass(){
             FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-            FLOG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+            FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
             FLOG(FTic counterTime);
             FLOG(FTic computationCounter);
 
@@ -328,17 +328,17 @@ public:
                     }
                 }
                 FLOG(computationCounter.tac());
-                FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
             }
-            FLOG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-            FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+            FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+            FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
 
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
         int numberOfLeafs = 0;
@@ -372,8 +372,8 @@ public:
         FLOG(computationCounter.tac());
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
 
     }
 

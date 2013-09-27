@@ -84,7 +84,7 @@ public:
                     && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
 
                     FLOG(if(sizeOfElement != sizeof(FReal)){)
-                        FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                        FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     FLOG(})
 
                     this->boxWidth = xyzBoxWidth[3];
@@ -122,7 +122,7 @@ public:
                     int count(0);
                     MPI_Get_count(&status, MPI_INT, &count);
                     FLOG(if(count  / 4 != this->nbParticles){)
-                        FLOG( FDebug::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
+                        FLOG( FLog::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
                     FLOG(})
                 }
                 else{
@@ -139,7 +139,7 @@ public:
                 int sizeOfElement(0);
                 removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
                 FLOG(if(sizeOfElement != int(sizeof(FReal)) ){)
-                    FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                    FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                 FLOG(})
                 removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
 

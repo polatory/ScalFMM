@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FAssertable.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 
@@ -61,7 +61,7 @@ public:
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
 
-        FLOG(FDebug::Controller << "FFmmAlgorithmTsm\n");
+        FLOG(FLog::Controller << "FFmmAlgorithmTsm\n");
     }
 
     /** Default destructor */
@@ -89,7 +89,7 @@ public:
     /** P2M */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
 
@@ -114,15 +114,15 @@ public:
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
     }
 
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
 
@@ -165,19 +165,19 @@ public:
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
     }
 
     /** M2L */
     void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
 
@@ -222,17 +222,17 @@ public:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
     }
 
     /** L2L */
     void downardPass(){
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
 
@@ -266,12 +266,12 @@ public:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-            FLOG( FDebug::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << totalComputation << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
     }
 
 
@@ -279,7 +279,7 @@ public:
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
 
@@ -302,8 +302,8 @@ public:
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );
-        FLOG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation L2P + P2P : " << totalComputation << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << totalComputation << " s\n" );
 
     }
 

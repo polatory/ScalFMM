@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FAssertable.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
@@ -135,8 +135,8 @@ public:
         fassert(tree, "tree cannot be null", __LINE__, __FILE__);
         fassert(-1 <= inUpperLevel, "inUpperLevel cannot be < -1", __LINE__, __FILE__);
 
-        FLOG(FDebug::Controller << "FFmmAlgorithmThreadProcPeriodic\n");
-        FLOG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+        FLOG(FLog::Controller << "FFmmAlgorithmThreadProcPeriodic\n");
+        FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
 
     /** Default destructor */
@@ -232,7 +232,7 @@ private:
     /** P2M Bottom Pass */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
+        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG(FTic counterTime);
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -256,8 +256,8 @@ private:
         FLOG(computationCounter.tac());
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
 
     }
 
@@ -268,7 +268,7 @@ private:
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
         FLOG(FTic prepareCounter);
@@ -443,10 +443,10 @@ private:
         }
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
 
         //////////////////////////////////////////////////////////////////
         //Periodicity
@@ -530,7 +530,7 @@ private:
     void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
         FLOG(FTic sendCounter);
@@ -871,12 +871,12 @@ private:
         delete[] requests;
         delete[] status;
 
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     }
 
     //////////////////////////////////////////////////////////////////
@@ -885,7 +885,7 @@ private:
 
     void downardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
         FLOG(FTic prepareCounter);
@@ -1022,10 +1022,10 @@ private:
         delete[] requests;
         delete[] status;
 
-        FLOG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
     }
 
 
@@ -1041,7 +1041,7 @@ private:
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG( FTic counterTime);
         FLOG( FTic prepareCounter);
         FLOG( FTic gatherCounter);
@@ -1415,12 +1415,12 @@ private:
         FLOG(computation2Counter.tac());
 
 
-        FLOG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
-        FLOG( FDebug::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
 
     }
 
