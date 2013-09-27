@@ -14,7 +14,8 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #include "FDebug.hpp"
-#ifdef SCALFMM_USE_DEBUG
+
+#ifdef ScalFMM_USE_LOG
 
 /**
 * Singleton debug
