@@ -45,7 +45,7 @@ public:
      */
     template<typename... Args>
     void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
-        FDEBUG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );
+        FLOG( FDebug::Controller.write("Warning, push is not implemented!").write(FDebug::Flush) );
     }
 };
 

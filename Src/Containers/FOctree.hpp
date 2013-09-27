@@ -93,7 +93,7 @@ class FOctree : protected FAssertable, public FNoCopyable {
         * @return the box num at the leaf level that contains inRelativePosition
         */
     int getTreeCoordinate(const FReal inRelativePosition) const {
-        FDEBUG( fassert(inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box", __LINE__, __FILE__) );
+        FLOG( fassert(inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box", __LINE__, __FILE__) );
         const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
         /*const int index = int(FMath::dfloor(indexFReal));
         if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * FReal(index) ) ){

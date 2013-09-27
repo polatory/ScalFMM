@@ -27,21 +27,21 @@ int main(void){
     std::cout << ">> to understand the FDebug system.\n";
     //////////////////////////////////////////////////////////////
 	// Print data simply
-	FDEBUG( FDebug::Controller << "Hello Wordl\n");
+	FLOG( FDebug::Controller << "Hello Wordl\n");
 
 	// Print a variable (formated print)
 	int i = 50;
-	FDEBUG( FDebug::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
+	FLOG( FDebug::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
 
 	// Write a developer information
-	FDEBUG( FDebug::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
+	FLOG( FDebug::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
 
 	// Flush
-	FDEBUG( FDebug::Controller << FDebug::Flush );
+	FLOG( FDebug::Controller << FDebug::Flush );
 
 	// Change stream type
-	FDEBUG( FDebug::Controller.writeToFile("testDebug.out.temp"); )
-	FDEBUG( FDebug::Controller << "Hello Wordl 2 the return\n");
+	FLOG( FDebug::Controller.writeToFile("testDebug.out.temp"); )
+	FLOG( FDebug::Controller << "Hello Wordl 2 the return\n");
 
 	return 0;
 }

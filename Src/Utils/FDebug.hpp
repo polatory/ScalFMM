@@ -23,11 +23,11 @@
 
 #ifndef ScalFMM_USE_LOG
 
-#define FDEBUG( X )
+#define FLOG( X )
 
 #else
 
-#define FDEBUG( X ) X
+#define FLOG( X ) X
 
 #include <iostream>
 #include <fstream>
@@ -42,8 +42,8 @@
 * You have to use the DEBUG macro as shown in the example.
 *
 * <code>
-* FDEBUG( FDebug::Controller.writeFromLine("hello World", __LINE__, __FILE__); ) <br>
-* FDEBUG( FDebug::Controller << "I want to debug " << toto << "\n"; )
+* FLOG( FDebug::Controller.writeFromLine("hello World", __LINE__, __FILE__); ) <br>
+* FLOG( FDebug::Controller << "I want to debug " << toto << "\n"; )
 * </code>
 */
 class FDebug : public FNoCopyable {

@@ -126,7 +126,7 @@ public:
   virtual void P2PRemote(const FTreeCoordinate& /*inLeafPosition*/,
 			 ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
                            ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/) {
-        FDEBUG( FDebug::Controller.write("Warning, P2P remote is used but not implemented!").write(FDebug::Flush) );
+        FLOG( FDebug::Controller.write("Warning, P2P remote is used but not implemented!").write(FDebug::Flush) );
     }
 
 };

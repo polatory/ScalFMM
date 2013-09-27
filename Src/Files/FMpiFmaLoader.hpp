@@ -83,9 +83,9 @@ public:
                     && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
                     && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
 
-                    FDEBUG(if(sizeOfElement != sizeof(FReal)){)
-                        FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
-                    FDEBUG(})
+                    FLOG(if(sizeOfElement != sizeof(FReal)){)
+                        FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                    FLOG(})
 
                     this->boxWidth = xyzBoxWidth[3];
                     this->centerOfBox.setPosition(xyzBoxWidth[0],xyzBoxWidth[1],xyzBoxWidth[2]);
@@ -121,9 +121,9 @@ public:
                     // check if needed
                     int count(0);
                     MPI_Get_count(&status, MPI_INT, &count);
-                    FDEBUG(if(count  / 4 != this->nbParticles){)
-                        FDEBUG( FDebug::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
-                    FDEBUG(})
+                    FLOG(if(count  / 4 != this->nbParticles){)
+                        FLOG( FDebug::Controller<< "Error read " << count << " data, nbPart is " << this->nbParticles << __LINE__ << " " << __FILE__ << "\n"; )
+                    FLOG(})
                 }
                 else{
                     this->totalNbParticles = 0;
@@ -138,9 +138,9 @@ public:
             if(file != NULL) {
                 int sizeOfElement(0);
                 removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
-                FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
-                    FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
-                FDEBUG(})
+                FLOG(if(sizeOfElement != int(sizeof(FReal)) ){)
+                    FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+                FLOG(})
                 removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
 
                 removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);

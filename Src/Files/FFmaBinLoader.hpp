@@ -71,10 +71,10 @@ public:
         if(this->file != NULL) {
             int sizeOfElement(0);
             removeWarning += fread(&sizeOfElement, sizeof(int), 1, file);
-            FDEBUG(if(sizeOfElement != int(sizeof(FReal)) ){)
-                FDEBUG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
+            FLOG(if(sizeOfElement != int(sizeof(FReal)) ){)
+                FLOG( FDebug::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     printf("%d sizeofelement\n",sizeOfElement);
-            FDEBUG(})
+            FLOG(})
             removeWarning += fread(&this->nbParticles, sizeof(FSize), 1, file);
 
             removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
