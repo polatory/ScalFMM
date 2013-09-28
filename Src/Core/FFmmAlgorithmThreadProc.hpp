@@ -112,7 +112,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(0), comm(inComm), numberOfLeafs(0),
+        : tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr),numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]){
@@ -127,7 +127,25 @@ public:
         FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
         FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
+    FFmmAlgorithmThreadProc(const MPI_Comm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
+        : tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr),numberOfLeafs(0),
+          MaxThreads(omp_get_max_threads()),
+          OctreeHeight(tree->getHeight()){
 
+        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+        nbProcess = comm.processCount()	;
+        idProcess = comm.processId() ;
+        intervals = new Interval[nbProcess] ;
+        workingIntervalsPerLevel = new Interval[nbProcess * tree->getHeight()] ;
+        //
+        this->kernels = new KernelClass*[MaxThreads];
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+            this->kernels[idxThread] = new KernelClass(*inKernels);
+        }
+
+        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
+        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+    }
     /** Default destructor */
     virtual ~FFmmAlgorithmThreadProc(){
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
