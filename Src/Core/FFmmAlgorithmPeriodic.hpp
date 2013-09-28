@@ -39,7 +39,7 @@
 * This class is a basic FMM algorithm with periodic behavior
 * It just iterates on a tree and call the kernels with good arguments.
 *
-* Of course this class does not deallocate pointer given in arguements.
+* Of course this class does not deallocate pointer given in arguments.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmPeriodic : protected FAssertable{
@@ -47,7 +47,7 @@ class FFmmAlgorithmPeriodic : protected FAssertable{
     OctreeClass* const tree;        //< The octree to work on
     KernelClass* kernels;           //< The kernels
 
-    const int OctreeHeight;         //< The heigh of the octree (real heigh)
+    const int OctreeHeight;         //< The height of the octree (real height)
     const int nbLevelsAboveRoot;    //< The nb of level the user ask to go above the tree (>= -1)
     const int offsetRealTree;       //< nbLevelsAboveRoot GetFackLevel
     const int periodicDirections;
@@ -58,7 +58,7 @@ public:
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
-      * @param inUpperLevel this parameter defins the behavior of the periodicity refer to the main doc
+      * @param inUpperLevel this parameter defines the behavior of the periodicity refer to the main doc
       *
       */
     FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0, const int inPeriodicDirections = AllDirs)
