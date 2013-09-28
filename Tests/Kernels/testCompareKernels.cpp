@@ -184,9 +184,9 @@ int main(int argc, char* argv[])
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
 
     } // end Chebyshev kernel
 
@@ -266,9 +266,9 @@ int main(int argc, char* argv[])
 
         // Print for information
         std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << potentialDiff << std::endl;
-        std::cout << "Fy " << potentialDiff << std::endl;
-        std::cout << "Fz " << potentialDiff << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
     } // end FFmaBlas kernel
 
     delete[] particles;
