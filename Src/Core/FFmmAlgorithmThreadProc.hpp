@@ -16,7 +16,9 @@
 #ifndef FFMMALGORITHMTHREADPROC_HPP
 #define FFMMALGORITHMTHREADPROC_HPP
 
+#include <omp.h>
 
+//
 #include "../Utils/FAssertable.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
@@ -32,7 +34,6 @@
 
 #include "../Utils/FMpi.hpp"
 
-#include <omp.h>
 
 #include "FCoreCommon.hpp"
 
@@ -126,25 +127,6 @@ public:
 
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
-    }
-    FFmmAlgorithmThreadProc(const MPI_Comm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr),numberOfLeafs(0),
-          MaxThreads(omp_get_max_threads()),
-          OctreeHeight(tree->getHeight()){
-
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        nbProcess = comm.processCount()	;
-        idProcess = comm.processId() ;
-        intervals = new Interval[nbProcess] ;
-        workingIntervalsPerLevel = new Interval[nbProcess * tree->getHeight()] ;
-        //
-        this->kernels = new KernelClass*[MaxThreads];
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass(*inKernels);
-        }
-
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
-        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
     /** Default destructor */
     virtual ~FFmmAlgorithmThreadProc(){
