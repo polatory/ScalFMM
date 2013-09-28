@@ -4,6 +4,11 @@
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FMath.hpp"
 
+#ifdef ScalFMM_USE_SSE
+#include <emmintrin.h>
+#include <mmintrin.h>
+#endif
+
 /**
  * @brief The FP2P class
  */
@@ -12,9 +17,10 @@ public:
     /**
      *
      */
+#ifndef ScalFMM_USE_SSE
     template <class ContainerClass>
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                    const int limiteNeighbors){
+                           const int limiteNeighbors){
 
         const int nbParticlesTargets = inTargets->getNbParticles();
         const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
@@ -27,45 +33,45 @@ public:
         FReal*const targetsPotentials = inTargets->getPotentials();
 
         for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-		if( inNeighbors[idxNeighbors] ){
-		    const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-		    const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-		    const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-		    const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-		    const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-		    FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
-		    FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
-		    FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
-		    FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+                FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
+                FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
+                FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
+                FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
 
-		    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-		            for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-		                FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-		                FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-		                FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                    for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                        FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                        FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                        FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-		                FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-		                const FReal inv_distance = FMath::Sqrt(inv_square_distance);
+                        FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+                        const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
-		                inv_square_distance *= inv_distance;
-		                inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
+                        inv_square_distance *= inv_distance;
+                        inv_square_distance *= targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource];
 
-		                dx *= inv_square_distance;
-		                dy *= inv_square_distance;
-		                dz *= inv_square_distance;
+                        dx *= inv_square_distance;
+                        dy *= inv_square_distance;
+                        dz *= inv_square_distance;
 
-		                targetsForcesX[idxTarget] += dx;
-		                targetsForcesY[idxTarget] += dy;
-		                targetsForcesZ[idxTarget] += dz;
-		                targetsPotentials[idxTarget] += inv_distance * sourcesPhysicalValues[idxSource];
+                        targetsForcesX[idxTarget] += dx;
+                        targetsForcesY[idxTarget] += dy;
+                        targetsForcesZ[idxTarget] += dz;
+                        targetsPotentials[idxTarget] += inv_distance * sourcesPhysicalValues[idxSource];
 
-		                sourcesForcesX[idxSource] -= dx;
-		                sourcesForcesY[idxSource] -= dy;
-		                sourcesForcesZ[idxSource] -= dz;
-		                sourcesPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
-	                   }
-	            }
-	      }
+                        sourcesForcesX[idxSource] -= dx;
+                        sourcesForcesY[idxSource] -= dy;
+                        sourcesForcesZ[idxSource] -= dz;
+                        sourcesPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
+                    }
+                }
+            }
         }
 
         for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
@@ -96,13 +102,187 @@ public:
             }
         }
     }
+#else
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+
+        const int nbParticlesTargets = inTargets->getNbParticles();
+        const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+        const FReal*const targetsX = inTargets->getPositions()[0];
+        const FReal*const targetsY = inTargets->getPositions()[1];
+        const FReal*const targetsZ = inTargets->getPositions()[2];
+        FReal*const targetsForcesX = inTargets->getForcesX();
+        FReal*const targetsForcesY = inTargets->getForcesY();
+        FReal*const targetsForcesZ = inTargets->getForcesZ();
+        FReal*const targetsPotentials = inTargets->getPotentials();
+
+        const __m128d mOne = _mm_set1_pd(1.0);
+
+        for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+1)/2;
+                const __m128d*const sourcesPhysicalValues = (const __m128d*)inNeighbors[idxNeighbors]->getPhysicalValues();
+                const __m128d*const sourcesX = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[0];
+                const __m128d*const sourcesY = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[1];
+                const __m128d*const sourcesZ = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[2];
+                __m128d*const sourcesForcesX = (__m128d*)inNeighbors[idxNeighbors]->getForcesX();
+                __m128d*const sourcesForcesY = (__m128d*)inNeighbors[idxNeighbors]->getForcesY();
+                __m128d*const sourcesForcesZ = (__m128d*)inNeighbors[idxNeighbors]->getForcesZ();
+                __m128d*const sourcesPotentials = (__m128d*)inNeighbors[idxNeighbors]->getPotentials();
+
+                for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                    const __m128d tx = _mm_load1_pd(&targetsX[idxTarget]);
+                    const __m128d ty = _mm_load1_pd(&targetsY[idxTarget]);
+                    const __m128d tz = _mm_load1_pd(&targetsZ[idxTarget]);
+                    const __m128d tv = _mm_load1_pd(&targetsPhysicalValues[idxTarget]);
+                    __m128d  tfx = _mm_setzero_pd();
+                    __m128d  tfy = _mm_setzero_pd();
+                    __m128d  tfz = _mm_setzero_pd();
+                    __m128d  tpo = _mm_setzero_pd();
+
+                    for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                        __m128d dx = sourcesX[idxSource] - tx;
+                        __m128d dy = sourcesY[idxSource] - ty;
+                        __m128d dz = sourcesZ[idxSource] - tz;
+
+                        __m128d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
+                        const __m128d inv_distance = _mm_sqrt_pd(inv_square_distance);
+
+                        inv_square_distance *= inv_distance;
+                        inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
+
+                        dx *= inv_square_distance;
+                        dy *= inv_square_distance;
+                        dz *= inv_square_distance;
+
+                        tfx += dx;
+                        tfy += dy;
+                        tfz += dz;
+                        tpo += inv_distance * sourcesPhysicalValues[idxSource];
+
+                        sourcesForcesX[idxSource] -= dx;
+                        sourcesForcesY[idxSource] -= dy;
+                        sourcesForcesZ[idxSource] -= dz;
+                        sourcesPotentials[idxSource] += inv_distance * tv;
+                    }
+
+                    __attribute__((aligned(16))) double buffer[2];
+
+                    _mm_store_pd(buffer, tfx);
+                    targetsForcesX[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tfy);
+                    targetsForcesY[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tfz);
+                    targetsForcesZ[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tpo);
+                    targetsPotentials[idxTarget] += buffer[0] + buffer[1];
+                }
+            }
+        }
+
+        {
+            const int nbParticlesSources = (nbParticlesTargets+1)/2;
+            const __m128d*const sourcesPhysicalValues = (const __m128d*)targetsPhysicalValues;
+            const __m128d*const sourcesX = (const __m128d*)targetsX;
+            const __m128d*const sourcesY = (const __m128d*)targetsY;
+            const __m128d*const sourcesZ = (const __m128d*)targetsZ;
+            __m128d*const sourcesForcesX = (__m128d*)targetsForcesX;
+            __m128d*const sourcesForcesY = (__m128d*)targetsForcesY;
+            __m128d*const sourcesForcesZ = (__m128d*)targetsForcesZ;
+            __m128d*const sourcesPotentials = (__m128d*)targetsPotentials;
+
+            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                const __m128d tx = _mm_load1_pd(&targetsX[idxTarget]);
+                const __m128d ty = _mm_load1_pd(&targetsY[idxTarget]);
+                const __m128d tz = _mm_load1_pd(&targetsZ[idxTarget]);
+                const __m128d tv = _mm_load1_pd(&targetsPhysicalValues[idxTarget]);
+                __m128d  tfx = _mm_setzero_pd();
+                __m128d  tfy = _mm_setzero_pd();
+                __m128d  tfz = _mm_setzero_pd();
+                __m128d  tpo = _mm_setzero_pd();
+
+                for(int idxSource = (idxTarget+2)/2 ; idxSource < nbParticlesSources ; ++idxSource){
+                    __m128d dx = sourcesX[idxSource] - tx;
+                    __m128d dy = sourcesY[idxSource] - ty;
+                    __m128d dz = sourcesZ[idxSource] - tz;
+
+                    __m128d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
+                    const __m128d inv_distance = _mm_sqrt_pd(inv_square_distance);
+
+                    inv_square_distance *= inv_distance;
+                    inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
+
+                    dx *= inv_square_distance;
+                    dy *= inv_square_distance;
+                    dz *= inv_square_distance;
+
+                    tfx += dx;
+                    tfy += dy;
+                    tfz += dz;
+                    tpo += inv_distance * sourcesPhysicalValues[idxSource];
+
+                    sourcesForcesX[idxSource] -= dx;
+                    sourcesForcesY[idxSource] -= dy;
+                    sourcesForcesZ[idxSource] -= dz;
+                    sourcesPotentials[idxSource] += inv_distance * tv;
+                }
+
+                __attribute__((aligned(16))) double buffer[2];
+
+                _mm_store_pd(buffer, tfx);
+                targetsForcesX[idxTarget] += buffer[0] + buffer[1];
+
+                _mm_store_pd(buffer, tfy);
+                targetsForcesY[idxTarget] += buffer[0] + buffer[1];
+
+                _mm_store_pd(buffer, tfz);
+                targetsForcesZ[idxTarget] += buffer[0] + buffer[1];
+
+                _mm_store_pd(buffer, tpo);
+                targetsPotentials[idxTarget] += buffer[0] + buffer[1];
+            }
+        }
+
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; idxTarget += 2){
+            const int idxSource = idxTarget + 1;
+            FReal dx = targetsX[idxSource] - targetsX[idxTarget];
+            FReal dy = targetsY[idxSource] - targetsY[idxTarget];
+            FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
+
+            FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+            const FReal inv_distance = FMath::Sqrt(inv_square_distance);
+
+            inv_square_distance *= inv_distance;
+            inv_square_distance *= targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource];
+
+            dx *= inv_square_distance;
+            dy *= inv_square_distance;
+            dz *= inv_square_distance;
+
+            targetsForcesX[idxTarget] += dx;
+            targetsForcesY[idxTarget] += dy;
+            targetsForcesZ[idxTarget] += dz;
+            targetsPotentials[idxTarget] += inv_distance * targetsPhysicalValues[idxSource];
+
+            targetsForcesX[idxSource] -= dx;
+            targetsForcesY[idxSource] -= dy;
+            targetsForcesZ[idxSource] -= dz;
+            targetsPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
+        }
+    }
+#endif
 
     /**
      *
      */
+#ifndef ScalFMM_USE_SSE
     template <class ContainerClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                    const int limiteNeighbors){
+                           const int limiteNeighbors){
         const int nbParticlesTargets = inTargets->getNbParticles();
         const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
         const FReal*const targetsX = inTargets->getPositions()[0];
@@ -114,12 +294,12 @@ public:
         FReal*const targetsPotentials = inTargets->getPotentials();
 
         for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-                if( inNeighbors[idxNeighbors] ){
-                    const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-                    const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-                    const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-                    const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-                    const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
                 for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
 
@@ -147,6 +327,79 @@ public:
             }
         }
     }
+#else
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        const int nbParticlesTargets = inTargets->getNbParticles();
+        const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+        const FReal*const targetsX = inTargets->getPositions()[0];
+        const FReal*const targetsY = inTargets->getPositions()[1];
+        const FReal*const targetsZ = inTargets->getPositions()[2];
+        FReal*const targetsForcesX = inTargets->getForcesX();
+        FReal*const targetsForcesY = inTargets->getForcesY();
+        FReal*const targetsForcesZ = inTargets->getForcesZ();
+        FReal*const targetsPotentials = inTargets->getPotentials();
+
+        const __m128d mOne = _mm_set1_pd(1.0);
+
+        for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles()/2;
+                const __m128d*const sourcesPhysicalValues = (const __m128d*)inNeighbors[idxNeighbors]->getPhysicalValues();
+                const __m128d*const sourcesX = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[0];
+                const __m128d*const sourcesY = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[1];
+                const __m128d*const sourcesZ = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[2];
+
+                for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                    const __m128d tx = _mm_load1_pd(&targetsX[idxTarget]);
+                    const __m128d ty = _mm_load1_pd(&targetsY[idxTarget]);
+                    const __m128d tz = _mm_load1_pd(&targetsZ[idxTarget]);
+                    const __m128d tv = _mm_load1_pd(&targetsPhysicalValues[idxTarget]);
+                    __m128d  tfx = _mm_setzero_pd();
+                    __m128d  tfy = _mm_setzero_pd();
+                    __m128d  tfz = _mm_setzero_pd();
+                    __m128d  tpo = _mm_setzero_pd();
+
+                    for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                        __m128d dx = sourcesX[idxSource] - tx;
+                        __m128d dy = sourcesY[idxSource] - ty;
+                        __m128d dz = sourcesZ[idxSource] - tz;
+
+                        __m128d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
+                        const __m128d inv_distance = _mm_sqrt_pd(inv_square_distance);
+
+                        inv_square_distance *= inv_distance;
+                        inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
+
+                        dx *= inv_square_distance;
+                        dy *= inv_square_distance;
+                        dz *= inv_square_distance;
+
+                        tfx += dx;
+                        tfy += dy;
+                        tfz += dz;
+                        tpo += inv_distance * sourcesPhysicalValues[idxSource];
+                    }
+
+                    __attribute__((aligned(16))) double buffer[2];
+
+                    _mm_store_pd(buffer, tfx);
+                    targetsForcesX[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tfy);
+                    targetsForcesY[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tfz);
+                    targetsForcesZ[idxTarget] += buffer[0] + buffer[1];
+
+                    _mm_store_pd(buffer, tpo);
+                    targetsPotentials[idxTarget] += buffer[0] + buffer[1];
+                }
+            }
+        }
+    }
+#endif
 
     /** P2P mutual interaction,
       * this function computes the interaction for 2 particles.
@@ -160,10 +413,10 @@ public:
       * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
       */
     static void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                         FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-                         const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                         FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential
-                         ){
+                                FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                                const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                                FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential
+                                ){
         FReal dx = sourceX - targetX;
         FReal dy = sourceY - targetY;
         FReal dz = sourceZ - targetZ;
@@ -201,8 +454,8 @@ public:
       * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
       */
     static void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                            const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                            FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential){
+                                   const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                                   FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential){
         FReal dx = sourceX - targetX;
         FReal dy = sourceY - targetY;
         FReal dz = sourceZ - targetZ;
@@ -225,7 +478,7 @@ public:
 
     template <class ContainerClass>
     static void FullMutualLJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                    const int limiteNeighbors){
+                             const int limiteNeighbors){
 
         const int nbParticlesTargets = inTargets->getNbParticles();
         const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
@@ -321,7 +574,7 @@ public:
      */
     template <class ContainerClass>
     static void FullRemoteLJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                    const int limiteNeighbors){
+                             const int limiteNeighbors){
         const int nbParticlesTargets = inTargets->getNbParticles();
         const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
         const FReal*const targetsX = inTargets->getPositions()[0];

@@ -16,6 +16,7 @@
 #include "FUTester.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
+#include "../Src/Containers/FBlockAllocator.hpp"
 #include "../Src/Containers/FVector.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
@@ -40,7 +41,7 @@ class TestOctree : public FUTester<TestOctree> {
     typedef FBasicParticleContainer<0>      ContainerClass;
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree<CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<CellClass, ContainerClass , LeafClass , FBasicBlockAllocator<CellClass> >  OctreeClass;
 
     // test size
     void TestAll(){

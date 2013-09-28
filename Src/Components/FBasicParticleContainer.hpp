@@ -17,6 +17,8 @@
 #define FBASICPARTICLECONTAINER_HPP
 
 #include "FAbstractParticleContainer.hpp"
+
+#include "../Utils/FAlignedMemory.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FPoint.hpp"
 
@@ -89,7 +91,7 @@ public:
     /** Simply dalloc the memory using first pointer
      */
     ~FBasicParticleContainer(){
-        delete[] reinterpret_cast<char*>(positions[0]);
+        FAlignedMemory::Dealloc16BAligned(positions[0]);
     }
 
     /**
@@ -164,10 +166,12 @@ public:
         // enought space?
         if( nbParticles == allocatedParticles ){
             // allocate memory
-            allocatedParticles = FMath::Max(10,int(FReal(nbParticles+1)*1.5));
+            const int moduloParticlesNumber = (16/sizeof(FReal)); // We want to be rounded to 16B
+            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
-            FReal* newData  = reinterpret_cast<FReal*>(new char[(sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles]);
-            memset( newData, 0, (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles);
+            const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate16BAligned(allocatedBytes));
+            memset( newData, 0, allocatedBytes);
             // copy memory
             const char*const toDelete  = reinterpret_cast<const char*>(positions[0]);
             for(int idx = 0 ; idx < 3 ; ++idx){
@@ -181,7 +185,7 @@ public:
                 attributes[idx] = startAddress + (idx * allocatedParticles);
             }
             // delete old
-            delete[] toDelete;
+            FAlignedMemory::Dealloc16BAligned(toDelete);
         }
         // insert particle data
         positions[0][nbParticles] = inParticlePosition.getX();
@@ -260,11 +264,15 @@ public:
     void restore(FBufferReader& buffer){
         buffer >> nbParticles;
         if( nbParticles >= allocatedParticles ){
-            allocatedParticles = FMath::Max(10,int(FReal(nbParticles+1)*1.5));
-            FReal* newData  = reinterpret_cast<FReal*>(new char[(sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles]);
-            memset( newData, 0, (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles);
+            // allocate memory
+            const int moduloParticlesNumber = (16/sizeof(FReal)); // We want to be rounded to 16B
+            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
+            // init with 0
+            const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate16BAligned(allocatedBytes));
+            memset( newData, 0, allocatedBytes);
 
-            delete[] reinterpret_cast<char*>(positions[0]);
+            FAlignedMemory::Dealloc16BAligned(positions[0]);
             for(int idx = 0 ; idx < 3 ; ++idx){
                 positions[idx] = newData + (allocatedParticles * idx);
             }

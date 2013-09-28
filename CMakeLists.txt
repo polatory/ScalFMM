@@ -38,10 +38,10 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 #
 # Options
-OPTION( ScalFMM_USE_BLAS "Set to ON to build ScaFMM with BLAS" OFF )
-OPTION( ScalFMM_USE_TRACE "Set to ON to print trace or use itac trace" OFF )
-OPTION( ScalFMM_BUILD_TESTS "Set to ON to build fonctionnalities Tests" OFF )
-OPTION( ScalFMM_BUILD_UTESTS "Set to ON to build UTests" OFF )
+OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
+OPTION( ScalFMM_USE_TRACE 		"Set to ON to print trace or use itac trace" OFF )
+OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build fonctionnalities Tests" OFF )
+OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
 OPTION( ScalFMM_USE_LOG              "Set to ON to print output debug information" OFF )
 OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"                 OFF )
@@ -90,13 +90,13 @@ else()
 
   # Compile optimization
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE()
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
     else()
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-Ofast -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF()
   ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})

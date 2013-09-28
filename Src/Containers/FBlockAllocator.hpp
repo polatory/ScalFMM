@@ -2,6 +2,7 @@
 #define FBLOCKALLOCATOR_HPP
 
 #include <list>
+#include <cstring>
 
 /**
  * What a cell allocator should implement
@@ -17,8 +18,8 @@ public:
     FAbstractBlockAllocator(const FAbstractBlockAllocator&) = delete;
     FAbstractBlockAllocator& operator=(const FAbstractBlockAllocator&) = delete;
 
-    virtual ObjectClass* newCell() = 0;
-    virtual void deleteCell(const ObjectClass*) = 0;
+    virtual ObjectClass* newObject() = 0;
+    virtual void deleteObject(const ObjectClass*) = 0;
 };
 
 /**
@@ -27,12 +28,12 @@ public:
 template <class ObjectClass>
 class FBasicBlockAllocator : public FAbstractBlockAllocator<ObjectClass> {
 public:
-    ObjectClass* newCell(){
+    ObjectClass* newObject(){
         return new ObjectClass;
     }
 
-    void deleteCell(const ObjectClass* inCell){
-        delete inCell;
+    void deleteObject(const ObjectClass* inObject){
+        delete inObject;
     }
 };
 
@@ -43,38 +44,38 @@ public:
 template <class ObjectClass, int SizeOfBlock >
 class FListBlockAllocator : public FAbstractBlockAllocator<ObjectClass>{
     class CellsBlock {
-        int nbCellsInBlock;
+        int nbObjectInBlock;
         unsigned char usedBlocks[SizeOfBlock];
-        unsigned char cellsMemory[SizeOfBlock * sizeof(ObjectClass)];
+        unsigned char objectMemory[SizeOfBlock * sizeof(ObjectClass)];
 
     public:
-        CellsBlock() : nbCellsInBlock(0){
+        CellsBlock() : nbObjectInBlock(0){
             memset(usedBlocks, 0, sizeof(unsigned char) * SizeOfBlock);
         }
 
         bool isInsideBlock(const ObjectClass*const cellPtr) const{
             const unsigned char*const inPtr = reinterpret_cast<const unsigned char*>( cellPtr );
-            return cellsMemory <= inPtr && inPtr < (cellsMemory+ SizeOfBlock * sizeof(ObjectClass));
+            return objectMemory <= inPtr && inPtr < (objectMemory+ SizeOfBlock * sizeof(ObjectClass));
         }
 
         int getPositionInBlock(const ObjectClass*const cellPtr) const{
             const unsigned char*const inPtr = reinterpret_cast<const unsigned char*>( cellPtr );
-            return int((inPtr - cellsMemory) / sizeof(ObjectClass));
+            return int((inPtr - objectMemory) / sizeof(ObjectClass));
         }
 
-        void deleteCell(const int position){
-            ((ObjectClass*)&cellsMemory)[position].~ObjectClass();
-            nbCellsInBlock -= 1;
+        void deleteObject(const int position){
+            reinterpret_cast<ObjectClass*>(objectMemory)[position].~ObjectClass();
+            nbObjectInBlock -= 1;
             usedBlocks[position] = 0x0;
         }
 
-        ObjectClass* getNewCell(){
+        ObjectClass* getNewObject(){
             for(int idx = 0 ; idx < SizeOfBlock ; ++idx){
                 if(usedBlocks[idx] == 0){
-                    nbCellsInBlock += 1;
+                    nbObjectInBlock += 1;
                     usedBlocks[idx] = 0x1;
-                    new (&((ObjectClass*)&cellsMemory)[idx]) ObjectClass;
-                    return &((ObjectClass*)&cellsMemory)[idx];
+                    new (&reinterpret_cast<ObjectClass*>(objectMemory)[idx]) ObjectClass;
+                    return &reinterpret_cast<ObjectClass*>(objectMemory)[idx];
                 }
             }
 
@@ -82,39 +83,39 @@ class FListBlockAllocator : public FAbstractBlockAllocator<ObjectClass>{
         }
 
         int isEmpty() const{
-            return nbCellsInBlock == 0;
+            return nbObjectInBlock == 0;
         }
 
         int isFull() const{
-            return nbCellsInBlock == SizeOfBlock;
+            return nbObjectInBlock == SizeOfBlock;
         }
     };
 
     std::list<CellsBlock> blocks;
 
 public:
-    ObjectClass* newCell(){
+    ObjectClass* newObject(){
         typename std::list<CellsBlock>::iterator iterator(blocks.begin());
         const typename std::list<CellsBlock>::iterator end(blocks.end());
 
         while( iterator != end){
             if( !(*iterator).isFull() ){
-                return (*iterator).getNewCell();
+                return (*iterator).getNewObject();
             }
             ++iterator;
         }
 
         blocks.emplace_back();
-        return blocks.back().getNewCell();
+        return blocks.back().getNewObject();
     }
 
-    void deleteCell(const ObjectClass* inCell){
+    void deleteObject(const ObjectClass* inObject){
         typename std::list<CellsBlock>::iterator iterator(blocks.begin());
         const  typename std::list<CellsBlock>::iterator end(blocks.end());
 
         while( iterator != end ){
-            if( (*iterator).isInsideBlock(inCell) ){
-                (*iterator).deleteCell((*iterator).getPositionInBlock(inCell));
+            if( (*iterator).isInsideBlock(inObject) ){
+                (*iterator).deleteObject((*iterator).getPositionInBlock(inObject));
                 if( (*iterator).isEmpty() ){
                     blocks.erase(iterator);
                 }

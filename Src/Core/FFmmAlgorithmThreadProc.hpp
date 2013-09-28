@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FAssertable.hpp"
-#include "../Utils/FDebug.hpp"
+#include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
@@ -124,8 +124,8 @@ public:
             this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
-        FDEBUG(FDebug::Controller << "FFmmAlgorithmThreadProc\n");
-        FDEBUG(FDebug::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+        FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
+        FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
     FFmmAlgorithmThreadProc(const MPI_Comm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
         : tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr),numberOfLeafs(0),
@@ -239,8 +239,8 @@ private:
     /** P2M Bottom Pass */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Bottom Pass\n").write(FDebug::Flush) );
-        FDEBUG(FTic counterTime);
+        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
+        FLOG(FTic counterTime);
 
         typename OctreeClass::Iterator octreeIterator(tree);
 
@@ -251,7 +251,7 @@ private:
             iterArray[leafs++] = octreeIterator;
         } while(octreeIterator.moveRight());
 
-        FDEBUG(FTic computationCounter);
+        FLOG(FTic computationCounter);
         #pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -260,11 +260,11 @@ private:
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
             }
         }
-        FDEBUG(computationCounter.tac());
+        FLOG(computationCounter.tac());
 
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
 
     }
 
@@ -275,11 +275,11 @@ private:
     /** M2M */
     void upwardPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Upward Pass\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-        FDEBUG(FTic computationCounter);
-        FDEBUG(FTic prepareCounter);
-        FDEBUG(FTic waitCounter);
+        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
+        FLOG(FTic counterTime);
+        FLOG(FTic computationCounter);
+        FLOG(FTic prepareCounter);
+        FLOG(FTic waitCounter);
 
         // Start from leal level - 1
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -330,7 +330,7 @@ private:
 
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
-            FDEBUG(prepareCounter.tic());
+            FLOG(prepareCounter.tic());
             if(idProcess != 0
                     && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
 
@@ -385,12 +385,12 @@ private:
                     }
                 }
             }
-            FDEBUG(prepareCounter.tac());
+            FLOG(prepareCounter.tac());
             FTRACE( regionTrace.end() );
 
             // Compute
             const int endIndex = (hasToReceive?numberOfCells-1:numberOfCells);
-            FDEBUG(computationCounter.tic());
+            FLOG(computationCounter.tic());
             #pragma omp parallel
             {
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
@@ -399,13 +399,13 @@ private:
                     myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
             }
-            FDEBUG(computationCounter.tac());
+            FLOG(computationCounter.tac());
 
             // Are we sending or waiting anything?
             if(iterRequests){
-                FDEBUG(waitCounter.tic());
+                FLOG(waitCounter.tic());
                 MPI_Waitall( iterRequests, requests, status);
-                FDEBUG(waitCounter.tac());
+                FLOG(waitCounter.tac());
 
                 // we were receiving data
                 if( hasToReceive ){
@@ -435,9 +435,9 @@ private:
                     }
 
                     // Finally compute
-                    FDEBUG(computationCounter.tic());
+                    FLOG(computationCounter.tic());
                     (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
-                    FDEBUG(computationCounter.tac());
+                    FLOG(computationCounter.tac());
 
 
                     firstProcThatSend = endProcThatSend - 1;
@@ -449,10 +449,10 @@ private:
         }
 
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
 
     }
 
@@ -464,13 +464,13 @@ private:
     void transferPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (M2L)\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-        FDEBUG(FTic computationCounter);
-        FDEBUG(FTic sendCounter);
-        FDEBUG(FTic receiveCounter);
-        FDEBUG(FTic prepareCounter);
-        FDEBUG(FTic gatherCounter);
+        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
+        FLOG(FTic counterTime);
+        FLOG(FTic computationCounter);
+        FLOG(FTic sendCounter);
+        FLOG(FTic receiveCounter);
+        FLOG(FTic prepareCounter);
+        FLOG(FTic gatherCounter);
 
         //////////////////////////////////////////////////////////////////
         // First know what to send to who
@@ -487,7 +487,7 @@ private:
 
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG(prepareCounter.tic());
+            FLOG(prepareCounter.tic());
 
             // To know if a leaf has been already sent to a proc
             bool*const alreadySent = new bool[nbProcess];
@@ -565,7 +565,7 @@ private:
                 }
 
             }
-            FDEBUG(prepareCounter.tac());
+            FLOG(prepareCounter.tac());
 
             delete[] alreadySent;
         }
@@ -574,20 +574,20 @@ private:
         // Gather this information
         //////////////////////////////////////////////////////////////////
 
-        FDEBUG(gatherCounter.tic());
+        FLOG(gatherCounter.tic());
         // All process say to each others
         // what the will send to who
         int*const globalReceiveMap = new int[nbProcess * nbProcess * OctreeHeight];
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
         FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
-        FDEBUG(gatherCounter.tac());
+        FLOG(gatherCounter.tac());
 
 
         //////////////////////////////////////////////////////////////////
         // Send and receive for real
         //////////////////////////////////////////////////////////////////
 
-        FDEBUG(sendCounter.tic());
+        FLOG(sendCounter.tic());
         // Then they can send and receive (because they know what they will receive)
         // To send in asynchrone way
         MPI_Request*const requests = new MPI_Request[2 * nbProcess * OctreeHeight];
@@ -628,7 +628,7 @@ private:
                 }
             }
         }
-        FDEBUG(sendCounter.tac());
+        FLOG(sendCounter.tac());
 
         //////////////////////////////////////////////////////////////////
         // Do M2L
@@ -663,7 +663,7 @@ private:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                FDEBUG(computationCounter.tic());
+                FLOG(computationCounter.tic());
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -677,7 +677,7 @@ private:
 
                     myThreadkernels->finishedLevelM2L(idxLevel);
                 }
-                FDEBUG(computationCounter.tac());
+                FLOG(computationCounter.tac());
             }
         }
 
@@ -690,7 +690,7 @@ private:
 
         {
             FTRACE( FTrace::FRegion regionTrace("Compute Received data", __FUNCTION__ , __FILE__ , __LINE__) );
-            FDEBUG(receiveCounter.tic());
+            FLOG(receiveCounter.tic());
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
@@ -745,7 +745,7 @@ private:
                 leafsNeedOther[idxLevel] = 0;
 
                 // Compute this cells
-                FDEBUG(computationCounter.tic());
+                FLOG(computationCounter.tic());
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -782,9 +782,9 @@ private:
 
                     myThreadkernels->finishedLevelM2L(idxLevel);
                 }
-                FDEBUG(computationCounter.tac());
+                FLOG(computationCounter.tac());
             }
-            FDEBUG(receiveCounter.tac());
+            FLOG(receiveCounter.tac());
         }
 
         for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
@@ -802,12 +802,12 @@ private:
         delete[] requests;
         delete[] status;
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     }
 
     //////////////////////////////////////////////////////////////////
@@ -816,11 +816,11 @@ private:
 
     void downardPass(){ // second L2L
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Downward Pass (L2L)\n").write(FDebug::Flush); );
-        FDEBUG(FTic counterTime);
-        FDEBUG(FTic computationCounter);
-        FDEBUG(FTic prepareCounter);
-        FDEBUG(FTic waitCounter);
+        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
+        FLOG(FTic counterTime);
+        FLOG(FTic computationCounter);
+        FLOG(FTic prepareCounter);
+        FLOG(FTic waitCounter);
 
         // Start from leal level - 1
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -863,7 +863,7 @@ private:
             bool needToRecv = false;
             int iterRequests = 0;
 
-            FDEBUG(prepareCounter.tic());
+            FLOG(prepareCounter.tic());
 
             // do we need to receive one or zeros cell
             if(idProcess != 0
@@ -900,9 +900,9 @@ private:
 
                 }
             }
-            FDEBUG(prepareCounter.tac());
+            FLOG(prepareCounter.tac());
 
-            FDEBUG(computationCounter.tic());
+            FLOG(computationCounter.tic());
             #pragma omp parallel
             {
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
@@ -911,23 +911,23 @@ private:
                     myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
             }
-            FDEBUG(computationCounter.tac());
+            FLOG(computationCounter.tac());
 
             // are we sending or receiving?
             if(iterRequests){
 
                 // process
-                FDEBUG(waitCounter.tic());
+                FLOG(waitCounter.tic());
                 MPI_Waitall( iterRequests, requests, status);
-                FDEBUG(waitCounter.tac());
+                FLOG(waitCounter.tac());
 
                 if(needToRecv){
                     // Need to compute
-                    FDEBUG(computationCounter.tic());
+                    FLOG(computationCounter.tic());
                     iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
 
                     kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
-                    FDEBUG(computationCounter.tac());
+                    FLOG(computationCounter.tac());
                 }
             }
 
@@ -938,10 +938,10 @@ private:
         delete[] requests;
         delete[] status;
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
     }
 
 
@@ -957,16 +957,16 @@ private:
     /** P2P */
     void directPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FDEBUG( FDebug::Controller.write("\tStart Direct Pass\n").write(FDebug::Flush); );
-        FDEBUG( FTic counterTime);
-        FDEBUG( FTic prepareCounter);
-        FDEBUG( FTic gatherCounter);
-        FDEBUG( FTic waitCounter);
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
+        FLOG( FTic counterTime);
+        FLOG( FTic prepareCounter);
+        FLOG( FTic gatherCounter);
+        FLOG( FTic waitCounter);
 
         ///////////////////////////////////////////////////
         // Prepare data to send receive
         ///////////////////////////////////////////////////
-        FDEBUG(prepareCounter.tic());
+        FLOG(prepareCounter.tic());
 
         // To send in asynchrone way
         MPI_Request requests[2 * nbProcess];
@@ -1055,9 +1055,9 @@ private:
                 }
             }
 
-            FDEBUG(gatherCounter.tic());
+            FLOG(gatherCounter.tic());
             FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
-            FDEBUG(gatherCounter.tac());
+            FLOG(gatherCounter.tac());
 
             // Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
@@ -1094,7 +1094,7 @@ private:
 
             delete[] toSend;
         }
-        FDEBUG(prepareCounter.tac());
+        FLOG(prepareCounter.tac());
 
         ///////////////////////////////////////////////////
         // Prepare data for thread P2P
@@ -1163,7 +1163,7 @@ private:
         //////////////////////////////////////////////////////////
         FTRACE( FTrace::FRegion regionP2PTrace("Compute P2P", __FUNCTION__ , __FILE__ , __LINE__) );
 
-        FDEBUG(FTic computationCounter);
+        FLOG(FTic computationCounter);
 
         #pragma omp parallel
         {
@@ -1189,14 +1189,14 @@ private:
                 previous = endAtThisShape;
             }
         }
-        FDEBUG(computationCounter.tac());
+        FLOG(computationCounter.tac());
         FTRACE( regionP2PTrace.end() );
 
         //////////////////////////////////////////////////////////
         // Wait send receive
         //////////////////////////////////////////////////////////
 
-        FDEBUG(FTic computation2Counter);
+        FLOG(FTic computation2Counter);
 
         // Create an octree with leaves from others
         OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
@@ -1206,9 +1206,9 @@ private:
             memset(indexMessage, 0, sizeof(int) * nbProcess * 2);
             int countMessages = 0;
             // Wait data
-            FDEBUG(waitCounter.tic());
+            FLOG(waitCounter.tic());
             MPI_Waitsome(iterRequest, requests, &countMessages, indexMessage, status);
-            FDEBUG(waitCounter.tac());
+            FLOG(waitCounter.tac());
             complete += countMessages;
 
 
@@ -1234,7 +1234,7 @@ private:
         //////////////////////////////////////////////////////////
 
         FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
-        FDEBUG( computation2Counter.tic() );
+        FLOG( computation2Counter.tic() );
 
         #pragma omp parallel
         {
@@ -1281,15 +1281,15 @@ private:
         delete[] globalReceiveMap;
         delete[] leafsDataArray;
 
-        FDEBUG(computation2Counter.tac());
+        FLOG(computation2Counter.tac());
 
 
-        FDEBUG( FDebug::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
-        FDEBUG( FDebug::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
 
     }
 

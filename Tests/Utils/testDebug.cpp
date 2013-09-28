@@ -13,35 +13,35 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#include "../../Src/Utils/FDebug.hpp"
+#include "../../Src/Utils/FLog.hpp"
 
 /**
 * In this file we show how to use the debug module.
-* Warning, in FGlobal.hpp (included in FDebug.hpp) SCALFMM_USE_DEBUG might be undefined.
+* Warning, in FGlobal.hpp (included in FLog.hpp) SCALFMM_USE_DEBUG might be undefined.
 */
 
 int main(void){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
-    std::cout << ">> to understand the FDebug system.\n";
+    std::cout << ">> to understand the FLog system.\n";
     //////////////////////////////////////////////////////////////
 	// Print data simply
-	FDEBUG( FDebug::Controller << "Hello Wordl\n");
+	FLOG( FLog::Controller << "Hello Wordl\n");
 
 	// Print a variable (formated print)
 	int i = 50;
-	FDEBUG( FDebug::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
+	FLOG( FLog::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
 
 	// Write a developer information
-	FDEBUG( FDebug::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
+	FLOG( FLog::Controller.writeFromLine("Strange things are there!", __LINE__, __FILE__); )
 
 	// Flush
-	FDEBUG( FDebug::Controller << FDebug::Flush );
+	FLOG( FLog::Controller << FLog::Flush );
 
 	// Change stream type
-	FDEBUG( FDebug::Controller.writeToFile("testDebug.out.temp"); )
-	FDEBUG( FDebug::Controller << "Hello Wordl 2 the return\n");
+	FLOG( FLog::Controller.writeToFile("testDebug.out.temp"); )
+	FLOG( FLog::Controller << "Hello Wordl 2 the return\n");
 
 	return 0;
 }

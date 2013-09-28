@@ -13,13 +13,14 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#include "FDebug.hpp"
-#ifdef SCALFMM_USE_DEBUG
+#include "FLog.hpp"
+
+#ifdef ScalFMM_USE_LOG
 
 /**
 * Singleton debug
 */
-FDebug FDebug::Controller;
+FLog FLog::Controller;
 
 
 
