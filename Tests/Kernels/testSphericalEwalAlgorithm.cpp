@@ -64,7 +64,7 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     std::cout << ">> options are -h H -sh SH -P p -per PER -f FILE -noper -verbose -gen -direct\n";
-    std::cout << ">> Recommanded files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
+    std::cout << ">> Recommended files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
     //////////////////////////////////////////////////////////////
 
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 4);
@@ -296,10 +296,10 @@ int main(int argc, char ** argv){
             }
         });
 
-        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
+        std::cout << "Forces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
         std::cout << "Potential = " << std::setprecision(8) << potential*coeff_MD/2 << std::endl;
         std::cout << "Energy from file = " << std::setprecision(8) << loader.getEnergy() << std::endl;
-	//        std::cout << "Constante DL_POLY: " << coeff_MD << std::endl;
+	//        std::cout << "Constant DL_POLY: " << coeff_MD << std::endl;
     }
     // -----------------------------------------------------
 

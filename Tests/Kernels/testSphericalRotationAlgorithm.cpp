@@ -40,7 +40,7 @@
 
 /** This program show an example of use of
   * the fmm basic algo
-  * it also check that eachh particles is little or longer
+  * it also check that each particles is little or longer
   * related that each other
   */
 
@@ -147,7 +147,7 @@ int main(int argc, char ** argv){
             }
         });
 
-        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
+        std::cout << "Forces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
         std::cout << "Potential = " << potential << std::endl;
     }
 

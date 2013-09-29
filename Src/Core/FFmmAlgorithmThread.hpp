@@ -40,7 +40,7 @@
 * It used the inspector-executor model :
 * iterates on the tree and builds an array to work in parallel on this array
 *
-* Of course this class does not deallocate pointer given in arguements.
+* Of course this class does not deallocate pointer given in arguments.
 *
 * When using this algorithm the P2P is thread safe.
 */
@@ -267,7 +267,7 @@ private:
     }
 
     /////////////////////////////////////////////////////////////////////////////
-    // Downard
+    // Downward
     /////////////////////////////////////////////////////////////////////////////
 
     void downardPass(){ // second L2L
@@ -283,7 +283,7 @@ private:
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         const int heightMinusOne = OctreeHeight - 1;
-        // for each levels exepted leaf level
+        // for each levels excepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
             int numberOfCells = 0;
@@ -373,8 +373,8 @@ private:
                 const int positionToWork = startPosAtShape[shapePosition]++;
                 omp_unset_lock(&lockShape[shapePosition]);
 
-                leafsDataArray[positionToWork].index = octreeIterator.getCurrentGlobalIndex();
-                leafsDataArray[positionToWork].cell = octreeIterator.getCurrentCell();
+                leafsDataArray[positionToWork].index   = octreeIterator.getCurrentGlobalIndex();
+                leafsDataArray[positionToWork].cell    = octreeIterator.getCurrentCell();
                 leafsDataArray[positionToWork].targets = octreeIterator.getCurrentListTargets();
                 leafsDataArray[positionToWork].sources = octreeIterator.getCurrentListSrc();
 
@@ -418,8 +418,8 @@ private:
 
 
         FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Computation P2P : " << computationCounterP2P.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated()    << " s\n" );
+        FLOG( FLog::Controller << "\t\t Computation P2P :       " << computationCounterP2P.cumulated() << " s\n" );
 
     }
 

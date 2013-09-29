@@ -211,7 +211,7 @@ int main(int argc, char ** argv){
         std::cout << "To test between for NB PART different H for 3 accuracies\n\n";
 
         std::cout << ">> -test-p [-p P] [-h H] [-nb NB PART] [-pv PHYSICAL VALUE]\n";
-        std::cout << "To test the time for a run of different nb particlues\n\n";
+        std::cout << "To test the time for a run of different nb particles\n\n";
     }
 
     const int NbParticles = FParameters::getValue(argc,argv,"-nb", 60000);

@@ -19,7 +19,7 @@
 
 #include <cstdio>
 
-#include "FGlobal.hpp"
+//#include "FGlobal.hpp"
 #include "FNoCopyable.hpp"
 #include "FMath.hpp"
 

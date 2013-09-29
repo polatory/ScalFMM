@@ -143,7 +143,7 @@ int main(int argc, char** argv){
             }
         });
 
-        std::cout << "Foces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
+        std::cout << "Forces Sum  x = " << fx << " y = " << fy << " z = " << fz << std::endl;
         std::cout << "Potential = " << potential << std::endl;
     }
 
