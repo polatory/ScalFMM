@@ -5,8 +5,7 @@
 #include "../../Utils/FMath.hpp"
 
 #ifdef ScalFMM_USE_SSE
-#include <emmintrin.h>
-#include <mmintrin.h>
+#include "../../Utils/FSse.hpp"
 #endif
 
 /**
