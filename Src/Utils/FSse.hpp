@@ -9,35 +9,35 @@
 
 #ifdef __INTEL_COMPILER
 
-__m128d& operator+=(__m128d& v1, const __m128d& v2){
+inline __m128d& operator+=(__m128d& v1, const __m128d& v2){
     return (v1 = _mm_add_pd(v1, v2));
 }
 
-__m128d& operator-=(__m128d& v1, const __m128d& v2){
+inline __m128d& operator-=(__m128d& v1, const __m128d& v2){
     return (v1 = _mm_sub_pd(v1, v2));
 }
 
-__m128d& operator*=(__m128d& v1, const __m128d& v2){
+inline __m128d& operator*=(__m128d& v1, const __m128d& v2){
     return (v1 = _mm_mul_pd(v1, v2));
 }
 
-__m128d& operator/=(__m128d& v1, const __m128d& v2){
+inline __m128d& operator/=(__m128d& v1, const __m128d& v2){
     return (v1 = _mm_div_pd(v1, v2));
 }
 
-__m128d operator+(const __m128d& v1, const __m128d& v2){
+inline __m128d operator+(const __m128d& v1, const __m128d& v2){
     return _mm_add_pd(v1, v2);
 }
 
-__m128d operator-(const __m128d& v1, const __m128d& v2){
+inline __m128d operator-(const __m128d& v1, const __m128d& v2){
     return _mm_sub_pd(v1, v2);
 }
 
-__m128d operator*(const __m128d& v1, const __m128d& v2){
+inline __m128d operator*(const __m128d& v1, const __m128d& v2){
     return _mm_mul_pd(v1, v2);
 }
 
-__m128d operator/(const __m128d& v1, const __m128d& v2){
+inline __m128d operator/(const __m128d& v1, const __m128d& v2){
     return _mm_div_pd(v1, v2);
 }
 
