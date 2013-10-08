@@ -20,6 +20,10 @@
 // Periodic condition definition
 ///////////////////////////////////////////////////////
 
+/**
+ * @brief The PeriodicCondition enum
+ * To be able to chose the direction of the periodicity.
+ */
 enum PeriodicCondition {
     DirNone     = 0,
 
@@ -37,6 +41,12 @@ enum PeriodicCondition {
     AllDirs     = (DirX | DirY | DirZ)
 };
 
+/**
+ * @brief TestPeriodicCondition
+ * @param conditions
+ * @param testConditions
+ * @return true if the direction is in the condition
+ */
 inline bool TestPeriodicCondition(const int conditions, const PeriodicCondition testConditions) {
     return (conditions & testConditions) == testConditions;
 }

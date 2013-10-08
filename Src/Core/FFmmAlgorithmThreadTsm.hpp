@@ -45,7 +45,7 @@
 * You should not write on sources in the P2P method!
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadTsm : protected FAssertable{
+class FFmmAlgorithmThreadTsm : protected FAssertable, public FAbstractAlgorithm{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 

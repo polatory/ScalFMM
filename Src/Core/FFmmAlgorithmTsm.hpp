@@ -39,7 +39,7 @@
 * The differences with FmmAlgorithm is that it used target source model.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmTsm : protected FAssertable{
+class FFmmAlgorithmTsm : protected FAssertable, public FAbstractAlgorithm{
 
     OctreeClass* const tree;                                                     //< The octree to work on
     KernelClass* const kernels;    //< The kernels

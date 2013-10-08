@@ -58,7 +58,7 @@
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadProc : protected FAssertable {
+class FFmmAlgorithmThreadProc : protected FAssertable , public FAbstractAlgorithm {
 
     static const int MaxSizePerCell = 1024;
 

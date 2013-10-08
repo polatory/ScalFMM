@@ -42,7 +42,7 @@
 * Of course this class does not deallocate pointer given in arguments.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmPeriodic : protected FAssertable{
+class FFmmAlgorithmPeriodic : protected FAssertable, public FAbstractAlgorithm{
 
     OctreeClass* const tree;        //< The octree to work on
     KernelClass* kernels;           //< The kernels

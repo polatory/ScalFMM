@@ -45,7 +45,7 @@
 * When using this algorithm the P2P is thread safe.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThread : protected FAssertable{
+class FFmmAlgorithmThread : protected FAssertable, public FAbstractAlgorithm{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 
