@@ -60,7 +60,7 @@ private:
   FSmartPointer< FReal[343][sizeDerivative] > M2LpreComputedDerivatives;  
   FSmartPointer< int[SizeVector] > preComputedIndirections;  
 
-  FReal _coeffPoly[SizeVector];// _coeffNk[SizeVector] ;
+  FReal _coeffPoly[SizeVector];
 
 
   ////////////////////////////////////////////////////
@@ -100,7 +100,6 @@ private:
    */
   FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
   {
-
     //Set the boxes width needed
     FReal widthAtCurrentLevel = widthAtLeafLevel*FReal(1 << (treeHeight-(inLevel+1)));   
     FReal widthAtCurrentLevelDiv2 = widthAtCurrentLevel/FReal(2);
@@ -116,7 +115,6 @@ private:
     FReal Z = boxCorner.getZ() + FReal(c)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
     
     FPoint cCenter = FPoint(X,Y,Z);
-
     return cCenter;
   }
 
@@ -240,7 +238,7 @@ private:
   {
     //Allocation of the memory needed
     M2LpreComputedDerivatives = new FReal[treeHeight][343][sizeDerivative];
-    // This is the width of a box at each level
+    //This is the width of a box at each level
     FReal boxWidthAtLevel = widthAtLeafLevel;
     // from leaf level to the root
     for(int idxLevel = treeHeight-1 ; idxLevel > 0 ; --idxLevel){
@@ -278,7 +276,7 @@ private:
     FReal R2 = dx*dx+dy*dy+dz*dz;
     tab[0]=FReal(1)/FMath::Sqrt(R2);   
     FReal R3 = tab[0]/(R2);
-    tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
+    tab[1]= -dx*R3;                 //Derivative in (1,0,0)
     tab[2]= -dy*R3;                 //Derivative in (0,1,0)
     tab[3]= -dz*R3;                 //Derivative in (0,0,1)
     FReal R5 = R3/R2;
@@ -307,7 +305,6 @@ private:
   void computeFullDerivative( FReal  dx,  FReal  dy,  FReal  dz, // Distance from distant center to local center
 			      FReal * yetComputed)
   {
-   
     initDerivative(dx,dy,dz,yetComputed);
     FReal dist2 =  dx*dx+dy*dy+dz*dz;
     int idxTarget;                      //Index of current yetComputed entry
@@ -522,22 +519,11 @@ public:
     for(int i=0 ,  a = 0, b = 0, c = 0; i<SizeVector ; ++i)
       {
 	facto = static_cast<FReal>(fact3int(a,b,c));
-	//_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/(facto*facto);
 	_coeffPoly[i] = FReal(1.0)/(facto);
-       	//_coeffNk[i] = static_cast<FReal>(factorials[a+b+c])/facto;
-#ifdef OC
-	//	_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/facto;
-	//_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/(facto*facto);
-
-#endif
-	//	std::cout << " i a b c   " <<i << "   " <<  a << "   " <<  b << "   " <<  c << "   " <<  _coeffNk[i] << std::endl;
-	this->incPowers(&a,&b,&c);       //inc powers of expansion
+	this->incPowers(&a,&b,&c); //inc powers of expansion
       }
     this->preComputeDerivative();
     this->preComputeIndirection();
-    
-    //Use it for verifying size of datas used.
-    //printf("Size of datas : \n Sizeof(FReal) = %d\n, SizeVector = %d\n, SizeDerivative = %d\n",sizeof(FReal(0)),SizeVector,sizeDerivative);
   }
   
   /* Default destructor
@@ -574,9 +560,8 @@ public:
     const FReal* posZ = positions[2];
     
     const FReal* phyValue = particles->getPhysicalValues();
-    //
+  
     // Iterating over Particles
-    //
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
     FReal dx[3] ; 
     for(int idPart=0 ; idPart<nbPart ; ++idPart){
@@ -601,7 +586,7 @@ public:
 	   } // for i
        }// for k
      //
-     // tester un saxpy avec la boucle sur les coefficients
+     // Does a saxpy be usefull here ?
      for( i=0 ; i < SizeVector ; ++i) 
        {
 	 multipole[i] +=  multipole2[i] ;
@@ -625,15 +610,11 @@ public:
 	   const CellClass*const FRestrict *const FRestrict child, 
 	   const int inLevel)
   {
-    
     //Powers of expansions
     int a=0,b=0,c=0;
-    
     //Indexes of powers
     int idx_a,idx_b,idx_c;
-
     //Distance from current child to parent
-    
     FReal dx = 0.0;
     FReal dy = 0.0;
     FReal dz = 0.0;
@@ -647,7 +628,6 @@ public:
     for(idxChild=0 ; idxChild<8 ; ++idxChild)
       {
 	if(child[idxChild]){
-	  //	  
 	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
 	  const FReal * FRestrict multChild = child[idxChild]->getMultipole();
 	  
@@ -759,11 +739,11 @@ public:
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
 	
-	//Try with preComputed values for derivatives
+	//Get the preComputed values for the derivative
 	psiVector = M2LpreComputedDerivatives[inLevel][idxNeigh];
-  		
+	//Multipole to be read
 	multipole = distantNeighbors[idxNeigh]->getMultipole();
-	//Iteration over Multipole / Local
+
 	//Iterating over local array : n
 	for(int i=0 ; i<SizeVector ; ++i)
 	  {
@@ -809,11 +789,11 @@ public:
     int idxFatherLoc;               //index of Father local expansion to be read.
     FReal dx,  dy,  dz, coeff;      
     int ap, bp, cp, af, bf, cf;     //Indexes of expansion for father and child.
-    //
+
     // For all children
     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-      // if child exists
-      if(childCell[idxChild]){
+
+      if(childCell[idxChild]){ // if child exists
 	
 	FReal* FRestrict childExpansion = childCell[idxChild]->getLocal() ;
 	const FPoint& childCenter = getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
@@ -898,9 +878,6 @@ public:
       //Iterator over particles
       int nbPart = particles->getNbParticles();
       
-      //	
-      //Iteration over Local array
-      //
       const FReal * iterLocal = local->getLocal();
       const FReal * const * positions = particles->getPositions();
       const FReal * posX = positions[0];
@@ -937,7 +914,6 @@ public:
 	  arrayDZ[d] = dz * arrayDZ[d-1] ;
 	}
 	FReal partPhyValue = phyValues[i]; 
-	//
 	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
 	int a=0,b=0,c=0;
 	for(int j=0,ord=0 ; ord <= P ; ++ord)
