@@ -19,7 +19,7 @@
 #include "../../Components/FAbstractKernels.hpp"
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FLog.hpp"
-
+#include "../../Utils/FSmartPointer.hpp"
 #include "../P2P/FP2P.hpp"
 
 /**
@@ -49,14 +49,19 @@ private:
   const FReal widthAtLeafLevel;       //< width of box at leaf level
   const FReal widthAtLeafLevelDiv2;   //< width of box at leaf leve div 2
   const FPoint boxCorner;             //< position of the box corner
-  
-  FReal factorials[2*P+1];             //< This contains the factorial until P
+
+  ////////////////////////////////////////////////////
+  // PreComputed values
+  ////////////////////////////////////////////////////
+  FReal factorials[2*P+1];           //< This contains the factorial until P
   FReal arrayDX[P+2],arrayDY[P+2],arrayDZ[P+2] ; //< Working arrays
   static const int  sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
-  FReal _PsiVector[sizeDerivative];         
+  FReal _PsiVector[sizeDerivative];  
+  FSmartPointer< FReal[343][sizeDerivative] > M2LpreComputedDerivatives;  
+  FSmartPointer< int[SizeVector] > preComputedIndirections;  
 
-  // For debugging purpose
-  FILE * out;
+  FReal _coeffPoly[SizeVector];// _coeffNk[SizeVector] ;
+
 
   ////////////////////////////////////////////////////
   // Private method
@@ -112,8 +117,6 @@ private:
     
     FPoint cCenter = FPoint(X,Y,Z);
 
-    //For debug purpose
-    //printf("%f,%f,%f\n",cCenter.getX(),cCenter.getY(),cCenter.getZ());
     return cCenter;
   }
 
@@ -146,20 +149,15 @@ private:
   
   /**
    * @brief Give the index of array from the corresponding 3-tuple
-   * powers.
+   * powers. 
    */
   int powerToIdx(const int a,const int b,const int c)
   {
-    int t,p = a+b+c;
-    if(p==0)
-      {return 0;}
-    else
-      {
-	int res = p*(p+1)*(p+2)/6;
-	t=p-a;
-	res+=t*(t+1)/2+c;
-	return res;
-      }
+    int t,res,p = a+b+c;
+    res  = p*(p+1)*(p+2)/6;
+    t    = p - a;
+    res += t*(t+1)/2+c;
+    return res;
   }
   
   /* Return the factorial of a number
@@ -191,7 +189,83 @@ private:
         return  factorials[a]/  (factorials[b]* factorials[a-b]) ; 
   }
 
-
+  /* PreCompute indirection for M2L translations :
+   *
+   * During the M2L, derivative vector isn't accessed in an adjacent
+   * way, so this function aimed at storing all the indirections in
+   * the reading of Derivatives vector.
+   *
+   */
+  void preComputeIndirection()
+  {
+    this->preComputedIndirections = new int[SizeVector][SizeVector];
+    
+    int al=0,bl=0,cl=0;
+    int alpha;
+    //Loop over first index
+    for(int k=0; k<SizeVector ; ++k)
+      {
+	//Loop over multipole expansion coefficients : am, bm, cm.
+	for( int ord=0, j= 0 ; ord <= P ; ++ord)
+	  {
+	    for(int am=ord ; am >= 0 ; --am)
+	      {
+		alpha = ord-am;
+		if ( alpha ==1 )  {
+		  for( int i=0 ; i <=1  ; (++i, ++j) )
+		    {
+		      preComputedIndirections[k][j] = powerToIdx(al+am,bl+1-i,cl+i);
+		    }
+		}
+		else {
+		  for( int bm=ord-am ; bm >= 0 ; --bm, ++j)
+		    {
+		      preComputedIndirections[k][j] = powerToIdx(al+am,bl+bm,cl+(ord-am-bm));
+		    }
+		}
+	      }
+	  }
+	incPowers(&al,&bl,&cl);
+      }
+  }
+  
+  /* Precomputation of all the derivatives that will be needed for the
+   * computation of M2L translations :
+   *
+   * Derivatives depends only on the distance between cells, so for
+   * each level, and each possible relative positions (343), we
+   * compute all the values needed.
+   */
+  void preComputeDerivative()
+  {
+    //Allocation of the memory needed
+    M2LpreComputedDerivatives = new FReal[treeHeight][343][sizeDerivative];
+    // This is the width of a box at each level
+    FReal boxWidthAtLevel = widthAtLeafLevel;
+    // from leaf level to the root
+    for(int idxLevel = treeHeight-1 ; idxLevel > 0 ; --idxLevel){
+      // we compute all possibilities
+      for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
+	for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
+	  for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
+	    // if this is not a neighbour
+	    if( idxX < -1 || 1 < idxX || idxY < -1 || 1 < idxY || idxZ < -1 || 1 < idxZ ){
+	      //Compute the relative position
+	      const FPoint relativePosition( -FReal(idxX)*boxWidthAtLevel,
+					     -FReal(idxY)*boxWidthAtLevel,
+					     -FReal(idxZ)*boxWidthAtLevel);
+	      // this is the position in the index system from 0 to 343
+	      const int position = ((( (idxX+3) * 7) + (idxY+3))) * 7 + idxZ + 3;
+	      initDerivative(relativePosition.getX(),relativePosition.getY(),relativePosition.getZ(),M2LpreComputedDerivatives[idxLevel][position]);
+	      computeFullDerivative(relativePosition.getX(),relativePosition.getY(),relativePosition.getZ(),M2LpreComputedDerivatives[idxLevel][position]);
+	    }
+	  }
+	}
+      }
+      boxWidthAtLevel *= FReal(2);
+    }
+  }
+  
   /** @brief Init the derivative array for using of following formula
    * from "A cartesian tree-code for screened coulomb interactions"
    *
@@ -202,7 +276,6 @@ private:
   void initDerivative(const FReal & dx ,const FReal & dy ,const FReal & dz  ,   FReal * tab)
   {
     FReal R2 = dx*dx+dy*dy+dz*dz;
-    //    printf("dx : %f dy : %f dz : %f\n",dx,dy,dz);
     tab[0]=FReal(1)/FMath::Sqrt(R2);   
     FReal R3 = tab[0]/(R2);
     tab[1]= -dx*R3;                 //Derivative in (1,0,0) il doit y avoir un -
@@ -215,13 +288,8 @@ private:
     tab[7] = FReal(3)*dy*dy*R5-R3;  //Derivative in (0,2,0)
     tab[8] = FReal(3)*dy*dz*R5;     //Derivative in (0,1,1)
     tab[9] = FReal(3)*dz*dz*R5-R3;  //Derivative in (0,0,2)
-    
-    // For debugging purpose : print the values computed
-    // for(int c=0 ; c<=9 ; ++c){
-    //   printf("just computed %f, a=%d, b=%d, c=%d target: %d %f\n",dx,0,0,0,c,tab[c]);
-    // }
   }
- 
+  
   /** @brief Compute and store the derivative for a given tuple.
    *  Derivative are used for the M2L
    *
@@ -414,7 +482,8 @@ private:
 	    }
 	    for(c=2 ; c <= 2*P-b-a ; ++c){
 	      //Computation of derivatives Psi_{a,b,c} with a >= 2
-	      // |x-y|^2*Psi_{a,b,c} + (2*a-1)*dx*Psi_{a-1,b,c} + a*(a-2)*Psi_{a-2,b,c} + 2*b*dy*Psi_{a,b-1,c} + b*(b-1)*Psi_{a,b-2,c} + 2*c= 0
+	      // |x-y|^2*Psi_{a,b,c} + (2*a-1)*dx*Psi_{a-1,b,c} + a*(a-2)*Psi_{a-2,b,c} + 2*b*dy*Psi_{a,b-1,c} + b*(b-1)*Psi_{a,b-2,c} 
+	      // + 2*c*dz*Psi_{a,b,c-1}} = 0
 	      idxTarget = powerToIdx(a,b,c);
 	      idxSrc1 = powerToIdx(a-1,b,c);
 	      idxSrc2 = powerToIdx(a,b-1,c);
@@ -447,7 +516,28 @@ public:
     widthAtLeafLevelDiv2(widthAtLeafLevel/2),
     boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2))
   {
+    FReal facto;
     this->precomputeFactorials() ;
+    //    int a = 0, b = 0, c = 0;
+    for(int i=0 ,  a = 0, b = 0, c = 0; i<SizeVector ; ++i)
+      {
+	facto = static_cast<FReal>(fact3int(a,b,c));
+	//_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/(facto*facto);
+	_coeffPoly[i] = FReal(1.0)/(facto);
+       	//_coeffNk[i] = static_cast<FReal>(factorials[a+b+c])/facto;
+#ifdef OC
+	//	_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/facto;
+	//_coeffPoly[i] = static_cast<FReal>(factorials[a+b+c])/(facto*facto);
+
+#endif
+	//	std::cout << " i a b c   " <<i << "   " <<  a << "   " <<  b << "   " <<  c << "   " <<  _coeffNk[i] << std::endl;
+	this->incPowers(&a,&b,&c);       //inc powers of expansion
+      }
+    this->preComputeDerivative();
+    this->preComputeIndirection();
+    
+    //Use it for verifying size of datas used.
+    //printf("Size of datas : \n Sizeof(FReal) = %d\n, SizeVector = %d\n, SizeDerivative = %d\n",sizeof(FReal(0)),SizeVector,sizeDerivative);
   }
   
   /* Default destructor
@@ -462,25 +552,22 @@ public:
    *  
    * Formula :
    * \f[
-   *   M_{k} = \sum_{j=0}^{N}{ q_j * \frac{|k|!}{k! k!} (x_c-x_j)^{k}}
+   *   M_{k} = \frac{|k|!}{k! k!} \sum_{j=0}^{N}{ q_j   (x_c-x_j)^{k}}
    * \f]
    * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge and  \f$N\f$ the particle number.
    */
   void P2M(CellClass* const pole, 
 	   const ContainerClass* const particles)
   {
-    //Variables computed for each power of Multipole
-    int a,b,c ;
-    FReal facto, coeff; 
     //Copying cell center position once and for all
     const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
-    //    printf("P2M :: pole : X: %f, Y: %f, Z:%f  \n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
-    FReal * multipole = pole->getMultipole();
+    
+    FReal * FRestrict multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*sizeof(FReal(0.0)));
-    //    
-    // Iterator over Particles
-    //
-    int nbPart = particles->getNbParticles();
+    
+    FReal multipole2[SizeVector] ;
+    
+    int nbPart = particles->getNbParticles(), i;
     const FReal* const * positions = particles->getPositions();
     const FReal* posX = positions[0];
     const FReal* posY = positions[1];
@@ -491,44 +578,41 @@ public:
     // Iterating over Particles
     //
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
+    FReal dx[3] ; 
     for(int idPart=0 ; idPart<nbPart ; ++idPart){
-      //      printf("P2M :: part : X: %f, Y: %f, Z:%f   Q %f\n", posX[idPart] , posY[idPart] , posZ[idPart] ,phyValue[idPart]);
-
-      // compute the distance to the centre	  
-      FReal dx =  xc - posX[idPart] ;
-      FReal dy =  yc - posY[idPart] ;
-      FReal dz =  zc - posZ[idPart] ;
-
-      // Precompute the  arrays of dx^i
-      arrayDX[0] = 1.0 ;
-      arrayDY[0] = 1.0 ;
-      arrayDZ[0] = 1.0 ;
-      for (int i = 1 ; i <= P ; ++i) 	{
-	arrayDX[i] = dx * arrayDX[i-1] ;
-	arrayDY[i] = dy * arrayDY[i-1] ; 
-	arrayDZ[i] = dz * arrayDZ[i-1] ;
-      }
       
-      //
-      //Iterating over MutlipoleVector
-      //
-      a = 0, b = 0, c = 0;
-      for(int i=0 ; i<SizeVector ; ++i)
-	{
-	  //
-	  // update needed values
-	  //
-	  facto = fact3int(a,b,c);
-	  coeff = factorials[a+b+c]/(facto*facto);
-	  //
-	  //Computation
-	  //
-	  multipole[i] += coeff*phyValue[idPart]*arrayDX[a]*arrayDY[b]*arrayDZ[c];
-	  
-	  incPowers(&a,&b,&c);       //inc powers of expansion
-	}  // end loop on multipoles
+      dx[0]         = xc - posX[idPart] ;
+      dx[1]         = yc - posY[idPart] ;   
+      dx[2]         = zc - posZ[idPart] ;
+      
+     multipole2[0] = phyValue[idPart]  ;
+      
+     int leading[3] = {0,0,0 } ;
+     for (int k=1, t=1, tail=1; k <= P; ++k, tail=t)
+       {
+	 for (i = 0; i < 3; ++i) // dérouler la boucle en I ??
+	   {
+	     int head = leading[i];
+	     leading[i] = t;
+	     for ( int j = head; j < tail; ++j, ++t)
+	       { 
+		 multipole2[t] = multipole2[j] *dx[i] ;
+	       }
+	   } // for i
+       }// for k
+     //
+     // tester un saxpy avec la boucle sur les coefficients
+     for( i=0 ; i < SizeVector ; ++i) 
+       {
+	 multipole[i] +=  multipole2[i] ;
+	 multipole2[i] = 0.0;
+       } 
     }  // end loop on particles
-    //    std::cout << std::endl;
+    // Multiply by the coefficient
+    for( i=0 ; i < SizeVector ; ++i) 
+      {
+	multipole[i] *=_coeffPoly[i] ;
+      }
   }
   
 
@@ -541,7 +625,7 @@ public:
 	   const CellClass*const FRestrict *const FRestrict child, 
 	   const int inLevel)
   {
-    //    printf("M2M %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    
     //Powers of expansions
     int a=0,b=0,c=0;
     
@@ -549,16 +633,14 @@ public:
     int idx_a,idx_b,idx_c;
 
     //Distance from current child to parent
-    // FReal boxSize = (boxWidth/FReal(1 << inLevel));
+    
     FReal dx = 0.0;
     FReal dy = 0.0;
     FReal dz = 0.0;
     //Center point of parent cell
     const FPoint& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
-    //    printf("M2M ::  fatherCell : X: %f, Y: %f, Z:%f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ());
     FReal * FRestrict mult = pole->getMultipole();
-    //    FMemUtils::memset(mult,FReal(0.0),SizeVector*FReal(0.0));
-    
+        
     //Iteration over the eight children
     int idxChild;
     FReal coeff;
@@ -567,15 +649,13 @@ public:
 	if(child[idxChild]){
 	  //	  
 	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
-	  //	  printf("M2M ::  child cells : X: %f, Y: %f, Z:%f\n",childCenter.getX(),childCenter.getY(),childCenter.getZ());
 	  const FReal * FRestrict multChild = child[idxChild]->getMultipole();
 	  
 	  //Set the distance between centers of cells
 	  dx = cellCenter.getX() - childCenter.getX();
 	  dy = cellCenter.getY() - childCenter.getY();
 	  dz = cellCenter.getZ() - childCenter.getZ();
-	  //	  printf("M2M :: dx=%f, dy=%f, dz=%f\n",dx,dy,dz);
-
+	  
 	  // Precompute the  arrays of dx^i
 	  arrayDX[0] = 1.0 ;
 	  arrayDY[0] = 1.0 ;
@@ -589,39 +669,60 @@ public:
 	  a=0;
 	  b=0;
 	  c=0;
-	  FReal value, Nk ;
+	  //FReal value ;
+	  FReal value;
 	  //Iteration over parent multipole array
-	  for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
+	  for(int ordMult = 0,idxMult=0 ; ordMult <= P ; ++ordMult)
 	    {
-	      value = 0.0;
-	      Nk    = factorials[a+b+c]/fact3int(a,b,c) ;
-	      int idMultiChild;
-	      //Iteration over the powers to find the cell multipole
-	      //involved in the computation of the parent multipole
-	      for(idx_a=0 ; idx_a <= a ; ++idx_a){
-		for(idx_b=0 ; idx_b <= b ; ++idx_b){
-		  for(idx_c=0 ; idx_c <= c ; ++idx_c){
-
-		    //Computation
-		    //Child multipole involved
-		    idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
-		    coeff = fact3int(a-idx_a,b-idx_b,c-idx_c)/(factorials[a+b+c-idx_a-idx_b-idx_c]*fact3int(idx_a,idx_b,idx_c));
-		    
-		    value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+	      for(a=ordMult ; a>=0 ; --a)
+		{
+		  if((ordMult-a) == 1){
+		      for(int i =0 ; i<= 1 ; ++i,++idxMult)
+			{
+			  value = 0.0;
+			  int idMultiChild;
+			  b = 1-i;
+			  c = i;
+			  //Iteration over the powers to find the cell multipole
+			  //involved in the computation of the parent multipole
+			  for(idx_a=0 ; idx_a <= a ; ++idx_a){
+			    for(idx_b=0 ; idx_b <= b ; ++idx_b){
+			      for(idx_c=0 ; idx_c <= c ; ++idx_c){
+				//Computation
+				//Child multipole involved
+				idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+				coeff = FReal(1.0)/fact3int(idx_a,idx_b,idx_c);
+				value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+			      }
+			    }
+			  }
+			  mult[idxMult] += value;
+			}
+		    }
+		  else{
+		    for(b=ordMult-a ; b>=0 ; --b, ++idxMult)
+		      {
+			value = 0.0;
+			int idMultiChild;
+			c = ordMult-a-b;
+			//Iteration over the powers to find the cell multipole
+			//involved in the computation of the parent multipole
+			for(idx_a=0 ; idx_a <= a ; ++idx_a){
+			  for(idx_b=0 ; idx_b <= b ; ++idx_b){
+			    for(idx_c=0 ; idx_c <= c ; ++idx_c){
+			      //Computation
+			      //Child multipole involved
+			      idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+			      coeff = FReal(1.0)/fact3int(idx_a,idx_b,idx_c);
+			      value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+			    }
+			  }
+			}
+			mult[idxMult] += value;
+		      }
 		  }
 		}
-	      }
-	      mult[idxMult] += Nk*value;
-	      incPowers(&a,&b,&c);
 	    }
-	  
-	  //For debugging purposes
-	  // int x=0,y=0,z=0;
-	  // for(int idxChk=0 ; idxChk<SizeVector ; ++idxChk)
-	  //   {
-	  //     printf("M2M in (%f,%f,%f) for (%d,%d,%d) is %f\n",cellCenter.getX(),cellCenter.getY(),cellCenter.getZ(),x,y,z,mult[idxChk]);
-	  //     incPowers(&x,&y,&z);
-	  //   }
 	}
       }
   }
@@ -645,81 +746,42 @@ public:
 	   const CellClass* distantNeighbors[343],       // Sources to be read     
 	   const int /*size*/, const int inLevel)
   {
-    //    printf("M2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
-    //Iteration over distantNeighbors
-    int idxNeigh;
-    //    int sizeDerivative = (2*P+1)*(P+1)*(2*P+3)/3; 
-    
-
-    FPoint locCenter = getCellCenter(local->getCoordinate(),inLevel);
-    
+    //Local expansion to be filled
     FReal * FRestrict iterLocal = local->getLocal();
-    FMemUtils::memset(iterLocal,0,SizeVector*sizeof(FReal(0.0)));
-    //    FReal yetComputed[sizeDerivative];
-    
+    //index for distant neighbors
+    int idxNeigh;
+    FReal tmp1;
+    int * ind;
+    FReal * psiVector;
+    const FReal * multipole;
+    //Loop over all the possible neighbors
     for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
-
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
-	//Derivatives are computed iteratively
 	
-	FMemUtils::memset(this->_PsiVector,0,sizeDerivative*sizeof(FReal(0.0)));
-	// 
-	// Compute derivatives on  locCenter - curDistCenter
-	//                           target       source
-	const FPoint& curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
-	FReal dx = locCenter.getX()-curDistCenter.getX();
-	FReal dy = locCenter.getY()-curDistCenter.getY();
-	FReal dz = locCenter.getZ()-curDistCenter.getZ();
-
-	
-	//Computation of all the derivatives needed
-	computeFullDerivative(dx,dy,dz,this->_PsiVector);
-
+	//Try with preComputed values for derivatives
+	psiVector = M2LpreComputedDerivatives[inLevel][idxNeigh];
+  		
+	multipole = distantNeighbors[idxNeigh]->getMultipole();
 	//Iteration over Multipole / Local
-	int al=0,bl=0,cl=0; // For local array
-	int am,bm,cm;       // For distant array
-	//	
 	//Iterating over local array : n
-	for(int i=0 ; i< SizeVector ; ++i){
-	  FReal fctl   = fact3int(al,bl,cl);
-	  FReal coeffL = factorials[al+bl+cl]/(fctl*fctl);
-	  //
-	  //Iterator over multipole array 
-	  const FReal * multipole = distantNeighbors[idxNeigh]->getMultipole();
-	  	  
-	  FReal tmp = 0.0 ;
-	  //Iterating over multipole array : k
-	  //  Loc(al,bl,cl) = N(al,bl,cl)/((al,bl,cl)!*(al,bl,cl)!) sum_(am,bm,cm) Psi[am+al,bm+bl,cm+cl] * M[am,bm,cm]  
-	  //
-	  am=0;	  bm=0;  cm=0;
-	  //printf("al= %d, bl=%d, cl=%d ==>    i =%d \n",al,bl,cl,i);
-	  for(int j = 0 ; j < SizeVector ; ++j){ //corresponding powers am,bm,cm
-	    int idxPsi = powerToIdx(al+am,bl+bm,cl+cm);
-	    tmp += this->_PsiVector[idxPsi]*multipole[j];
-	    
-	    //updating a,b,c
-	    incPowers(&am,&bm,&cm);
+	for(int i=0 ; i<SizeVector ; ++i)
+	  {
+	    //Get the right indexes set
+	    ind = this->preComputedIndirections[i];
+	    tmp1 = FReal(0);
+	    	    
+	    //Iterating over multipole array
+	    for (int j=0 ; j<SizeVector ; ++j)
+	      {
+		tmp1 += psiVector[ind[j]]*multipole[j];
+	      }
+	    iterLocal[i] += tmp1*_coeffPoly[i];
 	  }
-	  iterLocal[i] = tmp*coeffL ;
-	  incPowers(&al,&bl,&cl);
-	}
-	// For Debugging ..........................................................
-	// int x=0,y=0,z=0;
-	// for(int dby=0 ; dby<SizeVector ; dby++)
-	//   {	
-	//     //fprintf(stdout,"M2L :: source %f, %d,%d,%d ==> %f\n",curDistCenter.getX(),x,y,z,iterLocal[dby]);
-	//     incPowers(&x,&y,&z);
-	//   }
-	// x = y = z = 0;
-	// for(int dby=0 ; dby<sizeDerivative ; dby++)
-	//   {	
-	//     //fprintf(stdout,"M2L :: source %f, (%d,%d,%d) ==> derive : %f\n",curDistCenter.getX(),x,y,z,yetComputed[dby]);
-	//     incPowers(&x,&y,&z);
-	//   }
       }
     }
   }
+
 
   
   /**
@@ -740,7 +802,6 @@ public:
 	   CellClass* FRestrict * const FRestrict childCell, 
 	   const int inLevel)
   {
-    //    printf("L2L %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     
     // Get father local expansion
@@ -753,9 +814,10 @@ public:
     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
       // if child exists
       if(childCell[idxChild]){
+	
 	FReal* FRestrict childExpansion = childCell[idxChild]->getLocal() ;
-	const FPoint& childCenter =getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
-
+	const FPoint& childCenter = getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+	
 	//Set the distance between centers of cells
 	// Child - father
 	dx = childCenter.getX()-locCenter.getX();
@@ -770,25 +832,45 @@ public:
 	  arrayDY[i] = dy * arrayDY[i-1] ; 
 	  arrayDZ[i] = dz * arrayDZ[i-1] ;
 	}
-	//
 	//iterator over child's local expansion (to be filled)
 	af=0;	bf=0;	cf=0;
-	for(int k=0 ; k<SizeVector ; ++k){
-	  //	  
-	  //Iterator over parent's local array
-	  for(ap=af ; ap<=P ; ++ap)
+	for(int ordChild=0, idxChEx=0 ; ordChild <= P ; ++ordChild) {
+	  for(af=ordChild ; af>=0 ; --af)
 	    {
-	      for(bp=bf ; bp<=P ; ++bp)
-		{
-		  for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp)
-		    {
-		      idxFatherLoc = powerToIdx(ap,bp,cp);
-		      coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
-		      childExpansion[k] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+	      if((ordChild-af) == 1){
+		for(int i=0 ; i <= 1 ; ++i,++idxChEx)
+		  {
+		    bf = 1-i;
+		    cf = i;
+		    //Iterator over parent's local array
+		    for(ap=af ; ap<=P ; ++ap){
+		      for(bp=bf ; bp<=P ; ++bp){
+			for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp){
+			  idxFatherLoc = powerToIdx(ap,bp,cp);
+			  coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
+			  childExpansion[idxChEx] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+			}
+		      }
 		    }
-		}
+		  }
+	      }
+	      else{
+		for(bf=ordChild-af ; bf>=0 ; --bf, ++idxChEx)
+		  {
+		    cf = ordChild-af-bf;
+		    //Iterator over parent's local array
+		    for(ap=af ; ap<=P ; ++ap){
+		      for(bp=bf ; bp<=P ; ++bp){
+			for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp){
+			  idxFatherLoc = powerToIdx(ap,bp,cp);
+			  coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
+			  childExpansion[idxChEx] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+			}
+		      }
+		    }
+		  }
+	      }
 	    }
-	  incPowers(&af,&bf,&cf);
 	}
       }	
     }
@@ -812,37 +894,34 @@ public:
     void L2P(const CellClass* const local, 
 	     ContainerClass* const particles)
     {
-      //      printf("L2P %%%%%%%%%%%%%%%%%%%%%%%%%%\n");
       FPoint locCenter = getLeafCenter(local->getCoordinate());
-     
+      //Iterator over particles
       int nbPart = particles->getNbParticles();
       
       //	
       //Iteration over Local array
       //
       const FReal * iterLocal = local->getLocal();
-
       const FReal * const * positions = particles->getPositions();
       const FReal * posX = positions[0];
       const FReal * posY = positions[1];
       const FReal * posZ = positions[2];
       
-      FReal * const forceX = particles->getForcesX();
-      FReal * const forceY = particles->getForcesY();
-      FReal * const forceZ = particles->getForcesZ();
-      //
-      FReal * const targetsPotentials = particles->getPotentials();
+      FReal * forceX = particles->getForcesX();
+      FReal * forceY = particles->getForcesY();
+      FReal * forceZ = particles->getForcesZ();
+
+      FReal * targetsPotentials = particles->getPotentials();
       
-      FReal * const phyValues = particles->getPhysicalValues();
+      FReal * phyValues = particles->getPhysicalValues();
 
       //Iteration over particles
       for(int i=0 ; i<nbPart ; ++i){
-	//	
+
 	FReal dx =  posX[i] - locCenter.getX();
 	FReal dy =  posY[i] - locCenter.getY();
 	FReal dz =  posZ[i] - locCenter.getZ();
-	
-	//
+
 	// Precompute an arrays of Array[i] = dx^(i-1)
 	arrayDX[0] = 0.0 ; 
 	arrayDY[0] = 0.0 ;
@@ -859,28 +938,46 @@ public:
 	}
 	FReal partPhyValue = phyValues[i]; 
 	//
-	FReal  locPot = 0.0; 
-	FReal locForceX = 0.0;
-	FReal locForceY = 0.0;
-	FReal locForceZ = 0.0;
+	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
 	int a=0,b=0,c=0;
-	for(int j=0 ; j<SizeVector ; ++j){
-	  FReal locForce     = iterLocal[j];
-	  // compute the potential
-	  locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
-	  //Application of forces
-	  locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
-	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
-	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
-	 	  
-	  incPowers(&a,&b,&c);
-	}
-	targetsPotentials[i]  = partPhyValue*locPot ;
-	forceX[i]            = partPhyValue*locForceX ;
-	forceY[i]            = partPhyValue*locForceY ;
-	forceZ[i]            = partPhyValue*locForceZ ;
+	for(int j=0,ord=0 ; ord <= P ; ++ord)
+	  {
+	    for(a=ord ; a>=0 ; --a)
+	      {
+		if( (ord-a) == 1){
+		    for(int t=0 ; t<=1 ; ++t,++j)
+		      {
+			b = 1-t;
+			c = t;
+			FReal locForce     = iterLocal[j];
+			// compute the potential
+			locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
+			//Application of forces
+			locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+			locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+			locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+		      }
+		  }
+		else{
+		  for(b=ord-a ; b>=0 ; --b,++j)
+		    { 
+		      c = ord-a-b;
+		      FReal locForce     = iterLocal[j];
+		      // compute the potential
+		      locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
+		      //Application of forces
+		      locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+		      locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+		      locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+		    }
+		}
+	      }
+	  }
+	targetsPotentials[i]  +=/* partPhyValue*/locPot ;
+	forceX[i]             += partPhyValue*locForceX ;
+	forceY[i]             += partPhyValue*locForceY ;
+	forceZ[i]             += partPhyValue*locForceZ ;
       }
-
     }
 
   /**
@@ -896,7 +993,6 @@ public:
 	   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
 	   ContainerClass* const directNeighborsParticles[27], const int /*size*/)
   {
-    //    printf("P2P %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
     FP2P::FullMutual(targets,directNeighborsParticles,14);
   }
 
