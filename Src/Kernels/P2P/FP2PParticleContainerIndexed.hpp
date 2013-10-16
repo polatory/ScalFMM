@@ -17,6 +17,12 @@ public:
         indexes.push(index);
     }
 
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const bool isTarget, const int index, Args... args){
+        Parent::push(inParticlePosition, isTarget, args... );
+        indexes.push(index);
+    }
+
     const FVector<int>& getIndexes() const{
         return indexes;
     }
