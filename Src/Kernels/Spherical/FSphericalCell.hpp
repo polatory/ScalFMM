@@ -111,6 +111,16 @@ public:
         return local_exp;
     }
 
+    /** Make it like the begining */
+    void resetToInitialState(){
+        for(int idx = 0 ; idx < PoleSize ; ++idx){
+            multipole_exp[idx].setRealImag(FReal(0.0), FReal(0.0));
+        }
+        for(int idx = 0 ; idx < LocalSize ; ++idx){
+            local_exp[idx].setRealImag(FReal(0.0), FReal(0.0));
+        }
+    }
+
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable
     ///////////////////////////////////////////////////////

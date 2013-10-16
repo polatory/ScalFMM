@@ -74,6 +74,12 @@ public:
     return local_exp;
   }
 
+  /** Make it like the begining */
+  void resetToInitialState(){
+      FMemUtils::memset(multipole_exp,0,MultipoleSize*sizeof(FReal(0)));
+      FMemUtils::memset(local_exp,0,LocalSize*sizeof(FReal(0)));
+  }
+
 };
 
 #endif

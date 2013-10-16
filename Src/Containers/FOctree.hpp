@@ -1135,7 +1135,7 @@ public:
 
         Iterator avoidGoLeft(octreeIterator);
 
-        for(int idx = 0 ; idx < this->height - 1 ; ++idx ){
+        for(int idx = this->height-1 ; idx >= 1 ; --idx ){
             do{
                 function(octreeIterator.getCurrentCell());
             } while(octreeIterator.moveRight());

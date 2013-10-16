@@ -50,6 +50,10 @@ public:
         FExtendMortonIndex::restore(buffer);
         FExtendCoordinate::restore(buffer);
     }
+
+    /** Do nothing */
+    void resetToInitialState(){
+    }
 };
 
 

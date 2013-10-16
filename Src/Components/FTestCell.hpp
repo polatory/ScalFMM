@@ -54,6 +54,12 @@ public:
         this->dataDown = inData;
     }
 
+    /** Make it like the begining */
+    void resetToInitialState(){
+        this->dataDown = 0;
+        this->dataUp = 0;
+    }
+
     /////////////////////////////////////////////////
 
     /** Save the current cell in a buffer */

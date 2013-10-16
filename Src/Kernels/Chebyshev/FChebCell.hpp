@@ -68,6 +68,12 @@ public:
     int getVectorSize() const{
         return VectorSize;
     }
+
+    /** Make it like the begining */
+    void resetToInitialState(){
+        memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+        memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    }
 };
 
 

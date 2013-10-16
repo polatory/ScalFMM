@@ -89,6 +89,11 @@ public:
           * This function make the cell containing targets
           */
     virtual void setTargetsChildTrue() = 0;
+
+    /**
+          * This function make the cell containing targets
+          */
+    virtual void resetToInitialState() = 0;
 };
 
 
