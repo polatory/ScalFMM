@@ -38,7 +38,7 @@
 //
 // taylor kernel
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel_Opt.hpp"
+#include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
 //
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
     const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
-    const int DevP                   = FParameters::getValue(argc, argv, "-p", 7);
 #ifdef _OPENMP
     omp_set_num_threads(NbThreads);
     std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;

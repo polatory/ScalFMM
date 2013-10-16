@@ -53,7 +53,7 @@
 //
 // taylor kernel
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel_OptPreInd.hpp"
+#include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
 //
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"

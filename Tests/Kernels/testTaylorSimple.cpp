@@ -20,7 +20,7 @@
 #include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel_Opt.hpp"
+#include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
 
 #include "../../Src/Files/FFmaLoader.hpp"
 
