@@ -19,6 +19,8 @@
 
 #include "../Utils/FAssertable.hpp"
 #include "FAbstractLeaf.hpp"
+#include "FParticleType.hpp"
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -36,6 +38,7 @@ class FTypedLeaf  : public FAbstractLeaf<ContainerClass>, public FAssertable {
     ContainerClass targets; //< The targets containers
 
 public:
+
     /** Default destructor */
     virtual ~FTypedLeaf(){
     }
@@ -47,9 +50,9 @@ public:
         * followed by other param given by the user
         */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const bool isTarget, Args ... args){
-        if(isTarget) targets.push(inParticlePosition, isTarget, args...);
-        else sources.push(inParticlePosition, isTarget, args...);
+    void push(const FPoint& inParticlePosition, const FParticleType type, Args ... args){
+        if(type == FParticleTypeTarget) targets.push(inParticlePosition, FParticleTypeTarget, args...);
+        else sources.push(inParticlePosition, FParticleTypeSource, args...);
     }
 
     /**

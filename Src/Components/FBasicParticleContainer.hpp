@@ -21,6 +21,7 @@
 #include "../Utils/FAlignedMemory.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FPoint.hpp"
+#include "FParticleType.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -200,7 +201,7 @@ public:
      * Push called usually by FTypedLeaf with the isTarget flag in addition
      */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const bool /*isTarget*/, Args... args){
+    void push(const FPoint& inParticlePosition, const FParticleType /*particleType*/, Args... args){
         push(inParticlePosition, args...);
     }
 

@@ -83,9 +83,9 @@ int main(int argc, char ** argv){
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint particlePosition;
         FReal physicalValue = 0.0;
-        bool isTarget;
-        loader.fillParticle(&particlePosition,&physicalValue,&isTarget);
-        tree.insert(particlePosition, isTarget, physicalValue );
+        FParticleType particleType;
+        loader.fillParticle(&particlePosition,&physicalValue,&particleType);
+        tree.insert(particlePosition, particleType, physicalValue );
     }
 
     counter.tac();

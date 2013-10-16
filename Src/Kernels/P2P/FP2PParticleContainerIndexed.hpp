@@ -4,6 +4,7 @@
 #include "../../Containers/FVector.hpp"
 
 #include "FP2PParticleContainer.hpp"
+#include "../../Components/FParticleType.hpp"
 
 class FP2PParticleContainerIndexed : public FP2PParticleContainer {
     typedef FP2PParticleContainer Parent;
@@ -18,8 +19,8 @@ public:
     }
 
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const bool isTarget, const int index, Args... args){
-        Parent::push(inParticlePosition, isTarget, args... );
+    void push(const FPoint& inParticlePosition, const FParticleType particleType, const int index, Args... args){
+        Parent::push(inParticlePosition, particleType, args... );
         indexes.push(index);
     }
 

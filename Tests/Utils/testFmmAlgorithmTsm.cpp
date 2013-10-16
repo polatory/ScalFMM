@@ -83,10 +83,10 @@ int main(int argc, char ** argv){
 
     {
         FPoint particlePosition;
-        bool isTarget;
+        FParticleType particleType;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(&particlePosition, &isTarget);
-            tree.insert(particlePosition, isTarget);
+            loader.fillParticle(&particlePosition, &particleType);
+            tree.insert(particlePosition, particleType);
         }
     }
 

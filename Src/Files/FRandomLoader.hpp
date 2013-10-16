@@ -25,6 +25,7 @@
 
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
+#include "../Components/FParticleType.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -114,9 +115,10 @@ public:
     }
 
 
-    void fillParticle(FPoint*const inParticlePositions, bool*const isTarget){
+    void fillParticle(FPoint*const inParticlePositions, FParticleType*const isTarget){
         FRandomLoader::fillParticle(inParticlePositions);
-        (*isTarget) = (FRandomLoader::getRandom() > 0.5 );
+        if(FRandomLoader::getRandom() > 0.5 ) (*isTarget) = FParticleTypeTarget;
+        else (*isTarget) = FParticleTypeSource;
     }
 };
 

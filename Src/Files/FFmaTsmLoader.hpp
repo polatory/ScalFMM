@@ -23,6 +23,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
+#include "../Components/FParticleType.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -122,14 +123,15 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue, bool*const inIsTarget){
+    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue, FParticleType*const particleType){
         FReal x,y,z,data;
         int isTarget;
         this->file >> x >> y >> z >> data >> isTarget;
 
         inParticlePositions->setPosition(x,y,z);
         *inPhysicalValue = data;
-        *inIsTarget = isTarget;
+        if(isTarget) (*particleType) = FParticleTypeTarget;
+        else (*particleType) = FParticleTypeSource;
     }
 
 };
