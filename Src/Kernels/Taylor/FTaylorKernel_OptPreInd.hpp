@@ -587,26 +587,26 @@ public:
       
      multipole2[0] = phyValue[idPart]  ;
       
-      int leading[3] = {0,0,0 } ;
-      for (int k=1, t=1, tail=1; k <= P; ++k, tail=t)
-	{
-	  for (i = 0; i < 3; ++i) // dérouler la boucle en I ??
-	    {
-	      int head = leading[i];
-	      leading[i] = t;
-	      for ( int j = head; j < tail; ++j, ++t)
-		{ 
-		  multipole2[t] = multipole2[j] *dx[i] ;
-		}
-	    } // for i
-	}// for k
-      //
-      // tester un saxpy avec la boucle sur les coefficients
-      for( i=0 ; i < SizeVector ; ++i) 
-	{
-	  multipole[i] +=  multipole2[i] ;
-	  multipole2[i] = 0.0;
-	} 
+     int leading[3] = {0,0,0 } ;
+     for (int k=1, t=1, tail=1; k <= P; ++k, tail=t)
+       {
+	 for (i = 0; i < 3; ++i) // dérouler la boucle en I ??
+	   {
+	     int head = leading[i];
+	     leading[i] = t;
+	     for ( int j = head; j < tail; ++j, ++t)
+	       { 
+		 multipole2[t] = multipole2[j] *dx[i] ;
+	       }
+	   } // for i
+       }// for k
+     //
+     // tester un saxpy avec la boucle sur les coefficients
+     for( i=0 ; i < SizeVector ; ++i) 
+       {
+	 multipole[i] +=  multipole2[i] ;
+	 multipole2[i] = 0.0;
+       } 
     }  // end loop on particles
     // Multiply by the coefficient
     for( i=0 ; i < SizeVector ; ++i) 
@@ -672,27 +672,56 @@ public:
 	  //FReal value ;
 	  FReal value;
 	  //Iteration over parent multipole array
-	  for(int idxMult = 0 ; idxMult<SizeVector ; idxMult++)
+	  for(int ordMult = 0,idxMult=0 ; ordMult <= P ; ++ordMult)
 	    {
-	      value = 0.0;
-	      int idMultiChild;
-	      //Iteration over the powers to find the cell multipole
-	      //involved in the computation of the parent multipole
-	      for(idx_a=0 ; idx_a <= a ; ++idx_a){
-		for(idx_b=0 ; idx_b <= b ; ++idx_b){
-		  for(idx_c=0 ; idx_c <= c ; ++idx_c){
-
-		    //Computation
-		    //Child multipole involved
-		    idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
-		    coeff = FReal(1.0)/fact3int(idx_a,idx_b,idx_c);
-		    
-		    value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+	      for(a=ordMult ; a>=0 ; --a)
+		{
+		  if((ordMult-a) == 1){
+		      for(int i =0 ; i<= 1 ; ++i,++idxMult)
+			{
+			  value = 0.0;
+			  int idMultiChild;
+			  b = 1-i;
+			  c = i;
+			  //Iteration over the powers to find the cell multipole
+			  //involved in the computation of the parent multipole
+			  for(idx_a=0 ; idx_a <= a ; ++idx_a){
+			    for(idx_b=0 ; idx_b <= b ; ++idx_b){
+			      for(idx_c=0 ; idx_c <= c ; ++idx_c){
+				//Computation
+				//Child multipole involved
+				idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+				coeff = FReal(1.0)/fact3int(idx_a,idx_b,idx_c);
+				value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+			      }
+			    }
+			  }
+			  mult[idxMult] += value;
+			}
+		    }
+		  else{
+		    for(b=ordMult-a ; b>=0 ; --b, ++idxMult)
+		      {
+			value = 0.0;
+			int idMultiChild;
+			c = ordMult-a-b;
+			//Iteration over the powers to find the cell multipole
+			//involved in the computation of the parent multipole
+			for(idx_a=0 ; idx_a <= a ; ++idx_a){
+			  for(idx_b=0 ; idx_b <= b ; ++idx_b){
+			    for(idx_c=0 ; idx_c <= c ; ++idx_c){
+			      //Computation
+			      //Child multipole involved
+			      idMultiChild = powerToIdx(a-idx_a,b-idx_b,c-idx_c);
+			      coeff = FReal(1.0)/fact3int(idx_a,idx_b,idx_c);
+			      value += multChild[idMultiChild]*coeff*arrayDX[idx_a]*arrayDY[idx_b]*arrayDZ[idx_c];
+			    }
+			  }
+			}
+			mult[idxMult] += value;
+		      }
 		  }
 		}
-	      }
-	      mult[idxMult] += value;
-	      incPowers(&a,&b,&c);
 	    }
 	}
       }
@@ -803,25 +832,45 @@ public:
 	  arrayDY[i] = dy * arrayDY[i-1] ; 
 	  arrayDZ[i] = dz * arrayDZ[i-1] ;
 	}
-	//
 	//iterator over child's local expansion (to be filled)
 	af=0;	bf=0;	cf=0;
-	for(int k=0 ; k<SizeVector ; ++k){
-	  //	  
-	  //Iterator over parent's local array
-	  for(ap=af ; ap<=P ; ++ap)
+	for(int ordChild=0, idxChEx=0 ; ordChild <= P ; ++ordChild) {
+	  for(af=ordChild ; af>=0 ; --af)
 	    {
-	      for(bp=bf ; bp<=P ; ++bp)
-		{
-		  for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp)
-		    {
-		      idxFatherLoc = powerToIdx(ap,bp,cp);
-		      coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
-		      childExpansion[k] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+	      if((ordChild-af) == 1){
+		for(int i=0 ; i <= 1 ; ++i,++idxChEx)
+		  {
+		    bf = 1-i;
+		    cf = i;
+		    //Iterator over parent's local array
+		    for(ap=af ; ap<=P ; ++ap){
+		      for(bp=bf ; bp<=P ; ++bp){
+			for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp){
+			  idxFatherLoc = powerToIdx(ap,bp,cp);
+			  coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
+			  childExpansion[idxChEx] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+			}
+		      }
 		    }
-		}
+		  }
+	      }
+	      else{
+		for(bf=ordChild-af ; bf>=0 ; --bf, ++idxChEx)
+		  {
+		    cf = ordChild-af-bf;
+		    //Iterator over parent's local array
+		    for(ap=af ; ap<=P ; ++ap){
+		      for(bp=bf ; bp<=P ; ++bp){
+			for(cp=cf ; ((cp<=P) && (ap+bp+cp) <= P) ; ++cp){
+			  idxFatherLoc = powerToIdx(ap,bp,cp);
+			  coeff = combin(ap,af) * combin(bp,bf) * combin(cp,cf);
+			  childExpansion[idxChEx] += coeff*fatherExpansion[idxFatherLoc]*arrayDX[ap-af]*arrayDY[bp-bf]*arrayDZ[cp-cf] ;
+			}
+		      }
+		    }
+		  }
+	      }
 	    }
-	  incPowers(&af,&bf,&cf);
 	}
       }	
     }
@@ -891,17 +940,39 @@ public:
 	//
 	FReal  locPot = 0.0, locForceX = 0.0, locForceY = 0.0, locForceZ = 0.0 ;
 	int a=0,b=0,c=0;
-	for(int j=0 ; j<SizeVector ; ++j){
-	  FReal locForce     = iterLocal[j];
-	  // compute the potential
-	  locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
-	  //Application of forces
-	  locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
-	  locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
-	  locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
-	  //
-	  incPowers(&a,&b,&c);
-	}
+	for(int j=0,ord=0 ; ord <= P ; ++ord)
+	  {
+	    for(a=ord ; a>=0 ; --a)
+	      {
+		if( (ord-a) == 1){
+		    for(int t=0 ; t<=1 ; ++t,++j)
+		      {
+			b = 1-t;
+			c = t;
+			FReal locForce     = iterLocal[j];
+			// compute the potential
+			locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
+			//Application of forces
+			locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+			locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+			locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+		      }
+		  }
+		else{
+		  for(b=ord-a ; b>=0 ; --b,++j)
+		    { 
+		      c = ord-a-b;
+		      FReal locForce     = iterLocal[j];
+		      // compute the potential
+		      locPot += iterLocal[j]*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c+1];
+		      //Application of forces
+		      locForceX += FReal(a)*locForce*arrayDX[a]*arrayDY[b+1]*arrayDZ[c+1];
+		      locForceY += FReal(b)*locForce*arrayDX[a+1]*arrayDY[b]*arrayDZ[c+1];
+		      locForceZ += FReal(c)*locForce*arrayDX[a+1]*arrayDY[b+1]*arrayDZ[c];
+		    }
+		}
+	      }
+	  }
 	targetsPotentials[i]  +=/* partPhyValue*/locPot ;
 	forceX[i]             += partPhyValue*locForceX ;
 	forceY[i]             += partPhyValue*locForceY ;
