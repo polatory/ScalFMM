@@ -295,7 +295,8 @@ public:
             kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
             // need the current particles and neighbors particles
             const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-            kernels->P2P( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+            neighbors[13] = octreeIterator.getCurrentListSrc();
+            kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
                           octreeIterator.getCurrentListSrc() , neighbors, counter);
             FLOG(computationCounter.tac());
             FLOG(totalComputation += computationCounter.elapsed());
