@@ -195,6 +195,7 @@ public:
             do{
                 FLOG(computationCounter.tic());
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
+
                 if(currentCell->hasTargetsChild()){
                     const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
                     if( counter ){
@@ -247,21 +248,23 @@ public:
             FLOG(FTic counterTimeLevel);
             // for each cells
             do{
-                FLOG(computationCounter.tic());
-                CellClass* potentialChild[8];
-                CellClass** const realChild = octreeIterator.getCurrentChild();
-                CellClass* const currentCell = octreeIterator.getCurrentCell();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                        potentialChild[idxChild] = realChild[idxChild];
+                if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
+                    FLOG(computationCounter.tic());
+                    CellClass* potentialChild[8];
+                    CellClass** const realChild = octreeIterator.getCurrentChild();
+                    CellClass* const currentCell = octreeIterator.getCurrentCell();
+                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                        if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                            potentialChild[idxChild] = realChild[idxChild];
+                        }
+                        else{
+                            potentialChild[idxChild] = 0;
+                        }
                     }
-                    else{
-                        potentialChild[idxChild] = 0;
-                    }
+                    kernels->L2L( currentCell , potentialChild, idxLevel);
+                    FLOG(computationCounter.tac());
+                    FLOG(totalComputation += computationCounter.elapsed());
                 }
-                kernels->L2L( currentCell , potentialChild, idxLevel);
-                FLOG(computationCounter.tac());
-                FLOG(totalComputation += computationCounter.elapsed());
             } while(octreeIterator.moveRight());
 
             avoidGotoLeftIterator.moveDown();
@@ -291,15 +294,17 @@ public:
         ContainerClass* neighbors[27];
         // for each leafs
         do{
-            FLOG(computationCounter.tic());
-            kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            // need the current particles and neighbors particles
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-            neighbors[13] = octreeIterator.getCurrentListSrc();
-            kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
-                          octreeIterator.getCurrentListSrc() , neighbors, counter);
-            FLOG(computationCounter.tac());
-            FLOG(totalComputation += computationCounter.elapsed());
+            if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
+                FLOG(computationCounter.tic());
+                kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+                // need the current particles and neighbors particles
+                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
+                neighbors[13] = octreeIterator.getCurrentListSrc();
+                kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+                              octreeIterator.getCurrentListSrc() , neighbors, counter + 1);
+                FLOG(computationCounter.tac());
+                FLOG(totalComputation += computationCounter.elapsed());
+            }
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );
