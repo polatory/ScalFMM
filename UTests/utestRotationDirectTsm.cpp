@@ -54,7 +54,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
         Print(loader.getNumberOfParticles());
 
         const int NbLevels      = 4;
-        const int SizeSubLevels = 2;
+        const int SizeSubLevels = 3;
 
 
         struct TestParticle{
@@ -64,14 +64,13 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
             FReal potential;
         };
 
-        TestParticle* const particlesSources = new TestParticle[nbSources];
-        TestParticle* const particlesTargets = new TestParticle[nbTargets];
 
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
         const FReal physicalValue = 0.10;
 
+        TestParticle* const particlesTargets = new TestParticle[nbTargets];
         for(int idxPart = 0 ; idxPart < nbTargets ; ++idxPart){
             FPoint position;
             loader.fillParticle(&position);
@@ -86,6 +85,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
             particlesTargets[idxPart].forces[2] = 0.0;
         }
 
+        TestParticle* const particlesSources = new TestParticle[nbSources];
         for(int idxPart = 0 ; idxPart < nbSources ; ++idxPart){
             FPoint position;
             loader.fillParticle(&position);
@@ -228,7 +228,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
     /** set test */
     void SetTests(){
         AddTest(&TestRotationDirectTsm::TestRotation,"Test Rotation Kernel TSM");
-        AddTest(&TestRotationDirectTsm::TestRotation,"Test Rotation Kernel TSM thread");
+        AddTest(&TestRotationDirectTsm::TestRotationThread,"Test Rotation Kernel TSM thread");
     }
 };
 
