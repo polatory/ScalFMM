@@ -32,6 +32,9 @@
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
+#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+
 #include "../../Src/Files/FFmaTsmLoader.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
@@ -44,26 +47,17 @@
 
 
 // Simply create particles and try the kernels
-int main(int argc, char ** argv){
-    typedef FTypedSphericalCell            CellClass;
-    typedef FP2PParticleContainer         ContainerClass;
-
-    typedef FTypedLeaf< ContainerClass >                      LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
-
-    typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-    ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to test Spherical on a Tsm system.\n";
-    //////////////////////////////////////////////////////////////
-    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
+template <class CellClass, class ContainerClass, class LeafClass, class OctreeClass,
+          class KernelClass, class FmmClass, typename... Args>
+int testFunction(int argc, char ** argv, Args... kernelPreArgs){
+    FTic counter;
+    // Retrieve parameters
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    FTic counter;
-
+    // Get working file
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.tsm.fma");
     std::cout << "Opening : " << filename << "\n";
-
+    // Create particles loader
     FFmaTsmLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
@@ -71,7 +65,7 @@ int main(int argc, char ** argv){
     }
 
     // -----------------------------------------------------
-    CellClass::Init(DevP);
+    // Build the tree
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -96,7 +90,7 @@ int main(int argc, char ** argv){
     std::cout << "Create kernel ..." << std::endl;
     counter.tic();
 
-    KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    KernelClass kernels( kernelPreArgs... , NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     counter.tac();
     std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
@@ -142,5 +136,45 @@ int main(int argc, char ** argv){
     return 0;
 }
 
+// This is the real main!
+int main(int argc, char ** argv){
+    std::cout << "[PARAM] Use Parameters -spherical -rotation -chebyshev\n";
 
+    if( FParameters::existParameter(argc,argv,"-spherical") ){
+        std::cout << "[INFO] -spherical is used\n";
+        // Create template
+        typedef FTypedSphericalCell            CellClass;
+        typedef FP2PParticleContainer         ContainerClass;
 
+        typedef FTypedLeaf< ContainerClass >                      LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+
+        typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        const int DevP = FParameters::getValue(argc,argv,"-p", 8);
+        CellClass::Init(DevP);
+
+        // Call Main function
+        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP);
+    }
+
+    if( FParameters::existParameter(argc,argv,"-rotation") ){
+        std::cout << "[INFO] -rotation is used\n";
+        // Create template
+        static const int P = 9;
+        typedef FTypedRotationCell<P>            CellClass;
+        typedef FP2PParticleContainer         ContainerClass;
+
+        typedef FTypedLeaf< ContainerClass >                      LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FRotationKernel< CellClass, ContainerClass, P >          KernelClass;
+
+        typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+        // Call Main function
+        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv);
+    }
+
+    return 0;
+}
