@@ -188,13 +188,9 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
     static const int P = 9;
 
-    template <const int P>
-    class CustomTypedRotationCell : public FRotationCell<P>, public FExtendCellType{
-    };
-
     /** Rotation */
     void TestRotation(){
-        typedef CustomTypedRotationCell<P>    CellClass;
+        typedef FTypedRotationCell<P>    CellClass;
         typedef FP2PParticleContainerIndexed  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
@@ -208,7 +204,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
     }
 
     void TestRotationThread(){
-        typedef CustomTypedRotationCell<P>    CellClass;
+        typedef FTypedRotationCell<P>    CellClass;
         typedef FP2PParticleContainerIndexed  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;

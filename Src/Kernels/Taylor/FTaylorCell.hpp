@@ -19,6 +19,7 @@
 #include "../../Components/FBasicCell.hpp"
 #include "../../Containers/FVector.hpp"
 #include "../../Utils/FMemUtils.hpp"
+#include "../../Extensions/FExtendCellType.hpp"
 
 /**
  *@author Cyrille Piacibello
@@ -80,6 +81,23 @@ public:
       FMemUtils::memset(local_exp,0,LocalSize*sizeof(FReal(0)));
   }
 
+};
+
+template <int P, int order>
+class FTypedTaylorCell : public FTaylorCell<P,order>, public FExtendCellType {
+public:
+    void save(FBufferWriter& buffer) const{
+        FTaylorCell<P,order>::save(buffer);
+        FExtendCellType::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FTaylorCell<P,order>::restore(buffer);
+        FExtendCellType::restore(buffer);
+    }
+    void resetToInitialState(){
+        FTaylorCell<P,order>::resetToInitialState();
+        FExtendCellType::resetToInitialState();
+    }
 };
 
 #endif

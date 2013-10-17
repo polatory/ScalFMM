@@ -171,6 +171,10 @@ public:
         FSphericalCell::restore(buffer);
         FExtendCellType::restore(buffer);
     }
+    void resetToInitialState(){
+        FSphericalCell::resetToInitialState();
+        FExtendCellType::resetToInitialState();
+    }
 };
 
 

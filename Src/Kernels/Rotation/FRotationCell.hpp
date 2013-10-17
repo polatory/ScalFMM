@@ -138,4 +138,21 @@ public:
     }
 };
 
+template <int P>
+class FTypedRotationCell : public FRotationCell<P>, public FExtendCellType {
+public:
+    void save(FBufferWriter& buffer) const{
+        FRotationCell<P>::save(buffer);
+        FExtendCellType::save(buffer);
+    }
+    void restore(FBufferReader& buffer){
+        FRotationCell<P>::restore(buffer);
+        FExtendCellType::restore(buffer);
+    }
+    void resetToInitialState(){
+        FRotationCell<P>::resetToInitialState();
+        FExtendCellType::resetToInitialState();
+    }
+};
+
 #endif // FROTATIONCELL_HPP
