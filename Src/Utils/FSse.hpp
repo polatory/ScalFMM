@@ -5,7 +5,7 @@
 #include <emmintrin.h>  //SSE2
 #include <pmmintrin.h> //SSE3
 #include <tmmintrin.h>  //SSSE3
-#include <smmintrin.h> // SSE4
+//#include <smmintrin.h> // SSE4
 
 #ifdef __INTEL_COMPILER
 
