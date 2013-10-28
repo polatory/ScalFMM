@@ -248,7 +248,7 @@ public:
 
     /** The size to send a leaf */
     int getSavedSize() const{
-        return int(nbParticles * (3 * sizeof(FReal) + NbAttributesPerParticle * sizeof(AttributeClass)));
+      return int(sizeof(nbParticles) + nbParticles * (3 * sizeof(FReal) + NbAttributesPerParticle * sizeof(AttributeClass)));
     }
 
     /** Save the current cell in a buffer */
