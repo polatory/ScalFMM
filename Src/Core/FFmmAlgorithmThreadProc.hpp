@@ -507,11 +507,10 @@ private:
 
 	// Which cell potentialy needs other data and in the same time
 	// are potentialy needed by other
-	int neighborsPosition[189];
 	MortonIndex neighborsIndexes[189];
 	for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
 	  // Find the M2L neigbors of a cell
-	  const int counter = getInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndexes, neighborsPosition);
+	  const int counter = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndexes);
 
 	  memset(alreadySent, false, sizeof(bool) * nbProcess);
 	  bool needOther = false;
@@ -739,7 +738,7 @@ private:
 	  for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
 	    // compute indexes
 	    memset(neighbors, 0, 343 * sizeof(CellClass*));
-	    const int counterNeighbors = getInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition);
+	    const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
 
 	    int counter = 0;
 	    // does we receive this index from someone?
@@ -985,7 +984,7 @@ private:
       }
 
       // Number of cells max
-      const int limite = 1 << (this->OctreeHeight - 1);
+      //const int limite = 1 << (this->OctreeHeight - 1);
       // pointer to send
       FVector<typename OctreeClass::Iterator>*const toSend = new FVector<typename OctreeClass::Iterator>[nbProcess];
 
@@ -999,14 +998,13 @@ private:
       //Will store the indexes of the neighbors of current cell
       MortonIndex indexesNeighbors[26];
       //Obviously unused
-      int uselessIndexArray[26];
+      //int uselessIndexArray[26];
 
       for(int idxLeaf = 0 ; idxLeaf < this->numberOfLeafs ; ++idxLeaf){
 	memset(alreadySent, 0, sizeof(int) * nbProcess);
 	bool needOther = false;
 	//Get the neighbors of current cell in indexesNeighbors, and their number in neighCount
-	const int neighCount = getNeighborsIndexes(iterArray[idxLeaf].getCurrentGlobalCoordinate(), limite, 
-						   indexesNeighbors, uselessIndexArray);
+	const int neighCount = (iterArray[idxLeaf].getCurrentGlobalCoordinate()).getNeighborsIndexes(OctreeHeight,indexesNeighbors);
 	//Loop over the neighbor leafs
 	for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
 	  //Test if leaf belongs to someone else (false if it's mine)
@@ -1053,16 +1051,16 @@ private:
       
       {//TODO : remove 
 	//Print the globalReceiveMap for Process 0
-	if(idProcess == 0)
-	  {
-	    printf("\n Proc 0 :: \n");
-	    for(int u = 0 ; u < nbProcess ; ++u){
-	      for(int v = 0 ; v < nbProcess ; ++v){
-		printf("\t %d",globalReceiveMap[u*nbProcess+v]);
-	      }
-	      printf("\n");
-	    }
-	  }
+	// if(idProcess == 0)
+	//   {
+	//     printf("\n Proc 0 :: \n");
+	//     for(int u = 0 ; u < nbProcess ; ++u){
+	//       for(int v = 0 ; v < nbProcess ; ++v){
+	// 	printf("\t %d",globalReceiveMap[u*nbProcess+v]);
+	//       }
+	//       printf("\n");
+	//     }
+	//   }
       }
       
 
@@ -1084,10 +1082,6 @@ private:
 	  sendBuffer[idxProc] = new FBufferWriter(globalReceiveMap[idProcess*nbProcess+idxProc]); 
 	  // << is equivalent of write().
 	  (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
-	  if(idProcess == 0)
-	    {
-	      printf("Proc 0 :: toSend[1].getSize()==%d\n",toSend[1].getSize());
-	    }
 	  for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
 	    (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
 	    toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
@@ -1264,7 +1258,6 @@ private:
       MortonIndex indexesNeighbors[27];
       int indexArray[26];
       // Box limite
-      const int limite = 1 << (this->OctreeHeight - 1);
       const int nbLeafToProceed = leafsNeedOtherData.getSize();
 
 #pragma omp for
@@ -1276,7 +1269,7 @@ private:
 	memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
 	// Take possible data
-	const int nbNeigh = getNeighborsIndexes(currentIter.coord, limite, indexesNeighbors, indexArray);
+	const int nbNeigh = currentIter.coord.getNeighborsIndexes(OctreeHeight, indexesNeighbors, indexArray);
 
 	for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
 	  if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
@@ -1313,82 +1306,6 @@ private:
 
   }
 
-  /* @brief Compute the cells in neighborhood of a given cell  
-   * @param center cell which neigbors we are looking for 
-   * @param limite 
-   * @param indexes target array to store the MortonIndexes computed
-   * @param indexInArray store 
-   */
-  int getNeighborsIndexes(const FTreeCoordinate& center, const int limite, MortonIndex indexes[26], int indexInArray[26]) const{
-    int idxNeig = 0;
-    // We test all cells around
-    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
-      if(!FMath::Between(center.getX() + idxX,0, limite)) continue;
-
-      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
-	if(!FMath::Between(center.getY() + idxY,0, limite)) continue;
-
-	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-	  if(!FMath::Between(center.getZ() + idxZ,0, limite)) continue;
-
-	  // if we are not on the current cell
-	  if( idxX || idxY || idxZ ){
-	    const FTreeCoordinate other(center.getX() + idxX, center.getY() + idxY, center.getZ() + idxZ);
-	    indexes[ idxNeig ] = other.getMortonIndex(this->OctreeHeight - 1);
-	    indexInArray[ idxNeig ] = ((idxX+1)*3 + (idxY+1)) * 3 + (idxZ+1);
-	    ++idxNeig;
-	  }
-	}
-      }
-    }
-    return idxNeig;
-  }
-
-  int getInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
-
-    // Then take each child of the parent's neighbors if not in directNeighbors
-    // Father coordinate
-    const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
-
-    // Limite at parent level number of box (split by 2 by level)
-    const int limite = FMath::pow2(inLevel-1);
-
-    int idxNeighbors = 0;
-    // We test all cells around
-    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
-      if(!FMath::Between(parentCell.getX() + idxX,0,limite)) continue;
-
-      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
-	if(!FMath::Between(parentCell.getY() + idxY,0,limite)) continue;
-
-	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
-	  if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
-
-	  // if we are not on the current cell
-	  if( idxX || idxY || idxZ ){
-	    const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-	    const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
-
-	    // For each child
-	    for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
-	      const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
-	      const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
-	      const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
-
-	      // Test if it is a direct neighbor
-	      if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
-		// add to neighbors
-		inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
-		inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
-	      }
-	    }
-	  }
-	}
-      }
-    }
-
-    return idxNeighbors;
-  }
 };
 
 
