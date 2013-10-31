@@ -124,7 +124,6 @@ public :
   /** Destructor
    */
   virtual ~FMpiBufferReader(){
-    delete &array;
   }
   
   /** Get the memory area */
@@ -156,9 +155,9 @@ public :
   template <class ClassType>
   ClassType getValue(){
     ClassType value;
-    long int currentIndex = array.getSize();
+    int currentIndex = array.getSize();
     array.incIndex(sizeof(value));
-    MPI_Unpack(array.data(),sizeof(ClassType),&currentIndex,&value,1,FMpi::GetType(value),*comm);
+    MPI_Unpack(array.data(),sizeof(ClassType),&currentIndex,&value,1,FMpi::GetType(value),comm);
     return value;
   }
 
@@ -167,7 +166,7 @@ public :
   void fillValue(ClassType* const inValue){
     int currentIndex = array.getSize();
     array.incIndex(sizeof(ClassType));
-    MPI_Pack(inValue,1,FMpi::GetType(inValue),array.data(),array.getCapacity(),&currentIndex,*comm);
+    MPI_Pack(inValue,1,FMpi::GetType(*inValue),array.data(),array.getCapacity(),&currentIndex,comm);
   }
 
   /** Fill one/many value(s) with memcpy */
@@ -175,12 +174,12 @@ public :
   void fillArray(ClassType* const inArray, const int inSize){
     int currentIndex = array.getSize();
     array.incIndex(sizeof(ClassType) * inSize);
-    MPI_Pack(inArray,inSize,FMpi::GetType(inArray),array.data(),array.getCapacity(),&currentIndex,*comm);
+    MPI_Pack(inArray,inSize,FMpi::GetType(*inArray),array.data(),array.getCapacity(),&currentIndex,comm);
   }
 
   /** Same as fillValue */
   template <class ClassType>
-  FBufferReader& operator>>(ClassType& object){
+  FMpiBufferReader& operator>>(ClassType& object){
     fillValue(&object);
     return *this;
   }

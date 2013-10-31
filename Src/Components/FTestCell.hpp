@@ -16,7 +16,8 @@
 #ifndef FTESTCELL_HPP
 #define FTESTCELL_HPP
 
-
+#include "../Containers/FMpiBufferReader.hpp"
+#include "../Containers/FMpiBufferWriter.hpp"
 #include "FBasicCell.hpp"
 
 /**
@@ -93,6 +94,44 @@ public:
     void deserializeDown(FBufferReader& buffer){
         buffer >> this->dataDown;
     }
+
+  /////////////////////////////////////////////////////
+  ///////////////  Test with FMpiBuffer*  /////////////
+  /////////////////////////////////////////////////////
+
+    /** Save the current cell in a buffer */
+    void save(FMpiBufferWriter& buffer) const{
+        FBasicCell::save(buffer);
+        buffer << dataDown << dataUp;
+    }
+
+    /** Restore the current cell from a buffer */
+    void restore(FMpiBufferReader& buffer){
+        FBasicCell::restore(buffer);
+        buffer >> dataDown >> dataUp;
+    }
+
+    /////////////////////////////////////////////////
+
+    /** Serialize only up data in a buffer */
+    void serializeUp(FMpiBufferWriter& buffer) const {
+        buffer << this->dataUp;
+    }
+    /** Deserialize only up data in a buffer */
+    void deserializeUp(FMpiBufferReader& buffer){
+        buffer >> this->dataUp;
+    }
+
+    /** Serialize only down data in a buffer */
+    void serializeDown(FMpiBufferWriter& buffer) const {
+        buffer << this->dataDown;
+    }
+    /** Deserialize only up data in a buffer */
+    void deserializeDown(FMpiBufferReader& buffer){
+        buffer >> this->dataDown;
+    }
+  
+
 };
 
 

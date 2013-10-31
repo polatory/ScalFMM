@@ -21,6 +21,9 @@
 #include "../Containers/FTreeCoordinate.hpp"
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FBufferWriter.hpp"
+#include "../Containers/FMpiBufferReader.hpp"
+#include "../Containers/FMpiBufferWriter.hpp"
+
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -66,6 +69,21 @@ public:
     void restore(FBufferReader& buffer) {
         buffer >> mortonIndex;
     }
+
+  /////////////////////////////////////////////////////
+  ///////////////  Test with FMpiBuffer*  /////////////
+  /////////////////////////////////////////////////////
+
+  /** Save current object */
+  void save(FMpiBufferWriter& buffer) const {
+    buffer << mortonIndex;
+  }
+  /** Retrieve current object */
+  void restore(FMpiBufferReader& buffer) {
+    buffer >> mortonIndex;
+  }
+
+
 };
 
 

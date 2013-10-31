@@ -124,7 +124,6 @@ public:
   
   /** Destructor */
   virtual ~FMpiBufferWriter(){
-    delete &array;
   }
   
   /** Get allocated memory pointer */
@@ -165,17 +164,17 @@ public:
   /** Write back, position + sizeof(object) has to be < size */
   template <class ClassType>
   void writeAt(const int position, const ClassType& object){
-    //(*reinterpret_cast<ClassType*>(&buffer[position])) = object;
-    if(position < array.getSize()){
-      fprintf(stderr,"Aborting : writeAt is overwritting data\n");
+    // //(*reinterpret_cast<ClassType*>(&buffer[position])) = object;
+    // if(position < array.getSize()){
+    //   fprintf(stderr,"Aborting : writeAt is overwritting data\n");
+    // }
+    // else{
+    int temp = position;
+    if(position + ((int)sizeof(ClassType)) < array.getCapacity()){
+      MPI_Pack(const_cast<ClassType*>(&object),1,FMpi::GetType(object),array.data(),array.getCapacity(),&temp,comm);
     }
-    else{
-      int temp = position;
-      if(position + FMpi::GetType(object) < array.getCapacity()){
-	MPI_Pack(&object,1,FMpi::GetType(object),array.data(),array.getCapacity(),&temp,comm);
-      }
-      array.setIndex(temp);
-    }
+    array.setIndex(temp);
+    // }
   }
   
   /** Write an array 

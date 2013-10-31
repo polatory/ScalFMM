@@ -31,6 +31,8 @@
 
 #include "../Containers/FBufferWriter.hpp"
 #include "../Containers/FBufferReader.hpp"
+#include "../Containers/FMpiBufferWriter.hpp"
+#include "../Containers/FMpiBufferReader.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -200,6 +202,7 @@ public:
     if(operationsToProceed & FFmmP2M) bottomPass();
 
     if(operationsToProceed & FFmmM2M) upwardPass();
+    printf("So far so good \n");
 
     if(operationsToProceed & FFmmM2L) transferPass();
 
@@ -248,6 +251,7 @@ private:
     FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
 
+   
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -278,9 +282,9 @@ private:
     MPI_Status status[14];
 
     // Maximum data per message is:
-    FBufferWriter sendBuffer;
+    FMpiBufferWriter sendBuffer(comm.getComm());
     const int recvBufferOffset = 8 * MaxSizePerCell + 1;
-    FBufferReader recvBuffer(nbProcess * recvBufferOffset);
+    FMpiBufferReader recvBuffer(comm.getComm(), nbProcess * recvBufferOffset);
     CellClass recvBufferCells[8];
 
     int firstProcThatSend = idProcess + 1;
@@ -333,7 +337,7 @@ private:
 	  --sendToProc;
 	}
 
-	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
+	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
       }
 
       // We may need to receive something
@@ -361,7 +365,7 @@ private:
 	    hasToReceive = true;
 
 	    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE,
+	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
 			idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
 	    }
 	  }
@@ -425,7 +429,6 @@ private:
 	  firstProcThatSend = endProcThatSend - 1;
 	}
       }
-
       sendBuffer.reset();
       recvBuffer.seek(0);
     }
@@ -435,7 +438,7 @@ private:
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
-
+    printf("Almost finished\n");
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -1064,14 +1067,14 @@ private:
       }
       
 
-      // Prepare receive
+      //Prepare receive
       for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-	if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
-	  //allocate buffer of right size
-	  recvBuffer[idxProc] = new FBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
-	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
-				     idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
-	}
+      	if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
+      	  //allocate buffer of right size
+      	  recvBuffer[idxProc] = new FBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
+      	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
+      				     idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+      	}
       }
       
       nbMessagesToRecv = iterRequest;
@@ -1080,7 +1083,7 @@ private:
 	if(toSend[idxProc].getSize() != 0){
 	  //sendBuffer[idxProc] = new FBufferWriter(partsToSend[idxProc]); //Could be read out of globalReceiveMap
 	  sendBuffer[idxProc] = new FBufferWriter(globalReceiveMap[idProcess*nbProcess+idxProc]); 
-	  // << is equivalent of write().
+	  // << is equivalent to write().
 	  (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
 	  for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
 	    (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
@@ -1089,22 +1092,12 @@ private:
 	  
 	  //TEST BERENGER
 	  //if(sendBuffer[idxProc]->getSize() != partsToSend[idxProc]){
-	  
-	  // {
-	  //   MPI_Barrier(MPI_COMM_WORLD);
-	  // printf("Proc %d :: \t sizeof SendBuffer %d \t sizeof partToSend%d \t diff %d \t sizeof RecvBuffer%d\n",
-	  // 	   idProcess,sendBuffer[idxProc]->getSize(),partsToSend[idxProc],sendBuffer[idxProc]->getSize() - partsToSend[idxProc],
-	  // 	   recvBuffer[idxProc]->getSize()+1032);
-	  //   MPI_Barrier(MPI_COMM_WORLD);
-	  // }
-
-
 	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
 				      idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 	  
 	}
       }
-
+      
       delete[] toSend;
     }
     FLOG(prepareCounter.tac());
