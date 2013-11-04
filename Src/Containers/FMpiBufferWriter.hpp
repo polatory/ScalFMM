@@ -16,6 +16,7 @@
 #ifndef FMPIBUFFERWRITER_HPP
 #define FMPIBUFFERWRITER_HPP
 
+#include <memory>
 
 #include "../Utils/FMpi.hpp"
 
@@ -27,177 +28,97 @@
  * finally use data pointer as you like
  */
 class FMpiBufferWriter {
-  
-private :
-  //Classe FMpiVector, used only by FMpiBuffer.
-  template<class ObjectType>
-  class FMpiVector {
-  protected :
-    static const int DefaultSize = 10;
-    ObjectType* array;                    //memory area
-    int capacity;                         //Capacity of the array
-    long int index;                       //current position in Byte !!
-  
-  public:
-    FMpiVector():
-      array(0),
-      capacity(DefaultSize),
-      index(0){
-      array = reinterpret_cast<ObjectType*>(new char[sizeof(ObjectType)* DefaultSize]);
-    }
+    const MPI_Comm mpiComm;         //< Communicator needed by MPI_Pack functions
+    const int arrayCapacity;        //< Allocated Space
+    std::unique_ptr<char[]> array;  //< Allocated Array
+    int currentIndex;               //< Currently filled space
 
-    FMpiVector(const int inCapa):
-      array(0),
-      capacity(inCapa),
-      index(0){
-      array = reinterpret_cast<ObjectType*>(new char[sizeof(ObjectType)* inCapa]);
+    /** Test and exit if not enought space */
+    void assertRemainingSpace(const size_t requestedSpace) const {
+        if(int(currentIndex + requestedSpace) > arrayCapacity){
+            printf("Error FMpiBufferWriter has not enough space\n");
+            exit(0);
+        }
     }
-
-    virtual ~FMpiVector(){
-      delete[] reinterpret_cast< char* >(array);
-    }
-
-    //To get the capacity
-    const int getCapacity() const{
-      return this->capacity;
-    }
-    
-    //To get the array
-    ObjectType * data(){
-      return array;
-    }
-    
-    const ObjectType * data() const{
-      return array;
-    }
-    
-    //To delete all the element stored of the array
-    void clear(){
-      while(0 < index){
-	(&array[--index])->~ObjectType();
-      }
-    }
-    
-    //To get how much space is used
-    long int getSize() const{
-      return this->index;
-    }
-
-    //To get how many objects are stored
-    int getObjectsSize(){
-      return (this->index / sizeof(ObjectType));
-    }
-    
-    //To inc the index
-    //Usually used with array.incIndex(sizeof(my_object_stored));
-    void incIndex(const int inInc){
-      if(index + inInc > capacity){
-	fprintf(stderr,"Aborting : index array out of range\n");
-	exit(0);
-      }
-      else{
-	this->index+=inInc;
-      }
-    }
-    
-    //To set the index
-    void setIndex(const int inInd){
-      if(inInd>capacity){
-	fprintf(stderr,"Aborting : index array out of range\n");
-	exit(0);
-      }
-      else{
-	this->index = inInd;
-      }
-    }
-  };
-
-  const MPI_Comm comm;      // Communicator needed by MPI_Pack functions
-  FMpiVector<char> array;
 
 public:
-  /** Constructor with a default capacity of 512 bytes */
-  FMpiBufferWriter(const MPI_Comm inComm, const int inCapacity = 512): 
-    comm(inComm),
-    array(inCapacity)
-  {}
-  
-  /** Destructor */
-  virtual ~FMpiBufferWriter(){
-  }
-  
-  /** Get allocated memory pointer */
-  char* data(){
-    return array.data();
-  }
+    /** Constructor with a default arrayCapacity of 512 bytes */
+    FMpiBufferWriter(const MPI_Comm inComm, const int inCapacity = 512):
+        mpiComm(inComm), arrayCapacity(inCapacity), array(new char[inCapacity]), currentIndex(0){
+    }
 
-  /** Get allocated memory pointer */
-  const char* data() const {
-    return array.data();
-  }
+    /** Destructor */
+    virtual ~FMpiBufferWriter(){
+    }
 
-  /** Get the filled space */
-  int getSize() const {
-    return array.getSize();
-  }
+    /** Get allocated memory pointer */
+    char* data(){
+        return array.get();
+    }
 
-  /** Write data by packing cpy */
-  template <class ClassType>
-  void write(const ClassType& object){
-    //        buffer.memocopy(reinterpret_cast<const char*>(&object), int(sizeof(ClassType)));
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(ClassType));
-    MPI_Pack(const_cast<ClassType*>(&object),1,FMpi::GetType(object),array.data(),array.getCapacity(),&currentIndex,comm);
-  }
+    /** Get allocated memory pointer */
+    const char* data() const {
+        return array.get();
+    }
 
-  /**
+    /** Get the filled space */
+    int getSize() const {
+        return currentIndex;
+    }
+
+    /** Get the allocated space */
+    int getCapacity() const {
+        return arrayCapacity;
+    }
+
+    /** Write data by packing cpy */
+    template <class ClassType>
+    void write(const ClassType& object){
+        assertRemainingSpace(sizeof(ClassType));
+        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
+    }
+
+    /**
    * Allow to pass rvalue to write
    */
-  template <class ClassType>
-  void write(const ClassType&& object){
-    //        buffer.memocopy(reinterpret_cast<const char*>(&object), int(sizeof(ClassType)));
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(ClassType));
-    MPI_Pack(const_cast<ClassType*>(&object),1,FMpi::GetType(object),array.data(),array.getCapacity(),&currentIndex,comm);
-  }
-  
-  /** Write back, position + sizeof(object) has to be < size */
-  template <class ClassType>
-  void writeAt(const int position, const ClassType& object){
-    // //(*reinterpret_cast<ClassType*>(&buffer[position])) = object;
-    // if(position < array.getSize()){
-    //   fprintf(stderr,"Aborting : writeAt is overwritting data\n");
-    // }
-    // else{
-    int temp = position;
-    if(position + ((int)sizeof(ClassType)) < array.getCapacity()){
-      MPI_Pack(const_cast<ClassType*>(&object),1,FMpi::GetType(object),array.data(),array.getCapacity(),&temp,comm);
+    template <class ClassType>
+    void write(const ClassType&& object){
+        assertRemainingSpace(sizeof(ClassType));
+        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
     }
-    array.setIndex(temp);
-    // }
-  }
-  
-  /** Write an array 
+
+    /** Write back, position + sizeof(object) has to be < size */
+    template <class ClassType>
+    void writeAt(const int position, const ClassType& object){
+        if(position + sizeof(ClassType) > arrayCapacity){
+            printf("Not enought space\n");
+            exit(0);
+        }
+        int noConstPosition = position;
+        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &noConstPosition, mpiComm);
+        currentIndex = FMath::Max(currentIndex, noConstPosition);
+    }
+
+    /** Write an array
    * Warning : inSize is a number of ClassType object to write, not a size in bytes
    */
-  template <class ClassType>
-  void write(const ClassType* const objects, const int inSize){
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(ClassType) * inSize);
-    MPI_Pack(objects,inSize,FMpi::GetType(*objects),array.data(),array.getCapacity(),&currentIndex,comm);
-  }
-  
-  /** Equivalent to write */
-  template <class ClassType>
-  FMpiBufferWriter& operator<<(const ClassType& object){
-    write(object);
-    return *this;
-  }
-  
-  /** Reset the writing index, but do not change the capacity */
-  void reset(){
-    array.clear();
-  }
+    template <class ClassType>
+    void write(const ClassType* const objects, const int inSize){
+        assertRemainingSpace(sizeof(ClassType) * inSize);
+        MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm);
+    }
+
+    /** Equivalent to write */
+    template <class ClassType>
+    FMpiBufferWriter& operator<<(const ClassType& object){
+        write(object);
+        return *this;
+    }
+
+    /** Reset the writing index, but do not change the arrayCapacity */
+    void reset(){
+        currentIndex = 0;
+    }
 };
 
 
