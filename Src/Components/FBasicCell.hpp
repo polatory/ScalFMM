@@ -41,27 +41,17 @@ public:
     }
 
     /** Save the current cell in a buffer */
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FExtendMortonIndex::save(buffer);
         FExtendCoordinate::save(buffer);
     }
     /** Restore the current cell from a buffer */
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FExtendMortonIndex::restore(buffer);
         FExtendCoordinate::restore(buffer);
     }
-
-    /** Save the current cell in a buffer */
-    void save(FMpiBufferWriter& buffer) const{
-        FExtendMortonIndex::save(buffer);
-        FExtendCoordinate::save(buffer);
-    }
-    /** Restore the current cell from a buffer */
-    void restore(FMpiBufferReader& buffer){
-        FExtendMortonIndex::restore(buffer);
-        FExtendCoordinate::restore(buffer);
-    }
-
 
     /** Do nothing */
     void resetToInitialState(){

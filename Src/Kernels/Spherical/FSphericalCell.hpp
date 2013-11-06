@@ -16,9 +16,6 @@
 #ifndef FSPHERICALCELL_HPP
 #define FSPHERICALCELL_HPP
 
-
-#include "../../Components/FAbstractSerializable.hpp"
-#include "../../Components/FAbstractSendable.hpp"
 #include "../../Utils/FComplexe.hpp"
 #include "../../Utils/FMemUtils.hpp"
 

@@ -36,7 +36,7 @@ class FMpiBufferReader {
   /** Test and exit if not enought space */
   void assertRemainingSpace(const size_t requestedSpace) const {
     if(int(currentIndex + requestedSpace) > arrayCapacity){
-      printf("Error FMpiBufferWriter has not enough space\n");
+      printf("Error FMpiBufferReader has not enough space\n");
       exit(0);
     }
   }

@@ -19,10 +19,6 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
-#include "../Containers/FMpiBufferReader.hpp"
-#include "../Containers/FMpiBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -69,26 +65,15 @@ public:
 
 
     /** Save current object */
-    void save(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
         coordinate.save(buffer);
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
         coordinate.restore(buffer);
     }
-  
-  /////////////////////////////////////////////////////
-  ///////////////  Test with FMpiBuffer*  /////////////
-  /////////////////////////////////////////////////////
-  
-  /** Save current object */
-  void save(FMpiBufferWriter& buffer) const {
-    coordinate.save(buffer);
-  }
-  /** Retrieve current object */
-  void restore(FMpiBufferReader& buffer) {
-    coordinate.restore(buffer);
-  }
   
 };
 
