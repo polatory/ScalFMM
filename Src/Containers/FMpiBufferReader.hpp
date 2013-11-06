@@ -16,6 +16,7 @@
 #ifndef FMPIBUFFERREADER_HPP
 #define FMPIBUFFERREADER_HPP
 
+#include <memory>
 #include "../Utils/FMpi.hpp"
 
 
@@ -27,98 +28,26 @@
  * finally use data pointer as you like
  */
 class FMpiBufferReader {
+  const MPI_Comm comm;            //< Communicator needed by MPI_Pack functions
+  const int arrayCapacity;        //< Allocated space
+  std::unique_ptr<char[]> array;  //< Allocated Array
+  int currentIndex;
 
-private:
-  //Classe FMpiVector, used only by FMpiBuffer
-  template<class ObjectType>
-  class FMpiVector {
-      protected :
-    static const int DefaultSize = 10;
-    ObjectType* array;                    //memory area
-    int capacity;                         //Capacity of the array
-    long int index;                       //current position in Byte !!
-  
-  public:
-    FMpiVector():
-      array(0),
-      capacity(DefaultSize),
-      index(0){
-      array = reinterpret_cast<ObjectType*>(new char[sizeof(ObjectType)* DefaultSize]);
+  /** Test and exit if not enought space */
+  void assertRemainingSpace(const size_t requestedSpace) const {
+    if(int(currentIndex + requestedSpace) > arrayCapacity){
+      printf("Error FMpiBufferWriter has not enough space\n");
+      exit(0);
     }
-
-    FMpiVector(const int inCapa):
-      array(0),
-      capacity(inCapa),
-      index(0){
-      array = reinterpret_cast<ObjectType*>(new char[sizeof(ObjectType)* inCapa]);
-    }
-
-    virtual ~FMpiVector(){
-      delete[] reinterpret_cast< char* >(array);
-    }
-
-    //To get the capacity
-    const int getCapacity() const{
-      return this->capacity;
-    }
-    
-    //To get the array
-    ObjectType * data(){
-      return array;
-    }
-    
-    const ObjectType * data() const{
-      return array;
-    }
-    
-    //To delete all the element stored of the array
-    void clear(){
-      while(0 < index){
-	(&array[--index])->~ObjectType();
-      }
-    }
-    
-    //To get how much space is used
-    long int getSize() const{
-      return this->index;
-    }
-
-    //To get how many objects are stored
-    int getObjectsSize(){
-      return (this->index / sizeof(ObjectType));
-    }
-    
-    //To inc the index
-    //Usually used with array.incIndex(sizeof(my_object_stored));
-    void incIndex(const int inInc){
-      if(index + inInc > capacity){
-	fprintf(stderr,"Aborting : index array out of range\n");
-	exit(0);
-      }
-      else{
-	this->index+=inInc;
-      }
-    }
-    
-    //To set the index
-    void setIndex(const int inInd){
-      if(inInd>capacity){
-	fprintf(stderr,"Aborting : index array out of range\n");
-	exit(0);
-      }
-      else{
-	this->index = inInd;
-      }
-    }
-  };
-
-  MPI_Comm comm;
-  FMpiVector<char> array;
+  }
 
 public :
-  FMpiBufferReader(MPI_Comm inComm, const int inCapacity = 0):
+  /*Constructor with a default arrayCapacity of 512 bytes */
+  FMpiBufferReader(const MPI_Comm inComm, const int inCapacity = 512):
     comm(inComm),
-    array(inCapacity)
+    arrayCapacity(inCapacity),
+    array(new char[inCapacity]),
+    currentIndex(0)
   {}
   
   /** Destructor
@@ -126,55 +55,76 @@ public :
   virtual ~FMpiBufferReader(){
   }
   
-  /** Get the memory area */
+  /** Get allocated memory pointer */
   char* data(){
-    return array.data();
+    return array.get();
   }
   
-  /** Get the memory area */
+  /** Get allocated memory pointer */
   const char* data() const {
-    return array.data();
+    return array.get();
   }
   
-  /** Size of the memory initialized */
+  /** get the filled space */
   int getSize() const{
-    return array.getSize();
+    return currentIndex;
+  }
+
+  /** Size of the memory initialized */
+  int getCapacity() const{
+    return arrayCapacity;
   }
 
   /** Move the read index to a position */
   void seek(const int inIndex){
-    array.setIndex(inIndex);
+    if(inIndex > arrayCapacity){
+      printf("FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough");
+      exit(0);
+    }
+    else{
+      currentIndex = inIndex;
+    }
   }
 
   /** Get the read position */
   int tell() const {
-    return array.getSize();
+    return currentIndex;
   }
   
   /** Get a value with memory cast */
   template <class ClassType>
   ClassType getValue(){
     ClassType value;
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(value));
-    MPI_Unpack(array.data(),sizeof(ClassType),&currentIndex,&value,1,FMpi::GetType(value),comm);
+    int previousIndex = currentIndex;
+    seek(sizeof(value) + previousIndex);
+    MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm);
+    return value;
+  }
+
+  /** Get a value with memory cast at a specified index */
+  template <class ClassType>
+  ClassType getValue(const int ind){
+    ClassType value;
+    int previousIndex = ind;
+    seek(sizeof(value)+ind);
+    MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm);
     return value;
   }
 
   /** Fill a value with memory cast */
   template <class ClassType>
   void fillValue(ClassType* const inValue){
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(ClassType));
-    MPI_Pack(inValue,1,FMpi::GetType(*inValue),array.data(),array.getCapacity(),&currentIndex,comm);
+    int previousIndex = currentIndex;
+    seek(sizeof(ClassType) + previousIndex);
+    MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inValue,1,FMpi::GetType(*inValue),comm);
   }
 
   /** Fill one/many value(s) with memcpy */
   template <class ClassType>
   void fillArray(ClassType* const inArray, const int inSize){
-    int currentIndex = array.getSize();
-    array.incIndex(sizeof(ClassType) * inSize);
-    MPI_Pack(inArray,inSize,FMpi::GetType(*inArray),array.data(),array.getCapacity(),&currentIndex,comm);
+    int previousIndex = currentIndex;
+    seek(sizeof(ClassType) * inSize + previousIndex);
+    MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inArray,inSize,FMpi::GetType(*inArray),comm);
   }
 
   /** Same as fillValue */

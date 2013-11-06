@@ -202,7 +202,6 @@ public:
     if(operationsToProceed & FFmmP2M) bottomPass();
 
     if(operationsToProceed & FFmmM2M) upwardPass();
-    printf("So far so good \n");
 
     if(operationsToProceed & FFmmM2L) transferPass();
 
@@ -282,9 +281,9 @@ private:
     MPI_Status status[14];
 
     // Maximum data per message is:
-    FMpiBufferWriter sendBuffer(comm.getComm());
-    const int recvBufferOffset = 8 * MaxSizePerCell + 1;
-    FMpiBufferReader recvBuffer(comm.getComm(), nbProcess * recvBufferOffset);
+    FBufferWriter sendBuffer/*(comm.getComm())*/;
+    const int recvBufferOffset = (8 * MaxSizePerCell + 1);
+    FBufferReader recvBuffer(/*comm.getComm(),*/ nbProcess*recvBufferOffset);
     CellClass recvBufferCells[8];
 
     int firstProcThatSend = idProcess + 1;
@@ -321,7 +320,8 @@ private:
 	 && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
 
 	char state = 0;
-	sendBuffer.write(char(0));
+	sendBuffer.write(state);
+	printf("Index position after writing first state(%d) :: %d\n",state,sendBuffer.getSize());
 
 	const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
 	for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -331,23 +331,27 @@ private:
 	    state = char(state | (0x1 << idxChild));
 	  }
 	}
+	printf("state just before Send :: %d \n",state);
 	sendBuffer.writeAt(0,state);
+	printf("what is it in sendBuffer :: %d\n", sendBuffer.data()[0]);
 
 	while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , sendToProc - 1).max){
 	  --sendToProc;
 	}
 
-	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
+	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
       }
 
       // We may need to receive something
       bool hasToReceive = false;
       int endProcThatSend = firstProcThatSend;
 
-      if(idProcess != nbProcess - 1){
+      if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
 	while(firstProcThatSend < nbProcess
 	      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) < (getWorkingInterval((idxLevel+1), idProcess).max)){
+	  // Second condition :: while firstProcThatSend max morton index is < to myself max interval
 	  ++firstProcThatSend;
+	  printf("\n \n PLOP \n \n");
 	}
 
 	if(firstProcThatSend < nbProcess &&
@@ -365,7 +369,7 @@ private:
 	    hasToReceive = true;
 
 	    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
+	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE,
 			idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
 	    }
 	  }
@@ -402,7 +406,7 @@ private:
 	  for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
 	    recvBuffer.seek(idxProc * recvBufferOffset);
 	    int state = int(recvBuffer.getValue<char>());
-
+	    printf("state read in recv :: %d \n",state);
 	    int position = 0;
 	    while( state && position < 8){
 	      while(!(state & 0x1)){
@@ -411,7 +415,7 @@ private:
 	      }
 
 	      fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
-
+	      
 	      recvBufferCells[position].deserializeUp(recvBuffer);
 	      currentChild[position] = (CellClass*) &recvBufferCells[position];
 
@@ -438,7 +442,6 @@ private:
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
-    printf("Almost finished\n");
   }
 
   /////////////////////////////////////////////////////////////////////////////
