@@ -86,11 +86,13 @@ public:
 template <int P, int order>
 class FTypedTaylorCell : public FTaylorCell<P,order>, public FExtendCellType {
 public:
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FTaylorCell<P,order>::save(buffer);
         FExtendCellType::save(buffer);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FTaylorCell<P,order>::restore(buffer);
         FExtendCellType::restore(buffer);
     }

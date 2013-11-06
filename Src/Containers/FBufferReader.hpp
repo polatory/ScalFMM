@@ -17,7 +17,7 @@
 #define FBUFFERREADER_HPP
 
 #include "FVector.hpp"
-
+#include "FAbstractBuffer.hpp"
 
 /** @author Berenger Bramas
   * This class provide a fast way to manage a memory and convert
@@ -26,7 +26,7 @@
   * Specifie the needed space with reserve, then fill it with data
   * finaly read and convert.
   */
-class FBufferReader {
+class FBufferReader : public FAbstractBufferReader {
     FVector<char> buffer;   //< The memory buffer
     int index;              //< The current index reading position
 

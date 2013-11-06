@@ -16,9 +16,6 @@
 #ifndef FEXTENDCELLTYPE_HPP
 #define FEXTENDCELLTYPE_HPP
 
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendCellType
@@ -73,12 +70,14 @@ public:
 
 public:
     /** Save current object */
-    void save(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
         buffer << containsTargets;
         buffer << containsSources;
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
         buffer >> containsTargets;
         buffer >> containsSources;
     }

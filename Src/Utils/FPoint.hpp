@@ -18,8 +18,6 @@
 
 #include "FMath.hpp"
 #include "FGlobal.hpp"
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -300,12 +298,14 @@ public:
         return output;  // for multiple << operators.
     }
 
-    /** Save current object */
-    void save(FBufferWriter& buffer) const {
+    /** Save current object */    
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
         buffer << data[0] << data[1] << data[2];
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
         buffer >> data[0] >> data[1] >> data[2];
     }
 };

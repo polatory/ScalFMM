@@ -80,11 +80,13 @@ public:
 template <int ORDER, int NVALS = 1>
 class FTypedChebCell : public FChebCell<ORDER,NVALS>, public FExtendCellType {
 public:
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FChebCell<ORDER,NVALS>::save(buffer);
         FExtendCellType::save(buffer);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FChebCell<ORDER,NVALS>::restore(buffer);
         FExtendCellType::restore(buffer);
     }

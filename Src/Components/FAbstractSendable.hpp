@@ -16,9 +16,6 @@
 #ifndef FABSTRACTSENDABLE_HPP
 #define FABSTRACTSENDABLE_HPP
 
-class FBufferReader;
-class FBufferWriter;
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FAbstractSendable
@@ -36,18 +33,30 @@ protected:
     ///////////////////////////////////////////////
 
     /** Save your data */
-    virtual void serializeUp(FBufferWriter&) const  = 0;
+    template <class BufferWriterClass>
+    void serializeUp(BufferWriterClass&) const{
+        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement serializeUp");
+    }
     /** Retrieve your data */
-    virtual void deserializeUp(FBufferReader&) = 0;
+    template <class BufferReaderClass>
+    void deserializeUp(BufferReaderClass&){
+        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeUp");
+    }
 
     ///////////////////////////////////////////////
     // For Downward pass
     ///////////////////////////////////////////////
 
     /** Save your data */
-    virtual void serializeDown(FBufferWriter&) const = 0;
+    template <class BufferWriterClass>
+    void serializeDown(BufferWriterClass&) const{
+        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement serializeDown");
+    }
     /** Retrieve your data */
-    virtual void deserializeDown(FBufferReader&) = 0;
+    template <class BufferReaderClass>
+    void deserializeDown(BufferReaderClass&){
+        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeDown");
+    }
 };
 
 

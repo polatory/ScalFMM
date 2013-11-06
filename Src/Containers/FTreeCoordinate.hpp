@@ -21,6 +21,8 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FMath.hpp"
 
+#include "../Components/FAbstractSerializable.hpp"
+
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FTreeCoordinate
@@ -31,7 +33,7 @@
 * It is directly related to morton index, as interleaves
 * bits from this coordinate make the morton index
 */
-class FTreeCoordinate{
+class FTreeCoordinate : public FAbstractSerializable {
 private:
     int data[3];	//< all box-th position
 

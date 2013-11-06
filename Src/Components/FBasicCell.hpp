@@ -16,7 +16,7 @@
 #ifndef FBASICCELL_HPP
 #define FBASICCELL_HPP
 
-
+#include "FAbstractSerializable.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
 #include "../Extensions/FExtendCoordinate.hpp"
 
@@ -34,7 +34,7 @@
 *
 *
 */
-class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate {
+class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate, public FAbstractSerializable {
 public:
     /** Default destructor */
     virtual ~FBasicCell(){

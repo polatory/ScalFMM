@@ -23,9 +23,6 @@
 
 #include "../../Components/FBasicCell.hpp"
 
-#include "../../Containers/FBufferWriter.hpp"
-#include "../../Containers/FBufferReader.hpp"
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 */
@@ -121,29 +118,35 @@ public:
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable
     ///////////////////////////////////////////////////////
-    void serializeUp(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void serializeUp(BufferWriterClass& buffer) const{
         buffer.write(multipole_exp, PoleSize);
     }
-    void deserializeUp(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeUp(BufferReaderClass& buffer){
         buffer.fillArray(multipole_exp, PoleSize);
     }
 
-    void serializeDown(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void serializeDown(BufferWriterClass& buffer) const{
         buffer.write(local_exp, LocalSize);
     }
-    void deserializeDown(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeDown(BufferReaderClass& buffer){
         buffer.fillArray(local_exp, LocalSize);
     }
 
     ///////////////////////////////////////////////////////
     // to extend Serializable
     ///////////////////////////////////////////////////////
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FBasicCell::save(buffer);
         buffer.write(multipole_exp, PoleSize);
         buffer.write(local_exp, LocalSize);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FBasicCell::restore(buffer);
         buffer.fillArray(multipole_exp, PoleSize);
         buffer.fillArray(local_exp, LocalSize);
@@ -160,11 +163,13 @@ int FSphericalCell::PoleSize(-1);
 */
 class FTypedSphericalCell : public FSphericalCell, public FExtendCellType {
 public:
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FSphericalCell::save(buffer);
         FExtendCellType::save(buffer);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FSphericalCell::restore(buffer);
         FExtendCellType::restore(buffer);
     }

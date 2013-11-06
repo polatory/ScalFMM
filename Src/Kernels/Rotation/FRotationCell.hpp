@@ -23,8 +23,6 @@
 
 #include "../../Components/FBasicCell.hpp"
 
-#include "../../Containers/FBufferWriter.hpp"
-#include "../../Containers/FBufferReader.hpp"
 
 /** This class is a cell used for the rotation based kernel
   * The size of the multipole and local vector are based on a template
@@ -107,29 +105,35 @@ public:
     ///////////////////////////////////////////////////////
     // to extend FAbstractSendable
     ///////////////////////////////////////////////////////
-    void serializeUp(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void serializeUp(BufferWriterClass& buffer) const{
         buffer.write(multipole_exp, MultipoleSize);
     }
-    void deserializeUp(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeUp(BufferReaderClass& buffer){
         buffer.fillArray(multipole_exp, MultipoleSize);
     }
 
-    void serializeDown(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void serializeDown(BufferWriterClass& buffer) const{
         buffer.write(local_exp, LocalSize);
     }
-    void deserializeDown(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeDown(BufferReaderClass& buffer){
         buffer.fillArray(local_exp, LocalSize);
     }
 
     ///////////////////////////////////////////////////////
     // to extend Serializable
     ///////////////////////////////////////////////////////
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FBasicCell::save(buffer);
         buffer.write(multipole_exp, MultipoleSize);
         buffer.write(local_exp, LocalSize);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FBasicCell::restore(buffer);
         buffer.fillArray(multipole_exp, MultipoleSize);
         buffer.fillArray(local_exp, LocalSize);
@@ -139,11 +143,13 @@ public:
 template <int P>
 class FTypedRotationCell : public FRotationCell<P>, public FExtendCellType {
 public:
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FRotationCell<P>::save(buffer);
         FExtendCellType::save(buffer);
     }
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FRotationCell<P>::restore(buffer);
         FExtendCellType::restore(buffer);
     }

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "../Utils/FMpi.hpp"
+#include "FAbstractBuffer.hpp"
 
 /** @author Cyrille Piacibello
  * This class provide the same features as FBufferWriter using MPI_Pack system
@@ -26,7 +27,7 @@
  * then insert back if needed
  * finally use data pointer as you like
  */
-class FMpiBufferWriter {
+class FMpiBufferWriter : public FAbstractBufferWriter {
   const MPI_Comm mpiComm;         //< Communicator needed by MPI_Pack functions
   const int arrayCapacity;        //< Allocated Space
   std::unique_ptr<char[]> array;  //< Allocated Array

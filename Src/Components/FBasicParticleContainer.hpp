@@ -17,6 +17,7 @@
 #define FBASICPARTICLECONTAINER_HPP
 
 #include "FAbstractParticleContainer.hpp"
+#include "FAbstractSerializable.hpp"
 
 #include "../Utils/FAlignedMemory.hpp"
 #include "../Utils/FMath.hpp"
@@ -42,7 +43,7 @@
 * @code AStruct* strucs = container.getAttributes<0>();
 */
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal >
-class FBasicParticleContainer : public FAbstractParticleContainer {
+class FBasicParticleContainer : public FAbstractParticleContainer, public FAbstractSerializable {
 protected:
     /** The number of particles in the container */
     int nbParticles;
@@ -252,7 +253,8 @@ public:
     }
 
     /** Save the current cell in a buffer */
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         buffer << nbParticles;
         for(int idx = 0 ; idx < 3 ; ++idx){
             buffer.write(positions[idx], nbParticles);
@@ -262,7 +264,8 @@ public:
         }
     }
     /** Restore the current cell from a buffer */
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         buffer >> nbParticles;
         if( nbParticles >= allocatedParticles ){
             // allocate memory
