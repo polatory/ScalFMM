@@ -11,8 +11,7 @@ public:
     virtual int getSize() const = 0;
     virtual void seek(const int inIndex) = 0;
     virtual int tell() const  = 0;
-    virtual void reserve(const int nbBytes) = 0;
-    virtual void reset() = 0;
+
     template <class ClassType>
     ClassType getValue(){
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement getValue.");
