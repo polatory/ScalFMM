@@ -16,8 +16,6 @@
 #ifndef FROTATIONCELL_HPP
 #define FROTATIONCELL_HPP
 
-#include "../../Components/FAbstractSerializable.hpp"
-#include "../../Components/FAbstractSendable.hpp"
 #include "../../Utils/FComplexe.hpp"
 #include "../../Utils/FMemUtils.hpp"
 

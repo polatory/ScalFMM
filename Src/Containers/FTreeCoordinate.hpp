@@ -19,11 +19,6 @@
 #include <string>
 
 #include "../Utils/FGlobal.hpp"
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
-#include "../Containers/FMpiBufferReader.hpp"
-#include "../Containers/FMpiBufferWriter.hpp"
-
 #include "../Utils/FMath.hpp"
 
 /**
@@ -251,27 +246,15 @@ public:
     }
 
     /** Save current object */
-    void save(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
         buffer << data[0] << data[1] << data[2];
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
         buffer >> data[0] >> data[1] >> data[2];
     }
-
-  /////////////////////////////////////////////////////
-  ///////////////  Test with FMpiBuffer*  /////////////
-  /////////////////////////////////////////////////////
-  
-  
-  /** Save current object */
-  void save(FMpiBufferWriter& buffer) const {
-    buffer << data[0] << data[1] << data[2];
-  }
-  /** Retrieve current object */
-  void restore(FMpiBufferReader& buffer) {
-    buffer >> data[0] >> data[1] >> data[2];
-  }
   
 
     static std::string MortonToBinary(MortonIndex index, int level){
