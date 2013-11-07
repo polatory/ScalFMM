@@ -327,6 +327,11 @@ int main(int argc, char ** argv){
         return 1;
     }
 
+    std::cout << "Simulation properties :\n";
+    std::cout << "Nb Particles " << loader.getNumberOfParticles() << "\n";
+    std::cout << "Box Width : " << loader.getBoxWidth() << "\n";
+    std::cout << "Box Center : " << loader.getCenterOfBox() << "\n";
+
     // The real tree to work on
     OctreeClass realTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
@@ -371,7 +376,8 @@ int main(int argc, char ** argv){
     else{
         FPoint position;
         FReal physicalValue;
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        const FSize nbParticles = loader.getNumberOfParticles();
+        for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
             loader.fillParticle(&position,&physicalValue);
             realTree.insert(position);
         }
@@ -384,10 +390,16 @@ int main(int argc, char ** argv){
     OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     {
         FFmaBinLoader loaderSeq(filename);
+
+        std::cout << "Simulation properties :\n";
+        std::cout << "Nb Particles " << loaderSeq.getNumberOfParticles() << "\n";
+        std::cout << "Box Width : " << loaderSeq.getBoxWidth() << "\n";
+        std::cout << "Box Center : " << loaderSeq.getCenterOfBox() << "\n";
+
         FPoint position;
         FReal physicalValue;
         for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-            loader.fillParticle(&position,&physicalValue);
+            loaderSeq.fillParticle(&position,&physicalValue);
             treeValide.insert(position);
         }
     }
