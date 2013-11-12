@@ -56,8 +56,8 @@ public:
 
     /** Copy operator */
     FComplexe& operator=(const FComplexe& other){
-        this->complex[1] = other.complex[1];
         this->complex[0] = other.complex[0];
+        this->complex[1] = other.complex[1];
         return *this;
     }
 
