@@ -448,6 +448,21 @@ public:
         }
 	}
 
+    void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
+                     ContainerClass* const FRestrict TargetParticles,
+                     const ContainerClass* const FRestrict /*SourceParticles*/,
+                     ContainerClass* const NeighborSourceParticles[27],
+                     const int /* size */)
+    {
+        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
+    }
+
+
+    void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+                   ContainerClass* const inNeighbors[27], const int /*inSize*/){
+        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
+    }
 
 };
 
