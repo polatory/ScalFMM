@@ -43,7 +43,7 @@ class FMpiBufferWriter : public FAbstractBufferWriter {
 
 public:
   /** Constructor with a default arrayCapacity of 512 bytes */
-  FMpiBufferWriter(const MPI_Comm inComm, const int inCapacity = 512):
+  FMpiBufferWriter(const MPI_Comm inComm, const int inCapacity = 1024):
     mpiComm(inComm), 
     arrayCapacity(inCapacity), 
     array(new char[inCapacity]), 
@@ -77,6 +77,7 @@ public:
   /** Write data by packing cpy */
   template <class ClassType>
   void write(const ClassType& object){
+    //printf("Space need in the write : %d, index set on %d \n",sizeof(ClassType),currentIndex);
     assertRemainingSpace(sizeof(ClassType));
     MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
   }
@@ -86,6 +87,7 @@ public:
    */
   template <class ClassType>
   void write(const ClassType&& object){
+    // printf("Space need in the write : %d \n",sizeof(ClassType));
     assertRemainingSpace(sizeof(ClassType));
     MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
   }
@@ -93,7 +95,7 @@ public:
   /** Write back, position + sizeof(object) has to be < size */
   template <class ClassType>
   void writeAt(const int position, const ClassType& object){
-    if(position + sizeof(ClassType) > currentIndex){
+    if(position + (int) sizeof(ClassType) > currentIndex){
       printf("Not enought space\n");
       exit(0);
     }
@@ -106,6 +108,7 @@ public:
    */
   template <class ClassType>
   void write(const ClassType* const objects, const int inSize){
+    //    printf("Space need in the write : %d, index set on %d, and capacity is %d \n",sizeof(ClassType)*inSize,currentIndex,arrayCapacity);
     assertRemainingSpace(sizeof(ClassType) * inSize);
     MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm);
   }

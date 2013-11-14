@@ -67,7 +67,7 @@ static const FReal Epsilon = FReal(0.0005);
 template <class CellClass>
 bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul){
     FMath::FAccurater accurate;
-    for(int idx = 0; idx < CellClass::GetPoleSize(); ++idx){
+    for(int idx = 0; idx < /*CellClass::GetPoleSize()*/ 36; ++idx){
         accurate.add(me.getMultipole()[idx].getImag(),other.getMultipole()[idx].getImag());
         accurate.add(me.getMultipole()[idx].getReal(),other.getMultipole()[idx].getReal());
     }
@@ -76,9 +76,10 @@ bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul)
 }
 
 /** To compare data */
-bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other,FReal*const cumul){
+bool isEqualLocal(/*const FSphericalCell& me, const FSphericalCell& other,*/
+		  const FRotationCell<7>& me, const FRotationCell<7>& other, FReal*const cumul){
     FMath::FAccurater accurate;
-    for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
+    for(int idx = 0; idx < /*FSphericalCell::GetLocalSize()*/ 36; ++idx){
         accurate.add(me.getLocal()[idx].getImag(),other.getLocal()[idx].getImag());
         accurate.add(me.getLocal()[idx].getReal(),other.getLocal()[idx].getReal());
     }
@@ -213,12 +214,23 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-  typedef FSphericalCell         CellClass;
-  typedef FP2PParticleContainer         ContainerClass;
+  // typedef FSphericalCell         CellClass;
+  // typedef FP2PParticleContainer         ContainerClass;
 
+  // typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+  // typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+  // typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+
+  // typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+  // typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
+
+  // For Rotation test ::
+  typedef FRotationCell<7>         CellClass;
+  typedef FP2PParticleContainer         ContainerClass;
+  
   typedef FSimpleLeaf< ContainerClass >                     LeafClass;
   typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-  typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+  typedef FRotationKernel< CellClass, ContainerClass,7 >     KernelClass;
 
   typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
   typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
@@ -247,7 +259,8 @@ int main(int argc, char ** argv){
     return 1;
   }
 
-  CellClass::Init(DevP);
+  // ----Modified For Rotation----------------------------
+  //CellClass::Init(DevP);
   
   
   OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
@@ -288,7 +301,6 @@ int main(int argc, char ** argv){
 
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       tree.insert(finalParticles[idx].position,finalParticles[idx].physicalValue);
-
     }
 
     delete[] particles;
@@ -313,7 +325,7 @@ int main(int argc, char ** argv){
   // -----------------------------------------------------
   std::cout << "Create kernel..." << std::endl;
 
-  KernelClass kernels(DevP, NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
+  KernelClass kernels( NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
 
   std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
 
