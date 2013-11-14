@@ -242,7 +242,7 @@ int main(int argc, char ** argv){
 
   FMpi app( argc, argv);
 
-  const int DevP = FParameters::getValue(argc,argv,"-p", 8);
+  //  const int DevP = FParameters::getValue(argc,argv,"-p", 8);
   const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
   const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
   FTic counter;
@@ -287,7 +287,7 @@ int main(int argc, char ** argv){
     };
 
     TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-    memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
+    memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
       loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
