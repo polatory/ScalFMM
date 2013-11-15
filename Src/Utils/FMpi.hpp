@@ -23,6 +23,8 @@
 #include "FNoCopyable.hpp"
 #include "FMath.hpp"
 
+//Need that for converting datas
+#include "FComplexe.hpp"
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -278,6 +280,12 @@ public:
 
   static const MPI_Datatype GetType(const char&){
     return MPI_CHAR;
+  }
+
+  static const MPI_Datatype GetType(const FComplexe& a){
+    MPI_Datatype FMpiComplexe;
+    MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
+    return FMpiComplexe;
   }
 
   ////////////////////////////////////////////////////////////

@@ -246,10 +246,8 @@ private:
     }
     FLOG(computationCounter.tac());
 
-
     FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
-
    
   }
 
@@ -281,11 +279,11 @@ private:
     MPI_Status status[14];
 
     // Maximum data per message is:
-    FBufferWriter sendBuffer/*(comm.getComm())*/;
+    FMpiBufferWriter sendBuffer(comm.getComm(),7*MaxSizePerCell);
     const int recvBufferOffset = (8 * MaxSizePerCell + 1);
-    FBufferReader recvBuffer(/*comm.getComm(),*/ nbProcess*recvBufferOffset);
+    FMpiBufferReader recvBuffer(comm.getComm(), nbProcess*recvBufferOffset);
     CellClass recvBufferCells[8];
-
+    
     int firstProcThatSend = idProcess + 1;
 
     // for each levels
@@ -318,28 +316,25 @@ private:
       FLOG(prepareCounter.tic());
       if(idProcess != 0
 	 && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
-
+	
 	char state = 0;
 	sendBuffer.write(state);
-	printf("Index position after writing first state(%d) :: %d\n",state,sendBuffer.getSize());
-
+	
 	const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
 	for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
 	  if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
 	    child[idxChild]->serializeUp(sendBuffer);
-
 	    state = char(state | (0x1 << idxChild));
 	  }
 	}
-	printf("state just before Send :: %d \n",state);
 	sendBuffer.writeAt(0,state);
-	printf("what is it in sendBuffer :: %d\n", sendBuffer.data()[0]);
-
+	
 	while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , sendToProc - 1).max){
 	  --sendToProc;
 	}
 
-	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, sendToProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
+	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, sendToProc, 
+		  FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
       }
 
       // We may need to receive something
@@ -351,16 +346,15 @@ private:
 	      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) < (getWorkingInterval((idxLevel+1), idProcess).max)){
 	  // Second condition :: while firstProcThatSend max morton index is < to myself max interval
 	  ++firstProcThatSend;
-	  printf("\n \n PLOP \n \n");
 	}
 
 	if(firstProcThatSend < nbProcess &&
-	   (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+	   (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) == (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
 
 	  endProcThatSend = firstProcThatSend;
 
 	  while( endProcThatSend < nbProcess &&
-		 (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+		 (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) == (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
 	    ++endProcThatSend;
 	  }
 
@@ -369,7 +363,7 @@ private:
 	    hasToReceive = true;
 
 	    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE,
+	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
 			idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
 	    }
 	  }
@@ -406,7 +400,7 @@ private:
 	  for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
 	    recvBuffer.seek(idxProc * recvBufferOffset);
 	    int state = int(recvBuffer.getValue<char>());
-	    printf("state read in recv :: %d \n",state);
+	    
 	    int position = 0;
 	    while( state && position < 8){
 	      while(!(state & 0x1)){
@@ -583,35 +577,37 @@ private:
 
     const int SizeOfCellToSend = sizeof(MortonIndex) + sizeof(int) + MaxSizePerCell;
 
-    FBufferWriter**const sendBuffer = new FBufferWriter*[nbProcess * OctreeHeight];
-    memset(sendBuffer, 0, sizeof(FBufferWriter*) * nbProcess * OctreeHeight);
+    FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess * OctreeHeight];
+    memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess * OctreeHeight);
 
-    FBufferReader**const recvBuffer = new FBufferReader*[nbProcess * OctreeHeight];
-    memset(recvBuffer, 0, sizeof(FBufferReader*) * nbProcess * OctreeHeight);
+    FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess * OctreeHeight];
+    memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess * OctreeHeight);
 
 
     for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
       for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
 	const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
 	if(toSendAtProcAtLevel != 0){
-	  sendBuffer[idxLevel * nbProcess + idxProc] = new FBufferWriter(toSendAtProcAtLevel * SizeOfCellToSend);
+	  sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),toSendAtProcAtLevel * SizeOfCellToSend);
 
 	  for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
 	    const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
 	    sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
 	    toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
 	  }
-
-	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(), sendBuffer[idxLevel * nbProcess + idxProc]->getSize()
-				      , MPI_BYTE , idxProc, FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+	  
+	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(), 
+				      sendBuffer[idxLevel * nbProcess + idxProc]->getSize(),MPI_PACKED, idxProc, 
+				      FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 	}
 
 	const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
 	if(toReceiveFromProcAtLevel){
-	  recvBuffer[idxLevel * nbProcess + idxProc] = new FBufferReader(toReceiveFromProcAtLevel * SizeOfCellToSend);
+	  recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),toReceiveFromProcAtLevel * SizeOfCellToSend);
 
-	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(), recvBuffer[idxLevel * nbProcess + idxProc]->getSize(), MPI_BYTE,
-				     idxProc, FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
+				     recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), MPI_PACKED,idxProc, 
+				     FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 	}
       }
     }
@@ -699,12 +695,12 @@ private:
 	  const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
 
 	  for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-	    const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FBufferReader::getValue<MortonIndex>();
+	    const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<MortonIndex>();
 
 	    CellClass* const newCell = new CellClass;
 	    newCell->setMortonIndex(cellIndex);
 	    newCell->deserializeUp(*recvBuffer[idxLevel * nbProcess + idxProc]);
-
+	    
 	    tempTree.insertCell(cellIndex, idxLevel, newCell);
 	  }
 	}
@@ -819,8 +815,8 @@ private:
 
     const int heightMinusOne = OctreeHeight - 1;
 
-    FBufferWriter sendBuffer;
-    FBufferReader recvBuffer(MaxSizePerCell);
+    FMpiBufferWriter sendBuffer(comm.getComm());
+    FMpiBufferReader recvBuffer(comm.getComm(),MaxSizePerCell);
 
     // for each levels exepted leaf level
     for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
@@ -858,7 +854,7 @@ private:
 	needToRecv = true;
 
 
-	MPI_Irecv( recvBuffer.data(), recvBuffer.getSize(), MPI_BYTE, MPI_ANY_SOURCE,
+	MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, MPI_ANY_SOURCE,
 		   FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
       }
 
@@ -881,7 +877,7 @@ private:
 
 	  for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
 
-	    MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_BYTE, idxProc,
+	    MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProc,
 		      FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
 	  }
 
@@ -961,11 +957,11 @@ private:
     int iterRequest = 0;
     int nbMessagesToRecv = 0;
 
-    FBufferWriter**const sendBuffer = new FBufferWriter*[nbProcess];
-    memset(sendBuffer, 0, sizeof(FBufferWriter*) * nbProcess);
+    FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
+    memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
 
-    FBufferReader**const recvBuffer = new FBufferReader*[nbProcess];
-    memset(recvBuffer, 0, sizeof(FBufferReader*) * nbProcess);
+    FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
+    memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess);
 
     /* This a nbProcess x nbProcess matrix of integer
      * let U and V be id of processes :
@@ -1074,8 +1070,8 @@ private:
       for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
       	if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
       	  //allocate buffer of right size
-      	  recvBuffer[idxProc] = new FBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
-      	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getSize(), MPI_BYTE,
+      	  recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
+      	  FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(), MPI_PACKED,
       				     idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
       	}
       }
@@ -1084,8 +1080,7 @@ private:
       // Prepare send
       for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
 	if(toSend[idxProc].getSize() != 0){
-	  //sendBuffer[idxProc] = new FBufferWriter(partsToSend[idxProc]); //Could be read out of globalReceiveMap
-	  sendBuffer[idxProc] = new FBufferWriter(globalReceiveMap[idProcess*nbProcess+idxProc]); 
+	  sendBuffer[idxProc] = new FMpiBufferWriter(comm.getComm(),globalReceiveMap[idProcess*nbProcess+idxProc]); 
 	  // << is equivalent to write().
 	  (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
 	  for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
@@ -1095,7 +1090,7 @@ private:
 	  
 	  //TEST BERENGER
 	  //if(sendBuffer[idxProc]->getSize() != partsToSend[idxProc]){
-	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_BYTE ,
+	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_PACKED ,
 				      idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 	  
 	}
