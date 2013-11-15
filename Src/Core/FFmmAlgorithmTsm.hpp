@@ -17,7 +17,7 @@
 #define FFMMALGORITHMTSM_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -39,7 +39,7 @@
 * The differences with FmmAlgorithm is that it used target source model.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmTsm : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmTsm : public FAbstractAlgorithm{
 
     OctreeClass* const tree;                                                     //< The octree to work on
     KernelClass* const kernels;    //< The kernels
@@ -58,8 +58,8 @@ public:
     FFmmAlgorithmTsm(OctreeClass* const inTree, KernelClass* const inKernels)
         : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()){
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
+        FAssertLF(kernels, "kernels cannot be null");
 
         FLOG(FLog::Controller << "FFmmAlgorithmTsm\n");
     }

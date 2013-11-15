@@ -17,7 +17,7 @@
 #define FFMMALGORITHMTHREADTSM_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -45,7 +45,7 @@
 * You should not write on sources in the P2P method!
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadTsm : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 
@@ -65,7 +65,7 @@ public:
                       : tree(inTree) , kernels(0), iterArray(0),
                       MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()) {
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -98,7 +98,7 @@ public:
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
         iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-        fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+        FAssertLF(iterArray, "iterArray bad alloc");
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 

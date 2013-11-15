@@ -19,7 +19,7 @@
 #include <omp.h>
 
 //
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -60,7 +60,7 @@
  * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadProc : protected FAssertable , public FAbstractAlgorithm {
+class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
 
   static const int MaxSizePerCell = 1024;
   
@@ -119,7 +119,7 @@ public:
       OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
       workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]){
 
-    fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+    FAssertLF(tree, "tree cannot be null");
 
     this->kernels = new KernelClass*[MaxThreads];
     for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -163,7 +163,7 @@ public:
 	myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
       }
       iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-      fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+      FAssertLF(iterArray, "iterArray bad alloc");
 
       // We get the min/max indexes from each procs
       FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
@@ -414,7 +414,7 @@ private:
 		++position;
 	      }
 
-	      fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
+          FAssertLF(!currentChild[position], "Already has a cell here");
 	      
 	      recvBufferCells[position].deserializeUp(recvBuffer);
 	      currentChild[position] = (CellClass*) &recvBufferCells[position];

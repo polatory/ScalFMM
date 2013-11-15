@@ -18,7 +18,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FVector.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FMpi.hpp"
 
 #include "../Utils/FGlobalPeriodic.hpp"
@@ -36,7 +36,7 @@
   * tree.
   */
 template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
-class FOctreeArrangerProc : FAssertable {
+class FOctreeArrangerProc  {
     /** Interval is the min/max morton index
       * for a proc
       */
@@ -64,7 +64,7 @@ class FOctreeArrangerProc : FAssertable {
 public:
     /** Basic constructor */
     FOctreeArrangerProc(OctreeClass* const inTree) : tree(inTree) {
-        fassert(tree, "Tree cannot be null", __LINE__ , __FILE__ );
+        FAssertLF(tree, "Tree cannot be null");
     }
 
     /** return false if the tree is empty after processing */

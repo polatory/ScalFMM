@@ -18,7 +18,7 @@
 
 
 #include "../Utils/FGlobal.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -40,7 +40,7 @@
 * Of course this class does not deallocate pointer given in arguements.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmTask : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmTask : public FAbstractAlgorithm{
 
     OctreeClass* const tree;       //< The octree to work on
     KernelClass** kernels;    //< The kernels
@@ -60,8 +60,8 @@ public:
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight())
     {
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        fassert(inKernels, "kernels cannot be null", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
+        FAssertLF(inKernels, "kernels cannot be null");
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){

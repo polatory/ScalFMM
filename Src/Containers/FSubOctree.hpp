@@ -19,7 +19,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FPoint.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FMath.hpp"
 
 #include "FTreeCoordinate.hpp"
@@ -48,7 +48,7 @@
  * @warning Give the particleClass & cellClass
  */
 template< class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
-class FAbstractSubOctree : protected FAssertable{
+class FAbstractSubOctree {
 protected:
 
     CellClass*** cells;		            //< Potential cells, cells are allocated only if needed
@@ -187,7 +187,7 @@ public:
                         subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ), isLeafSubtree(inIsLeafSubtree) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
-        fassert(this->cells, "Allocation failled", __LINE__, __FILE__);
+        FAssertLF(this->cells, "Allocation failled");
 
         memset(this->cells, 0, sizeof(CellClass**) * subOctreeHeight);
 
@@ -195,7 +195,7 @@ public:
         int cellsAtlevel = 8;
         for( int indexLevel = 0 ; indexLevel < this->subOctreeHeight ; ++indexLevel ){
             this->cells[indexLevel] = new CellClass*[cellsAtlevel];
-            fassert(this->cells[indexLevel], "Allocation failled", __LINE__, __FILE__);
+            FAssertLF(this->cells[indexLevel], "Allocation failled");
 
             memset(this->cells[indexLevel], 0, sizeof(CellClass*) * cellsAtlevel);
 
@@ -278,7 +278,7 @@ public:
       * @param level the level to access cells array (must be < subOctreeHeight)
       * @return cells[level] */
     CellClass** cellsAt(const int level) const{
-        fassert(level < subOctreeHeight, "Level out of memory", __LINE__, __FILE__);
+        FAssertLF(level < subOctreeHeight, "Level out of memory");
         return cells[level];
     }
 
@@ -360,7 +360,7 @@ public:
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
         this->leafs = new LeafClass*[cellsAtLeafLevel];
-        Parent::fassert(this->leafs, "Allocation failled", __LINE__, __FILE__);
+        FAssertLF(this->leafs, "Allocation failled");
 
         memset(leafs, 0, sizeof(LeafClass*) * cellsAtLeafLevel);
     }
@@ -507,7 +507,7 @@ public:
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
         this->subleafs = new Parent*[cellsAtLeafLevel];
-        Parent::fassert(this->subleafs, "Allocation failled", __LINE__, __FILE__);
+        FAssertLF(this->subleafs, "Allocation failled");
 
         memset(subleafs, 0, sizeof(Parent**) * cellsAtLeafLevel);
     }

@@ -19,7 +19,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FPoint.hpp"
 #include "../Containers/FVector.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 
 #include "../Utils/FGlobalPeriodic.hpp"
 
@@ -37,13 +37,13 @@
 * tree.
 */
 template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
-class FOctreeArranger : FAssertable {
+class FOctreeArranger {
     OctreeClass* const tree; //< The tree to work on
 
 public:
     /** Basic constructor */
     FOctreeArranger(OctreeClass* const inTree) : tree(inTree) {
-        fassert(tree, "Tree cannot be null", __LINE__ , __FILE__ );
+        FAssertLF(tree, "Tree cannot be null" );
     }
 
     /** Arrange */

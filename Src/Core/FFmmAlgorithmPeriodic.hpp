@@ -19,7 +19,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FGlobalPeriodic.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -42,7 +42,7 @@
 * Of course this class does not deallocate pointer given in arguments.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmPeriodic : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmPeriodic : public FAbstractAlgorithm{
 
     OctreeClass* const tree;        //< The octree to work on
     KernelClass* kernels;           //< The kernels
@@ -66,8 +66,8 @@ public:
           nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3),
           periodicDirections(inPeriodicDirections) {
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        fassert(-1 <= inUpperLevel, "inUpperLevel cannot be < -1", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
+        FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
 
         FLOG(FLog::Controller << "FFmmAlgorithmPeriodic\n");
     }
@@ -85,7 +85,7 @@ public:
       * Call this function to run the complete algorithm
       */
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
-        fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
+        FAssertLF(kernels, "kernels cannot be null");
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );       
 
         if(operationsToProceed & FFmmP2M) bottomPass();

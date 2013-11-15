@@ -17,7 +17,7 @@
 #define FTYPEDLEAF_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "FAbstractLeaf.hpp"
 #include "FParticleType.hpp"
 
@@ -33,7 +33,7 @@
 * Particles should be typed to enable targets/sources difference.
 */
 template< class ContainerClass>
-class FTypedLeaf  : public FAbstractLeaf<ContainerClass>, public FAssertable {
+class FTypedLeaf  : public FAbstractLeaf<ContainerClass> {
     ContainerClass sources; //< The sources containers
     ContainerClass targets; //< The targets containers
 

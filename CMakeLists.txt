@@ -49,6 +49,7 @@ OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" 
 OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"       ON  )
+OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 
@@ -159,6 +160,12 @@ endif()
 
 # Use Mem stats
 MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
+
+# Use Log
+MESSAGE( STATUS "ScalFMM_USE_LOG              = ${ScalFMM_USE_LOG}" )
+
+# Use Assert
+MESSAGE( STATUS "ScalFMM_USE_ASSERT           = ${ScalFMM_USE_ASSERT}" )
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")

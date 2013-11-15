@@ -17,7 +17,7 @@
 #define FFMMALGORITHMTHREADPROCPPERIODIC_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -58,7 +58,7 @@
 * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadProcPeriodic : protected FAssertable, public FAbstractAlgorithm {
+class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
 
     static const int MaxSizePerCell = 2048;
 
@@ -132,8 +132,8 @@ public:
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        fassert(-1 <= inUpperLevel, "inUpperLevel cannot be < -1", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
+        FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
 
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProcPeriodic\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
@@ -173,7 +173,7 @@ public:
                 myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
             }
             iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-            fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+            FAssertLF(iterArray, "iterArray bad alloc");
 
             // We get the min/max indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
@@ -418,7 +418,7 @@ private:
                                 ++position;
                             }
 
-                            fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
+                            FAssertLF(!currentChild[position], "Already has a cell here");
 
                             recvBufferCells[position].deserializeUp(recvBuffer);
                             currentChild[position] = (CellClass*) &recvBufferCells[position];
@@ -481,7 +481,7 @@ private:
                             state >>= 1;
                             ++position;
                         }
-                        fassert(!currentChild[position], "Already has a cell here", __LINE__, __FILE__);
+                        FAssertLF(!currentChild[position], "Already has a cell here");
 
                         recvBufferCells[position].deserializeUp(recvBuffer);
 

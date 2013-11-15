@@ -26,7 +26,7 @@
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Utils/FAssertable.hpp"
+#include "../../Src/Utils/FAssert.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
