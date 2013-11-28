@@ -455,12 +455,12 @@ public:
         FReal legendre[SizeArray];
 
         // For all particles in the leaf box
-        const FReal*const physicalValues = inParticles.getPhysicalValues();
-        const FReal*const positionsX = inParticles.getPositions()[0];
-        const FReal*const positionsY = inParticles.getPositions()[1];
-        const FReal*const positionsZ = inParticles.getPositions()[2];
+        const FReal*const physicalValues = inParticles->getPhysicalValues();
+        const FReal*const positionsX = inParticles->getPositions()[0];
+        const FReal*const positionsY = inParticles->getPositions()[1];
+        const FReal*const positionsZ = inParticles->getPositions()[2];
 
-        for(int idxPart = 0 ; idxPart < inParticles.getNbParticles() ; ++ idxPart){
+        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // P2M
             const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
             const FSpherical sph(position - cellPosition);
@@ -666,16 +666,16 @@ public:
         const FPoint cellPosition = getLeafCenter(inLocal->getCoordinate());
 
         // For all particles in the leaf box
-        const FReal*const physicalValues = inParticles.getPhysicalValues();
-        const FReal*const positionsX = inParticles.getPositions()[0];
-        const FReal*const positionsY = inParticles.getPositions()[1];
-        const FReal*const positionsZ = inParticles.getPositions()[2];
-        const FReal*const forcesX = inParticles.getForcesX();
-        const FReal*const forcesY = inParticles.getForcesY();
-        const FReal*const forcesZ = inParticles.getForcesZ();
-        const FReal*const potentials = inParticles.getPotentials();
+        const FReal*const physicalValues = inParticles->getPhysicalValues();
+        const FReal*const positionsX = inParticles->getPositions()[0];
+        const FReal*const positionsY = inParticles->getPositions()[1];
+        const FReal*const positionsZ = inParticles->getPositions()[2];
+        FReal*const forcesX = inParticles->getForcesX();
+        FReal*const forcesY = inParticles->getForcesY();
+        FReal*const forcesZ = inParticles->getForcesZ();
+        FReal*const potentials = inParticles->getPotentials();
 
-        for(int idxPart = 0 ; idxPart < inParticles.getNbParticles() ; ++ idxPart){
+        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // L2P
             const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
             const FSpherical sph(position - cellPosition);
