@@ -1,0 +1,24 @@
+/*! \page contacts Contacts
+ *
+ * \section authors Authors
+
+ * ScalFmm is a library for the Fast Multipole Method (FMM). It is
+ * written in C++ and use OpenMP and MPI to support parallel
+ * execution. It is developed by the HiePACS team at the INRIA.
+
+ * You can contact the development team for any questions at
+ * <ul>
+ * <li> berenger.bramas@inria.fr </li>
+ * <li> olivier.coulaud@inria.fr </li>
+ * <li> cyrille.piacibello@inria.fr</li>
+ * </ul>
+
+ * If you want to see others projects of HiePACS Inria teams, please
+ * see : https://team.inria.fr/hiepacs/ .
+
+ * \section contributors Contributors
+ *
+ 
+
+ */
+ 
