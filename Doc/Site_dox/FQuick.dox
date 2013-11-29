@@ -1,0 +1,320 @@
+/*! \page quick Quick Start
+
+ * In this section, we present the data structure organization and the 
+ * classes design to understand fully ScalFmm. 
+ 
+ * \tableofcontents 
+ 
+ * \section prerequisite Prerequisite 
+ 
+ * In it is better to have built the library or at minimum to have 
+ * downloaded the sources. The user needs to be comfortable with 'C++' 
+ * language and if possible templates. 
+
+ * \section classes Overview of general architecture
+ *
+ * \image html Classes.png "General architecture"
+ 
+ * \section data What Data 
+ 
+ * In ScalFmm we proceed the Fast Multipole Method. New users should see 
+ * this process has a way to estimate far interactions and compute 
+ * accurately the close interactions in a group of particles. We then 
+ * have some particles that we insert in a octree. The octree stores the 
+ * particles in its leaves. From the root to the leaves there are the 
+ * cells. At this point we only express primitives classes which hold 
+ * data or primitives classes. 
+ 
+ * Then, we need a kernel which is computational part of the FMM. It is a 
+ * class that is able to compute the interactions between particles or 
+ * cells, etc. There is several possible kernels depending on what we 
+ * want to compute. 
+ 
+ * Finally, the FMM Core algorithm is a class that takes the primitives 
+ * classes and calls the kernel with the correct arguments. In our 
+ * implementation, the user has to choose between sequential FMM or 
+ * OpenMP FMM. 
+ 
+ * \section primitivesclasses Primitives Classes
+ 
+ * \subsection particles Particles
+ 
+ * To be stored in the octree, a particle must inherites
+ * FAbstractParticleContainer. This is the class needed:
+
+
+ * <pre class='brush: cpp'>
+ * class FAbstractParticleContainer{
+ 
+ * template<typename... Args>
+ * void push(const FPoint& , Args ... ){
+    
+ * };
+ * </pre>
+
+ * A class implements this minimum required methods, it is
+ * FBasicParticleContainer. This is what MUST proposes a particle
+ * class to be able to be inserted in the tree. Then, the user can add
+ * other methods to match the kernel requirement. For example, some
+ * kernel may need a particle to hold a physical value, a forces
+ * vector and a potential. See FRotationParticleContainer if you want
+ * an example of a Particle class.
+
+ * \subsection cells Cells
+
+ * The same principle apply to cells. There is a minimum sets of
+ * methods that must propose a cell class to be able to be used in the
+ * octree. And then, there are some other methods that you can add to
+ * make it usable per the kernel.
+
+ * The class Src/Components/FAbstractCell.hpp shows what should
+ * implement a cell:
+
+ * <pre class='brush: cpp'> 
+  * class FAbstractCell{ 
+  *  public: 
+  *  virtual ~FAbstractCell(){ 
+  *  } 
+  *  virtual MortonIndex getMortonIndex() const = 0; 
+  *  virtual void setMortonIndex(const MortonIndex inIndex) = 0; 
+  *  virtual void setPosition(const FPoint& inPosition) = 0; 
+  *  virtual const FTreeCoordinate& getCoordinate() const = 0; 
+  *  virtual void setCoordinate(const long inX, const long inY, const long inZ) = 0; 
+  *  virtual bool hasSrcChild() const = 0; 
+  *  virtual bool hasTargetsChild() const = 0; 
+  *  virtual void setSrcChildTrue() = 0; 
+  *  virtual void setTargetsChildTrue() = 0; 
+  *  }; 
+
+ * </pre>
+ 
+ * The FBasicCell class provides an implementation of all these
+ * methods.
+
+ * \subsection leaves Leaves 
+
+ * The leaf is the class responsible of hosting the particles. The
+ * octree uses this class and order to store a particle. Behind the
+ * scene, the leaf does what it wants. But, the octree also needs a way
+ * to get the particles it has inserted which can be targets or
+ * sources
+
+ * In the following class, FAbstractLeaf, one can see what is required
+ * by the algorithm :
+
+ * <pre>
+ * template< class ParticleClass, class ContainerClass > 
+ *   class FAbstractLeaf { 
+ *   public: 
+ *   // Default destructor
+ *   virtual ~FAbstractLeaf(){ 
+ *   } 
+ *   virtual void push(const ParticleClass& particle) = 0; 
+ *   virtual ContainerClass* getSrc() = 0; 
+ *   virtual ContainerClass* getTargets() = 0; 
+ *   }; 
+ * </pre>
+
+ * The FSimpleLeaf class provides an implementation of all thes
+ * methods.
+
+ * \section octree Octree
+ 
+ * The octree is templatized and then can host particles, cells and
+ * leaves. It also needs some information about the simulation like the
+ * size and the center of the box. Moreover, the user has to precise
+ * the height of the octree. The root is the level 0, so giving a
+ * height of 3 creates the root level, a cells level and the leaves
+ * level. The usual way of declaring the octree, taken from
+ * Tests/Utils/testOctree.cpp, is as follow:
+
+ * <pre>
+ * typedef FVector<FBasicParticle>                                        ContainerClass;
+ * typedef FSimpleLeaf<FBasicParticle, ContainerClass >                        LeafClass;
+ * typedef FOctree<FBasicParticle, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+ * OctreeClass tree(HEIGHT, SUBHEIGHT, BoxWidth, CenterOfBox);
+ * </pre>
+ 
+ * \subsection loading Loading Particle
+
+ * Once the octree is created, we need to put some particles in
+ * it. This is perform using classes called 'loader'.
+
+ * A loader should proposes theses methods :
+
+ * <pre>
+ * template <class ParticleClass> 
+ *   class FAbstractLoader { 
+ *   public:	 
+ *   // Default destructor 
+ *   virtual ~FAbstractLoader(){ 
+ *   } 
+ *   virtual FSize getNumberOfParticles() const = 0; 
+ *   virtual FPoint getCenterOfBox() const = 0; 
+ *   virtual FReal getBoxWidth() const = 0; 
+ *   virtual bool isOpen() const = 0; 
+ *   virtual void fillParticle(ParticleClass& inParticle) = 0; 
+ *   template <class OctreeClass> 
+ *   void fillTree(OctreeClass& tree){ 
+ *       ParticleClass particleToFill; 
+ *       for(int idxPart = 0 ; idxPart < getNumberOfParticles() ; ++idxPart){ 
+ *           fillParticle(particleToFill); 
+ *           tree.insert(particleToFill); 
+ *       } 
+ *   } 
+ *  }; 
+ * </pre>
+
+ * There exist several loaders; one per file format. Depending of the
+ * loader, the particle class should implement special methods. For
+ * example, the basic loader only fill the position of the
+ * particles. Whereas, the FMA loader also fill the physical value of
+ * the particles.
+
+ * The usual way of loading the particle is as follow :
+
+ * <pre>
+ * FRandomLoader<ParticleClass> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+ * OctreeClass tree(10, 3, loader.getBoxWidth(), loader.getCenterOfBox());
+ * loader.fillTree(tree);
+ * </pre>
+
+ * \subsection octreeIterator Iterating on an Octree
+ 
+ *If the user wants to iterate on the tree and access the particles or
+ *the cells. To do so, he needs to declare an iterator and use it to
+ *move from top to bottom and from left to right. It is critical that
+ *the octree is not empty!
+
+ * This next sample is taken from Tests/Utils/testOctreeIter.cpp and
+ * count the leaves :
+ 
+ * <pre>
+ * OctreeClass::Iterator octreeIterator(&tree);
+ *     octreeIterator.gotoBottomLeft();
+ *     int counter = 0;
+ *     do{
+ *             ++counter;
+ *     } while(octreeIterator.moveRight());
+ * </pre>
+
+ * To iterate on the cells we can proceed as follow :
+ * <pre>
+ * OctreeClass::Iterator octreeIterator(&tree);
+ * octreeIterator.gotoBottomLeft();
+ * for(int idxLevel = NbLevels - 1 ; idxLevel >= 1 ; --idxLevel ){
+ *    int counter = 0;
+ *    do{
+ *       ++counter;
+ *    } while(octreeIterator.moveRight());
+ *    octreeIterator.moveUp();
+ *    octreeIterator.gotoLeft();
+ *    std::cout << "Cells at level " << idxLevel << " = " << counter << " ...\n";
+ * }
+ * </pre>
+
+ * \section kernel The kernel
+ 
+ * The kernel is a class that should perform the usual FMM
+ * operators. Each kind of kernel may require special methods and
+ * needs on the particles and the cells.
+
+ * An empty kernel can be found in Src/Components/FBasicKernels.hpp,
+ * it implements the class definition FAbstractKernels :
+
+ * <pre>
+ * template< class ParticleClass, class CellClass, class ContainerClass> class FBasicKernels : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> { 
+ * public: 
+ *
+ * // Default destructor
+ * virtual ~FBasicKernels(){}
+ * virtual void P2M(CellClass* const , const ContainerClass* const ) {}
+ * virtual void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int ) {} 
+ * virtual void M2L(CellClass* const FRestrict , const CellClass* [], const int , const int ) {}
+ * virtual void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) {}
+ * virtual void L2P(const CellClass* const , ContainerClass* const ){}
+ * virtual void P2P(const FTreeCoordinate& , 
+ *                  ContainerClass* const FRestrict , const ContainerClass* const FRestrict , 
+ *                  ContainerClass* const [27], const int ){}
+ * virtual void P2PRemote(const FTreeCoordinate& , 
+ *                  ContainerClass* const FRestrict , const ContainerClass* const FRestrict , 
+ *                  ContainerClass* const [27], const int ){}
+ * </pre>
+
+ * One example of kernel is the 'test' kernel called
+ * FTestKernels. This kernels simply sum the particles (one particle
+ * weigh = 1) so at the end of the simulation each particles should be
+ * have a weigh of N. We just declare this kernel based on the
+ * components type but usually do not call any method manually since
+ * this is performed per the FMM core.
+
+ * <pre>
+ * typedef FTestKernels<ParticleClass, CellClass, ContainerClass >         KernelClass;
+ * KernelClass kernels;
+ * </pre>
+
+ * \section coreFMM The FMM Core
+ 
+ * We showed how to have an octree and a kernel. Now, we show how to use
+ * a Fmm Algorithm on the data. Remember, the FMM algorithm simply
+ * takes the data from the octree and call the method of the
+ * kernel. The goal is to have a FMM independent from the data.
+
+ * The next sample is taken from Tests/Utils/testFmmAlgorithm.cpp and
+ * use the basic sequential FMM :
+ 
+ * <pre>
+ * typedef FFmmAlgorithm<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+ * FmmClass algo(&tree,&kernels);
+ * algo.execute();
+ * </pre>
+
+ * To move to the OpenMP threaded FMM we can use the fallowing code by
+ * changing 'FFmmAlgorithm' per 'FFmmAlgorithmThread' :
+
+ * <pre>
+ * typedef FFmmAlgorithmThread<OctreeClass, ParticleClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+ * FmmClass algo(&tree,&kernels);
+ * algo.execute();
+ * </pre>
+
+ \section reasons The reasons why ...
+ 
+ * Of course the library is changing and re-factorized usually but
+ * lets discuss about 'The reasons why' : 
+ 
+ * <ul>
+ * <li> Every things is templatized : 
+ * <blockquote>
+ * The reason is to avoid the use of virtual and abstract class. In
+ * this page we present some abstract classes, but they are not really
+ * use. They only define the need, the minimum required to implement a
+ * particle or a cell. But the kernels should not work on an abstract
+ * type but on the real data. This enable lots of compiler
+ * optimizations and avoid the use of V-Table.
+ * </blockquote>
+ * </li>
+ 
+ * <li>
+ * Some destructors are not virtual :
+ * <blockquote>
+ * As we said, the objective of the class are not to be inherited. So
+ * a virtual destructor is not needed.
+ * </blockquote>
+ * </li>
+
+ * <li>
+ * Typedef is used like this : 
+ * <blockquote>
+ * It can take some time to understand how it works. But all our users
+ * finally like the way of using typedef and template. As you will see
+ * in most of the example the struct is the same and you will not be
+ * lost since in any example 'ParticleClass' is used for the particle
+ * type and so on.
+ * </blockquote>
+ * </li>
+
+ 
+ * </ul>
+
+*/
