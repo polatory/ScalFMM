@@ -8,9 +8,7 @@
 
  * You can contact the development team for any questions at
  * <ul>
- * <li> berenger.bramas@inria.fr </li>
- * <li> olivier.coulaud@inria.fr </li>
- * <li> cyrille.piacibello@inria.fr</li>
+ * <li> scalfmm-public-support@lists.gforge.inria.fr</li>
  * </ul>
 
  * If you want to see others projects of HiePACS Inria teams, please
@@ -18,7 +16,12 @@
 
  * \section contributors Contributors
  *
- 
+ * <ul>
+ * <li> Olivier Coulaud </li>
+ * <li> Bérenger Bramas </li>
+ * <li> Cyrille Piacibello </li>
+ * </ul>
+  
 
  */
  

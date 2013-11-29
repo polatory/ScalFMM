@@ -10,6 +10,10 @@
  * In it is better to have built the library or at minimum to have 
  * downloaded the sources. The user needs to be comfortable with 'C++' 
  * language and if possible templates. 
+
+ * \section classes Overview of general architecture
+ *
+ * \image html Classes.png "General architecture"
  
  * \section data What Data 
  

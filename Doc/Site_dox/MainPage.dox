@@ -7,7 +7,7 @@
  *
  * ScalFMM is a software library to simulate N-body interactions using
  * the Fast Multipole Method.
- *
+ * 
  * The library offers two methods to compute interactions between
  * bodies when the potential decays like 1/r. The first method is the
  * classical FMM based on spherical harmonic expansions and the second is

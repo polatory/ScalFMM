@@ -59,10 +59,10 @@
     * </ul>
   * </ul>
 *
-* You may want to install it : <b> $> make install </b>. Note that it
-* is not an obligation to install ScalFmm to use it. You can build it
-* and use it from the Build directory.
-*
+
+* Once the library is built, you may want to install it : <b> $> make
+* install </b>. Note that it is not an obligation to install ScalFmm
+* to use it. You can build it and use it from the Build directory.
 
 * The whole project is documented using Doxygen. You can build the doc
 * by typing <b> $> make doc </b> in the Build directory.
