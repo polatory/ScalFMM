@@ -6,7 +6,7 @@ endif(insource)
 
 project(Tests_scalfmm CXX)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
-
+ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS})
 # Find all code files
 file(	
 	GLOB_RECURSE
@@ -54,7 +54,8 @@ foreach(exec ${source_tests_files})
 				${execname}
 				${exec}
 				)
-		
+		SET_TARGET_PROPERTIES(${execname} PROPERTIES
+    ENABLE_EXPORTS TRUE)
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
