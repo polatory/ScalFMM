@@ -18,7 +18,7 @@
 
 #include <sstream>
 #include <iostream>
-#include <cstring>
+//#include <cstring>
 
 /** This file proposes some methods
   * to work with user input parameters.

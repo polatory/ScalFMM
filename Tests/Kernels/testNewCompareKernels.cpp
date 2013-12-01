@@ -103,12 +103,12 @@ int main(int argc, char* argv[])
         FReal physicalValue = 0.0;
         loader.fillParticle(&position,&physicalValue);
         // get copy
-        particles[idxPart].position = position;
-        particles[idxPart].physicalValue = physicalValue;
-        particles[idxPart].potential = 0.0;
-        particles[idxPart].forces[0] = 0.0;
-        particles[idxPart].forces[1] = 0.0;
-        particles[idxPart].forces[2] = 0.0;
+        particles[idxPart].position       = position;
+        particles[idxPart].physicalValue  = physicalValue;
+        particles[idxPart].potential      = 0.0;
+        particles[idxPart].forces[0]      = 0.0;
+        particles[idxPart].forces[1]      = 0.0;
+        particles[idxPart].forces[2]      = 0.0;
     }
     time.tic();
     {
