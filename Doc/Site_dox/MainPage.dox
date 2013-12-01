@@ -1,0 +1,53 @@
+// This page contains the special doxygen pages and mainpage.
+
+/*!
+ * @mainpage ScalFmm
+ *
+ * \section overV Overview
+ *
+ * ScalFMM is a software library to simulate N-body interactions using
+ * the Fast Multipole Method.
+ * 
+ * The library offers two methods to compute interactions between
+ * bodies when the potential decays like 1/r. The first method is the
+ * classical FMM based on spherical harmonic expansions and the second is
+ * the Black-Box method which is an independent kernel formulation
+ * (introduced by E. Darve @ Stanford). With this method, we can now
+ * easily add new non oscillatory kernels in our library. For the
+ * classical method, two approaches are used to decrease the complexity
+ * of the operators. We consider either matrix formulation that allows us
+ * to use BLAS routines or rotation matrices to speed up the M2L
+ * operator.
+ *
+ * ScalFMM intends to offer all the functionalities needed to perform
+ * large parallel simulations while enabling an easy customization of
+ * the simulation components: kernels, particles and cells. It works
+ * in parallel in a shared/distributed memory model using OpenMP and
+ * MPI. The software architecture has been designed with two major
+ * objectives: being easy to maintain and easy to understand. There is
+ * two main parts: 
+ * <ul> 
+ * <li> the management of the octree and the
+ * parallelization of the method; </li> 
+ * <li> The kernels. This new
+ * architecture allow us to easily add new FMM algorithm or kernels
+ * and new paradigm of parallelization. </li> 
+ * </ul>
+ *
+ *
+ * To download build and install the application, please see \ref
+ * install.
+ *
+ * The \ref quick can help you to understand the architectur of the
+ * library.
+ *
+ * This software is distributed under a specific License. For more
+ * informations, see \ref License.
+ *
+ * If you want to cite the project and/or the team, please contact
+ * us. See \ref contacts page.
+ *
+ */
+
+
+

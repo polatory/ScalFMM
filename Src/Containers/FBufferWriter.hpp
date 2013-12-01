@@ -17,6 +17,7 @@
 #define FBUFFERWRITER_HPP
 
 #include "FVector.hpp"
+#include "FAbstractBuffer.hpp"
 
 /** @author Berenger Bramas
   * This class provide a fast way to manage a memory and fill it
@@ -25,7 +26,7 @@
   * then insert back if needed
   * finaly use data pointer as you like
   */
-class FBufferWriter {
+class FBufferWriter : public FAbstractBufferWriter {
 private:
     FVector<char> buffer; //< The buffer
 

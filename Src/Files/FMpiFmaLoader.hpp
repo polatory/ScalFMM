@@ -81,7 +81,7 @@ public:
                 MPI_Status status;
                 if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
                     && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
-                    && MPI_File_read(file, xyzBoxWidth, 4, MPI_FLOAT, &status) == MPI_SUCCESS ){
+                        && MPI_File_read(file, xyzBoxWidth, 4, FMpi::GetType(xyzBoxWidth[0]), &status) == MPI_SUCCESS ){
 
                     FLOG(if(sizeOfElement != sizeof(FReal)){)
                         FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
@@ -110,13 +110,7 @@ public:
                     // local number to read
                     particles = new FReal[bufsize];
 
-                    if( sizeof(FReal) == sizeof(float) ){
-                        MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_FLOAT, &status);
-                    }
-                    else{
-                        MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), MPI_DOUBLE, &status);
-                    }
-
+                    MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal), particles, int(bufsize), FMpi::GetType(xyzBoxWidth[0]), &status);
 
                     // check if needed
                     int count(0);
@@ -142,7 +136,6 @@ public:
                     FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                 FLOG(})
                 removeWarning += fread(&this->totalNbParticles, sizeof(FSize), 1, file);
-
                 removeWarning += fread(&this->boxWidth, sizeof(FReal), 1, file);
                 this->boxWidth *= 2;
 
@@ -160,6 +153,7 @@ public:
 
                 if(filesize/4 != this->totalNbParticles){
                     printf("Error fileSize %ld, nbPart %lld\n", filesize/4, this->totalNbParticles);
+                    exit(0);
                 }
 
                 // in number of floats
@@ -172,7 +166,10 @@ public:
 
                 fseek(file, long(headDataOffSet + startPart * 4 * sizeof(FReal)), SEEK_SET);
 
-                removeWarning += fread(particles, sizeof(FReal), int(bufsize), file);
+                if( fread(particles, sizeof(FReal), int(bufsize), file) != unsigned(bufsize)){
+                    printf("Error when reading file.\n");
+                    exit(0);
+                }
 
                 fclose(file);
             }
@@ -226,6 +223,10 @@ public:
       * @param the particle to fill
       */
     void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
+        if(nbParticles*4 <= idxParticles){
+            printf("Error you're loading too much particles.\n");
+            exit(0);
+        }
         inParticlePositions->setPosition(particles[idxParticles],particles[idxParticles+1],particles[idxParticles+2]);
         (*inPhysicalValue) = (particles[idxParticles+3]);
         idxParticles += 4;

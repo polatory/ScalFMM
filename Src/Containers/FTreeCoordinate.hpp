@@ -19,9 +19,9 @@
 #include <string>
 
 #include "../Utils/FGlobal.hpp"
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
+#include "../Utils/FMath.hpp"
 
+#include "../Components/FAbstractSerializable.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -33,7 +33,7 @@
 * It is directly related to morton index, as interleaves
 * bits from this coordinate make the morton index
 */
-class FTreeCoordinate{
+class FTreeCoordinate : public FAbstractSerializable {
 private:
     int data[3];	//< all box-th position
 
@@ -248,13 +248,16 @@ public:
     }
 
     /** Save current object */
-    void save(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
         buffer << data[0] << data[1] << data[2];
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
         buffer >> data[0] >> data[1] >> data[2];
     }
+  
 
     static std::string MortonToBinary(MortonIndex index, int level){
         std::string str;
@@ -272,6 +275,157 @@ public:
         }
         return str;
     }
+  
+  /* @brief Compute the index of the cells in neighborhood of a given cell  
+   * @param OtreeHeight Height of the Octree
+   * @param indexes target array to store the MortonIndexes computed
+   * @param indexInArray store 
+   */
+  int getNeighborsIndexes(const int OctreeHeight, MortonIndex indexes[26], int indexInArray[26]) const{
+    int idxNeig = 0;
+    int limite = 1 << (OctreeHeight - 1);
+    // We test all cells around
+    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+      if(!FMath::Between(this->getX() + idxX,0, limite)) continue;
+
+      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+	if(!FMath::Between(this->getY() + idxY,0, limite)) continue;
+
+	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+	  if(!FMath::Between(this->getZ() + idxZ,0, limite)) continue;
+
+	  // if we are not on the current cell
+	  if( idxX || idxY || idxZ ){
+	    const FTreeCoordinate other(this->getX() + idxX, this->getY() + idxY, this->getZ() + idxZ);
+	    indexes[ idxNeig ] = other.getMortonIndex(OctreeHeight - 1);
+	    indexInArray[ idxNeig ] = ((idxX+1)*3 + (idxY+1)) * 3 + (idxZ+1);
+	    ++idxNeig;
+	  }
+	}
+      }
+    }
+    return idxNeig;
+  }
+
+  
+  /* @brief Compute the indexes of the neighborhood of the calling cell  
+   * @param OtreeHeight Height of the Octree
+   * @param indexes target array to store the MortonIndexes computed
+   */
+  int getNeighborsIndexes(const int OctreeHeight, MortonIndex indexes[26]) const{
+    int idxNeig = 0;
+    int limite = 1 << (OctreeHeight - 1);
+    // We test all cells around
+    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+      if(!FMath::Between(this->getX() + idxX,0, limite)) continue;
+
+      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+	if(!FMath::Between(this->getY() + idxY,0, limite)) continue;
+
+	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+	  if(!FMath::Between(this->getZ() + idxZ,0, limite)) continue;
+
+	  // if we are not on the current cell
+	  if( idxX || idxY || idxZ ){
+	    const FTreeCoordinate other(this->getX() + idxX, this->getY() + idxY, this->getZ() + idxZ);
+	    indexes[ idxNeig ] = other.getMortonIndex(OctreeHeight - 1);
+	    ++idxNeig;
+	  }
+	}
+      }
+    }
+    return idxNeig;
+  }
+  
+  int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
+    // Then take each child of the parent's neighbors if not in directNeighbors
+    // Father coordinate
+    const FTreeCoordinate parentCell(this->getX()>>1,this->getY()>>1,this->getZ()>>1);
+
+    // Limite at parent level number of box (split by 2 by level)
+    const int limite = FMath::pow2(inLevel-1);
+
+    int idxNeighbors = 0;
+    // We test all cells around
+    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+      if(!FMath::Between(parentCell.getX() + idxX,0,limite)) continue;
+
+      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+	if(!FMath::Between(parentCell.getY() + idxY,0,limite)) continue;
+
+	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+	  if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
+
+	  // if we are not on the current cell
+	  if( idxX || idxY || idxZ ){
+	    const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+	    const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
+
+	    // For each child
+	    for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
+	      const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - this->getX();
+	      const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - this->getY();
+	      const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - this->getZ();
+
+	      // Test if it is a direct neighbor
+	      if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+		// add to neighbors
+		inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
+		inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
+	      }
+	    }
+	  }
+	}
+      }
+    }
+
+    return idxNeighbors;
+  }
+
+  int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[189]) const{
+    // Then take each child of the parent's neighbors if not in directNeighbors
+    // Father coordinate
+    const FTreeCoordinate parentCell(this->getX()>>1,this->getY()>>1,this->getZ()>>1);
+
+    // Limite at parent level number of box (split by 2 by level)
+    const int limite = FMath::pow2(inLevel-1);
+
+    int idxNeighbors = 0;
+    // We test all cells around
+    for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+      if(!FMath::Between(parentCell.getX() + idxX,0,limite)) continue;
+
+      for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+	if(!FMath::Between(parentCell.getY() + idxY,0,limite)) continue;
+
+	for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+	  if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
+
+	  // if we are not on the current cell
+	  if( idxX || idxY || idxZ ){
+	    const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+	    const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
+
+	    // For each child
+	    for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
+	      const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - this->getX();
+	      const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - this->getY();
+	      const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - this->getZ();
+
+	      // Test if it is a direct neighbor
+	      if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+		// add to neighbors
+		inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
+	      }
+	    }
+	  }
+	}
+      }
+    }
+
+    return idxNeighbors;
+  }
+
 };
 
 

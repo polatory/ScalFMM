@@ -16,9 +16,6 @@
 #ifndef FEXTENDCELLTYPE_HPP
 #define FEXTENDCELLTYPE_HPP
 
-#include "../Containers/FBufferReader.hpp"
-#include "../Containers/FBufferWriter.hpp"
-
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * @class FExtendCellType
@@ -30,57 +27,64 @@
 */
 class FExtendCellType {
 protected:
-    /** Particle potential type */
-    static const int Neither = 0;
-    static const int ContainsSrc = 1;
-    static const int ContainsTargets = 2;
-
     /** Current type */
-    int type;
+    bool containsTargets;
+    bool containsSources;
 
 public:
     /** Default constructor */
-    FExtendCellType() : type(Neither) {
+    FExtendCellType() : containsTargets(false), containsSources(false) {
     }
 
     /** Copy constructor */
-    FExtendCellType(const FExtendCellType& other) : type(other.type) {
+    FExtendCellType(const FExtendCellType& other) : containsTargets(other.containsTargets),
+            containsSources(other.containsSources){
     }
 
     /** Copy operator */
     FExtendCellType& operator=(const FExtendCellType& other) {
-        this->type = other.type;
+        this->containsTargets = other.containsTargets;
+        this->containsSources = other.containsSources;
         return *this;
     }
 
     /** To know if a cell has sources */
     bool hasSrcChild() const {
-        return this->type & ContainsSrc;
+        return containsSources;
     }
 
     /** To know if a cell has targets */
     bool hasTargetsChild() const {
-        return this->type & ContainsTargets;
+        return containsTargets;
     }
 
     /** To set cell as sources container */
     void setSrcChildTrue() {
-        this->type |= ContainsSrc;
+        containsSources = true;
     }
 
     /** To set cell as targets container */
     void setTargetsChildTrue() {
-        this->type |= ContainsTargets;
+        containsTargets = true;
     }
 
 public:
     /** Save current object */
-    void save(FBufferWriter& buffer) const {
-        buffer << type;
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const {
+        buffer << containsTargets;
+        buffer << containsSources;
     }
     /** Retrieve current object */
-    void restore(FBufferReader& buffer) {
-        buffer >> type;
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer) {
+        buffer >> containsTargets;
+        buffer >> containsSources;
+    }
+    /** reset to unknown type */
+    void resetToInitialState(){
+        containsTargets = false;
+        containsSources = false;
     }
 };
 

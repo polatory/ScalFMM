@@ -21,6 +21,7 @@
 #include "../../Extensions/FExtendCoordinate.hpp"
 
 #include "./FChebTensor.hpp"
+#include "../../Extensions/FExtendCellType.hpp"
 
 /**
 * @author Matthias Messner (matthias.messner@inria.fr)
@@ -76,6 +77,24 @@ public:
     }
 };
 
+template <int ORDER, int NVALS = 1>
+class FTypedChebCell : public FChebCell<ORDER,NVALS>, public FExtendCellType {
+public:
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
+        FChebCell<ORDER,NVALS>::save(buffer);
+        FExtendCellType::save(buffer);
+    }
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
+        FChebCell<ORDER,NVALS>::restore(buffer);
+        FExtendCellType::restore(buffer);
+    }
+    void resetToInitialState(){
+        FChebCell<ORDER,NVALS>::resetToInitialState();
+        FExtendCellType::resetToInitialState();
+    }
+};
 
 #endif //FCHEBCELL_HPP
 

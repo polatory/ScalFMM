@@ -524,7 +524,7 @@ public:
 
         for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
             if( inNeighbors[idxNeighbors] ){
-                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles()/2;
+                const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+1)/2;
                 const __m128d*const sourcesPhysicalValues = (const __m128d*)inNeighbors[idxNeighbors]->getPhysicalValues();
                 const __m128d*const sourcesX = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[0];
                 const __m128d*const sourcesY = (const __m128d*)inNeighbors[idxNeighbors]->getPositions()[1];

@@ -43,8 +43,6 @@
 
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
-#include "../../Src/Components/FAbstractSendable.hpp"
-
 
 /** This program show an example of use of
   * the fmm basic algo

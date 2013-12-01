@@ -17,7 +17,7 @@
 #define FFMMALGORITHMTSM_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -39,7 +39,7 @@
 * The differences with FmmAlgorithm is that it used target source model.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmTsm : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmTsm : public FAbstractAlgorithm{
 
     OctreeClass* const tree;                                                     //< The octree to work on
     KernelClass* const kernels;    //< The kernels
@@ -58,8 +58,8 @@ public:
     FFmmAlgorithmTsm(OctreeClass* const inTree, KernelClass* const inKernels)
         : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()){
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
-        fassert(kernels, "kernels cannot be null", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
+        FAssertLF(kernels, "kernels cannot be null");
 
         FLOG(FLog::Controller << "FFmmAlgorithmTsm\n");
     }
@@ -195,6 +195,7 @@ public:
             do{
                 FLOG(computationCounter.tic());
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
+
                 if(currentCell->hasTargetsChild()){
                     const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
                     if( counter ){
@@ -247,21 +248,23 @@ public:
             FLOG(FTic counterTimeLevel);
             // for each cells
             do{
-                FLOG(computationCounter.tic());
-                CellClass* potentialChild[8];
-                CellClass** const realChild = octreeIterator.getCurrentChild();
-                CellClass* const currentCell = octreeIterator.getCurrentCell();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                        potentialChild[idxChild] = realChild[idxChild];
+                if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
+                    FLOG(computationCounter.tic());
+                    CellClass* potentialChild[8];
+                    CellClass** const realChild = octreeIterator.getCurrentChild();
+                    CellClass* const currentCell = octreeIterator.getCurrentCell();
+                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                        if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                            potentialChild[idxChild] = realChild[idxChild];
+                        }
+                        else{
+                            potentialChild[idxChild] = 0;
+                        }
                     }
-                    else{
-                        potentialChild[idxChild] = 0;
-                    }
+                    kernels->L2L( currentCell , potentialChild, idxLevel);
+                    FLOG(computationCounter.tac());
+                    FLOG(totalComputation += computationCounter.elapsed());
                 }
-                kernels->L2L( currentCell , potentialChild, idxLevel);
-                FLOG(computationCounter.tac());
-                FLOG(totalComputation += computationCounter.elapsed());
             } while(octreeIterator.moveRight());
 
             avoidGotoLeftIterator.moveDown();
@@ -291,15 +294,17 @@ public:
         ContainerClass* neighbors[27];
         // for each leafs
         do{
-            FLOG(computationCounter.tic());
-            kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            // need the current particles and neighbors particles
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-            neighbors[13] = octreeIterator.getCurrentListSrc();
-            kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
-                          octreeIterator.getCurrentListSrc() , neighbors, counter);
-            FLOG(computationCounter.tac());
-            FLOG(totalComputation += computationCounter.elapsed());
+            if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
+                FLOG(computationCounter.tic());
+                kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+                // need the current particles and neighbors particles
+                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
+                neighbors[13] = octreeIterator.getCurrentListSrc();
+                kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+                              octreeIterator.getCurrentListSrc() , neighbors, counter + 1);
+                FLOG(computationCounter.tac());
+                FLOG(totalComputation += computationCounter.elapsed());
+            }
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );

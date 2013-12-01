@@ -17,7 +17,7 @@
 #define FFMMALGORITHMTHREADTSM_HPP
 
 
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
@@ -45,7 +45,7 @@
 * You should not write on sources in the P2P method!
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadTsm : protected FAssertable, public FAbstractAlgorithm{
+class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 
@@ -65,7 +65,7 @@ public:
                       : tree(inTree) , kernels(0), iterArray(0),
                       MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()) {
 
-        fassert(tree, "tree cannot be null", __LINE__, __FILE__);
+        FAssertLF(tree, "tree cannot be null");
 
         this->kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -98,7 +98,7 @@ public:
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
         iterArray = new typename OctreeClass::Iterator[numberOfLeafs];
-        fassert(iterArray, "iterArray bad alloc", __LINE__, __FILE__);
+        FAssertLF(iterArray, "iterArray bad alloc");
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -313,18 +313,20 @@ public:
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        CellClass* potentialChild[8];
-                        CellClass** const realChild = iterArray[idxCell].getCurrentChild();
-                        CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
-                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                            if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
-                                potentialChild[idxChild] = realChild[idxChild];
+                        if( iterArray[idxCell].getCurrentCell()->hasTargetsChild() ){
+                            CellClass* potentialChild[8];
+                            CellClass** const realChild = iterArray[idxCell].getCurrentChild();
+                            CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
+                            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                                if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                                    potentialChild[idxChild] = realChild[idxChild];
+                                }
+                                else{
+                                    potentialChild[idxChild] = 0;
+                                }
                             }
-                            else{
-                                potentialChild[idxChild] = 0;
-                            }
+                            myThreadkernels->L2L( currentCell , potentialChild, idxLevel);
                         }
-                        myThreadkernels->L2L( currentCell , potentialChild, idxLevel);
                     }
                 }
                 FLOG(computationCounter.tac());
@@ -362,12 +364,14 @@ public:
 
             #pragma omp for schedule(dynamic) nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
-                myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
-                neighbors[13] = iterArray[idxLeafs].getCurrentListSrc();
-                myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
-                                      iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter);
+                if( iterArray[idxLeafs].getCurrentCell()->hasTargetsChild() ){
+                    myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
+                    // need the current particles and neighbors particles
+                    const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
+                    neighbors[13] = iterArray[idxLeafs].getCurrentListSrc();
+                    myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
+                                      iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter + 1);
+                }
             }
         }
         FLOG(computationCounter.tac());

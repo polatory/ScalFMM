@@ -16,7 +16,6 @@
 #ifndef FTESTCELL_HPP
 #define FTESTCELL_HPP
 
-
 #include "FBasicCell.hpp"
 
 /**
@@ -63,13 +62,15 @@ public:
     /////////////////////////////////////////////////
 
     /** Save the current cell in a buffer */
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FBasicCell::save(buffer);
         buffer << dataDown << dataUp;
     }
 
     /** Restore the current cell from a buffer */
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FBasicCell::restore(buffer);
         buffer >> dataDown >> dataUp;
     }
@@ -77,22 +78,27 @@ public:
     /////////////////////////////////////////////////
 
     /** Serialize only up data in a buffer */
-    void serializeUp(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void serializeUp(BufferWriterClass& buffer) const {
         buffer << this->dataUp;
     }
     /** Deserialize only up data in a buffer */
-    void deserializeUp(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeUp(BufferReaderClass& buffer){
         buffer >> this->dataUp;
     }
 
     /** Serialize only down data in a buffer */
-    void serializeDown(FBufferWriter& buffer) const {
+    template <class BufferWriterClass>
+    void serializeDown(BufferWriterClass& buffer) const {
         buffer << this->dataDown;
     }
     /** Deserialize only up data in a buffer */
-    void deserializeDown(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void deserializeDown(BufferReaderClass& buffer){
         buffer >> this->dataDown;
     }
+
 };
 
 

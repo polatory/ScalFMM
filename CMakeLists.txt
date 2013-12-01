@@ -50,6 +50,7 @@ OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" 
 OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"       ON  )
+OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 #
@@ -90,9 +91,9 @@ else()
 # Compile Release flags
 #
   SET(CMAKE_BUILD_TYPE Release)
-  # force -O2 in release
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
-  STRING(REPLACE "-O3" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
+  # force -O3 in release
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+  STRING(REPLACE "-O2" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
   # if compiler is intel add -ip
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip")
@@ -104,9 +105,9 @@ else()
   ELSE(APPLE)
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
@@ -174,6 +175,12 @@ endif()
 
 # Use Mem stats
 MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
+
+# Use Log
+MESSAGE( STATUS "ScalFMM_USE_LOG              = ${ScalFMM_USE_LOG}" )
+
+# Use Assert
+MESSAGE( STATUS "ScalFMM_USE_ASSERT           = ${ScalFMM_USE_ASSERT}" )
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")

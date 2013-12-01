@@ -28,7 +28,7 @@
 #include "../Utils/FPoint.hpp"
 #include "../Utils/FMath.hpp"
 #include "../Utils/FNoCopyable.hpp"
-#include "../Utils/FAssertable.hpp"
+#include "../Utils/FAssert.hpp"
 
 
 /**
@@ -53,7 +53,7 @@
  * CellAllocator can be FListBlockAllocator<CellClass, 10> or FBasicBlockAllocator<CellClass>
  */
 template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FListBlockAllocator<CellClass, 15> >
-class FOctree : protected FAssertable, public FNoCopyable {
+class FOctree : public FNoCopyable {
     typedef FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
     typedef FSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctree;
 
@@ -93,14 +93,10 @@ class FOctree : protected FAssertable, public FNoCopyable {
         * @return the box num at the leaf level that contains inRelativePosition
         */
     int getTreeCoordinate(const FReal inRelativePosition) const {
-        FLOG( fassert(inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box", __LINE__, __FILE__) );
-        const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-        /*const int index = int(FMath::dfloor(indexFReal));
-        if( index && FMath::LookEqual(inRelativePosition, this->boxWidthAtLevel[this->leafIndex] * FReal(index) ) ){
-            return index - 1;
-        }
-        return index;*/
-        return static_cast<int>(indexFReal);
+      FAssertLF( (inRelativePosition >= 0 && inRelativePosition < this->boxWidth), "inRelativePosition : ",inRelativePosition );
+      FAssertLF( inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box" );
+      const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
+      return static_cast<int>(indexFReal);
     }
 
 public:
@@ -117,7 +113,7 @@ public:
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
           boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
     {
-        fassert(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
+        FAssertLF(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
         if(subHeight == height - 1){
             root = new FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(0, 0, this->subHeight, 1);
@@ -271,7 +267,7 @@ public:
           * It uses the left right limit on each suboctree and their morton index.
           * Please have a look to the move functions to understand how the system is working.
           */
-    class Iterator : protected FAssertable {
+    class Iterator  {
         SubOctreeTypes current; //< Current suboctree
 
         int currentLocalIndex;  //< Current index (array position) in the current_suboctree.cells[ currentLocalLevel ]
@@ -295,8 +291,8 @@ public:
             */
         explicit Iterator(FOctree* const inTarget)
             : currentLocalIndex(0) , currentLocalLevel(0) {
-            fassert(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
-            fassert(inTarget->root->getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
+            FAssertLF(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
+            FAssertLF(inTarget->root->getRightLeafIndex() >= 0, "Octree seems to be empty, getRightLeafIndex == 0", __LINE__, __FILE__);
 
             // Start by the root
             this->current.tree = inTarget->root;

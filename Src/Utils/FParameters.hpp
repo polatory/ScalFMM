@@ -36,7 +36,7 @@ namespace FParameters{
 	 * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
 	 */
 	template <class VariableType>
-	const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
+    inline const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
 		std::istringstream iss(str,std::istringstream::in);
 		VariableType value;
 		iss >> value;
@@ -47,21 +47,21 @@ namespace FParameters{
     /** To put a char into lower format
       *
       */
-    char toLower(const char c){
+    inline char toLower(const char c){
         return char('A' <= c && c <= 'Z' ? (c - 'A') + 'a' : c);
     }
 
     /** To know if two char are equals
       *
       */
-    bool areCharsEquals(const char c1, const char c2, const bool caseSensible = false){
+    inline bool areCharsEquals(const char c1, const char c2, const bool caseSensible = false){
         return (caseSensible && c1 == c2) || (!caseSensible && toLower(c1) == toLower(c2));
     }
 
     /** To know if two str are equals
       *
       */
-    bool areStrEquals(const char* const inStr1, const char* const inStr2, const bool caseSensible = false){
+    inline bool areStrEquals(const char* const inStr1, const char* const inStr2, const bool caseSensible = false){
         int idxStr = 0;
         while(inStr1[idxStr] != '\0' && inStr2[idxStr] != '\0'){
             if(!areCharsEquals(inStr1[idxStr] ,inStr2[idxStr],caseSensible)){
@@ -75,7 +75,7 @@ namespace FParameters{
     /** To find a parameters from user format char parameters
       *
       */
-    int findParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
+    inline int findParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
         for(int idxArg = 0; idxArg < argc ; ++idxArg){
             if(areStrEquals(inName, argv[idxArg], caseSensible)){
                 return idxArg;
@@ -87,7 +87,7 @@ namespace FParameters{
     /** To know if a parameter exist from user format char parameters
       *
       */
-    bool existParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
+    inline bool existParameter(const int argc, const char* const * const argv, const char* const inName, const bool caseSensible = false){
         return NotFound != findParameter( argc, argv, inName, caseSensible);
     }
 
@@ -97,7 +97,7 @@ namespace FParameters{
       * else 0
       */
     template <class VariableType>
-    const VariableType getValue(const int argc, const char* const * const argv, const char* const inName, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
+    inline const VariableType getValue(const int argc, const char* const * const argv, const char* const inName, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
         if(position == NotFound || position == argc - 1){
             return defaultValue;
@@ -107,7 +107,7 @@ namespace FParameters{
 
     /** Get a str from argv
       */
-    const char* getStr(const int argc, const char* const * const argv, const char* const inName, const char* const inDefault, const bool caseSensible = false){
+    inline const char* getStr(const int argc, const char* const * const argv, const char* const inName, const char* const inDefault, const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
         if(position == NotFound || position == argc - 1){
             return inDefault;

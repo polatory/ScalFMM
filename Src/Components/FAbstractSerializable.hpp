@@ -16,8 +16,6 @@
 #ifndef FABSTRACTSERIALIZABLE_HPP
 #define FABSTRACTSERIALIZABLE_HPP
 
-class FBufferReader;
-class FBufferWriter;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -29,8 +27,14 @@ class FBufferWriter;
 */
 class FAbstractSerializable {
 protected:
-    virtual void save(FBufferWriter&) const  = 0;
-    virtual void restore(FBufferReader&) = 0;
+    template <class BufferWriterClass>
+    void save(BufferWriterClass&) const{
+        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement save");
+    }
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass&){
+        static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement restore");
+    }
 };
 
 #endif // FABSTRACTSERIALIZABLE_HPP

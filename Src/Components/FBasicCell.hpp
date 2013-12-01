@@ -16,7 +16,7 @@
 #ifndef FBASICCELL_HPP
 #define FBASICCELL_HPP
 
-
+#include "FAbstractSerializable.hpp"
 #include "../Extensions/FExtendMortonIndex.hpp"
 #include "../Extensions/FExtendCoordinate.hpp"
 
@@ -34,19 +34,21 @@
 *
 *
 */
-class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate {
+class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate, public FAbstractSerializable {
 public:
     /** Default destructor */
     virtual ~FBasicCell(){
     }
 
     /** Save the current cell in a buffer */
-    void save(FBufferWriter& buffer) const{
+    template <class BufferWriterClass>
+    void save(BufferWriterClass& buffer) const{
         FExtendMortonIndex::save(buffer);
         FExtendCoordinate::save(buffer);
     }
     /** Restore the current cell from a buffer */
-    void restore(FBufferReader& buffer){
+    template <class BufferReaderClass>
+    void restore(BufferReaderClass& buffer){
         FExtendMortonIndex::restore(buffer);
         FExtendCoordinate::restore(buffer);
     }

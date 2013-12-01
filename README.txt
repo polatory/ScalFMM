@@ -10,6 +10,7 @@ cmake ..
 # Or if you want to use MPI
 cmake .. -DScalFMM_USE_MPI=ON
 
+
 # Configure, for example with:
 ccmake ..
 # turn on/off the options you want
@@ -29,6 +30,3 @@ cd scalfmm/Build
 make doc
 # This will create a Html dir
 browser scalfmm/Build/Doc/html/index.html
-
-
-
