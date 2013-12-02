@@ -1,5 +1,8 @@
  cmake_minimum_required (VERSION 2.8.3 FATAL_ERROR)
-
+if(CMAKE_MAJOR_VERSION GREATER 1 AND CMAKE_MINOR_VERSION GREATER 7 AND CMAKE_PATCH_VERSION GREATER 11)
+  cmake_policy(SET CMP0022 OLD)
+endif()
+cmake_policy(SET CMP0004 OLD)
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
@@ -10,7 +13,7 @@ endif(insource)
 # MPI option has to be set before project, cannot be changed in the cache!
 if( ScalFMM_USE_MPI )
 	include(CMakeForceCompiler)
-	CMAKE_FORCE_C_COMPILER(mpicc "MPI C Compiler") 
+	CMAKE_FORCE_C_COMPILER(mpicc    "MPI C Compiler") 
     	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
 	set(ScalFMM_USE_MPI ON CACHE BOOL "ScalFmm use MPI")
 else()
@@ -52,62 +55,74 @@ OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"    
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
-
+#
+# Compile option
+#
+SET(ScaLFMM_CXX_FLAGS "-std=c++11 -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic")
+#
 # Test if openmp is here
+#
 find_package (OpenMP) 
 if(OPENMP_FOUND)
 	set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 	set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 	set(CMAKE_EXE_LINKER_FLAGS   "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
+endif(OPENMP_FOUND)
+MESSAGE(STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
 # Debug
-MESSAGE( STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
 if( ScalFMM_BUILD_DEBUG )
+#
+# Compile Debug flags
+#
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
-
-  # Compile optimization
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
-  ELSE()
+  ELSE(APPLE)
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
        SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64 -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
     else()
        SET(SCALFMM_FLAGS_OPTI_DEBUG "-march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
     endif()
-  ENDIF()
-  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
+  ENDIF(APPLE)
+#  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
+  SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
 else()
+#
+# Compile Release flags
+#
   SET(CMAKE_BUILD_TYPE Release)
   # force -O3 in release
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
   STRING(REPLACE "-O2" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
   # if compiler is intel add -ip
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    ADD_DEFINITIONS(-ip)
+    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip")
   ENDIF()
 
   # Compile optimization
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
-  ELSE()
+    SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
+  ELSE(APPLE)
     # Test if not apple and 64bits
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
        SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
        SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
-  ENDIF()
-  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
+  ENDIF(APPLE)
+#  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
+  SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
 endif()
-
+#
 # Attach source code to exec
 MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
 if( ScalFMM_ATTACHE_SOURCE )
   MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
-  ADD_DEFINITIONS(-g)
+#  ADD_DEFINITIONS(-g)
+    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
+
 endif()
 
 # Trace
@@ -123,25 +138,27 @@ endif()
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
-     SET(BLAS_LIBRARIES "-L$ENV{MKLROOT}/lib  -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" CACHE STRING "Set your MKL flags")
+     SET(BLAS_LIBRARIES "-L$ENV{MKLROOT}/lib -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" CACHE STRING "Set your MKL flags")
+     SET(LAPACK_LIBRARIES "")
   elseif(ScalFMM_USE_EXTERNAL_BLAS) 
          MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
   else()
 	INCLUDE(FindBLAS)
 	INCLUDE(FindLAPACK)
   endif()
-  #SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}")
-  SET(SCALFMM_LIBRARIES ${SCALFMM_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  #MESSAGE(${SCALFMM_LIBRARIES})
-endif()
+  MESSAGE("BLAS_LIBRARIES ${BLAS_LIBRARIES}")
+  MESSAGE(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}")
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}")
+endif(ScalFMM_USE_BLAS)
 
 # Compile option
-ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
+#ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
 # 
 # C++ 2011
-ADD_DEFINITIONS(-std=c++11)
+#ADD_DEFINITIONS(-std=c++11)
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" AND APPLE)
-  ADD_DEFINITIONS(-stdlib=libstdc++)
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES} -stdlib=libc++")
+  SET(ScaLFMM_CXX_FLAGS "${ScaLFMM_CXX_FLAGS} -stdlib=libc++")
 endif()
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
@@ -243,3 +260,8 @@ SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.ou
 LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}")
 #
 INCLUDE(CPack)
+#
+# OUTPUT
+#
+MESSAGE(STATUS "ScaLFMM_CXX_FLAGS:  ${ScaLFMM_CXX_FLAGS}")
+MESSAGE(STATUS "SCALFMM_LIBRARIES:-${SCALFMM_LIBRARIES}-")

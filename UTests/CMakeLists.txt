@@ -5,7 +5,9 @@ if(insource)
 endif(insource)
 
 project(UTests_scalfmm CXX)
+
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
+ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS})
 
 # Find all code files
 file(	

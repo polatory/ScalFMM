@@ -8,7 +8,8 @@ endif(insource)
 project(Lib_scalfmm)
 set(LIBRARY_OUTPUT_PATH ../lib/${CMAKE_BUILD_TYPE})
 
-
+ADD_DEFINITIONS(${ScaLFMM_CXX_FLAGS})
+MESSAGE( ${ScaLFMM_CXX_FLAGS})
 # Searching all cpp file
 file(
 	GLOB_RECURSE
@@ -26,8 +27,8 @@ add_library(
 # Add blas library (even if it is set to off)
 target_link_libraries(
 	scalfmm
-	${BLAS_LIBRARIES}
-	${LAPACK_LIBRARIES}
+	${scalfmm_lib}
+	${SCALFMM_LIBRARIES}
 )
 
 # Adding the entire project dir as an include dir
@@ -54,5 +55,6 @@ FOREACH(my_dir ${my_include_dirs})
 	)
 	INSTALL( FILES ${hpp_in_dir} DESTINATION include/${my_dir} )
 ENDFOREACH()
+
 INSTALL( FILES "${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/Utils/${my_dir} )
 
