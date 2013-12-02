@@ -1,5 +1,7 @@
  cmake_minimum_required (VERSION 2.8.3 FATAL_ERROR)
-cmake_policy(SET CMP0022 OLD)
+if(CMAKE_MAJOR_VERSION GREATER 1 AND CMAKE_MINOR_VERSION GREATER 7 AND CMAKE_PATCH_VERSION GREATER 11)
+  cmake_policy(SET CMP0022 OLD)
+endif()
 cmake_policy(SET CMP0004 OLD)
 # check if compiling into source directories
 STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
