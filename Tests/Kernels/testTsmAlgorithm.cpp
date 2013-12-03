@@ -49,7 +49,7 @@
 // Simply create particles and try the kernels
 template <class CellClass, class ContainerClass, class LeafClass, class OctreeClass,
           class KernelClass, class FmmClass, typename... Args>
-int testFunction(int argc, char ** argv, Args... kernelPreArgs){
+int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     FTic counter;
     // Retrieve parameters
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
@@ -89,8 +89,8 @@ int testFunction(int argc, char ** argv, Args... kernelPreArgs){
 
     std::cout << "Create kernel ..." << std::endl;
     counter.tic();
-
-    KernelClass kernels( kernelPreArgs... , NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    //    KernelClass kernels( kernelPreArgs... , NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    KernelClass kernels( kernelPreArgs... , loader.getBoxWidth(), loader.getCenterOfBox());
 
     counter.tac();
     std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
@@ -139,6 +139,7 @@ int testFunction(int argc, char ** argv, Args... kernelPreArgs){
 // This is the real main!
 int main(int argc, char ** argv){
     std::cout << "[PARAM] Use Parameters -spherical -rotation -chebyshev\n";
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
 
     if( FParameters::existParameter(argc,argv,"-spherical") ){
         std::cout << "[INFO] -spherical is used\n";
@@ -156,7 +157,7 @@ int main(int argc, char ** argv){
         CellClass::Init(DevP);
 
         // Call Main function
-        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP);
+        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP,NbLevels);
     }
 
     if( FParameters::existParameter(argc,argv,"-rotation") ){
@@ -173,7 +174,7 @@ int main(int argc, char ** argv){
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Call Main function
-        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv);
+        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv,NbLevels);
     }
 
     return 0;
