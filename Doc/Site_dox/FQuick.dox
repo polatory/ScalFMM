@@ -11,6 +11,8 @@
  * downloaded the sources. The user needs to be comfortable with 'C++' 
  * language and if possible templates. 
 
+ * If you want to browse the code, you may want to see first our \ref rules.
+
  * \section classes Overview of general architecture
  *
  * \image html Classes.png "General architecture"

@@ -13,7 +13,7 @@
 * \section secNecessary Require
 *
 * <ul>
-  * <li> CMake for compiling, ccmake for configuring the build </li>
+  * <li> CMake for compiling, ccmake for configuring the build. Version 2.8.12.1 or later </li>
   * <li> Open MP </li>
   * <li> MPI, if you want to use distributed version of the algorithm </li>
   * <li> A compiler supporting C++ 2011 </li>
