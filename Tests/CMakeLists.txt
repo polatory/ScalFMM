@@ -54,8 +54,7 @@ foreach(exec ${source_tests_files})
 				${execname}
 				${exec}
 				)
-		SET_TARGET_PROPERTIES(${execname} PROPERTIES
-    ENABLE_EXPORTS TRUE)
+		SET_TARGET_PROPERTIES(${execname} PROPERTIES ENABLE_EXPORTS TRUE)
 		target_link_libraries(
 			${execname}
 			${scalfmm_lib}
