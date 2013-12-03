@@ -69,13 +69,13 @@ public:
     template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
     static FAbstractAlgorithm* BuildAlgorithm(OctreeClass*const tree, KernelClass*const kernel,
                                        const MPI_Comm mpiComm = (MPI_Comm)0, const bool isPeriodic = false,
-                                       const int periodicUpperlevel = 0, const int inPeriodicDirections = AllDirs){
+                                       const int periodicUpperlevel = 0){
     #ifdef ScalFMM_USE_MPI
         if(isPeriodic == false){
             return new FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, kernel);
         }
         else{
-            auto algo = new FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, periodicUpperlevel, inPeriodicDirections);
+            auto algo = new FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, periodicUpperlevel);
             algo->setKernel(kernel);
             return algo;
         }
@@ -84,7 +84,7 @@ public:
             return new FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, kernel);
         }
         else{
-            auto algo = new FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, periodicUpperlevel, inPeriodicDirections);
+            auto algo = new FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, periodicUpperlevel);
             algo->setKernel(kernel);
             return algo;
         }

@@ -9,7 +9,7 @@ project(Lib_scalfmm)
 set(LIBRARY_OUTPUT_PATH ../lib/${CMAKE_BUILD_TYPE})
 
 ADD_DEFINITIONS(${ScaLFMM_CXX_FLAGS})
-MESSAGE( ${ScaLFMM_CXX_FLAGS})
+
 # Searching all cpp file
 file(
 	GLOB_RECURSE

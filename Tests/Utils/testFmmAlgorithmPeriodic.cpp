@@ -66,13 +66,6 @@ int main(int argc, char ** argv){
     const long NbParticles      = FParameters::getValue(argc,argv,"-nb", 1000);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
     // choose in +x dir or -/+x dir or all dirs
-    int PeriodicDirs          = (FParameters::existParameter(argc,argv,"-x")?DirMinusX:0) |
-                                (FParameters::existParameter(argc,argv,"+x")?DirPlusX:0) |
-                                (FParameters::existParameter(argc,argv,"-y")?DirMinusY:0) |
-                                (FParameters::existParameter(argc,argv,"+y")?DirPlusY:0) |
-                                (FParameters::existParameter(argc,argv,"-z")?DirMinusZ:0) |
-                                (FParameters::existParameter(argc,argv,"+z")?DirPlusZ:0);
-    if( PeriodicDirs == 0 ) PeriodicDirs =  AllDirs;
 
     FTic counter;
 
@@ -106,7 +99,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     KernelClass kernels;
-    FmmClass algo( &tree, PeriodicDeep, PeriodicDirs);
+    FmmClass algo( &tree, PeriodicDeep);
     algo.setKernel(&kernels);
     algo.execute();
 
@@ -134,10 +127,9 @@ int main(int argc, char ** argv){
         }
     }
     {
-        const FTreeCoordinate repetitions = algo.repetitions();
-        const int totalRepeatedBox = repetitions.getX() * repetitions.getY() * repetitions.getZ();
-        std::cout << "The box is repeated " << repetitions.getX() <<" "<< repetitions.getY()<<" "<<
-                     repetitions.getZ() << " there are " << totalRepeatedBox << " boxes in total\n";
+        const long repetitions = algo.theoricalRepetition();
+        const long totalRepeatedBox = repetitions * repetitions * repetitions;
+        std::cout << "The box is repeated " << repetitions << " there are " << totalRepeatedBox << " boxes in total\n";
         const long long NbParticlesEntireSystem = loader.getNumberOfParticles() * totalRepeatedBox;
         std::cout << "The total number of particles is "  << NbParticlesEntireSystem << "\n";
 

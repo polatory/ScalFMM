@@ -69,15 +69,7 @@ int main(int argc, char ** argv){
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
     const long NbParticles      = FParameters::getValue(argc,argv,"-nb", 5);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
-    // choose in +x dir or -/+x dir or all dirs
-    int PeriodicDirs          = (FParameters::existParameter(argc,argv,"-x")?DirMinusX:0) |
-                                (FParameters::existParameter(argc,argv,"+x")?DirPlusX:0) |
-                                (FParameters::existParameter(argc,argv,"-y")?DirMinusY:0) |
-                                (FParameters::existParameter(argc,argv,"+y")?DirPlusY:0) |
-                                (FParameters::existParameter(argc,argv,"-z")?DirMinusZ:0) |
-                                (FParameters::existParameter(argc,argv,"+z")?DirPlusZ:0);
-    if( PeriodicDirs == 0 ) PeriodicDirs =  AllDirs;
-    if( FParameters::existParameter(argc,argv,"-nodir") ) PeriodicDirs = 0;
+
 
     FMpi app(argc, argv);
 
@@ -127,7 +119,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     KernelClass kernels;
-    FmmClass algo( app.global(), &tree, PeriodicDeep, PeriodicDirs);
+    FmmClass algo( app.global(), &tree, PeriodicDeep);
     algo.setKernel(&kernels);
     algo.execute();
 
@@ -138,10 +130,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     {
-        const FTreeCoordinate repetitions = algo.repetitions();
-        const int totalRepeatedBox = repetitions.getX() * repetitions.getY() * repetitions.getZ();
-        std::cout << "The box is repeated " << repetitions.getX() <<" "<< repetitions.getY()<<" "<<
-                     repetitions.getZ() << " there are " << totalRepeatedBox << " boxes in total\n";
+        long long totalRepeatedBox = algo.theoricalRepetition();
+        totalRepeatedBox = (totalRepeatedBox*totalRepeatedBox*totalRepeatedBox);
         const long long NbParticlesEntireSystem = (NbParticles * app.global().processCount()) * totalRepeatedBox;
         std::cout << "The total number of particles is "  << NbParticlesEntireSystem << "\n";
         FTreeCoordinate min, max;
@@ -177,7 +167,7 @@ int main(int argc, char ** argv){
             }
         }
 
-        FmmClassSeq algoSeq( &treeSeq, PeriodicDeep, PeriodicDirs);
+        FmmClassSeq algoSeq( &treeSeq, PeriodicDeep);
         algoSeq.setKernel(&kernels);
         algoSeq.execute();
 

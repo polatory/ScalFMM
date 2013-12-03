@@ -75,7 +75,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
 
         // Run FMM
         Print("Fmm...");
-        FmmClass algo(&tree,PeriodicDeep, DirX | DirMinusY  | DirPlusZ);
+        FmmClass algo(&tree,PeriodicDeep);
         KernelClass kernels( algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
         algo.setKernel(&kernels);
         algo.execute();
