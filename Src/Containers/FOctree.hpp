@@ -52,7 +52,7 @@
  * at level 0 the space is not split
  * CellAllocator can be FListBlockAllocator<CellClass, 10> or FBasicBlockAllocator<CellClass>
  */
-template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FListBlockAllocator<CellClass, 15> >
+template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
 class FOctree : public FNoCopyable {
     typedef FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
     typedef FSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctree;

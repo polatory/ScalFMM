@@ -27,15 +27,16 @@
 /**
 * This class is simply used to count alloc dealloc
 */
+static const int SizeArray = 50;
 class TestObject{
 public:
     static int counter;
     static int dealloced;
 
-    int array[50];
+    int array[SizeArray];
 
     TestObject(){
-        memset(array, 0, 50 * sizeof(int));
+        memset(array, 0, SizeArray * sizeof(int));
         ++counter;
     }
     TestObject(const TestObject&){
@@ -62,8 +63,9 @@ class TestBlock : public FUTester<TestBlock> {
     void TestBlockFunction(){
         FListBlockAllocator<TestObject, 10> alloc;
 
-        TestObject* ptr[100];
-        for(int idx = 0 ; idx < 100 ; ++idx){
+        const int NbAlloc = 2;
+        TestObject* ptr[NbAlloc];
+        for(int idx = 0 ; idx < NbAlloc ; ++idx){
             TestObject* dl1 = alloc.newObject();
             TestObject* dl2 = alloc.newObject();
             alloc.deleteObject(dl1);
@@ -71,23 +73,23 @@ class TestBlock : public FUTester<TestBlock> {
             alloc.deleteObject(dl2);
         }
 
-        for(int idx = 0 ; idx < 100 ; ++idx){
-            for(int idxval = 0 ; idxval < 50 ; ++idxval){
+        for(int idx = 0 ; idx < 2 ; ++idx){
+            for(int idxval = 0 ; idxval < 17 ; ++idxval){
                 ptr[idx]->array[idxval] += (idxval * idx);
             }
         }
 
-        for(int idx = 0 ; idx < 100 ; ++idx){
-            for(int idxval = 0 ; idxval < 50 ; ++idxval){
+        for(int idx = 0 ; idx < NbAlloc ; ++idx){
+            for(int idxval = 0 ; idxval < SizeArray ; ++idxval){
                 uassert(ptr[idx]->array[idxval] == (idxval * idx));
             }
         }
 
-        for(int idx = 0 ; idx < 100 ; ++idx){
+        for(int idx = 0 ; idx < NbAlloc ; ++idx){
             alloc.deleteObject(ptr[idx]);
         }
 
-        uassert(TestObject::counter == 300);
+        uassert(TestObject::counter == (3*NbAlloc));
         uassert(TestObject::counter == TestObject::dealloced);
     }
 

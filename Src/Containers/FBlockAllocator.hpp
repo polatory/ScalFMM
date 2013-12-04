@@ -2,7 +2,10 @@
 #define FBLOCKALLOCATOR_HPP
 
 #include <list>
+#include <list>
 #include <cstring>
+
+#include "../Utils/FAssert.hpp"
 
 /**
  * What a cell allocator should implement
@@ -43,28 +46,39 @@ public:
  */
 template <class ObjectClass, int SizeOfBlock >
 class FListBlockAllocator : public FAbstractBlockAllocator<ObjectClass>{
+    static_assert(SizeOfBlock >= 1, "SizeOfBlock should be 1 minimum");
+
     class CellsBlock {
+        CellsBlock(const CellsBlock&) = delete;
+        CellsBlock& operator=(const CellsBlock&) = delete;
+
         int nbObjectInBlock;
+        ObjectClass*const objectPtr;
         unsigned char usedBlocks[SizeOfBlock];
         unsigned char objectMemory[SizeOfBlock * sizeof(ObjectClass)];
 
     public:
-        CellsBlock() : nbObjectInBlock(0){
+        CellsBlock() : nbObjectInBlock(0), objectPtr(reinterpret_cast<ObjectClass*>(objectMemory)){
             memset(usedBlocks, 0, sizeof(unsigned char) * SizeOfBlock);
         }
 
+        ~CellsBlock(){
+            FAssertLF(nbObjectInBlock == 0x0);
+        }
+
         bool isInsideBlock(const ObjectClass*const cellPtr) const{
-            const unsigned char*const inPtr = reinterpret_cast<const unsigned char*>( cellPtr );
-            return objectMemory <= inPtr && inPtr < (objectMemory+ SizeOfBlock * sizeof(ObjectClass));
+            return objectPtr <= cellPtr && cellPtr < &objectPtr[SizeOfBlock];
         }
 
         int getPositionInBlock(const ObjectClass*const cellPtr) const{
-            const unsigned char*const inPtr = reinterpret_cast<const unsigned char*>( cellPtr );
-            return int((inPtr - objectMemory) / sizeof(ObjectClass));
+            const int position = int((cellPtr - objectPtr));
+            FAssertLF(usedBlocks[position] != 0x0);
+            return position;
         }
 
         void deleteObject(const int position){
-            reinterpret_cast<ObjectClass*>(objectMemory)[position].~ObjectClass();
+            FAssertLF(usedBlocks[position] != 0x0);
+            objectPtr[position].~ObjectClass();
             nbObjectInBlock -= 1;
             usedBlocks[position] = 0x0;
         }
@@ -74,8 +88,8 @@ class FListBlockAllocator : public FAbstractBlockAllocator<ObjectClass>{
                 if(usedBlocks[idx] == 0){
                     nbObjectInBlock += 1;
                     usedBlocks[idx] = 0x1;
-                    new (&reinterpret_cast<ObjectClass*>(objectMemory)[idx]) ObjectClass;
-                    return &reinterpret_cast<ObjectClass*>(objectMemory)[idx];
+                    new (&(objectPtr[idx])) ObjectClass;
+                    return &(objectPtr[idx]);
                 }
             }
 
