@@ -1,5 +1,9 @@
 /*! \page install Downloading, Building and Installing ScalFMM
 *
+* On this page, you will find all the requirements for building and installing ScalFMM.
+*
+* \tableofcontents
+*
 * \section download Download ScalFMM
 *
 * To download ScalFmm go on http://scalfmm-public.gforge.inria.fr/download.html.
