@@ -485,9 +485,9 @@ private:
                          FReal*const forcesX,FReal*const forcesY,FReal*const forcesZ){
         //--------------- Forces ----------------//
 
-        FReal force_vector_in_local_base_x = 0;
-        FReal force_vector_in_local_base_y = 0;
-        FReal force_vector_in_local_base_z = 0;
+        FReal force_vector_in_local_base_x = 0.0;
+        FReal force_vector_in_local_base_y = 0.0;
+        FReal force_vector_in_local_base_z = 0.0;
 
         const FSpherical spherical(particlePosition - local_position);
         harmonic.computeInnerTheta( spherical );
@@ -536,12 +536,15 @@ private:
         // The -(- 1.0) computing is not the most efficient programming ...
         const FReal signe = 1.0;
         //if( FMath::Epsilon < spherical.getR()){
-            force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
+        // POURQUOI diviser par spherical.getR()
+            force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR()); // ????
+        	// force_vector_in_local_base_x = ( force_vector_in_local_base_x ); // Better
+            //
             force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
             force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
         //}
         /////////////////////////////////////////////////////////////////////
-
+        //	???????????????????
         //spherical_position_Set_ph
         FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
         if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
@@ -565,7 +568,10 @@ private:
         const FReal cos_phi     = FMath::Cos(ph);
         const FReal sin_theta   = FMath::Sin(th);
         const FReal sin_phi     = FMath::Sin(ph);
-
+//
+        //
+        // Formulae below are OK
+        //
         FReal force_vector_tmp_x = (
                 cos_phi * sin_theta * force_vector_in_local_base_x  +
                 cos_phi * cos_theta * force_vector_in_local_base_y +
@@ -587,11 +593,11 @@ private:
         (*forcesX) += force_vector_tmp_x;
         (*forcesY) += force_vector_tmp_y;
         (*forcesZ) += force_vector_tmp_z;
-
+        //
         //--------------- Potential ----------------//
-
+        //
         FReal result = 0.0;
-        index_j_k = 0;
+        index_j_k    = 0;
 
         for(int j = 0 ; j<= devP ; ++j){
             // k=0
