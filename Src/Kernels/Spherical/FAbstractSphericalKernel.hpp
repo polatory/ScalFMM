@@ -552,9 +552,9 @@ private:
         if (th > FMath::FPi){
             th = 2*FMath::FPi - th;
             //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-       /*     ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+            ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
             if (ph > M_PI) ph -= 2*FMath::FPi;
-            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi; */
+            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
         }
         //spherical_position_Set_r
         //FReal rh = spherical.r;
@@ -570,9 +570,9 @@ private:
             if (th > FMath::FPi){
                 th = 2*FMath::FPi - th;
                 //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-            /*    ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+                ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
                 if (ph > M_PI) ph -= 2*FMath::FPi;
-                if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;*/
+                if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
             }
         }
 
