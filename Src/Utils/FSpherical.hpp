@@ -96,8 +96,8 @@ public:
     }
     /** Get the azimuth angle [0,2pi]. You should use this method in order to obtain (x,y,z)*/
     FReal getAzimuth() const{
-        return (FMath::FPi + phi );
-//       return (phi < 0 ? FMath::FPi*2 + phi : phi);
+       // return (FMath::FPi + phi );
+        return (phi < 0 ? FMath::FPi*2.0 + phi : phi);
     }
 
     /** Get the cos of theta = z / r */
