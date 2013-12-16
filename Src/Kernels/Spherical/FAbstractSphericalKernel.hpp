@@ -534,17 +534,17 @@ private:
         // We want: - gradient(POTENTIAL_SIGN potential).
         // The -(- 1.0) computing is not the most efficient programming ...
         const FReal signe = 1.0;
-        if( FMath::Epsilon < spherical.getR()){
+        //if( FMath::Epsilon < spherical.getR()){
             force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
             force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
             force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
-        }
+        //}
         /////////////////////////////////////////////////////////////////////
 
         //spherical_position_Set_ph
         FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
         if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
-        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::Epsilon;
+        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi;
 
         //spherical_position_Set_th
         FReal th = FMath::Fmod(FMath::ACos(spherical.getCosTheta()), FReal(2) * FMath::FPi);
