@@ -23,6 +23,7 @@
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FSmartPointer.hpp"
 #include "../../Utils/FPoint.hpp"
+#include "../../Utils/FAssert.hpp"
 
 #include "../../Containers/FTreeCoordinate.hpp"
 
@@ -558,23 +559,7 @@ private:
         }
         //spherical_position_Set_r
         //FReal rh = spherical.r;
-        if (spherical.getR() < 0){
-            //rh = -spherical.r;
-            //spherical_position_Set_ph(p, M_PI - spherical_position_Get_th(p));
-            ph = FMath::Fmod(FMath::FPi - th, 2*FMath::FPi);
-            if (ph > M_PI) ph -= 2*FMath::FPi;
-            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::Epsilon;
-            //spherical_position_Set_th(p, spherical_position_Get_th(p) + M_PI);
-            th = FMath::Fmod(th + FMath::FPi, 2*FMath::FPi);
-            if (th < 0.0) th += 2*FMath::FPi;
-            if (th > FMath::FPi){
-                th = 2*FMath::FPi - th;
-                //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-                ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
-                if (ph > M_PI) ph -= 2*FMath::FPi;
-                if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
-            }
-        }
+        FAssertLF(spherical.getR() >= 0 , "R should be < 0!");
 
         const FReal cos_theta   = FMath::Cos(th);
         const FReal cos_phi     = FMath::Cos(ph);
