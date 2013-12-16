@@ -38,8 +38,10 @@
  * To download build and install the application, please see \ref
  * install.
  *
- * The \ref quick can help you to understand the architectur of the
+ * The \ref quick can help you to understand the architecture of the
  * library.
+ *
+ * The \ref mainexamples page can help you to understand how the test are made.
  *
  * This software is distributed under a specific License. For more
  * informations, see \ref License.
