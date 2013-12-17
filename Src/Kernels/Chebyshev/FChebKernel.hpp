@@ -70,8 +70,8 @@ public:
 			M2LHandler(new M2LHandlerClass(Epsilon))
 	{
 		// read precomputed compressed m2l operators from binary file
-		M2LHandler->ReadFromBinaryFileAndSet();
-		//M2LHandler->ComputeAndCompressAndSet();
+		//M2LHandler->ReadFromBinaryFileAndSet();
+		M2LHandler->ComputeAndCompressAndSet();
 	}
 
 
@@ -209,14 +209,14 @@ public:
                      ContainerClass* const NeighborSourceParticles[27],
                      const int /* size */)
     {
-        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteactionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
     }
 
 };

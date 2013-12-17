@@ -35,7 +35,7 @@
 
 
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
@@ -50,7 +50,7 @@
 int main(int, char **){
     typedef FP2PParticleContainer ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 
 
 	///////////////////////What we do/////////////////////////////

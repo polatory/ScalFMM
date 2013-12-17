@@ -22,7 +22,7 @@
 
 #include "../../Components/FAbstractKernels.hpp"
 
-#include "FChebP2PKernels.hpp"
+#include "../Interpolation/FInterpP2PKernels.hpp"
 #include "./FChebInterpolator.hpp"
 
 #include "../../Containers/FTreeCoordinate.hpp"

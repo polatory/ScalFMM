@@ -27,10 +27,9 @@
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
 
-#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -45,7 +44,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 
 /**
- * This program runs the FMM Algorithm with the Chebyshev kernel and compares the results with a direct computation.
+ * This program runs the FMM Algorithm with the Uniform kernel and compares the results with a direct computation.
  */
 
 // Simply create particles and try the kernels
@@ -63,8 +62,8 @@ int main(int argc, char* argv[])
   std::cout << "\n>> Sequential version.\n" << std::
 #endif
 
-  // init timer
-  FTic time;
+    // init timer
+    FTic time;
 
   // init particles position and physical value
   struct TestParticle{
@@ -95,7 +94,7 @@ int main(int argc, char* argv[])
   ////////////////////////////////////////////////////////////////////
 
   { // begin direct computation
-
+    std::cout << "\nDirect Computation ... " << std::endl;
     time.tic();
     {
       for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
@@ -112,26 +111,25 @@ int main(int argc, char* argv[])
       }
     }
     time.tac();
-    printf("Elapsed Time for direct computation: %f\n",time.elapsed());
+    std::cout << "Done  " << "(@Direct Computation = "
+              << time.elapsed() << "s)." << std::endl;
 
   } // end direct computation
 
   ////////////////////////////////////////////////////////////////////
 
-  {	// begin Chebyshev kernel
+  {	// begin Lagrange kernel
 
     // accuracy
     const unsigned int ORDER = 7;
-    const FReal epsilon = FReal(1e-7);
     // typedefs
     typedef FP2PParticleContainerIndexed ContainerClass;
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
     //typedef FInterpMatrixKernelLJ MatrixKernelClass;
     typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FChebCell<ORDER> CellClass;
+    typedef FUnifCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-    //typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -156,9 +154,9 @@ int main(int argc, char* argv[])
     } // -----------------------------------------------------
 
     { // -----------------------------------------------------
-      std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ",EPS="<< epsilon <<") ... " << std::endl;
+      std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
+      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();
@@ -171,7 +169,7 @@ int main(int argc, char* argv[])
       FMath::FAccurater potentialDiff;
       FMath::FAccurater fx, fy, fz;
       { // Check that each particle has been summed with all other
-    
+
         tree.forEachLeaf([&](LeafClass* leaf){
             const FReal*const potentials = leaf->getTargets()->getPotentials();
             const FReal*const forcesX = leaf->getTargets()->getForcesX();
@@ -179,7 +177,7 @@ int main(int argc, char* argv[])
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
             const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
             const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-    
+
             for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
               const int indexPartOrig = indexes[idxPart];
               potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
@@ -197,160 +195,7 @@ int main(int argc, char* argv[])
       std::cout << "Fz " << fz << std::endl;
     } // -----------------------------------------------------
 
-  } // end Chebyshev kernel
-
-
-
-
-  //// -----------------------------------------------------
-  //{ // cost of symmetric m2l opertors, weighted rank, etc.
-  //	const unsigned int nnodes = ORDER*ORDER*ORDER;
-  //	const SymmetryHandler<ORDER> *const SymHandler = kernels.getPtrToSymHandler();
-  //	unsigned int expansionCounter[343];
-  //	for (unsigned i=0; i<343; ++i) expansionCounter[i] = 0;
-  //	for (unsigned i=0; i<343; ++i) if (SymHandler->pindices[i]) expansionCounter[SymHandler->pindices[i]]++;
-  //
-  //	unsigned int overallCost = 0;
-  //	unsigned int overallWeightedRank = 0;
-  //	unsigned int nbExpansions = 0;
-  //	for (unsigned i=0; i<343; ++i)
-  //		if (expansionCounter[i]) {
-  //			const unsigned int cost = (2*nnodes*SymHandler->LowRank[i]) * expansionCounter[i];
-  //			const unsigned int weightedRank = SymHandler->LowRank[i] * expansionCounter[i];
-  //			overallCost += cost;
-  //			overallWeightedRank += weightedRank;
-  //			nbExpansions += expansionCounter[i];
-  //			std::cout << "expansionCounter[" << i << "] = " << expansionCounter[i]
-  //								<< "\tlow rank = " << SymHandler->LowRank[i]
-  //								<< "\t(2*nnodes*rank) * nb_exp = " << cost
-  //								<< std::endl;
-  //		}
-  //	std::cout << "=== Overall cost = " << overallCost << "\t Weighted rank = " << (double)overallWeightedRank / (double)nbExpansions << std::endl;
-  //	if (nbExpansions!=316) std::cout << "Something went wrong, number of counted expansions = " << nbExpansions << std::endl;
-  //}
-  //// -----------------------------------------------------
-
-
-  // -----------------------------------------------------
-  // find first non empty leaf cell
-  /*if (FParameters::findParameter(argc,argv,"-dont_check_accuracy") == FParameters::NotFound) {
-    OctreeClass::Iterator iLeafs(&tree);
-    iLeafs.gotoBottomLeft();
-
-    const ContainerClass *const Targets = iLeafs.getCurrentListTargets();
-    const unsigned int NumTargets = Targets->getSize();
-
-    FReal* Potential = new FReal [NumTargets];
-    FBlas::setzero(NumTargets, Potential);
-
-    FReal* Force = new FReal [NumTargets * 3];
-    FBlas::setzero(NumTargets * 3, Force);
-
-    std::cout << "\nDirect computation of " << NumTargets << " target particles ..." << std::endl;
-    const MatrixKernelClass MatrixKernel;
-    do {
-    const ContainerClass *const Sources = iLeafs.getCurrentListSrc();
-    unsigned int counter = 0;
-    ContainerClass::ConstBasicIterator iTarget(*Targets);
-    while(iTarget.hasNotFinished()) {
-    const FReal wt = iTarget.data().getPhysicalValue();
-    ContainerClass::ConstBasicIterator iSource(*Sources);
-    while(iSource.hasNotFinished()) {
-    if (&iTarget.data() != &iSource.data()) {
-    const FReal potential_value = MatrixKernel.evaluate(iTarget.data().getPosition(),
-    iSource.data().getPosition());
-    const FReal ws = iSource.data().getPhysicalValue();
-    // potential
-    Potential[counter] += potential_value * ws;
-    // force
-    if (MatrixKernelClass::Identifier == ONE_OVER_R) { // laplace force
-    FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
-    force *= ((ws*wt) * (potential_value*potential_value*potential_value));
-    Force[counter*3 + 0] += force.getX();
-    Force[counter*3 + 1] += force.getY();
-    Force[counter*3 + 2] += force.getZ();
-    } else if (MatrixKernelClass::Identifier == LEONARD_JONES_POTENTIAL) { // lenard-jones force
-    FPoint force(iSource.data().getPosition() - iTarget.data().getPosition());
-    const FReal one_over_r = FReal(1.) / FMath::Sqrt(force.getX()*force.getX() +
-    force.getY()*force.getY() +
-    force.getZ()*force.getZ()); // 1 + 15 + 5 = 21 flops
-    const FReal one_over_r3 = one_over_r * one_over_r * one_over_r;
-    const FReal one_over_r6 = one_over_r3 * one_over_r3;
-    const FReal one_over_r4 = one_over_r3 * one_over_r;
-    force *= ((ws*wt) * (FReal(12.)*one_over_r6*one_over_r4*one_over_r4 - FReal(6.)*one_over_r4*one_over_r4));
-    Force[counter*3 + 0] += force.getX();
-    Force[counter*3 + 1] += force.getY();
-    Force[counter*3 + 2] += force.getZ();
-    }
-    }
-    iSource.gotoNext();
-    }
-    counter++;
-    iTarget.gotoNext();
-    }
-    } while(iLeafs.moveRight());
-
-
-    FReal* ApproxPotential = new FReal [NumTargets];
-    FReal* ApproxForce     = new FReal [NumTargets * 3];
-
-    unsigned int counter = 0;
-    ContainerClass::ConstBasicIterator iTarget(*Targets);
-    while(iTarget.hasNotFinished()) {
-    ApproxPotential[counter]   = iTarget.data().getPotential();
-    ApproxForce[counter*3 + 0] = iTarget.data().getForces().getX();
-    ApproxForce[counter*3 + 1] = iTarget.data().getForces().getY();
-    ApproxForce[counter*3 + 2] = iTarget.data().getForces().getZ();
-    counter++;
-    iTarget.gotoNext();
-    }
-
-    std::cout << "\nPotential error:" << std::endl;
-    std::cout << "Relative L2 error   = " << computeL2norm( NumTargets, Potential, ApproxPotential)
-    << std::endl;
-    std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets, Potential, ApproxPotential)
-    << std::endl;
-
-    std::cout << "\nForce error:" << std::endl;
-    std::cout << "Relative L2 error   = " << computeL2norm( NumTargets*3, Force, ApproxForce)
-    << std::endl;
-    std::cout << "Relative Lmax error = " << computeINFnorm(NumTargets*3, Force, ApproxForce)
-    << std::endl;
-    std::cout << std::endl;
-
-    // free memory
-    delete [] Potential;
-    delete [] ApproxPotential;
-    delete [] Force;
-    delete [] ApproxForce;
-    }*/
-
-  /*
-  // Check if particles are strictly within its containing cells
-  const FReal BoxWidthLeaf = loader.getBoxWidth() / FReal(FMath::pow(2, TreeHeight-1));
-  OctreeClass::Iterator octreeIterator(&tree);
-  octreeIterator.gotoBottomLeft();
-  do{
-  const CellClass *const LeafCell = octreeIterator.getCurrentCell();
-  const FPoint LeafCellCenter(LeafCell->getCoordinate().getX() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getX(),
-  LeafCell->getCoordinate().getY() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getY(),
-  LeafCell->getCoordinate().getZ() * BoxWidthLeaf + BoxWidthLeaf/2 + loader.getCenterOfBox().getZ());
-  const ContainerClass *const Particles = octreeIterator.getCurrentListSrc();
-  ContainerClass::ConstBasicIterator particleIterator(*Particles);
-  while(particleIterator.hasNotFinished()) {
-  const FPoint distance(LeafCellCenter-particleIterator.data().getPosition());
-  std::cout << "center - particle = " << distance << " < " << BoxWidthLeaf/FReal(2.) << std::endl;
-  if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
-  std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
-  std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {
-  std::cout << "stop" << std::endl;
-  exit(-1);
-  }
-  particleIterator.gotoNext();
-  }
-  } while(octreeIterator.moveRight());
-  */
-
+  } // end Lagrange kernel
 
   return 0;
 }

@@ -39,7 +39,7 @@
 // chebyshev kernel
 
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #endif
@@ -61,6 +61,13 @@
 //Rotation kernel
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+
+#ifdef ScalFMM_USE_BLAS
+// Uniform grid kernel
+#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
+//#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#endif
 
 
 /**
@@ -140,11 +147,12 @@ int main(int argc, char* argv[])
         // typedefs
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FChebMatrixKernelR MatrixKernelClass;
+        typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
@@ -279,6 +287,85 @@ int main(int argc, char* argv[])
         std::cout << "Fy " << fy << std::endl;
         std::cout << "Fz " << fz << std::endl;
     } // end FFmaBlas kernel
+    //
+    ////////////////////////////////////////////////////////////////////
+    //
+    {	// begin Lagrange/Uniform Grid kernel
+
+      // TODO 
+
+      // accuracy
+      const unsigned int ORDER = 7;
+
+      // typedefs
+      typedef FP2PParticleContainerIndexed ContainerClass;
+      typedef FSimpleLeaf<ContainerClass> LeafClass;
+      typedef FInterpMatrixKernelR MatrixKernelClass;
+      typedef FUnifCell<ORDER> CellClass;
+      typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+
+      typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+      typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+
+
+      // init oct-tree
+      OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
+      { // -----------------------------------------------------
+        std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+                  << " particles ..." << std::endl;
+        std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+        time.tic();
+
+        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+          // put in tree
+          tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+        }
+
+        time.tac();
+        std::cout << "Done  " << "(@Creating and Inserting Particles = "
+                  << time.elapsed() << "s)." << std::endl;
+      } // -----------------------------------------------------
+
+      { // -----------------------------------------------------
+        std::cout << "\nLagrange FMM ... " << std::endl;
+        time.tic();
+        KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
+        FmmClass algorithm(&tree, &kernels);
+        algorithm.execute();
+        time.tac();
+        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+      } // -----------------------------------------------------
+
+      FMath::FAccurater potentialDiff;
+      FMath::FAccurater fx, fy, fz;
+      { // Check that each particle has been summed with all other
+
+        tree.forEachLeaf([&](LeafClass* leaf){
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+
+            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+              const int indexPartOrig = indexes[idxPart];
+              potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+              fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+              fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+              fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+            }
+          });
+      }
+
+      // Print for information
+      std::cout << "Potential " << potentialDiff << std::endl;
+      std::cout << "Fx " << fx << std::endl;
+      std::cout << "Fy " << fy << std::endl;
+      std::cout << "Fz " << fz << std::endl;
+
+    } // end Lagrange/Uniform Grid kernel
 #endif
 
 {

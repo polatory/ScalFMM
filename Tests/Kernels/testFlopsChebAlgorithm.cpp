@@ -27,7 +27,7 @@
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebFlopsSymKernel.hpp"
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     // typedefs
     typedef FP2PParticleContainer ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
     typedef FChebFlopsSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;

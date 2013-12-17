@@ -13,8 +13,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBMAPPING_HPP
-#define FCHEBMAPPING_HPP
+#ifndef FINTERPMAPPING_HPP
+#define FINTERPMAPPING_HPP
 
 #include <limits>
 
@@ -27,19 +27,19 @@
  */
 
 /**
- * @class FChebMapping
+ * @class FInterpMapping
  *
- * The class @p FChebMapping is the base class for the affine mapping
+ * The class @p FInterpMapping is the base class for the affine mapping
  * \f$\Phi:[-1,1]\rightarrow[a,b] \f$ and the inverse affine mapping
  * \f$\Phi^{-1}:[a,b]\rightarrow[-1,1]\f$.
  */
-class FChebMapping : FNoCopyable
+class FInterpMapping : FNoCopyable
 {
 protected:
   FPoint a;
   FPoint b;
  
-  explicit FChebMapping(const FPoint& center,
+  explicit FInterpMapping(const FPoint& center,
 											 const FReal width)
 		: a(center.getX() - width / FReal(2.),
 				center.getY() - width / FReal(2.),
@@ -94,11 +94,11 @@ public:
  * \f$\Phi^{-1}:[a,b]\rightarrow[-1,1]\f$. It maps from global coordinates to
  * local ones.
  */
-class map_glob_loc : public FChebMapping
+class map_glob_loc : public FInterpMapping
 {
 public:
   explicit map_glob_loc(const FPoint& center, const FReal width)
-		: FChebMapping(center, width) {}
+		: FInterpMapping(center, width) {}
   
 	/**
 	 * Maps from a global position to its local position: \f$\Phi^{-1}(x) =
@@ -130,11 +130,11 @@ public:
  * This class defines the affine mapping \f$\Phi:[-1,1]\rightarrow[a,b]\f$. It
  * maps from local coordinates to global ones.
  */
-class map_loc_glob : public FChebMapping
+class map_loc_glob : public FInterpMapping
 {
 public:
   explicit map_loc_glob(const FPoint& center, const FReal width)
-		: FChebMapping(center, width) {}
+		: FInterpMapping(center, width) {}
   
 	// globPos = (a + b) / 2 + (b - a) * loclPos / 2;
 	/**
@@ -157,4 +157,4 @@ public:
 
 
 
-#endif
+#endif /*FUNIFTENSOR_HPP*/

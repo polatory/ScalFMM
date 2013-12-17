@@ -13,62 +13,64 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBTENSOR_HPP
-#define FCHEBTENSOR_HPP
+#ifndef FUNIFTENSOR_HPP
+#define FUNIFTENSOR_HPP
 
 #include "../../Utils/FMath.hpp"
 
-#include "./FChebRoots.hpp"
+#include "./FUnifRoots.hpp"
 #include "./../Interpolation/FInterpTensor.hpp"
 
 
 /**
- * @author Matthias Messner (matthias.matthias@inria.fr)
+ * @author Pierre Blanchard (pierre.blanchard@inria.fr)
  * Please read the license
  */
 
 
 
 /**
- * @class FChebTensor
+ * @class FUnifTensor
  *
- * The class FChebTensor provides function considering the tensor product
+ * The class FUnifTensor provides function considering the tensor product
  * interpolation.
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
 template <int ORDER>
-class FChebTensor : public FInterpTensor<ORDER,FChebRoots<ORDER>>
+class FUnifTensor : public FInterpTensor<ORDER,FUnifRoots<ORDER>>
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-  typedef FChebRoots<ORDER> BasisType; 
+  typedef FUnifRoots<ORDER> BasisType;
   typedef FInterpTensor<ORDER,BasisType> ParentTensor;
 
  public:
 
   /**
-   * Sets the roots of the Chebyshev quadrature weights defined as \f$w_i =
-   * \frac{\pi}{\ell}\sqrt{1-\bar x_i^2}\f$ with the Chebyshev roots \f$\bar
-   * x\f$.
+   * Sets the diff of ids of the coordinates of all \f$\ell^6\f$ interpolation
+   * nodes duet
    *
-   * @param weights[out] the root of the weights \f$\sqrt{w_i}\f$
+   * @param[out] NodeIdsDiff diff of ids of coordinates of interpolation nodes
    */
   static
-    void setRootOfWeights(FReal weights[nnodes])
+    void setNodeIdsDiff(unsigned int NodeIdsDiff[nnodes*nnodes])
   {
-    // weights in 1d
-    FReal weights_1d[ORDER];
-    for (unsigned int o=0; o<ORDER; ++o)
-      weights_1d[o] = FMath::FPi/ORDER * FMath::Sqrt(FReal(1.)-FReal(BasisType::roots[o])*FReal(BasisType::roots[o]));
-    // weights in 3d (tensor structure)
     unsigned int node_ids[nnodes][3];
     ParentTensor::setNodeIds(node_ids);
-    for (unsigned int n=0; n<nnodes; ++n) {
-      weights[n] = FMath::Sqrt(weights_1d[node_ids[n][0]]*weights_1d[node_ids[n][1]]*weights_1d[node_ids[n][2]]);
+
+    for (unsigned int i=0; i<nnodes; ++i) {
+      for (unsigned int j=0; j<nnodes; ++j) {
+        // 0 <= id < 2*ORDER-1
+        unsigned int idl = node_ids[i][0]-node_ids[j][0]+ORDER-1;
+        unsigned int idm = node_ids[i][1]-node_ids[j][1]+ORDER-1;
+        unsigned int idn = node_ids[i][2]-node_ids[j][2]+ORDER-1;
+        NodeIdsDiff[i*nnodes+j]
+          = idn*(2*ORDER-1)*(2*ORDER-1) + idm*(2*ORDER-1) + idl;
+      }
     }
   }
 
 };
 
 
-#endif
+#endif /*FUNIFTENSOR_HPP*/

@@ -30,7 +30,7 @@
 #include "../../Src/Utils/FBlas.hpp"
 
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
 
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	FTic time;
 	
 	// define set matrix kernel
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 
 	// constants

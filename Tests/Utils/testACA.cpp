@@ -29,7 +29,7 @@
 
 #include "../../Src/Utils/FPoint.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebRoots.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymM2LHandler.hpp"
@@ -42,7 +42,7 @@
 
 int main(int argc, char* argv[])
 {
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 
 	const unsigned int ORDER = 9;

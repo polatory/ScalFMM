@@ -35,7 +35,7 @@
 
 
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 {
     typedef FP2PParticleContainer ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 
 	///////////////////////What we do/////////////////////////////
 	std::cout << "\nTask: Compute interactions between source particles in leaf Y and target\n";
