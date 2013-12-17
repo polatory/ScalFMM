@@ -44,7 +44,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     void RunTest(){
         // Warning in make test the exec dir it Build/UTests
         // Load particles
-        const int nbParticles = 3;
+        const int nbParticles = 2;
         const FReal boxWidth = 1.0;
         const FPoint boxCenter(boxWidth/2.0,boxWidth/2.0,boxWidth/2.0);
 
@@ -74,8 +74,6 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         particles[0].physicalValue = 0.50;
         particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
         particles[1].physicalValue = -0.10;
-        particles[2].position = FPoint(quarterDimLeaf, 2*quarterDimLeaf, quarterDimLeaf);
-        particles[2].physicalValue = 0.10;
 
         Print("Number of particles:");
         Print(nbParticles);
@@ -84,7 +82,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
             for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY){
                 for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ){
 
-                particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
+                particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
                                                FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
                                                FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
 
