@@ -100,8 +100,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                     /*particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
                                quarterDimLeaf,
                                quarterDimLeaf);*/
-                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
-                               quarterDimLeaf,
+                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                               3*quarterDimLeaf,
                                quarterDimLeaf);
 
                     // Create octree
