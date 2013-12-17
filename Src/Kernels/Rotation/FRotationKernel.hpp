@@ -319,7 +319,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
             {
                 int index_lm = index_P0;
                 for(int m = 0 ; m <= P ; ++m, ++index_lm ){
-                    const FReal mphi = (sph.getAzimuth() + FMath::FPiDiv2) * FReal(m);
+                    const FReal mphi = (sph.getPhiInO2PI() + FMath::FPiDiv2) * FReal(m);
                     // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
                     rotationExpMinusImPhi[idxChild][index_lm].setRealImag(FMath::Cos(-mphi), FMath::Sin(-mphi));
                     // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
@@ -418,7 +418,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
                         {
                             int index_lm = index_P0;
                             for(int m = 0 ; m <= P ; ++m, ++index_lm ){
-                                const FReal mphi = (sph.getAzimuth() + FMath::FPiDiv2) * FReal(m);
+                                const FReal mphi = (sph.getPhiInO2PI() + FMath::FPiDiv2) * FReal(m);
                                 // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
                                 rotationM2LExpMinusImPhi[position][index_lm].setRealImag(FMath::Cos(-mphi), FMath::Sin(-mphi));
                                 // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )

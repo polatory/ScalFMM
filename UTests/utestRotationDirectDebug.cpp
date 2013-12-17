@@ -102,13 +102,13 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
 
                 // Run FMM
-                Print("Fmm...");
+ //               Print("Fmm...");
                 KernelClass kernels(NbLevels,boxWidth, boxCenter);
                 FmmClass algo(&tree,&kernels);
                 algo.execute();
 
                 // Run direct computation
-                Print("Direct...");
+   //             Print("Direct...");
                 for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
                     for(int idxOther = idxTarget + 1 ; idxOther < nbParticles ; ++idxOther){
                         FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -123,7 +123,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                 }
 
                 // Compare
-                Print("Compute Diff...");
+   //             Print("Compute Diff...");
                 FMath::FAccurater potentialDiff;
                 FMath::FAccurater fx, fy, fz;
                 { // Check that each particle has been summed with all other
@@ -143,9 +143,13 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                             fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                             fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
 
-                            std::cout << indexPartOrig << " x " << particles[indexPartOrig].forces[0]<<" "<<forcesX[idxPart] << std::endl;
-                            std::cout << indexPartOrig << " y " << particles[indexPartOrig].forces[1]<<" "<<forcesY[idxPart] << std::endl;
-                            std::cout << indexPartOrig << " z " << particles[indexPartOrig].forces[2]<<" "<<forcesZ[idxPart] << std::endl;
+                            std::cout << indexPartOrig << " x Direct " << particles[indexPartOrig].forces[0]<<" FMM "<<forcesX[idxPart] << std::endl;
+                            std::cout << indexPartOrig << " y Direct " << particles[indexPartOrig].forces[1]<<" FMM "<<forcesY[idxPart] << std::endl;
+                            std::cout << indexPartOrig << " z Direct " << particles[indexPartOrig].forces[2]<<" FMM "<<forcesZ[idxPart] << std::endl;
+                            printf("Printf : forces x %e y %e z %e\n", forcesX[idxPart],forcesY[idxPart],forcesZ[idxPart]);//TODO delete
+//                            std::cout << indexPartOrig << " x " << particles[indexPartOrig].forces[0]<<" "<<forcesX[idxPart] << std::endl;
+//                            std::cout << indexPartOrig << " y " << particles[indexPartOrig].forces[1]<<" "<<forcesY[idxPart] << std::endl;
+//                            std::cout << indexPartOrig << " z " << particles[indexPartOrig].forces[2]<<" "<<forcesZ[idxPart] << std::endl;
                         }
                     });
 
@@ -217,7 +221,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    static const int P = 5;
+    static const int P = 2;
 
     /** Rotation */
     void TestRotation(){

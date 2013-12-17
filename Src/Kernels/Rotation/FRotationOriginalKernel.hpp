@@ -508,7 +508,7 @@ public:
 
                 // rotate it forward
                 const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
+                rotateMultipole(source_w, sph.getPhiInO2PI(), sph.getInclination());
 
                 const FReal b = -sph.getR();
                 // Translate it
@@ -528,7 +528,7 @@ public:
                 }
 
                 // Rotate it back
-                deRotateMultipole(target_w, sph.getAzimuth(), sph.getInclination());
+                deRotateMultipole(target_w, sph.getPhiInO2PI(), sph.getInclination());
 
                 // Sum the result
                 FMemUtils::addall( inPole->getMultipole(), target_w, SizeArray);
@@ -559,7 +559,7 @@ public:
 
                 // Rotate
                 const FSpherical sph = getSphericalInteraction(inLevel, idxNeigh);
-                rotateMultipole(source_w, sph.getAzimuth(), sph.getInclination());
+                rotateMultipole(source_w, sph.getPhiInO2PI(), sph.getInclination());
 
                 const FReal b = sph.getR();
                 // Transfer to u
@@ -580,7 +580,7 @@ public:
                 }
 
                 // Rotate it back
-                deRotateTaylor(target_u, sph.getAzimuth(), sph.getInclination());
+                deRotateTaylor(target_u, sph.getPhiInO2PI(), sph.getInclination());
 
                 // Sum
                 FMemUtils::addall(inLocal->getLocal(), target_u, SizeArray);
@@ -611,7 +611,7 @@ public:
 
                 // Rotate
                 const FSpherical sph = getSphericalChild(inLevel, idxChild);
-                rotateTaylor(source_u, sph.getAzimuth(), sph.getInclination());
+                rotateTaylor(source_u, sph.getPhiInO2PI(), sph.getInclination());
 
                 const FReal b = sph.getR();
                 // Translate
@@ -631,7 +631,7 @@ public:
                 }
 
                 // Rotate
-                deRotateTaylor(target_u, sph.getAzimuth(), sph.getInclination());
+                deRotateTaylor(target_u, sph.getPhiInO2PI(), sph.getInclination());
 
                 // Sum in child
                 FMemUtils::addall(inChildren[idxChild]->getLocal(), target_u, SizeArray);

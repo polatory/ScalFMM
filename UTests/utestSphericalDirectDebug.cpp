@@ -48,7 +48,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
     void RunTest(const bool isBlasKernel){
-        const int DevP = 5;
+        const int DevP = 2;
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         const int nbParticles = 2;
@@ -88,21 +88,22 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         Print(nbParticles);
 
         for(int idxLeafX = 0 ; idxLeafX < dimGrid ; ++idxLeafX){
-            /*for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY)*/{
-                /*for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ)*/{
+            for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY){
+                for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ){
                     //std::cout << "Shift : " << idxLeafX << " " << idxLeafY << " " << idxLeafZ << std::endl;
-                    //particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
-                    //                               FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
-                    //                               FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
-                    /*particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
+
+                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                                                   FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
+                                                   FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
+                  /*  particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
                                2*quarterDimLeaf,
-                               2*quarterDimLeaf);*/
-                    /*particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                               2*quarterDimLeaf);
+                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                               quarterDimLeaf,
+                               quarterDimLeaf);
+                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
                                quarterDimLeaf,
                                quarterDimLeaf);*/
-                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
-                               3*quarterDimLeaf,
-                               quarterDimLeaf);
 
                     // Create octree
                     OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, boxCenter);
@@ -207,16 +208,26 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                     Print(fz.getInfNorm());
 
                     // Assert
-                    const FReal MaximumDiff = FReal(0.0001);
-                    if(fx.getL2Norm() > MaximumDiff || fx.getInfNorm() > MaximumDiff){
-                        std::cout << "Error in X " << fx.getL2Norm() << " " << fx.getInfNorm() << std::endl;
-                    }
-                    if(fy.getL2Norm() > MaximumDiff || fy.getInfNorm() > MaximumDiff){
-                        std::cout << "Error in Y " << fy.getL2Norm() << " " << fy.getInfNorm() << std::endl;
-                    }
-                    if(fz.getL2Norm() > MaximumDiff || fz.getInfNorm() > MaximumDiff){
-                        std::cout << "Error in Z " << fz.getL2Norm() << " " << fz.getInfNorm() << std::endl;
-                    }
+                    // Assert
+                     const FReal MaximumDiff = FReal(0.0001);
+                     uassert(potentialDiff.getL2Norm() < MaximumDiff);
+                     uassert(potentialDiff.getInfNorm() < MaximumDiff);
+                     uassert(fx.getL2Norm()  < MaximumDiff);
+                     uassert(fx.getInfNorm() < MaximumDiff);
+                     uassert(fy.getL2Norm()  < MaximumDiff);
+                     uassert(fy.getInfNorm() < MaximumDiff);
+                     uassert(fz.getL2Norm()  < MaximumDiff);
+                     uassert(fz.getInfNorm() < MaximumDiff);
+//                   const FReal MaximumDiff = FReal(0.0001);
+//                    if(fx.getL2Norm() > MaximumDiff || fx.getInfNorm() > MaximumDiff){
+//                        std::cout << "Error in X " << fx.getL2Norm() << " " << fx.getInfNorm() << std::endl;
+//                    }
+//                    if(fy.getL2Norm() > MaximumDiff || fy.getInfNorm() > MaximumDiff){
+//                        std::cout << "Error in Y " << fy.getL2Norm() << " " << fy.getInfNorm() << std::endl;
+//                    }
+//                    if(fz.getL2Norm() > MaximumDiff || fz.getInfNorm() > MaximumDiff){
+//                        std::cout << "Error in Z " << fz.getL2Norm() << " " << fz.getInfNorm() << std::endl;
+//                    }
                 }
             }
         }

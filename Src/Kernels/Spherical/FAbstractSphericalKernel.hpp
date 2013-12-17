@@ -536,38 +536,41 @@ private:
         // The -(- 1.0) computing is not the most efficient programming ...
         const FReal signe = 1.0;
         //if( FMath::Epsilon < spherical.getR()){
-        // POURQUOI diviser par spherical.getR()
-            force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR()); // ????
-        	// force_vector_in_local_base_x = ( force_vector_in_local_base_x ); // Better
-            //
+        // The derivative wrt r is equivalent to use classical outer expansion multiplied by l and the result is divided by r
+            force_vector_in_local_base_x = ( force_vector_in_local_base_x  * signe / spherical.getR());
+            // classical definition of the derivatives
             force_vector_in_local_base_y = ( force_vector_in_local_base_y * signe / spherical.getR());
             force_vector_in_local_base_z = ( force_vector_in_local_base_z * signe / (spherical.getR() * spherical.getSinTheta()));
         //}
         /////////////////////////////////////////////////////////////////////
-        //	???????????????????
-        //spherical_position_Set_ph
-        FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
-        if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
-        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi;
-
-        //spherical_position_Set_th
-        FReal th = FMath::Fmod(spherical.getTheta(), FReal(2) * FMath::FPi);
-        if (th < 0.0) th += 2*FMath::FPi;
-        if (th > FMath::FPi){
-            th = 2*FMath::FPi - th;
-            //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-            ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
-            if (ph > M_PI) ph -= 2*FMath::FPi;
-            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
-        }
-        //spherical_position_Set_r
-        //FReal rh = spherical.r;
+//
+            //spherical_position_Set_ph
+        FReal ph = 	spherical.getPhiInO2PI();
+//        FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
+//        if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
+//        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi;
+//
+//        //spherical_position_Set_th
+//        FReal th = FMath::Fmod(spherical.getTheta(), FReal(2) * FMath::FPi);
+//        //FReal th = spherical.getTheta();
+//        if (th < 0.0) th += 2*FMath::FPi;
+//        if (th > FMath::FPi){
+//            th = 2*FMath::FPi - th;
+//            //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
+//            ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
+//            if (ph > M_PI) ph -= 2*FMath::FPi;
+//            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
+//        }
+//        //spherical_position_Set_r
+//        //FReal rh = spherical.r;
         FAssertLF(spherical.getR() >= 0 , "R should be < 0!");
 
-        const FReal cos_theta   = FMath::Cos(th);
+        const FReal cos_theta   = spherical.getCosTheta(); //FMath::Cos(th);
+    //    const FReal cos_theta   =  FMath::Cos(th);
         const FReal cos_phi     = FMath::Cos(ph);
-        const FReal sin_theta   = FMath::Sin(th);
-        const FReal sin_phi     = FMath::Sin(ph);
+        const FReal sin_theta   = spherical.getSinTheta() ;// FMath::Sin(th);
+   //     const FReal sin_theta   =  FMath::Sin(th);
+       const FReal sin_phi     = FMath::Sin(ph);
 //
         //
         // Formulae below are OK

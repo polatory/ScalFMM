@@ -19,7 +19,6 @@
 
 #include <cmath>
 #include <limits>
-#include <limits>
 
 #include "FGlobal.hpp"
 
@@ -32,6 +31,7 @@
 */
 struct FMath{
     static const FReal FPi;        //< Pi constant
+    static const FReal FTwoPi;     //< 2 Pi constant
     static const FReal FPiDiv2;    //< Pi/2 constant
     static const FReal Epsilon;    //< Epsilon
 
@@ -134,7 +134,8 @@ struct FMath{
         return log2(inValue);
     }
 
-    /** To get atan2 of a 2 FReal */
+    /** To get atan2 of a 2 FReal,  The return value is given in radians and is in the
+ range -pi to pi, inclusive.  */
     static float Atan2(const float inValue1,const float inValue2){
         return atan2f(inValue1,inValue2);
     }
@@ -158,10 +159,11 @@ struct FMath{
         return cos(inValue);
     }
 
-    /** To get acos of a FReal */
+    /** To get arccos of a float. The result is in the range [0, pi]*/
     static float ACos(const float inValue){
         return acosf(inValue);
     }
+    /** To get arccos of a double. The result is in the range [0, pi]*/
     static double ACos(const double inValue){
         return acos(inValue);
     }
@@ -170,6 +172,7 @@ struct FMath{
     static float Fmod(const float inValue1,const float inValue2){
         return fmodf(inValue1,inValue2);
     }
+    /** return the floating-point remainder of inValue1  / inValue2 */
     static double Fmod(const double inValue1,const double inValue2){
         return fmod(inValue1,inValue2);
     }
