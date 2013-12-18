@@ -52,8 +52,8 @@
 class FSpherical {
     // The attributes of a sphere
     FReal r;         //!< the radial distance
-    FReal theta;     //!< the inclination angle [0, pi] - colatitude
-    FReal phi;       //!< the azimuth angle [-pi,pi]$` - longitude - around z axis
+    FReal theta;     //!< the inclination angle [0, pi] - colatitude, polar angle
+    FReal phi;       //!< the azimuth angle [-pi,pi] - longitude - around z axis
     FReal cosTheta;
     FReal sinTheta;
 public:
@@ -95,9 +95,8 @@ public:
         return theta;
     }
     /** Get the azimuth angle [0,2pi]. You should use this method in order to obtain (x,y,z)*/
-    FReal getAzimuth() const{
-       // return (FMath::FPi + phi );
-        return (phi < 0 ? FMath::FPi*2.0 + phi : phi);
+    FReal getPhiInO2PI() const{
+        return (phi < 0 ? FMath::FTwoPi + phi : phi);
     }
 
     /** Get the cos of theta = z / r */
