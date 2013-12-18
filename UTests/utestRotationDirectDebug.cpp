@@ -70,7 +70,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         Print(quarterDimLeaf);
 
         TestParticle* const particles = new TestParticle[nbParticles];
-        particles[0].position = FPoint(quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+        particles[0].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
         particles[0].physicalValue = 0.50;
         particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
         particles[1].physicalValue = -0.10;
@@ -78,11 +78,12 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         Print("Number of particles:");
         Print(nbParticles);
 
-        for(int idxLeafX = 0 ; idxLeafX < dimGrid ; ++idxLeafX){
-            for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY){
-                for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ){
+        for(int idxLeafX = 0 ; idxLeafX < 2/*dimGrid*/ ; ++idxLeafX){
+            for(int idxLeafY = 0 ; idxLeafY < 1/*dimGrid*/ ; ++idxLeafY){
+                for(int idxLeafZ = 0 ; idxLeafZ < 1/*dimGrid*/ ; ++idxLeafZ){
 
-                particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                particles[0].position = FPoint((idxLeafX+1)*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+                particles[1].position = FPoint(FReal(2)*dimLeaf + 2*quarterDimLeaf,
                                                FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
                                                FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
 
@@ -157,8 +158,8 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                         std::cout << "Multipole:\n";
                         int index_j_k = 0;
                         for (int j = 0 ; j <= P ; ++j ){
-                            std::cout <<"[" << j << "] " << "[0] " << cell->getMultipole()[index_j_k].getReal() << " i" << cell->getMultipole()[index_j_k].getImag() << "\t";
-                            for (int k=1; k<=j ;++k, ++index_j_k){
+                            std::cout <<"[" << j << "] ";
+                            for (int k=0; k<=j ;++k, ++index_j_k){
                                 std::cout << "[" << k << "] " << cell->getMultipole()[index_j_k].getReal() << " i" << cell->getMultipole()[index_j_k].getImag() << "    ";
                             }
                             std::cout << "\n";
@@ -167,8 +168,8 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                         std::cout << "Local:\n";
                         index_j_k = 0;
                         for (int j = 0 ; j <= P ; ++j ){
-                            std::cout <<"[" << j << "] " << "[0] " << cell->getLocal()[index_j_k].getReal() << " i" << cell->getLocal()[index_j_k].getImag() << "\t";
-                            for (int k=1; k<=j ;++k, ++index_j_k){
+                            std::cout <<"[" << j << "] ";
+                            for (int k=0; k<=j ;++k, ++index_j_k){
                                 std::cout << "[" << k << "] " << cell->getLocal()[index_j_k].getReal() << " i" << cell->getLocal()[index_j_k].getImag() << "    ";
                             }
                             std::cout << "\n";
@@ -221,7 +222,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    static const int P = 2;
+    static const int P = 1;
 
     /** Rotation */
     void TestRotation(){

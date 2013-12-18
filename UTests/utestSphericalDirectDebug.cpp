@@ -173,8 +173,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                             std::cout << "Multipole:\n";
                             int index_j_k = 0;
                             for (int j = 0 ; j <= DevP ; ++j ){
-                                std::cout <<"[" << j << "] " << "[0] " << cell->getMultipole()[index_j_k].getReal() << " i" << cell->getMultipole()[index_j_k].getImag() << "\t";
-                                for (int k=1; k<=j ;++k, ++index_j_k){
+                                std::cout <<"[" << j << "]\n";
+                                for (int k=0; k<=j ;++k, ++index_j_k){
                                     std::cout << "[" << k << "] " << cell->getMultipole()[index_j_k].getReal() << " i" << cell->getMultipole()[index_j_k].getImag() << "    ";
                                 }
                                 std::cout << "\n";
@@ -183,8 +183,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                             std::cout << "Local:\n";
                             index_j_k = 0;
                             for (int j = 0 ; j <= DevP ; ++j ){
-                                std::cout <<"[" << j << "] " << "[0] " << cell->getLocal()[index_j_k].getReal() << " i" << cell->getLocal()[index_j_k].getImag() << "\t";
-                                for (int k=1; k<=j ;++k, ++index_j_k){
+                                std::cout <<"[" << j << "]\n";
+                                for (int k=0; k<=j ;++k, ++index_j_k){
                                     std::cout << "[" << k << "] " << cell->getLocal()[index_j_k].getReal() << " i" << cell->getLocal()[index_j_k].getImag() << "    ";
                                 }
                                 std::cout << "\n";
