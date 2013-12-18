@@ -545,7 +545,7 @@ private:
         /////////////////////////////////////////////////////////////////////
 //
             //spherical_position_Set_ph
-        FReal ph = 	spherical.getPhiInO2PI();
+        FReal ph = 	spherical.getPhiZero2Pi();
 //        FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
 //        if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
 //        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi;

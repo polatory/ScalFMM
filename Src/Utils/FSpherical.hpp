@@ -95,7 +95,7 @@ public:
         return theta;
     }
     /** Get the azimuth angle [0,2pi]. You should use this method in order to obtain (x,y,z)*/
-    FReal getPhiInO2PI() const{
+    FReal getPhiZero2Pi() const{
         return (phi < 0 ? FMath::FTwoPi + phi : phi);
     }
 
