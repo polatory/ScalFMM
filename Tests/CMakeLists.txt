@@ -39,6 +39,15 @@ foreach(exec ${source_tests_files})
 		endif()
 	endif()
 
+	# Test FFT dependency
+	file(STRINGS "${exec}" lines_fft REGEX "@FUSE_FFT")
+	if(lines_fft)
+		if( NOT ScalFMM_USE_FFT )
+			MESSAGE( STATUS "This needs FFT = ${exec}" )
+			set(compile_exec "FALSE")
+		endif()
+	endif()
+
 	# Test MPI dependency
 	file(STRINGS "${exec}" lines_mpi REGEX "@FUSE_MPI")
 	if(lines_mpi)

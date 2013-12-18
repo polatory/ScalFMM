@@ -14,6 +14,10 @@
 // relatives à l'usage du LOGICIEL
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_FFT
+// ================
+
 #include <iostream>
 #include <stdlib.h>
 

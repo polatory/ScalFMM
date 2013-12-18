@@ -62,7 +62,7 @@
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef ScalFMM_USE_FFT
 // Uniform grid kernel
 #include "../../Src/Kernels/Uniform/FUnifCell.hpp"
 //#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -287,6 +287,9 @@ int main(int argc, char* argv[])
         std::cout << "Fy " << fy << std::endl;
         std::cout << "Fz " << fz << std::endl;
     } // end FFmaBlas kernel
+#endif
+
+#ifdef  ScalFMM_USE_FFT
     //
     ////////////////////////////////////////////////////////////////////
     //

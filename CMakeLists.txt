@@ -42,9 +42,9 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 #
 # Options
 OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
-OPTION( ScalFMM_USE_FFTW 		"Set to ON to build ScaFMM with FFTW" OFF )
+OPTION( ScalFMM_USE_FFT  		"Set to ON to build ScaFMM with FFTW" OFF )
 OPTION( ScalFMM_USE_TRACE 		"Set to ON to print trace or use itac trace" OFF )
-OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build fonctionnalities Tests" OFF )
+OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build functionalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
 OPTION( ScalFMM_USE_LOG              "Set to ON to print output debug information" OFF )
@@ -52,7 +52,7 @@ OPTION( ScalFMM_USE_MEM_STATS        "Set to ON to profile memory"              
 OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision"    ON  )
 OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
-OPTION( ScalFMM_USE_SSE              "Set to ON to compile with sse support"       ON  )
+OPTION( ScalFMM_USE_SSE              "Set to ON to compile with SSE support"       ON  )
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
@@ -152,17 +152,17 @@ if( ScalFMM_USE_BLAS )
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
 endif(ScalFMM_USE_BLAS)
 
-# FFTW option
-if( ScalFMM_USE_FFTW )
+# FFT option
+if( ScalFMM_USE_FFT )
   OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" ON )
   if( ScalFMM_USE_MKL_AS_FFTW )
-    SET(FFTW_LIBRARIES "-I$ENV{MKLROOT}/include/fftw; -L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
+    SET(FFT_LIBRARIES "-I$ENV{MKLROOT}/include/fftw; -L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
   else()
-    SET(FFTW_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
+    SET(FFT_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
   endif()
-  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFTW_LIBRARIES}")
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
-endif(ScalFMM_USE_FFTW)
+endif(ScalFMM_USE_FFT)
 
 # Compile option
 #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
