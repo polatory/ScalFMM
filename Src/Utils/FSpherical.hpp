@@ -15,6 +15,7 @@
 // ===================================================================================
 #ifndef FSPHERICAL_HPP
 #define FSPHERICAL_HPP
+#include <iostream>
 
 #include "FGlobal.hpp"
 #include "FMath.hpp"
@@ -108,6 +109,21 @@ public:
     FReal getSinTheta() const{
         return sinTheta;
     }
+
+    /**
+     * Operator stream FPoint to std::ostream
+     * This can be used to simpldata[1] write out a position
+     * @param[in,out] output where to write the position
+     * @param[in] inPosition the position to write out
+     * @return the output for multiple << operators
+     */
+    template <class StreamClass>
+    friend StreamClass& operator<<(StreamClass& output, const FSpherical& inPosition){
+        output << "(" <<  inPosition.getR() << ", " << inPosition.getPhi() << ", " << inPosition.getTheta() <<")";
+        return output;  // for multiple << operators.
+    }
+
+
 };
 
 #endif // FSPHERICAL_HPP
