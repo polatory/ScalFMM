@@ -151,6 +151,15 @@ struct FMath{
         return sin(inValue);
     }
 
+    /** To get asinf of a float. The result is in the range [0, pi]*/
+    static float ASin(const float inValue){
+        return asinf(inValue);
+    }
+    /** To get asinf of a double. The result is in the range [0, pi]*/
+    static double ASin(const double inValue){
+        return asin(inValue);
+    }
+
     /** To get cos of a FReal */
     static float Cos(const float inValue){
         return cosf(inValue);
