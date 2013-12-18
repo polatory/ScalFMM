@@ -99,8 +99,12 @@ public:
 		// check if aready set
 		if (U||C||B) throw std::runtime_error("Compressed M2L operator already set");
 		rank = ComputeAndCompress(epsilon, U, C, B);
+
+    unsigned long sizeM2L = 343*rank*rank*sizeof(FReal);
+
+
 		// write info
-		std::cout << "Compressed and set M2L operators (" << rank << ") in "
+		std::cout << "Compressed and set M2L operators (" << long(sizeM2L) << " B) in "
 							<< time.tacAndElapsed() << "sec."	<< std::endl;
 	}
 

@@ -42,6 +42,7 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 #
 # Options
 OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
+OPTION( ScalFMM_USE_FFTW 		"Set to ON to build ScaFMM with FFTW" OFF )
 OPTION( ScalFMM_USE_TRACE 		"Set to ON to print trace or use itac trace" OFF )
 OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build fonctionnalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
@@ -138,7 +139,8 @@ endif()
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
-     SET(BLAS_LIBRARIES "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
+     SET(BLAS_LIBRARIES
+  "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
      SET(LAPACK_LIBRARIES "")
   elseif(ScalFMM_USE_EXTERNAL_BLAS) 
          MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
@@ -149,6 +151,18 @@ if( ScalFMM_USE_BLAS )
   SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLAS_LIBRARIES};${LAPACK_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
 endif(ScalFMM_USE_BLAS)
+
+# FFTW option
+if( ScalFMM_USE_FFTW )
+  OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" ON )
+  if( ScalFMM_USE_MKL_AS_FFTW )
+    SET(FFTW_LIBRARIES "-I$ENV{MKLROOT}/include/fftw; -L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
+  else()
+    SET(FFTW_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
+  endif()
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFTW_LIBRARIES}")
+  MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
+endif(ScalFMM_USE_FFTW)
 
 # Compile option
 #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )

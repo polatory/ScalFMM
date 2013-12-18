@@ -30,7 +30,7 @@
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FMath.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymM2LHandler.hpp"
 
 
@@ -42,7 +42,7 @@
 int main(int argc, char* argv[])
 { 
 	// typedefs   
-	typedef FChebMatrixKernelR MatrixKernelClass;
+	typedef FInterpMatrixKernelR MatrixKernelClass;
 
 	// instantiations
 	FTic time;

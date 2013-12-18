@@ -35,7 +35,7 @@
 
 
 #include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Chebyshev/FChebMatrixKernel.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 
@@ -226,7 +226,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const FReal epsilon = FReal(1e-5);
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FChebMatrixKernelR MatrixKernelClass;
+        typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER, NbRhs> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;
@@ -242,7 +242,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const FReal epsilon = FReal(1e-5);
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FChebMatrixKernelR MatrixKernelClass;
+        typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER, NbRhs> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;

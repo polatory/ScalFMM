@@ -479,9 +479,12 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-	//	std::cout << "The approximation of the " << counter
-	//					<< " far-field interactions (overall rank " << overall_rank << ") took "
-	//					<< overall_time << "s\n" << std::endl;
+		std::cout << "The approximation of the " << counter
+              << " far-field interactions (overall rank " << overall_rank 
+              << " / " << 16*nnodes 
+              << " , sizeM2L= " << 2*overall_rank*nnodes*sizeof(FReal) << ""
+              << " / " << 16*nnodes*nnodes*sizeof(FReal) << " B"
+              << ") took " << overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;

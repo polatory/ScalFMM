@@ -17,7 +17,7 @@
 #define FCHEBINTERPOLATOR_HPP
 
 
-#include "./FChebMapping.hpp"
+#include "./../Interpolation/FInterpMapping.hpp"
 #include "./FChebTensor.hpp"
 #include "./FChebRoots.hpp"
 
@@ -296,7 +296,7 @@ class FChebInterpolator : FNoCopyable
 
             // set child info
             FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter);
-            FChebTensor<ORDER>::setChebyshevRoots(ChildCenter, ChildWidth, ChildCoords);
+            FChebTensor<ORDER>::setPolynomialsRoots(ChildCenter, ChildWidth, ChildCoords);
 
             // allocate memory
             ChildParentInterpolator[child] = new FReal [3 * ORDER*ORDER];

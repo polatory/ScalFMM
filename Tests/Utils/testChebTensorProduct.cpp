@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
 
 		FReal coords[3][ORDER];
-		FChebTensor<ORDER>::setChebyshevRoots(cx, wx, coords);
+		FChebTensor<ORDER>::setPolynomialsRoots(cx, wx, coords);
 	
 		//	for (unsigned int n=0; n<ORDER; ++n) {
 		//		std::cout << coords[0][n] << "\t"
