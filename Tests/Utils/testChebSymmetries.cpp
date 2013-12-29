@@ -31,7 +31,7 @@
 
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebSymmetries.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpSymmetries.hpp"
 
 
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 	FReal maxdiff(0.);
 
 	// permuter
-	FChebSymmetries<order> permuter;
+	FInterpSymmetries<order> permuter;
 
 	// permutation vector
 	unsigned int perm[nnodes];

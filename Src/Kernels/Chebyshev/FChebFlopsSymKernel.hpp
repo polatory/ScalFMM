@@ -25,7 +25,7 @@
 #include "../../Components/FAbstractKernels.hpp"
 
 #include "./FChebInterpolator.hpp"
-#include "./FChebSymmetries.hpp"
+#include "../Interpolation/FInterpSymmetries.hpp"
 
 class FTreeCoordinate;
 
@@ -322,7 +322,7 @@ struct FChebFlopsSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
 		}
 			
 		// set permutation vector and indices
-		const FChebSymmetries<ORDER> Symmetries;
+		const FInterpSymmetries<ORDER> Symmetries;
 		for (int i=-3; i<=3; ++i)
 			for (int j=-3; j<=3; ++j)
 				for (int k=-3; k<=3; ++k)

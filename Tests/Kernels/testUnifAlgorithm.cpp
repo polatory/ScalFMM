@@ -29,7 +29,8 @@
 
 #include "../../Src/Kernels/Uniform/FUnifCell.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+//#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#include "../../Src/Kernels/Uniform/FUnifSymKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -51,7 +52,7 @@
 int main(int argc, char* argv[])
 {
   const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
+  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 3);
   const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
   const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
@@ -121,7 +122,7 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 7;
+    const unsigned int ORDER = 5;
     // typedefs
     typedef FP2PParticleContainerIndexed ContainerClass;
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
@@ -129,7 +130,8 @@ int main(int argc, char* argv[])
     typedef FInterpMatrixKernelR MatrixKernelClass;
     typedef FUnifCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    //typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FUnifSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 

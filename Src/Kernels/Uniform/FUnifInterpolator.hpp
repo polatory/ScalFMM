@@ -45,8 +45,6 @@ class FUnifInterpolator : FNoCopyable
   typedef FUnifRoots< ORDER>  BasisType;
   typedef FUnifTensor<ORDER> TensorType;
 
-  //  FReal T_of_roots[ORDER][ORDER];
-  //  FReal T[ORDER * (ORDER-1)];
   unsigned int node_ids[nnodes][3];
   FReal* ChildParentInterpolator[8];
 
@@ -56,12 +54,13 @@ class FUnifInterpolator : FNoCopyable
   ////////////////////////////////////////////////////////////////////
 
 
-
+  // PB: use improved version of M2M/L2L
   /**
    * Initialize the child - parent - interpolator, it is basically the matrix
    * S which is precomputed and reused for all M2M and L2L operations, ie for
    * all non leaf inter/anterpolations.
    */
+/*
   void initM2MandL2L()
   {
     FPoint ParentRoots[nnodes], ChildRoots[nnodes];
@@ -86,6 +85,7 @@ class FUnifInterpolator : FNoCopyable
       assembleInterpolator(nnodes, ChildRoots, ChildParentInterpolator[child]);
     }
   }
+*/
 
   /**
    * Initialize the child - parent - interpolator, it is basically the matrix
@@ -141,22 +141,10 @@ public:
    */
   explicit FUnifInterpolator()
   {
-    //    // initialize chebyshev polynomials of root nodes: T_o(x_j)
-    //    for (unsigned int o=1; o<ORDER; ++o)
-    //      for (unsigned int j=0; j<ORDER; ++j)
-    //        T_of_roots[o][j] = FReal(BasisType::T(o, FReal(BasisType::roots[j])));
-    //
-    //    // initialize chebyshev polynomials of root nodes: T_o(x_j)
-    //    for (unsigned int o=1; o<ORDER; ++o)
-    //      for (unsigned int j=0; j<ORDER; ++j)
-    //        T[(o-1)*ORDER + j] = FReal(BasisType::T(o, FReal(BasisType::roots[j])));
-
-
     // initialize root node ids
     TensorType::setNodeIds(node_ids);
 
-    // initialize interpolation operator for non M2M and L2L (non leaf
-    // operations)
+    // initialize interpolation operator for M2M and L2L (non leaf operations)
     //this -> initM2MandL2L();     // non tensor-product interpolation
     this -> initTensorM2MandL2L(); // tensor-product interpolation
   }
@@ -278,7 +266,7 @@ public:
                      const FReal *const localExpansion,
                      ContainerClass *const localParticles) const;
 
-
+  // PB: ORDER^6 version of applyM2M/L2L
   /*
     void applyM2M(const unsigned int ChildIndex,
     const FReal *const ChildExpansion,
@@ -299,9 +287,7 @@ public:
     }
   */
 
-  // PB: improvement of applyM2M/L2L can be preserved (TOFACTO)
-  // since relative position of child and parent interpolation is remains unchanged
-
+  // PB: improved version of applyM2M/L2L also applies to Lagrange interpolation
   void applyM2M(const unsigned int ChildIndex,
                 const FReal *const ChildExpansion,
                 FReal *const ParentExpansion) const
@@ -506,10 +492,10 @@ inline void FUnifInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
 
     // evaluate Lagrange polynomials of source particle
     for (unsigned int o=0; o<ORDER; ++o) {
-      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops PB: TODO confirm
+      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops 
       L_of_x[o][1] = BasisType::L(o, localPosition.getY()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
-      dL_of_x[o][0] = BasisType::dL(o, localPosition.getX()); // TODO verify 3 * ORDER*(ORDER-1) flops PB: TODO confirm
+      dL_of_x[o][0] = BasisType::dL(o, localPosition.getX()); // TODO verify 3 * ORDER*(ORDER-1) flops
       dL_of_x[o][1] = BasisType::dL(o, localPosition.getY()); // TODO verify 3 * ORDER*(ORDER-1) flops
       dL_of_x[o][2] = BasisType::dL(o, localPosition.getZ()); // TODO verify 3 * ORDER*(ORDER-1) flops
     }

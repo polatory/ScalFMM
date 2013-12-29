@@ -172,15 +172,17 @@ class FFft
 
 private:
   unsigned int nsteps_;
+  unsigned int nsteps_opt_;
 
 public:
 
   FFft(const unsigned int nsteps)
-  : nsteps_(nsteps)
+  : nsteps_(nsteps),
+    nsteps_opt_(nsteps/2+1) // SPECIFIC TO FTT FOR REAL VALUES
   {
     // allocate arrays
     fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-    fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_);
+    fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_opt_);
 
     // fftw plans
     plan_c2r_ =
@@ -213,7 +215,7 @@ public:
     // read sampled data
 //    std::cout<< "copy(";
 //    time.tic();
-    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(fftC_));
+    FBlas::c_setzero(nsteps_opt_,reinterpret_cast<FReal*>(fftC_));
     FBlas::copy(nsteps_, sampledData,fftR_);
 //    std::cout << time.tacAndElapsed() << ")";
 
@@ -226,11 +228,10 @@ public:
     // write transformed data
 //    std::cout<< " - copy(";
 //    time.tic();
-//    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(fftC_),
-//                  reinterpret_cast<FReal*>(transformedData));
-
-    for(unsigned int s=0; s<nsteps_; ++s)
-      transformedData[s]=fftC_[s];
+    FBlas::c_copy(nsteps_opt_,reinterpret_cast<FReal*>(fftC_),
+                  reinterpret_cast<FReal*>(transformedData));
+//    for(unsigned int s=0; s<nsteps_opt_; ++s)
+//      transformedData[s]=fftC_[s];
 
 //    std::cout << time.tacAndElapsed() << ") ";
 
@@ -242,7 +243,7 @@ public:
   {
     // read transformed data
     FBlas::setzero(nsteps_,fftR_);
-    FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(transformedData),
+    FBlas::c_copy(nsteps_opt_,reinterpret_cast<const FReal*>(transformedData),
                   reinterpret_cast<FReal*>(fftC_));
 
     // perform ifft

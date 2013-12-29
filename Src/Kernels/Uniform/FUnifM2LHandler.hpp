@@ -64,7 +64,7 @@ class FUnifM2LHandler : FNoCopyable
   unsigned int opt_rc; 
 
   typedef FUnifTensor<ORDER> TensorType;
-  unsigned int node_diff[nnodes*nnodes]; // PB: used in applyC to get id=i-j
+  unsigned int node_diff[nnodes*nnodes];
 
   //  FDft Dft; // Direct Discrete Fourier Transformator
   FFft Dft; // Fast Discrete Fourier Transformator
@@ -222,18 +222,12 @@ public:
     FReal Py[rc];
     FBlas::setzero(rc,Py);
 
-    FComplexe tmpFY[rc]; // not mandatory?
-
     // Apply Zero Padding
     for (unsigned int i=0; i<nnodes; ++i)
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,tmpFY);
-
-    // not mandatory?
-    for (unsigned int j=0; j<rc; ++j) // could be opt_rc
-      FY[j]+=tmpFY[j];
+    Dft.applyDFT(Py,FY);
 
   }
 
