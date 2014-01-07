@@ -75,6 +75,10 @@ public:
         buffer >> dataDown >> dataUp;
     }
 
+  static int GetSize(){
+    return sizeof(long long int)*2;
+  }
+
     /////////////////////////////////////////////////
 
     /** Serialize only up data in a buffer */

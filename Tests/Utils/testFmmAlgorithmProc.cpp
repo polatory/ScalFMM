@@ -351,7 +351,7 @@ int main(int argc, char ** argv){
 
     TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
     memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
-    FReal physicalValue; //unused
+    FReal physicalValue;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
       loader.fillParticle(&particles[idxPart].position,&physicalValue);
     }

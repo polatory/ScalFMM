@@ -21,7 +21,7 @@
 #include "../../Extensions/FExtendCoordinate.hpp"
 
 #include "./FUnifTensor.hpp"
-
+#include "../../Components/FBasicCell.hpp"
 #include "../../Extensions/FExtendCellType.hpp"
 
 #include "../../Utils/FComplexe.hpp"
@@ -43,7 +43,7 @@
  * @param NVALS is the number of right hand side.
  */
 template <int ORDER, int NVALS = 1>
-class FUnifCell : public FExtendMortonIndex, public FExtendCoordinate
+class FUnifCell : public FBasicCell
 {
   static const int VectorSize = TensorTraits<ORDER>::nnodes;
   static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
@@ -117,6 +117,59 @@ public:
   FComplexe* getTransformedLocal(const int inRhs){
     return this->transformed_local_exp + inRhs*TransformedVectorSize;
   }
+
+  ///////////////////////////////////////////////////////
+  // to extend FAbstractSendable
+  ///////////////////////////////////////////////////////
+  template <class BufferWriterClass>
+  void serializeUp(BufferWriterClass& buffer) const{
+    buffer.write(multipole_exp, VectorSize * NVALS);
+    buffer.write(transformed_multipole_exp, VectorSize * NVALS);
+  }
+
+  template <class BufferReaderClass>
+  void deserializeUp(BufferReaderClass& buffer){
+    buffer.fillArray(multipole_exp, VectorSize*NVALS);
+    buffer.fillArray(transformed_multipole_exp, VectorSize*NVALS);
+  }
+  
+  template <class BufferWriterClass>
+  void serializeDown(BufferWriterClass& buffer) const{
+    buffer.write(local_exp, VectorSize*NVALS);
+    buffer.write(transformed_local_exp, VectorSize * NVALS);
+  }
+  
+  template <class BufferReaderClass>
+  void deserializeDown(BufferReaderClass& buffer){
+    buffer.fillArray(local_exp, VectorSize*NVALS);
+    buffer.fillArray(transformed_local_exp, VectorSize*NVALS);
+  }
+  
+  ///////////////////////////////////////////////////////
+  // to extend Serializable
+  ///////////////////////////////////////////////////////
+  template <class BufferWriterClass>
+  void save(BufferWriterClass& buffer) const{
+    FBasicCell::save(buffer);
+    buffer.write(multipole_exp, VectorSize*NVALS);
+    buffer.write(transformed_multipole_exp, VectorSize*NVALS);
+    buffer.write(local_exp, VectorSize*NVALS);
+    buffer.write(transformed_local_exp, VectorSize*NVALS);
+  }
+  
+  template <class BufferReaderClass>
+  void restore(BufferReaderClass& buffer){
+    FBasicCell::restore(buffer);
+    buffer.fillArray(multipole_exp, VectorSize*NVALS);
+    buffer.fillArray(transformed_multipole_exp, VectorSize*NVALS);
+    buffer.fillArray(local_exp, VectorSize*NVALS);
+    buffer.fillArray(transformed_local_exp, VectorSize*NVALS);
+  }
+  
+  static int GetSize(){
+    return 2 * (int) sizeof(FReal)*VectorSize*NVALS + 2*NVALS*TransformedVectorSize*(int) sizeof(FComplexe);
+  }
+
 
 };
 
