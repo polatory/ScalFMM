@@ -119,7 +119,7 @@ public:
      */
     template <class StreamClass>
     friend StreamClass& operator<<(StreamClass& output, const FSpherical& inPosition){
-        output << "(" <<  inPosition.getR() << ", " << inPosition.getPhi() << ", " << inPosition.getTheta() <<")";
+        output << "(" <<  inPosition.getR() << ", " << inPosition.getTheta() << ", " << inPosition.getPhi() <<")";
         return output;  // for multiple << operators.
     }
 

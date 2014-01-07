@@ -16,6 +16,7 @@
 #ifndef FABSTRACTSPHERICALKERNEL_HPP
 #define FABSTRACTSPHERICALKERNEL_HPP
 
+#include <iostream>
 #include "../../Components/FAbstractKernels.hpp"
 
 #include "../../Utils/FGlobal.hpp"
@@ -491,6 +492,11 @@ private:
 
         const FSpherical spherical(particlePosition - local_position);
         harmonic.computeInnerTheta( spherical );
+//        std::cout << "  L2P:"<<std::endl
+//        		  << "        Centre: " << 		local_position <<std::endl
+//        		  << "        PArt: " << 		particlePosition <<std::endl
+//        		  << "        Diff           " << 		particlePosition - local_position<<std::endl
+//        		  << "        Spherical Diff " << 		spherical <<std::endl ;
 
         int index_j_k = 1;
 

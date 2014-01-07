@@ -35,10 +35,11 @@
 class FEwalLoader : public FAbstractLoader {
 protected:
     std::ifstream file;         //< The file to read
-    FPoint centerOfBox;    //< The center of box read from file
-    FReal boxWidth;             //< the box width read from file
-    int nbParticles;            //< the number of particles read from file
-    int levcfg  ;         //< DL_POLY CONFIG file key. 0,1 or 2
+    FPoint        centerOfBox;          //< The center of box read from file
+    FReal         boxWidth;             //< the box width read from file
+    int           nbParticles;            //< the number of particles read from file
+    int           levcfg  ;               //< DL_POLY CONFIG file key. 0,1 or 2
+    FReal         energy  ;
 public:
     enum Type{
         OW,
@@ -66,7 +67,7 @@ public:
             int imcon ;
             //int tempi(0);
             FReal tempf(0);
-            file >> levcfg >> imcon >> this->nbParticles;
+            file >> levcfg >> imcon >> this->nbParticles >> this->energy;
             // Periodic case
             if( imcon > 0 ) {
                 FReal widthx, widthy, widthz;
@@ -83,7 +84,7 @@ public:
             this->centerOfBox.setPosition(0.0,0.0,0.0);
         }
         else {
-            this->boxWidth = 0;
+            this->boxWidth    = 0;
             this->nbParticles = 0;
         }
     }
@@ -127,7 +128,7 @@ public:
     }
 
     FReal getEnergy() const{
-      return static_cast<FReal>(0.0);
+      return this->energy;
     }
 
     /**
@@ -232,7 +233,7 @@ public:
             centerOfBox.setPosition(0.0,0.0,0.0);
         }
         else {
-            this->boxWidth = 0;
+            this->boxWidth    = 0;
             this->nbParticles = 0;
         }
     }

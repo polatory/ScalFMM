@@ -48,7 +48,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
     void RunTest(const bool isBlasKernel){
-        const int DevP = 2;
+        const int DevP = 26;
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         const int nbParticles = 2;
@@ -80,19 +80,20 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         TestParticle* const particles = new TestParticle[nbParticles];
         particles[0].position = FPoint(quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
-        particles[0].physicalValue = 0.50;
-        particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
-        particles[1].physicalValue = -0.10;
+        particles[0].physicalValue = 1;
+//        particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+        particles[1].physicalValue = -1;
 
         Print("Number of particles:");
         Print(nbParticles);
-
-        for(int idxLeafX = 0 ; idxLeafX < dimGrid ; ++idxLeafX){
-            for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY){
-                for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ){
+        int idxLeafY = 0,idxLeafZ = 0 ;
+        	std::cout << "\n ------  Loop starts ---"<< std::endl ;
+        for(int idxLeafX = 2 ; idxLeafX < dimGrid ; ++idxLeafX){
+            /*for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY)*/{
+              /*  for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ)*/{
                     //std::cout << "Shift : " << idxLeafX << " " << idxLeafY << " " << idxLeafZ << std::endl;
 
-                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                    particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 3*quarterDimLeaf,
                                                    FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
                                                    FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
                   /*  particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
@@ -162,30 +163,32 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                                 fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                                 fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
 
-                                std::cout << indexPartOrig << " x Direct " << particles[indexPartOrig].forces[0]<<" FMM "<<forcesX[idxPart] << std::endl;
-                                std::cout << indexPartOrig << " y Direct " << particles[indexPartOrig].forces[1]<<" FMM "<<forcesY[idxPart] << std::endl;
-                                std::cout << indexPartOrig << " z Direct " << particles[indexPartOrig].forces[2]<<" FMM "<<forcesZ[idxPart] << std::endl;
+                                std::cout <<"indx: " << indexPartOrig << " Potential  Direct " << particles[indexPartOrig].potential<<" FMM "<<potentials[idxPart] << std::endl;
+                                std::cout <<"indx: " << indexPartOrig << " Fx Direct " << particles[indexPartOrig].forces[0]<<" FMM "<<forcesX[idxPart] << std::endl;
+                                std::cout <<"indx: " << indexPartOrig << " Fy Direct " << particles[indexPartOrig].forces[1]<<" FMM "<<forcesY[idxPart] << std::endl;
+                                std::cout <<"indx: " << indexPartOrig << " Fz Direct " << particles[indexPartOrig].forces[2]<<" FMM "<<forcesZ[idxPart] << std::endl;
                                 printf("Printf : forces x %e y %e z %e\n", forcesX[idxPart],forcesY[idxPart],forcesZ[idxPart]);//TODO delete
                             }
                         });
 
                         tree.forEachCell([&](CellClass* cell){
-                            std::cout << "Multipole:\n";
+
+                            std::cout << "cell " << cell->getMortonIndex() << "\n   Multipole: \n";
                             int index_j_k = 0;
                             for (int j = 0 ; j <= DevP ; ++j ){
-                                std::cout <<"[" << j << "]\n";
+                                std::cout <<"[" << j << "] ----- level\n";
                                 for (int k=0; k<=j ;++k, ++index_j_k){
-                                    std::cout << "[" << k << "] " << cell->getMultipole()[index_j_k].getReal() << " i" << cell->getMultipole()[index_j_k].getImag() << "    ";
+                                    std::cout << "[" << k << "] ( " << cell->getMultipole()[index_j_k].getReal() << " , " << cell->getMultipole()[index_j_k].getImag() << " )   ";
                                 }
                                 std::cout << "\n";
                             }
                             std::cout << "\n";
-                            std::cout << "Local:\n";
+                            std::cout << "   Local:\n";
                             index_j_k = 0;
                             for (int j = 0 ; j <= DevP ; ++j ){
-                                std::cout <<"[" << j << "]\n";
+                                std::cout <<"[" << j << "] ----- level \n";
                                 for (int k=0; k<=j ;++k, ++index_j_k){
-                                    std::cout << "[" << k << "] " << cell->getLocal()[index_j_k].getReal() << " i" << cell->getLocal()[index_j_k].getImag() << "    ";
+                                    std::cout << "[" << k << "] ( " << cell->getLocal()[index_j_k].getReal() << " , " << cell->getLocal()[index_j_k].getImag() << " )               ";
                                 }
                                 std::cout << "\n";
                             }

@@ -71,19 +71,19 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
         TestParticle* const particles = new TestParticle[nbParticles];
         particles[0].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
-        particles[0].physicalValue = 0.50;
+        particles[0].physicalValue = 1.0;
         particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
-        particles[1].physicalValue = -0.10;
+        particles[1].physicalValue = 1.0;
 
         Print("Number of particles:");
         Print(nbParticles);
 
-        for(int idxLeafX = 0 ; idxLeafX < 2/*dimGrid*/ ; ++idxLeafX){
+        for(int idxLeafX = 0 ; idxLeafX < dimGrid ; ++idxLeafX){
             for(int idxLeafY = 0 ; idxLeafY < 1/*dimGrid*/ ; ++idxLeafY){
                 for(int idxLeafZ = 0 ; idxLeafZ < 1/*dimGrid*/ ; ++idxLeafZ){
 
-                particles[0].position = FPoint((idxLeafX+1)*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
-                particles[1].position = FPoint(FReal(2)*dimLeaf + 2*quarterDimLeaf,
+ //               particles[0].position = FPoint((idxLeafX+1)*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+                particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
                                                FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
                                                FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);
 
@@ -97,8 +97,9 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                     particles[idxPart].forces[0] = 0.0;
                     particles[idxPart].forces[1] = 0.0;
                     particles[idxPart].forces[2] = 0.0;
-
-                    std::cout << idxPart << " " << particles[idxPart].position << std::endl;
+                   // FSpherical  PP(particles[idxPart].position) ;
+                    std::cout << idxPart << " cart " << particles[idxPart].position << std::endl;
+            //        std::cout << idxPart << " sph  " << FSpherical(particles[idxPart].position)  << std::endl;
                 }
 
 
@@ -222,7 +223,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    static const int P = 1;
+    static const int P = 2;
 
     /** Rotation */
     void TestRotation(){
