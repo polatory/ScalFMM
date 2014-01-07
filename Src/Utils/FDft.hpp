@@ -15,7 +15,9 @@
 // ===================================================================================
 #ifndef FDFT_HPP
 #define FDFT_HPP
+#include "ScalFmmConfig.h"
 
+#ifdef ScalFMM_USE_FFT
 #include <iostream>
 #include <stdlib.h>
 
@@ -258,6 +260,6 @@ public:
 
 
 };
-
+#endif /*ScalFMM_USE_FFT*/
 #endif /* FDFT_HPP */
 
