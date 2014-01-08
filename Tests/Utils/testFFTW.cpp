@@ -22,10 +22,10 @@
 #include <stdlib.h>
 
 // include for libfftw3
-//#include <fftw3.h>
+#include <fftw3.h>
 
 // include for mkl_fftw3
-#include <fftw/fftw3.h>
+//#include <fftw/fftw3.h>
 
 #include "../../Src/Utils/FGlobal.hpp"
 #include "../../Src/Utils/FComplexe.hpp"

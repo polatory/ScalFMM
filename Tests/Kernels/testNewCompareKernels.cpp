@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        //        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //        typedef FChebKernDel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
         { // -----------------------------------------------------
             std::cout << "\nChebyshev FMM ... " << std::endl;
             time.tic();
-            KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
+            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
             FmmClass algorithm(&tree, &kernels);
             algorithm.execute();
             time.tac();
@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
       { // -----------------------------------------------------
         std::cout << "\nLagrange FMM ... " << std::endl;
         time.tic();
-        KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
+        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algorithm(&tree, &kernels);
         algorithm.execute();
         time.tac();

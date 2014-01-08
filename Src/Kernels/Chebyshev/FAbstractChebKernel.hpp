@@ -45,95 +45,95 @@ class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-	typedef FChebInterpolator<ORDER> InterpolatorClass;
+  typedef FChebInterpolator<ORDER> InterpolatorClass;
 
-	/// Needed for P2M, M2M, L2L and L2P operators
-	const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
-	/// Needed for P2P operator
-	const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
-	/// Height of the entire oct-tree
-	const unsigned int TreeHeight;
-	/// Corner of oct-tree box
-	const FPoint BoxCorner;
-	/// Width of oct-tree box   
-	const FReal BoxWidth;    
-	/// Width of a leaf cell box 
-	const FReal BoxWidthLeaf;
+  /// Needed for P2M, M2M, L2L and L2P operators
+  const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
+  /// Needed for P2P operator
+  const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
+  /// Height of the entire oct-tree
+  const unsigned int TreeHeight;
+  /// Corner of oct-tree box
+  const FPoint BoxCorner;
+  /// Width of oct-tree box   
+  const FReal BoxWidth;    
+  /// Width of a leaf cell box 
+  const FReal BoxWidthLeaf;
 
-	/**
-	 * Compute center of leaf cell from its tree coordinate.
-	 * @param[in] Coordinate tree coordinate
-	 * @return center of leaf cell
-	 */
-	const FPoint getLeafCellCenter(const FTreeCoordinate& Coordinate) const
-	{
-		return FPoint(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
-											 BoxCorner.getY() + (FReal(Coordinate.getY()) + FReal(.5)) * BoxWidthLeaf,
-											 BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
-	}
+  /**
+   * Compute center of leaf cell from its tree coordinate.
+   * @param[in] Coordinate tree coordinate
+   * @return center of leaf cell
+   */
+  const FPoint getLeafCellCenter(const FTreeCoordinate& Coordinate) const
+  {
+    return FPoint(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
+		  BoxCorner.getY() + (FReal(Coordinate.getY()) + FReal(.5)) * BoxWidthLeaf,
+		  BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
+  }
 
 public:
-	/**
-	 * The constructor initializes all constant attributes and it reads the
-	 * precomputed and compressed M2L operators from a binary file (an
-	 * runtime_error is thrown if the required file is not valid).
-	 */
-	FAbstractChebKernel(const int inTreeHeight,
-											const FPoint& inBoxCenter,
-											const FReal inBoxWidth)
-		: Interpolator(new InterpolatorClass()),
-			MatrixKernel(new MatrixKernelClass()),
-			TreeHeight(inTreeHeight),
-			BoxCorner(inBoxCenter - inBoxWidth / FReal(2.)),
-			BoxWidth(inBoxWidth),
-			BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1)))
-	{
-		/* empty */
-	}
+  /**
+   * The constructor initializes all constant attributes and it reads the
+   * precomputed and compressed M2L operators from a binary file (an
+   * runtime_error is thrown if the required file is not valid).
+   */
+  FAbstractChebKernel(const int inTreeHeight,
+		      const FReal inBoxWidth,
+		      const FPoint& inBoxCenter)
+    : Interpolator(new InterpolatorClass()),
+      MatrixKernel(new MatrixKernelClass()),
+      TreeHeight(inTreeHeight),
+      BoxCorner(inBoxCenter - inBoxWidth / FReal(2.)),
+      BoxWidth(inBoxWidth),
+      BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1)))
+  {
+    /* empty */
+  }
 
-    virtual ~FAbstractChebKernel(){
-        // should not be used
-    }
+  virtual ~FAbstractChebKernel(){
+    // should not be used
+  }
 
-	const InterpolatorClass *const getPtrToInterpolator() const
-	{ return Interpolator.getPtr(); }
-
-
-	virtual void P2M(CellClass* const LeafCell,
-									 const ContainerClass* const SourceParticles) = 0;
+  const InterpolatorClass *const getPtrToInterpolator() const
+  { return Interpolator.getPtr(); }
 
 
-	virtual void M2M(CellClass* const FRestrict ParentCell,
-									 const CellClass*const FRestrict *const FRestrict ChildCells,
-									 const int TreeLevel) = 0;
+  virtual void P2M(CellClass* const LeafCell,
+		   const ContainerClass* const SourceParticles) = 0;
 
 
-	virtual void M2L(CellClass* const FRestrict TargetCell,
-									 const CellClass* SourceCells[343],
-									 const int NumSourceCells,
-									 const int TreeLevel) = 0;
+  virtual void M2M(CellClass* const FRestrict ParentCell,
+		   const CellClass*const FRestrict *const FRestrict ChildCells,
+		   const int TreeLevel) = 0;
 
 
-	virtual void L2L(const CellClass* const FRestrict ParentCell,
-									 CellClass* FRestrict *const FRestrict ChildCells,
-									 const int TreeLevel) = 0;
+  virtual void M2L(CellClass* const FRestrict TargetCell,
+		   const CellClass* SourceCells[343],
+		   const int NumSourceCells,
+		   const int TreeLevel) = 0;
 
 
-	virtual void L2P(const CellClass* const LeafCell,
-									 ContainerClass* const TargetParticles) = 0;
+  virtual void L2L(const CellClass* const FRestrict ParentCell,
+		   CellClass* FRestrict *const FRestrict ChildCells,
+		   const int TreeLevel) = 0;
+
+
+  virtual void L2P(const CellClass* const LeafCell,
+		   ContainerClass* const TargetParticles) = 0;
 	
 	
 
-    virtual void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
-					 ContainerClass* const FRestrict TargetParticles,
-                     const ContainerClass* const FRestrict /*SourceParticles*/,
-					 ContainerClass* const NeighborSourceParticles[27],
-                     const int /* size */) = 0;
+  virtual void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
+		   ContainerClass* const FRestrict TargetParticles,
+		   const ContainerClass* const FRestrict /*SourceParticles*/,
+		   ContainerClass* const NeighborSourceParticles[27],
+		   const int /* size */) = 0;
 
 
-    virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
-                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/) = 0;
+  virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+			 ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+			 ContainerClass* const inNeighbors[27], const int /*inSize*/) = 0;
 
 };
 

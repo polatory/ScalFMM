@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();

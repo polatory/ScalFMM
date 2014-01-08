@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
   { // -----------------------------------------------------
     std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ",EPS="<< epsilon <<") ... " << std::endl;
     time.tic();
-    KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
+    KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algorithm(app.global(),&tree, &kernels);
     algorithm.execute();
     time.tac();

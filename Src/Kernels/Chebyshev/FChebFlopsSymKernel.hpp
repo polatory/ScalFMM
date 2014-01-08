@@ -105,9 +105,9 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebFlopsSymKernel(const int _inTreeHeight,
-								 const FPoint& inBoxCenter,
-								 const FReal inBoxWidth,
-								 const FReal Epsilon)
+			    const FReal inBoxWidth,
+			    const FPoint& inBoxCenter,
+			    const FReal Epsilon)
 		:	MatrixKernel(new MatrixKernelClass()),
 			SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)), inTreeHeight(_inTreeHeight),
 			flopsP2M(0), flopsM2M(0), flopsM2L(0), flopsL2L(0), flopsL2P(0), flopsP2P(0),

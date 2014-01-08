@@ -158,7 +158,7 @@ int main(int argc, char ** argv){
 #ifndef  ScalFMM_USE_BLAS
     	KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 #else
-    	KernelClass kernels( NbLevels,  loader.getCenterOfBox(), loader.getBoxWidth(),epsilon);
+    	KernelClass kernels( NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
 #endif
         FmmClassNoPer algo(&tree,&kernels);
         algo.execute();
@@ -170,7 +170,7 @@ int main(int argc, char ** argv){
     	KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
 //    	KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
 #else
-    	KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxCenter(), algo.extendedBoxWidth(),epsilon);
+    	KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter(), epsilon);
 #endif
         algo.setKernel(&kernels);
         algo.execute();
