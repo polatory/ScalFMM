@@ -42,27 +42,27 @@
  *
  * @param NVALS is the number of right hand side.
  */
-template <int ORDER, int NVALS = 1>
+template <int ORDER, int NMUL = 1, int NLOC = 1>
 class FUnifCell : public FExtendMortonIndex, public FExtendCoordinate
 {
   static const int VectorSize = TensorTraits<ORDER>::nnodes;
   static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
 
-  FReal multipole_exp[NVALS * VectorSize]; //< Multipole expansion
-  FReal     local_exp[NVALS * VectorSize]; //< Local expansion
+  FReal multipole_exp[NMUL * VectorSize]; //< Multipole expansion
+  FReal     local_exp[NLOC * VectorSize]; //< Local expansion
 
   // PB: Store multipole and local expansion in Fourier space
-  FComplexe transformed_multipole_exp[NVALS * TransformedVectorSize];
-  FComplexe     transformed_local_exp[NVALS * TransformedVectorSize];
+  FComplexe transformed_multipole_exp[NMUL * TransformedVectorSize];
+  FComplexe     transformed_local_exp[NLOC * TransformedVectorSize];
 
 public:
   FUnifCell(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    memset(multipole_exp, 0, sizeof(FReal) * NMUL * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLOC * VectorSize);
     memset(transformed_multipole_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NMUL * TransformedVectorSize);
     memset(transformed_local_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NLOC * TransformedVectorSize);
   }
 
   ~FUnifCell() {}
@@ -92,12 +92,12 @@ public:
 
   /** Make it like the begining */
   void resetToInitialState(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    memset(multipole_exp, 0, sizeof(FReal) * NMUL * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLOC * VectorSize);
     memset(transformed_multipole_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NMUL * TransformedVectorSize);
     memset(transformed_local_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NLOC * TransformedVectorSize);
   }
 
   /** Get Transformed Multipole */
@@ -120,21 +120,21 @@ public:
 
 };
 
-template <int ORDER, int NVALS = 1>
-class FTypedUnifCell : public FUnifCell<ORDER,NVALS>, public FExtendCellType {
+template <int ORDER, int NMUL = 1, int NLOC = 1>
+class FTypedUnifCell : public FUnifCell<ORDER,NMUL,NLOC>, public FExtendCellType {
 public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
-    FUnifCell<ORDER,NVALS>::save(buffer);
+    FUnifCell<ORDER,NMUL,NLOC>::save(buffer);
     FExtendCellType::save(buffer);
   }
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
-    FUnifCell<ORDER,NVALS>::restore(buffer);
+    FUnifCell<ORDER,NMUL,NLOC>::restore(buffer);
     FExtendCellType::restore(buffer);
   }
   void resetToInitialState(){
-    FUnifCell<ORDER,NVALS>::resetToInitialState();
+    FUnifCell<ORDER,NMUL,NLOC>::resetToInitialState();
     FExtendCellType::resetToInitialState();
   }
 };

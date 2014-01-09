@@ -57,7 +57,9 @@
 int main(int, char **){
   typedef FP2PParticleContainer ContainerClass;
   typedef FSimpleLeaf<ContainerClass> LeafClass;
-  typedef FInterpMatrixKernelR MatrixKernelClass;
+//  typedef FInterpMatrixKernelR MatrixKernelClass;
+  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+  typedef FInterpMatrixKernel_R_IJK RIJKMatrixKernelClass; // PB: force computation
 
 
   ///////////////////////What we do/////////////////////////////
@@ -67,6 +69,10 @@ int main(int, char **){
   //////////////////////////////////////////////////////////////
 
   MatrixKernelClass MatrixKernel;
+  RIJKMatrixKernelClass RIJKMatrixKernel; // Only used for kernel R_IJ
+  const unsigned int nrhs = MatrixKernelClass::NRHS;
+  const unsigned int nlhs = MatrixKernelClass::NLHS;
+
   const FReal FRandMax = FReal(RAND_MAX);
   FTic time;
 
@@ -77,7 +83,7 @@ int main(int, char **){
   ////////////////////////////////////////////////////////////////////
   LeafClass X;
   FPoint cx(0., 0., 0.);
-  const unsigned long M = 20000;
+  const unsigned long M = 5000;
   std::cout << "Fill the leaf X of width " << width
             << " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
   {
@@ -85,6 +91,7 @@ int main(int, char **){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
+      // TODO: find a way to push vectorial attribute of arbitrary dim (nlhs)
       X.push(FPoint(x, y, z), FReal(rand())/FRandMax);
     }
   }
@@ -95,14 +102,15 @@ int main(int, char **){
   //  FPoint cy(FReal(2.)*width, 0., 0.);
   FPoint cy(FReal(2.)*width, FReal(2.)*width, 0.);
 
-  const unsigned long N = 20000;
+  const unsigned long N = 5000;
   std::cout << "Fill the leaf Y of width " << width
-            << " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
+            << " centered at cy=" << cy	<< " with N=" << N << " source particles" << std::endl;
   {
     for(unsigned long i=0; i<N; ++i){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
+      // TODO: find a way to push vectorial attribute of arbitrary dim (nrhs)
       Y.push(FPoint(x, y, z), FReal(rand())/FRandMax);
     }
   }
@@ -111,7 +119,7 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // approximative computation
-  const unsigned int ORDER = 2;
+  const unsigned int ORDER = 4;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
@@ -121,8 +129,10 @@ int main(int, char **){
   std::cout << "\nP2M ... " << std::flush;
   time.tic();
   // Anterpolate: W_n = \sum_j^N S(y_j,\bar y_n) * w_j
-  FReal W[nnodes]; // multipole expansion
-  S.applyP2M(cy, width, W, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
+  FReal W[nrhs*nnodes]; // multipole expansion
+  // tensorial case interpolate same Y for each component
+  for (unsigned int idRhs=0; idRhs<nrhs; ++idRhs)
+    S.applyP2M(cy, width, W + idRhs*nnodes, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   std::cout << "M2L ... " << std::flush;
@@ -132,34 +142,61 @@ int main(int, char **){
   FUnifTensor<ORDER>::setRoots(cx, width, rootsX);
   FUnifTensor<ORDER>::setRoots(cy, width, rootsY);
 
-  FReal F[nnodes]; // local expansion
+  FReal F[nlhs*nnodes]; // local expansion
+  for (unsigned int i=0; i<nnodes*nlhs; ++i) F[i] = FReal(0.);
+
   for (unsigned int i=0; i<nnodes; ++i) {
-    F[i] = FReal(0.);
     for (unsigned int j=0; j<nnodes; ++j){
+      
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
+        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
+          unsigned idxK = idxLhs*3+idxRhs; // or counter
+          unsigned int d = MatrixKernel.getPosition(idxK);
 
-      F[i] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j];
+          MatrixKernel.updateIndex(d);
 
+          F[i+idxLhs*nnodes] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j+idxRhs*nnodes];
+
+        }
     }
   }
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
+//  std::cout<< "F via direct applyM2L: "<<std::endl;
+//  for (unsigned int d=0; d<nlhs; ++d){
+//    for (unsigned int i=0; i<nnodes; ++i)
+//      std::cout<< F[i+d*nnodes] << ", ";
+//    std::cout<<std::endl;
+//  }
+//  std::cout<<std::endl;
 
   ////////////////////////////////////////////////////////////////////////////
   // Store M2L in K and apply K
-  FReal K[nnodes*nnodes]; // local expansion
+  const unsigned int dim=MatrixKernelClass::Dim;
+  FReal K[dim*nnodes*nnodes]; // local expansion
   for (unsigned int i=0; i<nnodes; ++i) {
     for (unsigned int j=0; j<nnodes; ++j){
-      K[i*nnodes+j] = MatrixKernel.evaluate(rootsX[i], rootsY[j]);
+
+      for (unsigned int d=0; d<dim; ++d){
+        MatrixKernel.updateIndex(d);
+        K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernel.evaluate(rootsX[i], rootsY[j]);        
+      }
+
     }
   }
   std::cout<< "Apply M2L in usual sense: ";
   time.tic();
+  for (unsigned int i=0; i<nnodes*nlhs; ++i) F[i] = FReal(0.);
 
-  for (unsigned int i=0; i<nnodes; ++i) {
-    F[i] = FReal(0.);
+  for (unsigned int i=0; i<nnodes; ++i)
     for (unsigned int j=0; j<nnodes; ++j){
 
-      F[i] += K[i*nnodes+j] * W[j];
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
+        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
+          unsigned idxK = idxLhs*3+idxRhs; // or counter
+          unsigned int d = MatrixKernel.getPosition(idxK);
+
+          F[i+idxLhs*nnodes] += K[d*nnodes*nnodes+i*nnodes+j] * W[j+idxRhs*nnodes];
 
     }
   }
@@ -167,36 +204,51 @@ int main(int, char **){
   time.tac();
   std::cout << "took " << time.elapsed() << "sec." << std::endl;
 
+//  std::cout<< "F via store and applyM2L: "<<std::endl;
+//  for (unsigned int d=0; d<nlhs; ++d){
+//    for (unsigned int i=0; i<nnodes; ++i)
+//      std::cout<< F[i+d*nnodes] << ", ";
+//    std::cout<<std::endl;
+//  }
+//  std::cout<<std::endl;
+
+  /////////////////////////////////////////////////////////////////////////////////////
   // PB: Verify storage improvement works (indexing etc...)
   // 1) store circulant matrix
   const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
-  FReal C[rc];
+  FReal C[dim*rc];
 
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
   TensorType::setNodeIdsDiff(node_diff);
-  unsigned int node_ids[nnodes][3];
-  TensorType::setNodeIds(node_ids);
   unsigned int node_ids_pairs[rc][2];
   TensorType::setNodeIdsPairs(node_ids_pairs);
 
-  //  std::cout << "2*order-1=" << 2*ORDER-1 << std::endl;
   unsigned int ido=0;
+
   for(unsigned int l=0; l<2*ORDER-1; ++l)
     for(unsigned int m=0; m<2*ORDER-1; ++m)
       for(unsigned int n=0; n<2*ORDER-1; ++n){
 
-        C[ido]
-          = MatrixKernel.evaluate(rootsX[node_ids_pairs[ido][0]], 
-                                  rootsY[node_ids_pairs[ido][1]]);
+        for (unsigned int d=0; d<dim; ++d){
+          MatrixKernel.updateIndex(d);
+
+          C[d*rc + ido]
+            = MatrixKernel.evaluate(rootsX[node_ids_pairs[ido][0]], 
+                                    rootsY[node_ids_pairs[ido][1]]);
+        }
+        
         ido++;
       }
 
 //  // Display C (gathers every values of K that need to be stored,
 //  // corresponds to the first line of the padded matrix (reverse order?))
 //  std::cout<<"C="<<std::endl;
-//  for (unsigned int n=0; n<rankpad; ++n)
-//    std::cout<< C[ido] << ", ";
+//    for (unsigned int d=0; d<dim; ++d){
+//      for (unsigned int n=0; n<rc; ++n)
+//        std::cout<< C[n + d*rc] << ", ";
+//      std::cout<<std::endl;
+//    }
 //  std::cout<<std::endl;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,35 +272,15 @@ int main(int, char **){
 //  }
 //  std::cout<<std::endl;
 
-  // Check multi-index
-  std::cout<< "node_ids=" <<std::endl;
-  for (unsigned int i=0; i<nnodes; ++i)
-    std::cout<< node_ids[i][0] <<", "
-             << node_ids[i][1] <<", "
-             << node_ids[i][2] <<", "<<std::endl;
-  std::cout<<std::endl;
-
-
-  // Check multi-index diff
-  std::cout<< "node_ids=" <<std::endl;
-  for (unsigned int i=0; i<nnodes; ++i){
-    for (unsigned int j=0; j<nnodes; ++j)
-      std::cout<< "(" << int(node_ids[i][0]-node_ids[j][0]) <<","
-               << int(node_ids[i][1]-node_ids[j][1]) <<","
-               << int(node_ids[i][2]-node_ids[j][2]) <<"), ";
-    std::cout<<std::endl;
-  }
-  std::cout<<std::endl;
-
-  // Check matrix node_diff
-  std::cout<< "node_diff=" <<std::endl;
-  for (unsigned int i=0; i<nnodes; ++i){
-    for (unsigned int j=0; j<nnodes; ++j){
-      std::cout<< node_diff[i*nnodes+j] <<", ";
-    }
-    std::cout<<std::endl;
-  }
-  std::cout<<std::endl;
+//  // Check matrix node_diff
+//  std::cout<< "node_diff=" <<std::endl;
+//  for (unsigned int i=0; i<nnodes; ++i){
+//    for (unsigned int j=0; j<nnodes; ++j){
+//      std::cout<< node_diff[i*nnodes+j] <<", ";
+//    }
+//    std::cout<<std::endl;
+//  }
+//  std::cout<<std::endl;
 
 //  // Expected ido for the (2*ORDER-1)^3x(2*ORDER-1)^3 circulant matrix
 //  for (unsigned int i=0; i<rc; ++i){
@@ -271,16 +303,18 @@ int main(int, char **){
   // in order to apply the (ORDER+ORDER-1)x(ORDER+ORDER-1)
   // circulant matrix to it.
   // Let us extend it to the 3D case:
-  FReal MultExp[nnodes]; FReal PaddedMultExp[rc];
-  for (unsigned int i=0; i<nnodes; ++i) MultExp[i]=W[i];
-  FReal LocalExp[nnodes]; FReal PaddedLocalExp[rc];
-  FBlas::setzero(nnodes,LocalExp);
-  FBlas::setzero(rc,PaddedLocalExp);
+  FReal MultExp[nrhs*nnodes]; FReal PaddedMultExp[nrhs*rc];
+  for (unsigned int i=0; i<nrhs*nnodes; ++i) MultExp[i]=W[i];
+  FReal LocalExp[nlhs*nnodes]; FReal PaddedLocalExp[nlhs*rc];
+  FBlas::setzero(nlhs*nnodes,LocalExp);
+  FBlas::setzero(nlhs*rc,PaddedLocalExp);
 
 //  std::cout<< "Expected LocalExp: "<<std::endl;
-//  for (unsigned int i=0; i<nnodes; ++i)
-//    std::cout<< F[i] << ", ";
-//  std::cout<<std::endl;
+//  for (unsigned int d=0; d<nlhs; ++d){
+//    for (unsigned int i=0; i<nnodes; ++i)
+//      std::cout<< F[i+d*nnodes] << ", ";
+//    std::cout<<std::endl;
+//  }
 
   /////////////////////////////////////////////////////////////////////////////////////
   // Application of circulant Toeplitz system in PHYSICAL SPACE
@@ -289,9 +323,10 @@ int main(int, char **){
   for (unsigned int i=0; i<nnodes; ++i){
 
     // Pad Multipole Expansion with respect to current row
-    FBlas::setzero(rc,PaddedMultExp);
+    FBlas::setzero(nrhs*rc,PaddedMultExp);
     for (unsigned int j=0; j<nnodes; ++j)
-      PaddedMultExp[node_diff[i*nnodes+j]]=MultExp[j];
+        for (unsigned int d=0; d<nrhs; ++d)
+          PaddedMultExp[node_diff[i*nnodes+j] + d*rc]=MultExp[j + d*nnodes];
 
 //    std::cout<< "Padded MultExp for row i=" << i << ": "<<std::endl;
 //    for (unsigned int p=0; p<rc; ++p)
@@ -300,36 +335,39 @@ int main(int, char **){
 
     // Application of M2L in PHYSICAL SPACE
     for (unsigned int pj=0; pj<rc; ++pj)
-      LocalExp[i]+=C[pj]*PaddedMultExp[pj];
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
+        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
+          unsigned idxK = idxLhs*3+idxRhs; // or counter
+
+          unsigned int d = MatrixKernel.getPosition(idxK);
+
+          LocalExp[i + idxLhs*nnodes]+=C[pj + d*rc]*PaddedMultExp[pj + idxRhs*rc];
+
+        }
 
   }// end i
   time.tac();
   std::cout << "took " << time.elapsed() << "sec." << std::endl;
 
 //  std::cout<< "LocalExp via product in PHYSICAL SPACE: "<<std::endl;
-//  for (unsigned int p=0; p<nnodes; ++p)
-//    std::cout<< LocalExp[p] << ", ";
-//  std::cout<<std::endl;
+//  for (unsigned int d=0; d<nlhs; ++d){
+//    for (unsigned int i=0; i<nnodes; ++i)
+//      std::cout<< LocalExp[i+d*nnodes] << ", ";
+//    std::cout<<std::endl;
+//  }
 //  std::cout<<std::endl;
 
   /////////////////////////////////////////////////////////////////////////////////////
   // Efficient application of the Toeplitz system in FOURIER SPACE
-  FComplexe FPMultExp[rc];
-  FComplexe FPLocalExp[rc];
-  FReal PLocalExp[rc];
-
-  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplexe(0.0,0.0);
-  FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FPLocalExp));
-
-  FBlas::setzero(rc,PLocalExp);
 
   // Init DFT
-  // NB: only one FFTor is defined a since scalar problems involve scalar r/lhs and scalar matrix kernel. All dimensions are 1. 
   //FDft Dft(rc); // direct version
-  FFft<1> Dft(rc); // fast version
+  FFft<1/*(TODO: fix MultidimFFT) nK*/> DftK(rc); // fast version
+  FFft<1/*nrhs*/> DftRhs(rc);
+  FFft<1/*nlhs*/> DftLhs(rc);
 
   // Get first COLUMN of K and Store in T
-  FReal T[rc];
+  FReal T[dim*rc];
   // use permutations
   unsigned int perm[rc];
   for(unsigned int p=0; p<rc; ++p){
@@ -343,7 +381,8 @@ int main(int, char **){
     //  for (unsigned int j=0; j<rc; ++j){
 //      if(i>0) T[i]=C[i-0-1];
 //      else T[i]=C[rc+i-0-1];
-      T[i]=C[perm[i]];
+    for (unsigned int d=0; d<dim; ++d)
+      T[i + d*rc]=C[perm[i] + d*rc];
   //  }
   }
 
@@ -353,25 +392,36 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
   // Apply DFT to T
-  FComplexe FT[rc];
+  FComplexe FT[dim*rc];
   //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplexe(0.0,0.0);
-  FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FT));
+  FBlas::c_setzero(dim*rc,reinterpret_cast<FReal*>(FT));
 
   // if first COLUMN (T) of C is used
-  Dft.applyDFT(T,FT);
+  for (unsigned int d=0; d<dim; ++d)
+    DftK.applyDFT(T+d*rc,FT+d*rc);
 //  // if first ROW of C is used
-//  Dft.applyDFT(C,FT);
+//  DftK.applyDFT(C,FT);
+
+  FComplexe FPMultExp[nrhs*rc];
+  FComplexe FPLocalExp[nlhs*rc];
+  FReal PLocalExp[nlhs*rc];
+
+  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplexe(0.0,0.0);
+  FBlas::c_setzero(nlhs*rc,reinterpret_cast<FReal*>(FPLocalExp));
+
+  FBlas::setzero(nlhs*rc,PLocalExp);
 
   // Pad physical MultExp
-  FBlas::setzero(rc,PaddedMultExp); //part of padding
-  for (unsigned int j=0; j<nnodes; ++j){
-    // if first COLUMN (T) of C is used
-    PaddedMultExp[node_diff[j*nnodes]]=MultExp[j];
+  FBlas::setzero(nrhs*rc,PaddedMultExp); //part of padding
+  for (unsigned int idRhs=0; idRhs<nrhs; ++idRhs)
+    for (unsigned int j=0; j<nnodes; ++j){
+      // if first COLUMN (T) of C is used
+      PaddedMultExp[node_diff[j*nnodes]+idRhs*rc]=MultExp[j+idRhs*nnodes];
 //    // if first ROW of C is used
 //    PaddedMultExp[node_diff[j]]=MultExp[j];
-  }
+    }
 
-//    std::cout<< "Padded MultExp for row i=" << i << ": "<<std::endl;
+//    std::cout<< "Padded MultExp: "<<std::endl;
 //    for (unsigned int p=0; p<rc; ++p)
 //      std::cout<< PaddedMultExp[p] << ", ";
 //    std::cout<<std::endl;
@@ -379,10 +429,11 @@ int main(int, char **){
 
   // Set transformed MultExp to 0
   //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplexe(0.0,0.0);
-  FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FPMultExp));
+  FBlas::c_setzero(nrhs*rc,reinterpret_cast<FReal*>(FPMultExp));
 
   // Transform PaddedMultExp
-  Dft.applyDFT(PaddedMultExp,FPMultExp);
+  for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs) // apply nrhs 1 dimensionnal FFT
+    DftRhs.applyDFT(PaddedMultExp+idxRhs*rc,FPMultExp+idxRhs*rc);
 
   std::cout<< "Apply M2L in Fourier space: ";
   time.tic();
@@ -394,11 +445,20 @@ int main(int, char **){
 //            reinterpret_cast<FReal*>(FPMultExp),
 //            reinterpret_cast<FReal*>(FPLocalExp));
   // > or perform entrywise product manually
-  for (unsigned int pj=0; pj<rc; ++pj){
-    FPLocalExp[pj]=FT[pj];
-    FPLocalExp[pj]*=FPMultExp[pj];
-  }
+  FComplexe tmpFX;
+  for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
+    for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
+      unsigned int idxK = idxLhs*3+idxRhs; // or counter
 
+      unsigned int d = MatrixKernel.getPosition(idxK);
+
+      for (unsigned int pj=0; pj<rc; ++pj){
+        tmpFX=FT[pj + d*rc];
+        tmpFX*=FPMultExp[pj+idxRhs*rc];
+        FPLocalExp[pj+idxLhs*rc]+=tmpFX; // add new contribution +RijYj
+      }
+
+  }
   time.tac();
   std::cout << "took " << time.elapsed() << "sec." << std::endl;
 
@@ -407,7 +467,8 @@ int main(int, char **){
 //      std::cout<< FPLocalExp[p] << ", ";
 //    std::cout<<std::endl;
 
-  Dft.applyIDFT(FPLocalExp,PLocalExp);
+  for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs) // apply nrhs 1 dimensionnal FFT
+    DftLhs.applyIDFT(FPLocalExp+idxLhs*rc,PLocalExp+idxLhs*rc);
 
 //  std::cout<< "Padded LocalExp: "<<std::endl;
 //  for (unsigned int p=0; p<rc; ++p)
@@ -415,12 +476,13 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
   // Unpad
-  for (unsigned int j=0; j<nnodes; ++j){
-    // if first COLUMN (T) of C is used
-    LocalExp[j]=PLocalExp[node_diff[nnodes-j-1]];
+  for (unsigned int idLhs=0; idLhs<nlhs; ++idLhs)
+    for (unsigned int j=0; j<nnodes; ++j){
+      // if first COLUMN (T) of C is used
+      LocalExp[j+idLhs*nnodes]=PLocalExp[node_diff[nnodes-j-1]+idLhs*rc];
 //    // if first ROW of C is used
 //    LocalExp[j]=PLocalExp[node_diff[j*nnodes]];
-  }
+    }
 
 //  std::cout<< "Mask to be applied to Padded LocalExp: "<<std::endl;
 //  for (unsigned int j=0; j<nnodes; ++j)
@@ -428,8 +490,11 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
 //  std::cout<< "LocalExp via product in FOURIER SPACE: "<<std::endl;
-//  for (unsigned int p=0; p<nnodes; ++p)
-//    std::cout<< LocalExp[p] << ", ";
+//  for (unsigned int d=0; d<nlhs; ++d){
+//    for (unsigned int p=0; p<nnodes; ++p)
+//      std::cout<< LocalExp[p + d*nnodes] << ", ";
+//    std::cout<<std::endl;
+//  }
 //  std::cout<<std::endl;
 
 
@@ -438,17 +503,21 @@ int main(int, char **){
   std::cout << "L2P (potential) ... " << std::flush;
   time.tic();
   // Interpolate p_i = \sum_m^L S(x_i,\bar x_m) * F_m
-  S.applyL2P(cx, width, F, X.getTargets());
+  for (unsigned int idLhs=0; idLhs<nlhs; ++idLhs)
+    S.applyL2P(cx, width, F+idLhs*nnodes, X.getTargets());
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   std::cout << "L2P (forces) ... " << std::flush;
   time.tic();
   // Interpolate f_i = \sum_m^L P(x_i,\bar x_m) * F_m
-  S.applyL2PGradient(cx, width, F, X.getTargets());
+  for (unsigned int idLhs=0; idLhs<nlhs; ++idLhs)
+    S.applyL2PGradient(cx, width, F+idLhs*nnodes, X.getTargets());
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   ////////////////////////////////////////////////////////////////////
-  // direct computation
+  // direct computation 
+  // Only scalar phys val => only compute first compo and no derivative
+  // TODO add multidim phys val !!!!!!
   std::cout << "Compute interactions directly ..." << std::endl;
   time.tic();
 
@@ -475,17 +544,38 @@ int main(int, char **){
                                 Y.getSrc()->getPositions()[2][idxPartY]);
         const FReal  wy = Y.getSrc()->getPhysicalValues()[idxPartY];
 
-        const FReal one_over_r = MatrixKernel.evaluate(x, y);
-        // potential
-        p[counter] += one_over_r * wy;
-        // force
-        FPoint force(y - x);
-        force *= one_over_r*one_over_r*one_over_r;
-        f[counter*3 + 0] += force.getX() * wx * wy;
-        f[counter*3 + 1] += force.getY() * wx * wy;
-        f[counter*3 + 2] += force.getZ() * wx * wy;
-      }
+//        // 1/R
+//        const FReal one_over_r = MatrixKernel.evaluate(x, y);
+//
+//        // potential
+//        p[counter] += one_over_r * wy;
+//        // force
+//        FPoint force(y - x);
+//        force *= one_over_r*one_over_r*one_over_r;
+//        f[counter*3 + 0] += force.getX() * wx * wy;
+//        f[counter*3 + 1] += force.getY() * wx * wy;
+//        f[counter*3 + 2] += force.getZ() * wx * wy;
 
+        // R,ij and (R,ij),k
+        for (unsigned int i=0; i<nlhs; ++i) // sum all compo
+          for (unsigned int j=0; j<nrhs; ++j){
+            unsigned int d = MatrixKernel.getPosition(i*nrhs+j);
+            MatrixKernel.updateIndex(d);
+            const FReal rij = MatrixKernel.evaluate(x, y);
+            // potential
+            p[counter] += rij * wy;
+            // force
+            FReal force[3];
+            for (unsigned int k=0; k<3; ++k){
+              //std::cout << "i,j,k,=" << i << ","<< j << ","<< k << std::endl;
+              unsigned int dk = RIJKMatrixKernel.getPosition(i*3*3+j*3+k);
+              RIJKMatrixKernel.updateIndex(dk);
+              force[k] = RIJKMatrixKernel.evaluate(x, y);
+              f[counter*3 + k] += force[k] * wx * wy;
+            }
+          }
+
+      }
       counter++;
     }
   } // end direct computation

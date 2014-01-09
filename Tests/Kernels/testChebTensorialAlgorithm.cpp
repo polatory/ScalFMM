@@ -27,10 +27,10 @@
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
 
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
+
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
-//#include "../../Src/Kernels/Uniform/FUnifSymKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebTensorialKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -119,20 +119,31 @@ int main(int argc, char* argv[])
 
   ////////////////////////////////////////////////////////////////////
 
-  {	// begin Lagrange kernel
+  {	// begin Chebyshev kernel
 
     // accuracy
     const unsigned int ORDER = 3;
+    const FReal epsilon = FReal(1e-7);
 
     // typedefs
-    typedef FP2PParticleContainerIndexed ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >  LeafClass;
     //typedef FInterpMatrixKernelLJ MatrixKernelClass;
     typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FUnifCell<ORDER> CellClass;
+//    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass; // not working with Non-Symmetric variant ! Because of UCB decomposition.
+
+    const unsigned int NRHS = MatrixKernelClass::NRHS;
+    const unsigned int NLHS = MatrixKernelClass::NLHS;
+    std::cout << "NRHS=" << NRHS << std::endl;
+    std::cout << "NLHS=" << NLHS << std::endl;
+
+    typedef FP2PParticleContainerIndexed ContainerClass;
+//    const unsigned int NDIM = NRHS + 4*NLHS;
+//    typedef FP2PTensorialParticleContainerIndexed<NDIM> ContainerClass; // TODO fix a TensorialParticleContainer for easy access to multidim PhysVal
+
+    typedef FSimpleLeaf< ContainerClass >  LeafClass;
+    typedef FChebCell<ORDER,NRHS,NLHS> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-    //typedef FUnifSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FChebTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass; // PB: TODO erase when symmetric version done
+    //typedef FChebTensorialSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass; // PB: TODO
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -159,7 +170,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth());
+      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();

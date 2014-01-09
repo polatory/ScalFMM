@@ -31,18 +31,18 @@
 * This class defines a cell used in the Chebyshev based FMM.
 * @param NVALS is the number of right hand side.
 */
-template <int ORDER, int NVALS = 1>
+template <int ORDER, int NMUL = 1, int NLOC = 1>
 class FChebCell : public FExtendMortonIndex, public FExtendCoordinate
 {
     static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
 
-    FReal multipole_exp[NVALS * VectorSize]; //< Multipole expansion
-    FReal     local_exp[NVALS * VectorSize]; //< Local expansion
+    FReal multipole_exp[NMUL * VectorSize]; //< Multipole expansion
+    FReal     local_exp[NLOC * VectorSize]; //< Local expansion
 	
 public:
     FChebCell(){
-        memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-        memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+        memset(multipole_exp, 0, sizeof(FReal) * NMUL * VectorSize);
+        memset(local_exp, 0, sizeof(FReal) * NLOC * VectorSize);
     }
 
 	~FChebCell() {}
@@ -72,26 +72,26 @@ public:
 
     /** Make it like the begining */
     void resetToInitialState(){
-        memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-        memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+        memset(multipole_exp, 0, sizeof(FReal) * NMUL * VectorSize);
+        memset(local_exp, 0, sizeof(FReal) * NLOC * VectorSize);
     }
 };
 
-template <int ORDER, int NVALS = 1>
-class FTypedChebCell : public FChebCell<ORDER,NVALS>, public FExtendCellType {
+template <int ORDER, int NMUL = 1, int NLOC = 1>
+class FTypedChebCell : public FChebCell<ORDER,NMUL,NLOC>, public FExtendCellType {
 public:
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FChebCell<ORDER,NVALS>::save(buffer);
+        FChebCell<ORDER,NMUL,NLOC>::save(buffer);
         FExtendCellType::save(buffer);
     }
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FChebCell<ORDER,NVALS>::restore(buffer);
+        FChebCell<ORDER,NMUL,NLOC>::restore(buffer);
         FExtendCellType::restore(buffer);
     }
     void resetToInitialState(){
-        FChebCell<ORDER,NVALS>::resetToInitialState();
+        FChebCell<ORDER,NMUL,NLOC>::resetToInitialState();
         FExtendCellType::resetToInitialState();
     }
 };

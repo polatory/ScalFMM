@@ -37,11 +37,13 @@
  * The class @p FUnifInterpolator defines the anterpolation (M2M) and
  * interpolation (L2L) concerning operations.
  */
-template <int ORDER>
+template <int ORDER, class MatrixKernelClass>
 class FUnifInterpolator : FNoCopyable
 {
   // compile time constants and types
-  enum {nnodes = TensorTraits<ORDER>::nnodes};
+  enum {nnodes = TensorTraits<ORDER>::nnodes,
+        nRhs = MatrixKernelClass::NRHS,
+        nLhs = MatrixKernelClass::NLHS};
   typedef FUnifRoots< ORDER>  BasisType;
   typedef FUnifTensor<ORDER> TensorType;
 
@@ -288,6 +290,7 @@ public:
   */
 
   // PB: improved version of applyM2M/L2L also applies to Lagrange interpolation
+  // PB: Multidim version handled in kernel !
   void applyM2M(const unsigned int ChildIndex,
                 const FReal *const ChildExpansion,
                 FReal *const ParentExpansion) const
@@ -351,22 +354,22 @@ public:
  * Particle to moment: application of \f$S_\ell(y,\bar y_n)\f$
  * (anterpolation, it is the transposed interpolation)
  */
-template <int ORDER>
+template <int ORDER, class MatrixKernelClass>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER>::applyP2M(const FPoint& center,
-                                               const FReal width,
-                                               FReal *const multipoleExpansion,
-                                               const ContainerClass *const inParticles) const
+inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& center,
+                                                                 const FReal width,
+                                                                 FReal *const multipoleExpansion,
+                                                                 const ContainerClass *const inParticles) const
 {
   // set all multipole expansions to zero
-  FBlas::setzero(nnodes, multipoleExpansion);
+  FBlas::setzero(nRhs*nnodes, multipoleExpansion);
 
   // allocate stuff
   const map_glob_loc map(center, width);
   FPoint localPosition;
 
   // loop over source particles
-  const FReal*const physicalValues = inParticles->getPhysicalValues();
+  const FReal*const physicalValues = inParticles->getPhysicalValues();  // PB: TODO add multidim PhysVal
   const FReal*const positionsX = inParticles->getPositions()[0];
   const FReal*const positionsY = inParticles->getPositions()[1];
   const FReal*const positionsZ = inParticles->getPositions()[2];
@@ -381,37 +384,55 @@ inline void FUnifInterpolator<ORDER>::applyP2M(const FPoint& center,
       L_of_x[o][1] = BasisType::L(o, localPosition.getY()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
     }
-    // read physicalValue
-    const FReal weight = physicalValues[idxPart];
 
-    // assemble multipole expansions
-    for (unsigned int i=0; i<ORDER; ++i) {
-      for (unsigned int j=0; j<ORDER; ++j) {
-        for (unsigned int k=0; k<ORDER; ++k) {
-          const unsigned int idx = k*ORDER*ORDER + j*ORDER + i;
-          multipoleExpansion[idx] += L_of_x[i][0] * L_of_x[j][1] * L_of_x[k][2] * weight; // 3 * ORDER*ORDER*ORDER flops
+//    // PB: More optimal version where the sum over Lhs/Rhs is done inside applyL2P/P2M
+//    // this avoid nLhs/nLhs evaluations of the same interpolating polynomials
+//    for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
+
+      // read physicalValue
+      const FReal weight = physicalValues[idxPart/*+idxRhs*nParticles*/]; //PB: TODO select next compo
+
+      // assemble multipole expansions
+      for (unsigned int i=0; i<ORDER; ++i) {
+        for (unsigned int j=0; j<ORDER; ++j) {
+          for (unsigned int k=0; k<ORDER; ++k) {
+            const unsigned int idx = /*idxRhs*nnodes +*/ k*ORDER*ORDER + j*ORDER + i;
+            multipoleExpansion[idx] += L_of_x[i][0] * L_of_x[j][1] * L_of_x[k][2] * weight; // 3 * ORDER*ORDER*ORDER flops
+          }
         }
       }
-    }
+
+//    } // idxRhs
 
   } // flops: N * (3 * ORDER*ORDER*ORDER + 3 * 3 * ORDER*(ORDER-1)) flops
 
+//    std::cout<< "multipoleExpansion="<<std::endl;
+//    for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs)
+//      for (unsigned int i=0; i<nnodes; ++i)
+//        std::cout<< multipoleExpansion[idxRhs*nnodes+i] << ", ";
+//    std::cout<<std::endl;
 }
 
 
 /**
  * Local to particle operation: application of \f$S_\ell(x,\bar x_m)\f$ (interpolation)
  */
-template <int ORDER>
+template <int ORDER, class MatrixKernelClass>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER>::applyL2P(const FPoint& center,
-                                               const FReal width,
-                                               const FReal *const localExpansion,
-                                               ContainerClass *const inParticles) const
+inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& center,
+                                                                 const FReal width,
+                                                                 const FReal *const localExpansion,
+                                                                 ContainerClass *const inParticles) const
 {
   // loop over particles
   const map_glob_loc map(center, width);
   FPoint localPosition;
+
+//    std::cout<< "localExpansion="<<std::endl;
+//    for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs)
+//      for (unsigned int i=0; i<nnodes; ++i)
+//        std::cout<< localExpansion[idxLhs*nnodes+i] << ", ";
+//    std::cout<<std::endl;
 
   //const FReal*const physicalValues = inParticles->getPhysicalValues();
   const FReal*const positionsX = inParticles->getPositions()[0];
@@ -419,7 +440,9 @@ inline void FUnifInterpolator<ORDER>::applyL2P(const FPoint& center,
   const FReal*const positionsZ = inParticles->getPositions()[2];
   FReal*const potentials = inParticles->getPotentials();
 
-  for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+  const unsigned int nParticles = inParticles->getNbParticles();
+
+  for(int idxPart = 0 ; idxPart < nParticles ; ++ idxPart){
 
     // map global position to [-1,1]
     map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
@@ -432,22 +455,29 @@ inline void FUnifInterpolator<ORDER>::applyL2P(const FPoint& center,
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
     }
 
-    // interpolate and increment target value
-    FReal targetValue=0.;
-    {
-      for (unsigned int l=0; l<ORDER; ++l) {
-        for (unsigned int m=0; m<ORDER; ++m) {
-          for (unsigned int n=0; n<ORDER; ++n) {
-            const unsigned int idx = n*ORDER*ORDER + m*ORDER + l;
-            targetValue +=
-              L_of_x[l][0] * L_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
-          } // ORDER * 4 flops
-        } // ORDER * ORDER * 4 flops
-      } // ORDER * ORDER * ORDER * 4 flops
-    }
+//    // PB: More optimal version where the sum over Lhs/Rhs is done inside applyL2P/P2M
+//    // this avoid nLhs/nLhs evaluations of the same interpolating polynomials
+//    for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
-    // set potential
-    potentials[idxPart] += (targetValue);
+      // interpolate and increment target value
+      FReal targetValue=0.;
+      {
+        for (unsigned int l=0; l<ORDER; ++l) {
+          for (unsigned int m=0; m<ORDER; ++m) {
+            for (unsigned int n=0; n<ORDER; ++n) {
+              const unsigned int idx = /*idxLhs*nnodes +*/ n*ORDER*ORDER + m*ORDER + l;
+              targetValue +=
+                L_of_x[l][0] * L_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
+            } // ORDER * 4 flops
+          } // ORDER * ORDER * 4 flops
+        } // ORDER * ORDER * ORDER * 4 flops
+      }
+
+      // set potential
+      potentials[idxPart/*+idxLhs*nParticles*/] += (targetValue); //PB: TODO update next compo
+
+//    } // idxLhs
+
   } // N * (4 * ORDER * ORDER * ORDER + 9 * ORDER*(ORDER-1) ) flops
 }
 
@@ -456,12 +486,12 @@ inline void FUnifInterpolator<ORDER>::applyL2P(const FPoint& center,
 /**
  * Local to particle operation: application of \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
  */
-template <int ORDER>
+template <int ORDER, class MatrixKernelClass>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
-                                                       const FReal width,
-                                                       const FReal *const localExpansion,
-                                                       ContainerClass *const inParticles) const
+inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2PGradient(const FPoint& center,
+                                                                         const FReal width,
+                                                                         const FReal *const localExpansion,
+                                                                         ContainerClass *const inParticles) const
 {
   ////////////////////////////////////////////////////////////////////
   // TENSOR-PRODUCT INTERPOLUTION NOT IMPLEMENTED YET HERE!!! ////////
@@ -485,6 +515,8 @@ inline void FUnifInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
   FReal*const forcesZ = inParticles->getForcesZ();
   //FReal*const potentials = inParticles->getPotentials();
 
+//  const unsigned int nParticles = inParticles->getNbParticles();
+
   for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
     // map global position to [-1,1]
@@ -500,36 +532,44 @@ inline void FUnifInterpolator<ORDER>::applyL2PGradient(const FPoint& center,
       dL_of_x[o][2] = BasisType::dL(o, localPosition.getZ()); // TODO verify 3 * ORDER*(ORDER-1) flops
     }
 
-    // interpolate and increment forces value
-    FReal forces[3] = {FReal(0.), FReal(0.), FReal(0.)};
-    {
-      for (unsigned int l=0; l<ORDER; ++l) {
-        for (unsigned int m=0; m<ORDER; ++m) {
-          for (unsigned int n=0; n<ORDER; ++n) {
-            const unsigned int idx = n*ORDER*ORDER + m*ORDER + l;
-            forces[0] +=
-              dL_of_x[l][0] * L_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
-            forces[1] +=
-              L_of_x[l][0] * dL_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
-            forces[2] +=
-              L_of_x[l][0] * L_of_x[m][1] * dL_of_x[n][2] * localExpansion[idx];
+//    // PB: More optimal version where the sum over Lhs/Rhs is done inside applyL2P/P2M
+//    // this avoid nLhs/nLhs evaluations of the same interpolating polynomials
+//    for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
-          } // ORDER * 4 flops
-        } // ORDER * ORDER * 4 flops
-      } // ORDER * ORDER * ORDER * 4 flops
+      // interpolate and increment forces value
+      FReal forces[3] = {FReal(0.), FReal(0.), FReal(0.)};
+      {
+        for (unsigned int l=0; l<ORDER; ++l) {
+          for (unsigned int m=0; m<ORDER; ++m) {
+            for (unsigned int n=0; n<ORDER; ++n) {
+              const unsigned int idx = /*idxLhs*nnodes +*/ n*ORDER*ORDER + m*ORDER + l;
+              forces[0] +=
+                dL_of_x[l][0] * L_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
+              forces[1] +=
+                L_of_x[l][0] * dL_of_x[m][1] * L_of_x[n][2] * localExpansion[idx];
+              forces[2] +=
+                L_of_x[l][0] * L_of_x[m][1] * dL_of_x[n][2] * localExpansion[idx];
+
+            } // ORDER * 4 flops
+          } // ORDER * ORDER * 4 flops
+        } // ORDER * ORDER * ORDER * 4 flops
 
 
-      // scale forces
-      forces[0] *= jacobian[0];// / nnodes;
-      forces[1] *= jacobian[1];// / nnodes;
-      forces[2] *= jacobian[2];// / nnodes;
+        // scale forces
+        forces[0] *= jacobian[0];// / nnodes;
+        forces[1] *= jacobian[1];// / nnodes;
+        forces[2] *= jacobian[2];// / nnodes;
+      }
+
+      // set computed forces
+      // const unsigned int idx = idxPart+idxLhs*nParticles
+      forcesX[idxPart] += forces[0] * physicalValues[idxPart]; //PB: TODO update next compo
+      forcesY[idxPart] += forces[1] * physicalValues[idxPart]; //PB: TODO update next compo
+      forcesZ[idxPart] += forces[2] * physicalValues[idxPart]; //PB: TODO update next compo
     }
 
-    // set computed forces
-    forcesX[idxPart] += forces[0] * physicalValues[idxPart];
-    forcesY[idxPart] += forces[1] * physicalValues[idxPart];
-    forcesZ[idxPart] += forces[2] * physicalValues[idxPart];
-  }
+//  }// idxLhs
+
 }
 
 

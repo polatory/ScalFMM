@@ -16,16 +16,20 @@
 #ifndef FINTERPMATRIXKERNEL_HPP
 #define FINTERPMATRIXKERNEL_HPP
 
+#include <stdexcept>
+
 #include "../../Utils/FPoint.hpp"
 #include "../../Utils/FNoCopyable.hpp"
 #include "../../Utils/FMath.hpp"
 #include "../../Utils/FBlas.hpp"
 
-
 // extendable
 enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
                                  ONE_OVER_R_SQUARED,
-                                 LENNARD_JONES_POTENTIAL};
+                                 LENNARD_JONES_POTENTIAL,
+                                 ID_OVER_R,
+                                 R_IJ,
+                                 R_IJK};
 
 // probably not extedable :)
 enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
@@ -52,8 +56,34 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R;
+  static const  unsigned int Dim = 1; //PB: dimension of kernel
+  const unsigned int indexTab[2]={0,
+                                  0};
+  static const unsigned int NK = 1;
+  static const unsigned int NRHS = 1;
+  static const unsigned int NLHS = 1;
+
+  // PB: figure out if applyTab is already of size NRHS*NLHS ?
+  const unsigned int applyTab[1]={0}; // get position in sym tensor
+
+  unsigned int _i,_j;
 
   FInterpMatrixKernelR() {}
+
+  // updates indices _i and _j for current position d in reduced storage 
+  void updateIndex(const unsigned int d) //const
+  {_i=indexTab[d]; _j=indexTab[d+Dim];}
+
+  // returns indices i and j for a given position in full storage
+  int getIndexLhs(const unsigned int d) const
+  {return indexTab[applyTab[d]];}
+
+  int getIndexRhs(const unsigned int d) const
+  {return indexTab[applyTab[d]+Dim];}
+
+  // returns position in reduced storage (from n= position in full ?or? for i, j)
+  int getPosition(const unsigned int n) const
+  {return applyTab[n];} 
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
@@ -82,7 +112,15 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R_SQUARED;
+  static const  unsigned int Dim = 1; //PB: dimension of kernel
+  const unsigned int indexTab[2]={0,
+                                  0};
+  static const unsigned int NK = 1;
+  static const unsigned int NRHS = 1;
+  static const unsigned int NLHS = 1;
 
+  // PB: figure out if applyTab is already of size NRHS*NLHS ?
+  const unsigned int applyTab[1]={0}; // get position in sym tensor
   FInterpMatrixKernelRR() {}
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -112,6 +150,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = LENNARD_JONES_POTENTIAL;
+  static const  unsigned int Dim = 1; //PB: dimension of kernel
 
   FInterpMatrixKernelLJ() {}
 
@@ -137,9 +176,236 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
     // return 1 because non homogeneous kernel functions cannot be scaled!!!
     return FReal(1.);
   }
+
 };
 
 
+/// Test Tensorial kernel 1/R*Id_3
+struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
+{
+  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+  static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
+  static const unsigned int Dim = 6; //PB: dimension of kernel
+  const unsigned int indexTab[12]={0,0,0,1,1,2,
+                                   0,1,2,1,2,2};
+  static const unsigned int NK = 9;
+  static const unsigned int NRHS = 3;
+  static const unsigned int NLHS = 3;
+
+  // PB: figure out if applyTab is already of size NRHS*NLHS ?
+  const unsigned int applyTab[9]={0,1,2,1,3,4,2,4,5}; // get position in sym tensor
+
+  unsigned int _i,_j;
+
+  FInterpMatrixKernel_IOR() {}
+
+  // updates indices _i and _j for current position d in reduced storage 
+  void updateIndex(const unsigned int d) //const
+  {_i=indexTab[d]; _j=indexTab[d+Dim];}
+
+  // returns indices i and j for a given position in full storage
+  int getIndexLhs(const unsigned int d) const
+  {return indexTab[applyTab[d]];}
+
+  int getIndexRhs(const unsigned int d) const
+  {return indexTab[applyTab[d]+Dim];}
+
+  // returns position in reduced storage (from n= position in full ?or? for i, j)
+  int getPosition(const unsigned int n) const
+  {return applyTab[n];} 
+
+  FReal evaluate(const FPoint& x, const FPoint& y) const
+  {
+    const FPoint xy(x-y);
+
+    if(_i==_j)
+      return FReal(1.)/xy.norm();
+    else
+      return FReal(0.);
+
+  }
+
+  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
+  {
+    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
+    return getScaleFactor(CellWidth);
+  }
+
+  FReal getScaleFactor(const FReal CellWidth) const
+  {
+        return FReal(2.) / CellWidth;
+  }
+
+};
+
+/// R_{,ij}
+struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
+{
+  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+  static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJ;
+  static const unsigned int Dim = 6; //PB: dimension of kernel
+  const unsigned int indexTab[12]={0,0,0,1,1,2,
+                                   0,1,2,1,2,2};
+  static const unsigned int NK = 9;
+  static const unsigned int NRHS = 3;
+  static const unsigned int NLHS = 3;
+
+  // PB: figure out if applyTab is already of size NRHS*NLHS ?
+  const unsigned int applyTab[9]={0,1,2,1,3,4,2,4,5}; // get position in sym tensor
+
+  unsigned int _i,_j;
+
+  FInterpMatrixKernel_R_IJ() {}
+
+  // updates indices _i and _j for current position d in reduced storage 
+  void updateIndex(const unsigned int d) //const
+  {_i=indexTab[d]; _j=indexTab[d+Dim];}
+
+  // returns indices i and j for a given position in full storage
+  int getIndexLhs(const unsigned int d) const
+  {return indexTab[applyTab[d]];}
+
+  int getIndexRhs(const unsigned int d) const
+  {return indexTab[applyTab[d]+Dim];}
+
+  // returns position in reduced storage (from n= position in full ?or? for i, j)
+  int getPosition(const unsigned int n) const
+  {return applyTab[n];} 
+
+  FReal evaluate(const FPoint& x, const FPoint& y) const
+  {
+    const FPoint xy(x-y);
+    const FReal one_over_r = FReal(1.)/xy.norm();
+    const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
+    double ri,rj;
+
+    if(_i==0) ri=xy.getX();
+    else if(_i==1) ri=xy.getY();
+    else if(_i==2) ri=xy.getZ();
+    else throw std::runtime_error("Update i!");
+
+    if(_j==0) rj=xy.getX();
+    else if(_j==1) rj=xy.getY();
+    else if(_j==2) rj=xy.getZ();
+    else throw std::runtime_error("Update j!");
+
+    if(_i==_j)
+      return one_over_r - ri * ri * one_over_r3;
+    else
+      return - ri * rj * one_over_r3;
+
+  }
+
+  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
+  {
+    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
+    return getScaleFactor(CellWidth);
+  }
+
+  // R_{,ij} is homogeneous to [L]/[L]^{-2}=[L]^{-1}
+  // => same scale factor as ONE_OVER_R
+  FReal getScaleFactor(const FReal CellWidth) const
+  {
+        return FReal(2.) / CellWidth;
+  }
+
+};
+
+
+/// R_{,ijk}
+struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
+{
+  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+  static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJK;
+  static const  unsigned int Dim = 10; //PB: dimension of kernel
+  const unsigned int indexTab[30]={0,0,0,1,1,1,2,2,2,0,
+                                   0,1,2,0,1,2,0,1,2,1,
+                                   0,1,2,0,1,2,0,1,2,2};
+  static const unsigned int NK = 27;
+  static const unsigned int NRHS = 3;
+  static const unsigned int NLHS = 3;
+
+  // PB: figure out if applyTab is already of size NRHS*NLHS ?
+  const unsigned int applyTab[27]={0,3,6,3,1,9,6,9,2,
+                                   3,1,9,1,4,7,9,7,5,
+                                   6,9,2,9,7,5,2,5,8}; // get position in sym tensor
+
+
+  unsigned int _i,_j,_k;
+
+  FInterpMatrixKernel_R_IJK() {}
+
+  void updateIndex(unsigned int d) //const
+  {
+    _i=indexTab[d]; _j=indexTab[d+Dim]; _k=indexTab[d+2*Dim];
+  }
+
+  // returns indices i and j for a given position in full storage
+  int getIndexLhs(const unsigned int d) const
+  {return indexTab[applyTab[d]];}
+
+  int getIndexRhs(const unsigned int d) const
+  {return indexTab[applyTab[d]+Dim];}
+
+  // returns position in reduced storage (from n= position in full ?or? for i, j)
+  int getPosition(const unsigned int n) const
+  {return applyTab[n];} 
+
+  FReal evaluate(const FPoint& x, const FPoint& y) const
+  {
+    const FPoint xy(x-y);
+    const FReal one_over_r = FReal(1.)/xy.norm();
+    const FReal one_over_r2 = one_over_r*one_over_r;
+    const FReal one_over_r3 = one_over_r2*one_over_r;
+    double ri,rj,rk;
+
+    if(_i==0) ri=xy.getX();
+    else if(_i==1) ri=xy.getY();
+    else if(_i==2) ri=xy.getZ();
+    else throw std::runtime_error("Update i!");
+
+    if(_j==0) rj=xy.getX();
+    else if(_j==1) rj=xy.getY();
+    else if(_j==2) rj=xy.getZ();
+    else throw std::runtime_error("Update j!");
+
+    if(_k==0) rk=xy.getX();
+    else if(_k==1) rk=xy.getY();
+    else if(_k==2) rk=xy.getZ();
+    else throw std::runtime_error("Update k!");
+
+    const FReal ri2=ri*ri;
+    const FReal rj2=rj*rj;
+
+    if(_i==_j){
+      if(_j==_k) //i=j=k
+        return FReal(3.) * ( FReal(-1.) + ri2 * one_over_r2 ) * ri * one_over_r3;
+      else //i=j!=k
+        return ( FReal(-1.) + FReal(3.) * ri2 * one_over_r2 ) * rk * one_over_r3;
+    }
+    else //(_i!=j)
+      if(_i==_k) //i=k!=j
+        return ( FReal(-1.) + FReal(3.) * ri2 * one_over_r2 ) * rj * one_over_r3;
+      else if(_j==_k) //i!=k=j
+        return ( FReal(-1.) + FReal(3.) * rj2 * one_over_r2 ) * ri * one_over_r3;
+      else //i!=k!=j
+        return FReal(3.) * ri * rj * rk * one_over_r2 * one_over_r3;
+
+  }
+
+  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
+  {
+    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
+    return getScaleFactor(CellWidth);
+  }
+
+  // R_{,ijk} is homogeneous to [L]/[L]^{-3}=[L]^{-2}
+  // => same scale factor as ONE_OVER_RR
+  FReal getScaleFactor(const FReal CellWidth) const
+  {
+    return FReal(4.) / (CellWidth*CellWidth);
+  }
+};
 
 
 
