@@ -13,6 +13,9 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+#
+#include <cstddef>
+
 #include "FUTester.hpp"
 
 #include "../Src/Containers/FBufferReader.hpp"
@@ -27,7 +30,7 @@ class TestBuffer : public FUTester<TestBuffer> {
         void TestWriteRead(){
             FBufferWriter writer;
 
-            const int BytesTested = (sizeof(int)+sizeof(char)+sizeof(double)+sizeof(float));
+            const int BytesTested = static_cast<int>(sizeof(int)+sizeof(char)+sizeof(double)+sizeof(float));
             const int NbTest = 5;
             for(int idxWrite = 0 ; idxWrite < NbTest ; ++idxWrite){
                 writer << idxWrite << char(idxWrite) << double(idxWrite) << float(idxWrite);
