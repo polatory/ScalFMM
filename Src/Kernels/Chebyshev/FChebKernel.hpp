@@ -61,13 +61,13 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebKernel(const int inTreeHeight,
-							const FPoint& inBoxCenter,
-							const FReal inBoxWidth,
-							const FReal Epsilon)
+		    const FReal inBoxWidth,
+		    const FPoint& inBoxCenter,
+		    const FReal Epsilon)
         : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
-																																															inBoxCenter,
-																																															inBoxWidth),
-			M2LHandler(new M2LHandlerClass(Epsilon))
+											   inBoxWidth,
+											   inBoxCenter),
+	  M2LHandler(new M2LHandlerClass(Epsilon))
 	{
 		// read precomputed compressed m2l operators from binary file
 		//M2LHandler->ReadFromBinaryFileAndSet();

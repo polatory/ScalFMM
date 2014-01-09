@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	
 	// -----------------------------------------------------
 	std::cout << "\nChebyshev FMM ... " << std::endl;
-	KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
+	KernelClass kernels(TreeHeight, loader.getBoxWidth(),loader.getCenterOfBox(), epsilon);
 	FmmClass algorithm(&tree,&kernels);
 	time.tic();
 	algorithm.execute();

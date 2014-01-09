@@ -81,11 +81,11 @@ public:
    * runtime_error is thrown if the required file is not valid).
    */
   FUnifTensorialKernel(const int inTreeHeight,
-              const FPoint& inBoxCenter,
-              const FReal inBoxWidth)
+                       const FReal inBoxWidth,
+                       const FPoint& inBoxCenter)
     : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
-                                                                                       inBoxCenter,
-                                                                                       inBoxWidth),
+                                                                                       inBoxWidth,
+                                                                                       inBoxCenter),
       M2LHandler(new M2LHandlerClass())
   {
     // read precomputed compressed m2l operators from binary file

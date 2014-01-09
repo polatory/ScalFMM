@@ -35,6 +35,11 @@ protected:
     void restore(BufferReaderClass&){
         static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement restore");
     }
+  
+  static int GetSize(){
+    return 0;
+  }
+
 };
 
 #endif // FABSTRACTSERIALIZABLE_HPP

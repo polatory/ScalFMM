@@ -79,8 +79,8 @@ public:
    * runtime_error is thrown if the required file is not valid).
    */
   FAbstractUnifKernel(const int inTreeHeight,
-                      const FPoint& inBoxCenter,
-                      const FReal inBoxWidth)
+		      const FReal inBoxWidth,
+		      const FPoint& inBoxCenter)
     : Interpolator(new InterpolatorClass()),
       MatrixKernel(new MatrixKernelClass()),
       TreeHeight(inTreeHeight),

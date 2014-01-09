@@ -151,6 +151,10 @@ public:
         buffer.fillArray(multipole_exp, PoleSize);
         buffer.fillArray(local_exp, LocalSize);
     }
+  
+  static int GetSize(){
+    return (int) sizeof(FComplexe) * (PoleSize+LocalSize);
+  }
 };
 
 int FSphericalCell::DevP(-1);

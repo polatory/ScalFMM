@@ -92,6 +92,12 @@ public:
         return local_exp;
     }
 
+  const int getArraySize() const
+  {
+    return MultipoleSize;
+  }
+
+
     /** Make it like the begining */
     void resetToInitialState(){
         for(int idx = 0 ; idx < MultipoleSize ; ++idx){
@@ -138,6 +144,9 @@ public:
         buffer.fillArray(multipole_exp, MultipoleSize);
         buffer.fillArray(local_exp, LocalSize);
     }
+  static int GetSize(){
+    return ((int) sizeof(FComplexe)) * (MultipoleSize + LocalSize);
+  }
 };
 
 template <int P>

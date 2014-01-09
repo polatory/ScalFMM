@@ -62,7 +62,7 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
 
-  static const int MaxSizePerCell = 1024;
+  const int MaxSizePerCell = CellClass::GetSize();
   
   OctreeClass* const tree;                 //< The octree to work on
   KernelClass** kernels;                   //< The kernels
@@ -191,7 +191,7 @@ public:
 	  currentLimit >>= 3;
 	}
       }
-
+      printf("Proc::%d From leaf %lld to leaf %lld\n",idProcess,myLastInterval.min,myLastInterval.max);
       // We get the min/max indexes from each procs
       FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
 				      workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
@@ -325,43 +325,44 @@ private:
 	  if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
 	    child[idxChild]->serializeUp(sendBuffer);
 	    state = char(state | (0x1 << idxChild));
+	    
 	  }
 	}
 	sendBuffer.writeAt(0,state);
 	
-	while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , sendToProc - 1).max){
+	while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , sendToProc - 1).max){
 	  --sendToProc;
 	}
 
 	MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, sendToProc, 
 		  FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
+	
       }
-
       // We may need to receive something
       bool hasToReceive = false;
       int endProcThatSend = firstProcThatSend;
 
       if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
 	while(firstProcThatSend < nbProcess
-	      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) < (getWorkingInterval((idxLevel+1), idProcess).max)){
+	      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) <= (getWorkingInterval((idxLevel+1), idProcess).max)){
 	  // Second condition :: while firstProcThatSend max morton index is < to myself max interval
 	  ++firstProcThatSend;
 	}
 
 	if(firstProcThatSend < nbProcess &&
-	   (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) == (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+	   (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
 
 	  endProcThatSend = firstProcThatSend;
 
 	  while( endProcThatSend < nbProcess &&
-		 (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) == (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+		 (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
 	    ++endProcThatSend;
 	  }
 
 
 	  if(firstProcThatSend != endProcThatSend){
 	    hasToReceive = true;
-
+	    
 	    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
 	      MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
 			idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
@@ -369,6 +370,7 @@ private:
 	  }
 	}
       }
+      
       FLOG(prepareCounter.tac());
       FTRACE( regionTrace.end() );
 
@@ -395,7 +397,7 @@ private:
 	if( hasToReceive ){
 	  CellClass* currentChild[8];
 	  memcpy(currentChild, iterArray[numberOfCells - 1].getCurrentChild(), 8 * sizeof(CellClass*));
-
+	  
 	  // retreive data and merge my child and the child from others
 	  for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
 	    recvBuffer.seek(idxProc * recvBufferOffset);
@@ -407,12 +409,12 @@ private:
 		state >>= 1;
 		++position;
 	      }
-
-          FAssertLF(!currentChild[position], "Already has a cell here");
+	      
+	      FAssertLF(!currentChild[position], "Already has a cell here");
 	      
 	      recvBufferCells[position].deserializeUp(recvBuffer);
 	      currentChild[position] = (CellClass*) &recvBufferCells[position];
-
+	      
 	      state >>= 1;
 	      ++position;
 	    }
@@ -422,7 +424,6 @@ private:
 	  FLOG(computationCounter.tic());
 	  (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
 	  FLOG(computationCounter.tac());
-
 
 	  firstProcThatSend = endProcThatSend - 1;
 	}
@@ -815,7 +816,7 @@ private:
 
     const int heightMinusOne = OctreeHeight - 1;
 
-    FMpiBufferWriter sendBuffer(comm.getComm());
+    FMpiBufferWriter sendBuffer(comm.getComm(),MaxSizePerCell);
     FMpiBufferReader recvBuffer(comm.getComm(),MaxSizePerCell);
 
     // for each levels exepted leaf level

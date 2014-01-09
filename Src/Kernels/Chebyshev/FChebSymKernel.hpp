@@ -107,10 +107,10 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebSymKernel(const int inTreeHeight,
-								 const FPoint& inBoxCenter,
-								 const FReal inBoxWidth,
-								 const FReal Epsilon)
-		: AbstractBaseClass(inTreeHeight, inBoxCenter, inBoxWidth),
+		       const FReal inBoxWidth,
+		       const FPoint& inBoxCenter,
+		       const FReal Epsilon)
+	  : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
 			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon, inBoxWidth, inTreeHeight)),
 			Loc(NULL), Mul(NULL), countExp(NULL)
 	{

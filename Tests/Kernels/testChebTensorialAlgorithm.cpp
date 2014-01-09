@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getCenterOfBox(), loader.getBoxWidth(), epsilon);
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();
@@ -208,10 +208,10 @@ int main(int argc, char* argv[])
           });
       }
 
-      std::cout << "Check Potential " << std::endl;
-      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential << std::endl;
-      std::cout << std::endl;
+//      std::cout << "Check Potential " << std::endl;
+//      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
+//        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential << std::endl;
+//      std::cout << std::endl;
 
       // Print for information
       std::cout << "Potential " << potentialDiff << std::endl;
