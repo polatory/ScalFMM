@@ -189,7 +189,7 @@ public:
     	else{
     		*inPhysicalValue = FReal(-0.41);
     		*inIndex = HW;
-    		std::cerr << "Atom type not defined"<< std::endl;
+    		std::cerr << "Atom type not defined "<< type << std::endl;
     		exit(-1);
     	}
     }
