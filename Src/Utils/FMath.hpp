@@ -209,11 +209,11 @@ struct FMath{
         FReal max;
         FReal maxDiff;
     public:
-        FAccurater() : l2Dot(0), l2Diff(0), max(0), maxDiff(0) {
+        FAccurater() : l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0) {
         }
         /** with inital values */
         FAccurater(const FReal inGood[], const FReal inBad[], const int nbValues)
-            : l2Dot(0), l2Diff(0), max(0), maxDiff(0) {
+            :  l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0)  {
             add(inGood, inBad, nbValues);
         }
         /** Add value to the current list */
@@ -232,10 +232,18 @@ struct FMath{
         }
         /** Get the L2 norm */
         FReal getL2Norm() const{
-            return Sqrt(l2Diff / l2Dot);
+            return Sqrt(l2Diff );
         }
         /** Get the inf norm */
         FReal getInfNorm() const{
+            return maxDiff;
+        }
+        /** Get the L2 norm */
+        FReal getRelativeL2Norm() const{
+            return Sqrt(l2Diff / l2Dot);
+        }
+        /** Get the inf norm */
+        FReal getRelativeInfNorm() const{
             return maxDiff / max;
         }
         /** Print */
