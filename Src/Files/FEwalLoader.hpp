@@ -44,6 +44,8 @@ public:
     enum Type{
         OW,
         HW,
+        Na,
+        Cl,
         Undefined,
     };
 
@@ -141,43 +143,56 @@ public:
           -4406.48579000       6815.52906417       10340.2577024
       */
     void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
-        FReal x, y, z, fx, fy, fz, vx, vy, vz;
-        int index;
-        char type[2];
-        std::string line;
-        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    	FReal x, y, z, fx, fy, fz, vx, vy, vz;
+    	int index;
+    	char type[2];
+    	std::string line;
+    	file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        file.read(type, 2);
-        file >> index;
-        std::getline(file, line); // needed to skip the end of the line in non periodic case
-        if ( levcfg == 0) {
-           file >> x >> y >> z;
-        }else if ( levcfg == 1) {
-            file >> x >> y >> z;
-            file >> vx >> vy >> vz;
-        }else {
-            file >> x >> y >> z;
-            file >> vx >> vy >> vz;
-            file >> fx >> fy >> fz;
-        }
+    	file.read(type, 2);
+    	file >> index;
+    	std::getline(file, line); // needed to skip the end of the line in non periodic case
+    	if ( levcfg == 0) {
+    		file >> x >> y >> z;
+    	}else if ( levcfg == 1) {
+    		file >> x >> y >> z;
+    		file >> vx >> vy >> vz;
+    	}else {
+    		file >> x >> y >> z;
+    		file >> vx >> vy >> vz;
+    		file >> fx >> fy >> fz;
+    	}
 
-        inIndex[0] = index;
+    	inIndex[0] = index;
 
-        inPosition->setPosition( x, y ,z);
-        inForces[0] = fx;
-        inForces[1] = fy;
-        inForces[2] = fz;
+    	inPosition->setPosition( x, y ,z);
+    	inForces[0] = fx;
+    	inForces[1] = fy;
+    	inForces[2] = fz;
 
-        if( strncmp(type, "OW", 2) == 0){
-            *inPhysicalValue = FReal(-0.82);
-            *inIndex = OW;
-        }
-        else{
-            *inPhysicalValue = FReal(-0.41);
-            *inIndex = HW;
-        }
+    	if( strncmp(type, "OW", 2) == 0){
+    		*inPhysicalValue = FReal(-0.82);
+    		*inIndex = OW;
+    	}
+    	else if( strncmp(type, "HW", 2) == 0){
+    		*inPhysicalValue = FReal(-0.41);
+    		*inIndex = HW;
+    	}
+    	else if( strncmp(type, "Na", 2) == 0){
+    		*inPhysicalValue = FReal(1.0);
+    		*inIndex = Na;
+    	}
+    	else if( strncmp(type, "Cl", 2) == 0){
+    		*inPhysicalValue = FReal(-1.0);
+    		*inIndex = Cl;
+    	}
+    	else{
+    		*inPhysicalValue = FReal(-0.41);
+    		*inIndex = HW;
+    		std::cerr << "Atom type not defined"<< std::endl;
+    		exit(-1);
+    	}
     }
-
 };
 
 

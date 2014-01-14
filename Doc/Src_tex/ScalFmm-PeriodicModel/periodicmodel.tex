@@ -138,7 +138,7 @@ Such approaches leads to a tree where all leaves may not be at the same level, b
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/Octree}
+\includegraphics[scale=0.6]{Images/Octree}
 \caption{$2D$ Octree}
 \end{figure}
 
@@ -155,7 +155,7 @@ $r = Diagonal/2 = \sqrt{ 3 * Edge^2 }/2 = \sqrt{ 3 * (BoxWidth/2^{l})^2 }/2$.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/TopDownOperators}
+\includegraphics[scale=0.6]{Images/TopDownOperators}
 \caption{Top-Down Operators}
 \end{figure}
 
@@ -177,7 +177,7 @@ Any FMM implementation has the capacity to compute the $M2L$ between two cell of
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/InteractionsOperators}
+\includegraphics[scale=0.6]{Images/InteractionsOperators}
 \caption{Interactions Operators, P2P (Blue), M2L (Green)}
 \end{figure}
 
@@ -201,7 +201,7 @@ In the next paragraph we supposed when speaking about interactions or neighbors 
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/Repetitions}
+\includegraphics[scale=0.6]{Images/Repetitions}
 \caption{Repetitions of the simulation box create new neighbors}
 \end{figure}
 
@@ -218,7 +218,7 @@ It is important to have in mind that without any special operation the box is al
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.35]{../Images/PeriodicL2}
+\includegraphics[scale=0.35]{Images/PeriodicL2}
 \caption{Extension of the box with a periodicity until level $2$}
 \end{figure}
 
@@ -231,7 +231,7 @@ Finally we can compute the downward pass from level $0$ to the leaves.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/PeriodicL0}
+\includegraphics[scale=0.45]{Images/PeriodicL0}
 \caption{Extension of the box with a periodicity until level $0$}
 \end{figure}
 
@@ -259,7 +259,7 @@ The have a perfect symmetric periodicity we need to add a border.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/PeriodicL-1}
+\includegraphics[scale=0.45]{Images/PeriodicL-1}
 \caption{Extension of the box with a periodicity until level $-1$ without border}
 \end{figure}
 
@@ -289,7 +289,7 @@ Each of this $M2M$ is computing the relation between one or two sub-cells and th
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/Border}
+\includegraphics[scale=0.45]{Images/Border}
 \caption{Extension of the box with a periodicity until level $-1$ with border}
 \end{figure}
 
@@ -355,6 +355,52 @@ In fact, let the original FMM box width be $w$ and a tree height be $h$.
 Then, if is required to apply periodicity until level $d$ above the root.
 The kernel should be able to proceed usual FMM operator in a tree of height of size $h+d+5$ with a initial box width of $w*2^{d+3}$.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\subsection{Ewald summation comparisons}
+
+The energy computed by molecular dynamics codes is given by
+$$
+U = \frac{1}{4 \pi\epsilon_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+$$
+and the force on atom $x_i$
+$$
+f(x_i) =  \frac{1}{4 \pi\epsilon_0}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+$$
+\subsubsection{DL\_Poly comparisons}
+DL\_POLY\_2 uses the following internal molecular units \\
+
+\begin{tabular}{|l|c|c|l|}
+\hline
+type & Expression & Numerical value & \\
+time &$t_0$ & $10^{-12}\;s$& picosecond\\
+length & $l_0$ &$10^{-10}\; m $& $\AA$ Angström\\
+mass &  $m_0$ & $ 1.6605402 \; 10^{−27}\; kg $& atomic mass unit\\
+charge &  $q_0$ & $1.60217733 \; 10^{−19} Coulombs$& unit of proton charge\\
+energy & $E_0 = m_0(l_0/t_0)^2$&$1.6605402 \;  10^{−23}\; Joules $ & $10\; J\, mol^{-1}$\\
+\hline
+\end{tabular}
+
+ In internal variables the energy writes 
+$$
+U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+$$
+and the forces write 
+$$
+f(x_i) = -\frac{q_0}{4 \pi\epsilon_0 l_0^2}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+ = -C_{force}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+$$
+
+The Energy conversion factor is $\gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+ & \multicolumn{2}{|c|}{Energy}  & \multicolumn{2}{c|}{Force} \\
+units& $kcal\, mol^{-1}$& & &\\
+\hline
+$C_{energy}$& & & &\\
+$C_{force}$& & & &\\
+\hline
+\end{tabular}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A new approach has been proposed to compute a periodic FMM.
