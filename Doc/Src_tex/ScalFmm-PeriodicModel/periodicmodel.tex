@@ -122,11 +122,11 @@ The potential at particle $x_i$ computed by ScalFMM code is given by
 $$
 V(x_i) = \sum_{j=0,i\neq j}^{N}{\frac{q_j}{\|x_i-x_j\|}}
 $$ 
-and the force on atom $x_i$
+and the force on atom $x_i$ writes
 $$
 f(x_i) =  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}.
 $$
-Finally, the total energy of the system writes
+Finally, the total energy of the system is
 $$
 U = \frac{1}{2}\sum_{i=0}^{N}{q_i V(x_i)}.
 $$ 
@@ -396,29 +396,30 @@ energy & $E_0 = m_0(l_0/t_0)^2$&$1.6605402 \;  10^{−23}\; Joules $ & $10\; J\,
 
  In internal variables the energy writes 
 $$
-U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}  \;\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
 $$
 and the forces write 
 $$
 f(x_i) = -\frac{q_0^2}{4 \pi\epsilon_0 l_0^2} q_i \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
- = -C_{force} q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+ = C_{force} \; q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
 $$
 
-The Energy conversion factor is $\gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
+The Energy conversion factor is $\gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal\, mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
 
 
 To compare with the molecular dynamics code, the forces and the energy is multiplied by $C_{force}$ ($C_{energy}$ respectively). 
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
- & \multicolumn{2}{|c|}{Energy}  & \multicolumn{2}{c|}{Force} \\
-units& $kcal\, mol^{-1}$& & &\\
+   & Constant & Value &  Unit \\
 \hline
-$C_{energy}$& & & &\\
-$C_{force}$& -138935.4835/418.400& & &\\
+Energy & $C_{energy}$& 138935.4835/418.4 &  $kcal\, mol^{-1}$\\
+Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
 \hline
 \end{tabular}
 \end{center}
+The force unit is the internal DL\_Poly unit.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A new approach has been proposed to compute a periodic FMM.
