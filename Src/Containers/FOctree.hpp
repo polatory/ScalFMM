@@ -867,6 +867,7 @@ public:
 	int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[343],
 			const FTreeCoordinate& workingCell,
 			const int inLevel, const int inDirection) const{
+        // TODO : REMOVE NEXT COMMENTS
 //		std::cout << " Begin in getPeriodicInteractionNeighbors"<<std::endl;
 
 		// Then take each child of the parent's neighbors if not in directNeighbors
@@ -892,6 +893,7 @@ public:
 			const int endY =    (TestPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
 			const int startZ =  (TestPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
 			const int endZ =    (TestPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
+            // TODO : REMOVE NEXT COMMENTS
 //			std::cout << "  -- startX " << startX << " endX "<< endX<< std::endl ;
 //			std::cout << "  -- startY " << startY << " endX "<< endY<< std::endl ;
 //			std::cout << "  -- startZ " << startZ << " endX "<< endZ<< std::endl ;
@@ -932,6 +934,7 @@ public:
 							const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
 							// Get child
 							CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
+                            // TODO : REMOVE NEXT COMMENTS
 //							std::cout << "     idx,idy,idz "<< idxX << " "<<  idxY  << " "<<   idxZ
 //									  <<"  mortonOtherParent"<<  mortonOtherParent<< std::endl;
 
@@ -947,6 +950,7 @@ public:
 										// Test if it is a direct neighbor
 										if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
 											// add to neighbors
+                                            // TODO : REMOVE NEXT COMMENTS
 //											std::cout << "     Voisin numero "<< idxNeighbors
 //													  << " indexinTab "<< (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3
 //													  << "  idxXousin " << idxCousin<< std::endl;
@@ -1045,6 +1049,7 @@ public:
 			const FTreeCoordinate& center, const int inLevel, const int inDirection){
 
 		const int boxLimite = FMath::pow2(inLevel);
+        // TODO : REMOVE NEXT COMMENTS
 //		std::cout << " Begin in getPeriodicLeafsNeighbors"<<std::endl;
 
 		if( center.getX() != 0 && center.getY() != 0 && center.getZ() != 0 &&
@@ -1063,6 +1068,7 @@ public:
 		const int endY = (TestPeriodicCondition(inDirection, DirPlusY) || center.getY() != boxLimite - 1 ?1:0);
 		const int startZ = (TestPeriodicCondition(inDirection, DirMinusZ) || center.getZ() != 0 ?-1:0);
 		const int endZ = (TestPeriodicCondition(inDirection, DirPlusZ) || center.getZ() != boxLimite - 1 ?1:0);
+        // TODO : REMOVE NEXT COMMENTS
 //		std::cout << "  -- startX " << startX << " endX "<< endX<< std::endl ;
 //		std::cout << "  -- startY " << startY << " endX "<< endY<< std::endl ;
 //		std::cout << "  -- startZ " << startZ << " endX "<< endZ<< std::endl ;
@@ -1099,6 +1105,7 @@ public:
 					zoffset = 0 ;
 					// if we are not on the current cell
 					if( idxX || idxY || idxZ ){ //  !( idxX !=0  && idxY != 0  &&idxZ != 0  )
+                        // TODO : REMOVE NEXT COMMENTS
 //						FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
 						otherZ = center.getZ() + idxZ ;
 
@@ -1112,6 +1119,7 @@ public:
 						}
 						other.setZ(otherZ);
 
+                        // TODO : REMOVE NEXT COMMENTS
 //						if( other.getX() < 0 ){
 //							other.setX( other.getX() + boxLimite );
 //							xoffset = -1;
@@ -1138,8 +1146,8 @@ public:
 //						}
 
 
-						const MortonIndex mortonOther = other.getMortonIndex(inLevel);
-						//
+                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        // TODO : REMOVE NEXT COMMENTS
 //						std::cout << "     idx,idy,idz "<< idxX << " "<<  idxY  << " "<<   idxZ
 //								  <<"  mortonOther  "<<  mortonOther<<  "          other "<< other<< std::endl;
 						// get cell
@@ -1149,6 +1157,7 @@ public:
 							const int index = (((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1;
 							inNeighbors[index] = leaf;
 							outOffsets[index].setPosition(xoffset,yoffset,zoffset);
+                            // TODO : REMOVE NEXT COMMENTS
 //							std::cout << "        xoffset,yoffset,zoffset "<< xoffset << " "<<  yoffset  << " "<<   zoffset <<" mortonOther " << mortonOther << std::endl<< std::endl;
 
 							++idxNeighbors;
@@ -1157,6 +1166,7 @@ public:
 				}
 			}
 		}
+// TODO : REMOVE NEXT COMMENTS
 //		std::cout << " End   in getPeriodicLeafsNeighbors " <<std::endl;
 
 		return idxNeighbors;
