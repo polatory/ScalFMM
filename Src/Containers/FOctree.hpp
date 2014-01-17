@@ -1152,7 +1152,7 @@ public:
 //							std::cout << "        xoffset,yoffset,zoffset "<< xoffset << " "<<  yoffset  << " "<<   zoffset <<" mortonOther " << mortonOther << std::endl<< std::endl;
 
 							++idxNeighbors;
-						}  //ñif(leaf)
+						}  // if(leaf)
 					} // if( idxX || idxY || idxZ )
 				}
 			}
