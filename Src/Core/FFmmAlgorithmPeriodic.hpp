@@ -541,9 +541,9 @@ public:
                 const CellClass* neighbors[343];
                 memset(neighbors, 0, sizeof(CellClass*) * 343);
                 int counter = 0;
-                for(int idxX = -2 ; idxX <= 1 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 1 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 1 ; ++idxZ){
+                for(int idxX = -3 ; idxX <= 2 ; ++idxX){
+                    for(int idxY = -3 ; idxY <= 2 ; ++idxY){
+                        for(int idxZ = -3 ; idxZ <= 2 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
                                 neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
                                 ++counter;
