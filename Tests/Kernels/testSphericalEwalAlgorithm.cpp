@@ -279,9 +279,9 @@ int main(int argc, char ** argv){
 					}
 				}
 			}
-			part.forces[0] *= -scaleForce ;
-			part.forces[1] *= -scaleForce ;
-			part.forces[2] *= -scaleForce ;
+            part.forces[0] *= scaleForce ;
+            part.forces[1] *= scaleForce ;
+            part.forces[2] *= scaleForce ;
 			if(FParameters::existParameter(argc, argv, "-verbose")){
 				std::cout << ">> index " << particles[idxTarget].index << std::endl;
 				std::cout << "Good    x " << particles[idxTarget].position.getX() << " y " << particles[idxTarget].position.getY() << " z " << particles[idxTarget].position.getZ() << std::endl;
