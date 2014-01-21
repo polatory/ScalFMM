@@ -29,7 +29,7 @@
 */
 
 /**
-* @brief This class is an arranger, it move the particles that need to be hosted in a different leaf.
+* @brief This class is an arranger, it moves the particles that need to be hosted in a different leaf.
 *
 * For example, if a simulation has been executed and the position
 * of the particles have been changed, then it may be better

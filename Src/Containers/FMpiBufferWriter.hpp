@@ -19,6 +19,7 @@
 #include <memory>
 #include "../Utils/FMpi.hpp"
 #include "FAbstractBuffer.hpp"
+#include "../Utils/FAssert.hpp"
 
 /** @author Cyrille Piacibello
  * This class provide the same features as FBufferWriter using MPI_Pack system
@@ -35,10 +36,7 @@ class FMpiBufferWriter : public FAbstractBufferWriter {
 
     /** Test and exit if not enought space */
     void assertRemainingSpace(const size_t requestedSpace) const {
-        if(int(currentIndex + requestedSpace) > arrayCapacity){
-            printf("Error FMpiBufferWriter has not enough space\n");
-            exit(0);
-        }
+        FAssertLF(int(currentIndex + requestedSpace) <= arrayCapacity, "Error FMpiBufferWriter has not enough space");
     }
 
 public:
@@ -93,10 +91,7 @@ public:
     /** Write back, position + sizeof(object) has to be < size */
     template <class ClassType>
     void writeAt(const int position, const ClassType& object){
-        if(position + (int) sizeof(ClassType) > currentIndex){
-            printf("Not enought space\n");
-            exit(0);
-        }
+        FAssertLF(int(position + sizeof(ClassType)) <= currentIndex)
         int noConstPosition = position;
         MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &noConstPosition, mpiComm);
     }

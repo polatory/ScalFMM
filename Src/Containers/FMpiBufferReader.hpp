@@ -19,7 +19,7 @@
 #include <memory>
 #include "../Utils/FMpi.hpp"
 #include "FAbstractBuffer.hpp"
-
+#include "../Utils/FAssert.hpp"
 
 /** @author Cyrille Piacibello
  * This class provide the same features as FBufferWriter using MPI_Pack system
@@ -40,8 +40,9 @@ public :
         comm(inComm),
         arrayCapacity(inCapacity),
         array(new char[inCapacity]),
-        currentIndex(0)
-    {}
+        currentIndex(0){
+        FAssertLF(array, "Cannot allocate array");
+    }
 
     /** Destructor
    */
@@ -70,13 +71,8 @@ public :
 
     /** Move the read index to a position */
     void seek(const int inIndex){
-        if(inIndex > arrayCapacity){
-            printf("FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough");
-            exit(0);
-        }
-        else{
-            currentIndex = inIndex;
-        }
+        FAssertLF(inIndex < arrayCapacity, "FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough");
+        currentIndex = inIndex;
     }
 
     /** Get the read position */
