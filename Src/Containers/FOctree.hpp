@@ -94,8 +94,10 @@ class FOctree : public FNoCopyable {
      * @return the box num at the leaf level that contains inRelativePosition
      */
     int getTreeCoordinate(const FReal inRelativePosition) const {
-        FAssertLF( (inRelativePosition >= 0 && inRelativePosition < this->boxWidth), "inRelativePosition : ",inRelativePosition );
-        FAssertLF( inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box" );
+        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= this->boxWidth), "inRelativePosition : ",inRelativePosition );
+        if(inRelativePosition == this->boxWidth){
+            return FMath::pow2(height-1)-1;
+        }
         const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
         return static_cast<int>(indexFReal);
     }
