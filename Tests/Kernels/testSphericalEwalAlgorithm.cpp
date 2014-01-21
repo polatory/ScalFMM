@@ -109,7 +109,7 @@ int main(int argc, char ** argv){
 
 	std::cout << "Opening : " << filename << "\n";
 	FEwalLoader loader(filename);
-//	FEwalBinLoader loader(filename);
+	//	FEwalBinLoader loader(filename);
 	if(!loader.isOpen()){
 		std::cout << "Loader Error, " << filename << " is missing\n";
 		return 1;
@@ -132,11 +132,11 @@ int main(int argc, char ** argv){
 	// Insert particles in the Octree
 	// ---------------------------------------------------------------------------------   std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
 	std::cout << "\tWidth : " << loader.getBoxWidth() << " \t center x : " << loader.getCenterOfBox().getX()
-            		  << " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
+            						  << " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 	counter.tic();
-
+	FPoint electricMoment(0.0,0.0,0.0) ;
 	EwalParticle * const particles = new EwalParticle[loader.getNumberOfParticles()];
 	memset(particles, 0, sizeof(EwalParticle) * loader.getNumberOfParticles());
 	double totalCharge = 0.0;
@@ -144,12 +144,20 @@ int main(int argc, char ** argv){
 		loader.fillParticle(&particles[idxPart].position, particles[idxPart].forces,
 				&particles[idxPart].physicalValue,&particles[idxPart].index);
 		totalCharge += particles[idxPart].physicalValue ;
+		electricMoment.incX(particles[idxPart].physicalValue*particles[idxPart].position.getX() );
+		electricMoment.incY(particles[idxPart].physicalValue*particles[idxPart].position.getY() );
+		electricMoment.incZ(particles[idxPart].physicalValue*particles[idxPart].position.getZ() );
 		// reset forces and insert in the tree
 		tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
 	}
 
 	counter.tac();
-	std::cout << "Total Charge = "<< totalCharge <<std::endl;
+	std::cout << std::endl;
+	std::cout << "Total Charge    = "<< totalCharge <<std::endl;
+	std::cout << "Electric Moment = "<< electricMoment <<std::endl;
+	std::cout << std::endl;
+	std::cout << std::endl;
+
 	std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 	//
 	// ---------------------------------------------------------------------------------
@@ -219,7 +227,8 @@ int main(int argc, char ** argv){
 	std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
 	// -----------------------------------------------------
-
+	//              DIRECT COMPUTATION
+	// -----------------------------------------------------
 	EwalParticle* particlesDirect = 0;
 	//
 	// direct computation
@@ -231,8 +240,10 @@ int main(int argc, char ** argv){
 
 		particlesDirect = new EwalParticle[loader.getNumberOfParticles()];
 
-		FReal dpotential = 0.0;
+		FReal denergy = 0.0;
 		FMath::FAccurater dfx, dfy, dfz;
+		//
+		//
 		for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
 			EwalParticle part = particles[idxTarget];
 			part.forces[0] = part.forces[1] = part.forces[2] = 0.0;
@@ -255,54 +266,60 @@ int main(int argc, char ** argv){
 			//
 			// compute with image boxes
 			//
-			for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
-				for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
-					for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
-						if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
+			//					for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
+			//						for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
+			//							for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
+			int nL = PeriodicDeep ;
+			{
+				//
+				for(int idxX = -nL ; idxX <= nL -1; ++idxX){
+					for(int idxY = -nL ; idxY <=nL-1 ; ++idxY){
+						for(int idxZ = -nL ; idxZ <= nL-1; ++idxZ){
+							if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
-						const FPoint offset(loader.getBoxWidth() * FReal(idxX),
-								loader.getBoxWidth() * FReal(idxY),
-								loader.getBoxWidth() * FReal(idxZ));
-
-						for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
-							EwalParticle source = particles[idxSource];
-							source.position += offset;
-							FP2P::NonMutualParticles(
-									source.position.getX(), source.position.getY(),
-									source.position.getZ(),source.physicalValue,
-									part.position.getX(), part.position.getY(),
-									part.position.getZ(),part.physicalValue,
-									&part.forces[0],&part.forces[1],
-									&part.forces[2],&part.potential
-							);
+							const FPoint offset(loader.getBoxWidth() * FReal(idxX),
+									loader.getBoxWidth() * FReal(idxY),
+									loader.getBoxWidth() * FReal(idxZ));
+							//							std::cout <<" ( "<< idxX<<" , "<<idxY << " , "<< idxZ << " ) "<< offset <<std::endl;
+							for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
+								EwalParticle source = particles[idxSource];
+								source.position += offset;
+								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
+								FP2P::NonMutualParticles(
+										source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
+										part.position.getX(), part.position.getY(),part.position.getZ(),part.physicalValue,
+										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential
+								);
+							}
+							//						std::cout <<std::endl<<std::endl<<std::endl;
 						}
 					}
-				}
+				} // END
 			}
-			part.forces[0] *= -scaleForce ;
-			part.forces[1] *= -scaleForce ;
-			part.forces[2] *= -scaleForce ;
+			//			exit(-1);
+			part.forces[0] *= scaleForce ;
+			part.forces[1] *= scaleForce ;
+			part.forces[2] *= scaleForce ;
 			if(FParameters::existParameter(argc, argv, "-verbose")){
 				std::cout << ">> index " << particles[idxTarget].index << std::endl;
 				std::cout << "Good    x " << particles[idxTarget].position.getX() << " y " << particles[idxTarget].position.getY() << " z " << particles[idxTarget].position.getZ() << std::endl;
 				std::cout << "Good    fx " <<particles[idxTarget].forces[0] << " fy " << particles[idxTarget].forces[1] << " fz " << particles[idxTarget].forces[2] << std::endl;
 				std::cout << "DIRECT  fx " << part.forces[0]<< " fy " <<part.forces[1] << " fz " << part.forces[2] << std::endl;
 				std::cout << "ratio  fx " << particles[idxTarget].forces[0]/part.forces[0] << " fy " <<particles[idxTarget].forces[1]/part.forces[1] << " fz " << particles[idxTarget].forces[2]/part.forces[2] << std::endl;
-				std::cout << "GOOD physical value " << particles[idxTarget].physicalValue << " potential " << particles[idxTarget].potential << std::endl;
 				std::cout << "DIRECT  physical value " << part.physicalValue << " potential " << part.potential << std::endl;
 
 				std::cout << "\n";
 			}
-//
+			//
 			dfx.add(particles[idxTarget].forces[0],part.forces[0]);
 			dfy.add(particles[idxTarget].forces[1],part.forces[1]);
 			dfz.add(particles[idxTarget].forces[2],part.forces[2]);
 
-			dpotential += part.potential * part.physicalValue;
+			denergy += part.potential * part.physicalValue;
 
 			particlesDirect[idxTarget] = part;
 		}
-		dpotential *= 0.5*scaleEnergy ;
+		denergy *= 0.5*scaleEnergy ;
 
 		printf("Difference between direct and DL_POLY:\n");
 		printf("Fx diff is = \n");
@@ -314,9 +331,9 @@ int main(int argc, char ** argv){
 		printf("Fz diff is = \n");
 		printf("   L2Norm  %e\n",dfz.getL2Norm());
 		printf("   InfNorm %e\n",dfz.getInfNorm());
-		printf("Energy FMM=   %e\n",dpotential);
-		printf("Energy EWALD= %e\n",loader.getEnergy());
-		printf("Energy EWALD - Energy FMM = %e\n",loader.getEnergy()-dpotential);
+		printf("Energy DIRECT=   %e\n",denergy);
+		printf("Energy EWALD = %e\n",loader.getEnergy());
+		printf("Energy EWALD - Energy DIRECT = %e\n",loader.getEnergy()-denergy);
 		//
 		if(FParameters::existParameter(argc, argv, "-saveError")){
 			errorfile << std::endl << "      END DIRECT " << std::endl ;
@@ -385,7 +402,7 @@ int main(int argc, char ** argv){
 			}
 		});
 		energy *= 0.5*scaleEnergy ;
-//
+		//
 		printf("Difference between FMM and DL_POLY:\n");
 
 		printf("Fx diff is = \n");
