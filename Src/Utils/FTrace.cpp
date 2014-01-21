@@ -14,12 +14,12 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #include "FTrace.hpp"
-#ifdef SCALFMM_USE_TRACE
+#ifdef ScalFMM_USE_TRACE
 
-#if !defined (SCALFMM_USE_ITAC) && !defined (SCALFMM_USE_EZTRACE)
+#if !defined (ScalFMM_USE_ITAC) && !defined (ScalFMM_USE_EZTRACE)
 int FTrace::Deep = 0;
 FTic FTrace::TimeSinceBegining;
 #endif
 
-#endif // SCALFMM_USE_TRACE
+#endif // ScalFMM_USE_TRACE
 

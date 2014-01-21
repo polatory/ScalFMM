@@ -17,7 +17,7 @@
 
 /**
 * In this file we show how to use the debug module.
-* Warning, in FGlobal.hpp (included in FLog.hpp) SCALFMM_USE_DEBUG might be undefined.
+* Warning, in FGlobal.hpp (included in FLog.hpp) ScalFMM_USE_DEBUG might be undefined.
 */
 
 int main(void){

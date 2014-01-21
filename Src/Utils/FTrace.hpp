@@ -34,7 +34,7 @@
 * </code>
 */
 
-#ifndef SCALFMM_USE_TRACE
+#ifndef ScalFMM_USE_TRACE
 
     #define FTRACE( X )
 
@@ -56,7 +56,7 @@
 
     #define FTRACE( X ) X
 
-    #ifdef SCALFMM_USE_ITAC
+    #ifdef ScalFMM_USE_ITAC
 
         #include <VT.h>
 
@@ -85,7 +85,7 @@
         };
 
     #else
-        #ifdef SCALFMM_USE_EZTRACE
+        #ifdef ScalFMM_USE_EZTRACE
 
             #include <eztrace.h>
 
@@ -219,11 +219,11 @@
                 friend class FFunction;
             };
 
-        #endif //SCALFMM_USE_EZTRACE
+        #endif //ScalFMM_USE_EZTRACE
 
-    #endif //SCALFMM_USE_ITAC
+    #endif //ScalFMM_USE_ITAC
 
-#endif //SCALFMM_USE_TRACE
+#endif //ScalFMM_USE_TRACE
 
 #endif //FTRACE_HPP
 
