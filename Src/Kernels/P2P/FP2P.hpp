@@ -973,7 +973,6 @@ public:
         (*sourcePotential) += ( potentialCoef * targetPhysicalValue );
     }
 
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1033,6 +1032,7 @@ public:
                             
                             // potentials
                             FReal potentialCoef;
+//                            potentialCoef = r[0]*r[0] * inv_distance_pow3; //PB: test
                             if(i==j)
                               potentialCoef = inv_distance - ri2 * inv_distance_pow3;
                             else
@@ -1101,6 +1101,7 @@ public:
 
                     // potentials
                     FReal potentialCoef;
+//                    potentialCoef = r[0]*r[0] * inv_distance_pow3; //PB: test
                     if(i==j)
                       potentialCoef = inv_distance - ri2 * inv_distance_pow3;
                     else
@@ -1195,6 +1196,7 @@ public:
 
                             // potentials
                             FReal potentialCoef;
+//                            potentialCoef = r[0]*r[0] * inv_distance_pow3; //PB: test
                             if(i==j)
                               potentialCoef = inv_distance - ri2 * inv_distance_pow3;
                             else
@@ -1283,6 +1285,7 @@ public:
 
             // potentials
             FReal potentialCoef;
+//            potentialCoef = r[0]*r[0] * inv_distance_pow3; //PB: test
             if(i==j)
               potentialCoef = inv_distance - ri2 * inv_distance_pow3;
             else
@@ -1388,20 +1391,20 @@ public:
 
                             // potentials
                             FReal potentialCoef;
-                            if(i==j)
+                            //if(i==j)
                               potentialCoef = inv_distance;
-                            else
-                              potentialCoef = FReal(0.);
+                            //else
+                            //  potentialCoef = FReal(0.);
 
                             // forces
                             FReal coef[3];
                             for(unsigned int k = 0 ; k < 3 ; ++k){
-                              if(i==j){
+                              //if(i==j){
                                 coef[k] = + r[k] * inv_distance_pow3 * (targetsPhysicalValues[idxTarget/* + i*nbParticles*/] * sourcesPhysicalValues[idxSource/* + j*nbParticles*/]);
-                              }
-                              else{
-                               coef[k] = FReal(0.);
-                              }
+                              //}
+                              //else{
+                              // coef[k] = FReal(0.);
+                              //}
 
                             }
 
@@ -1442,20 +1445,20 @@ public:
 
                     // potentials
                     FReal potentialCoef;
-                    if(i==j)
+                    //if(i==j)
                       potentialCoef = inv_distance;
-                    else
-                      potentialCoef = FReal(0.);
+                    //else
+                    //  potentialCoef = FReal(0.);
 
                     // forces
                     FReal coef[3];
                     for(unsigned int k = 0 ; k < 3 ; ++k){
-                      if(i==j){
+                      //if(i==j){
                         coef[k] = + r[k] * inv_distance_pow3 * (targetsPhysicalValues[idxTarget/* + i*nbParticles*/] * targetsPhysicalValues[idxSource/* + j*nbParticles*/]);
-                      }
-                      else{
-                        coef[k] = FReal(0.);
-                      }
+                      //}
+                      //else{
+                      //  coef[k] = FReal(0.);
+                      //}
 
                     }
 
@@ -1523,20 +1526,20 @@ public:
 
                             // potentials
                             FReal potentialCoef;
-                            if(i==j)
+                            //if(i==j)
                               potentialCoef = inv_distance ;
-                            else
-                              potentialCoef = FReal(0.);
+                            //else
+                            //  potentialCoef = FReal(0.);
 
                             // forces
                             FReal coef[3];
                             for(unsigned int k = 0 ; k < 3 ; ++k){
-                              if(i==j){
+                              //if(i==j){
                                 coef[k] = + r[k] * inv_distance_pow3 * (targetsPhysicalValues[idxTarget/* + i*nbParticles*/] * sourcesPhysicalValues[idxSource/* + j*nbParticles*/]);
-                              }
-                              else{
-                                coef[k] = FReal(0.);
-                              }
+                              //}
+                              //else{
+                              //  coef[k] = FReal(0.);
+                              //}
 
                             }
 
@@ -1598,20 +1601,20 @@ public:
                  
             // potentials
             FReal potentialCoef;
-            if(i==j)
+            //if(i==j)
               potentialCoef = inv_distance;
-            else
-              potentialCoef = FReal(0.);
+            //else
+            //  potentialCoef = FReal(0.);
 
             // forces
             FReal coef[3];
             for(unsigned int k = 0 ; k < 3 ; ++k){
-              if(i==j){
+              //if(i==j){
                 coef[k] = + r[k] * inv_distance_pow3 * (targetPhysicalValue * sourcePhysicalValue);
-              }
-              else{
-                coef[k] = FReal(0.);
-              }
+              //}
+              //else{
+              //  coef[k] = FReal(0.);
+              //}
 
             }
 

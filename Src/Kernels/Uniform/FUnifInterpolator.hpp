@@ -362,7 +362,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
                                                                  const ContainerClass *const inParticles) const
 {
   // set all multipole expansions to zero
-  FBlas::setzero(nRhs*nnodes, multipoleExpansion);
+  FBlas::setzero(/*nRhs**/nnodes, multipoleExpansion);
 
   // allocate stuff
   const map_glob_loc map(center, width);
@@ -386,7 +386,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
     }
 
 //    // PB: More optimal version where the sum over Lhs/Rhs is done inside applyL2P/P2M
-//    // this avoid nLhs/nLhs evaluations of the same interpolating polynomials
+//    // this avoids nLhs/nRhs evaluations of the same interpolating polynomials
 //    for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
 
       // read physicalValue
@@ -406,11 +406,6 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
 
   } // flops: N * (3 * ORDER*ORDER*ORDER + 3 * 3 * ORDER*(ORDER-1)) flops
 
-//    std::cout<< "multipoleExpansion="<<std::endl;
-//    for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs)
-//      for (unsigned int i=0; i<nnodes; ++i)
-//        std::cout<< multipoleExpansion[idxRhs*nnodes+i] << ", ";
-//    std::cout<<std::endl;
 }
 
 
@@ -428,12 +423,6 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
   const map_glob_loc map(center, width);
   FPoint localPosition;
 
-//    std::cout<< "localExpansion="<<std::endl;
-//    for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs)
-//      for (unsigned int i=0; i<nnodes; ++i)
-//        std::cout<< localExpansion[idxLhs*nnodes+i] << ", ";
-//    std::cout<<std::endl;
-
   //const FReal*const physicalValues = inParticles->getPhysicalValues();
   const FReal*const positionsX = inParticles->getPositions()[0];
   const FReal*const positionsY = inParticles->getPositions()[1];
@@ -450,13 +439,13 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
     // evaluate Lagrange polynomial at local position
     FReal L_of_x[ORDER][3];
     for (unsigned int o=0; o<ORDER; ++o) {
-      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops PB: TODO confirm
+      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][1] = BasisType::L(o, localPosition.getY()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
     }
 
 //    // PB: More optimal version where the sum over Lhs/Rhs is done inside applyL2P/P2M
-//    // this avoid nLhs/nLhs evaluations of the same interpolating polynomials
+//    // this avoid nLhs/nRhs evaluations of the same interpolating polynomials
 //    for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
       // interpolate and increment target value
@@ -474,7 +463,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
       }
 
       // set potential
-      potentials[idxPart/*+idxLhs*nParticles*/] += (targetValue); //PB: TODO update next compo
+      potentials[idxPart/*+idxLhs*nParticles*/] += (targetValue);
 
 //    } // idxLhs
 

@@ -30,7 +30,7 @@
 
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebTensorialKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebSymTensorialKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -100,14 +100,22 @@ int main(int argc, char* argv[])
     {
       for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
         for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-          FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                                &particles[idxTarget].forces[2], &particles[idxTarget].potential,
-                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                                &particles[idxOther].forces[2], &particles[idxOther].potential);
+//          FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+//                                particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+//                                &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
+//                                &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+//                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+//                                particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+//                                &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+//                                &particles[idxOther].forces[2], &particles[idxOther].potential);
+          FP2P::MutualParticlesIOR(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+                                   &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
+                                   &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+                                   particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                   particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                   &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+                                   &particles[idxOther].forces[2], &particles[idxOther].potential);
         }
       }
     }
@@ -122,18 +130,18 @@ int main(int argc, char* argv[])
   {	// begin Chebyshev kernel
 
     // accuracy
-    const unsigned int ORDER = 3;
-    const FReal epsilon = FReal(1e-7);
+    const unsigned int ORDER = 4;
+    const FReal epsilon = FReal(1e-8);
 
     // typedefs
     //typedef FInterpMatrixKernelLJ MatrixKernelClass;
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+//    typedef FInterpMatrixKernelR MatrixKernelClass;
 //    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass; // not working with Non-Symmetric variant ! Because of UCB decomposition.
+                                                          // and not working either with Symmetric variant because of lack of symmetry... 
+    typedef FInterpMatrixKernel_IOR MatrixKernelClass;
 
     const unsigned int NRHS = MatrixKernelClass::NRHS;
     const unsigned int NLHS = MatrixKernelClass::NLHS;
-    std::cout << "NRHS=" << NRHS << std::endl;
-    std::cout << "NLHS=" << NLHS << std::endl;
 
     typedef FP2PParticleContainerIndexed ContainerClass;
 //    const unsigned int NDIM = NRHS + 4*NLHS;
@@ -142,8 +150,7 @@ int main(int argc, char* argv[])
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
     typedef FChebCell<ORDER,NRHS,NLHS> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-    typedef FChebTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass; // PB: TODO erase when symmetric version done
-    //typedef FChebTensorialSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass; // PB: TODO
+    typedef FChebSymTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass; // PB: tensorial kernel needs to be symmetric !!
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -168,7 +175,7 @@ int main(int argc, char* argv[])
     } // -----------------------------------------------------
 
     { // -----------------------------------------------------
-      std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
+      std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
       KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
       FmmClass algorithm(&tree, &kernels);

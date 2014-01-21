@@ -148,8 +148,6 @@ int main(int argc, char* argv[])
 
     const unsigned int NRHS = MatrixKernelClass::NRHS;
     const unsigned int NLHS = MatrixKernelClass::NLHS;
-    std::cout << "NRHS=" << NRHS << std::endl;
-    std::cout << "NLHS=" << NLHS << std::endl;
 
     typedef FP2PParticleContainerIndexed ContainerClass;
 //    const unsigned int NDIM = NRHS + 4*NLHS;

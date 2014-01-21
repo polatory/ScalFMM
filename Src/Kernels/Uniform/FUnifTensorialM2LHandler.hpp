@@ -56,11 +56,11 @@ class FUnifTensorialM2LHandler : FNoCopyable
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
-        dim = MatrixKernelClass::Dim, 
+        dim = MatrixKernelClass::DIM, 
         nRhs = MatrixKernelClass::NRHS,
         nLhs = MatrixKernelClass::NLHS};
 
-	/*const*/ MatrixKernelClass MatrixKernel;
+	const MatrixKernelClass MatrixKernel;
 
 	FComplexe *FC[dim];
 
@@ -86,7 +86,7 @@ class FUnifTensorialM2LHandler : FNoCopyable
 	
 public:
 	FUnifTensorialM2LHandler()
-		: MatrixKernel(), /*FC(NULL),*/
+		: MatrixKernel(), // PB: used only to getPosition and getScalFac in applyM2L
       opt_rc(rc/2+1),
       Dft(rc) // initialize Discrete Fourier Transformator
 	{    
@@ -273,10 +273,7 @@ FUnifTensorialM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC,
 	// set roots of target cell (X)
 	FUnifTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 	// init matrix kernel
-	/*const*/ MatrixKernelClass MatrixKernel;
-
-  // update index of compo to be computed
-  MatrixKernel.updateIndex(d);
+	const MatrixKernelClass MatrixKernel(d);
 
 	// allocate memory and compute 316 m2l operators
 	FReal *_C;

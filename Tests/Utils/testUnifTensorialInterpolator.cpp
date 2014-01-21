@@ -68,8 +68,7 @@ int main(int, char **){
   std::cout << " direct computation.\n" << std::endl;
   //////////////////////////////////////////////////////////////
 
-  MatrixKernelClass MatrixKernel;
-  RIJKMatrixKernelClass RIJKMatrixKernel; // Only used for kernel R_IJ
+  const unsigned int dim = MatrixKernelClass::DIM;
   const unsigned int nrhs = MatrixKernelClass::NRHS;
   const unsigned int nlhs = MatrixKernelClass::NLHS;
 
@@ -123,6 +122,8 @@ int main(int, char **){
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
+  MatrixKernelClass MatrixKernel;
+  RIJKMatrixKernelClass RIJKMatrixKernel;
 
   std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
 
@@ -153,9 +154,7 @@ int main(int, char **){
           unsigned idxK = idxLhs*3+idxRhs; // or counter
           unsigned int d = MatrixKernel.getPosition(idxK);
 
-          MatrixKernel.updateIndex(d);
-
-          F[i+idxLhs*nnodes] += MatrixKernel.evaluate(rootsX[i], rootsY[j]) * W[j+idxRhs*nnodes];
+          F[i+idxLhs*nnodes] += MatrixKernelClass(d).evaluate(rootsX[i], rootsY[j]) * W[j+idxRhs*nnodes];
 
         }
     }
@@ -172,14 +171,12 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////////////
   // Store M2L in K and apply K
-  const unsigned int dim=MatrixKernelClass::Dim;
   FReal K[dim*nnodes*nnodes]; // local expansion
   for (unsigned int i=0; i<nnodes; ++i) {
     for (unsigned int j=0; j<nnodes; ++j){
 
       for (unsigned int d=0; d<dim; ++d){
-        MatrixKernel.updateIndex(d);
-        K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernel.evaluate(rootsX[i], rootsY[j]);        
+        K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernelClass(d).evaluate(rootsX[i], rootsY[j]);        
       }
 
     }
@@ -231,10 +228,9 @@ int main(int, char **){
       for(unsigned int n=0; n<2*ORDER-1; ++n){
 
         for (unsigned int d=0; d<dim; ++d){
-          MatrixKernel.updateIndex(d);
 
           C[d*rc + ido]
-            = MatrixKernel.evaluate(rootsX[node_ids_pairs[ido][0]], 
+            = MatrixKernelClass(d).evaluate(rootsX[node_ids_pairs[ido][0]], 
                                     rootsY[node_ids_pairs[ido][1]]);
         }
         
@@ -560,8 +556,7 @@ int main(int, char **){
         for (unsigned int i=0; i<nlhs; ++i) // sum all compo
           for (unsigned int j=0; j<nrhs; ++j){
             unsigned int d = MatrixKernel.getPosition(i*nrhs+j);
-            MatrixKernel.updateIndex(d);
-            const FReal rij = MatrixKernel.evaluate(x, y);
+            const FReal rij = MatrixKernelClass(d).evaluate(x, y);
             // potential
             p[counter] += rij * wy;
             // force
@@ -569,8 +564,7 @@ int main(int, char **){
             for (unsigned int k=0; k<3; ++k){
               //std::cout << "i,j,k,=" << i << ","<< j << ","<< k << std::endl;
               unsigned int dk = RIJKMatrixKernel.getPosition(i*3*3+j*3+k);
-              RIJKMatrixKernel.updateIndex(dk);
-              force[k] = RIJKMatrixKernel.evaluate(x, y);
+              force[k] = RIJKMatrixKernelClass(dk).evaluate(x, y);
               f[counter*3 + k] += force[k] * wx * wy;
             }
           }
