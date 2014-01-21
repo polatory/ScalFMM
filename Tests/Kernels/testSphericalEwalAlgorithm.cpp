@@ -168,17 +168,17 @@ int main(int argc, char ** argv){
 	octreeData << "Leaf width " << widthAtLeafLevel << std::endl ;
 	octreeData << "Box Corner "<< boxCorner << std::endl<< std::endl ;
 
-	do{
-		auto * const FRestrict cell = octreeIterator.getCurrentCell();
-		FTreeCoordinate coordinate  = cell->getCoordinate() ;
-		FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-				FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-				FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
-		octreeData << "Leaf " << cell->getMortonIndex() << std::endl
-				<< "    Center   "<<  coordinate <<    std::endl
-				<< "    Center   "<<  leafCenter
-				<< std::endl ;
-	} while(octreeIterator.moveRight());
+    do{
+        auto * const FRestrict cell = octreeIterator.getCurrentCell();
+        FTreeCoordinate coordinate  = cell->getCoordinate() ;
+        FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
+        octreeData << "Leaf " << cell->getMortonIndex() << std::endl
+                << "    Center   "<<  coordinate <<    std::endl
+                << "    Center   "<<  leafCenter
+                << std::endl ;
+    } while(octreeIterator.moveRight());
 	//
 	FIOVtk vtkfile ;
 	vtkfile.writeOctree("octreeFile.vtk","Octree ", tree) ;
@@ -300,7 +300,7 @@ int main(int argc, char ** argv){
 
 			dpotential += part.potential * part.physicalValue;
 
-			particlesDirect[idxTarget] = part;
+        //	particlesDirect[idxTarget] = part;
 		}
 		dpotential *= 0.5*scaleEnergy ;
 
