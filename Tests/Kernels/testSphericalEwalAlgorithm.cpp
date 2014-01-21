@@ -176,17 +176,17 @@ int main(int argc, char ** argv){
 	octreeData << "Leaf width " << widthAtLeafLevel << std::endl ;
 	octreeData << "Box Corner "<< boxCorner << std::endl<< std::endl ;
 
-	do{
-		auto * const FRestrict cell = octreeIterator.getCurrentCell();
-		FTreeCoordinate coordinate  = cell->getCoordinate() ;
-		FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-				FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-				FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
-		octreeData << "Leaf " << cell->getMortonIndex() << std::endl
-				<< "    Center   "<<  coordinate <<    std::endl
-				<< "    Center   "<<  leafCenter
-				<< std::endl ;
-	} while(octreeIterator.moveRight());
+    do{
+        auto * const FRestrict cell = octreeIterator.getCurrentCell();
+        FTreeCoordinate coordinate  = cell->getCoordinate() ;
+        FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+                FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
+        octreeData << "Leaf " << cell->getMortonIndex() << std::endl
+                << "    Center   "<<  coordinate <<    std::endl
+                << "    Center   "<<  leafCenter
+                << std::endl ;
+    } while(octreeIterator.moveRight());
 	//
 	FIOVtk vtkfile ;
 	vtkfile.writeOctree("octreeFile.vtk","Octree ", tree) ;
@@ -296,10 +296,10 @@ int main(int argc, char ** argv){
 					}
 				} // END
 			}
-			//			exit(-1);
-			part.forces[0] *= scaleForce ;
-			part.forces[1] *= scaleForce ;
-			part.forces[2] *= scaleForce ;
+
+            part.forces[0] *= scaleForce ;
+            part.forces[1] *= scaleForce ;
+            part.forces[2] *= scaleForce ;
 			if(FParameters::existParameter(argc, argv, "-verbose")){
 				std::cout << ">> index " << particles[idxTarget].index << std::endl;
 				std::cout << "Good    x " << particles[idxTarget].position.getX() << " y " << particles[idxTarget].position.getY() << " z " << particles[idxTarget].position.getZ() << std::endl;
@@ -317,7 +317,7 @@ int main(int argc, char ** argv){
 
 			denergy += part.potential * part.physicalValue;
 
-			particlesDirect[idxTarget] = part;
+        //	particlesDirect[idxTarget] = part;
 		}
 		denergy *= 0.5*scaleEnergy ;
 
