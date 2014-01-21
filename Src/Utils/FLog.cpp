@@ -24,5 +24,5 @@ FLog FLog::Controller;
 
 
 
-#endif // SCALFMM_USE_DEBUG
+#endif // ScalFMM_USE_DEBUG
 

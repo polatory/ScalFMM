@@ -16,6 +16,7 @@
 #ifndef FTESTCELL_HPP
 #define FTESTCELL_HPP
 
+#include <cstddef>
 #include "FBasicCell.hpp"
 
 /**
@@ -75,7 +76,7 @@ public:
         buffer >> dataDown >> dataUp;
     }
 
-  static int GetSize(){
+  static size_t GetSize(){
     return sizeof(long long int)*2;
   }
 

@@ -123,6 +123,16 @@ public:
 #endif
 	}
 	
+	/**
+	 * The constructor initializes all constant attributes and it reads the
+	 * precomputed and compressed M2L operators from a binary file (an
+	 * runtime_error is thrown if the required file is not valid).
+	 */
+	FChebSymKernel(const int inTreeHeight,
+		       const FReal inBoxWidth,
+		       const FPoint& inBoxCenter) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter, FReal(1.0/FMath::pow(10,ORDER)))
+		       {}
+
 	
 
 	/** Copy constructor */

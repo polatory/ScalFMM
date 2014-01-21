@@ -19,7 +19,7 @@ FMemStats FMemStats::controler;
 
 #include <cstdio>
 
-#ifdef SCALFMM_USE_MEM_STATS
+#ifdef ScalFMM_USE_MEM_STATS
     // Regular scalar new
     void* operator new(std::size_t n) throw(std::bad_alloc)
     {

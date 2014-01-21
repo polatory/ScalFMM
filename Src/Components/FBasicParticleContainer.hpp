@@ -103,7 +103,14 @@ public:
     int getNbParticles() const{
         return nbParticles;
     }
-
+    /**
+     * @brief reset the number of particles
+     * @warning Only the number of particles is set to 0, the particles are still here.
+     */
+    void resetNumberOfParticles()
+    {
+    	nbParticles = 0 ;
+    }
     /**
      * @brief getPositions
      * @return a FReal*[3] to get access to the positions
@@ -116,7 +123,7 @@ public:
      * @brief getWPositions
      * @return get the position in write mode
      */
-    FReal*const* getWPositions() {
+    FReal* const* getWPositions() {
         return positions;
     }
 

@@ -30,7 +30,7 @@ class FPoint;
 * This class define the method that every particle container
 * has to implement.
 *
-* @warning Inherite from this class when implement a specific particle type
+* @warning Inherit from this class when implement a specific particle type
 */
 class FAbstractParticleContainer {
 public:
@@ -40,8 +40,8 @@ public:
 
     /**
      * This method should be inherited (or your leaf will do nothing)
-     * the point is coming from the tree and is fallowed by what let the leaf
-     * pass throught its push method.
+     * the point is coming from the tree and is followed by what let the leaf
+     * pass through its push method.
      */
     template<typename... Args>
     void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){

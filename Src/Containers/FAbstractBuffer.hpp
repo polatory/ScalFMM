@@ -1,16 +1,35 @@
+// ===================================================================================
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
+// ===================================================================================
 #ifndef FABSTRACTBUFFER_HPP
 #define FABSTRACTBUFFER_HPP
 
+/**
+ * @brief The FAbstractBufferReader class defines what is an abstract buffer reader.
+ * The buffer used by the mpi algorithm for example should defines this methods.
+ */
 class FAbstractBufferReader {
 public:
     virtual ~FAbstractBufferReader(){
     }
 
-    virtual char* data() = 0;
-    virtual const char* data() const  = 0;
-    virtual int getSize() const = 0;
-    virtual void seek(const int inIndex) = 0;
-    virtual int tell() const  = 0;
+    virtual char*       data()      = 0;
+    virtual const char* data()      const  = 0;
+    virtual int         getSize()   const = 0;
+    virtual void        seek(const int inIndex) = 0;
+    virtual int         tell()      const  = 0;
 
     template <class ClassType>
     ClassType getValue(){
@@ -33,16 +52,19 @@ public:
 };
 
 
-
+/**
+ * @brief The FAbstractBufferWriter class defines what is an abstract buffer writer.
+ * The buffer used by the mpi algorithm for example should defines this methods.
+ */
 class FAbstractBufferWriter {
 public:
     virtual ~FAbstractBufferWriter(){
     }
 
-    virtual char* data() = 0;
+    virtual char*       data()  = 0;
     virtual const char* data()  const = 0;
-    virtual int getSize() const = 0;
-    virtual void reset() = 0;
+    virtual int         getSize() const = 0;
+    virtual void        reset() = 0;
 
     template <class ClassType>
     void write(const ClassType& object){

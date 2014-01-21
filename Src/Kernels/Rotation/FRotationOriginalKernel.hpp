@@ -119,19 +119,19 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
         if( l >= 0 && -l <= k && k <= l && FMath::Abs(k) <= m && m <= l ){
             FReal sum = 0;
             for(int n = FMath::Max(-(m+k),0) ; n <= FMath::Min(l-m,l-k) ; ++n){
-                sum += FMath::pow(FReal(-1.0), l-m-n) * combin(l-k, n) * combin(l+k, l-m-n) * FMath::pow(FReal(1.0)+cosTheta,n) * FMath::pow(FReal(1.0)-cosTheta, l-m-n);
+	      sum += FMath::pow(FReal(-1.0), FMath::Abs(l-m-n)) * combin(l-k, n) * combin(l+k, l-m-n) * FMath::pow(FReal(1.0)+cosTheta,FMath::Abs(n)) * FMath::pow(FReal(1.0)-cosTheta, FMath::Abs(l-m-n));
             }
-            return (FReal(1.0)/FMath::pow(FReal(2.0),l)) * FMath::Sqrt((fact(l-m)*fact(l+m))/(fact(l-k)*fact(l+k)))
-                    * FMath::pow(FReal(1.0) + FReal(Sgn(k))*cosTheta, FMath::Abs(k)) * FMath::pow(sinTheta, m - FMath::Abs(k)) * sum;
+            return (FReal(1.0)/FMath::pow(FReal(2.0),FMath::Abs(l))) * FMath::Sqrt((fact(l-m)*fact(l+m))/(fact(l-k)*fact(l+k)))
+	      * FMath::pow(FReal(1.0) + FReal(Sgn(k))*cosTheta, FMath::Abs(k)) * FMath::pow(sinTheta, FMath::Abs(m - FMath::Abs(k))) * sum;
         }
         // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, -l \leq m \le 0, |m| \leq k \leq l
         else if( (l > 0 && -l <= m && m < 0 && FMath::Abs(m) <= k && k <= l)
                  ||  (l > 0 && 0 <= m && m < l && m < k && k <= l )) {
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, k ,m);
+	  return FMath::pow(FReal(-1.0), FMath::Abs(m+k)) * d_lmk_analytical(cosTheta,sinTheta, l, k ,m);
         }
         // P^{l}_{m,k} = (-1)^{m+k} P^{l}_{k,m} , l \ge 0, 0 \leq m \le l, m \le k \leq l
         else if( l > 0 && -l <= m && m < l && -l <= k && k < -m ){
-            return FMath::pow(FReal(-1.0), m+k) * d_lmk_analytical(cosTheta,sinTheta, l, -m, -k);
+	  return FMath::pow(FReal(-1.0), FMath::Abs(m+k)) * d_lmk_analytical(cosTheta,sinTheta, l, -m, -k);
         }
         else{
             printf("Error that should not be possible!\n");

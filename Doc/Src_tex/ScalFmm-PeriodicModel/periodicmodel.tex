@@ -105,18 +105,36 @@ Berenger \textsc{Bramas} % Your name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Abstract}
 
-This study proposes a new approach to compute a boundary/periodic Fast Multipole Method (FMM) in any direction.
-The proposed model uses the standard FMM operators ($M2M$, $M2L$, $L2L$, $P2P$) which make it kernel independent.
-The algorithm can simulate a large repetition of the simulation box for a low computational cost.
+The current report describes a new algorithm in order to perform an periodic Multipole Method (FMM).
+This algorithm uses the usual FMM operators ($M2M$, $M2L$, $L2L$, $P2P$) why makes it kernels independent in a way explained in the later sections.
+The computational cost of the method is small and is using the same error bound as the FMM.
 
-Keywords: FMM, octree, boundary.
+Keywords: FMM, octree, periodic.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
-The FMM is widely use to run physical simulations where pairs interactions, also known as nbody problem,
-can have a complexity reduced from O(n2) to O(n).
-But many physical problem could also have the need to compute periodic simulations.
-Many analytical methods have been developed but none of them is using the power of the FMM to compute the periodicity.
+The FMM is widely use to execute physical simulations with pairs interactions.
+Direct approaches compute all interactions and have a complexity of $O(n^2)$.
+The FMM reduce this complexity to a $O(n)$.
+But many physical problems need to compute the periodic conditions.
+Several solutions relies on analytical methods.
+
+\paragraph{Type of interactions.}
+
+In the current report we speak of potential at particle $x_i$ given by:
+$$
+V(x_i) = \sum_{j=0,i\neq j}^{N}{\frac{q_j}{\|x_i-x_j\|}}
+$$ 
+and the force on atom $x_i$ writes
+$$
+f(x_i) =  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}.
+$$
+Finally, the total energy of the system is
+$$
+U = \frac{1}{2}\sum_{i=0}^{N}{q_i V(x_i)}.
+$$ 
+
+Such formulas are supported by ScalFMM.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{State of the art}
@@ -126,19 +144,19 @@ is not using the power of FMM and the usual shape of its operators.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Usual Operators}
-In this section we remind the common FMM operators in a algorithm view.
+In this section we remind the common FMM operators in an algorithm view.
 
 \subsection{Octree}
-The FMM operators relies on the spacial decomposition of the problem which is done using an octree.
-The system, which can be particles for example, is include in a cube which is the root of the tree at level $0$.
-Then we divide this root-cell by $2$ in each dimension which create $2^{DIM}$ sub-cells.
+The FMM operators rely on the spacial decomposition of the problem which is done using an octree.
+The system is included in a cube where the root of the tree at level $0$ contains all the data.
+Then we divide this root-cell by $2$ in each dimension which creates $2^{DIM}$ sub-cells.
 We repeat the previous step until a level $L$. We have a maximum of $2^{DIM*l}$ cells at level $l$.
 Some implementation subdivides a cell until a condition is respected, like for example having less than $N$ particles in each leaves.
 Such approaches leads to a tree where all leaves may not be at the same level, but our method can even be applied them.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/Octree}
+\includegraphics[scale=0.6]{Images/Octree}
 \caption{$2D$ Octree}
 \end{figure}
 
@@ -155,7 +173,7 @@ $r = Diagonal/2 = \sqrt{ 3 * Edge^2 }/2 = \sqrt{ 3 * (BoxWidth/2^{l})^2 }/2$.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/TopDownOperators}
+\includegraphics[scale=0.6]{Images/TopDownOperators}
 \caption{Top-Down Operators}
 \end{figure}
 
@@ -177,7 +195,7 @@ Any FMM implementation has the capacity to compute the $M2L$ between two cell of
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/InteractionsOperators}
+\includegraphics[scale=0.6]{Images/InteractionsOperators}
 \caption{Interactions Operators, P2P (Blue), M2L (Green)}
 \end{figure}
 
@@ -201,7 +219,7 @@ In the next paragraph we supposed when speaking about interactions or neighbors 
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.6]{../Images/Repetitions}
+\includegraphics[scale=0.6]{Images/Repetitions}
 \caption{Repetitions of the simulation box create new neighbors}
 \end{figure}
 
@@ -218,7 +236,7 @@ It is important to have in mind that without any special operation the box is al
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.35]{../Images/PeriodicL2}
+\includegraphics[scale=0.35]{Images/PeriodicL2}
 \caption{Extension of the box with a periodicity until level $2$}
 \end{figure}
 
@@ -231,7 +249,7 @@ Finally we can compute the downward pass from level $0$ to the leaves.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/PeriodicL0}
+\includegraphics[scale=0.45]{Images/PeriodicL0}
 \caption{Extension of the box with a periodicity until level $0$}
 \end{figure}
 
@@ -259,7 +277,7 @@ The have a perfect symmetric periodicity we need to add a border.
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/PeriodicL-1}
+\includegraphics[scale=0.45]{Images/PeriodicL-1}
 \caption{Extension of the box with a periodicity until level $-1$ without border}
 \end{figure}
 
@@ -275,6 +293,9 @@ So we create a grid of size $(6*2^d)^3$ and we are working on the center cell at
 
 
 \subsection{Adding a border}
+
+THIS IS NOT USE ANYMORE!
+
 After having proceed $d$ levels above $0$, a border of the simulation box is missing.
 To take into consideration this border, we need to use the root cell and create all the configuration in order to have create
 cells one levels above $d$ which contains all the information.
@@ -289,7 +310,7 @@ Each of this $M2M$ is computing the relation between one or two sub-cells and th
 
 \begin{figure}[h]
 \centering
-\includegraphics[scale=0.45]{../Images/Border}
+\includegraphics[scale=0.45]{Images/Border}
 \caption{Extension of the box with a periodicity until level $-1$ with border}
 \end{figure}
 
@@ -303,17 +324,17 @@ Then, during the addition of the border only the periodic directions have to be 
 
 The periodic-algorithm does not allow to choose a specific grid size.
 The only parameter $D$ is the number of level above the root of the box where the algorithm is applied.
-As it has been illustrated the final grid size has a width of $dim = 3*2^{Abs(D)+1} + 1$
+As it has been illustrated the final grid size has a width of $dim = 2^{Abs(D)+2}$
 
 \begin{center}
 \begin{tabular}{ | c | c | }
  \hline                 
    D & Grid Dim \\ \hline
    1 & 3 \\
-   0 & 7 \\
-   1 & 13 \\
-   5 & 193 \\
-   20 & 6 291 457 \\
+   0 & 4 \\
+   1 & 8 \\
+   5 & 32 \\
+   20 & 1 048 576 \\
  \hline  
  \end{tabular}
 \end{center}
@@ -323,7 +344,6 @@ We determine the cost of the periodicity in term of FMM operators.
 The following cost is based on a full octree.
 
 There are $2^{DIM}$ $M2M$, $1$ $L2L$, and $6^{DIM}-3^{DIM}$ $M2L$ per level above the root.
-For the border the cost is $\sum_{i=1}^{DIM}{i^2}$ $M2M$ per level above root.
 
 For example, in $3D$, the cost for $D=5$ is $5*(2^3 + 1^2 + 2^2 + 3^2) = 110$ $M2M$ and $5*189 = 945$ $M2L$.
 For example, in $3D$, the cost for $D=20$ is $20*(2^3 + 1^2 + 2^2 + 3^2) = 440$ $M2M$ and $20*189 = 3780$ $M2L$.
@@ -354,6 +374,61 @@ Our kernel compute the requested operation without any difference between the re
 In fact, let the original FMM box width be $w$ and a tree height be $h$.
 Then, if is required to apply periodicity until level $d$ above the root.
 The kernel should be able to proceed usual FMM operator in a tree of height of size $h+d+5$ with a initial box width of $w*2^{d+3}$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\subsection{Ewald summation comparisons}
+
+The energy computed by molecular dynamics codes is given by
+$$
+U = \frac{1}{4 \pi\epsilon_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+$$ 
+and the force on atom $x_i$
+$$
+f(x_i) =  \frac{q_i }{4 \pi\epsilon_0}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+$$
+\subsubsection{DL\_Poly comparisons}
+DL\_POLY\_2 uses the following internal molecular units \\
+
+\begin{tabular}{|l|c|c|l|}
+\hline
+type & Expression & Numerical value & \\
+time &$t_0$ & $10^{-12}\;s$& picosecond\\
+length & $l_0$ &$10^{-10}\; m $& $\AA$ Angström\\
+mass &  $m_0$ & $ 1.6605402 \; 10^{−27}\; kg $& atomic mass unit\\
+charge &  $q_0$ & $1.60217733 \; 10^{−19} Coulombs$& unit of proton charge\\
+energy & $E_0 = m_0(l_0/t_0)^2$&$1.6605402 \;  10^{−23}\; Joules $ & $10\; J\, mol^{-1}$\\
+\hline
+\end{tabular}
+
+ In internal variables the energy writes 
+$$
+U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}  \;\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+$$
+and the forces write 
+$$
+f(x_i) = -\frac{q_0^2}{4 \pi\epsilon_0 l_0^2} q_i \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+ = C_{force} \; q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+$$
+
+The Energy conversion factor is $\gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal\, mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
+
+
+To compare with the molecular dynamics code, the forces and the energy is multiplied by $C_{force}$ ($C_{energy}$ respectively). 
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+   & Constant & Value &  Unit \\
+\hline
+Energy & $C_{energy}$& 138935.4835/418.4 &  $kcal\, mol^{-1}$\\
+Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
+\hline
+\end{tabular}
+\end{center}
+The force unit is the internal DL\_Poly unit.
+
+
+The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have X atoms.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}

@@ -54,8 +54,9 @@
  */
 template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
 class FOctree : public FNoCopyable {
-    typedef FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
-    typedef FSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctree;
+    typedef FOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
+    typedef  FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
+    typedef FSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>           SubOctree;
 
     FAbstractSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>* root;   //< root suboctree
 
@@ -72,10 +73,10 @@ class FOctree : public FNoCopyable {
 
 
     /**
-        * Get morton index from a position for the leaf leavel
-        * @param inPosition position to compute
-        * @return the morton index
-        */
+     * Get morton index from a position for the leaf leavel
+     * @param inPosition position to compute
+     * @return the morton index
+     */
     FTreeCoordinate getCoordinateFromPosition(const FPoint& inPosition) const {
         // box coordinate to host the particle
         FTreeCoordinate host;
@@ -87,16 +88,18 @@ class FOctree : public FNoCopyable {
     }
 
     /**
-        * Get the box number from a position
-        * at a position POS with a leaf level box width of WI, the position is RELATIVE_TO_CORNER(POS)/WI
-        * @param inRelativePosition a position from the corner of the box
-        * @return the box num at the leaf level that contains inRelativePosition
-        */
+     * Get the box number from a position
+     * at a position POS with a leaf level box width of WI, the position is RELATIVE_TO_CORNER(POS)/WI
+     * @param inRelativePosition a position from the corner of the box
+     * @return the box num at the leaf level that contains inRelativePosition
+     */
     int getTreeCoordinate(const FReal inRelativePosition) const {
-      FAssertLF( (inRelativePosition >= 0 && inRelativePosition < this->boxWidth), "inRelativePosition : ",inRelativePosition );
-      FAssertLF( inRelativePosition >= 0 && inRelativePosition < this->boxWidth, "Particle out of box" );
-      const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-      return static_cast<int>(indexFReal);
+        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= this->boxWidth), "inRelativePosition : ",inRelativePosition );
+        if(inRelativePosition == this->boxWidth){
+            return FMath::pow2(height-1)-1;
+        }
+        const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
+        return static_cast<int>(indexFReal);
     }
 
 public:
@@ -157,8 +160,8 @@ public:
     }
 
     /** Count the number of cells per level,
-      * it will iter on the tree to do that!
-      */
+     * it will iter on the tree to do that!
+     */
     void getNbCellsPerLevel(int inNbCells[]){
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
@@ -198,8 +201,8 @@ public:
     }
 
     /** Remove a leaf from its morton index
-      * @param indexToRemove the index of the leaf to remove
-      */
+     * @param indexToRemove the index of the leaf to remove
+     */
     LeafClass* createLeaf(const MortonIndex indexToCreate ){
         const FTreeCoordinate host(indexToCreate,this->height-1);
         if(root->isLeafPart()){
@@ -211,27 +214,27 @@ public:
     }
 
     /** Remove a leaf from its morton index
-      * @param indexToRemove the index of the leaf to remove
-      */
+     * @param indexToRemove the index of the leaf to remove
+     */
     void removeLeaf(const MortonIndex indexToRemove ){
         root->removeLeaf( indexToRemove , this->height);
     }
 
     /**
-        * Get a morton index from a real position
-        * @param position a position to compute MI
-        * @return the morton index
-        */
+     * Get a morton index from a real position
+     * @param position a position to compute MI
+     * @return the morton index
+     */
     MortonIndex getMortonFromPosition(const FPoint& position) const {
         return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
     }
 
     /**
-          * The class works on suboctree. Most of the resources needed
-          * are avaiblable by using FAbstractSubOctree. But when accessing
-          * to the leaf we have to use FSubOctree or FSubOctreeWithLeafs
-          * depending if we are working on the bottom of the tree.
-          */
+     * The class works on suboctree. Most of the resources needed
+     * are avaiblable by using FAbstractSubOctree. But when accessing
+     * to the leaf we have to use FSubOctree or FSubOctreeWithLeafs
+     * depending if we are working on the bottom of the tree.
+     */
     union SubOctreeTypes {
         FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
         FSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
@@ -239,8 +242,8 @@ public:
     };
 
     /**
-          * This class is a const SubOctreeTypes
-          */
+     * This class is a const SubOctreeTypes
+     */
     union SubOctreeTypesConst {
         const FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
         const FSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
@@ -248,25 +251,25 @@ public:
     };
 
     /**
-          * This has to be used to iterate on an octree
-          * It simply stores an pointer on a suboctree and moves to right/left/up/down.
-          * Please refere to testOctreeIter file to see how it works.
-          *
-          * @code
-          * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree); <br>
-          * octreeIterator.gotoBottomLeft(); <br>
-          * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){ <br>
-          *     do{ <br>
-          *         // ...  <br>
-          *     } while(octreeIterator.moveRight()); <br>
-          *     octreeIterator.moveUp(); <br>
-          *     octreeIterator.gotoLeft(); <br>
-          * } <br>
-          * @endcode
-          * Remark :
-          * It uses the left right limit on each suboctree and their morton index.
-          * Please have a look to the move functions to understand how the system is working.
-          */
+     * This has to be used to iterate on an octree
+     * It simply stores an pointer on a suboctree and moves to right/left/up/down.
+     * Please refere to testOctreeIter file to see how it works.
+     *
+     * @code
+     * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree); <br>
+     * octreeIterator.gotoBottomLeft(); <br>
+     * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){ <br>
+     *     do{ <br>
+     *         // ...  <br>
+     *     } while(octreeIterator.moveRight()); <br>
+     *     octreeIterator.moveUp(); <br>
+     *     octreeIterator.gotoLeft(); <br>
+     * } <br>
+     * @endcode
+     * Remark :
+     * It uses the left right limit on each suboctree and their morton index.
+     * Please have a look to the move functions to understand how the system is working.
+     */
     class Iterator  {
         SubOctreeTypes current; //< Current suboctree
 
@@ -274,9 +277,9 @@ public:
         int currentLocalLevel;  //< Current level in the current suboctree
 
         /**
-          * To know what is the left limit on the current level on the current subtree
-          * @return suboctree.left_limit >> 3 * diff(leaf_index, current_index).
-          */
+         * To know what is the left limit on the current level on the current subtree
+         * @return suboctree.left_limit >> 3 * diff(leaf_index, current_index).
+         */
         static int TransposeIndex(const int indexInLeafLevel, const int distanceFromLeafLevel) {
             return indexInLeafLevel >> (3 * distanceFromLeafLevel);
         }
@@ -284,11 +287,11 @@ public:
 
     public:
         /**
-            * Constructor
-            * @param inTarget the octree to iterate on
-            * After building a iterator, this one is positioned at the level 0
-            * of the root (level 1 of octree) at the left limit index
-            */
+         * Constructor
+         * @param inTarget the octree to iterate on
+         * After building a iterator, this one is positioned at the level 0
+         * of the root (level 1 of octree) at the left limit index
+         */
         explicit Iterator(FOctree* const inTarget)
             : currentLocalIndex(0) , currentLocalLevel(0) {
             FAssertLF(inTarget, "Target for Octree::Iterator cannot be null", __LINE__, __FILE__);
@@ -305,8 +308,8 @@ public:
         }
 
         /** Copy constructor
-              * @param other source iterator to copy
-              */
+         * @param other source iterator to copy
+         */
         Iterator(const Iterator& other){
             this->current = other.current ;
             this->currentLocalLevel = other.currentLocalLevel ;
@@ -314,9 +317,9 @@ public:
         }
 
         /** Copy operator
-              * @param other source iterator to copy
-              * @return this after copy
-              */
+         * @param other source iterator to copy
+         * @return this after copy
+         */
         Iterator& operator=(const Iterator& other){
             this->current = other.current ;
             this->currentLocalLevel = other.currentLocalLevel ;
@@ -325,12 +328,12 @@ public:
         }
 
         /**
-              * Move iterator to the top! (level 0 of root suboctree, level 1 of octree)
-              * after this function : index = left limit at root level
-              * the Algorithm is :
-              *     going to root suboctree
-              *     going to the first level and most left node
-              */
+         * Move iterator to the top! (level 0 of root suboctree, level 1 of octree)
+         * after this function : index = left limit at root level
+         * the Algorithm is :
+         *     going to root suboctree
+         *     going to the first level and most left node
+         */
         void gotoTop(){
             while(this->current.tree->hasParent()){
                 this->current.tree = this->current.tree->getParent();
@@ -340,12 +343,12 @@ public:
         }
 
         /**
-              * Move iterator to the bottom left place
-              * We are on a leaf a the most left node
-              * the Algorithm is :
-              *     first go to top
-              *     then stay on the left and go downward
-              */
+         * Move iterator to the bottom left place
+         * We are on a leaf a the most left node
+         * the Algorithm is :
+         *     first go to top
+         *     then stay on the left and go downward
+         */
         void gotoBottomLeft(){
             gotoTop();
             while(1) {
@@ -359,12 +362,12 @@ public:
         }
 
         /**
-              * Move iterator to the left place at the same level
-              * if needed we go on another suboctree but we stay on at the same level
-              * the Algorithm is :
-              *     go to top
-              *     go downard until we are a the same level
-              */
+         * Move iterator to the left place at the same level
+         * if needed we go on another suboctree but we stay on at the same level
+         * the Algorithm is :
+         *     go to top
+         *     go downard until we are a the same level
+         */
         void gotoLeft(){
             //  Function variables
             const int currentLevel = level();
@@ -385,12 +388,12 @@ public:
         }
 
         /**
-              * Move iterator to the right place at the same level
-              * if needed we go on another suboctree but we stay on at the same level
-              * the Algorithm is :
-              *     go to top
-              *     go downard until we are a the same level
-              */
+         * Move iterator to the right place at the same level
+         * if needed we go on another suboctree but we stay on at the same level
+         * the Algorithm is :
+         *     go to top
+         *     go downard until we are a the same level
+         */
         void gotoRight(){
             //  Function variables
             const int currentLevel = level();
@@ -408,30 +411,30 @@ public:
         }
 
         /**
-              * Goto the next value on the right at the same level
-              *
-              * The algorithm here is :
-              * As long as we are on the right limit, go to the parent suboctree
-              * if we are on the root and on the right then return (there is no more data on the right)
-              *
-              * After that point we do not know where we are but we know that there is some data
-              * on the right (without knowing our position!)
-              *
-              * We gotoNext on the brother to find an allocated cell (->)
-              * for example if we are on index 2 we will look until 8 = 2 | 7 + 1
-              * if we arrive a 8 without finding a cell we go upper and do the same
-              * we know we will find something because we are not at the right limit
-              *
-              * We find an allocated cell.
-              * We have to go down, we go on the left child of this cells
-              * until : the current level if we did not have change the current suboctree
-              * or : the leaf level
-              *
-              * In the second case, it meanse we need to change octree downward
-              * but it is easy because we can use the left limit!
-              *
-              * @return true if we succeed to go to the right, else false
-              */
+         * Goto the next value on the right at the same level
+         *
+         * The algorithm here is :
+         * As long as we are on the right limit, go to the parent suboctree
+         * if we are on the root and on the right then return (there is no more data on the right)
+         *
+         * After that point we do not know where we are but we know that there is some data
+         * on the right (without knowing our position!)
+         *
+         * We gotoNext on the brother to find an allocated cell (->)
+         * for example if we are on index 2 we will look until 8 = 2 | 7 + 1
+         * if we arrive a 8 without finding a cell we go upper and do the same
+         * we know we will find something because we are not at the right limit
+         *
+         * We find an allocated cell.
+         * We have to go down, we go on the left child of this cells
+         * until : the current level if we did not have change the current suboctree
+         * or : the leaf level
+         *
+         * In the second case, it meanse we need to change octree downward
+         * but it is easy because we can use the left limit!
+         *
+         * @return true if we succeed to go to the right, else false
+         */
         bool moveRight(){
             //  Function variables
             SubOctreeTypes workingTree = this->current;    // To cover parent other sub octre
@@ -443,7 +446,7 @@ public:
             int countUpward = 0;
             // We stop when we can right move or if there is no more parent (root)
             while( workingIndex == TransposeIndex(workingTree.tree->getRightLeafIndex(), (workingTree.tree->getSubOctreeHeight() - workingLevel - 1) )
-                  && workingTree.tree->hasParent() ){
+                   && workingTree.tree->hasParent() ){
                 // Goto the leaf level into parent at current_tree.position_into_parent_array
                 workingIndex        = workingTree.tree->getIndexInParent();
                 workingTree.tree    = workingTree.tree->getParent();
@@ -512,11 +515,11 @@ public:
         }
 
         /**
-              * Move to the upper level
-              * It may cause to change the suboctree we are working on
-              * but we are using the same morton index >> 3
-              * @return true if succeed
-              */
+         * Move to the upper level
+         * It may cause to change the suboctree we are working on
+         * but we are using the same morton index >> 3
+         * @return true if succeed
+         */
         bool moveUp() {
             // It is on the top level?
             if( this->currentLocalLevel ){
@@ -537,12 +540,12 @@ public:
         }
 
         /**
-              * Move down
-              * It may cause to change the suboctree we are working on
-              * We point on the first child found from left to right in the above
-              * level
-              * @return true if succeed
-              */
+         * Move down
+         * It may cause to change the suboctree we are working on
+         * We point on the first child found from left to right in the above
+         * level
+         * @return true if succeed
+         */
         bool moveDown(){
             if( !isAtLeafLevel() ){
                 // We are on the leaf of the current suboctree?
@@ -567,72 +570,72 @@ public:
         }
 
         /**
-              * To know if we are not on the root level
-              * @return true if we can move up
-              */
+         * To know if we are not on the root level
+         * @return true if we can move up
+         */
         bool canProgressToUp() const {
             return this->currentLocalLevel || this->current.tree->hasParent();
         }
 
         /**
-              * To know if we are not on the leafs level
-              * @return true if we can move down
-              */
+         * To know if we are not on the leafs level
+         * @return true if we can move down
+         */
         bool canProgressToDown() const {
             return !isAtLeafLevel();
         }
 
         /**
-              * To know if we are on the leafs level
-              * @return true if we are at the bottom of the tree
-              */
+         * To know if we are on the leafs level
+         * @return true if we are at the bottom of the tree
+         */
         bool isAtLeafLevel() const {
             return this->current.tree->isLeafPart() && this->currentLocalLevel + 1 == this->current.tree->getSubOctreeHeight();
         }
 
         /**
-              * To know the current level (not local but global)
-              * @return the level in the entire octree
-              */
+         * To know the current level (not local but global)
+         * @return the level in the entire octree
+         */
         int level() const {
             return this->currentLocalLevel + this->current.tree->getSubOctreePosition();
         }
 
         /** Get the current pointed leaf
-              * @return current leaf element
-              */
+         * @return current leaf element
+         */
         LeafClass* getCurrentLeaf() const {
             return this->current.leafTree->getLeaf(this->currentLocalIndex);
         }
 
         /** To access the current particles list
-              * You have to be at the leaf level to call this function!
-              * @return current element list
-              */
+         * You have to be at the leaf level to call this function!
+         * @return current element list
+         */
         ContainerClass* getCurrentListSrc() const {
             return this->current.leafTree->getLeafSrc(this->currentLocalIndex);
         }
 
         /** To access the current particles list
-              * You have to be at the leaf level to call this function!
-              * @return current element list
-              */
+         * You have to be at the leaf level to call this function!
+         * @return current element list
+         */
         ContainerClass* getCurrentListTargets() const {
             return this->current.leafTree->getLeafTargets(this->currentLocalIndex);
         }
 
         /** Get the current pointed cell
-              * @return current cell element
-              */
+         * @return current cell element
+         */
         CellClass* getCurrentCell() const {
             return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex];
         }
 
         /** Get the child of the current cell
-              * This function return an array of CellClass (array size = 8)
-              * User has to test each case to know if there is a cell
-              * @return the child array
-              */
+         * This function return an array of CellClass (array size = 8)
+         * User has to test each case to know if there is a cell
+         * @return the child array
+         */
         CellClass** getCurrentChild() const {
             // are we at the bottom of the suboctree
             if(this->current.tree->getSubOctreeHeight() - 1 == this->currentLocalLevel ){
@@ -646,25 +649,25 @@ public:
         }
 
         /** Get the part of array that contains all the pointers
-              *
-              */
+         *
+         */
         CellClass** getCurrentBox() const {
             return &this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex & ~7];
         }
 
         /** Get the Morton index of the current cell pointed by the iterator
-              * @return The global morton index
-              * <code>iter.getCurrentGlobalIndex();<br>
-              * // is equivalent to :<br>
-              * iter.getCurrentCell()->getMortonIndex();</code>
-              */
+         * @return The global morton index
+         * <code>iter.getCurrentGlobalIndex();<br>
+         * // is equivalent to :<br>
+         * iter.getCurrentCell()->getMortonIndex();</code>
+         */
         MortonIndex getCurrentGlobalIndex() const{
             return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex]->getMortonIndex();
         }
 
         /** To get the tree coordinate of the current working cell
-              *
-              */
+         *
+         */
         const FTreeCoordinate& getCurrentGlobalCoordinate() const{
             return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex]->getCoordinate();
         }
@@ -679,11 +682,11 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     /** This function return a cell (if it exists) from a morton index and a level
-          * @param inIndex the index of the desired cell
-          * @param inLevel the level of the desired cell (cannot be infered from the index)
-          * @return the cell if it exist or null (0)
-          * This function starts from the root until it find a missing cell or the right cell
-          */
+     * @param inIndex the index of the desired cell
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @return the cell if it exist or null (0)
+     * This function starts from the root until it find a missing cell or the right cell
+     */
     CellClass* getCell(const MortonIndex inIndex, const int inLevel) const{
         SubOctreeTypesConst workingTree;
         workingTree.tree = &this->root;
@@ -705,18 +708,18 @@ public:
 
 
     /** This function fill a array with the neighbors of a cell
-          * it does not put the brothers in the array (brothers are cells
-          * at the same level with the same parent) because they are of course
-          * direct neighbors.
-          * There is a maximum of 26 (3*3*3-1) direct neighbors
-          *  // Take the neighbors != brothers
-          *  CellClass* directNeighbors[26];
-          *  const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);
-          * @param inNeighbors the array to store the elements
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
+     * it does not put the brothers in the array (brothers are cells
+     * at the same level with the same parent) because they are of course
+     * direct neighbors.
+     * There is a maximum of 26 (3*3*3-1) direct neighbors
+     *  // Take the neighbors != brothers
+     *  CellClass* directNeighbors[26];
+     *  const int nbDirectNeighbors = getNeighborsNoBrothers(directNeighbors,inIndex,inLevel);
+     * @param inNeighbors the array to store the elements
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
     int getNeighborsNoBrothers(CellClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel) const {
         FTreeCoordinate center;
         center.setPositionFromMorton(inIndex, inLevel);
@@ -756,12 +759,12 @@ public:
 
 
     /** This function return an adresse of cell array from a morton index and a level
-          *
-          * @param inIndex the index of the desired cell array has to contains
-          * @param inLevel the level of the desired cell (cannot be infered from the index)
-          * @return the cell if it exist or null (0)
-          *
-          */
+     *
+     * @param inIndex the index of the desired cell array has to contains
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @return the cell if it exist or null (0)
+     *
+     */
     CellClass** getCellPt(const MortonIndex inIndex, const int inLevel) const{
         SubOctreeTypesConst workingTree;
         workingTree.tree = this->root;
@@ -790,15 +793,15 @@ public:
 
 
     /** This function fill an array with the distant neighbors of a cell
-          * @param inNeighbors the array to store the elements
-          * @param inNeighborsIndex the array to store morton index of the neighbors
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
+     * @param inNeighbors the array to store the elements
+     * @param inNeighborsIndex the array to store morton index of the neighbors
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
     int getInteractionNeighbors(const CellClass* inNeighbors[343],
-                            const FTreeCoordinate& workingCell,
-                            const int inLevel) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel) const{
         // reset
         memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
@@ -855,17 +858,19 @@ public:
 
 
     /** This function fill an array with the distant neighbors of a cell
-          * it respects the periodic condition and will give the relative distance
-          * between the working cell and the neighbors
-          * @param inNeighbors the array to store the elements
-          * @param inRelativePosition the array to store the relative position of the neighbors
-          * @param workingCell the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
+     * it respects the periodic condition and will give the relative distance
+     * between the working cell and the neighbors
+     * @param inNeighbors the array to store the elements
+     * @param inRelativePosition the array to store the relative position of the neighbors
+     * @param workingCell the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
     int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[343],
-                            const FTreeCoordinate& workingCell,
-                            const int inLevel, const int inDirection) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel, const int inDirection) const{
+        // TODO : REMOVE NEXT COMMENTS
+        //		std::cout << " Begin in getPeriodicInteractionNeighbors"<<std::endl;
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -881,6 +886,7 @@ public:
         }
         else{
             // reset
+
             memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
             const int startX =  (TestPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
@@ -889,7 +895,11 @@ public:
             const int endY =    (TestPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
             const int startZ =  (TestPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
             const int endZ =    (TestPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
-
+            // TODO : REMOVE NEXT COMMENTS
+            //			std::cout << "  -- startX " << startX << " endX "<< endX<< std::endl ;
+            //			std::cout << "  -- startY " << startY << " endX "<< endY<< std::endl ;
+            //			std::cout << "  -- startZ " << startZ << " endX "<< endZ<< std::endl ;
+            //			std::cout << "     boxLimite "<< boxLimite<<std::endl;
             int idxNeighbors = 0;
             // We test all cells around
             for(int idxX = startX ; idxX <= endX ; ++idxX){
@@ -926,6 +936,9 @@ public:
                             const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
                             // Get child
                             CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
+                            // TODO : REMOVE NEXT COMMENTS
+                            //							std::cout << "     idx,idy,idz "<< idxX << " "<<  idxY  << " "<<   idxZ
+                            //									  <<"  mortonOtherParent"<<  mortonOtherParent<< std::endl;
 
                             // If there is one or more child
                             if(cells){
@@ -939,8 +952,13 @@ public:
                                         // Test if it is a direct neighbor
                                         if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
                                             // add to neighbors
+                                            // TODO : REMOVE NEXT COMMENTS
+                                            //											std::cout << "     Voisin numero "<< idxNeighbors
+                                            //													  << " indexinTab "<< (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3
+                                            //													  << "  idxXousin " << idxCousin<< std::endl;
                                             inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
                                             ++idxNeighbors;
+
                                         }
                                     }
                                 }
@@ -949,6 +967,7 @@ public:
                     }
                 }
             }
+            //			std::cout << " End   in getPeriodicInteractionNeighbors"<<std::endl;
 
             return idxNeighbors;
         }
@@ -956,11 +975,11 @@ public:
 
 
     /** This function return a cell (if it exists) from a morton index and a level
-          * @param inIndex the index of the desired cell
-          * @param inLevel the level of the desired cell (cannot be infered from the index)
-          * @return the cell if it exist or null (0)
-          *
-          */
+     * @param inIndex the index of the desired cell
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @return the cell if it exist or null (0)
+     *
+     */
     ContainerClass* getLeafSrc(const MortonIndex inIndex){
         SubOctreeTypes workingTree;
         workingTree.tree = this->root;
@@ -981,11 +1000,11 @@ public:
     }
 
     /** This function fill an array with the neighbors of a cell
-          * @param inNeighbors the array to store the elements
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
+     * @param inNeighbors the array to store the elements
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
     int getLeafsNeighbors(ContainerClass* inNeighbors[27], const FTreeCoordinate& center, const int inLevel){
         memset( inNeighbors, 0 , 27 * sizeof(ContainerClass*));
         const int boxLimite = FMath::pow2(inLevel);
@@ -1023,18 +1042,20 @@ public:
 
 
     /** This function fill an array with the neighbors of a cell
-          * @param inNeighbors the array to store the elements
-          * @param inIndex the index of the element we want the neighbors
-          * @param inLevel the level of the element
-          * @return the number of neighbors
-          */
-    int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[27], FTreeCoordinate inOffsets[27], bool*const isPeriodic,
-                                  const FTreeCoordinate& center, const int inLevel, const int inDirection){
+     * @param inNeighbors the array to store the elements
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
+    int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[27], FTreeCoordinate outOffsets[27], bool*const isPeriodic,
+    const FTreeCoordinate& center, const int inLevel, const int inDirection){
 
         const int boxLimite = FMath::pow2(inLevel);
+        // TODO : REMOVE NEXT COMMENTS
+        //		std::cout << " Begin in getPeriodicLeafsNeighbors"<<std::endl;
 
         if( center.getX() != 0 && center.getY() != 0 && center.getZ() != 0 &&
-                  center.getX() != boxLimite - 1 && center.getY() != boxLimite - 1 && center.getZ() != boxLimite - 1 ){
+                center.getX() != boxLimite - 1 && center.getY() != boxLimite - 1 && center.getZ() != boxLimite - 1 ){
             (*isPeriodic) = false;
             return getLeafsNeighbors(inNeighbors, center, inLevel);
         }
@@ -1049,55 +1070,106 @@ public:
         const int endY = (TestPeriodicCondition(inDirection, DirPlusY) || center.getY() != boxLimite - 1 ?1:0);
         const int startZ = (TestPeriodicCondition(inDirection, DirMinusZ) || center.getZ() != 0 ?-1:0);
         const int endZ = (TestPeriodicCondition(inDirection, DirPlusZ) || center.getZ() != boxLimite - 1 ?1:0);
+        // TODO : REMOVE NEXT COMMENTS
+        //		std::cout << "  -- startX " << startX << " endX "<< endX<< std::endl ;
+        //		std::cout << "  -- startY " << startY << " endX "<< endY<< std::endl ;
+        //		std::cout << "  -- startZ " << startZ << " endX "<< endZ<< std::endl ;
+        //		std::cout << "     boxLimite "<< boxLimite<<std::endl;
+        int otherX,otherY,otherZ;
+        FTreeCoordinate other;
 
+        int xoffset = 0, yoffset = 0, zoffset = 0;
         // We test all cells around
         for(int idxX = startX ; idxX <= endX ; ++idxX){
+            otherX = center.getX() + idxX ; xoffset = 0 ;
+            if( otherX < 0 ){
+                otherX += boxLimite ;
+                xoffset = -1;
+            }
+            else if( boxLimite <= otherX ){
+                otherX -= boxLimite ;
+                xoffset = 1;
+            }
+            other.setX(otherX);
             for(int idxY = startY ; idxY <= endY ; ++idxY){
+                otherY = center.getY() + idxY ;
+                yoffset = 0 ;
+                if( otherY < 0 ){
+                    otherY += boxLimite ;
+                    yoffset = -1;
+                }
+                else if( boxLimite <= otherY ){
+                    otherY -= boxLimite ;
+                    yoffset = 1;
+                }
+                other.setY(otherY);
                 for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
+                    zoffset = 0 ;
                     // if we are not on the current cell
-                    if( idxX || idxY || idxZ ){
-                        FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        int xoffset = 0, yoffset = 0, zoffset = 0;
+                    if( idxX || idxY || idxZ ){ //  !( idxX !=0  && idxY != 0  &&idxZ != 0  )
+                        // TODO : REMOVE NEXT COMMENTS
+                        //						FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
+                        otherZ = center.getZ() + idxZ ;
 
-                        if( other.getX() < 0 ){
-                            other.setX( other.getX() + boxLimite );
-                            xoffset = -1;
-                        }
-                        else if( boxLimite <= other.getX() ){
-                            other.setX( other.getX() - boxLimite );
-                            xoffset = 1;
-                        }
-                        if( other.getY() < 0 ){
-                            other.setY( other.getY() + boxLimite );
-                            yoffset = -1;
-                        }
-                        else if( boxLimite <= other.getY() ){
-                            other.setY( other.getY() - boxLimite );
-                            yoffset = 1;
-                        }
-                        if( other.getZ() < 0 ){
-                            other.setZ( other.getZ() + boxLimite );
+                        if( otherZ < 0 ){
+                            otherZ += boxLimite ;
                             zoffset = -1;
                         }
-                        else if( boxLimite <= other.getZ() ){
-                            other.setZ( other.getZ() - boxLimite );
+                        else if( boxLimite <= otherZ ){
+                            otherZ -= boxLimite ;
                             zoffset = 1;
                         }
+                        other.setZ(otherZ);
+
+                        // TODO : REMOVE NEXT COMMENTS
+                        //						if( other.getX() < 0 ){
+                        //							other.setX( other.getX() + boxLimite );
+                        //							xoffset = -1;
+                        //						}
+                        //						else if( boxLimite <= other.getX() ){
+                        //							other.setX( other.getX() - boxLimite );
+                        //							xoffset = 1;
+                        //						}
+                        //						if( other.getY() < 0 ){
+                        //							other.setY( other.getY() + boxLimite );
+                        //							yoffset = -1;
+                        //						}
+                        //						else if( boxLimite <= other.getY() ){
+                        //							other.setY( other.getY() - boxLimite );
+                        //							yoffset = 1;
+                        //						}
+                        //						if( other.getZ() < 0 ){
+                        //							other.setZ( other.getZ() + boxLimite );
+                        //							zoffset = -1;
+                        //						}
+                        //						else if( boxLimite <= other.getZ() ){
+                        //							other.setZ( other.getZ() - boxLimite );
+                        //							zoffset = 1;
+                        //						}
+
 
                         const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        // TODO : REMOVE NEXT COMMENTS
+                        //						std::cout << "     idx,idy,idz "<< idxX << " "<<  idxY  << " "<<   idxZ
+                        //								  <<"  mortonOther  "<<  mortonOther<<  "          other "<< other<< std::endl;
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
                         if(leaf){
                             const int index = (((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1;
                             inNeighbors[index] = leaf;
-                            inOffsets[index].setPosition(xoffset,yoffset,zoffset);
+                            outOffsets[index].setPosition(xoffset,yoffset,zoffset);
+                            // TODO : REMOVE NEXT COMMENTS
+                            //							std::cout << "        xoffset,yoffset,zoffset "<< xoffset << " "<<  yoffset  << " "<<   zoffset <<" mortonOther " << mortonOther << std::endl<< std::endl;
+
                             ++idxNeighbors;
-                        }
-                    }
+                        }  // if(leaf)
+                    } // if( idxX || idxY || idxZ )
                 }
             }
         }
+        // TODO : REMOVE NEXT COMMENTS
+        //		std::cout << " End   in getPeriodicLeafsNeighbors " <<std::endl;
 
         return idxNeighbors;
     }
