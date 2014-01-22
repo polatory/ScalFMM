@@ -22,10 +22,10 @@
 #include <stdlib.h>
 
 // include for libfftw3
-#include <fftw3.h>
+//#include <fftw3.h>
 
 // include for mkl_fftw3
-//#include <fftw/fftw3.h>
+#include <fftw/fftw3.h>
 
 #include "../../Src/Utils/FGlobal.hpp"
 #include "../../Src/Utils/FComplexe.hpp"
@@ -46,14 +46,21 @@ int main()
   // INITIALIZATION
 
   // size (pick a power of 2 for better performance of the FFT algorithm)
+  unsigned int rank = 2;
   unsigned int nsteps_ = 500; 
+  unsigned int dim = 10;
+  const int steps[2]={static_cast<int>(dim),
+                      static_cast<int>(nsteps_)};
+  unsigned int size = dim*nsteps_;
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Multidimensionnal FFT PLANS
   // fftw arrays
   FReal* fftR_;
   FComplexe* fftC_;
 
-  fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-  fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_);
+  fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * size );
+  fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * size );
 
   // fftw plans
   // use routine defined in file:
@@ -65,35 +72,32 @@ int main()
   time.tic();
 
   plan_c2r_ =
-    fftw_plan_dft_c2r_1d(nsteps_, 
-                         reinterpret_cast<fftw_complex*>(fftC_),
-                         fftR_, 
-                         FFTW_MEASURE);
+    fftw_plan_dft_c2r(rank, steps, 
+                      reinterpret_cast<fftw_complex*>(fftC_),
+                      fftR_, 
+                      FFTW_MEASURE);
   plan_r2c_ =
-    fftw_plan_dft_r2c_1d(nsteps_, 
-                         fftR_, 
-                         reinterpret_cast<fftw_complex*>(fftC_), 
-                         FFTW_MEASURE);
+    fftw_plan_dft_r2c(rank, steps, 
+                      fftR_, 
+                      reinterpret_cast<fftw_complex*>(fftC_), 
+                      FFTW_MEASURE);
 
   std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
-
-  // alternative choice of plan type
-//  plan_c2r_ =
-//    fftw_plan_dft_1d(nsteps_, fftC_, fftR_, FFTW_BACKWARD, FFTW_MEASURE);
-//  plan_r2c_ =
-//    fftw_plan_dft_1d(nsteps_, fftR_, fftC_, FFTW_FORWARD, FFTW_MEASURE);
 
   //////////////////////////////////////////////////////////////////////////////
   // EXECUTION
   // generate random physical data
-  for(unsigned int s=0; s<nsteps_; ++s)
+  for(unsigned int s=0; s<size; ++s)
     fftR_[s] = FReal(rand())/FRandMax; 
 
-//  // display data in  physical space
-//  std::cout<< "Physical data: "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftR_[s] << ", ";
-//  std::cout<<std::endl;
+// // display data in  physical space
+// std::cout<< "Physical data: "<<std::endl;
+// for(unsigned int d=0; d<dim; ++d){
+//   for(unsigned int s=0; s<nsteps_; ++s)
+//     std::cout<< fftR_[s+d*nsteps_] << ", ";
+//   std::cout<<std::endl;
+// }
+// std::cout<<std::endl;
 
   // perform fft
   std::cout<< "Perform Forward FFT: ";
@@ -104,8 +108,11 @@ int main()
 //  // display transform in Fourier space
 //  // beware the real data FFT stores only N/2+1 complex output values
 //  std::cout<< "Transformed data : "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftC_[s] << ", ";
+//  for(unsigned int d=0; d<dim; ++d){
+//    for(unsigned int s=0; s<nsteps_/2+1; ++s)
+//      std::cout<< fftC_[s+d*(nsteps_/2+1)] << ", ";
+//    std::cout<<std::endl;
+//  }
 //  std::cout<<std::endl;
 
 //  for(unsigned int s=0; s<nsteps_/2+1; ++s){
@@ -125,19 +132,17 @@ int main()
 
 //  // display data in physical space
 //  std::cout<< "Physical data (from 1/N*IFFT(FFT(Physical data))): "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftR_[s]/nsteps_ << ", ";
+//  for(unsigned int d=0; d<dim; ++d){
+//    for(unsigned int s=0; s<nsteps_; ++s)
+//      std::cout<< fftR_[s+d*nsteps_]/(nsteps_*dim) << ", ";
+//    std::cout<<std::endl;
+//  }
 //  std::cout<<std::endl;
-
-  //////////////////////////////////////////////////////////////////////////////
-  // VALIDATION
-  // TODO
 
   //free memory
   fftw_destroy_plan(plan_r2c_);
   fftw_destroy_plan(plan_c2r_);
   fftw_free(fftR_);
   fftw_free(fftC_);
-
 
 }// end test

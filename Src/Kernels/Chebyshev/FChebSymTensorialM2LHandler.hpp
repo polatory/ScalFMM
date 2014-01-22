@@ -13,8 +13,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBSYMM2LHANDLER_HPP
-#define FCHEBSYMM2LHANDLER_HPP
+#ifndef FCHEBSYMTENSORIALM2LHANDLER_HPP
+#define FCHEBSYMTENSORIALM2LHANDLER_HPP
 
 #include <climits>
 
@@ -26,6 +26,7 @@
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
+ * @author Pierre Blanchard (pierre.blanchard@inria.fr)
  * Please read the license
  */
 
@@ -259,7 +260,7 @@ void pACA(const ComputerType& Computer,
   FACASVD is defined or not, either ACA+SVD or only SVD is used to compress
   them. */
 template <int ORDER, typename MatrixKernelClass>
-static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
+static void precompute(const int idxK, const FReal CellWidth,
 											 const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
   //	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
@@ -302,7 +303,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				FChebTensor<ORDER>::setRootOfWeights(weights);
 
 				// now the entry-computer is responsible for weighting the matrix entries
-				EntryComputer<MatrixKernelClass> Computer(nnodes, X, nnodes, Y, weights);
+				EntryComputer<MatrixKernelClass> Computer(nnodes, X, nnodes, Y, weights, idxK);
 
 				// start timer
 				time.tic();
@@ -340,7 +341,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 #else
 				pACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
 #endif 
-
+    
 				// QR decomposition
 				FReal* phi = new FReal [rank*rank];
 				{
@@ -479,12 +480,15 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			}
 		}
 	}
-		std::cout << "The approximation of the " << counter
-              << " far-field interactions (overall rank " << overall_rank 
-              << " / " << 16*nnodes 
-              << " , sizeM2L= " << 2*overall_rank*nnodes*sizeof(FReal) << ""
-              << " / " << 16*nnodes*nnodes*sizeof(FReal) << " B"
-              << ") took " << overall_time << "s\n" << std::endl;
+
+
+
+//		std::cout << "The approximation of the " << counter
+//              << " far-field interactions (overall rank " << overall_rank 
+//              << " / " << 16*nnodes 
+//              << " , sizeM2L= " << 2*overall_rank*nnodes*sizeof(FReal) << ""
+//              << " / " << 16*nnodes*nnodes*sizeof(FReal) << " B"
+//              << ") took " << overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;
@@ -508,17 +512,17 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
   because it allows us to use to associate the far-field interactions based on
   the index \f$t = 7^2(i+3) + 7(j+3) + (k+3)\f$ where \f$(i,j,k)\f$ denotes
   the relative position of the source cell to the target cell. */
-template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
+template <int ORDER, int DIM, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
 
 /*! Specialization for homogeneous kernel functions */
-template <int ORDER>
-class SymmetryHandler<ORDER, HOMOGENEOUS>
+template <int ORDER, int DIM>
+class SymmetryHandler<ORDER, DIM, HOMOGENEOUS>
 {
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// M2L operators
-	FReal*    K[343];
-	int LowRank[343];
+  FReal*** K;
+  int** LowRank;
 
 public:
 	
@@ -529,16 +533,26 @@ public:
 
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
-	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon,
+	SymmetryHandler(const MatrixKernelClass *const MatrixKernel,
+                  const FReal Epsilon,
 									const FReal, const unsigned int)
 	{
+    // For each component of kernel matrix
 		// init all 343 item to zero, because effectively only 16 exist
-		for (unsigned int t=0; t<343; ++t) {
-			K[t] = NULL;
-			LowRank[t] = 0;
-		}
-			
-		// set permutation vector and indices
+    K       = new FReal** [DIM];
+    LowRank = new int* [DIM];
+
+    for (unsigned int d=0; d<DIM; ++d) {
+      K[d]       = new FReal* [343];
+			LowRank[d] = new int    [343];
+
+      for (unsigned int t=0; t<343; ++t) {
+        K[d][t]       = NULL;
+        LowRank[d][t] = 0;
+      }
+    }
+
+    // set permutation vector and indices
 		const FInterpSymmetries<ORDER> Symmetries;
 		for (int i=-3; i<=3; ++i)
 			for (int j=-3; j<=3; ++j)
@@ -551,7 +565,9 @@ public:
 
 		// precompute 16 M2L operators
 		const FReal ReferenceCellWidth = FReal(2.);
-		precompute<ORDER>(MatrixKernel, ReferenceCellWidth, Epsilon, K, LowRank);
+    for (unsigned int d=0; d<DIM; ++d)
+      precompute<ORDER,MatrixKernelClass>(d, ReferenceCellWidth, Epsilon, K[d], LowRank[d]);
+
 	}
 
 
@@ -559,17 +575,20 @@ public:
 	/** Destructor */
 	~SymmetryHandler()
 	{
-		for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+    for (unsigned int d=0; d<DIM; ++d)
+      for (unsigned int t=0; t<343; ++t) if (K[d][t]!=NULL) delete [] K[d][t];
 	}
 
 
 	/*! return the t-th approximated far-field interactions*/
-	const FReal *const getK(const unsigned int, const unsigned int t) const
-	{	return K[t]; }
-
+	const FReal *const getK(const unsigned int, const unsigned int t,
+                          const unsigned int d) const
+	{ return K[d][t]; }
+  
 	/*! return the t-th approximated far-field interactions*/
-	const int getLowRank(const unsigned int, const unsigned int t) const
-	{	return LowRank[t]; }
+	const int getLowRank(const unsigned int, const unsigned int t, 
+                       const unsigned int d) const
+	{	return LowRank[d][t]; }
 
 };
 
@@ -579,8 +598,8 @@ public:
 
 
 /*! Specialization for non-homogeneous kernel functions */
-template <int ORDER>
-class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
+template <int ORDER, int DIM>
+class SymmetryHandler<ORDER, DIM, NON_HOMOGENEOUS>
 {
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -588,8 +607,8 @@ class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
 	const unsigned int TreeHeight;
 
 	// M2L operators for all levels in the octree
-	FReal***    K;
-	int** LowRank;
+	FReal****    K;
+	int*** LowRank;
 
 public:
 	
@@ -600,24 +619,28 @@ public:
 
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
-	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon,
+	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, 
+                  const double Epsilon,
 									const FReal RootCellWidth, const unsigned int inTreeHeight)
 		: TreeHeight(inTreeHeight)
 	{
 		// init all 343 item to zero, because effectively only 16 exist
-		K       = new FReal** [TreeHeight];
-		LowRank = new int*    [TreeHeight];
-		K[0]       = NULL; K[1]       = NULL;
-		LowRank[0] = NULL; LowRank[1] = NULL;
-		for (unsigned int l=2; l<TreeHeight; ++l) {
-			K[l]       = new FReal* [343];
-			LowRank[l] = new int    [343];
-			for (unsigned int t=0; t<343; ++t) {
-				K[l][t]       = NULL;
-				LowRank[l][t] = 0;
-			}
+    K       = new FReal*** [DIM];
+    LowRank = new int** [DIM];
+    for (unsigned int d=0; d<DIM; ++d) {
+      K[d]       = new FReal** [TreeHeight];
+      LowRank[d] = new int*    [TreeHeight];
+      K[d][0]       = NULL; K[d][1]       = NULL;
+      LowRank[d][0] = NULL; LowRank[d][1] = NULL;
+      for (unsigned int l=2; l<TreeHeight; ++l) {
+        K[d][l]       = new FReal* [343];
+        LowRank[d][l] = new int    [343];
+        for (unsigned int t=0; t<343; ++t) {
+          K[d][l][t]       = NULL;
+          LowRank[d][l][t] = 0;
+        }
+      }
 		}
-		
 
 		// set permutation vector and indices
 		const FInterpSymmetries<ORDER> Symmetries;
@@ -631,12 +654,14 @@ public:
 				}
 
 		// precompute 16 M2L operators at all levels having far-field interactions
-		FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
-		CellWidth /= FReal(2.);                      // at level 2
-		for (unsigned int l=2; l<TreeHeight; ++l) {
-			precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
-			CellWidth /= FReal(2.);                    // at level l+1 
-		}
+    for (unsigned int d=0; d<DIM; ++d) {
+      FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
+      CellWidth /= FReal(2.);                      // at level 2
+      for (unsigned int l=2; l<TreeHeight; ++l) {
+        precompute<ORDER,MatrixKernelClass>(d, CellWidth, Epsilon, K[d][l], LowRank[d][l]);
+        CellWidth /= FReal(2.);                    // at level l+1 
+      }
+    }
 	}
 
 
@@ -644,138 +669,142 @@ public:
 	/** Destructor */
 	~SymmetryHandler()
 	{
-		for (unsigned int l=0; l<TreeHeight; ++l) {
-			if (K[l]!=NULL) {
-				for (unsigned int t=0; t<343; ++t) if (K[l][t]!=NULL) delete [] K[l][t];
-				delete [] K[l];
-			}
-			if (LowRank[l]!=NULL)	delete [] LowRank[l];
-		}
-		delete [] K;
-		delete [] LowRank;
+    for (unsigned int d=0; d<DIM; ++d) {
+      for (unsigned int l=0; l<TreeHeight; ++l) {
+        if (K[d][l]!=NULL) {
+          for (unsigned int t=0; t<343; ++t) if (K[d][l][t]!=NULL) delete [] K[d][l][t];
+          delete [] K[d][l];
+        }
+        if (LowRank[d][l]!=NULL)	delete [] LowRank[d][l];
+      }      
+      delete [] K[d];
+      delete [] LowRank[d];
+    }
+    delete [] K;
+    delete [] LowRank;    
 	}
 
 	/*! return the t-th approximated far-field interactions*/
-	const FReal *const getK(const unsigned int l, const unsigned int t) const
-	{	return K[l][t]; }
+	const FReal *const getK(const unsigned int l, const unsigned int t, const unsigned int d) const
+	{	return K[d][l][t]; }
 
 	/*! return the t-th approximated far-field interactions*/
-	const int getLowRank(const unsigned int l, const unsigned int t) const
-	{	return LowRank[l][t]; }
+	const int getLowRank(const unsigned int l, const unsigned int t, const unsigned int d) const
+	{	return LowRank[d][l][t]; }
 
 };
 
 
 
 
+// PB: TODO ComputeAndCompressAndStoreInBinaryFile() + ReadFromBinaryFile()
 
 
 
-
-#include <fstream>
-#include <sstream>
-
-
-/**
- * Computes, compresses and stores the 16 M2L kernels in a binary file.
- */
-template <int ORDER, typename MatrixKernelClass>
-static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon)
-{
-	static const unsigned int nnodes = ORDER*ORDER*ORDER;
-
-	// compute and compress ////////////
-	FReal* K[343];
-	int LowRank[343];
-	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
-	precompute<ORDER>(MatrixKernel, FReal(2.), Epsilon, K, LowRank);
-
-	// write to binary file ////////////
-	FTic time; time.tic();
-	// start computing process
-	const char precision = (typeid(FReal)==typeid(double) ? 'd' : 'f');
-	std::stringstream sstream;
-	sstream << "sym2l_" << precision << "_o" << ORDER << "_e" << Epsilon << ".bin";
-	const std::string filename(sstream.str());
-	std::ofstream stream(filename.c_str(),
-											 std::ios::out | std::ios::binary | std::ios::trunc);
-	if (stream.good()) {
-		stream.seekp(0);
-		for (unsigned int idx=0; idx<343; ++idx)
-			if (K[idx]!=NULL) {
-				// 1) write index
-				stream.write(reinterpret_cast<char*>(&idx), sizeof(int));
-				// 2) write low rank (int)
-				int rank = LowRank[idx];
-				stream.write(reinterpret_cast<char*>(&rank), sizeof(int));
-				// 3) write U and V (both: rank*nnodes * FReal)
-				FReal *const U = K[idx];
-				FReal *const V = K[idx] + rank*nnodes;
-				stream.write(reinterpret_cast<char*>(U), sizeof(FReal)*rank*nnodes);
-				stream.write(reinterpret_cast<char*>(V), sizeof(FReal)*rank*nnodes);
-			}
-	} else throw std::runtime_error("File could not be opened to write");
-	stream.close();
-	// write info
-	//	std::cout << "Compressed M2L operators stored in binary file " << filename
-	//					<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
-
-	// free memory /////////////////////
-	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
-}
-
-
-/**
- * Reads the 16 compressed M2L kernels from the binary files and writes them
- * in K and the respective low-rank in LowRank.
- */
-template <int ORDER>
-void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
-{
-	// compile time constants
-	const unsigned int nnodes = ORDER*ORDER*ORDER;
-	
-	// find filename
-	const char precision = (typeid(FReal)==typeid(double) ? 'd' : 'f');
-	std::stringstream sstream;
-	sstream << "sym2l_" << precision << "_o" << ORDER << "_e" << Epsilon << ".bin";
-	const std::string filename(sstream.str());
-
-	// read binary file
-	std::ifstream istream(filename.c_str(),
-												std::ios::in | std::ios::binary | std::ios::ate);
-	const std::ifstream::pos_type size = istream.tellg();
-	if (size<=0) throw std::runtime_error("The requested binary file does not yet exist. Exit.");
-	
-	if (istream.good()) {
-		istream.seekg(0);
-		// 1) read index (int)
-		int _idx;
-		istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
-		// loop to find 16 compressed m2l operators
-		for (int idx=0; idx<343; ++idx) {
-			K[idx] = NULL;
-			LowRank[idx] = 0;
-			// if it exists
-			if (idx == _idx) {
-				// 2) read low rank (int)
-				int rank;
-				istream.read(reinterpret_cast<char*>(&rank), sizeof(int));
-				LowRank[idx] = rank;
-				// 3) read U and V (both: rank*nnodes * FReal)
-				K[idx] = new FReal [2*rank*nnodes];
-				FReal *const U = K[idx];
-				FReal *const V = K[idx] + rank*nnodes;
-				istream.read(reinterpret_cast<char*>(U), sizeof(FReal)*rank*nnodes);
-				istream.read(reinterpret_cast<char*>(V), sizeof(FReal)*rank*nnodes);
-
-				// 1) read next index
-				istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
-			}
-		}
-	}	else throw std::runtime_error("File could not be opened to read");
-	istream.close();
-}
+//#include <fstream>
+//#include <sstream>
+//
+//
+///**
+// * Computes, compresses and stores the 16 M2L kernels in a binary file.
+// */
+//template <int ORDER, typename MatrixKernelClass>
+//static void ComputeAndCompressAndStoreInBinaryFile(const FReal Epsilon)
+//{
+//	static const unsigned int nnodes = ORDER*ORDER*ORDER;
+//
+//	// compute and compress ////////////
+//	FReal* K[343];
+//	int LowRank[343];
+//	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
+//	precompute<ORDER,MatrixKernelClass>(FReal(2.), Epsilon, K, LowRank);
+//
+//	// write to binary file ////////////
+//	FTic time; time.tic();
+//	// start computing process
+//	const char precision = (typeid(FReal)==typeid(double) ? 'd' : 'f');
+//	std::stringstream sstream;
+//	sstream << "sym2l_" << precision << "_o" << ORDER << "_e" << Epsilon << ".bin";
+//	const std::string filename(sstream.str());
+//	std::ofstream stream(filename.c_str(),
+//											 std::ios::out | std::ios::binary | std::ios::trunc);
+//	if (stream.good()) {
+//		stream.seekp(0);
+//		for (unsigned int idx=0; idx<343; ++idx)
+//			if (K[idx]!=NULL) {
+//				// 1) write index
+//				stream.write(reinterpret_cast<char*>(&idx), sizeof(int));
+//				// 2) write low rank (int)
+//				int rank = LowRank[idx];
+//				stream.write(reinterpret_cast<char*>(&rank), sizeof(int));
+//				// 3) write U and V (both: rank*nnodes * FReal)
+//				FReal *const U = K[idx];
+//				FReal *const V = K[idx] + rank*nnodes;
+//				stream.write(reinterpret_cast<char*>(U), sizeof(FReal)*rank*nnodes);
+//				stream.write(reinterpret_cast<char*>(V), sizeof(FReal)*rank*nnodes);
+//			}
+//	} else throw std::runtime_error("File could not be opened to write");
+//	stream.close();
+//	// write info
+//	//	std::cout << "Compressed M2L operators stored in binary file " << filename
+//	//					<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
+//
+//	// free memory /////////////////////
+//	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+//}
+//
+//
+///**
+// * Reads the 16 compressed M2L kernels from the binary files and writes them
+// * in K and the respective low-rank in LowRank.
+// */
+//template <int ORDER>
+//void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
+//{
+//	// compile time constants
+//	const unsigned int nnodes = ORDER*ORDER*ORDER;
+//	
+//	// find filename
+//	const char precision = (typeid(FReal)==typeid(double) ? 'd' : 'f');
+//	std::stringstream sstream;
+//	sstream << "sym2l_" << precision << "_o" << ORDER << "_e" << Epsilon << ".bin";
+//	const std::string filename(sstream.str());
+//
+//	// read binary file
+//	std::ifstream istream(filename.c_str(),
+//												std::ios::in | std::ios::binary | std::ios::ate);
+//	const std::ifstream::pos_type size = istream.tellg();
+//	if (size<=0) throw std::runtime_error("The requested binary file does not yet exist. Exit.");
+//	
+//	if (istream.good()) {
+//		istream.seekg(0);
+//		// 1) read index (int)
+//		int _idx;
+//		istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
+//		// loop to find 16 compressed m2l operators
+//		for (int idx=0; idx<343; ++idx) {
+//			K[idx] = NULL;
+//			LowRank[idx] = 0;
+//			// if it exists
+//			if (idx == _idx) {
+//				// 2) read low rank (int)
+//				int rank;
+//				istream.read(reinterpret_cast<char*>(&rank), sizeof(int));
+//				LowRank[idx] = rank;
+//				// 3) read U and V (both: rank*nnodes * FReal)
+//				K[idx] = new FReal [2*rank*nnodes];
+//				FReal *const U = K[idx];
+//				FReal *const V = K[idx] + rank*nnodes;
+//				istream.read(reinterpret_cast<char*>(U), sizeof(FReal)*rank*nnodes);
+//				istream.read(reinterpret_cast<char*>(V), sizeof(FReal)*rank*nnodes);
+//
+//				// 1) read next index
+//				istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
+//			}
+//		}
+//	}	else throw std::runtime_error("File could not be opened to read");
+//	istream.close();
+//}
 
 
 

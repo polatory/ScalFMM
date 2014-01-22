@@ -27,10 +27,10 @@
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
 
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
+
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
-//#include "../../Src/Kernels/Uniform/FUnifSymKernel.hpp"
+#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
+#include "../../Src/Kernels/Uniform/FUnifTensorialKernel.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -100,14 +100,30 @@ int main(int argc, char* argv[])
     {
       for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
         for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-          FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                                &particles[idxTarget].forces[2], &particles[idxTarget].potential,
-                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                                &particles[idxOther].forces[2], &particles[idxOther].potential);
+//          FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+//                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+//                                   &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
+//                                   &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+//                                   particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+//                                   particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+//                                   &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+//                                   &particles[idxOther].forces[2], &particles[idxOther].potential);
+          FP2P::MutualParticlesRIJ(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+                                   &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
+                                   &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+                                   particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                   particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                   &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+                                   &particles[idxOther].forces[2], &particles[idxOther].potential);
+//          FP2P::MutualParticlesIOR(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+//                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+//                                   &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
+//                                   &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+//                                   particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+//                                   particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+//                                   &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+//                                   &particles[idxOther].forces[2], &particles[idxOther].potential);
         }
       }
     }
@@ -122,17 +138,25 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 3;
+    const unsigned int ORDER = 5;
 
     // typedefs
-    typedef FP2PParticleContainerIndexed ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >  LeafClass;
     //typedef FInterpMatrixKernelLJ MatrixKernelClass;
-    typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FUnifCell<ORDER> CellClass;
+//    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+//    typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+
+    const unsigned int NRHS = MatrixKernelClass::NRHS;
+    const unsigned int NLHS = MatrixKernelClass::NLHS;
+
+    typedef FP2PParticleContainerIndexed ContainerClass;
+//    const unsigned int NDIM = NRHS + 4*NLHS;
+//    typedef FP2PTensorialParticleContainerIndexed<NDIM> ContainerClass; // TODO fix a TensorialParticleContainer for easy access to multidim PhysVal
+
+    typedef FSimpleLeaf< ContainerClass >  LeafClass;
+    typedef FUnifCell<ORDER,NRHS,NLHS> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-    //typedef FUnifSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FUnifTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -173,6 +197,7 @@ int main(int argc, char* argv[])
       FMath::FAccurater fx, fy, fz;
 
       FReal checkPotential[20000];
+      FReal checkfx[20000];
 
       { // Check that each particle has been summed with all other
 
@@ -188,6 +213,7 @@ int main(int argc, char* argv[])
               const int indexPartOrig = indexes[idxPart];
               //PB: store potential in nbParticles array
               checkPotential[indexPartOrig]=potentials[idxPart];              
+              checkfx[indexPartOrig]=forcesX[idxPart];              
 
               potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
               fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
@@ -197,9 +223,11 @@ int main(int argc, char* argv[])
           });
       }
 
-//      std::cout << "Check Potential " << std::endl;
-//      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-//        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential << std::endl;
+//      std::cout << "Check Potential, forceX " << std::endl;
+//      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart){
+//        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential<< "|| ";
+//        std::cout << checkfx[idxPart] << ", "<< particles[idxPart].forces[0] << std::endl;
+//      }
 //      std::cout << std::endl;
 
       // Print for information

@@ -161,9 +161,11 @@ public:
  *
  * @tparam nsteps number of sampled values \f$N\f$
  */
-
+template<int DIM = 1>
 class FFft
 {
+  enum{dim = DIM};
+
   // arrays
   FReal* fftR_;
   FComplexe* fftC_;
@@ -173,29 +175,43 @@ class FFft
   fftw_plan plan_r2c_; // forward FFT plan 
 
 private:
-  unsigned int nsteps_;
+  /*unsigned*/ int nsteps_; // all dimensions have same nb of steps
+  /*unsigned*/ int nsteps_opt_;
 
 public:
 
   FFft(const unsigned int nsteps)
-  : nsteps_(nsteps)
+    : nsteps_(nsteps),
+      nsteps_opt_(nsteps/2+1) // SPECIFIC TO REAL VALUED FTT
   {
     // allocate arrays
-    fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-    fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_);
+    fftR_ = (FReal*) fftw_malloc(dim * sizeof(FReal) * dim * nsteps_);
+    fftC_ = (FComplexe*) fftw_malloc(dim * sizeof(FComplexe) * dim * nsteps_opt_);
 
-    // fftw plans
+//    // fftw plans
+//    plan_c2r_ =
+//      fftw_plan_dft_c2r_1d(nsteps_, 
+//                           reinterpret_cast<fftw_complex*>(fftC_),
+//                           fftR_, 
+//                           FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
+//    plan_r2c_ =
+//      fftw_plan_dft_r2c_1d(nsteps_, 
+//                           fftR_, 
+//                           reinterpret_cast<fftw_complex*>(fftC_), 
+//                           FFTW_MEASURE);
+
+    // multidim fftw plans
+    const int steps[2] = {dim, nsteps_};
     plan_c2r_ =
-      fftw_plan_dft_c2r_1d(nsteps_, 
-                           reinterpret_cast<fftw_complex*>(fftC_),
-                           fftR_, 
-                           FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
+      fftw_plan_dft_c2r(2, steps, 
+                        reinterpret_cast<fftw_complex*>(fftC_),
+                        fftR_, 
+                        FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
     plan_r2c_ =
-      fftw_plan_dft_r2c_1d(nsteps_, 
-                           fftR_, 
-                           reinterpret_cast<fftw_complex*>(fftC_), 
-                           FFTW_MEASURE);
-
+      fftw_plan_dft_r2c(2, steps, 
+                        fftR_, 
+                        reinterpret_cast<fftw_complex*>(fftC_), 
+                        FFTW_MEASURE);
 
   }
 
@@ -215,8 +231,8 @@ public:
     // read sampled data
 //    std::cout<< "copy(";
 //    time.tic();
-    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(fftC_));
-    FBlas::copy(nsteps_, sampledData,fftR_);
+    FBlas::c_setzero(dim*nsteps_opt_,reinterpret_cast<FReal*>(fftC_));
+    FBlas::copy(dim*nsteps_, sampledData,fftR_);
 //    std::cout << time.tacAndElapsed() << ")";
 
     // perform fft
@@ -228,11 +244,10 @@ public:
     // write transformed data
 //    std::cout<< " - copy(";
 //    time.tic();
-//    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(fftC_),
-//                  reinterpret_cast<FReal*>(transformedData));
-
-    for(unsigned int s=0; s<nsteps_; ++s)
-      transformedData[s]=fftC_[s];
+    FBlas::c_copy(dim*nsteps_opt_,reinterpret_cast<FReal*>(fftC_),
+                  reinterpret_cast<FReal*>(transformedData));
+//    for(unsigned int s=0; s<nsteps_opt_; ++s)
+//      transformedData[s]=fftC_[s];
 
 //    std::cout << time.tacAndElapsed() << ") ";
 
@@ -243,18 +258,18 @@ public:
                  FReal* sampledData) const
   {
     // read transformed data
-    FBlas::setzero(nsteps_,fftR_);
-    FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(transformedData),
+    FBlas::setzero(dim*nsteps_,fftR_);
+    FBlas::c_copy(dim*nsteps_opt_,reinterpret_cast<const FReal*>(transformedData),
                   reinterpret_cast<FReal*>(fftC_));
 
     // perform ifft
     fftw_execute( plan_c2r_ );
 
-    for(unsigned int s=0; s<nsteps_; ++s)
-      fftR_[s]/=nsteps_; // the fft from fftw is not scaled !!!!!!!!
+    for(unsigned int s=0; s<dim*nsteps_; ++s)
+      fftR_[s]/=(dim*nsteps_); // the fft from fftw is not scaled !!!!!!!!
 
     // write sampled data
-    FBlas::copy(nsteps_,fftR_,sampledData);
+    FBlas::copy(dim*nsteps_,fftR_,sampledData);
 
   }
 

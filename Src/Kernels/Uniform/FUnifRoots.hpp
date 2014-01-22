@@ -63,14 +63,14 @@ struct FUnifRoots : FNoCopyable
       x = (x < FReal(-1.) ? FReal(-1.) : x);
     }
 
-    FReal tmpL=FReal(1.);
+    FReal L=FReal(1.);
     for(unsigned int m=0;m<order;++m){
       if(m!=n)
-        tmpL *= (x-FUnifRoots<order>::roots[m])/(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[m]);
+        L *= (x-FUnifRoots<order>::roots[m])/(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[m]);
       
     }
 
-    return FReal(tmpL);
+    return FReal(L);
   }
 
 
@@ -90,26 +90,22 @@ struct FUnifRoots : FNoCopyable
       x = (x < FReal(-1.) ? FReal(-1.) : x);
     }
 
-    FReal tmpdL;
-    FReal dL=FReal(0.);
-
+    // optimized variant
+    FReal NdL=FReal(0.);// init numerator
+    FReal DdL=FReal(1.);// init denominator
+    FReal tmpNdL;
     for(unsigned int p=0;p<order;++p){
       if(p!=n){
-        tmpdL=1./(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[p]);
-
-      for(unsigned int m=0;m<order;++m){
-        if(m!=n && m!=p)
-          tmpdL *= (x-FUnifRoots<order>::roots[m])/(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[m]);
-
-      }// m
-
-      dL+=tmpdL;
-      
+        tmpNdL=FReal(1.);
+        for(unsigned int m=0;m<order;++m)
+          if(m!=n && m!=p)
+            tmpNdL*=x-FUnifRoots<order>::roots[m];
+        NdL+=tmpNdL;
+        DdL*=FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[p];
       }//endif
-
     }// p
 
-    return FReal(dL);
+    return FReal(NdL/DdL);
 
   }
 };

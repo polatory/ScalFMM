@@ -13,8 +13,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBSYMMETRIES_HPP
-#define FCHEBSYMMETRIES_HPP
+#ifndef FINTERPSYMMETRIES_HPP
+#define FINTERPSYMMETRIES_HPP
 
 #include <climits>
 
@@ -25,12 +25,12 @@
  */
 
 /**
- * @class FChebSymmetries
+ * @class FInterpSymmetries
  *
- * The class @p FChebSymmetries exploits all symmetries
+ * The class @p FInterpSymmetries exploits all symmetries
  */
 template <int ORDER>
-class FChebSymmetries
+class FInterpSymmetries
 {
 	enum {nnodes = ORDER*ORDER*ORDER};
 
@@ -49,11 +49,11 @@ class FChebSymmetries
 		return  (sk | sj | si);
 	}
 
-
+  
 	public:
 
 	/** Constructor */
-	FChebSymmetries()
+	FInterpSymmetries()
 	{
 		// permutations for 8 quadrants
 		unsigned int quads[8][nnodes];
