@@ -61,8 +61,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         const int NbLevels      = 3;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 2;
-        const int NbParticles   = 1;
+        const int PeriodicDeep  = 1;
+        const int NbParticles   = 6;
 
         FRandomLoader loader(NbParticles);
 
@@ -102,7 +102,6 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         algo.execute();
 
         // Run direct computation
-        const MatrixKernelClass MatrixKernel;
         Print("Direct...");
 
         FTreeCoordinate min, max;
@@ -187,7 +186,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         Print(fz.getInfNorm());
 
         // Assert
-        const FReal MaximumDiffPotential = FReal(9e-5);
+        const FReal MaximumDiffPotential = FReal(9e-4);
         const FReal MaximumDiffForces = FReal(9e-3);
 
         uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);
@@ -221,7 +220,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** TestChebKernel */
 	void TestChebKernel(){
-		const unsigned int ORDER = 5;
+        const unsigned int ORDER = 5;
         const FReal epsilon = FReal(1e-5);
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
@@ -236,8 +235,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
-		const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+        const unsigned int ORDER = 7;
+        const FReal epsilon = FReal(1e-7);
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR MatrixKernelClass;
