@@ -31,18 +31,18 @@
  * This class defines a cell used in the Chebyshev based FMM.
  * @param NVALS is the number of right hand side.
  */
-template <int ORDER, int NVALS = 1>
+template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FChebCell : public FBasicCell
 {
   static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
 
-  FReal multipole_exp[NVALS * VectorSize]; //< Multipole expansion
-  FReal     local_exp[NVALS * VectorSize]; //< Local expansion
-	
+  FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
+  FReal     local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
+
 public:
   FChebCell(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
   }
 
   ~FChebCell() {}
@@ -72,8 +72,8 @@ public:
 
   /** Make it like the begining */
   void resetToInitialState(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
   }
   
   ///////////////////////////////////////////////////////
@@ -81,20 +81,20 @@ public:
   ///////////////////////////////////////////////////////
   template <class BufferWriterClass>
   void serializeUp(BufferWriterClass& buffer) const{
-    buffer.write(multipole_exp, VectorSize*NVALS);
+    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
   }
   template <class BufferReaderClass>
   void deserializeUp(BufferReaderClass& buffer){
-    buffer.fillArray(multipole_exp, VectorSize*NVALS);
+    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
   }
   
   template <class BufferWriterClass>
   void serializeDown(BufferWriterClass& buffer) const{
-    buffer.write(local_exp, VectorSize*NVALS);
+    buffer.write(local_exp, VectorSize*NVALS*NLHS);
   }
   template <class BufferReaderClass>
   void deserializeDown(BufferReaderClass& buffer){
-    buffer.fillArray(local_exp, VectorSize*NVALS);
+    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
   }
   
   ///////////////////////////////////////////////////////
@@ -103,37 +103,37 @@ public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
     FBasicCell::save(buffer);
-    buffer.write(multipole_exp, VectorSize);
-    buffer.write(local_exp, VectorSize);
+    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.write(local_exp, VectorSize*NVALS*NLHS);
   }
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
     FBasicCell::restore(buffer);
-    buffer.fillArray(multipole_exp, VectorSize);
-    buffer.fillArray(local_exp, VectorSize);
+    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
   }
   
   static int GetSize(){
-    return sizeof(FReal)*VectorSize*2*NVALS;
+    return sizeof(FReal) * VectorSize*(NRHS+NLHS)*NVALS;
   }
 
 };
 
-template <int ORDER, int NVALS = 1>
-class FTypedChebCell : public FChebCell<ORDER,NVALS>, public FExtendCellType {
+template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FTypedChebCell : public FChebCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
-    FChebCell<ORDER,NVALS>::save(buffer);
+    FChebCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
     FExtendCellType::save(buffer);
   }
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
-    FChebCell<ORDER,NVALS>::restore(buffer);
+    FChebCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
     FExtendCellType::restore(buffer);
   }
   void resetToInitialState(){
-    FChebCell<ORDER,NVALS>::resetToInitialState();
+    FChebCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
     FExtendCellType::resetToInitialState();
   }
 };

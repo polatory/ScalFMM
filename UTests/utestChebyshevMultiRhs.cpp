@@ -227,7 +227,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER, NbRhs> CellClass;
+        typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -243,7 +243,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FP2PParticleContainerIndexed ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER, NbRhs> CellClass;
+        typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;

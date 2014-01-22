@@ -33,36 +33,31 @@
  *
  * This class defines a cell used in the Lagrange based FMM.
  * 
- * PB: !!! exactly the same as FChebCell except the TensorTraits used is 
- * the one from FUnifTensor. This is a quick work around to avoid multiple 
- * definition of TensorTraits until it is factorized for all interpolations.
- *
- * PB: This class also contains the storage and accessors for the tranformed 
- * expansion  (in Fourier space, i.e. complex valued).
+ * PB: This class also contains the storage and accessors for the transformed 
+ * expansion (in Fourier space, i.e. complex valued).
  *
  * @param NVALS is the number of right hand side.
  */
-template <int ORDER, int NVALS = 1>
+template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FUnifCell : public FBasicCell
 {
   static const int VectorSize = TensorTraits<ORDER>::nnodes;
   static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
 
-  FReal multipole_exp[NVALS * VectorSize]; //< Multipole expansion
-  FReal     local_exp[NVALS * VectorSize]; //< Local expansion
-
+  FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
+  FReal     local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
   // PB: Store multipole and local expansion in Fourier space
-  FComplexe transformed_multipole_exp[NVALS * TransformedVectorSize];
-  FComplexe     transformed_local_exp[NVALS * TransformedVectorSize];
+  FComplexe transformed_multipole_exp[NRHS * NVALS * TransformedVectorSize];
+  FComplexe     transformed_local_exp[NLHS * NVALS * TransformedVectorSize];
 
 public:
   FUnifCell(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
+    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
     memset(transformed_multipole_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NRHS * NVALS * TransformedVectorSize);
     memset(transformed_local_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
+           sizeof(FComplexe) * NLHS * NVALS * TransformedVectorSize);
   }
 
   ~FUnifCell() {}
@@ -90,19 +85,9 @@ public:
     return VectorSize;
   }
 
-  /** Make it like the begining */
-  void resetToInitialState(){
-    memset(multipole_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NVALS * VectorSize);
-    memset(transformed_multipole_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
-    memset(transformed_local_exp, 0, 
-           sizeof(FComplexe) * NVALS * TransformedVectorSize);
-  }
-
   /** Get Transformed Multipole */
-  const FComplexe* getTransformedMultipole(const int inRhs) const
-  {	return this->transformed_multipole_exp + inRhs*TransformedVectorSize;
+  const FComplexe* getTransformedMultipole(const int inRhs) const{	
+    return this->transformed_multipole_exp + inRhs*TransformedVectorSize;
   }
   /** Get Transformed Local */
   const FComplexe* getTransformedLocal(const int inRhs) const{
@@ -118,31 +103,46 @@ public:
     return this->transformed_local_exp + inRhs*TransformedVectorSize;
   }
 
+  /** To get the leading dim of a vec */
+  int getTransformedVectorSize() const{
+    return TransformedVectorSize;
+  }
+
+  /** Make it like the begining */
+  void resetToInitialState(){
+    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
+    memset(transformed_multipole_exp, 0, 
+           sizeof(FComplexe) * NRHS * NVALS * TransformedVectorSize);
+    memset(transformed_local_exp, 0, 
+           sizeof(FComplexe) * NLHS * NVALS * TransformedVectorSize);
+  }
+
   ///////////////////////////////////////////////////////
   // to extend FAbstractSendable
   ///////////////////////////////////////////////////////
   template <class BufferWriterClass>
   void serializeUp(BufferWriterClass& buffer) const{
-    buffer.write(multipole_exp, VectorSize * NVALS);
-    buffer.write(transformed_multipole_exp, VectorSize * NVALS);
+    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.write(transformed_multipole_exp, TransformedVectorSize*NVALS*NRHS);
   }
 
   template <class BufferReaderClass>
   void deserializeUp(BufferReaderClass& buffer){
-    buffer.fillArray(multipole_exp, VectorSize*NVALS);
-    buffer.fillArray(transformed_multipole_exp, VectorSize*NVALS);
+    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.fillArray(transformed_multipole_exp, TransformedVectorSize*NVALS*NRHS);
   }
   
   template <class BufferWriterClass>
   void serializeDown(BufferWriterClass& buffer) const{
-    buffer.write(local_exp, VectorSize*NVALS);
-    buffer.write(transformed_local_exp, VectorSize * NVALS);
+    buffer.write(local_exp, VectorSize*NVALS*NLHS);
+    buffer.write(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
   
   template <class BufferReaderClass>
   void deserializeDown(BufferReaderClass& buffer){
-    buffer.fillArray(local_exp, VectorSize*NVALS);
-    buffer.fillArray(transformed_local_exp, VectorSize*NVALS);
+    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
+    buffer.fillArray(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
   
   ///////////////////////////////////////////////////////
@@ -151,43 +151,43 @@ public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
     FBasicCell::save(buffer);
-    buffer.write(multipole_exp, VectorSize*NVALS);
-    buffer.write(transformed_multipole_exp, VectorSize*NVALS);
-    buffer.write(local_exp, VectorSize*NVALS);
-    buffer.write(transformed_local_exp, VectorSize*NVALS);
+    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.write(transformed_multipole_exp, TransformedVectorSize*NVALS*NRHS);
+    buffer.write(local_exp, VectorSize*NVALS*NLHS);
+    buffer.write(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
   
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
     FBasicCell::restore(buffer);
-    buffer.fillArray(multipole_exp, VectorSize*NVALS);
-    buffer.fillArray(transformed_multipole_exp, VectorSize*NVALS);
-    buffer.fillArray(local_exp, VectorSize*NVALS);
-    buffer.fillArray(transformed_local_exp, VectorSize*NVALS);
+    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
+    buffer.fillArray(transformed_multipole_exp, TransformedVectorSize*NVALS*NRHS);
+    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
+    buffer.fillArray(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
   
   static int GetSize(){
-    return 2 * (int) sizeof(FReal)*VectorSize*NVALS + 2*NVALS*TransformedVectorSize*(int) sizeof(FComplexe);
+    return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplexe);
   }
 
 
 };
 
-template <int ORDER, int NVALS = 1>
-class FTypedUnifCell : public FUnifCell<ORDER,NVALS>, public FExtendCellType {
+template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FTypedUnifCell : public FUnifCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
-    FUnifCell<ORDER,NVALS>::save(buffer);
+    FUnifCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
     FExtendCellType::save(buffer);
   }
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
-    FUnifCell<ORDER,NVALS>::restore(buffer);
+    FUnifCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
     FExtendCellType::restore(buffer);
   }
   void resetToInitialState(){
-    FUnifCell<ORDER,NVALS>::resetToInitialState();
+    FUnifCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
     FExtendCellType::resetToInitialState();
   }
 };

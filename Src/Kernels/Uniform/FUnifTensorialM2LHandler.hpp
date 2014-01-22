@@ -13,8 +13,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FUNIFM2LHANDLER_HPP
-#define FUNIFM2LHANDLER_HPP
+#ifndef FUNIFTENSORIALM2LHANDLER_HPP
+#define FUNIFTENSORIALM2LHANDLER_HPP
 
 #include <numeric>
 #include <stdexcept>
@@ -36,7 +36,7 @@
 
 /**
  * @author Pierre Blanchard (pierre.blanchard@inria.fr)
- * @class FUnifM2LHandler
+ * @class FUnifTensorialM2LHandler
  * Please read the license
  *
  * This class precomputes and efficiently stores the M2L operators
@@ -50,16 +50,19 @@
  * @tparam ORDER interpolation order \f$\ell\f$
  */
 template <int ORDER, class MatrixKernelClass>
-class FUnifM2LHandler : FNoCopyable
+class FUnifTensorialM2LHandler : FNoCopyable
 {
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
-        rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
+        rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
+        dim = MatrixKernelClass::DIM, 
+        nRhs = MatrixKernelClass::NRHS,
+        nLhs = MatrixKernelClass::NLHS};
 
 	const MatrixKernelClass MatrixKernel;
 
-	FComplexe *FC;
+	FComplexe *FC[dim];
 
   // for real valued kernel only n/2+1 complex values are stored 
   // after performing the DFT (the rest is deduced by conjugation)
@@ -82,18 +85,23 @@ class FUnifM2LHandler : FNoCopyable
 
 	
 public:
-	FUnifM2LHandler()
-		: MatrixKernel(), FC(NULL),
+	FUnifTensorialM2LHandler()
+		: MatrixKernel(), // PB: used only to getPosition and getScalFac in applyM2L
       opt_rc(rc/2+1),
       Dft(rc) // initialize Discrete Fourier Transformator
 	{    
+    // initialize array
+    for (unsigned int d=0; d<dim; ++d)
+      FC[d]=NULL;
+
     // initialize root node ids
     TensorType::setNodeIdsDiff(node_diff);
   }
 
-	~FUnifM2LHandler()
+	~FUnifTensorialM2LHandler()
 	{
-		if (FC != NULL) delete [] FC;
+    for (unsigned int d=0; d<dim; ++d)
+      if (FC[d] != NULL) delete [] FC[d];
 	}
 
 	/**
@@ -103,13 +111,18 @@ public:
 	{
 		// measure time
 		FTic time; time.tic();
-		// check if aready set
-    		if (FC) throw std::runtime_error("M2L operator already set");
-    // Compute matrix of interactions
-		Compute(FC);
+
+    for (unsigned int d=0; d<dim; ++d){
+
+      // check if aready set
+      if (FC[d]) throw std::runtime_error("M2L operator already set");
+      // Compute matrix of interactions
+      Compute(FC[d], d);
+
+    }
 
     // Compute memory usage
-    unsigned long sizeM2L = 343*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = 343*dim*opt_rc*sizeof(FComplexe);
 
 
 		// write info
@@ -122,7 +135,7 @@ public:
 	 */
 	void ComputeAndStoreInBinaryFileAndReadFromFileAndSet()
 	{
-		FUnifM2LHandler<ORDER,MatrixKernelClass>::ComputeAndStoreInBinaryFile();
+		FUnifTensorialM2LHandler<ORDER,MatrixKernelClass>::ComputeAndStoreInBinaryFile();
 		this->ReadFromBinaryFileAndSet();
 	}
 
@@ -131,7 +144,7 @@ public:
 	 *
 	 * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
 	 */
-	static void Compute(FComplexe* &FC);
+	static void Compute(FComplexe* &FC, const unsigned int d);
 
 	/**
 	 * Computes and stores the matrix \f$C_t\f$ in a binary
@@ -179,15 +192,17 @@ public:
 	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
 	 */
   void applyFC(const unsigned int idx, FReal CellWidth,
-                  const FComplexe *const FY, FComplexe *const FX) const
+               const FComplexe *const FY, FComplexe *const FX, 
+               const unsigned int idxK) const
   {
 		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+    unsigned int d = MatrixKernel.getPosition(idxK);
 
     FComplexe tmpFX; 
 
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      tmpFX=FC[idx*opt_rc + j];
+      tmpFX=FC[d][idx*opt_rc + j];
       tmpFX*=FY[j];
       tmpFX*=scale;
       FX[j]+=tmpFX;
@@ -247,7 +262,8 @@ public:
 
 template <int ORDER, class MatrixKernelClass>
 void
-FUnifM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC)
+FUnifTensorialM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC,
+                                                            const unsigned int d)
 {
 	// allocate memory and store compressed M2L operators
   	if (FC) throw std::runtime_error("M2L operators are already set");
@@ -257,7 +273,7 @@ FUnifM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC)
 	// set roots of target cell (X)
 	FUnifTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 	// init matrix kernel
-	const MatrixKernelClass MatrixKernel;
+	const MatrixKernelClass MatrixKernel(d);
 
 	// allocate memory and compute 316 m2l operators
 	FReal *_C;
@@ -359,7 +375,7 @@ FUnifM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC)
 
 //template <int ORDER, class MatrixKernelClass>
 //void
-//FUnifM2LHandler<ORDER, MatrixKernelClass>::ComputeAndStoreInBinaryFile()
+//FUnifTensorialM2LHandler<ORDER, MatrixKernelClass>::ComputeAndStoreInBinaryFile()
 //{
 //	// measure time
 //	FTic time; time.tic();
@@ -392,7 +408,7 @@ FUnifM2LHandler<ORDER, MatrixKernelClass>::Compute(FComplexe* &FC)
 //
 //template <int ORDER, class MatrixKernelClass>
 //void
-//FUnifM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
+//FUnifTensorialM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 //{
 //	// measure time
 //	FTic time; time.tic();
@@ -453,6 +469,6 @@ unsigned int ReadRankFromBinaryFile(const std::string& filename)
 
 
 
-#endif // FUNIFM2LHANDLER_HPP
-
+#endif // FUNIFTENSORIALM2LHANDLER_HPP
+ 
 // [--END--]

@@ -107,7 +107,7 @@ int main(int, char **){
   std::cout<< "Set DFT: ";
   time.tic();
   //FDft Dft(N);// direct version
-  FFft Dft(N);// fast version
+  FFft<1> Dft(N);// fast version
   std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
   // Initialize manually

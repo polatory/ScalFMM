@@ -95,7 +95,7 @@ public:
     // should not be used
   }
 
-  const InterpolatorClass *const getPtrToInterpolator() const
+  const InterpolatorClass * getPtrToInterpolator() const
   { return Interpolator.getPtr(); }
 
 
