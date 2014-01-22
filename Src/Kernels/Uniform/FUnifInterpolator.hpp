@@ -217,9 +217,9 @@ public:
 
 
 
-  const FReal *const *const getChildParentInterpolator() const
+  const FReal *const * getChildParentInterpolator() const
   { return ChildParentInterpolator; }
-  const unsigned int *const getPermutationsM2ML2L(unsigned int i) const
+  const unsigned int * getPermutationsM2ML2L(unsigned int i) const
   { return perm[i]; }
 
 
