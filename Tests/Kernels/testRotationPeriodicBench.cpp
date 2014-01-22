@@ -56,8 +56,11 @@ int main(int argc, char** argv){
     const int MinLevelAbove  = FParameters::getValue(argc, argv, "-min",-1);
     const int MaxLevelAbove  = FParameters::getValue(argc, argv, "-max",3);
     const int IncLevelAbove  = 1;
-    const int NbParticles    = FParameters::getValue(argc, argv, "-nb",6);;
+    const int NbParticles    = FParameters::getValue(argc, argv, "-nb",6);
+    const int NbParticlesPrint    = FParameters::getValue(argc, argv, "-nbprint", FMath::Min(6, NbParticles));
+    FAssertLF(NbParticlesPrint <= NbParticles , "The number of printer particles cannot be higer than the number of particles.");
 
+    std::cout << "The application will use " << NbParticles << " but studies only " << NbParticlesPrint << " of them." << std::endl;
 
     /////////////////////////////////////////////////
     // Insert particlePositions in tree and copy into array
@@ -70,7 +73,7 @@ int main(int argc, char** argv){
         loader.fillParticle(&particlePositions[idxPart]);
     }
 
-    FReal* allPotential = new FReal[(MaxLevelAbove-MinLevelAbove)*NbParticles];
+    FReal* allPotential = new FReal[(MaxLevelAbove-MinLevelAbove)*NbParticlesPrint];
 
     /////////////////////////////////////////////////
     // Test for different periodicity for FMM!!
@@ -106,7 +109,9 @@ int main(int argc, char** argv){
             const FReal*const potentials = leaf->getTargets()->getPotentials();
             const FVector<int>& indexes =  leaf->getTargets()->getIndexes();
             for(int idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
-                allPotential[(idxLevelAbove - MinLevelAbove)*NbParticles + indexes[idxPart]] = potentials[idxPart];
+                if( indexes[idxPart] < NbParticlesPrint){
+                    allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + indexes[idxPart]] = potentials[idxPart];
+                }
             }
         });
     }
@@ -121,10 +126,10 @@ int main(int argc, char** argv){
         std::cout << idxLevelAbove << "\t";
     }
     std::cout << "\n";
-    for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+    for(int idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
         std::cout << idxPart << "\t";
         for(int idxLevelAbove = MinLevelAbove; idxLevelAbove < MaxLevelAbove ; idxLevelAbove += IncLevelAbove){
-            std::cout << allPotential[(idxLevelAbove - MinLevelAbove)*NbParticles + idxPart] << "\t";
+            std::cout << allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + idxPart] << "\t";
         }
         std::cout << "\n";
     }
@@ -135,11 +140,11 @@ int main(int argc, char** argv){
         std::cout << idxLevelAbove << "/" << idxLevelAbove-1 << "\t";
     }
     std::cout << "\n";
-    for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+    for(int idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
         std::cout << idxPart << "\t";
         for(int idxLevelAbove = MinLevelAbove +1; idxLevelAbove < MaxLevelAbove ; idxLevelAbove += IncLevelAbove){
-            std::cout << FMath::Abs((allPotential[(idxLevelAbove - MinLevelAbove)*NbParticles + idxPart]
-                         / allPotential[(idxLevelAbove - MinLevelAbove - 1)*NbParticles + idxPart])-1.0) << "\t";
+            std::cout << FMath::Abs((allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + idxPart]
+                         / allPotential[(idxLevelAbove - MinLevelAbove - 1)*NbParticlesPrint + idxPart])-1.0) << "\t";
         }
         std::cout << "\n";
     }
