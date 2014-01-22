@@ -27,7 +27,6 @@
 enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
                                  ONE_OVER_R_SQUARED,
                                  LENNARD_JONES_POTENTIAL,
-                                 RX,
                                  ID_OVER_R,
                                  R_IJ,
                                  R_IJK};
@@ -112,7 +111,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1;
   static const unsigned int NLHS = 1;
 
-  FInterpMatrixKernelRR(const unsigned int) {}
+  FInterpMatrixKernelRR(const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -164,45 +163,6 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
     //return one_over_r6 * one_over_r6;
     //return one_over_r6;
     return one_over_r6 * one_over_r6 - one_over_r6;
-  }
-
-  FReal getScaleFactor(const FReal, const int) const
-  {
-    // return 1 because non homogeneous kernel functions cannot be scaled!!!
-    return FReal(1.);
-  }
-
-  FReal getScaleFactor(const FReal) const
-  {
-    // return 1 because non homogeneous kernel functions cannot be scaled!!!
-    return FReal(1.);
-  }
-
-};
-
-
-/// r_0 / R^2
-struct FInterpMatrixKernelRX : FInterpAbstractMatrixKernel
-{
-  // PB: leave NON_HOMOGENEOUS while it is used as test matrix kernel
-  static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
-  static const KERNEL_FUNCTION_IDENTIFIER Identifier = RX;
-  static const  unsigned int DIM = 1; //PB: dimension of kernel
-  static const unsigned int NRHS = 1;
-  static const unsigned int NLHS = 1;
-
-  FInterpMatrixKernelRX(const unsigned int = 0) {}
-
-  // returns position in reduced storage
-  int getPosition(const unsigned int) const
-  {return 0;} 
-
-  FReal evaluate(const FPoint& x, const FPoint& y) const
-  {
-    const FPoint xy(x-y);
-    const FReal r = xy.norm();
-    const FReal r2 = r*r;
-    return xy.getX()/**xy.getX()*//r2;
   }
 
   FReal getScaleFactor(const FReal, const int) const
