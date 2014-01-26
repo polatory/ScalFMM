@@ -434,9 +434,9 @@ The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is co
 Crystal & Cube size & Cut off & reciprocal lattice vector &Energy \\
         &  $\AA$    & $\AA$    &             & $kcal\, mol^{-1}$ \\
 \hline
-Small & 16 & 8 & (9,9,9) & $ -2.346403 10^{4}  $ \\
+Small & 16 & 8 & (9,9,9) & $ -2.346403 \,10^{4}  $ \\
 \hline
-Big   & 40 & 12 & (15,15,15) & $-3.666255 10^{5}  $ \\
+Big   & 40 & 12 & (15,15,15) & $-3.666255 \,10^{5}  $ \\
 \hline
 \end{tabular}
 \end{center}
@@ -446,4 +446,35 @@ A new approach has been proposed to compute a periodic FMM.
 This approach can be used with any kernel and without the need of developing new operators.
 Moreover, it is possible to compute an important repetition size for a small cost.
 
+
+\newpage
+\section*{Appendix 1 }
+
+\begin{center}
+\large DL\_poly CONTROL file
+\end{center}
+
+\begin{verbatim}
+timestep 1.e-15
+steps 1
+
+temperature 0.0
+ensemble nve
+
+delr 0.5
+cutoff 8.0
+
+ewald precision 1.e-8
+
+no vdw
+
+traj 1,1,2
+print 1
+stats 1
+
+job time 3600
+close time   10
+
+finish
+\end{verbatim}
 \end{document}
