@@ -427,9 +427,19 @@ Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
 \end{center}
 The force unit is the internal DL\_Poly unit.
 
-
-The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file.
-
+The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file. The EWald's parameter are chosen such that the  Ewald sum  precision is $10^{-08}$.
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+Crystal & Cube size & Cut off & reciprocal lattice vector &Energy \\
+        &  $\AA$    & $\AA$    &             & $kcal\, mol^{-1}$ \\
+\hline
+Small & 16 & 8 & (9,9,9) & $ -2.346403 10^{4}  $ \\
+\hline
+Big   & 40 & 12 & (15,15,15) & $-3.666255 10^{5}  $ \\
+\hline
+\end{tabular}
+\end{center}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A new approach has been proposed to compute a periodic FMM.
