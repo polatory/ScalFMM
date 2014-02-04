@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
 
 	// init timer
 	FTic time;
-
+  
     // typedefs
-    typedef FP2PParticleContainer ContainerClass;
+  typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;
 	typedef FChebCell<ORDER> CellClass;

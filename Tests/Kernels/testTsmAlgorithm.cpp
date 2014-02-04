@@ -145,7 +145,7 @@ int main(int argc, char ** argv){
         std::cout << "[INFO] -spherical is used\n";
         // Create template
         typedef FTypedSphericalCell            CellClass;
-        typedef FP2PParticleContainer         ContainerClass;
+        typedef FP2PParticleContainer<>         ContainerClass;
 
         typedef FTypedLeaf< ContainerClass >                      LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -165,7 +165,7 @@ int main(int argc, char ** argv){
         // Create template
         static const int P = 9;
         typedef FTypedRotationCell<P>            CellClass;
-        typedef FP2PParticleContainer         ContainerClass;
+        typedef FP2PParticleContainer<>         ContainerClass;
 
         typedef FTypedLeaf< ContainerClass >                      LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;

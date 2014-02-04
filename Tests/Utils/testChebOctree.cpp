@@ -46,7 +46,7 @@ int main(int, char **){
 
 	const int ORDER = 5;
 
-    typedef FP2PParticleContainer ContainerClass;
+    typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FChebCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;

@@ -48,7 +48,7 @@
 */
 
 int main(int, char **){
-    typedef FP2PParticleContainer ContainerClass;
+    typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;
 

@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
         // typedefs
 	typedef FTaylorCell<ORDER,1>                                 CellClass;
 
-        typedef FP2PParticleContainerIndexed                          ContainerClass;
+  typedef FP2PParticleContainerIndexed<>                          ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                         LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
 	typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;

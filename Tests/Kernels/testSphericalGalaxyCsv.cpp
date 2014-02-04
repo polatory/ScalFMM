@@ -40,8 +40,8 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 
-class VelocityContainer : public FP2PParticleContainer {
-    typedef FP2PParticleContainer Parent;
+class VelocityContainer : public FP2PParticleContainer<> {
+  typedef FP2PParticleContainer<> Parent;
 
     FVector<FPoint> velocities;
 

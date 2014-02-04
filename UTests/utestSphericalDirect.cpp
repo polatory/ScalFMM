@@ -185,7 +185,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Classic */
     void TestSpherical(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
@@ -201,7 +201,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Rotation */
     void TestRotation(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FSphericalRotationKernel< CellClass, ContainerClass >          KernelClass;
 
@@ -218,7 +218,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Blas */
     void TestSphericalBlas(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
 
@@ -234,7 +234,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Block blas */
     void TestSphericalBlockBlas(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FP2PParticleContainerIndexed<> ContainerClass;
 
         typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
 

@@ -18,48 +18,49 @@
 
 #include "../../Components/FBasicParticleContainer.hpp"
 
-class FP2PParticleContainer : public FBasicParticleContainer<5> {
-    typedef FBasicParticleContainer<5> Parent;
+template<int NRHS = 1, int NLHS = 1>
+class FP2PParticleContainer : public FBasicParticleContainer<NRHS+4*NLHS> {
+    typedef FBasicParticleContainer<NRHS+4*NLHS> Parent;
 
 public:
-    FReal* getPhysicalValues(){
-        return Parent::getAttribute<0>();
+    FReal* getPhysicalValues(const int idxRhs = 0){
+        return Parent::getAttribute(0+idxRhs);
     }
 
-    const FReal* getPhysicalValues() const {
-        return Parent::getAttribute<0>();
+    const FReal* getPhysicalValues(const int idxRhs = 0) const {
+        return Parent::getAttribute(0+idxRhs);
     }
 
-    FReal* getPotentials(){
-        return Parent::getAttribute<1>();
+    FReal* getPotentials(const int idxLhs = 0){
+        return Parent::getAttribute(NRHS+idxLhs);
     }
 
-    const FReal* getPotentials() const {
-        return Parent::getAttribute<1>();
+    const FReal* getPotentials(const int idxLhs = 0) const {
+        return Parent::getAttribute(NRHS+idxLhs);
     }
 
-    FReal* getForcesX(){
-        return Parent::getAttribute<2>();
+    FReal* getForcesX(const int idxLhs = 0){
+        return Parent::getAttribute(NRHS+NLHS+idxLhs);
     }
 
-    const FReal* getForcesX() const {
-        return Parent::getAttribute<2>();
+    const FReal* getForcesX(const int idxLhs = 0) const {
+        return Parent::getAttribute(NRHS+NLHS+idxLhs);
     }
 
-    FReal* getForcesY(){
-        return Parent::getAttribute<3>();
+    FReal* getForcesY(const int idxLhs = 0){
+        return Parent::getAttribute(NRHS+2*NLHS+idxLhs);
     }
 
-    const FReal* getForcesY() const {
-        return Parent::getAttribute<3>();
+    const FReal* getForcesY(const int idxLhs = 0) const {
+        return Parent::getAttribute(NRHS+2*NLHS+idxLhs);
     }
 
-    FReal* getForcesZ(){
-        return Parent::getAttribute<4>();
+    FReal* getForcesZ(const int idxLhs = 0){
+        return Parent::getAttribute(NRHS+3*NLHS+idxLhs);
     }
 
-    const FReal* getForcesZ() const {
-        return Parent::getAttribute<4>();
+    const FReal* getForcesZ(const int idxLhs = 0) const {
+        return Parent::getAttribute(NRHS+3*NLHS+idxLhs);
     }
 };
 

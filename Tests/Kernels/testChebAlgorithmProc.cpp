@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
   const unsigned int ORDER = 7;
   const FReal epsilon = FReal(1e-7);
 
-  typedef FP2PParticleContainerIndexed ContainerClass;
+  typedef FP2PParticleContainerIndexed<> ContainerClass;
   typedef FSimpleLeaf< ContainerClass >  LeafClass;
 
   typedef FInterpMatrixKernelR MatrixKernelClass;

@@ -179,7 +179,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** Rotation */
     void TestRotation(){
         typedef FRotationCell<P>              CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 

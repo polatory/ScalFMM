@@ -50,7 +50,7 @@ int main(int argc, char ** argv){
     {
         typedef FSphericalCell                 CellClass;
 
-        typedef FP2PParticleContainer      ContainerClass;
+        typedef FP2PParticleContainer<>      ContainerClass;
 
         typedef FSimpleLeaf< ContainerClass >                     LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;

@@ -191,7 +191,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
     /** Rotation */
     void TestRotation(){
         typedef FTypedRotationCell<P>    CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
@@ -205,7 +205,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
     void TestRotationThread(){
         typedef FTypedRotationCell<P>    CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 

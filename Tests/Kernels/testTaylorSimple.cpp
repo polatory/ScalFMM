@@ -34,7 +34,7 @@
    FReal boxWidth = FReal(4);
 
    typedef FTaylorCell<P,order> CellClass;
-   typedef FP2PParticleContainer ContainerClass;
+   typedef FP2PParticleContainer<> ContainerClass;
 
    typedef FSimpleLeaf< ContainerClass > LeafClass;
    typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;

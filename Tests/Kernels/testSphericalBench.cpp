@@ -56,7 +56,7 @@ int restultIndex(const int idxP, const int idxH, const int minP,
 
 
 typedef FSphericalCell                 CellClass;
-typedef FP2PParticleContainerIndexed   ContainerClass;
+typedef FP2PParticleContainerIndexed<>   ContainerClass;
 
 typedef FSimpleLeaf< ContainerClass >                     LeafClass;
 typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;

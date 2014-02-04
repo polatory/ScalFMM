@@ -224,7 +224,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const int NbRhs = 4;
         const unsigned int ORDER = 5;
         const FReal epsilon = FReal(1e-5);
-        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;
@@ -240,7 +240,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const int NbRhs = 4;
         const unsigned int ORDER = 5;
         const FReal epsilon = FReal(1e-5);
-        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;

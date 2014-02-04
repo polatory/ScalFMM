@@ -41,11 +41,8 @@ class FTreeCoordinate;
  * 1) Handling tensorial kernels (DIM,NRHS,NLHS) and having multiple rhs (NVALS) 
  * are considered 2 separate features and are currently combined.
  *
- * 2) The present tensorial version is the most naive one. All tensorial aspects 
- * are handled in the kernel. A more optimal version would be to consider looping 
- * over nRhs/nLhs inside Interpolator::applyP2M/L2P in order to avoid extra 
- * evaluation of the interpolating polynomials. When it comes to applying M2L it is 
- * NOT much faster to loop over NRHSxNLHS inside applyM2L (at least for the Lagrange case)
+ * 2) When it comes to applying M2L it is NOT much faster to loop over NRHSxNLHS 
+ * inside applyM2L (at least for the Lagrange case).
  * 2-bis) The evaluation of the kernel matrix (see M2LHandler) should be done at once 
  * instead of compo-by-compo (TODO). On the other hand, the ChebyshevSym tensorial kernel 
  * requires the matrix kernel to be evaluated compo-by-compo since we currently use a scalar ACA.
@@ -102,14 +99,16 @@ public:
            const ContainerClass* const SourceParticles)
   {
     const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate())); 
+
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
+
+      // 1) apply Sy
+      AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                LeafCell->getMultipole(idxV*nRhs), SourceParticles);
+
       for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
         // update multipole index
         int idxMul = idxV*nRhs + idxRhs;
-
-        // 1) apply Sy
-        AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                  LeafCell->getMultipole(idxMul), SourceParticles);
 
         // 2) apply Discrete Fourier Transform
         M2LHandler->applyZeroPaddingAndDFT(LeafCell->getMultipole(idxMul), 
@@ -211,15 +210,16 @@ public:
         M2LHandler->unapplyZeroPaddingAndDFT(LeafCell->getTransformedLocal(idxLoc), 
                                              const_cast<CellClass*>(LeafCell)->getLocal(idxLoc));
 
-        // 2.a) apply Sx
-        AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                  LeafCell->getLocal(idxLoc), TargetParticles);
-
-        // 2.b) apply Px (grad Sx)
-        AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                          LeafCell->getLocal(idxLoc), TargetParticles);
-
       }
+
+      // 2.a) apply Sx
+      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                LeafCell->getLocal(idxV*nLhs), TargetParticles);
+
+      // 2.b) apply Px (grad Sx)
+      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                        LeafCell->getLocal(idxV*nLhs), TargetParticles);
+
     }// NVALS
   }
 

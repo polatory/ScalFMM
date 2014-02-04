@@ -35,7 +35,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
     void TestPeriodicFmm(){
         static const int P = 9;
         typedef FRotationCell<P>            CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FRotationKernel< CellClass, ContainerClass, P >   KernelClass;
 
