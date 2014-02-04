@@ -77,19 +77,22 @@
 \begin{minipage}{0.4\textwidth}
 \begin{flushleft} \large
 \emph{Author:}\\
-Berenger \textsc{Bramas} % Your name
+Berenger \textsc{Bramas} \\% Your name
+Olivier \textsc{Coulaud} % Your name
+
 \end{flushleft}
 \end{minipage}
 ~
 \begin{minipage}{0.4\textwidth}
 \begin{flushright} \large
-\emph{Supervisor:} \\
-\textsc{} % Supervisor's Name
+%\emph{Supervisor:} \\
+%\textsc{} % Supervisor's Name
 \end{flushright}
 \end{minipage}\\[4cm]
 
-{\large \today}\\[3cm] % Date, change the \today to a set date if you want to be precise
+{\large \today}\\[1cm] % Date, change the \today to a set date if you want to be precise
 
+{\Large \textbf{Working note}}
 \vfill % Fill the rest of the page with whitespace
 
 \end{titlepage}
@@ -387,6 +390,16 @@ and the force on atom $x_i$
 $$
 f(x_i) =  \frac{q_i }{4 \pi\epsilon_0}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
 $$
+
+
+The Ewald method is equivalent to consider a surrounding conductor ($\epsilon=\infty$). The method described in this document and implemented in ScalFMM consider a finite set of the original box surrounded by a vacuum with dielectric constant $\epsilon=1$. The results by these two approaches are different \cite{DeLeeuw1980, Heyes1981} and for a very large sphere surrounding all boxes we have the following equation
+\begin{equation}
+E_{Ewald} = E_{FMM} -\frac{2\pi}{3V}|\sum_{i=1}^{N}{q_i x_i}|^2.
+\end{equation}
+By tacking the gradient of this equation, the relationship between FMM forces and Ewald forces is
+\begin{equation}
+F_{Ewald}(x_k) = -\nabla_k E_{Ewald} = F_{FMM}(x_k)  + \frac{4\pi}{3V} q_k \sum_{i=1}^{N}{q_i x_i}.
+\end{equation}
 \subsubsection{DL\_Poly comparisons}
 DL\_POLY\_2 uses the following internal molecular units \\
 
@@ -428,12 +441,49 @@ Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
 The force unit is the internal DL\_Poly unit.
 
 
-The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have X atoms.
-
+The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file. The Ewald's parameter are chosen such that the  Ewald sum  precision is $10^{-08}$.
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+Crystal & Cube size & Cut off & reciprocal lattice vector &Energy \\
+        &  $\AA$    & $\AA$    &             & $kcal\, mol^{-1}$ \\
+\hline
+Small & 16 & 8 & (9,9,9) & $ -2.346403 \,10^{4}  $ \\
+\hline
+Big   & 40 & 12 & (15,15,15) & $-3.666255 \,10^{5}  $ \\
+\hline
+\end{tabular}
+\end{center}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A new approach has been proposed to compute a periodic FMM.
 This approach can be used with any kernel and without the need of developing new operators.
 Moreover, it is possible to compute an important repetition size for a small cost.
 
+\bibliographystyle{plain}
+\bibliography{fmm}
+
+\newpage
+\section*{Appendix 1 }
+
+\begin{center}
+\large DL\_poly CONTROL file
+\end{center}
+
+\begin{verbatim}
+timestep 1.e-15
+steps 1
+temperature 0.0
+ensemble nve
+delr 0.5
+cutoff 8.0
+ewald precision 1.e-8
+no vdw
+traj 1,1,2
+print 1
+stats 1
+job time 3600
+close time   10
+finish
+\end{verbatim}
 \end{document}

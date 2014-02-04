@@ -71,7 +71,8 @@ public :
 
     /** Move the read index to a position */
     void seek(const int inIndex){
-        FAssertLF(inIndex < arrayCapacity, "FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough");
+      
+      FAssertLF(inIndex <= arrayCapacity, "FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough ",inIndex," ",arrayCapacity);
         currentIndex = inIndex;
     }
 

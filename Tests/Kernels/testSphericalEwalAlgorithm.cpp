@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, B��renger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -72,7 +72,7 @@ int main(int argc, char ** argv){
 #ifdef  ScalFMM_USE_BLAS
 	// begin Chebyshef kernel
 	// accuracy
-	const unsigned int ORDER = 6;
+	const unsigned int ORDER = 8;
 	// typedefs
 	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
 	typedef FChebCell<ORDER>                                                  CellClass;
@@ -109,7 +109,7 @@ int main(int argc, char ** argv){
 
 	std::cout << "Opening : " << filename << "\n";
 	FEwalLoader loader(filename);
-//	FEwalBinLoader loader(filename);
+	//	FEwalBinLoader loader(filename);
 	if(!loader.isOpen()){
 		std::cout << "Loader Error, " << filename << " is missing\n";
 		return 1;
@@ -132,11 +132,11 @@ int main(int argc, char ** argv){
 	// Insert particles in the Octree
 	// ---------------------------------------------------------------------------------   std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
 	std::cout << "\tWidth : " << loader.getBoxWidth() << " \t center x : " << loader.getCenterOfBox().getX()
-            		  << " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
+	    		<< " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 	counter.tic();
-
+	FPoint electricMoment(0.0,0.0,0.0) ;
 	EwalParticle * const particles = new EwalParticle[loader.getNumberOfParticles()];
 	memset(particles, 0, sizeof(EwalParticle) * loader.getNumberOfParticles());
 	double totalCharge = 0.0;
@@ -144,12 +144,25 @@ int main(int argc, char ** argv){
 		loader.fillParticle(&particles[idxPart].position, particles[idxPart].forces,
 				&particles[idxPart].physicalValue,&particles[idxPart].index);
 		totalCharge += particles[idxPart].physicalValue ;
+		electricMoment.incX(particles[idxPart].physicalValue*particles[idxPart].position.getX() );
+		electricMoment.incY(particles[idxPart].physicalValue*particles[idxPart].position.getY() );
+		electricMoment.incZ(particles[idxPart].physicalValue*particles[idxPart].position.getZ() );
 		// reset forces and insert in the tree
 		tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
 	}
 
 	counter.tac();
-	std::cout << "Total Charge = "<< totalCharge <<std::endl;
+	double dipoleNorm = electricMoment.norm2() ;
+	double volume     =  loader.getBoxWidth()*loader.getBoxWidth()*loader.getBoxWidth() ;
+	double coeffCorrectionDLPOLY = 2.0*FMath::FPi/volume/3.0 ;
+
+	std::cout << std::endl;
+	std::cout << "Total Charge    = "<< totalCharge <<std::endl;
+	std::cout << "Electric Moment = "<< electricMoment <<std::endl;
+	std::cout << "electric Moment = "<< dipoleNorm  <<std::endl;
+	std::cout << std::endl;
+	std::cout << std::endl;
+
 	std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 	//
 	// ---------------------------------------------------------------------------------
@@ -168,17 +181,17 @@ int main(int argc, char ** argv){
 	octreeData << "Leaf width " << widthAtLeafLevel << std::endl ;
 	octreeData << "Box Corner "<< boxCorner << std::endl<< std::endl ;
 
-    do{
-        auto * const FRestrict cell = octreeIterator.getCurrentCell();
-        FTreeCoordinate coordinate  = cell->getCoordinate() ;
-        FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-                FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
-                FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
-        octreeData << "Leaf " << cell->getMortonIndex() << std::endl
-                << "    Center   "<<  coordinate <<    std::endl
-                << "    Center   "<<  leafCenter
-                << std::endl ;
-    } while(octreeIterator.moveRight());
+	do{
+		auto * const FRestrict cell = octreeIterator.getCurrentCell();
+		FTreeCoordinate coordinate  = cell->getCoordinate() ;
+		FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+				FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+				FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
+		octreeData << "Leaf " << cell->getMortonIndex() << std::endl
+				<< "    Center   "<<  coordinate <<    std::endl
+				<< "    Center   "<<  leafCenter
+				<< std::endl ;
+	} while(octreeIterator.moveRight());
 	//
 	FIOVtk vtkfile ;
 	vtkfile.writeOctree("octreeFile.vtk","Octree ", tree) ;
@@ -202,6 +215,8 @@ int main(int argc, char ** argv){
 	else{
 		FmmClass algo(&tree,PeriodicDeep);
 		std::cout << "The simulation box is repeated " << algo.theoricalRepetition() << " in X/Y/Z" << std::endl;
+		std::cout << "Simulated box: " << algo.extendedBoxWidth()<<std::endl;
+
 #ifndef  ScalFMM_USE_BLAS
 		KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
 #else
@@ -210,33 +225,46 @@ int main(int argc, char ** argv){
 		algo.setKernel(&kernels);
 		algo.execute();
 		algo.repetitionsIntervals(&min, &max);
-		std::cout << "Min indexes " << min << std::endl ;
-		std::cout << "Max indexes " << max << std::endl ;
 	}
 
 	counter.tac();
 
-	std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
+	std::cout << "Done  " << "(@FMM Algorithm = " << counter.elapsed() << "s)." << std::endl;
+	std::cout << "\n"<< "END FMM "
+			<< "-------------------------------------------------------------------------" << std::endl << std::endl ;
 
-	// -----------------------------------------------------
+	// ----------------------------------------------------------------------------------------------------------
+	//                                  DIRECT COMPUTATION
+	// ----------------------------------------------------------------------------------------------------------
+	EwalParticle* particlesDirect = nullptr;
+	FReal directEnergy = 0.0;
 
-	EwalParticle* particlesDirect = 0;
 	//
 	// direct computation
 	//
+	bool direct = false ;
 	if(FParameters::existParameter(argc, argv, "-direct")){
+		direct = true ;
 		printf("Compute direct:\n");
 		printf("Box [%d;%d][%d;%d][%d;%d]\n", min.getX(), max.getX(), min.getY(),
 				max.getY(), min.getZ(), max.getZ());
 
 		particlesDirect = new EwalParticle[loader.getNumberOfParticles()];
 
-		FReal dpotential = 0.0;
-		FMath::FAccurater dfx, dfy, dfz;
+		FReal denergy = 0.0;
+		FMath::FAccurater dfx, dfy, dfz ;
+		//
+		//
+		// particles       : Ewald results
+		// particlesDirect : Direct results
+		//
+		counter.tic();
 		for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-			EwalParticle part = particles[idxTarget];
+			particlesDirect[idxTarget] = particles[idxTarget];
+			EwalParticle & part        = particlesDirect[idxTarget];
 			part.forces[0] = part.forces[1] = part.forces[2] = 0.0;
 			part.potential = 0.0;
+            //
 			// compute with all other except itself
 			//
 			// Compute force and potential between  particles[idxTarget] and particles inside the box
@@ -258,77 +286,105 @@ int main(int argc, char ** argv){
 			for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
 				for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
 					for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
-						if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
+						int nL = PeriodicDeep ;
+						{
+							//
+							//	for(int idxX = -nL ; idxX <= nL -1; ++idxX){
+							//	  for(int idxY = -nL ; idxY <=nL-1 ; ++idxY){
+							//	    for(int idxZ = -nL ; idxZ <= nL-1; ++idxZ){
+							if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
-						const FPoint offset(loader.getBoxWidth() * FReal(idxX),
-								loader.getBoxWidth() * FReal(idxY),
-								loader.getBoxWidth() * FReal(idxZ));
-
-						for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
-							EwalParticle source = particles[idxSource];
-							source.position += offset;
-							FP2P::NonMutualParticles(
-									source.position.getX(), source.position.getY(),
-									source.position.getZ(),source.physicalValue,
-									part.position.getX(), part.position.getY(),
-									part.position.getZ(),part.physicalValue,
-									&part.forces[0],&part.forces[1],
-									&part.forces[2],&part.potential
-							);
+							const FPoint offset(loader.getBoxWidth() * FReal(idxX),
+									loader.getBoxWidth() * FReal(idxY),
+									loader.getBoxWidth() * FReal(idxZ));
+							//							std::cout <<" ( "<< idxX<<" , "<<idxY << " , "<< idxZ << " ) "<< offset <<std::endl;
+							for(int idxSource = 0 ; idxSource < loader.getNumberOfParticles() ; ++idxSource){
+								EwalParticle source = particles[idxSource];
+								source.position += offset;
+								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
+								FP2P::NonMutualParticles(
+										source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
+										part.position.getX(), part.position.getY(),part.position.getZ(),part.physicalValue,
+										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential
+								);
+							}
+							//						std::cout <<std::endl<<std::endl<<std::endl;
 						}
 					}
-				}
+				} // END
 			}
-            part.forces[0] *= scaleForce ;
-            part.forces[1] *= scaleForce ;
-            part.forces[2] *= scaleForce ;
+			//
+			// remove dipole correction for DL_POLY
+			//
+			part.forces[0] -= 2.0*part.physicalValue*coeffCorrectionDLPOLY*electricMoment.getX() ;
+			part.forces[1] -= 2.0*part.physicalValue*coeffCorrectionDLPOLY*electricMoment.getY() ;
+			part.forces[2] -= 2.0*part.physicalValue*coeffCorrectionDLPOLY*electricMoment.getZ() ;
+			//
+			//  Scaling
+			//
+			part.forces[0] *= scaleForce ;
+			part.forces[1] *= scaleForce ;
+			part.forces[2] *= scaleForce ;
 			if(FParameters::existParameter(argc, argv, "-verbose")){
 				std::cout << ">> index " << particles[idxTarget].index << std::endl;
 				std::cout << "Good    x " << particles[idxTarget].position.getX() << " y " << particles[idxTarget].position.getY() << " z " << particles[idxTarget].position.getZ() << std::endl;
 				std::cout << "Good    fx " <<particles[idxTarget].forces[0] << " fy " << particles[idxTarget].forces[1] << " fz " << particles[idxTarget].forces[2] << std::endl;
 				std::cout << "DIRECT  fx " << part.forces[0]<< " fy " <<part.forces[1] << " fz " << part.forces[2] << std::endl;
 				std::cout << "ratio  fx " << particles[idxTarget].forces[0]/part.forces[0] << " fy " <<particles[idxTarget].forces[1]/part.forces[1] << " fz " << particles[idxTarget].forces[2]/part.forces[2] << std::endl;
-				std::cout << "GOOD physical value " << particles[idxTarget].physicalValue << " potential " << particles[idxTarget].potential << std::endl;
 				std::cout << "DIRECT  physical value " << part.physicalValue << " potential " << part.potential << std::endl;
 
 				std::cout << "\n";
 			}
-//
+			//
 			dfx.add(particles[idxTarget].forces[0],part.forces[0]);
 			dfy.add(particles[idxTarget].forces[1],part.forces[1]);
 			dfz.add(particles[idxTarget].forces[2],part.forces[2]);
 
-			dpotential += part.potential * part.physicalValue;
+			denergy += part.potential * part.physicalValue;
 
-        //	particlesDirect[idxTarget] = part;
+			//	particlesDirect[idxTarget] = part;
 		}
-		dpotential *= 0.5*scaleEnergy ;
+		counter.tac();
+		denergy *= 0.5*scaleEnergy ;
+		denergy -= coeffCorrectionDLPOLY*dipoleNorm*scaleEnergy ;
+		directEnergy	= denergy ;
+		printf("Difference between direct and Ewald (DL_POLY)\n");
+		printf("DirectEwald Fx diff is = \n");
+		printf("DirectEwald   L2Norm  %e\n",dfx.getRelativeL2Norm() );
+		printf("DirectEwald   InfNorm %e\n",dfx.getRelativeInfNorm());
+		printf("DirectEwaldFy diff is = \n");
+		printf("DirectEwald   L2Norm  %e\n",dfx.getRelativeL2Norm());
+		printf("DirectEwald   InfNorm %e\n",dfy.getRelativeInfNorm());
+		printf("DirectEwaldFz diff is = \n");
+		printf("DirectEwald   L2Norm  %e\n",dfx.getRelativeL2Norm());
+		printf("DirectEwald   InfNorm %e\n",dfz.getRelativeInfNorm());
+		double L2error = (dfx.getRelativeL2Norm()*dfx.getRelativeL2Norm() + dfy.getRelativeL2Norm()*dfy.getRelativeL2Norm()  + dfz.getRelativeL2Norm() *dfz.getRelativeL2Norm()  );
+		printf("DirectEwald L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("DirectEwald Energy DIRECT=   %e\n",denergy);
+		printf("DirectEwald Energy EWALD = %e\n",loader.getEnergy());
+		printf("DirectEwald Energy EWALD - Energy DIRECT              = %e\n", loader.getEnergy()-denergy );
+		printf("DirectEwald |Energy EWALD - Energy DIRECT|/directEnergy= %e\n",FMath::Abs((loader.getEnergy()-denergy)/loader.getEnergy()));
 
-		printf("Difference between direct and DL_POLY:\n");
-		printf("Fx diff is = \n");
-		printf("   L2Norm  %e\n",dfx.getL2Norm());
-		printf("   InfNorm %e\n",dfx.getInfNorm());
-		printf("Fy diff is = \n");
-		printf("   L2Norm  %e\n",dfy.getL2Norm());
-		printf("   InfNorm %e\n",dfy.getInfNorm());
-		printf("Fz diff is = \n");
-		printf("   L2Norm  %e\n",dfz.getL2Norm());
-		printf("   InfNorm %e\n",dfz.getInfNorm());
-		printf("Energy FMM=   %e\n",dpotential);
-		printf("Energy EWALD= %e\n",loader.getEnergy());
-		printf("Energy EWALD - Energy FMM = %e\n",loader.getEnergy()-dpotential);
 		//
 		if(FParameters::existParameter(argc, argv, "-saveError")){
 			errorfile << std::endl << "      END DIRECT " << std::endl ;
 		}
-		std::cout << "\n"<< "      END DIRECT "
+		std::cout << "Done  " << "(@DIRECT Algorithm = " << counter.elapsed() << "s)." << std::endl;
+
+		std::cout << "\n"<< "END DIRECT "
 				<< "-------------------------------------------------------------------------" << std::endl << std::endl ;
 	}
-
-	// -----------------------------------------------------
+	// ----------------------------------------------------------------------------------------------------------
+	//                                  DIRECT -- FMM  Comparisons
+	//                                  Ewald  -- FMM  Comparisons
+	// ----------------------------------------------------------------------------------------------------------
 	{
+		// particles       : Ewald results
+		// particlesDirect : Direct results
+		//
+
 		FReal  potential = 0.0, energy = 0.0;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater fx, fy, fz, fmmdfx, fmmdfy, fmmdfz;
 
 		tree.forEachLeaf([&](LeafClass* leaf){
 			const FReal*const potentials = leaf->getTargets()->getPotentials();
@@ -339,17 +395,34 @@ int main(int argc, char ** argv){
 			const FReal*const positionsX = leaf->getTargets()->getPositions()[0];
 			const FReal*const positionsY = leaf->getTargets()->getPositions()[1];
 			const FReal*const positionsZ = leaf->getTargets()->getPositions()[2];
-			const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-			const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-
+			const int nbParticlesInLeaf  = leaf->getTargets()->getNbParticles();
+			const FVector<int>& indexes  = leaf->getTargets()->getIndexes();
+			//
 			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 				const int indexPartOrig = indexes[idxPart];
+				//
+				// remove dipole correction for DL_POLY
+				//
+				forcesX[idxPart] -= 2.0*physicalValues[idxPart]*coeffCorrectionDLPOLY*electricMoment.getX() ;
+				forcesY[idxPart] -= 2.0*physicalValues[idxPart]*coeffCorrectionDLPOLY*electricMoment.getY() ;
+				forcesZ[idxPart] -= 2.0*physicalValues[idxPart]*coeffCorrectionDLPOLY*electricMoment.getZ() ;
+				//
 				forcesX[idxPart] *= scaleForce;
 				forcesY[idxPart] *= scaleForce;
 				forcesZ[idxPart] *= scaleForce;
-				fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-				fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-				fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+				if(direct) {
+//					std::cout << "Good    x " << particlesDirect[idxPart].position.getX() << " y " << particlesDirect[idxPart].position.getY() << " z " << particlesDirect[idxPart].position.getZ() << std::endl;
+//					std::cout << "Direct fx " <<particlesDirect[idxPart].forces[0]<< " fy " << particlesDirect[idxPart].forces[1] << " fz " << particlesDirect[idxPart].forces[2] << std::endl;
+//					std::cout << "FMM  fx " << forcesX[idxPart] << " fy " <<forcesY[idxPart] << " fz " << forcesZ[idxPart] << std::endl;
+
+					fmmdfx.add(particlesDirect[indexPartOrig].forces[0],forcesX[idxPart]);
+					fmmdfy.add(particlesDirect[indexPartOrig].forces[1],forcesY[idxPart]);
+					fmmdfz.add(particlesDirect[indexPartOrig].forces[2],forcesZ[idxPart]);
+				} else {
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]); // Ewald - FMM
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+				}
 				energy +=  potentials[idxPart]*physicalValues[idxPart];
 				//
 				if(FParameters::existParameter(argc, argv, "-verbose")){
@@ -359,8 +432,8 @@ int main(int argc, char ** argv){
 					std::cout << "Good fx " <<particles[indexPartOrig].forces[0] << " fy " << particles[indexPartOrig].forces[1] << " fz " << particles[indexPartOrig].forces[2] << std::endl;
 					std::cout << "FMM  fx " << forcesX[idxPart] << " fy " <<forcesY[idxPart] << " fz " << forcesZ[idxPart] << std::endl;
 					std::cout << "ratio  fx " << particles[indexPartOrig].forces[0]/forcesX[idxPart] << " fy " <<particles[indexPartOrig].forces[1]/forcesY[idxPart] << " fz " << particles[indexPartOrig].forces[2]/forcesZ[idxPart] << std::endl;
-					std::cout << "GOOD physical value " << particles[indexPartOrig].physicalValue << " potential " << particles[indexPartOrig].potential << std::endl;
-					std::cout << "FMM  physical value " << physicalValues[idxPart] << " potential " << potentials[idxPart] <<  " energy cumul " << energy<<std::endl;
+//					std::cout << "GOOD physical value " << particles[indexPartOrig].physicalValue << " potential " << particles[indexPartOrig].potential << std::endl;
+//					std::cout << "FMM  physical value " << physicalValues[idxPart] << " potential " << potentials[idxPart] <<  " energy cumul " << energy<<std::endl;
 
 					std::cout << "\n";
 				}
@@ -385,25 +458,47 @@ int main(int argc, char ** argv){
 			}
 		});
 		energy *= 0.5*scaleEnergy ;
-//
-		printf("Difference between FMM and DL_POLY:\n");
+		energy -= coeffCorrectionDLPOLY*dipoleNorm*scaleEnergy ;
+		//    printf("(Energy EWALD - Energy FMM)/dipoleNorm = %e\n",(loader.getEnergy()-energy)*volume/(dipoleNorm));
+		//    printf("(dipoleNorm /Volume = %e\n",correctEnergy);
+		//
+		if(direct) {
+			printf("Difference between FMM and DiRECT:\n");
+			printf("DirectFmm Fx diff is = \n");
+			printf("DirectFmm   L2Norm  %e\n",fmmdfx.getRelativeL2Norm());
+			printf("DirectFmm   InfNorm %e\n",fmmdfx.getRelativeInfNorm());
+			printf("DirectFmm Fy diff is = \n");
+			printf("DirectFmm   L2Norm  %e\n",fmmdfy.getRelativeL2Norm());
+			printf("DirectFmm   InfNorm %e\n",fmmdfy.getRelativeInfNorm());
+			printf("DirectFmm Fz diff is = \n");
+			printf("DirectFmm   L2Norm  %e\n",fmmdfz.getRelativeL2Norm());
+			printf("DirectFmm   InfNorm %e\n",fmmdfz.getRelativeInfNorm());
+			double L2error = (fmmdfx.getRelativeL2Norm()*fmmdfx.getRelativeL2Norm() + fmmdfy.getRelativeL2Norm()*fmmdfy.getRelativeL2Norm()  + fmmdfz.getRelativeL2Norm() *fmmdfz.getRelativeL2Norm()  );
+			printf("DirectFmm L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
 
-		printf("Fx diff is = \n");
-		printf("   L2Norm  %e\n",fx.getL2Norm());
-		printf("   InfNorm %e\n",fx.getInfNorm());
-		printf("Fy diff is = \n");
-		printf("   L2Norm  %e\n",fy.getL2Norm());
-		printf("   InfNorm %e\n",fy.getInfNorm());
-		printf("Fz diff is = \n");
-		printf("   L2Norm  %e\n",fz.getL2Norm());
-		printf("   InfNorm %e\n",fz.getInfNorm());
-		std::cout << std::endl<< std::endl<< "Potential= " << std::setprecision(8) << potential*scaleEnergy << std::endl;
-		//
-		printf("Energy FMM=   %e\n",energy);
-		printf("Energy EWALD= %e\n",loader.getEnergy());
-		printf("Energy EWALD - Energy FMM = %e\n",loader.getEnergy()-energy);
-		printf("Energy EWALD / Energy FMM = %e\n",loader.getEnergy()/energy);
-		//
+			//
+			printf("DirectFmm Energy FMM=   %e\n",energy);
+			printf("DirectFmm Energy DIRECT= %e\n",directEnergy);
+			printf("DirectFmm |Energy DIRECT - Energy DIRECT|/directEnergy= %e\n",FMath::Abs((directEnergy-energy)/directEnergy));
+		}
+		else {
+			printf("FmmEwald Difference between FMM and Ewald DL_POLY:\n");
+			printf("FmmEwald Fx diff is = \n");
+			printf("FmmEwald   L2Norm  %e\n",fx.getRelativeL2Norm());
+			printf("FmmEwald   InfNorm %e\n",fx.getRelativeInfNorm());
+			printf("FmmEwald Fy diff is = \n");
+			printf("FmmEwald   L2Norm  %e\n",fy.getRelativeL2Norm());
+			printf("FmmEwald   InfNorm %e\n",fy.getInfNorm());
+			printf("FmmEwald Fz diff is = \n");
+			printf("FmmEwald   L2Norm  %e\n",fz.getRelativeL2Norm());
+			printf("FmmEwald   InfNorm %e\n",fz.getRelativeInfNorm());
+			//
+			printf("FmmEwald Energy FMM=   %e\n",energy);
+			printf("FmmEwald Energy EWALD= %e\n",loader.getEnergy());
+			printf("FmmEwald Energy EWALD - Energy FMM = %e\n",loader.getEnergy()-energy);
+			printf("FmmEwald |Energy EWALD -Energy FMM|/Energy EWALD= %e\n",FMath::Abs((loader.getEnergy()-energy)/loader.getEnergy()));
+
+		}
 		printf("vtkParticles\n");
 
 		vtkfile.writeParticules(tree, true,1,1,"vtkParticles","FMM results");

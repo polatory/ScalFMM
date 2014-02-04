@@ -1,12 +1,12 @@
 // ===================================================================================
 // Logiciel initial: ScalFmm Version 0.5
-// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
-// Propriétaires : INRIA.
-// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
+// Co-auteurs : Olivier Coulaud, B��renger Bramas.
+// Propri��taires : INRIA.
+// Copyright �� 2011-2012, diffus�� sous les termes et conditions d���une licence propri��taire.
 // Initial software: ScalFmm Version 0.5
-// Co-authors: Olivier Coulaud, Bérenger Bramas.
+// Co-authors: Olivier Coulaud, B��renger Bramas.
 // Owners: INRIA.
-// Copyright © 2011-2012, spread under the terms and conditions of a proprietardata[1] license.
+// Copyright �� 2011-2012, spread under the terms and conditions of a proprietardata[1] license.
 // ===================================================================================
 #ifndef FPOINT_HPP
 #define FPOINT_HPP
@@ -62,7 +62,7 @@ public:
     }
 
     /**
-        * Assignement operator
+        * Assignment operator
         * @param other the source class to copy
         */
     FPoint(const FPoint& other, const FReal addset) {
@@ -172,14 +172,23 @@ public:
     FReal * getDataValue(){
         return this->data ;
     }
-  /**
-    *Compute the distance to the origin
-    * @return the norm of the Fpoint
-    */
-    FReal norm() const {
-        return FMath::Sqrt(this->data[0]*this->data[0]+this->data[1]*this->data[1]
-                        +this->data[2]*this->data[2]) ;
-    }
+    /**
+      *Compute the distance to the origin
+      * @return the norm of the Fpoint
+      */
+      FReal norm() const {
+          return FMath::Sqrt(this->data[0]*this->data[0]+this->data[1]*this->data[1]
+                          +this->data[2]*this->data[2]) ;
+      }
+
+      /**
+        *Compute the distance to the origin
+        * @return the square norm of the Fpoint
+        */
+        FReal norm2() const {
+            return (this->data[0]*this->data[0]+this->data[1]*this->data[1]
+                            +this->data[2]*this->data[2]) ;
+        }
 
     /**
  * Subtract to all dim the inValue
@@ -195,7 +204,7 @@ public:
 
     /**
  * Affect to all dim the inValue
- * @param inValue the value to afect
+ * @param inValue the value to affect
  * @return the current object after being affected
  */
     FPoint& operator+=(const FReal inValue){
