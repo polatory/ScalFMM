@@ -66,12 +66,23 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
+  // typedefs
+//  typedef FInterpMatrixKernelLJ MatrixKernelClass;
+//    typedef FInterpMatrixKernelR MatrixKernelClass;
+//    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass; // not working with Non-Symmetric variant ! Because of UCB decomposition.
+                                                          // and not working either with Symmetric variant because not symmetric... 
+  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+
+//  const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
+  const unsigned int NRHS = MatrixKernelClass::NRHS;
+  const unsigned int NLHS = MatrixKernelClass::NLHS;
+
   // init particles position and physical value
   struct TestParticle{
     FPoint position;
-    FReal forces[3];
-    FReal physicalValue;
-    FReal potential;
+    FReal forces[3][NLHS];
+    FReal physicalValue[NRHS];
+    FReal potential[NLHS];
   };
 
   // open particle file
@@ -85,11 +96,14 @@ int main(int argc, char* argv[])
     loader.fillParticle(&position,&physicalValue);
     // get copy
     particles[idxPart].position       = position;
-    particles[idxPart].physicalValue  = physicalValue;
-    particles[idxPart].potential      = 0.0;
-    particles[idxPart].forces[0]      = 0.0;
-    particles[idxPart].forces[1]      = 0.0;
-    particles[idxPart].forces[2]      = 0.0;
+    for(unsigned idxRhs = 0; idxRhs<NRHS;++idxRhs)
+      particles[idxPart].physicalValue[idxRhs]  = physicalValue;
+    for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
+      particles[idxPart].potential[idxLhs]      = 0.0;
+      particles[idxPart].forces[0][idxLhs]      = 0.0;
+      particles[idxPart].forces[1][idxLhs]      = 0.0;
+      particles[idxPart].forces[2][idxLhs]      = 0.0;
+    }
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -110,12 +124,12 @@ int main(int argc, char* argv[])
 //                                &particles[idxOther].forces[2], &particles[idxOther].potential);
           FP2P::MutualParticlesIOR(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                    particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                   &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                                   &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+                                   particles[idxTarget].forces[0], particles[idxTarget].forces[1],
+                                   particles[idxTarget].forces[2], particles[idxTarget].potential,
                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                    particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                   &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                                   &particles[idxOther].forces[2], &particles[idxOther].potential);
+                                   particles[idxOther].forces[0], particles[idxOther].forces[1],
+                                   particles[idxOther].forces[2], particles[idxOther].potential);
         }
       }
     }
@@ -134,18 +148,7 @@ int main(int argc, char* argv[])
     const FReal epsilon = FReal(1e-8);
 
     // typedefs
-    //typedef FInterpMatrixKernelLJ MatrixKernelClass;
-//    typedef FInterpMatrixKernelR MatrixKernelClass;
-//    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass; // not working with Non-Symmetric variant ! Because of UCB decomposition.
-                                                          // and not working either with Symmetric variant because of lack of symmetry... 
-    typedef FInterpMatrixKernel_IOR MatrixKernelClass;
-
-    const unsigned int NRHS = MatrixKernelClass::NRHS;
-    const unsigned int NLHS = MatrixKernelClass::NLHS;
-
-    typedef FP2PParticleContainerIndexed ContainerClass;
-//    const unsigned int NDIM = NRHS + 4*NLHS;
-//    typedef FP2PTensorialParticleContainerIndexed<NDIM> ContainerClass; // TODO fix a TensorialParticleContainer for easy access to multidim PhysVal
+    typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
 
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
     typedef FChebCell<ORDER,NRHS,NLHS> CellClass;
@@ -166,7 +169,8 @@ int main(int argc, char* argv[])
 
       for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         // put in tree
-        tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+        // PB: here we have to know the number of NRHS...
+        tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
       }
 
       time.tac();
@@ -187,44 +191,68 @@ int main(int argc, char* argv[])
 
     { // -----------------------------------------------------
       std::cout << "\nError computation ... " << std::endl;
-      FMath::FAccurater potentialDiff;
-      FMath::FAccurater fx, fy, fz;
+      FMath::FAccurater potentialDiff[NLHS];
+      FMath::FAccurater fx[NLHS], fy[NLHS], fz[NLHS];
 
-      FReal checkPotential[20000];
+      FReal checkPhysVal[20000][NRHS];
+      FReal checkPotential[20000][NLHS];
+      FReal checkfx[20000][NLHS];
 
       { // Check that each particle has been summed with all other
 
         tree.forEachLeaf([&](LeafClass* leaf){
-            const FReal*const potentials = leaf->getTargets()->getPotentials();
-            const FReal*const forcesX = leaf->getTargets()->getForcesX();
-            const FReal*const forcesY = leaf->getTargets()->getForcesY();
-            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
+              const FReal*const physVals = leaf->getTargets()->getPhysicalValues(idxLhs);
+              const FReal*const potentials = leaf->getTargets()->getPotentials(idxLhs);
+              const FReal*const forcesX = leaf->getTargets()->getForcesX(idxLhs);
+              const FReal*const forcesY = leaf->getTargets()->getForcesY(idxLhs);
+              const FReal*const forcesZ = leaf->getTargets()->getForcesZ(idxLhs);
+              const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+              const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-              const int indexPartOrig = indexes[idxPart];
-              //PB: store potential in nbParticles array
-              checkPotential[indexPartOrig]=potentials[idxPart];              
+              for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                const int indexPartOrig = indexes[idxPart];
 
-              potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-              fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-              fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-              fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                //PB: store potential in array[nbParticles]
+                checkPhysVal[indexPartOrig][idxLhs]=physVals[idxPart];              
+                checkPotential[indexPartOrig][idxLhs]=potentials[idxPart];              
+                checkfx[indexPartOrig][idxLhs]=forcesX[idxPart]; 
+
+                potentialDiff[idxLhs].add(particles[indexPartOrig].potential[idxLhs],potentials[idxPart]);
+                fx[idxLhs].add(particles[indexPartOrig].forces[0][idxLhs],forcesX[idxPart]);
+                fy[idxLhs].add(particles[indexPartOrig].forces[1][idxLhs],forcesY[idxPart]);
+                fz[idxLhs].add(particles[indexPartOrig].forces[2][idxLhs],forcesZ[idxPart]);
+              }
             }
           });
       }
 
-//      std::cout << "Check Potential " << std::endl;
+//      std::cout << "Check Potential, forceX " << std::endl;
 //      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-//        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential << std::endl;
+//        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
+//          std::cout << checkPhysVal[idxPart][idxLhs] << ", "<< particles[idxPart].physicalValue[idxLhs]<< "|| ";
+//          std::cout << checkPotential[idxPart][idxLhs] << ", "<< particles[idxPart].potential[idxLhs]<< "|| ";
+//          std::cout << checkfx[idxPart][idxLhs] << ", "<< particles[idxPart].forces[0][idxLhs] << std::endl;
+//        }
 //      std::cout << std::endl;
 
+
       // Print for information
-      std::cout << "Potential " << potentialDiff << std::endl;
-      std::cout << "Fx " << fx << std::endl;
-      std::cout << "Fy " << fy << std::endl;
-      std::cout << "Fz " << fz << std::endl;
+      std::cout << "\nTest Chebyshev Tensorial returns wrong results! ChebInterpolator still needs to be modified like UnifInterpolator." << std::endl;
+//      std::cout << "\nAbsolute errors: " << std::endl;
+//      std::cout << "Potential: ";
+//      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << potentialDiff[idxLhs] << ", " ;
+//      std::cout << std::endl;
+//      std::cout << "Fx: "; 
+//      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fx[idxLhs] << ", " ;
+//      std::cout  << std::endl;
+//      std::cout << "Fy: "; 
+//      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fy[idxLhs] << ", " ;
+//      std::cout  << std::endl;
+//      std::cout << "Fz: "; 
+//      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fz[idxLhs] << ", " ;
+//      std::cout << std::endl;
+
     } // -----------------------------------------------------
 
   } // end Lagrange kernel

@@ -34,7 +34,7 @@
 
 
 typedef FSphericalCell           CellClass;
-typedef FP2PParticleContainerIndexed  ContainerClass;
+typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
 typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 

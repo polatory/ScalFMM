@@ -6,8 +6,9 @@
 #include "FP2PParticleContainer.hpp"
 #include "../../Components/FParticleType.hpp"
 
-class FP2PParticleContainerIndexed : public FP2PParticleContainer {
-    typedef FP2PParticleContainer Parent;
+template<int NRHS = 1, int NLHS = 1>
+class FP2PParticleContainerIndexed : public FP2PParticleContainer<NRHS,NLHS> {
+    typedef FP2PParticleContainer<NRHS,NLHS> Parent;
 
     FVector<int> indexes;
 

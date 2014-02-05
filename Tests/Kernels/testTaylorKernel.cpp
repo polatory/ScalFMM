@@ -41,7 +41,7 @@ const int order = 1;
 FPoint centerBox = FPoint(0,0,0);
 
 typedef FTaylorCell<P,order> CellClass;
-typedef FP2PParticleContainer ContainerClass;
+ typedef FP2PParticleContainer<> ContainerClass;
 typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
 typedef FSimpleLeaf< ContainerClass > LeafClass;
 typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;

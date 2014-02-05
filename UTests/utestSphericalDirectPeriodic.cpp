@@ -36,7 +36,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed  ContainerClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
         typedef FSphericalKernel<CellClass, ContainerClass >   KernelClass;
 

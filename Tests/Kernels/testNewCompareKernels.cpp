@@ -138,21 +138,21 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////////////////////////
     //
 #ifdef  ScalFMM_USE_BLAS
-    {	// begin Chebyshef kernel
+    {	// begin Chebyshev kernel
 
         // accuracy
         const unsigned int ORDER = 7;
         const FReal epsilon = FReal(1e-7);
 
         // typedefs
-        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        //        typedef FChebKernDel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
 
         // typedefs
         typedef FSphericalCell                 CellClass;
-        typedef FP2PParticleContainerIndexed         ContainerClass;
+        typedef FP2PParticleContainerIndexed<>         ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                     LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
         typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
       const unsigned int ORDER = 7;
 
       // typedefs
-      typedef FP2PParticleContainerIndexed ContainerClass;
+      typedef FP2PParticleContainerIndexed<> ContainerClass;
       typedef FSimpleLeaf<ContainerClass> LeafClass;
       typedef FInterpMatrixKernelR MatrixKernelClass;
       typedef FUnifCell<ORDER> CellClass;
@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
 {
   const static int P = 7;
   typedef FRotationCell<P>               CellClass;
-  typedef FP2PParticleContainerIndexed          ContainerClass;
+  typedef FP2PParticleContainerIndexed<>          ContainerClass;
   typedef FSimpleLeaf< ContainerClass >                     LeafClass;
   typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
   typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
@@ -446,7 +446,7 @@ int main(int argc, char* argv[])
         // typedefs
 	typedef FTaylorCell<ORDER,1>                                 CellClass;
 
-        typedef FP2PParticleContainerIndexed                          ContainerClass;
+        typedef FP2PParticleContainerIndexed<>                          ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                         LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
 	typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;

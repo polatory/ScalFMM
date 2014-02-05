@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         const FReal epsilon = FReal(1e-7);
 
         // typedefs
-        typedef FP2PParticleContainerIndexed ContainerClass;
+        typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
         typedef FChebCell<ORDER> CellClass;
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 
         // typedefs
         typedef FSphericalCell                 CellClass;
-        typedef FP2PParticleContainerIndexed         ContainerClass;
+        typedef FP2PParticleContainerIndexed<>         ContainerClass;
         typedef FSimpleLeaf< ContainerClass >                     LeafClass;
         typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
         //typedef FSphericalBlasKernel< CellClass, ContainerClass > KernelClass;

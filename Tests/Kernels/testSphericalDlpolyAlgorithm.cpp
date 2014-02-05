@@ -66,7 +66,7 @@ struct EwalParticle {
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
 
-	typedef FP2PParticleContainerIndexed                      ContainerClass;
+	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
 	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
 
 #ifdef  ScalFMM_USE_BLAS

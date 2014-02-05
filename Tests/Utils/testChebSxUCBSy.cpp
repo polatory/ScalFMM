@@ -50,7 +50,7 @@ void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const
 
 int main(int argc, char* argv[])
 {
-    typedef FP2PParticleContainer ContainerClass;
+    typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;
 

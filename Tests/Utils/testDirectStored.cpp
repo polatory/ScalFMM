@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
     const unsigned int ORDER = 7;
 
     // typedefs
-    typedef FP2PParticleContainerIndexed ContainerClass;
+    typedef FP2PParticleContainerIndexed<> ContainerClass;
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
 
     typedef FInterpMatrixKernelR MatrixKernelClass;

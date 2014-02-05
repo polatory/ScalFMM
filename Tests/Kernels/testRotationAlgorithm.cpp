@@ -45,7 +45,7 @@ int main(int argc, char** argv){
     static const int P = 9;
 
     typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer          ContainerClass;
+    typedef FP2PParticleContainer<>          ContainerClass;
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
