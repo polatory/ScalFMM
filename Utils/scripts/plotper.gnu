@@ -2,7 +2,7 @@
 #set terminal postscript enhanced color 
 #set output FMMEnergy.ps'
 set key left
-szt encoding iso_8859_1 
+set encoding iso_8859_1 
 
 set title "FMM Energy"
 set xlabel "per size (per)"

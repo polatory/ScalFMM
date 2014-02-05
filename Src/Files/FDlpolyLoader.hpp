@@ -13,8 +13,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FEWALLOADER_HPP
-#define FEWALLOADER_HPP
+#ifndef FDlpolyLOADER_HPP
+#define FDlpolyLOADER_HPP
 
 
 #include <iostream>
@@ -25,22 +25,15 @@
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
 
-
-/**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FEwalLoader
-* Please read the license
-* Particle has to extend {FExtendPhysicalValue,FExtendPosition}
-*/
-class FEwalLoader : public FAbstractLoader {
+class FDlpolyLoader : public FAbstractLoader {
 protected:
-    std::ifstream file;         //< The file to read
+//    std::ifstream file;         //< The file to read
     FPoint        centerOfBox;          //< The center of box read from file
     FReal         boxWidth;             //< the box width read from file
     int           nbParticles;            //< the number of particles read from file
     int           levcfg  ;               //< DL_POLY CONFIG file key. 0,1 or 2
     FReal         energy  ;
-public:
+protected:
     enum Type{
         OW,
         HW,
@@ -48,7 +41,113 @@ public:
         Cl,
         Undefined,
     };
+public:
+    virtual ~FDlpolyLoader()
+    {}
+    virtual bool isOpen() const =0;
+    virtual void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex)=0;
 
+    /**
+       * To get the number of particles from this loader
+       * @param the number of particles the loader can fill
+       */
+     FSize getNumberOfParticles() const{
+         return FSize(this->nbParticles);
+     }
+
+     /**
+       * The center of the box from the simulation file opened by the loader
+       * @return box center
+       */
+     FPoint getCenterOfBox() const{
+         return this->centerOfBox;
+     }
+
+     /**
+       * The box width from the simulation file opened by the loader
+       * @return box width
+       */
+     FReal getBoxWidth() const{
+         return this->boxWidth;
+     }
+
+     FReal getEnergy() const{
+       return this->energy;
+     }
+     void getPhysicalValue(std::string &type,FReal & outPhysicalValue, int & outIndex) const{
+      	if( strncmp(type.c_str(), "OW", 2) == 0){
+      		outPhysicalValue = FReal(-0.82);
+      		outIndex = OW;
+      	}
+      	else if( strncmp(type.c_str(), "HW", 2) == 0){
+      		outPhysicalValue = FReal(-0.41);
+      		outIndex = HW;
+      	}
+      	else if( strncmp(type.c_str(), "Na", 2) == 0){
+      		outPhysicalValue = FReal(1.0);
+      		outIndex = Na;
+      	}
+      	else if( strncmp(type.c_str(), "Cl", 2) == 0){
+      		outPhysicalValue = FReal(-1.0);
+      		outIndex = Cl;
+      	}
+      	else{
+
+      		std::cerr << "Atom type not defined "<< type << std::endl;
+      		exit(-1);
+      	}
+    //  	std::cout << "Atom type " << type << "  "<< outPhysicalValue << " " << outIndex <<std::endl;
+      }
+
+     void getPhysicalValue(char type[2],FReal & outPhysicalValue, int & outIndex) const{
+     	if( strncmp(type, "OW", 2) == 0){
+     		outPhysicalValue = FReal(-0.82);
+     		outIndex = OW;
+     	}
+     	else if( strncmp(type, "HW", 2) == 0){
+     		outPhysicalValue = FReal(-0.41);
+     		outIndex = HW;
+     	}
+     	else if( strncmp(type, "Na", 2) == 0){
+     		outPhysicalValue = FReal(1.0);
+     		outIndex = Na;
+     	}
+     	else if( strncmp(type, "Cl", 2) == 0){
+     		outPhysicalValue = FReal(-1.0);
+     		outIndex = Cl;
+     	}
+     	else{
+
+     		std::cerr << "Atom type not defined "<< type << std::endl;
+     		exit(-1);
+     	}
+   //  	std::cout << "Atom type " << type << "  "<< outPhysicalValue << " " << outIndex <<std::endl;
+     }
+
+} ;
+/**
+* @author Berenger Bramas (berenger.bramas@inria.fr)
+* @class FDlpolyLoader
+* Please read the license
+* Particle has to extend {FExtendPhysicalValue,FExtendPosition}
+*/
+class FDlpolyAsciiLoader : public FDlpolyLoader {
+private:
+    std::ifstream file;         //< The file to read
+//    FPoint        centerOfBox;          //< The center of box read from file
+//    FReal         boxWidth;             //< the box width read from file
+//    int           nbParticles;            //< the number of particles read from file
+//    int           levcfg  ;               //< DL_POLY CONFIG file key. 0,1 or 2
+//    FReal         energy  ;
+//public:
+//    enum Type{
+//        OW,
+//        HW,
+//        Na,
+//        Cl,
+//        Undefined,
+//    };
+//
     /**
     * The constructor need the file name
     * @param filename the name of the file to open
@@ -59,12 +158,14 @@ public:
       0.000000000000     17.200000000000      0.000000000000
       0.000000000000      0.000000000000     17.200000000000
     */
-    FEwalLoader(const char* const filename): file(filename,std::ifstream::in){
+public:
+    FDlpolyAsciiLoader(const char* const filename): file(filename,std::ifstream::in){
         // test if open
         if(this->file.is_open()){
             const int bufferSize = 512;
             char buffer[bufferSize];
             file.getline(buffer, bufferSize);
+
 
             int imcon ;
             //int tempi(0);
@@ -89,11 +190,13 @@ public:
             this->boxWidth    = 0;
             this->nbParticles = 0;
         }
+
+        std::cout << "ASCII LOADER "<< this->nbParticles<< "     "<< this->boxWidth<<std::endl;
     }
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FEwalLoader(){
+    virtual ~FDlpolyAsciiLoader(){
         file.close();
     }
 
@@ -105,33 +208,6 @@ public:
         return this->file.is_open() && !this->file.eof();
     }
 
-    /**
-      * To get the number of particles from this loader
-      * @param the number of particles the loader can fill
-      */
-    FSize getNumberOfParticles() const{
-        return FSize(this->nbParticles);
-    }
-
-    /**
-      * The center of the box from the simulation file opened by the loader
-      * @return box center
-      */
-    FPoint getCenterOfBox() const{
-        return this->centerOfBox;
-    }
-
-    /**
-      * The box width from the simulation file opened by the loader
-      * @return box width
-      */
-    FReal getBoxWidth() const{
-        return this->boxWidth;
-    }
-
-    FReal getEnergy() const{
-      return this->energy;
-    }
 
     /**
       * Fill a particle
@@ -145,13 +221,17 @@ public:
     void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
     	FReal x, y, z, fx, fy, fz, vx, vy, vz;
     	int index;
-    	char type[2];
-    	std::string line;
-    	file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    	file.read(type, 2);
+
+    	this->file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    	std::string atomType, line;
+    	this->file >> atomType;
+//
     	file >> index;
+
     	std::getline(file, line); // needed to skip the end of the line in non periodic case
+    	std::cout << "line: " << line << std::endl;
     	if ( levcfg == 0) {
     		file >> x >> y >> z;
     	}else if ( levcfg == 1) {
@@ -170,39 +250,19 @@ public:
     	inForces[1] = fy;
     	inForces[2] = fz;
 
-    	if( strncmp(type, "OW", 2) == 0){
-    		*inPhysicalValue = FReal(-0.82);
-    		*inIndex = OW;
-    	}
-    	else if( strncmp(type, "HW", 2) == 0){
-    		*inPhysicalValue = FReal(-0.41);
-    		*inIndex = HW;
-    	}
-    	else if( strncmp(type, "Na", 2) == 0){
-    		*inPhysicalValue = FReal(1.0);
-    		*inIndex = Na;
-    	}
-    	else if( strncmp(type, "Cl", 2) == 0){
-    		*inPhysicalValue = FReal(-1.0);
-    		*inIndex = Cl;
-    	}
-    	else{
-    		*inPhysicalValue = FReal(-0.41);
-    		*inIndex = HW;
-    		std::cerr << "Atom type not defined "<< type << std::endl;
-    		exit(-1);
-    	}
+    	getPhysicalValue(atomType, *inPhysicalValue,*inIndex  );
+
     }
 };
 
 
-class FEwalBinLoader : public FAbstractLoader {
+class FDlpolyBinLoader : public FDlpolyLoader {
 protected:
     FILE* const file;         //< The file to read
-    FPoint centerOfBox;    //< The center of box read from file
-    double boxWidth;             //< the box width read from file
-    int nbParticles;            //< the number of particles read from file
-    double energy;
+//    FPoint centerOfBox;    //< The center of box read from file
+//    double boxWidth;             //< the box width read from file
+//    int nbParticles;            //< the number of particles read from file
+//    double energy;
     size_t removeWarning;
 
     template<class Type>
@@ -212,8 +272,8 @@ protected:
         removeWarning = fread(&sizeBefore, sizeof(int), 1, file);
         removeWarning = fread(&value, sizeof(Type), 1, file);
         removeWarning = fread(&sizeAfter, sizeof(int), 1, file);
-        if( sizeBefore != sizeof(Type) ) printf("Error in loader ewal Size before %d should be %lu\n", sizeBefore, sizeof(Type));
-        if( sizeAfter != sizeof(Type) ) printf("Error in loader ewal Size after %d should be %lu\n", sizeAfter, sizeof(Type));
+        if( sizeBefore != sizeof(Type) ) printf("Error in loader Dlpoly Size before %d should be %lu\n", sizeBefore, sizeof(Type));
+        if( sizeAfter != sizeof(Type) ) printf("Error in loader Dlpoly Size after %d should be %lu\n", sizeAfter, sizeof(Type));
         return value;
     }
 
@@ -223,8 +283,8 @@ protected:
         removeWarning = fread(&sizeBefore, sizeof(int), 1, file);
         removeWarning = fread(array, sizeof(Type), size, file);
         removeWarning = fread(&sizeAfter, sizeof(int), 1, file);
-        if( sizeBefore != int(sizeof(Type) * size) ) printf("Error in loader ewal Size before %d should be %lu\n", sizeBefore, size*sizeof(Type));
-        if( sizeAfter != int(sizeof(Type) * size) ) printf("Error in loader ewal Size after %d should be %lu\n", sizeAfter, size*sizeof(Type));
+        if( sizeBefore != int(sizeof(Type) * size) ) printf("Error in loader Dlpoly Size before %d should be %lu\n", sizeBefore, size*sizeof(Type));
+        if( sizeAfter != int(sizeof(Type) * size) ) printf("Error in loader Dlpoly Size after %d should be %lu\n", sizeAfter, size*sizeof(Type));
         return array;
     }
 
@@ -237,7 +297,7 @@ public:
         [index charge x y z fx fy fz]
         int double double ...
     */
-    FEwalBinLoader(const char* const filename): file(fopen(filename, "rb")) {
+    FDlpolyBinLoader(const char* const filename): file(fopen(filename, "rb")) {
         // test if open
         if(this->file != NULL){
             energy = readValue<double>();
@@ -255,7 +315,7 @@ public:
     /**
     * Default destructor, simply close the file
     */
-    virtual ~FEwalBinLoader(){
+    virtual ~FDlpolyBinLoader(){
         fclose(file);
     }
 
@@ -267,33 +327,33 @@ public:
         return this->file != NULL;
     }
 
-    /**
-      * To get the number of particles from this loader
-      * @param the number of particles the loader can fill
-      */
-    FSize getNumberOfParticles() const{
-        return FSize(this->nbParticles);
-    }
-
-    /**
-      * The center of the box from the simulation file opened by the loader
-      * @return box center
-      */
-    FPoint getCenterOfBox() const{
-        return this->centerOfBox;
-    }
-
-    /**
-      * The box width from the simulation file opened by the loader
-      * @return box width
-      */
-    FReal getBoxWidth() const{
-      return static_cast<FReal>(this->boxWidth);
-    }
-
-    FReal getEnergy() const{
-      return static_cast<FReal>(this->energy);
-    }
+//    /**
+//      * To get the number of particles from this loader
+//      * @param the number of particles the loader can fill
+//      */
+//    FSize getNumberOfParticles() const{
+//        return FSize(this->nbParticles);
+//    }
+//
+//    /**
+//      * The center of the box from the simulation file opened by the loader
+//      * @return box center
+//      */
+//    FPoint getCenterOfBox() const{
+//        return this->centerOfBox;
+//    }
+//
+//    /**
+//      * The box width from the simulation file opened by the loader
+//      * @return box width
+//      */
+//    FReal getBoxWidth() const{
+//      return static_cast<FReal>(this->boxWidth);
+//    }
+//
+//    FReal getEnergy() const{
+//      return static_cast<FReal>(this->energy);
+//    }
 
     /**
       * Fill a particle
@@ -307,7 +367,7 @@ public:
 
         int size;
         removeWarning = fread(&size, sizeof(int), 1, file);
-        if(size != 60) printf("Error in loader ewal Size %d should be %d\n", size, 60);
+        if(size != 60) printf("Error in loader Dlpoly Size %d should be %d\n", size, 60);
 
         removeWarning = fread(&index, sizeof(int), 1, file);
         removeWarning = fread(&charge, sizeof(double), 1, file);
@@ -321,7 +381,7 @@ public:
         removeWarning = fread(&fz, sizeof(double), 1, file);
 
         removeWarning = fread(&size, sizeof(int), 1, file);
-        if(size != 60) printf("Error in loader ewal Size %d should be %d\n", size, 60);
+        if(size != 60) printf("Error in loader Dlpoly Size %d should be %d\n", size, 60);
 
         inPosition->setPosition( static_cast<FReal>(x), static_cast<FReal>(y) ,static_cast<FReal>(z));
         inForces[0] = static_cast<FReal>(fx);
@@ -334,6 +394,6 @@ public:
 };
 
 
-#endif //FEwalLoader_HPP
+#endif //FDlpolyLoader_HPP
 
 
