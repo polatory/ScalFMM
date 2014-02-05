@@ -55,22 +55,21 @@
  */
 
 int main(int, char **){
-  typedef FP2PParticleContainer<> ContainerClass;
-  typedef FSimpleLeaf<ContainerClass> LeafClass;
+
 //  typedef FInterpMatrixKernelR MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJK RIJKMatrixKernelClass; // PB: force computation
-
+  const unsigned int dim = MatrixKernelClass::DIM;
+  const unsigned int nrhs = MatrixKernelClass::NRHS;
+  const unsigned int nlhs = MatrixKernelClass::NLHS;
+  typedef FP2PParticleContainer<nrhs,nlhs> ContainerClass;
+  typedef FSimpleLeaf<ContainerClass> LeafClass;
 
   ///////////////////////What we do/////////////////////////////
   std::cout << "\nTask: Compute interactions between source particles in leaf Y and target\n";
   std::cout << " particles in leaf X. Compare the fast summation K ~ Lx K Ly' with the\n";
   std::cout << " direct computation.\n" << std::endl;
   //////////////////////////////////////////////////////////////
-
-  const unsigned int dim = MatrixKernelClass::DIM;
-  const unsigned int nrhs = MatrixKernelClass::NRHS;
-  const unsigned int nlhs = MatrixKernelClass::NLHS;
 
   const FReal FRandMax = FReal(RAND_MAX);
   FTic time;
@@ -86,12 +85,13 @@ int main(int, char **){
   std::cout << "Fill the leaf X of width " << width
             << " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
   {
+    
     for(unsigned long i=0; i<M; ++i){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-      // TODO: find a way to push vectorial attribute of arbitrary dim (nlhs)
-      X.push(FPoint(x, y, z), FReal(rand())/FRandMax);
+      // PB: need to know the actual value of NLHS
+      X.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
     }
   }
 
@@ -109,8 +109,8 @@ int main(int, char **){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-      // TODO: find a way to push vectorial attribute of arbitrary dim (nrhs)
-      Y.push(FPoint(x, y, z), FReal(rand())/FRandMax);
+      // PB: need to know the actual value of NRHS
+      Y.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
     }
   }
 
@@ -118,7 +118,7 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // approximative computation
-  const unsigned int ORDER = 4;
+  const unsigned int ORDER = 5;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
@@ -132,8 +132,7 @@ int main(int, char **){
   // Anterpolate: W_n = \sum_j^N S(y_j,\bar y_n) * w_j
   FReal W[nrhs*nnodes]; // multipole expansion
   // tensorial case interpolate same Y for each component
-  for (unsigned int idRhs=0; idRhs<nrhs; ++idRhs)
-    S.applyP2M(cy, width, W + idRhs*nnodes, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
+  S.applyP2M(cy, width, W, Y.getSrc()); // the multipole expansions are set to 0 in S.applyP2M
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   std::cout << "M2L ... " << std::flush;
@@ -499,15 +498,13 @@ int main(int, char **){
   std::cout << "L2P (potential) ... " << std::flush;
   time.tic();
   // Interpolate p_i = \sum_m^L S(x_i,\bar x_m) * F_m
-  for (unsigned int idLhs=0; idLhs<nlhs; ++idLhs)
-    S.applyL2P(cx, width, F+idLhs*nnodes, X.getTargets());
+  S.applyL2P(cx, width, F, X.getTargets());
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   std::cout << "L2P (forces) ... " << std::flush;
   time.tic();
   // Interpolate f_i = \sum_m^L P(x_i,\bar x_m) * F_m
-  for (unsigned int idLhs=0; idLhs<nlhs; ++idLhs)
-    S.applyL2PGradient(cx, width, F+idLhs*nnodes, X.getTargets());
+  S.applyL2PGradient(cx, width, F, X.getTargets());
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
 
   ////////////////////////////////////////////////////////////////////
@@ -517,13 +514,21 @@ int main(int, char **){
   std::cout << "Compute interactions directly ..." << std::endl;
   time.tic();
 
-  FReal* approx_f = new FReal [M * 3];
-  FReal*        f = new FReal [M * 3];
-  FBlas::setzero(M*3, f);
+  FReal** approx_f = new FReal* [nlhs];
+  FReal**        f = new FReal* [nlhs];
+  for (unsigned int i=0; i<nrhs; ++i){
+    approx_f[i] = new FReal [M * 3];
+    f[i] = new FReal [M * 3];
+    FBlas::setzero(M*3, f[i]);
+  }
 
-  FReal* approx_p = new FReal[M];
-  FReal*        p = new FReal[M];
-  FBlas::setzero(M, p);
+  FReal** approx_p = new FReal* [nlhs];
+  FReal**        p = new FReal* [nlhs];
+  for (unsigned int i=0; i<nrhs; ++i){
+    approx_p[i] = new FReal [M];
+    p[i] = new FReal [M];
+    FBlas::setzero(M, p[i]);
+  }
 
   { // start direct computation
     unsigned int counter = 0;
@@ -532,14 +537,18 @@ int main(int, char **){
       const FPoint x = FPoint(X.getSrc()->getPositions()[0][idxPartX],
                               X.getSrc()->getPositions()[1][idxPartX],
                               X.getSrc()->getPositions()[2][idxPartX]);
-      const FReal  wx = X.getSrc()->getPhysicalValues()[idxPartX];
+      const FReal wx[nrhs] = {X.getSrc()->getPhysicalValues(0)[idxPartX],
+                              X.getSrc()->getPhysicalValues(1)[idxPartX],
+                              X.getSrc()->getPhysicalValues(2)[idxPartX]}; 
 
       for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
         const FPoint y = FPoint(Y.getSrc()->getPositions()[0][idxPartY],
                                 Y.getSrc()->getPositions()[1][idxPartY],
                                 Y.getSrc()->getPositions()[2][idxPartY]);
-        const FReal  wy = Y.getSrc()->getPhysicalValues()[idxPartY];
-
+        const FReal wy[nrhs] = {Y.getSrc()->getPhysicalValues(0)[idxPartY],
+                                Y.getSrc()->getPhysicalValues(1)[idxPartY],
+                                Y.getSrc()->getPhysicalValues(2)[idxPartY]};
+        
 //        // 1/R
 //        const FReal one_over_r = MatrixKernel.evaluate(x, y);
 //
@@ -558,14 +567,14 @@ int main(int, char **){
             unsigned int d = MatrixKernel.getPosition(i*nrhs+j);
             const FReal rij = MatrixKernelClass(d).evaluate(x, y);
             // potential
-            p[counter] += rij * wy;
+            p[i][counter] += rij * wy[j];
             // force
             FReal force[3];
             for (unsigned int k=0; k<3; ++k){
               //std::cout << "i,j,k,=" << i << ","<< j << ","<< k << std::endl;
               unsigned int dk = RIJKMatrixKernel.getPosition(i*3*3+j*3+k);
               force[k] = RIJKMatrixKernelClass(dk).evaluate(x, y);
-              f[counter*3 + k] += force[k] * wx * wy;
+              f[i][counter*3 + k] += force[k] * wx[j] * wy[j];
             }
           }
 
@@ -582,22 +591,41 @@ int main(int, char **){
   ////////////////////////////////////////////////////////////////////
   unsigned int counter = 0;
   for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
-    approx_p[counter] = X.getSrc()->getPotentials()[idxPartX];
-    const FPoint force = FPoint(X.getSrc()->getForcesX()[idxPartX],
-                                X.getSrc()->getForcesY()[idxPartX],
-                                X.getSrc()->getForcesZ()[idxPartX]);
-    approx_f[counter*3 + 0] = force.getX();
-    approx_f[counter*3 + 1] = force.getY();
-    approx_f[counter*3 + 2] = force.getZ();
-
+    for (unsigned int i=0; i<nlhs; ++i){
+      approx_p[i][counter] = X.getSrc()->getPotentials(i)[idxPartX];
+      const FPoint force = FPoint(X.getSrc()->getForcesX(i)[idxPartX],
+                                  X.getSrc()->getForcesY(i)[idxPartX],
+                                  X.getSrc()->getForcesZ(i)[idxPartX]);
+      approx_f[i][counter*3 + 0] = force.getX();
+      approx_f[i][counter*3 + 1] = force.getY();
+      approx_f[i][counter*3 + 2] = force.getZ();
+    }
     counter++;
   }
 
-  std::cout << "\nPotential error:" << std::endl;
-  std::cout << "Relative error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
+//  std::cout << "Check Potential, forceX, forceY, forceZ " << std::endl;
+//  for (unsigned int i=0; i<nlhs; ++i){
+//    std::cout<< "idxLhs="<< i << std::endl;
+//    for(int idxPart = 0 ; idxPart < 20 ; ++idxPart){
+//      std::cout << approx_p[i][idxPart]     << ", "<< p[i][idxPart] << "|| ";
+//      std::cout << approx_f[i][idxPart]     << ", "<< f[i][idxPart] << "|| ";
+//      std::cout << approx_f[i][idxPart+M]   << ", "<< f[i][idxPart+M] << "|| ";
+//      std::cout << approx_f[i][idxPart+2*M] << ", "<< f[i][idxPart+2*M] << "|| ";
+//      std::cout << std::endl;
+//    }
+//    std::cout << std::endl;
+//  }
+//  std::cout << std::endl;
 
-  std::cout << "\nForce error:" << std::endl;
-  std::cout << "Relative L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
+  std::cout << "\nPotential error:" << std::endl;
+  std::cout << "Relative error  X = " << FMath::FAccurater( p[0], approx_p[0], M) << std::endl;
+  std::cout << "Relative error  Y = " << FMath::FAccurater( p[1], approx_p[1], M) << std::endl;
+  std::cout << "Relative error  Z = " << FMath::FAccurater( p[2], approx_p[2], M) << std::endl;
+
+  std::cout << "\nForce error (Something is wrong here => TOFIX):" << std::endl;
+  std::cout << "Relative L2 error X  = " << FMath::FAccurater( f[0], approx_f[0], M*3) << std::endl;
+  std::cout << "Relative L2 error Y  = " << FMath::FAccurater( f[1], approx_f[1], M*3) << std::endl;
+  std::cout << "Relative L2 error Z  = " << FMath::FAccurater( f[2], approx_f[2], M*3) << std::endl;
   std::cout << std::endl;
 
   // free memory

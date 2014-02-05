@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 
 
   // typedefs
-  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-//  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+//  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
 
   const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
   const unsigned int NRHS = MatrixKernelClass::NRHS;

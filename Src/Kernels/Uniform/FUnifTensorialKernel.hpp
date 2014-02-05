@@ -38,14 +38,15 @@ class FTreeCoordinate;
  *
  * PB: 3 IMPORTANT remarks !!!
  *
- * 1) Handling tensorial kernels (DIM,NRHS,NLHS) and having multiple rhs (NVALS) 
- * are considered 2 separate features and are currently combined.
+ * 1) Handling tensorial kernels (DIM,NRHS,NLHS) and having multiple rhs 
+ * (NVALS) are considered 2 distinct features and are currently combined.
  *
- * 2) When it comes to applying M2L it is NOT much faster to loop over NRHSxNLHS 
- * inside applyM2L (at least for the Lagrange case).
- * 2-bis) The evaluation of the kernel matrix (see M2LHandler) should be done at once 
- * instead of compo-by-compo (TODO). On the other hand, the ChebyshevSym tensorial kernel 
- * requires the matrix kernel to be evaluated compo-by-compo since we currently use a scalar ACA.
+ * 2) When it comes to applying M2L it is NOT much faster to loop over 
+ * NRHSxNLHS inside applyM2L (at least for the Lagrange case).
+ * 2-bis) During precomputation the tensorial matrix kernels are evaluated 
+ * blockwise, but this is not always possible. 
+ * In fact, in the ChebyshevSym variant the matrix kernel needs to be 
+ * evaluated compo-by-compo since we currently use a scalar ACA.
  *
  * 3) We currently use multiple 1D FFT instead of multidim FFT. 
  * TODO switch to multidim if relevant in considered range of size 
@@ -66,7 +67,7 @@ class FUnifTensorialKernel
 protected://PB: for OptiDis
 
   // private types
-  typedef FUnifTensorialM2LHandler<ORDER,MatrixKernelClass> M2LHandlerClass;
+  typedef FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
 
   // using from
   typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
@@ -83,16 +84,13 @@ public:
    */
   FUnifTensorialKernel(const int inTreeHeight,
                        const FReal inBoxWidth,
-                       const FPoint& inBoxCenter)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
-                                                                                       inBoxWidth,
-                                                                                       inBoxCenter),
-      M2LHandler(new M2LHandlerClass())
-  {
-    // read precomputed compressed m2l operators from binary file
-    //M2LHandler->ReadFromBinaryFileAndSet(); // PB: TODO?
-    M2LHandler->ComputeAndSet();
-  }
+                       const FPoint& inBoxCenter,
+                       const double inMatParam = 0.0)
+    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inMatParam),
+      M2LHandler(new M2LHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(),
+                                     inTreeHeight,
+                                     inBoxWidth))// PB: for non homogeneous case
+  { }
 
 
   void P2M(CellClass* const LeafCell,
@@ -150,6 +148,7 @@ public:
            const int TreeLevel)
   {
     const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
+    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(CellWidth));
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
@@ -163,12 +162,15 @@ public:
           int idxMul = idxV*nRhs + idxRhs;
           // update kernel index such that: x_i = K_{ij}y_j 
           int idxK = idxLhs*nRhs + idxRhs;
+          // get index in matrix kernel
+          unsigned int d 
+            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxK);
 
           for (int idx=0; idx<343; ++idx){
             if (SourceCells[idx]){
-              M2LHandler->applyFC(idx, CellWidth, 
+              M2LHandler->applyFC(idx, TreeLevel, scale, d,
                                   SourceCells[idx]->getTransformedMultipole(idxMul),
-                                  TransformedLocalExpansion,idxK);
+                                  TransformedLocalExpansion);
 
             }
           }

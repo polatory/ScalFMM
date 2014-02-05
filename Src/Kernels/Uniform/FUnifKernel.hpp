@@ -45,7 +45,7 @@ class FUnifKernel
   : public FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
   // private types
-  typedef FUnifM2LHandler<ORDER,MatrixKernelClass> M2LHandlerClass;
+  typedef FUnifM2LHandler<ORDER,MatrixKernelClass::Type> M2LHandlerClass;
 
   // using from
   typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
@@ -61,17 +61,13 @@ public:
    * runtime_error is thrown if the required file is not valid).
    */
   FUnifKernel(const int inTreeHeight,
-	      const FReal inBoxWidth,
-	      const FPoint& inBoxCenter)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
-										       inBoxWidth,
-										       inBoxCenter),
-      M2LHandler(new M2LHandlerClass())
-  {
-    // read precomputed compressed m2l operators from binary file
-    //M2LHandler->ReadFromBinaryFileAndSet(); // PB: TODO?
-    M2LHandler->ComputeAndSet();
-  }
+              const FReal inBoxWidth,
+              const FPoint& inBoxCenter)
+    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
+      M2LHandler(new M2LHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(),
+                                     inTreeHeight,
+                                     inBoxWidth))// PB: for non homogeneous case
+  { }
 
 
   void P2M(CellClass* const LeafCell,
@@ -133,16 +129,17 @@ public:
            const int /*NumSourceCells*/,
            const int TreeLevel)
   {
+    const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
+    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(CellWidth));
+
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxRhs);
 
-      const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
       for (int idx=0; idx<343; ++idx){
         if (SourceCells[idx]){
-          M2LHandler->applyFC(idx, CellWidth, SourceCells[idx]->getTransformedMultipole(idxRhs),
+          M2LHandler->applyFC(idx, TreeLevel, scale, 
+                              SourceCells[idx]->getTransformedMultipole(idxRhs),
                               TransformedLocalExpansion);
-
-
         }
       }
     }

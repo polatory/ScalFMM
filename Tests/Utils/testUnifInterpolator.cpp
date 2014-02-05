@@ -509,11 +509,21 @@ int main(int, char **){
     counter++;
   }
 
+//  std::cout << "Check Potential, forceX, forceY, forceZ " << std::endl;
+//  for(int idxPart = 0 ; idxPart < 20 ; ++idxPart){
+//    std::cout << approx_p[idxPart] << ", "<< p[idxPart] << "|| ";
+//    std::cout << approx_f[idxPart] << ", "<< f[idxPart] << "|| ";
+//    std::cout << approx_f[idxPart+M] << ", "<< f[idxPart+M] << "|| ";
+//    std::cout << approx_f[idxPart+2*M] << ", "<< f[idxPart+2*M] << "|| ";
+//    std::cout << std::endl;
+//  }
+//  std::cout << std::endl;
+
   std::cout << "\nPotential error:" << std::endl;
-  std::cout << "Relative error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
+  std::cout << "Absolute error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
 
   std::cout << "\nForce error:" << std::endl;
-  std::cout << "Relative L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
+  std::cout << "Absolute L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
   std::cout << std::endl;
 
   // free memory
