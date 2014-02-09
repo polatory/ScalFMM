@@ -407,7 +407,7 @@ DL\_POLY\_2 uses the following internal molecular units \\
 \hline
 type & Expression & Numerical value & \\
 time &$t_0$ & $10^{-12}\;s$& picosecond\\
-length & $l_0$ &$10^{-10}\; m $& $\AA$ Angström\\
+length & $l_0$ &$10^{-10}\; m $& $\AA$ Angstrom\\
 mass &  $m_0$ & $ 1.6605402 \; 10^{−27}\; kg $& atomic mass unit\\
 charge &  $q_0$ & $1.60217733 \; 10^{−19} Coulombs$& unit of proton charge\\
 energy & $E_0 = m_0(l_0/t_0)^2$&$1.6605402 \;  10^{−23}\; Joules $ & $10\; J\, mol^{-1}$\\
@@ -424,7 +424,7 @@ f(x_i) = -\frac{q_0^2}{4 \pi\epsilon_0 l_0^2} q_i \sum_{j=0,i\neq j}^{N}{q_j\fra
  = C_{force} \; q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
 $$
 
-The Energy conversion factor is $\gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal\, mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
+The Energy conversion factor is $\displaystyle \gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal\, mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
 
 
 To compare with the molecular dynamics code, the forces and the energy is multiplied by $C_{force}$ ($C_{energy}$ respectively). 
@@ -441,16 +441,16 @@ Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
 The force unit is the internal DL\_Poly unit.
 
 
-The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second tests is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file. The Ewald's parameter are chosen such that the  Ewald sum  precision is $10^{-08}$.
+The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second test is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file. The Ewald's parameters are chosen such that the  Ewald sum  precision is $10^{-14}$. In the test1 (reps. test2) the cut off is $8\, \AA$ (reps. $12\, \AA$) and the reciprocal lattice vector in $18$ (resp. 25) in each direction.
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|c|}
 \hline
-Crystal & Cube size & Cut off & reciprocal lattice vector &Energy \\
-        &  $\AA$    & $\AA$    &             & $kcal\, mol^{-1}$ \\
+Crystal  &Cube size & lattice & Nb atoms  &Energy  &Energy/atom\\
+      &    $\AA$    & $\AA$    &     & $kcal\, mol^{-1}$ & $kcal\, mol^{-1}$\\
 \hline
-Small & 16 & 8 & (19,19,19) & $ -2.346403 \,10^{4}  $ \\
+test1 & 16 & $4x4x4$ & 128 & $ -2.346403 \,10^{4}  $ & -$183.312727$\\
 \hline
-Big   & 40 & 12 & (25,25,25) & $-3.666255 \,10^{5}  $ \\
+test2   & 40 &$10x10x10$  & 2000 & $-3.666255 \,10^{5} $ &$183.312729$\\
 \hline
 \end{tabular}
 \end{center}
@@ -486,4 +486,33 @@ job time 3600
 close time   10
 finish
 \end{verbatim}
+
+\newpage
+\section*{\centerline{Appendix 2}\\ \centerline{Binary output file }}
+
+We introduce the following structure for atoms coming from MD simulation. Here the type of the atom is not considered and you can find it with the index of the atom. 
+\begin{verbatim}
+struct MDParticle {
+	FPoint position;
+	FReal forces[3];
+	FReal physicalValue;
+	FReal potential;
+	int index;
+};
+\end{verbatim}
+We save the direct evaluation of the forces in a binary file. To read the file you should proceed as follow
+\begin{verbatim}
+	std::ifstream fileout(filenameOut,
+	                      std::ifstream::in| std::ios::binary);
+
+   file.seekg (std::ios::beg);
+1  file.read( (char*)(&nbParticles), sizeof(int));
+2  fileout.read( (char*)(&boxsize[0]), sizeof(double)*3);
+3  fileout.read((char*)&PER[0],sizeof(int)*4);
+4  fileout.read( (char*)(&denergy), sizeof(denergy));
+  //
+  particles = new MDParticle[nbParticles*2];
+  fileout.read((char*)&particles[0], sizeof(MDParticle)*nbParticles);
+\end{verbatim}
+Line 1 reads the number of particles, line 2 the boxe size in the three dimension of space. Line 3 describes if we are periodic or not. If PER[0] is $0$ the system is not periodic and the three others values are null. If PER[0] is $0$ then we consider a periodic system ans for the FMM algorithm the periodic deep is given by  PER[1]xPER[2]xPER[3].
 \end{document}
