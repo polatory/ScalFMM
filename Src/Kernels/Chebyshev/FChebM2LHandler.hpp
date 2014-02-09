@@ -51,6 +51,16 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
  * size \f$\ell^3\times r\f$, and \f$316\f$ \f$C_t\f$, each of size \f$r\times
  * r\f$.
  *
+ * PB: FChebM2LHandler does not seem to support non_homogeneous kernels!
+ * In fact nothing appears to handle this here (i.e. adapt scaling and storage 
+ * to MatrixKernelClass::Type). Given the relatively important cost of the 
+ * Chebyshev variant, it is probably a choice not to have implemented this 
+ * feature here but instead in the ChebyshevSym variant. But what if the 
+ * kernel is non homogeneous and non symmetric (e.g. Dislocations)... 
+ * 
+ * TODO Specialize class (see UnifM2LHandler) OR prevent from using this 
+ * class with non homogeneous kernels ?!
+ *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
 template <int ORDER, class MatrixKernelClass>

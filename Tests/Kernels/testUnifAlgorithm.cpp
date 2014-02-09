@@ -122,12 +122,12 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 3;
+    const unsigned int ORDER = 5;
 
     // typedefs
     typedef FP2PParticleContainerIndexed<> ContainerClass;
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
-    //typedef FInterpMatrixKernelLJ MatrixKernelClass;
+//    typedef FInterpMatrixKernelLJ MatrixKernelClass;
     typedef FInterpMatrixKernelR MatrixKernelClass;
     typedef FUnifCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
