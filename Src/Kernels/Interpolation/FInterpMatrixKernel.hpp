@@ -89,6 +89,11 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
                                    xy.getZ()*xy.getZ());
   }
 
+  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
+  {
+    block[0]=this->evaluate(x,y);
+  }
+
   FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
   {
     const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
@@ -210,8 +215,8 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
   static const unsigned int DIM = 6; //PB: dimension of kernel
   static const unsigned int NIDX = 2; //PB: number of indices 
-  static constexpr unsigned int indexTab[12]={0,0,0,1,1,2,
-                                   0,1,2,1,2,2};
+  /*static */const/*expr*/ unsigned int indexTab[12]={0,0,0,1,1,2,
+                                                      0,1,2,1,2,2};
   static const unsigned int NRHS = 3;
   static const unsigned int NLHS = 3;
 
@@ -280,8 +285,8 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJ;
   static const unsigned int DIM = 6; //PB: dimension of kernel
   static const unsigned int NIDX = 2; //PB: number of indices 
-  static constexpr unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,2,
-                                                    0,1,2,1,2,2};
+  /*static */const/*expr*/ unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,2,
+                                                            0,1,2,1,2,2};
   static const unsigned int NRHS = 3;
   static const unsigned int NLHS = 3;
 
@@ -364,7 +369,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJK;
   static const  unsigned int DIM = 10; //PB: dimension of kernel
   static const unsigned int NIDX = 3; //PB: number of indices 
-  static constexpr unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,1,2,2,2,0,
+  /*static */const/*expr*/ unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,1,2,2,2,0,
                                          0,1,2,0,1,2,0,1,2,1,
                                          0,1,2,0,1,2,0,1,2,2};
   static const unsigned int NRHS = 3;

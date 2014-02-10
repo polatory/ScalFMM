@@ -137,28 +137,28 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
         // Print for information
         Print("Potential diff is = ");
-        Print(potentialDiff.getL2Norm());
-        Print(potentialDiff.getInfNorm());
+        Print(potentialDiff.getRelativeL2Norm());
+        Print(potentialDiff.getRelativeInfNorm());
         Print("Fx diff is = ");
-        Print(fx.getL2Norm());
-        Print(fx.getInfNorm());
+        Print(fx.getRelativeL2Norm());
+        Print(fx.getRelativeInfNorm());
         Print("Fy diff is = ");
-        Print(fy.getL2Norm());
-        Print(fy.getInfNorm());
+        Print(fy.getRelativeL2Norm());
+        Print(fy.getRelativeInfNorm());
         Print("Fz diff is = ");
-        Print(fz.getL2Norm());
-        Print(fz.getInfNorm());
+        Print(fz.getRelativeL2Norm());
+        Print(fz.getRelativeInfNorm());
 
         // Assert
         const FReal MaximumDiff = FReal(0.0001);
-        uassert(potentialDiff.getL2Norm() < MaximumDiff);
-        uassert(potentialDiff.getInfNorm() < MaximumDiff);
-        uassert(fx.getL2Norm()  < MaximumDiff);
-        uassert(fx.getInfNorm() < MaximumDiff);
-        uassert(fy.getL2Norm()  < MaximumDiff);
-        uassert(fy.getInfNorm() < MaximumDiff);
-        uassert(fz.getL2Norm()  < MaximumDiff);
-        uassert(fz.getInfNorm() < MaximumDiff);
+        uassert(potentialDiff.getRelativeL2Norm() < MaximumDiff);
+        uassert(potentialDiff.getRelativeInfNorm() < MaximumDiff);
+        uassert(fx.getRelativeL2Norm()  < MaximumDiff);
+        uassert(fx.getRelativeInfNorm() < MaximumDiff);
+        uassert(fy.getRelativeL2Norm()  < MaximumDiff);
+        uassert(fy.getRelativeInfNorm() < MaximumDiff);
+        uassert(fz.getRelativeL2Norm()  < MaximumDiff);
+        uassert(fz.getRelativeInfNorm() < MaximumDiff);
     }
 
     /** If memstas is running print the memory used */
