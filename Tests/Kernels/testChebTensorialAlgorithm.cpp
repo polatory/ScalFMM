@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 
 
   // typedefs
-  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-//  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+//  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
 //  typedef FInterpMatrixKernelR MatrixKernelClass;
 
   const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 6; //PB: Beware order=9 exceed memory (even 8 since compute _C then store in C) 
+    const unsigned int ORDER = 5; //PB: Beware order=9 exceed memory (even 8 since compute _C then store in C) 
     const FReal epsilon = FReal(1e-7);
 
     typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;

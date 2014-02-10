@@ -51,6 +51,8 @@ class FChebInterpolator : FNoCopyable
   typedef FChebRoots< ORDER>  BasisType;
   typedef FChebTensor<ORDER> TensorType;
 
+protected: // PB for OptiDis
+
   FReal T_of_roots[ORDER][ORDER];
   FReal T[ORDER * (ORDER-1)];
     unsigned int node_ids[nnodes][3];
@@ -891,8 +893,8 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
 
           // set potential
         potentials[idxPart] += (targetValue);
-      } // N * (7 + ORDER * (ORDER * (9 + ORDER * 4))) flops
-    } // NRHS
+      } // NLHS
+    } // N * (7 + ORDER * (ORDER * (9 + ORDER * 4))) flops
 }
 
 

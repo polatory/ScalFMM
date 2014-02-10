@@ -211,7 +211,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 /// Test Tensorial kernel 1/R*Id_3
 struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
 {
-  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+  static const KERNEL_FUNCTION_TYPE Type = /*NON_*/HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
   static const unsigned int DIM = 6; //PB: dimension of kernel
   static const unsigned int NIDX = 2; //PB: number of indices 
@@ -273,6 +273,18 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
   {
         return FReal(2.) / CellWidth;
   }
+
+//  FReal getScaleFactor(const FReal, const int) const
+//  {
+//    // return 1 because non homogeneous kernel functions cannot be scaled!!!
+//    return FReal(1.);
+//  }
+//
+//  FReal getScaleFactor(const FReal) const
+//  {
+//    // return 1 because non homogeneous kernel functions cannot be scaled!!!
+//    return FReal(1.);
+//  }
 
 };
 

@@ -214,6 +214,162 @@ public:
 };
 
 
+template <int ORDER, class MatrixKernelClass>
+class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCopyable
+{
+	enum {order = ORDER,
+				nnodes = TensorTraits<ORDER>::nnodes,
+				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
+        dim = MatrixKernelClass::DIM,
+        nidx = MatrixKernelClass::NIDX};
+
+  // Tensorial MatrixKernel and homogeneity specific
+	FReal **U, **B;
+	FReal*** C;
+
+  const unsigned int TreeHeight;
+  const FReal RootCellWidth;
+
+	const FReal epsilon; //<! accuracy which determines trucation of SVD
+	unsigned int *rank;   //<! truncation rank, satisfies @p epsilon
+
+
+	static const std::string getFileName(FReal epsilon)
+	{
+		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
+		std::stringstream stream;
+		stream << "m2l_k"<< MatrixKernelClass::Identifier << "_" << precision_type
+					 << "_o" << order << "_e" << epsilon << ".bin";
+		return stream.str();
+	}
+
+	
+public:
+	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal _epsilon)
+		: TreeHeight(inTreeHeight),
+      RootCellWidth(inRootCellWidth),
+      epsilon(_epsilon)
+	{
+		// measure time
+		FTic time; time.tic();
+
+    // allocate rank
+    rank = new unsigned int[TreeHeight];
+
+    // allocate U and B
+    U = new FReal*[TreeHeight]; 
+    B = new FReal*[TreeHeight]; 
+		for (unsigned int l=0; l<TreeHeight; ++l){
+       B[l]=NULL; U[l]=NULL;
+    }
+
+    // allocate C
+    C = new FReal**[TreeHeight];
+		for (unsigned int l=0; l<TreeHeight; ++l){ 
+      C[l] = new FReal*[dim];
+      for (unsigned int d=0; d<dim; ++d)
+        C[l][d]=NULL;
+    }
+
+    for (unsigned int l=0; l<TreeHeight; ++l) {
+      if (U[l] || B[l]) throw std::runtime_error("Operator U or B already set");
+      for (unsigned int d=0; d<dim; ++d)
+        if (C[l][d]) throw std::runtime_error("Compressed M2L operator already set");
+    }
+
+    // Compute matrix of interactions at each level !! (since non homog)
+		FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
+		CellWidth /= FReal(2.);                      // at level 2
+    rank[0]=rank[1]=0;
+		for (unsigned int l=2; l<TreeHeight; ++l) {
+      rank[l] = ComputeAndCompress<order>(MatrixKernel, CellWidth, epsilon, U[l], C[l], B[l]);
+			CellWidth /= FReal(2.);                    // at level l+1 
+    }
+    unsigned long sizeM2L = (TreeHeight-2)*343*dim*rank[2]*rank[2]*sizeof(FReal);
+
+		// write info
+    std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
+							<< time.tacAndElapsed() << "sec."	<< std::endl;
+}
+
+	~FChebTensorialM2LHandler()
+	{
+    if (rank != NULL) delete [] rank;
+    for (unsigned int l=0; l<TreeHeight; ++l) {
+      if (U[l] != NULL) delete [] U[l];
+      if (B[l] != NULL) delete [] B[l];
+      for (unsigned int d=0; d<dim; ++d)
+        if (C[l][d] != NULL) delete [] C[l][d];
+    }
+	}
+
+	/**
+	 * @return rank of the SVD compressed M2L operators
+	 */
+	unsigned int getRank(unsigned int l = 2) const {return rank[l];}
+
+  /**
+	 * Expands potentials \f$x+=UX\f$ of a target cell. This operation can be
+	 * seen as part of the L2L operation.
+	 *
+	 * @param[in] X compressed local expansion of size \f$r\f$
+	 * @param[out] x local expansion of size \f$\ell^3\f$
+	 */
+  void applyU(const FReal *const X, FReal *const x) const
+  {
+//    FBlas::gemva(nnodes, rank, 1., U, const_cast<FReal*>(X), x);
+    FBlas::add(nnodes, const_cast<FReal*>(X), x);
+  }
+
+  /**
+	 * Compressed M2L operation \f$X+=C_tY\f$, where \f$Y\f$ is the compressed
+	 * multipole expansion and \f$X\f$ is the compressed local expansion, both
+	 * of size \f$r\f$. The index \f$t\f$ denotes the transfer vector of the
+	 * target cell to the source cell.
+	 *
+	 * @param[in] transfer transfer vector
+	 * @param[in] Y compressed multipole expansion
+	 * @param[out] X compressed local expansion
+	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
+	 */
+//  void applyC(const int transfer[3], FReal CellWidth,
+//							const FReal *const Y, FReal *const X) const
+//  {
+//		const unsigned int idx
+//			= (transfer[0]+3)*7*7 + (transfer[1]+3)*7 + (transfer[2]+3);
+//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+//    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
+//  }
+  void applyC(const unsigned int idx, const unsigned int l, 
+               const FReal scale, const unsigned int d,
+							const FReal *const Y, FReal *const X) const
+  {
+//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+    FBlas::gemva(rank[l], rank[l], scale, C[l][d] + idx*rank[l]*rank[l], const_cast<FReal*>(Y), X);
+  }
+//  void applyC(FReal CellWidth,
+//							const FReal *const Y, FReal *const X) const
+//  {
+//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+//    FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal*>(Y), X);
+//  }
+
+  /**
+	 * Compresses densities \f$Y=B^\top y\f$ of a source cell. This operation
+	 * can be seen as part of the M2M operation.
+	 *
+	 * @param[in] y multipole expansion of size \f$\ell^3\f$
+	 * @param[out] Y compressed multipole expansion of size \f$r\f$
+	 */
+  void applyB(FReal *const y, FReal *const Y) const
+  {
+//    FBlas::gemtv(nnodes, rank, 1., B, y, Y);
+    FBlas::copy(nnodes, y, Y);
+  }
+
+
+};
+
 
 
 
@@ -242,7 +398,6 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
   const unsigned int dim = MatrixKernelClass::DIM;
 
 	// allocate memory and store compressed M2L operators
-//	if (U||C||B) throw std::runtime_error("Compressed M2L operators are already set");
   for (unsigned int d=0; d<dim; ++d) 
     if (C[d]) throw std::runtime_error("Compressed M2L operators are already set");
 
@@ -250,12 +405,8 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
 	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
-//	// init matrix kernel
-//	const MatrixKernelClass MatrixKernel;
 
 	// allocate memory and compute 316 m2l operators
-//	FReal *_U, *_C, *_B;
-//	_U = _B = NULL;
   FReal** _C; 
   _C  = new FReal* [dim];
   for (unsigned int d=0; d<dim; ++d) 
@@ -312,7 +463,6 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
   const unsigned int rank	= nnodes; //PB: dense Chebyshev
 	if (!(rank>0)) throw std::runtime_error("Low rank must be larger then 0!");
 
-
 	// store U
 	U = new FReal [nnodes * rank];
 //	FBlas::copy(rank*nnodes, _U, U);
@@ -345,7 +495,7 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 		throw std::runtime_error("Number of interactions must correspond to 316");
   for (unsigned int d=0; d<dim; ++d) 
     delete [] _C[d];
-		
+
 
 //	//////////////////////////////////////////////////////////		
 //	for (unsigned int n=0; n<nnodes; ++n) {
@@ -353,7 +503,6 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 //		FBlas::scal(rank, FReal(1.) / weights[n], B+n, nnodes); // scale rows
 //	}
 //	//////////////////////////////////////////////////////////		
-
 
 	// return low rank
 	return rank;

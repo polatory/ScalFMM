@@ -439,7 +439,7 @@ public:
 		}
 
     // Compute memory usage
-    unsigned long sizeM2L = (TreeHeight-1)*343*dim*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = (TreeHeight-2)*343*dim*opt_rc*sizeof(FComplexe);
 
 		// write info
 		std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
