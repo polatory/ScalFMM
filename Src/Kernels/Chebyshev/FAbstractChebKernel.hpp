@@ -45,7 +45,7 @@ class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-  typedef FChebInterpolator<ORDER> InterpolatorClass;
+  typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
 
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
@@ -59,6 +59,8 @@ protected:
   const FReal BoxWidth;    
   /// Width of a leaf cell box 
   const FReal BoxWidthLeaf;
+  /// Parameter to pass to matrix kernel (material specific or anything)
+  const double MatParam;
 
   /**
    * Compute center of leaf cell from its tree coordinate.
@@ -79,14 +81,16 @@ public:
    * runtime_error is thrown if the required file is not valid).
    */
   FAbstractChebKernel(const int inTreeHeight,
-		      const FReal inBoxWidth,
-		      const FPoint& inBoxCenter)
+                      const FReal inBoxWidth,
+                      const FPoint& inBoxCenter,
+                      const double inMatParam = 0.0)
     : Interpolator(new InterpolatorClass()),
-      MatrixKernel(new MatrixKernelClass()),
+      MatrixKernel(new MatrixKernelClass(inMatParam)),
       TreeHeight(inTreeHeight),
       BoxCorner(inBoxCenter - inBoxWidth / FReal(2.)),
       BoxWidth(inBoxWidth),
-      BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1)))
+      BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1))),
+      MatParam(inMatParam)
   {
     /* empty */
   }

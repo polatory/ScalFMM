@@ -154,30 +154,30 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         // Print for information
         Print("Potential diff is = ");
-        Print(potentialDiff.getL2Norm());
-        Print(potentialDiff.getInfNorm());
+        Print(potentialDiff.getRelativeL2Norm());
+        Print(potentialDiff.getRelativeInfNorm());
         Print("Fx diff is = ");
-        Print(fx.getL2Norm());
-        Print(fx.getInfNorm());
+        Print(fx.getRelativeL2Norm());
+        Print(fx.getRelativeInfNorm());
         Print("Fy diff is = ");
-        Print(fy.getL2Norm());
-        Print(fy.getInfNorm());
+        Print(fy.getRelativeL2Norm());
+        Print(fy.getRelativeInfNorm());
         Print("Fz diff is = ");
-        Print(fz.getL2Norm());
-        Print(fz.getInfNorm());
+        Print(fz.getRelativeL2Norm());
+        Print(fz.getRelativeInfNorm());
 
         // Assert
         const FReal MaximumDiffPotential = FReal(9e-5);
         const FReal MaximumDiffForces = FReal(9e-3);
 
-        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);
-        uassert(potentialDiff.getInfNorm() < MaximumDiffPotential);
-        uassert(fx.getL2Norm()  < MaximumDiffForces);
-        uassert(fx.getInfNorm() < MaximumDiffForces);
-        uassert(fy.getL2Norm()  < MaximumDiffForces);
-        uassert(fy.getInfNorm() < MaximumDiffForces);
-        uassert(fz.getL2Norm()  < MaximumDiffForces);
-        uassert(fz.getInfNorm() < MaximumDiffForces);
+        uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);
+        uassert(potentialDiff.getRelativeInfNorm() < MaximumDiffPotential);
+        uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);
+        uassert(fx.getRelativeInfNorm() < MaximumDiffForces);
+        uassert(fy.getRelativeL2Norm()  < MaximumDiffForces);
+        uassert(fy.getRelativeInfNorm() < MaximumDiffForces);
+        uassert(fz.getRelativeL2Norm()  < MaximumDiffForces);
+        uassert(fz.getRelativeInfNorm() < MaximumDiffForces);
 
         // Compute multipole local rhs diff
         FMath::FAccurater localDiff;

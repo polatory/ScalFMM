@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 	// approximative computation
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	typedef FChebInterpolator<ORDER> InterpolatorClass;
+	typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
 	InterpolatorClass S;
 	
 

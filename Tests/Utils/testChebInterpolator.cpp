@@ -104,7 +104,7 @@ int main(int, char **){
 	// approximative computation
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	typedef FChebInterpolator<ORDER> InterpolatorClass;
+	typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
 	InterpolatorClass S;
 
 	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
