@@ -215,15 +215,12 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
   static const unsigned int DIM = 6; //PB: dimension of kernel
   static const unsigned int NIDX = 2; //PB: number of indices 
-  /*static */const/*expr*/ unsigned int indexTab[12]={0,0,0,1,1,2,
-                                                      0,1,2,1,2,2};
+  static const unsigned int indexTab[/*DIM*NIDX=12*/];
   static const unsigned int NRHS = 3;
   static const unsigned int NLHS = 3;
 
   // store positions in sym tensor 
-  const unsigned int applyTab[9]={0,1,2,
-                                  1,3,4,
-                                  2,4,5};
+  static const unsigned int applyTab[/*9*/];
 
   const unsigned int _i,_j;
 
@@ -297,15 +294,12 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJ;
   static const unsigned int DIM = 6; //PB: dimension of kernel
   static const unsigned int NIDX = 2; //PB: number of indices 
-  /*static */const/*expr*/ unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,2,
-                                                            0,1,2,1,2,2};
+  static const unsigned int indexTab[/*DIM*NIDX=12*/];
   static const unsigned int NRHS = 3;
   static const unsigned int NLHS = 3;
 
   // store positions in sym tensor (when looping over NRHSxNLHS)
-  const unsigned int applyTab[9]={0,1,2,
-                                  1,3,4,
-                                  2,4,5};
+  static const unsigned int applyTab[/*9*/];
 
   const unsigned int _i,_j;
 
@@ -381,16 +375,12 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJK;
   static const  unsigned int DIM = 10; //PB: dimension of kernel
   static const unsigned int NIDX = 3; //PB: number of indices 
-  /*static */const/*expr*/ unsigned int indexTab[DIM*NIDX]={0,0,0,1,1,1,2,2,2,0,
-                                         0,1,2,0,1,2,0,1,2,1,
-                                         0,1,2,0,1,2,0,1,2,2};
+  static const unsigned int indexTab[/*DIM*NIDX=30*/];
   static const unsigned int NRHS = 3;
   static const unsigned int NLHS = 3;
 
   // store positions in sym tensor (when looping over NRHSxNLHS)
-  const unsigned int applyTab[27]={0,3,6,3,1,9,6,9,2,
-                                   3,1,9,1,4,7,9,7,5,
-                                   6,9,2,9,7,5,2,5,8};
+  static const unsigned int applyTab[/*27*/];
 
   const unsigned int _i,_j,_k;
 
@@ -478,8 +468,9 @@ public:
   explicit EntryComputer(const unsigned int _nx, const FPoint *const _px,
                          const unsigned int _ny, const FPoint *const _py,
                          const FReal *const _weights = NULL,
-                         const unsigned int idxK = 0)
-    : Kernel(idxK),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
+                         const unsigned int idxK = 0,
+                         const double matparam = 0.0)
+    : Kernel(matparam,idxK),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
 
   void operator()(const unsigned int xbeg, const unsigned int xend,
                   const unsigned int ybeg, const unsigned int yend,
