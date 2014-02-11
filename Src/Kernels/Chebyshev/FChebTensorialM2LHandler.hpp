@@ -44,9 +44,9 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
                                 FReal** &C,
                                 FReal* &B);
 
-template <int ORDER>
-unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
-											FReal* &U,	FReal* &C, FReal* &B);
+//template <int ORDER>
+//unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
+//											FReal* &U,	FReal* &C, FReal* &B);
 
 
 /**
@@ -175,27 +175,12 @@ public:
 	 * @param[out] X compressed local expansion
 	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
 	 */
-//  void applyC(const int transfer[3], FReal CellWidth,
-//							const FReal *const Y, FReal *const X) const
-//  {
-//		const unsigned int idx
-//			= (transfer[0]+3)*7*7 + (transfer[1]+3)*7 + (transfer[2]+3);
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-//    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
-//  }
   void applyC(const unsigned int idx, const unsigned int , 
                const FReal scale, const unsigned int d,
 							const FReal *const Y, FReal *const X) const
   {
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
     FBlas::gemva(rank, rank, scale, C[d] + idx*rank*rank, const_cast<FReal*>(Y), X);
   }
-//  void applyC(FReal CellWidth,
-//							const FReal *const Y, FReal *const X) const
-//  {
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-//    FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal*>(Y), X);
-//  }
 
   /**
 	 * Compresses densities \f$Y=B^\top y\f$ of a source cell. This operation
@@ -332,27 +317,12 @@ public:
 	 * @param[out] X compressed local expansion
 	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
 	 */
-//  void applyC(const int transfer[3], FReal CellWidth,
-//							const FReal *const Y, FReal *const X) const
-//  {
-//		const unsigned int idx
-//			= (transfer[0]+3)*7*7 + (transfer[1]+3)*7 + (transfer[2]+3);
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-//    FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
-//  }
   void applyC(const unsigned int idx, const unsigned int l, 
-               const FReal scale, const unsigned int d,
+               const FReal, const unsigned int d,
 							const FReal *const Y, FReal *const X) const
   {
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-    FBlas::gemva(rank[l], rank[l], scale, C[l][d] + idx*rank[l]*rank[l], const_cast<FReal*>(Y), X);
+    FBlas::gemva(rank[l], rank[l], 1., C[l][d] + idx*rank[l]*rank[l], const_cast<FReal*>(Y), X);
   }
-//  void applyC(FReal CellWidth,
-//							const FReal *const Y, FReal *const X) const
-//  {
-//		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
-//    FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal*>(Y), X);
-//  }
 
   /**
 	 * Compresses densities \f$Y=B^\top y\f$ of a source cell. This operation
@@ -622,138 +592,138 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-/**
- * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_kV^\top\|_F \le
- * \epsilon \|K\|_F\f$, ie., the truncation rank of the singular value
- * decomposition. With the definition of the Frobenius norm \f$\|K\|_F =
- * \left(\sum_{i=1}^N \sigma_i^2\right)^{\frac{1}{2}}\f$ the determination of
- * the low-rank follows as \f$\|K-U\Sigma_kV^\top\|_F^2 = \sum_{i=k+1}^N
- * \sigma_i^2 \le \epsilon^2 \sum_{i=1}^N \sigma_i^2 = \epsilon^2
- * \|K\|_F^2\f$.
- *
- * @param[in] singular_values array of singular values ordered as \f$\sigma_1
- * \ge \sigma_2 \ge \dots \ge \sigma_N\f$
- * @param[in] eps accuracy \f$\epsilon\f$
- */ 
-template <int ORDER>
-unsigned int getRank(const FReal singular_values[], const double eps)
-{
-	enum {nnodes = TensorTraits<ORDER>::nnodes};
-
-	FReal nrm2(0.);
-	for (unsigned int k=0; k<nnodes; ++k)
-		nrm2 += singular_values[k] * singular_values[k];
-
-	FReal nrm2k(0.);
-	for (unsigned int k=nnodes; k>0; --k) {
-		nrm2k += singular_values[k-1] * singular_values[k-1];
-		if (nrm2k > eps*eps * nrm2)	return k;
-	}
-	throw std::runtime_error("rank cannot be larger than nnodes");
-	return 0;
-}
-
-unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
-{
-	const FReal nrm2 = FBlas::scpr(size, singular_values, singular_values);
-	FReal nrm2k(0.);
-	for (unsigned int k=size; k>0; --k) {
-		nrm2k += singular_values[k-1] * singular_values[k-1];
-		if (nrm2k > eps*eps * nrm2)	return k;
-	}
-	throw std::runtime_error("rank cannot be larger than size");
-	return 0;
-}
-
-
-/**
- * Compresses \f$[K_1,\dots,K_{316}]\f$ in \f$C\f$. Attention: the matrices
- * \f$U,B\f$ are not initialized, no memory is allocated as input, as output
- * they store the respective matrices. The matrix \f$C\f$ stores
- * \f$[K_1,\dots,K_{316}]\f$ as input and \f$[C_1,\dots,C_{316}]\f$ as output.
- *
- * @param[in] epsilon accuracy
- * @param[out] U matrix of size \f$\ell^3\times r\f$
- * @param[in] C matrix of size \f$\ell^3\times 316 \ell^e\f$ storing \f$[K_1,\dots,K_{316}]\f$
- * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
- * @param[out] B matrix of size \f$\ell^3\times r\f$
- */
-template <int ORDER>
-unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
-											FReal* &U,	FReal* &C, FReal* &B)
-{
-	// compile time constants
-	enum {order = ORDER,
-				nnodes = TensorTraits<ORDER>::nnodes};
-
-	// init SVD
-	const unsigned int LWORK = 2 * (3*nnodes + ninteractions*nnodes);
-	FReal *const WORK = new FReal [LWORK];
-	
-	// K_col ///////////////////////////////////////////////////////////
-	FReal *const K_col = new FReal [ninteractions * nnodes*nnodes]; 
-	for (unsigned int i=0; i<ninteractions; ++i)
-		for (unsigned int j=0; j<nnodes; ++j)
-			FBlas::copy(nnodes,
-									C     + i*nnodes*nnodes + j*nnodes,
-									K_col + j*ninteractions*nnodes + i*nnodes);
-	// singular value decomposition
-	FReal *const Q = new FReal [nnodes*nnodes];
-	FReal *const S = new FReal [nnodes];
-	const unsigned int info_col
-		= FBlas::gesvd(ninteractions*nnodes, nnodes, K_col, S, Q, nnodes,
-									 LWORK, WORK);
-	if (info_col!=0)
-		throw std::runtime_error("SVD did not converge with " + info_col);
-	delete [] K_col;
-	const unsigned int k_col = getRank<ORDER>(S, epsilon);
-
-	// Q' -> B 
-	B = new FReal [nnodes*k_col];
-	for (unsigned int i=0; i<k_col; ++i)
-		FBlas::copy(nnodes, Q+i, nnodes, B+i*nnodes, 1);
-
-	// K_row //////////////////////////////////////////////////////////////
-	FReal *const K_row = C;
-
-	const unsigned int info_row
-		= FBlas::gesvdSO(nnodes, ninteractions*nnodes, K_row, S, Q, nnodes,
-										 LWORK, WORK);
-	if (info_row!=0)
-		throw std::runtime_error("SVD did not converge with " + info_row);
-	const unsigned int k_row = getRank<ORDER>(S, epsilon);
-	delete [] WORK;
-
-	// Q -> U
-	U = Q;
-
-	// V' -> V
-	FReal *const V = new FReal [nnodes*ninteractions * k_row];
-	for (unsigned int i=0; i<k_row; ++i)
-		FBlas::copy(nnodes*ninteractions, K_row+i, nnodes,
-								V+i*nnodes*ninteractions, 1);
-
-	// rank k(epsilon) /////////////////////////////////////////////////////
-	const unsigned int k = k_row < k_col ? k_row : k_col;
-
-	// C_row ///////////////////////////////////////////////////////////
-	C = new FReal [ninteractions * k*k];
-	for (unsigned int i=0; i<k; ++i) {
-		FBlas::scal(nnodes*ninteractions, S[i], V + i*nnodes*ninteractions);
-		for (unsigned int m=0; m<ninteractions; ++m)
-			for (unsigned int j=0; j<k; ++j)
-				C[m*k*k + j*k + i]
-					= FBlas::scpr(nnodes,
-												V + i*nnodes*ninteractions + m*nnodes,
-												B + j*nnodes);
-	}
-
-	delete [] V;
-	delete [] S;
-	delete [] K_row;
-
-	return k;
-}
+///**
+// * Computes the low-rank \f$k\f$ based on \f$\|K-U\Sigma_kV^\top\|_F \le
+// * \epsilon \|K\|_F\f$, ie., the truncation rank of the singular value
+// * decomposition. With the definition of the Frobenius norm \f$\|K\|_F =
+// * \left(\sum_{i=1}^N \sigma_i^2\right)^{\frac{1}{2}}\f$ the determination of
+// * the low-rank follows as \f$\|K-U\Sigma_kV^\top\|_F^2 = \sum_{i=k+1}^N
+// * \sigma_i^2 \le \epsilon^2 \sum_{i=1}^N \sigma_i^2 = \epsilon^2
+// * \|K\|_F^2\f$.
+// *
+// * @param[in] singular_values array of singular values ordered as \f$\sigma_1
+// * \ge \sigma_2 \ge \dots \ge \sigma_N\f$
+// * @param[in] eps accuracy \f$\epsilon\f$
+// */ 
+//template <int ORDER>
+//unsigned int getRank(const FReal singular_values[], const double eps)
+//{
+//	enum {nnodes = TensorTraits<ORDER>::nnodes};
+//
+//	FReal nrm2(0.);
+//	for (unsigned int k=0; k<nnodes; ++k)
+//		nrm2 += singular_values[k] * singular_values[k];
+//
+//	FReal nrm2k(0.);
+//	for (unsigned int k=nnodes; k>0; --k) {
+//		nrm2k += singular_values[k-1] * singular_values[k-1];
+//		if (nrm2k > eps*eps * nrm2)	return k;
+//	}
+//	throw std::runtime_error("rank cannot be larger than nnodes");
+//	return 0;
+//}
+//
+//unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
+//{
+//	const FReal nrm2 = FBlas::scpr(size, singular_values, singular_values);
+//	FReal nrm2k(0.);
+//	for (unsigned int k=size; k>0; --k) {
+//		nrm2k += singular_values[k-1] * singular_values[k-1];
+//		if (nrm2k > eps*eps * nrm2)	return k;
+//	}
+//	throw std::runtime_error("rank cannot be larger than size");
+//	return 0;
+//}
+//
+//
+///**
+// * Compresses \f$[K_1,\dots,K_{316}]\f$ in \f$C\f$. Attention: the matrices
+// * \f$U,B\f$ are not initialized, no memory is allocated as input, as output
+// * they store the respective matrices. The matrix \f$C\f$ stores
+// * \f$[K_1,\dots,K_{316}]\f$ as input and \f$[C_1,\dots,C_{316}]\f$ as output.
+// *
+// * @param[in] epsilon accuracy
+// * @param[out] U matrix of size \f$\ell^3\times r\f$
+// * @param[in] C matrix of size \f$\ell^3\times 316 \ell^e\f$ storing \f$[K_1,\dots,K_{316}]\f$
+// * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
+// * @param[out] B matrix of size \f$\ell^3\times r\f$
+// */
+//template <int ORDER>
+//unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
+//											FReal* &U,	FReal* &C, FReal* &B)
+//{
+//	// compile time constants
+//	enum {order = ORDER,
+//				nnodes = TensorTraits<ORDER>::nnodes};
+//
+//	// init SVD
+//	const unsigned int LWORK = 2 * (3*nnodes + ninteractions*nnodes);
+//	FReal *const WORK = new FReal [LWORK];
+//	
+//	// K_col ///////////////////////////////////////////////////////////
+//	FReal *const K_col = new FReal [ninteractions * nnodes*nnodes]; 
+//	for (unsigned int i=0; i<ninteractions; ++i)
+//		for (unsigned int j=0; j<nnodes; ++j)
+//			FBlas::copy(nnodes,
+//									C     + i*nnodes*nnodes + j*nnodes,
+//									K_col + j*ninteractions*nnodes + i*nnodes);
+//	// singular value decomposition
+//	FReal *const Q = new FReal [nnodes*nnodes];
+//	FReal *const S = new FReal [nnodes];
+//	const unsigned int info_col
+//		= FBlas::gesvd(ninteractions*nnodes, nnodes, K_col, S, Q, nnodes,
+//									 LWORK, WORK);
+//	if (info_col!=0)
+//		throw std::runtime_error("SVD did not converge with " + info_col);
+//	delete [] K_col;
+//	const unsigned int k_col = getRank<ORDER>(S, epsilon);
+//
+//	// Q' -> B 
+//	B = new FReal [nnodes*k_col];
+//	for (unsigned int i=0; i<k_col; ++i)
+//		FBlas::copy(nnodes, Q+i, nnodes, B+i*nnodes, 1);
+//
+//	// K_row //////////////////////////////////////////////////////////////
+//	FReal *const K_row = C;
+//
+//	const unsigned int info_row
+//		= FBlas::gesvdSO(nnodes, ninteractions*nnodes, K_row, S, Q, nnodes,
+//										 LWORK, WORK);
+//	if (info_row!=0)
+//		throw std::runtime_error("SVD did not converge with " + info_row);
+//	const unsigned int k_row = getRank<ORDER>(S, epsilon);
+//	delete [] WORK;
+//
+//	// Q -> U
+//	U = Q;
+//
+//	// V' -> V
+//	FReal *const V = new FReal [nnodes*ninteractions * k_row];
+//	for (unsigned int i=0; i<k_row; ++i)
+//		FBlas::copy(nnodes*ninteractions, K_row+i, nnodes,
+//								V+i*nnodes*ninteractions, 1);
+//
+//	// rank k(epsilon) /////////////////////////////////////////////////////
+//	const unsigned int k = k_row < k_col ? k_row : k_col;
+//
+//	// C_row ///////////////////////////////////////////////////////////
+//	C = new FReal [ninteractions * k*k];
+//	for (unsigned int i=0; i<k; ++i) {
+//		FBlas::scal(nnodes*ninteractions, S[i], V + i*nnodes*ninteractions);
+//		for (unsigned int m=0; m<ninteractions; ++m)
+//			for (unsigned int j=0; j<k; ++j)
+//				C[m*k*k + j*k + i]
+//					= FBlas::scpr(nnodes,
+//												V + i*nnodes*ninteractions + m*nnodes,
+//												B + j*nnodes);
+//	}
+//
+//	delete [] V;
+//	delete [] S;
+//	delete [] K_row;
+//
+//	return k;
+//}
 
 
 
