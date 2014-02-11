@@ -190,6 +190,11 @@ int main(int argc, char ** argv){
 	if( FParameters::existParameter(argc, argv, "-per") ){
 		FmmClass algo(&tree,PeriodicDeep);
 		algo.repetitionsIntervals(&min, &max);
+		std::cout << "Simulated box: " << algo.extendedBoxWidth()<<std::endl;
+
+	}
+	else{
+		std::cout << "Simulated box: " << loader->getBoxWidth()<<std::endl;
 	}
 	// ----------------------------------------------------------------------------------------------------------
 	//                                  DIRECT COMPUTATION
