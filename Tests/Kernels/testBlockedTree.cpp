@@ -6,12 +6,6 @@
 #include <functional>
 
 
-//This is temporary. The idea is to avoid the situation where two
-//cells are far away in the tree, but the constructor put them inside
-//the same block, generating a huge header.
-//Need to be greater than nbCellPerBlocks, obviously.
-#define SIZEMAXFORHEAD 500
-
 template <class CellClass>
 class FBlockedTree {
   //< This value is for not used cells
@@ -40,8 +34,6 @@ protected:
     int*            blockIndexesTable;
     //< Pointer to the cells inside the block memory
     CellClass*      blockCells;
-    //<Max Number of Cell per Block defined in the tree
-    int nbCellsPerBlocks;
     //< This value is for not used cells
     static const MortonIndex CellIsEmptyFlag = -1;
     
@@ -52,8 +44,8 @@ protected:
      * @param inEndingIndex last cell morton index + 1
      * @param inNumberOfCells total number of cells in the interval (should be <= inEndingIndex-inEndingIndex)
      */
-    FBlockOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells, const FBlockedTree *const tree )
-      : memoryBuffer(0), blockHeader(0), blockIndexesTable(0), blockCells(0), nbCellsPerBlocks(tree->nbCellsPerBlocks){
+    FBlockOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells)
+      : memoryBuffer(0), blockHeader(0), blockIndexesTable(0), blockCells(0) {
       // Find the number of cell to allocate in the blocks
       const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
       FAssertLF(inNumberOfCells <= blockIndexesTableSize);
@@ -81,69 +73,7 @@ protected:
 	blockIndexesTable[idxCellPtr] = CellIsEmptyFlag;
       }
     }
-      
-    /**@ init function allocate memory for a new Block
-     */
-    void init(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells){
-      // Find the number of cell to allocate in the blocks
-      const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
-      FAssertLF(inNumberOfCells <= blockIndexesTableSize);
-      // Total number of bytes in the block
-      const size_t memoryToAlloc = sizeof(BlockHeader) + (blockIndexesTableSize*sizeof(int)) + (inNumberOfCells*sizeof(CellClass));
-	
-      // Allocate
-      memoryBuffer = new unsigned char[memoryToAlloc];
-      FAssertLF(memoryBuffer);
-      memset(memoryBuffer, 0, memoryToAlloc);
-	
-      // Move the pointers to the correct position
-      blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-      blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-      blockCells          = reinterpret_cast<CellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockIndexesTableSize*sizeof(int)));
-	
-      // Init header
-      blockHeader->startingIndex = inStartingIndex;
-      blockHeader->endingIndex   = inEndingIndex;
-      blockHeader->numberOfCellsInBlock  = inNumberOfCells;
-      blockHeader->blockIndexesTableSize = blockIndexesTableSize;
-	
-      // Set all index to not used
-      for(int idxCellPtr = 0 ; idxCellPtr < blockIndexesTableSize ; ++idxCellPtr){
-	blockIndexesTable[idxCellPtr] = CellIsEmptyFlag;
-      }
-    }
-      
-    /** @brief This constructor take an array of Morton index to
-     * create the block and the cells !!
-     */
-    FBlockOfCells(MortonIndex head[],const FBlockedTree *const tree)
-      : memoryBuffer(0), blockHeader(0), blockIndexesTable(0), blockCells(0),nbCellsPerBlocks(tree->nbCellsPerBlocks){
-      //Store the start and end
-      MortonIndex start = head[0];
-      MortonIndex end = start;
-      int count = 0;
-      // Find the number of cell to allocate in the blocks
-      for(int idxHead = 0 ; idxHead<nbCellsPerBlocks ; idxHead++){
-	if (head[idxHead] != CellIsEmptyFlag){
-	  count++;
-	  end = head[idxHead];
-	}
-	else{
-	  break;
-	}
-      }
-      //allocation of memory
-      init(start,end+1,count);
-      //allocation of cells
-      for(int idx=0 ; idx<count ; idx++){
-	this->newCell(head[idx], idx);
-	(this->getCell(head[idx]))->setMortonIndex(head[idx]);
-	//(this->getCell(head[idx]))->setCoordinate();
-	//printf("Done");
-      }
-    }
-      
-      
+          
     /** Call the destructor of cells and dealloc block memory */
     ~FBlockOfCells(){
       for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
@@ -224,6 +154,36 @@ protected:
   //< all the blocks of the tree
   std::list<FBlockOfCells*>* cellBlocksPerLevel;
 
+  /** @brief This private method take an array of Morton index to
+   * create the block and the cells, using the constructor of
+   * FBlockOfCells !!
+   */
+  FBlockOfCells * createBlockFromArray(MortonIndex head[]){
+    //Store the start and end
+    MortonIndex start = head[0];
+    MortonIndex end = start;
+    int count = 0;
+    // Find the number of cell to allocate in the blocks
+    for(int idxHead = 0 ; idxHead<nbCellsPerBlocks ; idxHead++){
+      if (head[idxHead] != CellIsEmptyFlag){
+	count++;
+	end = head[idxHead];
+      }
+      // else{
+      // 	break;
+      // }
+    }
+    //allocation of memory
+    FBlockOfCells * newBlock = new FBlockOfCells(start,end+1,count);
+    //allocation of cells
+    for(int idx=0 ; idx<count ; idx++){
+      newBlock->newCell(head[idx], idx);
+      (newBlock->getCell(head[idx]))->setMortonIndex(head[idx]);
+      //(this->getCell(head[idx]))->setCoordinate();
+    }
+    return newBlock;
+  }
+  
 public:
   /** This constructor create a blocked octree from a usual octree
    * The cell are allocated as in the usual octree (no copy constructor are called!)
@@ -254,7 +214,7 @@ public:
 	// Create a block with the apropriate parameters
 	FBlockOfCells*const newBlock = new FBlockOfCells(blockIteratorInOctree.getCurrentGlobalIndex(),
 							 octreeIterator.getCurrentGlobalIndex()+1,
-							 sizeOfBlock,this);
+							 sizeOfBlock);
 	// Initialize each cell of the block
 	int cellIdInBlock = 0;
 	while(cellIdInBlock != sizeOfBlock){
@@ -322,26 +282,20 @@ public:
       idxLeafs += inNbCellsPerBlock;
     
       //creation of the block and addition to the list
-      FBlockOfCells * tempBlock = new FBlockOfCells(head,this);
+      FBlockOfCells * tempBlock = createBlockFromArray(head);
       cellBlocksPerLevel[treeHeight-1].push_back(tempBlock);
     }
-    printf("Cells at Leaf level created. Nb of Blocks used : %lu\n",cellBlocksPerLevel[treeHeight-1].size());
-    
-    typename std::list<FBlockOfCells*>::const_iterator curBlockPrint;
-    int i =0;
-    for(curBlockPrint = cellBlocksPerLevel[treeHeight-1].cbegin() ; curBlockPrint != cellBlocksPerLevel[treeHeight-1].end() ; ++curBlockPrint){
-      printf("Block : %d, from %lld to %lld, %d cells \n",i,(*curBlockPrint)->getStartingIndex(),
-	     (*curBlockPrint)->getEndingIndex(),(*curBlockPrint)->getNumberOfCellsInBlock());
-      i++;
-    }
+    delete[] leafsIdx;
     
     //Creation of the cells at others level
     //Loop over levels
-    for(int idxLevel = treeHeight-2 ; idxLevel > 0 ; --idxLevel){
+    for(int idxLevel = treeHeight-2 ; idxLevel >= 0 ; --idxLevel){
       
       //Set the storing system (a simple array) to CellIsEmptyFlag
       memset(head,CellIsEmptyFlag,sizeof(MortonIndex)*inNbCellsPerBlock);
       int idxHead = -1;
+      MortonIndex previous = -1;
+
       //Iterator over the list at a deeper level (READ)
       typename std::list<FBlockOfCells*>::const_iterator curBlockRead;
       for(curBlockRead = cellBlocksPerLevel[idxLevel+1].begin() ; curBlockRead != cellBlocksPerLevel[idxLevel+1].end() ; ++curBlockRead){
@@ -349,9 +303,10 @@ public:
 	for(MortonIndex idxCell = (*curBlockRead)->getStartingIndex() ; idxCell < (*curBlockRead)->getEndingIndex() ; ++idxCell){
 
 	  MortonIndex newIdx(idxCell >> 3);
-	  
-	  //For Head Increment, we need to know when parent change
-	  if((newIdx != ((idxCell-1) >> 3))){
+	  //printf("Lvl : %d Current Idx %lld, parent's one : %lld \n",idxLevel,idxCell,newIdx);
+	  //For Head Increment, we need to know if this parent has
+	  //already been created
+	  if(newIdx != previous){
 	    //test if (Read cell exists) 
 	    if((*curBlockRead)->exists(idxCell)){
 	      idxHead++; //cell at deeper level exist, so we increment the count to store it
@@ -360,34 +315,30 @@ public:
 	      if(idxHead < inNbCellsPerBlock){
 		//No need for a Block, just the cell is created
 		head[idxHead] = newIdx;
+		previous = newIdx;
 	      }
 	      else{
 		//Creation of the block from head, then reset head, and
 		//storage of new idx in new head
-		FBlockOfCells * tempBlock = new FBlockOfCells(head,this);
+		FBlockOfCells * tempBlock = createBlockFromArray(head);
 		cellBlocksPerLevel[idxLevel].push_back(tempBlock);
 	      
 		//Need a new block
 		memset(head,CellIsEmptyFlag,sizeof(MortonIndex)*nbCellsPerBlocks);
+		head[0] = newIdx;
 		idxHead = 0;
-		head[idxHead] = newIdx;
+		previous = newIdx;
 	      }
 	    }
 	  }
 	}
       }
       //Before changing Level, need to close current Block
-      FBlockOfCells * tempBlock = new FBlockOfCells(head,this);
+      FBlockOfCells * tempBlock = createBlockFromArray(head);
       cellBlocksPerLevel[idxLevel].push_back(tempBlock);
-      //Printing Information about the blocks
-      printf("Cells at level %d created. Nb of Blocks used : %lu\n",idxLevel,cellBlocksPerLevel[idxLevel].size());
-     
-      for(curBlockPrint = cellBlocksPerLevel[idxLevel].cbegin() ; curBlockPrint != cellBlocksPerLevel[idxLevel].end() ; ++curBlockPrint){
-	printf("Block : %d, from %lld to %lld, %d cells \n",i,(*curBlockPrint)->getStartingIndex(),
-	       (*curBlockPrint)->getEndingIndex(),(*curBlockPrint)->getNumberOfCellsInBlock());
-	i++;
-      }
     }
+    printf("toto \n");
+    delete[] head;
   }
     
 
@@ -438,6 +389,23 @@ public:
       for (FBlockOfCells* &block: levelBlocks){
 	block->forEachCell(function, idxLevel);
       }
+    }
+  }
+
+  /** @brief, for statistic purpose, dispay each block with number of
+   * cell, size of header, starting index, and ending index
+   */
+  void printInfoBlocks(){
+    typename std::list<FBlockOfCells*>::const_iterator curBlockPrint;
+    int i = 0;
+    for(int idxLevel = treeHeight-1 ; idxLevel > -1  ; --idxLevel){
+      for(curBlockPrint = cellBlocksPerLevel[idxLevel].cbegin() ; curBlockPrint != cellBlocksPerLevel[idxLevel].end() ; ++curBlockPrint){
+	float perC = float((*curBlockPrint)->getNumberOfCellsInBlock()) / 
+	  (float((*curBlockPrint)->getEndingIndex())-float((*curBlockPrint)->getStartingIndex()));
+	printf("Block : %d, at level %d from %lld to %lld, contains %d cells, percentage used %f \n",++i,idxLevel,(*curBlockPrint)->getStartingIndex(),
+	       (*curBlockPrint)->getEndingIndex(),(*curBlockPrint)->getNumberOfCellsInBlock(),100*perC);
+      }
+      printf("\n");
     }
   }
   
@@ -509,12 +477,17 @@ int main(int argc, char* argv[]){
   const int blockSize      = FParameters::getValue(argc,argv,"-bs", 250);
 
   counter.tic();
-  BlockedOctreeClass blockedTree(NbLevels, blockSize, &tree);
-  std::cout << "Done  " << "(@Converting the tree = " << counter.tacAndElapsed() << "s). Block size is " << blockSize << "." << std::endl;
+  BlockedOctreeClass blockedTree(NbLevels, blockSize, &tree,0);
+  std::cout << "Done  " << "(@Converting the tree with leafs only = " << counter.tacAndElapsed() << "s). Block size is " << blockSize << "." << std::endl;
 
-  blockedTree.forEachCell([&](CellClass * cell){
-      std::cout << "Cell " << cell->getMortonIndex() << std::endl;
-    });
+  counter.tic();
+  BlockedOctreeClass blockedTree2(NbLevels, blockSize, &tree);
+  std::cout << "Done  " << "(@Converting the tree with all Octree = " << counter.tacAndElapsed() << "s). Block size is " << blockSize << "." << std::endl;
+
+
+  blockedTree.printInfoBlocks();
+  blockedTree2.printInfoBlocks();
+
   
   return 0;
 }
