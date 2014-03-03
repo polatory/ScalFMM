@@ -71,7 +71,7 @@ int main(int argc, char ** argv){
 #ifdef  ScalFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
-	const unsigned int ORDER = 12;
+	const unsigned int ORDER = 13;
 	// typedefs
 	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
 	typedef FChebCell<ORDER>                                                  CellClass;
@@ -463,13 +463,16 @@ int main(int argc, char ** argv){
 				if(FParameters::existParameter(argc, argv, "-verbose")){
 					std::cout << ">> index " << particles[indexPartOrig].index << std::endl;
 					std::cout << "Good x " << particles[indexPartOrig].position.getX() << " y " << particles[indexPartOrig].position.getY() << " z " << particles[indexPartOrig].position.getZ() << std::endl;
+					 std::cout << std::fixed  << std::setprecision(5) ;
+
 					std::cout << "FMM  x " << positionsX[idxPart] << " y " << positionsY[idxPart] << " z " << positionsZ[idxPart] << std::endl;
 					std::cout << "Good fx " <<particles[indexPartOrig].forces[0] << " fy " << particles[indexPartOrig].forces[1] << " fz " << particles[indexPartOrig].forces[2] << std::endl;
 					std::cout << "FMM  fx " << forcesX[idxPart] << " fy " <<forcesY[idxPart] << " fz " << forcesZ[idxPart] << std::endl;
-					std::cout << "ratio  fx " << particles[indexPartOrig].forces[0]/forcesX[idxPart] << " fy " <<particles[indexPartOrig].forces[1]/forcesY[idxPart] << " fz " << particles[indexPartOrig].forces[2]/forcesZ[idxPart] << std::endl;
+					 std::cout << std::scientific  << std::setprecision(5) ;
+					std::cout << "Diff  fx " << particles[indexPartOrig].forces[0]-forcesX[idxPart] << " fy " <<particles[indexPartOrig].forces[1]-forcesY[idxPart] << " fz " << particles[indexPartOrig].forces[2]-forcesZ[idxPart] << std::endl;
 					//					std::cout << "GOOD physical value " << particles[indexPartOrig].physicalValue << " potential " << particles[indexPartOrig].potential << std::endl;
 					//					std::cout << "FMM  physical value " << physicalValues[idxPart] << " potential " << potentials[idxPart] <<  " energy cumul " << energy<<std::endl;
-
+					 std::cout << std::fixed  << std::setprecision(5) ;
 					std::cout << "\n";
 				}
 				if(FParameters::existParameter(argc, argv, "-saveError")){
@@ -531,6 +534,9 @@ int main(int argc, char ** argv){
 			printf("FmmEwald   L2Norm  %e\n",fz.getRelativeL2Norm());
 			printf("FmmEwald   InfNorm %e\n",fz.getRelativeInfNorm());
 			//
+			double L2error = (fx.getL2Norm()*fx.getL2Norm() + fy.getL2Norm()*fy.getL2Norm()  + fz.getL2Norm() *fz.getL2Norm()  );
+			printf("FmmEwald RMS Force Error= %e\n",FMath::Sqrt(L2error/loader->getNumberOfParticles())) ;
+//
 			printf("FmmEwald Energy FMM=   %.12e\n",energy);
 			printf("FmmEwald Energy EWALD= %.12e\n",loader->getEnergy());
 			printf("FmmEwald Energy EWALD - Energy FMM = %e\n",loader->getEnergy()-energy);
@@ -543,42 +549,8 @@ int main(int argc, char ** argv){
 
 	}
 	//
-	// -----------------------------------------------------
-	// ReGenerate file
+	// ----------------------------------------------------------------------------
 	//
-	if( FParameters::existParameter(argc, argv, "-gen") ){
-		std::cout << "Generate ewal.out from input file" << std::endl;
-		std::ofstream fileout("ewal.out",std::ifstream::out);
-		std::ifstream file(filename,std::ifstream::in);
-		if(file.is_open()){
-			const int bufferSize = 512;
-			char buffer[bufferSize];
-			file.getline(buffer, bufferSize);
-			fileout << buffer << '\n';
-			file.getline(buffer, bufferSize);
-			fileout << buffer << '\n';
-			if( !FParameters::existParameter(argc, argv, "-noper") ){
-				file.getline(buffer, bufferSize);
-				fileout << buffer << '\n';
-				file.getline(buffer, bufferSize);
-				fileout << buffer << '\n';
-				file.getline(buffer, bufferSize);
-				fileout << buffer << '\n';
-			}
-			for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
-				file.getline(buffer, bufferSize);
-				fileout << buffer << '\n';
-				file.getline(buffer, bufferSize);
-				fileout << buffer << '\n';
-				file.getline(buffer, bufferSize);
-				file.getline(buffer, bufferSize);
-			}
-		}
-	}
-	// end generate
-
-	// -----------------------------------------------------
-
 	delete[] particles;
 	delete[] particlesDirect;
 
