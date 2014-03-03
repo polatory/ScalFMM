@@ -246,7 +246,7 @@ private:
     }
     FLOG(computationCounter.tac());
 
-    FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
    
   }
@@ -433,7 +433,7 @@ private:
     }
 
 
-    FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
@@ -786,7 +786,7 @@ private:
     delete[] requests;
     delete[] status;
 
-    FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
@@ -922,7 +922,7 @@ private:
     delete[] requests;
     delete[] status;
 
-    FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
@@ -1088,7 +1088,6 @@ private:
 	    (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
 	    toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
 	  }
-	  
 	  //TEST BERENGER
 	  //if(sendBuffer[idxProc]->getSize() != partsToSend[idxProc]){
 	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_PACKED ,
@@ -1289,7 +1288,7 @@ private:
     FLOG(computation2Counter.tac());
 
 
-    FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
     FLOG( FLog::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
