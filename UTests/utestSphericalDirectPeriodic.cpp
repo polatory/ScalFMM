@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -46,11 +46,11 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
-        const int NbLevels      = 3;
+        const int NbLevels        = 3;
         const int SizeSubLevels = 2;
         const int PeriodicDeep  = 3;
-        const int DevP = 9;
-        const int NbParticles = 1;
+        const int DevP              = 9;
+        const int NbParticles     = 1;
 
         FSphericalCell::Init(DevP);
 
@@ -131,14 +131,16 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
+        FReal energy = 0.0 ;
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
                 const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+                const FReal*const forcesX     = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY     = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ     = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf    = leaf->getTargets()->getNbParticles();
                 const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
                 for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
@@ -147,32 +149,39 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                    energy +=  potentials[idxPart]*physicalValues[idxPart];
+
                 }
             });
         }
 
         Print("Potential diff is = ");
-        Print(potentialDiff.getL2Norm());
-        Print(potentialDiff.getInfNorm());
+        printf("   L2Norm  %e\n",potentialDiff.getRelativeL2Norm());
+		printf("   RMSError %e\n",potentialDiff.getRMSError());
         Print("Fx diff is = ");
-        Print(fx.getL2Norm());
-        Print(fx.getInfNorm());
+		printf("   L2Norm  %e\n",fx.getRelativeL2Norm());
+		printf("   RMSError %e\n",fx.getRMSError());
+        Print(fx.getRelativeL2Norm());
+        Print(fx.getRelativeInfNorm());
         Print("Fy diff is = ");
-        Print(fy.getL2Norm());
-        Print(fy.getInfNorm());
+		printf("   L2Norm  %e\n",fy.getRelativeL2Norm());
+		printf("   RMSError %e\n",fy.getRMSError());
         Print("Fz diff is = ");
-        Print(fz.getL2Norm());
-        Print(fz.getInfNorm());
+		printf("   L2Norm  %e\n",fz.getRelativeL2Norm());
+		printf("   RMSError %e\n",fz.getRMSError());
+        FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
+		printf("     L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("  Energy  =   %.12e\n",energy);
 
-        const FReal MaximumDiff = FReal(0.0001);
-        uassert(potentialDiff.getL2Norm() < MaximumDiff);
-        uassert(potentialDiff.getInfNorm() < MaximumDiff);
-        uassert(fx.getL2Norm()  < MaximumDiff);
-        uassert(fx.getInfNorm() < MaximumDiff);
-        uassert(fy.getL2Norm()  < MaximumDiff);
-        uassert(fy.getInfNorm() < MaximumDiff);
-        uassert(fz.getL2Norm()  < MaximumDiff);
-        uassert(fz.getInfNorm() < MaximumDiff);
+        const FReal MaximumDiff = FReal(0.001);
+        uassert(potentialDiff.getRelativeL2Norm() < MaximumDiff);  // 1
+        uassert(potentialDiff.getRMSError() < MaximumDiff);  // 2
+        uassert(fx.getRelativeL2Norm()  < MaximumDiff);     // 3
+        uassert(fx.getRMSError() < MaximumDiff);                // 4
+        uassert(fy.getRelativeL2Norm()  < MaximumDiff);     // 5
+        uassert(fy.getRMSError() < MaximumDiff);                 // 6
+        uassert(fz.getRelativeL2Norm()  < MaximumDiff);    // 7
+        uassert(fz.getRMSError() < MaximumDiff);                // 8
 
         delete[] particles;
     }

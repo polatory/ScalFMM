@@ -382,17 +382,25 @@ The kernel should be able to proceed usual FMM operator in a tree of height of s
 \section{Results}
 \subsection{Ewald summation comparisons}
 
-The energy computed by molecular dynamics codes is given by
+The energy computed by molecular dynamics codes for a finite system is given by
 $$
 U = \frac{1}{4 \pi\epsilon_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
 $$ 
-and the force on atom $x_i$
+and the force on atom $x_i$ is
 $$
 f(x_i) =  \frac{q_i }{4 \pi\epsilon_0}\sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
 $$
+Now consider a periodic system, the energy computed by molecular dynamics codes atypically by Ewald method is
+$$
+U = \frac{1}{8 \pi\epsilon_0}\sum_{|n|=0}^{\infty}{\sum_{i,j}^{N}{\sum_{j<i}{'\frac{q_i q_j}{\|x_i-x_j + n L \| }}}}
+$$ 
+where $L$ is the box size and ${'}$ specifies that for $n=0$ the omit i equal $j$ in the sum. The force on atom $x_i$ is
+$$
+f(x_i) =  \frac{q_i}{8 \pi\epsilon_0}\sum_{|n|=0}^{\infty}{\sum_{i,j}^{N}{'q_j\frac{x_i-x_j}{\|x_i-x_j + n L\|^3}}}
+$$
+In the Ewald method, to original box is replicated up to the infinity, and then the method is equivalent to consider a surrounding conductor ($\epsilon=\infty$). 
 
-
-The Ewald method is equivalent to consider a surrounding conductor ($\epsilon=\infty$). The method described in this document and implemented in ScalFMM consider a finite set of the original box surrounded by a vacuum with dielectric constant $\epsilon=1$. The results by these two approaches are different \cite{DeLeeuw1980, Heyes1981} and for a very large sphere surrounding all boxes we have the following equation
+The method described in this document and implemented in ScalFMM consider a finite set of the original box surrounded by a vacuum with dielectric constant $\epsilon=1$. The results by these two approaches are different \cite{DeLeeuw1980, Heyes1981} and for a very large sphere surrounding all boxes we have the following equation
 \begin{equation}
 E_{Ewald} = E_{FMM} -\frac{2\pi}{3V}|\sum_{i=1}^{N}{q_i x_i}|^2.
 \end{equation}
@@ -400,6 +408,20 @@ By tacking the gradient of this equation, the relationship between FMM forces an
 \begin{equation}
 F_{Ewald}(x_k) = -\nabla_k E_{Ewald} = F_{FMM}(x_k)  + \frac{4\pi}{3V} q_k \sum_{i=1}^{N}{q_i x_i}.
 \end{equation}
+If we denote by $\mathbf{D}= \sum_{i=1}^{N}{q_i x_i}$ the dipole moment of the system then the periodic energy is   
+\begin{equation}
+E_{Ewald} = E_{FMM} - \frac{2\pi}{3V}\mathbf{D}.\mathbf{D} =\sum_{i=1}^{N}{q_i V_i^{Ewald}}
+\end{equation}
+the potential 
+\begin{equation}
+V^{Ewald}(r) = V^{FMM}(r) - \frac{4\pi}{3V} r.\mathbf{D}  
+\end{equation}
+and the forces are
+\begin{equation}
+F_{Ewald}(x_k) = -\nabla_k E_{Ewald} = F_{FMM}(x_k)  + \frac{4\pi}{3V} q_k \mathbf{D}.
+\end{equation}
+
+
 \subsubsection{DL\_Poly comparisons}
 DL\_POLY\_2 uses the following internal molecular units \\
 
@@ -502,14 +524,14 @@ struct MDParticle {
 \end{verbatim}
 We save the direct evaluation of the forces in a binary file. To read the file you should proceed as follow
 \begin{verbatim}
-	std::ifstream fileout(filenameOut,
+	std::ifstream filein(filename,
 	                      std::ifstream::in| std::ios::binary);
 
-   file.seekg (std::ios::beg);
-1  file.read( (char*)(&nbParticles), sizeof(int));
-2  fileout.read( (char*)(&boxsize[0]), sizeof(double)*3);
-3  fileout.read((char*)&PER[0],sizeof(int)*4);
-4  fileout.read( (char*)(&denergy), sizeof(denergy));
+   filein.seekg (std::ios::beg);
+1  filein.read( (char*)(&nbParticles), sizeof(int));
+2  filein.read( (char*)(&boxsize[0]), sizeof(double)*3);
+3  filein.read((char*)&PER[0],sizeof(int)*4);
+4  filein.read( (char*)(&denergy), sizeof(denergy));
   //
   particles = new MDParticle[nbParticles*2];
   fileout.read((char*)&particles[0], sizeof(MDParticle)*nbParticles);
