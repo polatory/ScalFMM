@@ -152,7 +152,7 @@ public:
         buffer.fillArray(local_exp, LocalSize);
     }
   
-  static constexpr int GetSize(){
+  static  int GetSize(){
     return (int) sizeof(FComplexe) * (PoleSize+LocalSize);
   }
 };

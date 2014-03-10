@@ -62,7 +62,7 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
 
-  const int MaxSizePerCell = CellClass::GetSize();
+  //  const static int MaxSizePerCell = CellClass::GetSize();
   
   OctreeClass* const tree;                 //< The octree to work on
   KernelClass** kernels;                   //< The kernels
@@ -257,6 +257,7 @@ private:
 
   /** M2M */
   void upwardPass(){
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
     FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
     FLOG(FTic counterTime);
@@ -445,6 +446,7 @@ private:
 
   /** M2L  */
   void transferPass(){
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
     FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
@@ -799,6 +801,7 @@ private:
   //////////////////////////////////////////////////////////////////
 
   void downardPass(){ // second L2L
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
     FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
     FLOG(FTic counterTime);
