@@ -113,7 +113,7 @@ public:
     buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
   }
   
-  static int GetSize(){
+  static constexpr int GetSize(){
     return sizeof(FReal) * VectorSize*(NRHS+NLHS)*NVALS;
   }
 

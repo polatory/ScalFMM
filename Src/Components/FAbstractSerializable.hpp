@@ -49,7 +49,7 @@ protected:
    * @brief GetSize returns the size of the current block (in order to prepare the buffer)
    * @return
    */
-    static int GetSize(){
+    static constexpr int GetSize(){
         return 0;
     }
 

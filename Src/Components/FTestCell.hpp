@@ -76,7 +76,7 @@ public:
         buffer >> dataDown >> dataUp;
     }
 
-  static size_t GetSize(){
+  static constexpr int GetSize(){
     return sizeof(long long int)*2;
   }
 
