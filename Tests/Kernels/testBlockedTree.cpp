@@ -57,16 +57,16 @@ int main(int argc, char* argv[]){
     const int groupSize      = FParameters::getValue(argc,argv,"-bs", 250);
 
     counter.tic();
-    GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
+    GroupOctreeClass groupedTree(NbLevels, groupSize, &tree, 0);
     std::cout << "Done  " << "(@Converting the tree with leafs only = " << counter.tacAndElapsed() << "s). Group size is " << groupSize << "." << std::endl;
 
     counter.tic();
-    //GroupOctreeClass groupedTree2(NbLevels, groupSize, &tree);
+    GroupOctreeClass groupedTree2(NbLevels, groupSize, &tree);
     std::cout << "Done  " << "(@Converting the tree with all Octree = " << counter.tacAndElapsed() << "s). Group size is " << groupSize << "." << std::endl;
 
 
     groupedTree.printInfoBlocks();
-    //groupedTree2.printInfoBlocks();
+    groupedTree2.printInfoBlocks();
 
 
     return 0;

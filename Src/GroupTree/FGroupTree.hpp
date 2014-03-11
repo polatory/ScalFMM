@@ -25,35 +25,6 @@ protected:
     //< all the blocks of leaves
     std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*> particleBlocks;
 
-    /** @brief This private method take an array of Morton index to
-   * create the block and the cells, using the constructor of
-   * FGroupOfCells !!
-   */
-    FGroupOfCells<CellClass> * createBlockFromArray(MortonIndex head[]){
-        //Store the start and end
-        MortonIndex start = head[0];
-        MortonIndex end = start;
-        int count = 0;
-        // Find the number of cell to allocate in the blocks
-        for(int idxHead = 0 ; idxHead<nbElementsPerBlock ; idxHead++){
-            if (head[idxHead] != CellIsEmptyFlag){
-                count++;
-                end = head[idxHead];
-            }
-            // else{
-            // 	break;
-            // }
-        }
-        //allocation of memory
-        FGroupOfCells<CellClass> * newBlock = new FGroupOfCells<CellClass>(start,end+1,count);
-        //allocation of cells
-        for(int idx=0 ; idx<count ; idx++){
-            newBlock->newCell(head[idx], idx);
-            (newBlock->getCell(head[idx]))->setMortonIndex(head[idx]);
-            //(this->getCell(head[idx]))->setCoordinate();
-        }
-        return newBlock;
-    }
 
 public:
     /** This constructor create a blocked octree from a usual octree
@@ -166,6 +137,41 @@ public:
         }
     }
 
+
+    ////////////////////////////////////////////////////////////////////
+    // Work in progress part, build the tree from an array of particles
+    ////////////////////////////////////////////////////////////////////
+
+    /** @brief This private method take an array of Morton index to
+   * create the block and the cells, using the constructor of
+   * FGroupOfCells !!
+   */
+    FGroupOfCells<CellClass> * createBlockFromArray(MortonIndex head[]){
+        //Store the start and end
+        MortonIndex start = head[0];
+        MortonIndex end = start;
+        int count = 0;
+        // Find the number of cell to allocate in the blocks
+        for(int idxHead = 0 ; idxHead<nbElementsPerBlock ; idxHead++){
+            if (head[idxHead] != CellIsEmptyFlag){
+                count++;
+                end = head[idxHead];
+            }
+            // else{
+            // 	break;
+            // }
+        }
+        //allocation of memory
+        FGroupOfCells<CellClass> * newBlock = new FGroupOfCells<CellClass>(start,end+1,count);
+        //allocation of cells
+        for(int idx=0 ; idx<count ; idx++){
+            newBlock->newCell(head[idx], idx);
+            (newBlock->getCell(head[idx]))->setMortonIndex(head[idx]);
+            //(this->getCell(head[idx]))->setCoordinate();
+        }
+        return newBlock;
+    }
+
     /** This constructor build the BlockOctree from an Octree, but only
    * the cells at leaf level are read. The cells ares constructed with
    * several walk through the leafs.
@@ -266,6 +272,10 @@ public:
         printf("toto \n");
         delete[] head;
     }
+
+    ////////////////////////////////////////////////////////////////////
+    // End work in progress part, build the tree from an array of particles
+    ////////////////////////////////////////////////////////////////////
 
 
     /** This function dealloc the tree by deleting each block */
