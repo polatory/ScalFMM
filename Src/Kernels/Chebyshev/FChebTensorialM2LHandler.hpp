@@ -86,8 +86,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        dim = MatrixKernelClass::DIM};
 
 //	const MatrixKernelClass MatrixKernel;
 
@@ -205,8 +204,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        dim = MatrixKernelClass::DIM};
 
   // Tensorial MatrixKernel and homogeneity specific
 	FReal **U, **B;

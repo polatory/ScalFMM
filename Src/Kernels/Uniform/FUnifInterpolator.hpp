@@ -43,7 +43,8 @@ class FUnifInterpolator : FNoCopyable
   // compile time constants and types
   enum {nnodes = TensorTraits<ORDER>::nnodes,
         nRhs = MatrixKernelClass::NRHS,
-        nLhs = MatrixKernelClass::NLHS};
+        nLhs = MatrixKernelClass::NLHS,
+        nPV = MatrixKernelClass::NPV};
   typedef FUnifRoots< ORDER>  BasisType;
   typedef FUnifTensor<ORDER> TensorType;
 
@@ -441,7 +442,14 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
     }
 
+    // loop over dim of local expansions
     for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
+      // distribution over potential components:
+      // We sum the multidim contribution of PhysValue
+      // This was originally done at M2L step but moved here 
+      // because their storage is required by the force computation.
+      // In fact : f_{ik}(x)=w_j(x) \nabla_{x_i} K_{ij}(x,y)w_j(y))
+      const unsigned int idxPot = idxLhs / nPV; 
 
       // interpolate and increment target value
       FReal targetValue=0.;
@@ -458,7 +466,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
       }
 
       // get potential
-      FReal*const potentials = inParticles->getPotentials(idxLhs);
+      FReal*const potentials = inParticles->getPotentials(idxPot);
       // add contribution to potential
       potentials[idxPart] += (targetValue);
 
@@ -514,6 +522,8 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2PGradient(const F
     }
 
     for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
+      const unsigned int idxPot = idxLhs / nPV; 
+      const unsigned int idxPV  = idxLhs % nPV; 
 
       // interpolate and increment forces value
       FReal forces[3] = {FReal(0.), FReal(0.), FReal(0.)};
@@ -533,17 +543,16 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2PGradient(const F
           } // ORDER * ORDER * 4 flops
         } // ORDER * ORDER * ORDER * 4 flops
 
-
         // scale forces
         forces[0] *= jacobian[0];
         forces[1] *= jacobian[1];
         forces[2] *= jacobian[2];
       }
 
-      const FReal*const physicalValues = inParticles->getPhysicalValues(idxLhs);
-      FReal*const forcesX = inParticles->getForcesX(idxLhs);
-      FReal*const forcesY = inParticles->getForcesY(idxLhs);
-      FReal*const forcesZ = inParticles->getForcesZ(idxLhs);
+      const FReal*const physicalValues = inParticles->getPhysicalValues(idxPV);
+      FReal*const forcesX = inParticles->getForcesX(idxPot);
+      FReal*const forcesY = inParticles->getForcesY(idxPot);
+      FReal*const forcesZ = inParticles->getForcesZ(idxPot);
 
       // set computed forces
       forcesX[idxPart] += forces[0] * physicalValues[idxPart];

@@ -112,7 +112,6 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
                 for (unsigned int d=0; d<dim; ++d) 
                   _C[d][perm[ido]] = block[d];
 
-
                 ido++;
               }
 
@@ -192,8 +191,7 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        dim = MatrixKernelClass::DIM};
 
   // Tensorial MatrixKernel specific
 	FComplexe** FC;
@@ -345,7 +343,6 @@ public:
 
     // Apply forward Discrete Fourier Transform
     Dft.applyDFT(Py,FY);
-
   }
 
 
@@ -360,8 +357,7 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        dim = MatrixKernelClass::DIM};
 
   // Tensorial MatrixKernel and homogeneity specific
 	FComplexe*** FC;
@@ -525,7 +521,6 @@ public:
 
     // Apply forward Discrete Fourier Transform
     Dft.applyDFT(Py,FY);
-
   }
 
 

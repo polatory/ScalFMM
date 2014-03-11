@@ -59,9 +59,13 @@ int main(int, char **){
 //  typedef FInterpMatrixKernelR MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJK RIJKMatrixKernelClass; // PB: force computation
+  const double a = 0.0; // core width (Beware! if diff from 0. then Kernel should be NON HOMOGENEOUS !!!)
+
   const unsigned int dim = MatrixKernelClass::DIM;
   const unsigned int nrhs = MatrixKernelClass::NRHS;
   const unsigned int nlhs = MatrixKernelClass::NLHS;
+  const unsigned int npot = MatrixKernelClass::NPOT;
+
   typedef FP2PParticleContainer<nrhs,nlhs> ContainerClass;
   typedef FSimpleLeaf<ContainerClass> LeafClass;
 
@@ -90,7 +94,7 @@ int main(int, char **){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-      // PB: need to know the actual value of NLHS
+      // PB: need to know the actual value of NRHS
       X.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
     }
   }
@@ -98,8 +102,8 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   LeafClass Y;
-  //  FPoint cy(FReal(2.)*width, 0., 0.);
-  FPoint cy(FReal(2.)*width, FReal(2.)*width, 0.);
+    FPoint cy(FReal(2.)*width, 0., 0.);
+  //FPoint cy(FReal(2.)*width, FReal(2.)*width, 0.);
 
   const unsigned long N = 5000;
   std::cout << "Fill the leaf Y of width " << width
@@ -118,7 +122,7 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // approximative computation
-  const unsigned int ORDER = 5;
+  const unsigned int ORDER = 9;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
@@ -148,14 +152,13 @@ int main(int, char **){
   for (unsigned int i=0; i<nnodes; ++i) {
     for (unsigned int j=0; j<nnodes; ++j){
       
-      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
-        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
-          unsigned idxK = idxLhs*3+idxRhs; // or counter
-          unsigned int d = MatrixKernel.getPosition(idxK);
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
+        unsigned int idxRhs = idxLhs % npot;
+        unsigned int d = MatrixKernel.getPosition(idxLhs);
 
-          F[i+idxLhs*nnodes] += MatrixKernelClass(d).evaluate(rootsX[i], rootsY[j]) * W[j+idxRhs*nnodes];
+        F[i+idxLhs*nnodes] += MatrixKernelClass(a,d).evaluate(rootsX[i], rootsY[j]) * W[j+idxRhs*nnodes];
 
-        }
+      }
     }
   }
   std::cout << "took " << time.tacAndElapsed() << "s" << std::endl;
@@ -175,7 +178,7 @@ int main(int, char **){
     for (unsigned int j=0; j<nnodes; ++j){
 
       for (unsigned int d=0; d<dim; ++d){
-        K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernelClass(d).evaluate(rootsX[i], rootsY[j]);        
+        K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernelClass(a,d).evaluate(rootsX[i], rootsY[j]);        
       }
 
     }
@@ -187,12 +190,11 @@ int main(int, char **){
   for (unsigned int i=0; i<nnodes; ++i)
     for (unsigned int j=0; j<nnodes; ++j){
 
-      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
-        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
-          unsigned idxK = idxLhs*3+idxRhs; // or counter
-          unsigned int d = MatrixKernel.getPosition(idxK);
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
+        unsigned int idxRhs = idxLhs % npot;
+        unsigned int d = MatrixKernel.getPosition(idxLhs);
 
-          F[i+idxLhs*nnodes] += K[d*nnodes*nnodes+i*nnodes+j] * W[j+idxRhs*nnodes];
+        F[i+idxLhs*nnodes] += K[d*nnodes*nnodes+i*nnodes+j] * W[j+idxRhs*nnodes];
 
     }
   }
@@ -229,7 +231,7 @@ int main(int, char **){
         for (unsigned int d=0; d<dim; ++d){
 
           C[d*rc + ido]
-            = MatrixKernelClass(d).evaluate(rootsX[node_ids_pairs[ido][0]], 
+            = MatrixKernelClass(a,d).evaluate(rootsX[node_ids_pairs[ido][0]], 
                                     rootsY[node_ids_pairs[ido][1]]);
         }
         
@@ -330,15 +332,13 @@ int main(int, char **){
 
     // Application of M2L in PHYSICAL SPACE
     for (unsigned int pj=0; pj<rc; ++pj)
-      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
-        for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
-          unsigned idxK = idxLhs*3+idxRhs; // or counter
+      for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
+        unsigned int idxRhs = idxLhs % npot;
+        unsigned int d = MatrixKernel.getPosition(idxLhs);
 
-          unsigned int d = MatrixKernel.getPosition(idxK);
+        LocalExp[i + idxLhs*nnodes]+=C[pj + d*rc]*PaddedMultExp[pj + idxRhs*rc];
 
-          LocalExp[i + idxLhs*nnodes]+=C[pj + d*rc]*PaddedMultExp[pj + idxRhs*rc];
-
-        }
+      }
 
   }// end i
   time.tac();
@@ -441,17 +441,15 @@ int main(int, char **){
 //            reinterpret_cast<FReal*>(FPLocalExp));
   // > or perform entrywise product manually
   FComplexe tmpFX;
-  for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs)
-    for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs){
-      unsigned int idxK = idxLhs*3+idxRhs; // or counter
+  for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
+    unsigned int idxRhs = idxLhs % npot;
+    unsigned int d = MatrixKernel.getPosition(idxLhs);
 
-      unsigned int d = MatrixKernel.getPosition(idxK);
-
-      for (unsigned int pj=0; pj<rc; ++pj){
-        tmpFX=FT[pj + d*rc];
-        tmpFX*=FPMultExp[pj+idxRhs*rc];
-        FPLocalExp[pj+idxLhs*rc]+=tmpFX; // add new contribution +RijYj
-      }
+    for (unsigned int pj=0; pj<rc; ++pj){
+      tmpFX=FT[pj + d*rc];
+      tmpFX*=FPMultExp[pj+idxRhs*rc];
+      FPLocalExp[pj+idxLhs*rc]+=tmpFX; // add new contribution +RijYj
+    }
 
   }
   time.tac();
@@ -509,22 +507,20 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // direct computation 
-  // Only scalar phys val => only compute first compo and no derivative
-  // TODO add multidim phys val !!!!!!
   std::cout << "Compute interactions directly ..." << std::endl;
   time.tic();
 
-  FReal** approx_f = new FReal* [nlhs];
-  FReal**        f = new FReal* [nlhs];
-  for (unsigned int i=0; i<nrhs; ++i){
+  FReal** approx_f = new FReal* [npot];
+  FReal**        f = new FReal* [npot];
+  for (unsigned int i=0; i<npot; ++i){
     approx_f[i] = new FReal [M * 3];
     f[i] = new FReal [M * 3];
     FBlas::setzero(M*3, f[i]);
   }
 
-  FReal** approx_p = new FReal* [nlhs];
-  FReal**        p = new FReal* [nlhs];
-  for (unsigned int i=0; i<nrhs; ++i){
+  FReal** approx_p = new FReal* [npot];
+  FReal**        p = new FReal* [npot];
+  for (unsigned int i=0; i<npot; ++i){
     approx_p[i] = new FReal [M];
     p[i] = new FReal [M];
     FBlas::setzero(M, p[i]);
@@ -562,19 +558,18 @@ int main(int, char **){
 //        f[counter*3 + 2] += force.getZ() * wx * wy;
 
         // R,ij and (R,ij),k
-        for (unsigned int i=0; i<nlhs; ++i) // sum all compo
+        for (unsigned int i=0; i<npot; ++i) // sum all compo
           for (unsigned int j=0; j<nrhs; ++j){
             unsigned int d = MatrixKernel.getPosition(i*nrhs+j);
-            const FReal rij = MatrixKernelClass(d).evaluate(x, y);
+            const FReal rij = MatrixKernelClass(a,d).evaluate(x, y);
             // potential
             p[i][counter] += rij * wy[j];
             // force
-            FReal force[3];
+            FReal force_k;
             for (unsigned int k=0; k<3; ++k){
-              //std::cout << "i,j,k,=" << i << ","<< j << ","<< k << std::endl;
-              unsigned int dk = RIJKMatrixKernel.getPosition(i*3*3+j*3+k);
-              force[k] = RIJKMatrixKernelClass(dk).evaluate(x, y);
-              f[i][counter*3 + k] += force[k] * wx[j] * wy[j];
+              unsigned int dk = RIJKMatrixKernel.getPosition((i*nrhs+j)*3+k);
+              force_k = RIJKMatrixKernelClass(a,dk).evaluate(x, y);
+              f[i][counter*3 + k] += force_k * wx[j] * wy[j];
             }
           }
 
@@ -591,7 +586,7 @@ int main(int, char **){
   ////////////////////////////////////////////////////////////////////
   unsigned int counter = 0;
   for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
-    for (unsigned int i=0; i<nlhs; ++i){
+    for (unsigned int i=0; i<npot; ++i){
       approx_p[i][counter] = X.getSrc()->getPotentials(i)[idxPartX];
       const FPoint force = FPoint(X.getSrc()->getForcesX(i)[idxPartX],
                                   X.getSrc()->getForcesY(i)[idxPartX],
@@ -604,7 +599,7 @@ int main(int, char **){
   }
 
 //  std::cout << "Check Potential, forceX, forceY, forceZ " << std::endl;
-//  for (unsigned int i=0; i<nlhs; ++i){
+//  for (unsigned int i=0; i<npot; ++i){
 //    std::cout<< "idxLhs="<< i << std::endl;
 //    for(int idxPart = 0 ; idxPart < 20 ; ++idxPart){
 //      std::cout << approx_p[i][idxPart]     << ", "<< p[i][idxPart] << "|| ";
@@ -617,15 +612,23 @@ int main(int, char **){
 //  }
 //  std::cout << std::endl;
 
-  std::cout << "\nPotential error:" << std::endl;
-  std::cout << "Relative error  X = " << FMath::FAccurater( p[0], approx_p[0], M) << std::endl;
-  std::cout << "Relative error  Y = " << FMath::FAccurater( p[1], approx_p[1], M) << std::endl;
-  std::cout << "Relative error  Z = " << FMath::FAccurater( p[2], approx_p[2], M) << std::endl;
+  std::cout << "\nRelative Inf/L2 errors: " << std::endl;
+  std::cout << "  Potential:" << std::endl;
+  for(unsigned i = 0; i<npot;++i) {
+    std::cout << "    " << i << ": "
+              << FMath::FAccurater(p[i],approx_p[i],M).getRelativeInfNorm()<<", " 
+              << FMath::FAccurater(p[i],approx_p[i],M).getRelativeL2Norm()
+              << std::endl;
+  }
+  std::cout << std::endl;
 
-  std::cout << "\nForce error (Something is wrong here => TOFIX):" << std::endl;
-  std::cout << "Relative L2 error X  = " << FMath::FAccurater( f[0], approx_f[0], M*3) << std::endl;
-  std::cout << "Relative L2 error Y  = " << FMath::FAccurater( f[1], approx_f[1], M*3) << std::endl;
-  std::cout << "Relative L2 error Z  = " << FMath::FAccurater( f[2], approx_f[2], M*3) << std::endl;
+  std::cout << "  Force:" << std::endl;
+  for(unsigned i = 0; i<npot;++i) {
+    std::cout << "    " << i << ": "
+              << FMath::FAccurater(f[i],approx_f[i],3*M).getRelativeInfNorm()<<", " 
+              << FMath::FAccurater(f[i],approx_f[i],3*M).getRelativeL2Norm()
+              << std::endl;
+  }
   std::cout << std::endl;
 
   // free memory

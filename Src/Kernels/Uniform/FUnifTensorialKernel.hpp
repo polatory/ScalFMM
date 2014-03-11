@@ -62,7 +62,9 @@ class FUnifTensorialKernel
   : public FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
   enum {nRhs = MatrixKernelClass::NRHS,
-        nLhs = MatrixKernelClass::NLHS};
+        nLhs = MatrixKernelClass::NLHS,
+        nPot = MatrixKernelClass::NPOT,
+        nPV = MatrixKernelClass::NPV};
 
 protected://PB: for OptiDis
 
@@ -152,19 +154,24 @@ public:
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
-        // update local index
-        int idxLoc = idxV*nLhs + idxLhs;
-        // load transformed local expansion
-        FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
+          // update local index
+          const int idxLoc = idxV*nLhs + idxLhs;
 
-        for (int idxRhs=0; idxRhs < nRhs; ++idxRhs){
+          // load transformed local expansion
+          FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
+
+          // update idxRhs
+          const int idxRhs = idxLhs % nPV; 
           // update multipole index
-          int idxMul = idxV*nRhs + idxRhs;
-          // update kernel index such that: x_i = K_{ij}y_j 
-          int idxK = idxLhs*nRhs + idxRhs;
+          const int idxMul = idxV*nRhs + idxRhs;
+
           // get index in matrix kernel
-          unsigned int d 
-            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxK);
+          const unsigned int d 
+            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxLhs);
+
+//          std::cout<<"idxLhs="<< idxLhs 
+//                   <<" - d="<< d
+//                   <<" - idxRhs="<< idxRhs <<std::endl;
 
           for (int idx=0; idx<343; ++idx){
             if (SourceCells[idx]){
@@ -172,10 +179,9 @@ public:
                                   SourceCells[idx]->getTransformedMultipole(idxMul),
                                   TransformedLocalExpansion);
 
-            }
           }
-        }// NRHS
-      }// NLHS
+        }
+      }// NLHS=NPOT*NPV
     }// NVALS
   }
 
@@ -231,14 +237,14 @@ public:
            ContainerClass* const NeighborSourceParticles[27],
            const int /* size */)
   {
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
   }
 
 
   void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                  ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                  ContainerClass* const inNeighbors[27], const int /*inSize*/){
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
   }
 
 };
