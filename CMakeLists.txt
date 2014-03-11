@@ -54,6 +54,7 @@ OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"             
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with SSE support"       ON  )
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
+OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 #
@@ -70,7 +71,14 @@ if(OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS   "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif(OPENMP_FOUND)
 MESSAGE(STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  SET(FLAGS_64bits "-m64")
+else()
+  SET(FLAGS_64bits "")
+endif()
+#
 # Debug
+#
 if( ScalFMM_BUILD_DEBUG )
 #
 # Compile Debug flags
@@ -80,12 +88,7 @@ if( ScalFMM_BUILD_DEBUG )
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ELSE(APPLE)
-    # Test if not apple and 64bits
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-       SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64 -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
-    else()
-       SET(SCALFMM_FLAGS_OPTI_DEBUG "-march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
-    endif()
+    SET(SCALFMM_FLAGS_OPTI_DEBUG "${FLAGS_64bits} -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ENDIF(APPLE)
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
@@ -106,14 +109,14 @@ else()
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE(APPLE)
-    # Test if not apple and 64bits
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64 -ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+    # Not apple system - Check the compilater flags 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
-#  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_RELEASE})
+#
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
 endif()
 #
@@ -187,12 +190,15 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
 if( ScalFMM_USE_SSE )
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -axAVX")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -vec -axAVX")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
   ENDIF()
 endif()
+if( ScalFMM_USE_MIC_NATIVE ) 
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
 
+ENDIF()
 # Use Mem stats
 MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
 
