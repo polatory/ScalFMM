@@ -2,6 +2,7 @@
 #define FGROUPATTACHEDLEAF_HPP
 
 #include "../Utils/FGlobal.hpp"
+#include "../Utils/FAssert.hpp"
 
 /**
  * This class is "attached" to a buffer.
@@ -19,11 +20,13 @@ protected:
     //< Pointers to the attributes of the particles
     AttributeClass* attributes[NbAttributesPerParticle];
 
-    // Forbid copy even if there is no real reason to do that
-    FGroupAttachedLeaf(const FGroupAttachedLeaf&) = delete;
-    FGroupAttachedLeaf& operator=(const FGroupAttachedLeaf&) = delete;
-
 public:
+    /** Empty constructor to point to nothing */
+    FGroupAttachedLeaf() : nbParticles(-1) {
+        memset(positionsPointers, 0, sizeof(FReal*) * 3);
+        memset(attributes, 0, sizeof(AttributeClass*) * NbAttributesPerParticle);
+    }
+
     /**
      * @brief FGroupAttachedLeaf
      * @param inNbParticles the number of particles in the leaf
@@ -41,9 +44,37 @@ public:
         positionsPointers[2] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*2);
 
         // Redirect pointers to data
-        for(int idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
         }
+    }    
+
+    /** Copy the attached group to another one (copy the pointer not the content!) */
+    FGroupAttachedLeaf(const FGroupAttachedLeaf& other) : nbParticles(other.nbParticles) {
+        positionsPointers[0] = other.positionsPointers[0];
+        positionsPointers[1] = other.positionsPointers[1];
+        positionsPointers[2] = other.positionsPointers[2];
+
+        // Redirect pointers to data
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            attributes[idxAttribute] = other.attributes[idxAttribute];
+        }
+    }
+
+    /** Copy the attached group to another one (copy the pointer not the content!) */
+    FGroupAttachedLeaf& operator=(const FGroupAttachedLeaf& other){
+        nbParticles = (other.nbParticles);
+
+        positionsPointers[0] = other.positionsPointers[0];
+        positionsPointers[1] = other.positionsPointers[1];
+        positionsPointers[2] = other.positionsPointers[2];
+
+        // Redirect pointers to data
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            attributes[idxAttribute] = other.attributes[idxAttribute];
+        }
+
+        return (*this);
     }
 
     /**
@@ -105,6 +136,42 @@ public:
         static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
         return attributes[index];
     }
+
+    /** Return true if it has been attached to a memoy block */
+    bool isAttachedToSomething() const {
+        return nbParticles != -1;
+    }
+
+    /** Allocate a new leaf by calling its constructor */
+    template<class ParticleClassContainer>
+    void copyFromContainer(const ParticleClassContainer* particles, const int offsetInSrcContainer){
+        FAssertLF(isAttachedToSomething());
+        // Copy position
+        memcpy(positionsPointers[0], particles->getPositions()[0] + offsetInSrcContainer, nbParticles*sizeof(FReal));
+        memcpy(positionsPointers[1], particles->getPositions()[1] + offsetInSrcContainer, nbParticles*sizeof(FReal));
+        memcpy(positionsPointers[2], particles->getPositions()[2] + offsetInSrcContainer, nbParticles*sizeof(FReal));
+
+        // Copy data
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            memcpy(attributes[idxAttribute], particles->getAttribute(idxAttribute) + offsetInSrcContainer, nbParticles*sizeof(AttributeClass));
+        }
+    }
+
+
+    /** Copy data for one particle (from the ParticleClassContainer into the attached buffer) */
+    template<class ParticleClassContainer>
+    void setParticle(const int destPartIdx, const int srcPartIdx, const ParticleClassContainer* particles){
+        // Copy position
+        positionsPointers[0][destPartIdx] = particles->getPositions()[0][srcPartIdx];
+        positionsPointers[1][destPartIdx] = particles->getPositions()[1][srcPartIdx];
+        positionsPointers[2][destPartIdx] = particles->getPositions()[2][srcPartIdx];
+
+        // Copy data
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            attributes[idxAttribute][destPartIdx] = particles->getAttribute(idxAttribute)[srcPartIdx];
+        }
+    }
+
 };
 
 #endif // FGROUPATTACHEDLEAF_HPP

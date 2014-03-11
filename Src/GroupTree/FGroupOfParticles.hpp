@@ -152,25 +152,13 @@ public:
     }
 
     /** Allocate a new leaf by calling its constructor */
-    template<class ParticleClassContainer>
-    void newLeaf(const MortonIndex inIndex, const int id, const int nbParticles, const size_t offsetInGroup,
-                 const ParticleClassContainer* particles, const int offsetInSrcContainer){
+    void newLeaf(const MortonIndex inIndex, const int id, const int nbParticles, const size_t offsetInGroup){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);
         blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
         leafHeader[id].nbParticles = nbParticles;
         leafHeader[id].offSet = offsetInGroup;
-
-        // Copy position
-        memcpy(particlePosition[0] + offsetInGroup, particles->getPositions()[0] + offsetInSrcContainer, nbParticles*sizeof(FReal));
-        memcpy(particlePosition[1] + offsetInGroup, particles->getPositions()[1] + offsetInSrcContainer, nbParticles*sizeof(FReal));
-        memcpy(particlePosition[2] + offsetInGroup, particles->getPositions()[2] + offsetInSrcContainer, nbParticles*sizeof(FReal));
-
-        // Copy data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            memcpy(particleAttributes[idxAttribute] + offsetInGroup, particles->getAttribute(idxAttribute) + offsetInSrcContainer, nbParticles*sizeof(AttributeClass));
-        }
     }
 
     /** Iterate on each allocated leaves */
@@ -192,16 +180,16 @@ public:
 
     /** Return the address of the leaf if it exists (or NULL) */
     template<class ParticlesAttachedClass>
-    ParticlesAttachedClass* getLeaf(const MortonIndex leafIndex){
+    ParticlesAttachedClass getLeaf(const MortonIndex leafIndex){
         if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
             const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
             return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
-                    positionOffset,
-                    particleAttributes[0] + leafHeader[id].offSet,
-                    attributeOffset);
+                                            positionOffset,
+                                            particleAttributes[0] + leafHeader[id].offSet,
+                                            attributeOffset);
         }
-        return NULL;
+        return ParticlesAttachedClass();
     }
 };
 

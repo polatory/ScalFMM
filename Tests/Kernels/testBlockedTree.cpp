@@ -45,11 +45,14 @@ int main(int argc, char* argv[]){
 
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
+    FP2PParticleContainer<> allParticles;
+
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition, physicalValue );
+        allParticles.push(particlePosition, physicalValue);
     }
 
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.tacAndElapsed() << "s)." << std::endl;
@@ -57,17 +60,15 @@ int main(int argc, char* argv[]){
     const int groupSize      = FParameters::getValue(argc,argv,"-bs", 250);
 
     counter.tic();
-    GroupOctreeClass groupedTree(NbLevels, groupSize, &tree, 0);
-    std::cout << "Done  " << "(@Converting the tree with leafs only = " << counter.tacAndElapsed() << "s). Group size is " << groupSize << "." << std::endl;
-
-    counter.tic();
     GroupOctreeClass groupedTree2(NbLevels, groupSize, &tree);
     std::cout << "Done  " << "(@Converting the tree with all Octree = " << counter.tacAndElapsed() << "s). Group size is " << groupSize << "." << std::endl;
 
+    counter.tic();
+    GroupOctreeClass groupedTree3(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
+    std::cout << "Done  " << "(@Converting the tree with all Octree = " << counter.tacAndElapsed() << "s). Group size is " << groupSize << "." << std::endl;
 
-    groupedTree.printInfoBlocks();
     groupedTree2.printInfoBlocks();
-
+    groupedTree3.printInfoBlocks();
 
     return 0;
 }
