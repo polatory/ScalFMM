@@ -255,7 +255,7 @@ struct FMath{
 		/** Print */
 		template <class StreamClass>
 		friend StreamClass& operator<<(StreamClass& output, const FAccurater& inAccurater){
-			output << "[Error] L2Norm = " << inAccurater.getL2Norm() << " \t Inf = " << inAccurater.getInfNorm();
+			output << "[Error] Relative L2Norm = " << inAccurater.getRelativeL2Norm() << " \t RMS Norm = " << inAccurater.getRMSError() << " \t Relative Inf = " << inAccurater.getRelativeInfNorm();
 			return output;
 		}
 
