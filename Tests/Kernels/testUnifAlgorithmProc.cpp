@@ -17,6 +17,7 @@
 // ==== CMAKE =====
 // @FUSE_BLAS
 // @FUSE_MPI
+// @FUSE_FFT
 // ================
 
 #include <iostream>
