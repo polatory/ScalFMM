@@ -37,7 +37,7 @@ class TestQuickSort : public FUTester<TestQuickSort> {
     void manyThreads(){
         const long Size = 100000;
         long long* const array = new long long[Size];
-        srand(0);
+        srand48(0);
         const int originalThreadsNumber = omp_get_num_threads();
 
         for(int idxThread = 1 ; idxThread <= omp_get_max_threads() ; idxThread *= 2){

@@ -23,7 +23,7 @@
 
 #include "../../Src/Utils/FBlas.hpp"
 
-FReal FRandom() { return (FReal(rand()) / FReal(RAND_MAX)); }
+FReal FRandom() { return (FReal(drand48())); }
 
 /**
  * Test functionality of C - interfaced BLAS functions

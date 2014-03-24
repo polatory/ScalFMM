@@ -90,10 +90,9 @@ int main(int argc, char* argv[])
 	std::cout << ", finished in " << time.tacAndElapsed() << "s." << std::endl;
 	
 	// generate right hand side vector
-	FReal *const w = new FReal [nnodes];
-	const FReal FRandMax = FReal(RAND_MAX);
+    FReal *const w = new FReal [nnodes];
 	for (unsigned int j=0; j<nnodes; ++j)
-		w[j] = FReal(rand())/FRandMax;
+        w[j] = FReal(drand48());
 	
 	// compute f0 = Kw
 	FReal *const f0 = new FReal [nnodes];

@@ -60,13 +60,12 @@ int main(int argc, char* argv[])
 	std::cout << " direct computation.\n" << std::endl;
 	//////////////////////////////////////////////////////////////
 
-	MatrixKernelClass MatrixKernel;
-	const FReal FRandMax = FReal(RAND_MAX);
+    MatrixKernelClass MatrixKernel;
 	FTic time;
 
 	
 	// Leaf size
-	FReal width(FReal(rand()) / FRandMax * FReal(10.));
+    FReal width(FReal(drand48()) * FReal(10.));
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
@@ -77,9 +76,9 @@ int main(int argc, char* argv[])
 						<< "] with M=" << M << " target particles" << std::endl;
     {
 		for(long i=0; i<M; ++i){
-			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
-			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
-            FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
+            FReal x = (FReal(drand48()) - FReal(.5)) * width + cx.getX();
+            FReal y = (FReal(drand48()) - FReal(.5)) * width + cx.getY();
+            FReal z = (FReal(drand48()) - FReal(.5)) * width + cx.getZ();
             X.push(FPoint(x,y,z));
 		}
 	}
@@ -94,10 +93,10 @@ int main(int argc, char* argv[])
 						<< "] with N=" << N << " target particles" << std::endl;
     {
 		for(long i=0; i<N; ++i){
-			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
-			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
-			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-            Y.push(FPoint(x, y, z),FReal(rand())/FRandMax);
+            FReal x = (FReal(drand48()) - FReal(.5)) * width + cy.getX();
+            FReal y = (FReal(drand48()) - FReal(.5)) * width + cy.getY();
+            FReal z = (FReal(drand48()) - FReal(.5)) * width + cy.getZ();
+            Y.push(FPoint(x, y, z),FReal(drand48()));
 		}
 	}
 

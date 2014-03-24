@@ -59,8 +59,7 @@ int main(int, char **){
 	std::cout << " direct computation.\n" << std::endl;
 	//////////////////////////////////////////////////////////////
 
-	MatrixKernelClass MatrixKernel;
-	const FReal FRandMax = FReal(RAND_MAX);
+    MatrixKernelClass MatrixKernel;
 	FTic time;
 
 	
@@ -75,10 +74,10 @@ int main(int, char **){
 						<< " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
     {
 		for(unsigned long i=0; i<M; ++i){
-			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
-			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
-			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-            X.push(FPoint(x, y, z), FReal(rand())/FRandMax);
+            FReal x = (FReal(drand48()) - FReal(.5)) * width + cx.getX();
+            FReal y = (FReal(drand48()) - FReal(.5)) * width + cx.getY();
+            FReal z = (FReal(drand48()) - FReal(.5)) * width + cx.getZ();
+            X.push(FPoint(x, y, z), FReal(drand48()));
 		}
 	}
 
@@ -91,10 +90,10 @@ int main(int, char **){
 						<< " centered at cy=" << cy	<< " with N=" << N << " target particles" << std::endl;
     {
 		for(unsigned long i=0; i<N; ++i){
-			FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
-			FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
-			FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-            Y.push(FPoint(x, y, z), FReal(rand())/FRandMax);
+            FReal x = (FReal(drand48()) - FReal(.5)) * width + cy.getX();
+            FReal y = (FReal(drand48()) - FReal(.5)) * width + cy.getY();
+            FReal z = (FReal(drand48()) - FReal(.5)) * width + cy.getZ();
+            Y.push(FPoint(x, y, z), FReal(drand48()));
 		}
 	}
 
