@@ -42,13 +42,15 @@
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
+
 #include <iostream>
 
 #include <cstdio>
 #include <cstdlib>
 
 // Uncoment to validate the FMM
-#define VALIDATE_FMM
+//#define VALIDATE_FMM
 
 /** This program show an example of use of
  * the fmm basic algo it also check that eachh particles is little or longer
@@ -282,10 +284,11 @@ int main(int argc, char ** argv){
     }
 
     FVector<TestParticle> finalParticles;
+    FleafBalance balancer;
     FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
 						 tree.getBoxCenter(),
 						 tree.getBoxWidth(),
-						 tree.getHeight(), &finalParticles);
+						 tree.getHeight(), &finalParticles,&balancer);
 
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       tree.insert(finalParticles[idx].position,finalParticles[idx].physicalValue);
@@ -312,7 +315,7 @@ int main(int argc, char ** argv){
 
   // -----------------------------------------------------
   std::cout << "Create kernel..." << std::endl;
-
+  {
   KernelClass kernels( NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
 
   std::cout << "Done  " << " in " << counter.elapsed() << "s)." << std::endl;
@@ -320,11 +323,11 @@ int main(int argc, char ** argv){
   // -----------------------------------------------------
 
   std::cout << "Working on particles ..." << std::endl;
-
+  {
   FmmClass algo(app.global(),&tree,&kernels);
 
   counter.tic();
-  algo.execute();
+  algo.execute(FFmmM2M);
   counter.tac();
 
   std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
@@ -408,7 +411,8 @@ int main(int argc, char ** argv){
     ValidateFMMAlgoProc<OctreeClass,ContainerClass>(&tree,&treeValide,&app);
   }
 #endif
-
+}
+}
 
   // -----------------------------------------------------
 

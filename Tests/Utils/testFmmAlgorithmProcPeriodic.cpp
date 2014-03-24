@@ -43,6 +43,7 @@
 
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -100,8 +101,9 @@ int main(int argc, char ** argv){
         }
 
         FVector<TestParticle> finalParticles;
+	FLeafBalance balancer;
         FMpiTreeBuilder<TestParticle>::ArrayToTree(app.global(), particles, NbParticles, loader.getCenterOfBox(),
-                                                    loader.getBoxWidth(), tree.getHeight(), &finalParticles);
+						   loader.getBoxWidth(), tree.getHeight(), &finalParticles, &balancer);
 
         for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position);

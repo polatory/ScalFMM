@@ -372,7 +372,7 @@ int main(int argc, char* argv[])
 #endif
 
 {
-  const static int P = 7;
+  const static int P = 8;
   typedef FRotationCell<P>               CellClass;
   typedef FP2PParticleContainerIndexed<>          ContainerClass;
   typedef FSimpleLeaf< ContainerClass >                     LeafClass;

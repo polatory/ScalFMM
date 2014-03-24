@@ -40,6 +40,7 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
 
 struct TestParticle{
     FPoint position;
@@ -117,9 +118,10 @@ int main(int argc, char ** argv){
         }
 
         FVector<TestParticle> finalParticles;
+	FLeafBalance balancer;
         FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, NbPart,
-                                                                           FPoint(BoxCenter,BoxCenter,BoxCenter),
-                                                                           BoxWidth, tree.getHeight(), &finalParticles);
+						     FPoint(BoxCenter,BoxCenter,BoxCenter),
+						     BoxWidth, tree.getHeight(), &finalParticles,&balancer);
 
         for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position);

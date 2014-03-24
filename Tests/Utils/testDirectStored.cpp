@@ -26,7 +26,11 @@
  * Each data is a FReal : posX,posY,posZ,physicalValue,forceX,forceY,forceZ,potential
  */
 
-
+// ==== CMAKE =====
+// // @FUSE_BLAS
+// // ================
+//
+//
 #include <iostream>
 
 #include <cstdio>
