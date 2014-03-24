@@ -30,8 +30,8 @@
 * Please read the license
 *
 * Load a file with a format like :
-* NB_particles Box_width Box_X Box_Y Box_Z // init
-* X Y Z // one particle by line
+* NB_particles Box_width Center_X Center_Y Center_Z // init
+* X Y Z PhysicalValue // one particle by line
 * ....
 * <code>
 *    FFmaBinLoader<FBasicParticle> loader("../Adir/Tests/particles.basic.txt"); <br>

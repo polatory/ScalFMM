@@ -45,7 +45,7 @@ public:
     FRandomLoader(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
                   const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(0))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
-        srand(inSeed);
+        srand48(inSeed);
     }
 
     /**
@@ -99,7 +99,7 @@ public:
 
     /** Get a random number between 0 & 1 */
     FReal getRandom() const{
-        return FReal(rand())/FReal(RAND_MAX);
+        return FReal(drand48());
     }
 };
 
