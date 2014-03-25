@@ -53,11 +53,10 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
     const int NbSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
     const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
-    const FReal FRandMax = FReal(RAND_MAX);
 
     FTic counterTime;
 
-    srand ( 1 ); // volontary set seed to constant
+    srand48 ( 1 ); // volontary set seed to constant
     // -----------------------------------------------------
 
     OctreeClass tree(NbLevels, NbSubLevels, 1.0, FPoint(0.5,0.5,0.5));
@@ -68,7 +67,7 @@ int main(int argc, char ** argv){
     {
         FPoint particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            particle.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
+            particle.setPosition(FReal(drand48()),FReal(drand48()),FReal(drand48()));
             tree.insert(particle);
         }
     }

@@ -62,7 +62,7 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
 
-  const int MaxSizePerCell = CellClass::GetSize();
+  //  const static int MaxSizePerCell = CellClass::GetSize();
   
   OctreeClass* const tree;                 //< The octree to work on
   KernelClass** kernels;                   //< The kernels
@@ -246,7 +246,7 @@ private:
     }
     FLOG(computationCounter.tac());
 
-    FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
    
   }
@@ -257,6 +257,7 @@ private:
 
   /** M2M */
   void upwardPass(){
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
     FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
     FLOG(FTic counterTime);
@@ -433,7 +434,7 @@ private:
     }
 
 
-    FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
@@ -445,6 +446,7 @@ private:
 
   /** M2L  */
   void transferPass(){
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
     FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
@@ -786,7 +788,7 @@ private:
     delete[] requests;
     delete[] status;
 
-    FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Send : " << sendCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
@@ -799,6 +801,7 @@ private:
   //////////////////////////////////////////////////////////////////
 
   void downardPass(){ // second L2L
+    const int MaxSizePerCell = CellClass::GetSize();
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
     FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
     FLOG(FTic counterTime);
@@ -922,7 +925,7 @@ private:
     delete[] requests;
     delete[] status;
 
-    FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
     FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
@@ -1088,7 +1091,6 @@ private:
 	    (*sendBuffer[idxProc]) << toSend[idxProc][idxLeaf].getCurrentGlobalIndex();
 	    toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
 	  }
-	  
 	  //TEST BERENGER
 	  //if(sendBuffer[idxProc]->getSize() != partsToSend[idxProc]){
 	  FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_PACKED ,
@@ -1289,7 +1291,7 @@ private:
     FLOG(computation2Counter.tac());
 
 
-    FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << " s)\n" );
     FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
     FLOG( FLog::Controller << "\t\t Computation P2P 2 : " << computation2Counter.elapsed() << " s\n" );
     FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );

@@ -166,7 +166,7 @@ public:
     buffer.fillArray(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
   
-  static int GetSize(){
+  static constexpr int GetSize(){
     return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplexe);
   }
 

@@ -7,9 +7,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % use:$ pdflatex ParallelDetails.tex
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\author{Berenger Bramas}
+\author{Berenger Bramas, Olivier Coulaud, Cyrille Piacibelo}
 \title{ScalFmm - Parallel Algorithms (Draft)}
-\date{August 11, 2011}
+\date{\today}
 
 %% Package config
 \lstset{language=c++, frame=lines}
@@ -67,8 +67,8 @@ which part of the file it needs to load.
 \end{equation}
 \newline
 We do not use the view system to read that data as it is used to
-write. The MPI\_File\_read is called as described in the fallowing
-$C++$ code.
+write. The MPI\_File\_read is called as described in the following
+C++ code.
 \begin{lstlisting}
   // From FMpiFmaLoader
   MPI_File_read_at(file, headDataOffSet + startPart * 4 * sizeof(FReal),
@@ -165,7 +165,7 @@ At the end of the algorithm our system is completely balanced with the same numb
 
 \begin{figure}[h!]
   \begin{center}
-    \includegraphics[width=15cm, height=15cm, keepaspectratio=true]{Balance.png}
+    \includegraphics[width=15cm, height=15cm, keepaspectratio=true]{Images/Balance.png}
     \caption{Balancing Example}
   \end{center}
 \end{figure}
@@ -178,8 +178,9 @@ Same in the other side, and we can reverse the calculs to know if a process has 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Simple operators: P2M, M2M, L2L}
-We present the different FMM operators in two separated parts
+\chapter{Distributed algorithm} 
+
+Here present the different FMM operators in two separated parts
 depending on their parallel complexity.  In this first part, we
 present the three simplest operators P2M, M2M and L2L.  Their
 simplicity is explained by the possible prediction to know which node
@@ -245,7 +246,7 @@ There are to cases :
 
 \begin{figure}[h!]
   \begin{center}
-    \includegraphics[width=14cm, height=7cm, keepaspectratio=true]{ruleillu.jpg}
+    \includegraphics[width=14cm, height=7cm, keepaspectratio=true]{Images/ruleillu.jpg}
     \caption{Potential Conflicts}
   \end{center}
 \end{figure}
@@ -306,9 +307,9 @@ send.
 Example :
 \begin{tabular}{| c || c | c | c |}
   \hline
-  Header & Datas & ... & Datas \\
+  Header & Data & ... & Data \\
   \hline
-  00001011 & Datas of cell 5 & Datas of cell 7 & Datas of cell 8 \\
+  00001011 & Data of cell 5 & Data of cell 7 & Data of cell 8 \\
   \hline
 \end{tabular}
 

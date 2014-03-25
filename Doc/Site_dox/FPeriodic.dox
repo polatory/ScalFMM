@@ -4,4 +4,7 @@
 * \section Periodic-1 Periodicity in usual FMM
 
 
+
+ *  \subsection limitation
+ *  support only cubic box 
 */

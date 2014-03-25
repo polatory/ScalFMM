@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -203,36 +203,43 @@ struct FMath{
 
 	/** A class to compute accuracy */
 	class FAccurater {
+		int    nbElements;
 		FReal l2Dot;
 		FReal l2Diff;
 		FReal max;
 		FReal maxDiff;
 	public:
-		FAccurater() : l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0) {
+		FAccurater() : nbElements(0),l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0) {
 		}
 		/** with inital values */
 		FAccurater(const FReal inGood[], const FReal inBad[], const int nbValues)
-		:  l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0)  {
+		:  nbElements(0),l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0)  {
 			add(inGood, inBad, nbValues);
 		}
 		/** Add value to the current list */
 		void add(const FReal inGood, const FReal inBad){
-			l2Diff += (inBad - inGood) * (inBad - inGood);
-			l2Dot  += inGood * inGood;
-
-			max    = Max(max , Abs(inGood));
-			maxDiff = Max(maxDiff, Abs(inGood-inBad));
+			l2Diff          += (inBad - inGood) * (inBad - inGood);
+			l2Dot          += inGood * inGood;
+			max               = Max(max , Abs(inGood));
+			maxDiff         = Max(maxDiff, Abs(inGood-inBad));
+			nbElements += 1 ;
 		}
 		/** Add array of values */
 		void add(const FReal inGood[], const FReal inBad[], const int nbValues){
 			for(int idx = 0 ; idx < nbValues ; ++idx){
 				add(inGood[idx],inBad[idx]);
 			}
+			nbElements += nbValues ;
 		}
-		/** Get the L2 norm */
+		/** Get the root mean squared error*/
 		FReal getL2Norm() const{
 			return Sqrt(l2Diff );
 		}
+		/** Get the L2 norm */
+		FReal getRMSError() const{
+			return Sqrt(l2Diff /static_cast<FReal>(nbElements));
+		}
+
 		/** Get the inf norm */
 		FReal getInfNorm() const{
 			return maxDiff;
@@ -248,16 +255,17 @@ struct FMath{
 		/** Print */
 		template <class StreamClass>
 		friend StreamClass& operator<<(StreamClass& output, const FAccurater& inAccurater){
-			output << "[Error] L2Norm = " << inAccurater.getL2Norm() << " \t Inf = " << inAccurater.getInfNorm();
+			output << "[Error] Relative L2Norm = " << inAccurater.getRelativeL2Norm() << " \t RMS Norm = " << inAccurater.getRMSError() << " \t Relative Inf = " << inAccurater.getRelativeInfNorm();
 			return output;
 		}
 
 		void reset()
 		{
-			l2Dot = FReal(0);
-			l2Diff = FReal(0);;
-			max = FReal(0);
-			maxDiff = FReal(0);
+			l2Dot          = FReal(0);
+			l2Diff          = FReal(0);;
+			max            = FReal(0);
+			maxDiff      = FReal(0);
+			nbElements = 0 ;
 		}
 	};
 };

@@ -144,7 +144,7 @@ public:
         buffer.fillArray(multipole_exp, MultipoleSize);
         buffer.fillArray(local_exp, LocalSize);
     }
-  static int GetSize(){
+  static constexpr int GetSize(){
     return ((int) sizeof(FComplexe)) * (MultipoleSize + LocalSize);
   }
 };

@@ -66,11 +66,10 @@ int main(int argc, char ** argv){
         const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
         const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
         const int DevP         = FParameters::getValue(argc,argv,"-p", 5);
-        const FReal FRandMax    = FReal(RAND_MAX);
         const FPoint centerOfBox = FPoint(0.5,0.5,0.5);
         FTic counter;
 
-        srand ( 1 ); // volontary set seed to constant
+        srand48 ( 1 ); // volontary set seed to constant
 
         //////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +89,7 @@ int main(int argc, char ** argv){
             FPoint particlePosition;
             FReal physicalValue = 0.10;
             for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-                particlePosition.setPosition(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax);
+                particlePosition.setPosition(FReal(drand48()),FReal(drand48()),FReal(drand48()));
                 tree.insert(particlePosition, physicalValue);
             }
         }

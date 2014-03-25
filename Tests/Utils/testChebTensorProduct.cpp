@@ -183,13 +183,12 @@ int main(int argc, char* argv[])
 	FPoint lp[M];
 	FReal equivW[nnodes];
 
-	{ ////////////////////////////////////////////////////////
-		const FReal FRandMax = FReal(RAND_MAX);
+    { ////////////////////////////////////////////////////////
 		for(unsigned int p=0; p<M; ++p){
-			points[0][p] = (FReal(rand())/FRandMax - FReal(.5)) * FReal(2.);
-			points[1][p] = (FReal(rand())/FRandMax - FReal(.5)) * FReal(2.);
-			points[2][p] = (FReal(rand())/FRandMax - FReal(.5)) * FReal(2.);
-			weights[p] = FReal(rand())/FRandMax;
+            points[0][p] = (FReal(drand48()) - FReal(.5)) * FReal(2.);
+            points[1][p] = (FReal(drand48()) - FReal(.5)) * FReal(2.);
+            points[2][p] = (FReal(drand48()) - FReal(.5)) * FReal(2.);
+            weights[p] = FReal(drand48());
 			lp[p].setX(points[0][p]);
 			lp[p].setY(points[1][p]);
 			lp[p].setZ(points[2][p]);

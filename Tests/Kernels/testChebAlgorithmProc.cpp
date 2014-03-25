@@ -47,6 +47,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
 /**
  * This program runs the FMM Algorithm Distributed with the Chebyshev kernel
  */
@@ -110,10 +111,11 @@ int main(int argc, char* argv[])
     loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
   }
   FVector<TestParticle> finalParticles;
+  FLeafBalance balancer;
   FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
 					       tree.getBoxCenter(),
 					       tree.getBoxWidth(),
-					       tree.getHeight(), &finalParticles);		 
+					       tree.getHeight(), &finalParticles,&balancer);
 
   { // -----------------------------------------------------
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles()

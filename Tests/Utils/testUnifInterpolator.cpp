@@ -211,14 +211,14 @@ int main(int, char **){
   // In order to actually embed K into a circulant matrix C one just
   // needs to insert (ORDER-1) extra lines/columns (to each block).
 
-//  std::cout<< "K=" <<std::endl;
-//  for (unsigned int i=0; i<nnodes; ++i){
-//    for (unsigned int j=0; j<nnodes; ++j){
-//      std::cout<< K[i*nnodes+j]<<", ";
-//    }
-//    std::cout<<std::endl;
-//  }
-//  std::cout<<std::endl;
+  std::cout<< "K=" <<std::endl;
+  for (unsigned int i=0; i<nnodes; ++i){
+    for (unsigned int j=0; j<nnodes; ++j){
+      std::cout<< K[i*nnodes+j]<<", ";
+    }
+    std::cout<<std::endl;
+  }
+  std::cout<<std::endl;
 
   if(ORDER<4){// display some extra results for low orders
 
@@ -327,9 +327,10 @@ int main(int, char **){
   FBlas::setzero(rc,PLocalExp);
 
   // Init DFT
-  // NB: only one FFTor is defined a since scalar problems involve scalar r/lhs and scalar matrix kernel. All dimensions are 1. 
+  const int dimfft = 1;
+  const int steps[dimfft] = {rc};
   //FDft Dft(rc); // direct version
-  FFft<1> Dft(rc); // fast version
+  FFft<dimfft> Dft(steps); // fast version
 
   // Get first COLUMN of K and Store in T
   FReal T[rc];

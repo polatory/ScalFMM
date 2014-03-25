@@ -57,11 +57,10 @@ int main(int, char **){
 	std::cout << ">> and how to use the Octree\n";
 	//////////////////////////////////////////////////////////////
 	
-	const long NbPart = 100000;
-	const FReal FRandMax = FReal(RAND_MAX);
+    const long NbPart = 100000;
 	FTic counter;
 	
-	srand( static_cast<unsigned int>(time(NULL)) );
+    srand48( static_cast<unsigned int>(time(NULL)) );
 	
 	const FReal BoxWidth = 1.;
 	const FPoint BoxCenter(.5, .5, .5);
@@ -73,7 +72,7 @@ int main(int, char **){
 	counter.tic();
     {
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            tree.insert(FPoint(FReal(rand())/FRandMax,FReal(rand())/FRandMax,FReal(rand())/FRandMax));
+            tree.insert(FPoint(FReal(drand48()),FReal(drand48()),FReal(drand48())));
 		}
 	}
 	counter.tac();

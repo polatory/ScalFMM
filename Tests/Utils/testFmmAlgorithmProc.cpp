@@ -44,6 +44,8 @@
 
 #include "../../Src/Components/FBasicKernels.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
+
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -357,10 +359,11 @@ int main(int argc, char ** argv){
     }
 
     FVector<TestParticle> finalParticles;
+    FLeafBalance balancer;
     FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
 						 realTree.getBoxCenter(),
 						 realTree.getBoxWidth(),
-						 realTree.getHeight(), &finalParticles);
+						 realTree.getHeight(), &finalParticles,&balancer);
 
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       realTree.insert(finalParticles[idx].position);

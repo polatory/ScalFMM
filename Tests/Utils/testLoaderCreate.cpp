@@ -39,7 +39,6 @@ int main(int argc, char ** argv){
 
     // Nb of particles
     const FSize NbParticles = FParameters::getValue(argc,argv,"-nb", FSize(20000));
-    const FReal FRandMax = FReal(RAND_MAX);
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -68,9 +67,9 @@ int main(int argc, char ** argv){
 
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
-        const FReal px = ((FReal(rand())/FRandMax) * BoxWidth) + XCenter - (BoxWidth/FReal(2.0));
-        const FReal py = ((FReal(rand())/FRandMax) * BoxWidth) + YCenter - (BoxWidth/FReal(2.0));
-        const FReal pz = ((FReal(rand())/FRandMax) * BoxWidth) + ZCenter - (BoxWidth/FReal(2.0));
+        const FReal px = ((FReal(drand48())) * BoxWidth) + XCenter - (BoxWidth/FReal(2.0));
+        const FReal py = ((FReal(drand48())) * BoxWidth) + YCenter - (BoxWidth/FReal(2.0));
+        const FReal pz = ((FReal(drand48())) * BoxWidth) + ZCenter - (BoxWidth/FReal(2.0));
 
         myfile << " \n" << px << " " << py << " " <<  pz;
     }

@@ -60,7 +60,6 @@ int main(int argc, char ** argv){
     std::cout << "Creating " << NbParticles << " particles at " << Output << "\n";
     std::cout << "Working...\n";
 
-    const FReal FRandMax = FReal(RAND_MAX);
     // Center of the box
     const FReal XCenter = 0.;
     const FReal YCenter = 0.;
@@ -78,12 +77,12 @@ int main(int argc, char ** argv){
 
         // Generate particles
         for( long idx = 0 ; idx < NbParticles ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal pz = rayon * FMath::Cos(theta) + ZCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter + thresh * (FReal(drand48())) - threshDiv2;
 
             myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
@@ -97,23 +96,23 @@ int main(int argc, char ** argv){
 
         // Generate particles
         for( long idx = 0 ; idx < NbParticles/2 ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal pz = rayon * FMath::Cos(theta) + ZCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
 
             myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
 
         for( long idx = 0 ; idx < NbParticles/2 ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            const FReal pz = rayon * FMath::Cos(theta) + ZCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
 
             myfile << " \n" << px << " " << py << " " <<  pz << " " << physicalValue;
         }
