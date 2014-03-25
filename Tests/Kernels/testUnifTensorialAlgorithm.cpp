@@ -81,8 +81,14 @@ int main(int argc, char* argv[])
 
   const double CoreWidth = 10;
   const MatrixKernelClass DirectMatrixKernel(CoreWidth);
-
-  std::cout<< "CoreWidth2 = "<< DirectMatrixKernel.getCoreWidth2()<<std::endl;
+  std::cout<< "Interaction kernel: ";
+  if(MK_ID == ONE_OVER_R) std::cout<< "1/R";
+  else if(MK_ID == ID_OVER_R) std::cout<< "Id/R";
+  else if(MK_ID == R_IJ)
+    std::cout<< "Ra_{,ij}" << " with core width a=" << CoreWidth <<std::endl;
+  else if(MK_ID == R_IJK)
+    std::cout<< "Ra_{,ijk}"<< " with core width a=" << CoreWidth <<std::endl;
+  else std::runtime_error("Provide a valid matrix kernel!");
 
   // init particles position and physical value
   struct TestParticle{
@@ -174,7 +180,7 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-const unsigned int ORDER = 12 ;
+    const unsigned int ORDER = 6 ;
 
     typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
 
@@ -265,13 +271,6 @@ const unsigned int ORDER = 12 ;
           });
       }
 
-      std::cout << "Check Potential, forceX, ... " << std::endl;
-      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-        for(unsigned idxPot = 0; idxPot<NPOT;++idxPot){
-          std::cout << checkPotential[idxPart][idxPot] << ", "<< particles[idxPart].potential[idxPot]<< "|| ";
-          std::cout << checkfx[idxPart][idxPot] << ", "<< particles[idxPart].forces[0][idxPot] << std::endl;
-        }
-      std::cout << std::endl;
 
       // Print for information
       std::cout << "\nRelative Inf/L2 errors: " << std::endl;
@@ -307,47 +306,6 @@ const unsigned int ORDER = 12 ;
                   << std::endl;
       }
       std::cout << std::endl;
-
-      { // -----------------------------------------------------
-
-
-        std::cout << "\nStore results in file ... "<<std::endl;
-        std::ostringstream sstream;
-        if(MK_ID == R_IJ)
-          sstream << "testUnifRij_h"<< TreeHeight << "_a" << 1000*CoreWidth;
-        else if(MK_ID == R_IJK)
-          sstream << "testUnifRijk_h"<< TreeHeight << "_a" << 1000*CoreWidth;
-
-        if(TreeHeight>2) sstream <<"_o"<<ORDER;
-        const std::string para_ext = sstream.str();
-        std::string outname = "../tmp/"+para_ext+".dat";
-        std::ofstream fout(outname.c_str());
-        fout.precision(15);
-        
-        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) 
-          fout << potentialDiff[idxLhs].getL2Norm() << " " 
-               << potentialDiff[idxLhs].getInfNorm() << " "
-               << potentialDiff[idxLhs].getRelativeL2Norm() << " " 
-               << potentialDiff[idxLhs].getRelativeInfNorm() << std::endl;
-        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) 
-          fout << fx[idxLhs].getL2Norm() << " " 
-               << fx[idxLhs].getInfNorm() << " "
-               << fx[idxLhs].getRelativeL2Norm() << " " 
-               << fx[idxLhs].getRelativeInfNorm() << std::endl;
-        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) 
-          fout << fy[idxLhs].getL2Norm() << " " 
-               << fy[idxLhs].getInfNorm() << " "
-               << fy[idxLhs].getRelativeL2Norm() << " " 
-               << fy[idxLhs].getRelativeInfNorm() << std::endl;
-        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) 
-          fout << fz[idxLhs].getL2Norm() << " " 
-               << fz[idxLhs].getInfNorm() << " "
-               << fz[idxLhs].getRelativeL2Norm() << " " 
-               << fz[idxLhs].getRelativeInfNorm() << std::endl;
-        fout << std::flush;
-        fout.close();
-
-      } // -----------------------------------------------------
 
     } // -----------------------------------------------------
 

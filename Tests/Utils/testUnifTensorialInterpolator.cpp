@@ -51,17 +51,18 @@
 
 
 /**
- * In this file we show how to use octree
+ * In this file we compute the interactions (direct and Unif FM-approximate) for
+ * a tensorial interaction kernel (R_ij) as well as the forces (comparison 
+ * with direct computation using R_ijk kernel).
  */
 
 int main(int, char **){
 
-//  typedef FInterpMatrixKernelR MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
   typedef FInterpMatrixKernel_R_IJK RIJKMatrixKernelClass; // PB: force computation
   const double a = 0.0; // core width (Beware! if diff from 0. then Kernel should be NON HOMOGENEOUS !!!)
 
-  const unsigned int dim = MatrixKernelClass::DIM;
+  const unsigned int ncmp = MatrixKernelClass::NCMP;
   const unsigned int nrhs = MatrixKernelClass::NRHS;
   const unsigned int nlhs = MatrixKernelClass::NLHS;
   const unsigned int npot = MatrixKernelClass::NPOT;
@@ -94,7 +95,7 @@ int main(int, char **){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
-      // PB: need to know the actual value of NRHS
+      // PB: need to know the actual value of NRHS (=3 here)
       X.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
     }
   }
@@ -113,7 +114,7 @@ int main(int, char **){
       FReal x = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getX();
       FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
       FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
-      // PB: need to know the actual value of NRHS
+      // PB: need to know the actual value of NRHS (=3 here)
       Y.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
     }
   }
@@ -122,7 +123,7 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // approximative computation
-  const unsigned int ORDER = 9;
+  const unsigned int ORDER = 6;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
@@ -173,11 +174,11 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////////////
   // Store M2L in K and apply K
-  FReal K[dim*nnodes*nnodes]; // local expansion
+  FReal K[ncmp*nnodes*nnodes]; // local expansion
   for (unsigned int i=0; i<nnodes; ++i) {
     for (unsigned int j=0; j<nnodes; ++j){
 
-      for (unsigned int d=0; d<dim; ++d){
+      for (unsigned int d=0; d<ncmp; ++d){
         K[d*nnodes*nnodes+i*nnodes+j] = MatrixKernelClass(a,d).evaluate(rootsX[i], rootsY[j]);        
       }
 
@@ -214,7 +215,7 @@ int main(int, char **){
   // PB: Verify storage improvement works (indexing etc...)
   // 1) store circulant matrix
   const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
-  FReal C[dim*rc];
+  FReal C[ncmp*rc];
 
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
@@ -228,11 +229,11 @@ int main(int, char **){
     for(unsigned int m=0; m<2*ORDER-1; ++m)
       for(unsigned int n=0; n<2*ORDER-1; ++n){
 
-        for (unsigned int d=0; d<dim; ++d){
+        for (unsigned int d=0; d<ncmp; ++d){
 
           C[d*rc + ido]
             = MatrixKernelClass(a,d).evaluate(rootsX[node_ids_pairs[ido][0]], 
-                                    rootsY[node_ids_pairs[ido][1]]);
+                                              rootsY[node_ids_pairs[ido][1]]);
         }
         
         ido++;
@@ -241,7 +242,7 @@ int main(int, char **){
 //  // Display C (gathers every values of K that need to be stored,
 //  // corresponds to the first line of the padded matrix (reverse order?))
 //  std::cout<<"C="<<std::endl;
-//    for (unsigned int d=0; d<dim; ++d){
+//    for (unsigned int d=0; d<ncmp; ++d){
 //      for (unsigned int n=0; n<rc; ++n)
 //        std::cout<< C[n + d*rc] << ", ";
 //      std::cout<<std::endl;
@@ -362,7 +363,7 @@ int main(int, char **){
   FFft<dimfft> Dft(steps); // fast version
 
   // Get first COLUMN of K and Store in T
-  FReal T[dim*rc];
+  FReal T[ncmp*rc];
   // use permutations
   unsigned int perm[rc];
   for(unsigned int p=0; p<rc; ++p){
@@ -376,7 +377,7 @@ int main(int, char **){
     //  for (unsigned int j=0; j<rc; ++j){
 //      if(i>0) T[i]=C[i-0-1];
 //      else T[i]=C[rc+i-0-1];
-    for (unsigned int d=0; d<dim; ++d)
+    for (unsigned int d=0; d<ncmp; ++d)
       T[i + d*rc]=C[perm[i] + d*rc];
   //  }
   }
@@ -387,12 +388,12 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
   // Apply DFT to T
-  FComplexe FT[dim*rc];
+  FComplexe FT[ncmp*rc];
   //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplexe(0.0,0.0);
-  FBlas::c_setzero(dim*rc,reinterpret_cast<FReal*>(FT));
+  FBlas::c_setzero(ncmp*rc,reinterpret_cast<FReal*>(FT));
 
   // if first COLUMN (T) of C is used
-  for (unsigned int d=0; d<dim; ++d)
+  for (unsigned int d=0; d<ncmp; ++d)
     Dft.applyDFT(T+d*rc,FT+d*rc);
 //  // if first ROW of C is used
 //  Dft.applyDFT(C,FT);
@@ -568,7 +569,8 @@ int main(int, char **){
             FReal force_k;
             for (unsigned int k=0; k<3; ++k){
               unsigned int dk = RIJKMatrixKernel.getPosition((i*nrhs+j)*3+k);
-              force_k = RIJKMatrixKernelClass(a,dk).evaluate(x, y);
+              // Convention in matrix kernel: R_ij(x-y), while R_ijk(y-x)
+              force_k = FReal(-1.) * RIJKMatrixKernelClass(a,dk).evaluate(x, y);
               f[i][counter*3 + k] += force_k * wx[j] * wy[j];
             }
           }

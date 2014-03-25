@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
   omp_set_num_threads(NbThreads);
   std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
 #else
-  std::cout << "\n>> Sequential version.\n" << std::
+  std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
 
     // init timer

@@ -86,7 +86,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
-        dim = MatrixKernelClass::DIM};
+        ncmp = MatrixKernelClass::NCMP};
 
 //	const MatrixKernelClass MatrixKernel;
 
@@ -118,18 +118,18 @@ public:
 		if (U||B) throw std::runtime_error("U or B operator already set");
 
     // allocate C
-    C = new FReal*[dim];
-    for (unsigned int d=0; d<dim; ++d)
+    C = new FReal*[ncmp];
+    for (unsigned int d=0; d<ncmp; ++d)
       C[d]=NULL;
 
-    for (unsigned int d=0; d<dim; ++d)
+    for (unsigned int d=0; d<ncmp; ++d)
       if (C[d]) throw std::runtime_error("Compressed M2L operator already set");
 
     // Compute matrix of interactions
     const FReal ReferenceCellWidth = FReal(2.);
 		rank = ComputeAndCompress<order>(MatrixKernel, ReferenceCellWidth, epsilon, U, C, B);
 
-    unsigned long sizeM2L = 343*dim*rank*rank*sizeof(FReal);
+    unsigned long sizeM2L = 343*ncmp*rank*rank*sizeof(FReal);
 
 
 		// write info
@@ -141,7 +141,7 @@ public:
 	{
 		if (U != NULL) delete [] U;
 		if (B != NULL) delete [] B;
-    for (unsigned int d=0; d<dim; ++d)
+    for (unsigned int d=0; d<ncmp; ++d)
       if (C[d] != NULL) delete [] C[d];
 	}
 
@@ -204,7 +204,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
-        dim = MatrixKernelClass::DIM};
+        ncmp = MatrixKernelClass::NCMP};
 
   // Tensorial MatrixKernel and homogeneity specific
 	FReal **U, **B;
@@ -249,14 +249,14 @@ public:
     // allocate C
     C = new FReal**[TreeHeight];
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
-      C[l] = new FReal*[dim];
-      for (unsigned int d=0; d<dim; ++d)
+      C[l] = new FReal*[ncmp];
+      for (unsigned int d=0; d<ncmp; ++d)
         C[l][d]=NULL;
     }
 
     for (unsigned int l=0; l<TreeHeight; ++l) {
       if (U[l] || B[l]) throw std::runtime_error("Operator U or B already set");
-      for (unsigned int d=0; d<dim; ++d)
+      for (unsigned int d=0; d<ncmp; ++d)
         if (C[l][d]) throw std::runtime_error("Compressed M2L operator already set");
     }
 
@@ -268,7 +268,7 @@ public:
       rank[l] = ComputeAndCompress<order>(MatrixKernel, CellWidth, epsilon, U[l], C[l], B[l]);
 			CellWidth /= FReal(2.);                    // at level l+1 
     }
-    unsigned long sizeM2L = (TreeHeight-2)*343*dim*rank[2]*rank[2]*sizeof(FReal);
+    unsigned long sizeM2L = (TreeHeight-2)*343*ncmp*rank[2]*rank[2]*sizeof(FReal);
 
 		// write info
     std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
@@ -281,7 +281,7 @@ public:
     for (unsigned int l=0; l<TreeHeight; ++l) {
       if (U[l] != NULL) delete [] U[l];
       if (B[l] != NULL) delete [] B[l];
-      for (unsigned int d=0; d<dim; ++d)
+      for (unsigned int d=0; d<ncmp; ++d)
         if (C[l][d] != NULL) delete [] C[l][d];
     }
 	}
@@ -363,10 +363,10 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
   const unsigned int order = ORDER;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   const unsigned int ninteractions = 316;
-  const unsigned int dim = MatrixKernelClass::DIM;
+  const unsigned int ncmp = MatrixKernelClass::NCMP;
 
 	// allocate memory and store compressed M2L operators
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     if (C[d]) throw std::runtime_error("Compressed M2L operators are already set");
 
 	// interpolation points of source (Y) and target (X) cell
@@ -376,8 +376,8 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 
 	// allocate memory and compute 316 m2l operators
   FReal** _C; 
-  _C  = new FReal* [dim];
-  for (unsigned int d=0; d<dim; ++d) 
+  _C  = new FReal* [ncmp];
+  for (unsigned int d=0; d<ncmp; ++d) 
     _C[d] = new FReal [nnodes*nnodes * ninteractions];
 
 	unsigned int counter = 0;
@@ -396,11 +396,11 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
               // Compute current M2L interaction (block matrix)
 
               FReal* block; 
-              block = new FReal[dim]; 
+              block = new FReal[ncmp]; 
               MatrixKernel->evaluateBlock(X[m], Y[n], block);
 
               // Copy block in C
-              for (unsigned int d=0; d<dim; ++d) 
+              for (unsigned int d=0; d<ncmp; ++d) 
                 _C[d][counter*nnodes*nnodes + n*nnodes + m] = block[d];
 
               delete [] block;
@@ -444,24 +444,24 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 
 	// store C
 	counter = 0;
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     C[d] = new FReal [343 * rank*rank];
 	for (int i=-3; i<=3; ++i)
 		for (int j=-3; j<=3; ++j)
 			for (int k=-3; k<=3; ++k) {
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
-          for (unsigned int d=0; d<dim; ++d) 
+          for (unsigned int d=0; d<ncmp; ++d) 
             FBlas::copy(rank*rank, _C[d] + counter*rank*rank, C[d] + idx*rank*rank);
 					counter++;
 				} else {
-          for (unsigned int d=0; d<dim; ++d) 
+          for (unsigned int d=0; d<ncmp; ++d) 
             FBlas::setzero(rank*rank, C[d] + idx*rank*rank);
         }
 			}
 	if (counter != ninteractions)
 		throw std::runtime_error("Number of interactions must correspond to 316");
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     delete [] _C[d];
 
 

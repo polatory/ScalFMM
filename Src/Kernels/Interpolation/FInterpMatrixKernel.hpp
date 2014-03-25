@@ -44,8 +44,8 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  * This class provides the evaluators and scaling functions of the matrix 
  * kernels. A matrix kernel should be understood in the sense of a kernel 
  * of interaction (or the fundamental solution of a given equation). 
- * It can either be scalar (DIM=1) or tensorial (DIM>1) depending on the 
- * dimension of the equation considered. DIM denotes the number of components 
+ * It can either be scalar (NCMP=1) or tensorial (NCMP>1) depending on the 
+ * dimension of the equation considered. NCMP denotes the number of components 
  * that are actually stored (e.g. 6 for a \f$3\times3\f$ symmetric tensor). 
  * Notes on application scheme: 
  * Let there be a kernel \f$K\f$ such that \f$X_i=K_{ij}Y_j\f$
@@ -70,11 +70,11 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = /*NON_*/HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R;
-  static const  unsigned int DIM = 1; //PB: dimension of kernel
-  static const unsigned int NPV = 1;
-  static const unsigned int NPOT = 1;
-  static const unsigned int NRHS = 1;
-  static const unsigned int NLHS = 1;
+  static const unsigned int NCMP = 1; //< number of components
+  static const unsigned int NPV  = 1; //< dim of physical values
+  static const unsigned int NPOT = 1; //< dim of potentials
+  static const unsigned int NRHS = 1; //< dim of mult exp
+  static const unsigned int NLHS = 1; //< dim of loc exp
 
   FInterpMatrixKernelR(const double = 0.0, const unsigned int = 0) {}
 
@@ -127,11 +127,11 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R_SQUARED;
-  static const  unsigned int DIM = 1; //PB: dimension of kernel
-  static const unsigned int NPV = 1;
-  static const unsigned int NPOT = 1;
-  static const unsigned int NRHS = 1;
-  static const unsigned int NLHS = 1;
+  static const unsigned int NCMP = 1; //< number of components
+  static const unsigned int NPV  = 1; //< dim of physical values
+  static const unsigned int NPOT = 1; //< dim of potentials
+  static const unsigned int NRHS = 1; //< dim of mult exp
+  static const unsigned int NLHS = 1; //< dim of loc exp
 
   FInterpMatrixKernelRR(const double = 0.0, const unsigned int = 0) {}
 
@@ -145,6 +145,11 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
     return FReal(1.) / FReal(xy.getX()*xy.getX() +
                              xy.getY()*xy.getY() +
                              xy.getZ()*xy.getZ());
+  }
+
+  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
+  {
+    block[0]=this->evaluate(x,y);
   }
 
   FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
@@ -166,11 +171,11 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = LENNARD_JONES_POTENTIAL;
-  static const  unsigned int DIM = 1; //PB: dimension of kernel
-  static const unsigned int NPV = 1;
-  static const unsigned int NPOT = 1;
-  static const unsigned int NRHS = 1;
-  static const unsigned int NLHS = 1;
+  static const unsigned int NCMP = 1; //< number of components
+  static const unsigned int NPV  = 1; //< dim of physical values
+  static const unsigned int NPOT = 1; //< dim of potentials
+  static const unsigned int NRHS = 1; //< dim of mult exp
+  static const unsigned int NLHS = 1; //< dim of loc exp
 
   FInterpMatrixKernelLJ(const double = 0.0, const unsigned int = 0) {}
 
@@ -187,6 +192,11 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
     //return one_over_r6 * one_over_r6;
     //return one_over_r6;
     return one_over_r6 * one_over_r6 - one_over_r6;
+  }
+
+  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
+  {
+    block[0]=this->evaluate(x,y);
   }
 
   FReal getScaleFactor(const FReal, const int) const
@@ -206,7 +216,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Tensorial Matrix Kernels (DIM>1)
+// Tensorial Matrix Kernels (NCMP>1)
 //
 // The definition of the potential p and force f are extended to the case
 // of tensorial interaction kernels:
@@ -236,15 +246,15 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = /*NON_*/HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
-  static const unsigned int NK = 3*3; // dim of kernel
-  static const unsigned int DIM = 6; // reduced dim
-  static const unsigned int NPOT = 3; // dim of potentials
-  static const unsigned int NPV = 3; // dim of physical values
-  static const unsigned int NRHS = NPV; // dim of mult exp (here = dim physval)
-  static const unsigned int NLHS = NPOT*NRHS; // dim of loc exp (here = NPOT*NRHS)
+  static const unsigned int NK   = 3*3; //< total number of components
+  static const unsigned int NCMP = 6;   //< number of components after symmetry
+  static const unsigned int NPV  = 3;   //< dim of physical values
+  static const unsigned int NPOT = 3;   //< dim of potentials
+  static const unsigned int NRHS = NPV; //< dim of mult exp
+  static const unsigned int NLHS = NPOT*NRHS; //< dim of loc exp
 
   // store indices (i,j) corresponding to sym idx
-  static const unsigned int indexTab[/*2*DIM=12*/];
+  static const unsigned int indexTab[/*2*NCMP=12*/];
 
   // store positions in sym tensor 
   static const unsigned int applyTab[/*9*/];
@@ -252,7 +262,7 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
   const unsigned int _i,_j;
 
   FInterpMatrixKernel_IOR(const double = 0.0, const unsigned int d = 0)
-  : _i(indexTab[d]), _j(indexTab[d+DIM])
+  : _i(indexTab[d]), _j(indexTab[d+NCMP])
   {}
 
   // returns position in reduced storage from position in full 3x3 matrix
@@ -276,9 +286,9 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
     const FPoint xy(x-y);
     const FReal one_over_r = FReal(1.)/xy.norm();
 
-    for(unsigned int d=0;d<DIM;++d){
+    for(unsigned int d=0;d<NCMP;++d){
 //      unsigned int i = indexTab[d];
-//      unsigned int j = indexTab[d+DIM];
+//      unsigned int j = indexTab[d+NCMP];
 
 //      if(i==j)
         block[d] = one_over_r;
@@ -313,15 +323,15 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJ;
-  static const unsigned int NK = 3*3; // dim of kernel
-  static const unsigned int DIM = 6; // reduced dim
-  static const unsigned int NPOT = 3; // dim of potentials
-  static const unsigned int NPV = 3; // dim of physical values
-  static const unsigned int NRHS = NPV; // dim of mult exp (here = dim physval)
-  static const unsigned int NLHS = NPOT*NRHS; // dim of loc exp (here = NPOT*NRHS)
+  static const unsigned int NK   = 3*3; //< total number of components
+  static const unsigned int NCMP = 6;   //< number of components
+  static const unsigned int NPV  = 3;   //< dim of physical values
+  static const unsigned int NPOT = 3;   //< dim of potentials
+  static const unsigned int NRHS = NPV; //< dim of mult exp
+  static const unsigned int NLHS = NPOT*NRHS; //< dim of loc exp
 
   // store indices (i,j) corresponding to sym idx
-  static const unsigned int indexTab[/*2*DIM=12*/];
+  static const unsigned int indexTab[/*2*NCMP=12*/];
 
   // store positions in sym tensor (when looping over NRHSxNLHS)
   static const unsigned int applyTab[/*NK=9*/];
@@ -333,7 +343,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   const double _CoreWidth2; // if >0 then kernel is NON homogeneous
 
   FInterpMatrixKernel_R_IJ(const double CoreWidth = 0.0, const unsigned int d = 0) 
-    : _i(indexTab[d]), _j(indexTab[d+DIM]), _CoreWidth2(CoreWidth*CoreWidth)
+    : _i(indexTab[d]), _j(indexTab[d+NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
   // returns position in reduced storage from position in full 3x3 matrix
@@ -379,9 +389,9 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
     const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
     const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
-    for(unsigned int d=0;d<DIM;++d){
+    for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
-      unsigned int j = indexTab[d+DIM];
+      unsigned int j = indexTab[d+NCMP];
 
       if(i==j)
         block[d] = one_over_r - r[i] * r[i] * one_over_r3;
@@ -416,15 +426,15 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 {
   static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJK;
-  static const unsigned int NK = 3*3*3; // dim of kernel
-  static const unsigned int DIM = 10; // reduced dim
-  static const unsigned int NPOT = 3; // dim of potentials
-  static const unsigned int NPV = 3*3; // dim of physical values
-  static const unsigned int NRHS = NPV; // dim of mult exp (here = dim physval)
-  static const unsigned int NLHS = NPOT*NRHS; // dim of loc exp (here = NPOT*NRHS)
+  static const unsigned int NK = 3*3*3; //< total number of components
+  static const unsigned int NCMP = 10;  //< number of components after symmetry
+  static const unsigned int NPOT = 3;   //< dim of potentials
+  static const unsigned int NPV  = 3*3; //< dim of physical values
+  static const unsigned int NRHS = NPV; //< dim of mult exp
+  static const unsigned int NLHS = NPOT*NRHS; //< dim of loc exp
 
   // store indices (i,j,k) corresponding to sym idx
-  static const unsigned int indexTab[/*3*DIM=30*/];
+  static const unsigned int indexTab[/*3*NCMP=30*/];
 
   // store positions in sym tensor wr to full
   static const unsigned int applyTab[/*NK=27*/];
@@ -436,7 +446,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   const double _CoreWidth2; // if >0 then kernel is NON homogeneous
 
   FInterpMatrixKernel_R_IJK(const double CoreWidth = 0.0, const unsigned int d = 0) 
-  : _i(indexTab[d]), _j(indexTab[d+DIM]), _k(indexTab[d+2*DIM]), _CoreWidth2(CoreWidth*CoreWidth)
+  : _i(indexTab[d]), _j(indexTab[d+NCMP]), _k(indexTab[d+2*NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
   // returns position in reduced storage from position in full 3x3x3 matrix
@@ -449,7 +459,8 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
-//    const FPoint xy(x-y);
+    // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
+    // This makes the P2P mutual interactions implementation more explicit 
     const FPoint xy(y-x);
     const FReal one_over_r = FReal(1.)/sqrt(xy.getX()*xy.getX() + 
                                             xy.getY()*xy.getY() + 
@@ -494,7 +505,8 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
-//    const FPoint xy(x-y);
+    // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
+    // This makes the P2P mutual interactions implementation more explicit 
     const FPoint xy(y-x);
     const FReal one_over_r = FReal(1.)/sqrt(xy.getX()*xy.getX() + 
                                             xy.getY()*xy.getY() + 
@@ -504,10 +516,10 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 
     const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
-    for(unsigned int d=0;d<DIM;++d){
+    for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
-      unsigned int j = indexTab[d+DIM];
-      unsigned int k = indexTab[d+2*DIM];
+      unsigned int j = indexTab[d+NCMP];
+      unsigned int k = indexTab[d+2*NCMP];
 
       if(i==j){
         if(j==k) //i=j=k
