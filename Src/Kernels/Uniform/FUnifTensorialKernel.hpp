@@ -48,9 +48,9 @@ class FTreeCoordinate;
  * In fact, in the ChebyshevSym variant the matrix kernel needs to be 
  * evaluated compo-by-compo since we currently use a scalar ACA.
  *
- * 3) We currently use multiple 1D FFT instead of multidim FFT. 
- * TODO switch to multidim if relevant in considered range of size 
- * (see testFFTW and testFFTWMultidim).
+ * 3) We currently use multiple 1D FFT instead of multidim FFT since embedding
+ * is circulant. Multidim FFT could be used if embedding were block circulant.
+ * TODO investigate possibility of block circulant embedding
  *
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles

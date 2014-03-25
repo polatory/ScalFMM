@@ -356,10 +356,10 @@ int main(int, char **){
   // Efficient application of the Toeplitz system in FOURIER SPACE
 
   // Init DFT
+  const int dimfft = 1;
+  const int steps[dimfft] = {rc};
   //FDft Dft(rc); // direct version
-  FFft<1/*(TODO: fix MultidimFFT) nK*/> DftK(rc); // fast version
-  FFft<1/*nrhs*/> DftRhs(rc);
-  FFft<1/*nlhs*/> DftLhs(rc);
+  FFft<dimfft> Dft(steps); // fast version
 
   // Get first COLUMN of K and Store in T
   FReal T[dim*rc];
@@ -393,9 +393,9 @@ int main(int, char **){
 
   // if first COLUMN (T) of C is used
   for (unsigned int d=0; d<dim; ++d)
-    DftK.applyDFT(T+d*rc,FT+d*rc);
+    Dft.applyDFT(T+d*rc,FT+d*rc);
 //  // if first ROW of C is used
-//  DftK.applyDFT(C,FT);
+//  Dft.applyDFT(C,FT);
 
   FComplexe FPMultExp[nrhs*rc];
   FComplexe FPLocalExp[nlhs*rc];
@@ -428,7 +428,7 @@ int main(int, char **){
 
   // Transform PaddedMultExp
   for (unsigned int idxRhs=0; idxRhs<nrhs; ++idxRhs) // apply nrhs 1 dimensionnal FFT
-    DftRhs.applyDFT(PaddedMultExp+idxRhs*rc,FPMultExp+idxRhs*rc);
+    Dft.applyDFT(PaddedMultExp+idxRhs*rc,FPMultExp+idxRhs*rc);
 
   std::cout<< "Apply M2L in Fourier space: ";
   time.tic();
@@ -463,7 +463,7 @@ int main(int, char **){
 //    std::cout<<std::endl;
 
   for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs) // apply nrhs 1 dimensionnal FFT
-    DftLhs.applyIDFT(FPLocalExp+idxLhs*rc,PLocalExp+idxLhs*rc);
+    Dft.applyIDFT(FPLocalExp+idxLhs*rc,PLocalExp+idxLhs*rc);
 
 //  std::cout<< "Padded LocalExp: "<<std::endl;
 //  for (unsigned int p=0; p<rc; ++p)

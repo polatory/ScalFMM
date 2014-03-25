@@ -75,8 +75,10 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
   TensorType::setNodeIdsPairs(node_ids_pairs);
 
   // init Discrete Fourier Transformator
+  const int dimfft = 1; // unidim FFT since fully circulant embedding
+  const int steps[dimfft] = {rc};
 //	FDft Dft(rc);
-	FFft<1> Dft(rc);
+	FFft<dimfft> Dft(steps);
 
   // get first column of K via permutation
   unsigned int perm[rc];
@@ -198,15 +200,17 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
   // Tensorial MatrixKernel specific
 	FComplexe** FC;
 
-  // for real valued kernel only n/2+1 complex values are stored 
-  // after performing the DFT (the rest is deduced by conjugation)
-  unsigned int opt_rc; 
-
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
-  //  FDft Dft; // Direct Discrete Fourier Transformator
-  FFft<1> Dft; // Fast Discrete Fourier Transformator
+  // DFT specific
+  static const int dimfft = 1; // unidim FFT since fully circulant embedding
+//  FDft Dft; // Direct Discrete Fourier Transformator
+  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
+
+  const unsigned int opt_rc; // specific to real valued kernel
+
 
 	static const std::string getFileName()
 	{
@@ -220,9 +224,12 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	
 public:
 	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: opt_rc(rc/2+1), 
-      Dft(rc) // initialize Discrete Fourier Transformator
+		: opt_rc(rc/2+1)
 	{
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft = new DftClass(steps);
+
     // allocate FC
     FC = new FComplexe*[dim];
     for (unsigned int d=0; d<dim; ++d)
@@ -277,7 +284,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
+    Dft->applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -344,7 +351,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
+    Dft->applyDFT(Py,FY);
 
   }
 
@@ -369,15 +376,17 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
   const unsigned int TreeHeight;
   const FReal RootCellWidth;
 
-  // for real valued kernel only n/2+1 complex values are stored 
-  // after performing the DFT (the rest is deduced by conjugation)
-  unsigned int opt_rc; 
-
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
-  //  FDft Dft; // Direct Discrete Fourier Transformator
-  FFft<1> Dft; // Fast Discrete Fourier Transformator
+  // DFT specific
+  static const int dimfft = 1; // unidim FFT since fully circulant embedding
+//  FDft Dft; // Direct Discrete Fourier Transformator
+  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
+
+  const unsigned int opt_rc; // specific to real valued kernel
+
 
 	static const std::string getFileName()
 	{
@@ -393,9 +402,12 @@ public:
 	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
 		: TreeHeight(inTreeHeight),
       RootCellWidth(inRootCellWidth),
-      opt_rc(rc/2+1), 
-      Dft(rc) // initialize Discrete Fourier Transformator
+      opt_rc(rc/2+1)
 	{
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft = new DftClass(steps);
+
     // allocate FC
     FC = new FComplexe**[TreeHeight];
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
@@ -458,7 +470,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
+    Dft->applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -524,7 +536,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
+    Dft->applyDFT(Py,FY);
 
   }
 

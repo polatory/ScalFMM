@@ -70,6 +70,7 @@ extern "C"
 							 double*, double*, const unsigned*, int*);
 	void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*, int*);
+  void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 #ifdef ScalFMM_USE_MKL_AS_BLAS
   // mkl: hadamard product is not implemented in mkl_blas
@@ -103,6 +104,7 @@ extern "C"
 							 float*, float*, const unsigned*, int*);
 	void sorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*, int*);
+  void spotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 	// double complex //////////////////////////////////////////////////
 	// blas 1
@@ -119,7 +121,7 @@ extern "C"
 							double*, const unsigned*, const double*, double*, const unsigned*);
 	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
-
+  void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 	// single complex //////////////////////////////////////////////////
 	// blas 1
@@ -136,7 +138,7 @@ extern "C"
 							float*, const unsigned*, const float*, float*, const unsigned*);
 	void cgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
-
+  void cpotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 
 }
@@ -506,6 +508,19 @@ namespace FBlas {
 
 
 
+  // Cholesky decomposition: A=LL^T (if A is symmetric definite positive)
+  inline int potrf(const unsigned m, double* A, const unsigned n)
+  { 
+		int INF;  
+    dpotrf_("L", &m, A, &n, &INF); 
+    return INF;
+  }
+  inline int potrf(const unsigned m, float* A, const unsigned n)
+  { 
+		int INF;  
+    spotrf_("L", &m, A, &n, &INF); 
+    return INF;
+  }
 
 } // end namespace FCBlas
 
