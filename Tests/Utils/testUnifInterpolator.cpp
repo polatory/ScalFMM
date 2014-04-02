@@ -111,7 +111,7 @@ int main(int, char **){
 
   ////////////////////////////////////////////////////////////////////
   // approximative computation
-  const unsigned int ORDER = 2;
+  const unsigned int ORDER = 4;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
@@ -220,6 +220,8 @@ int main(int, char **){
 //  }
 //  std::cout<<std::endl;
 
+  if(ORDER<4){// display some extra results for low orders
+
   // Check multi-index
   std::cout<< "node_ids=" <<std::endl;
   for (unsigned int i=0; i<nnodes; ++i)
@@ -227,7 +229,6 @@ int main(int, char **){
              << node_ids[i][1] <<", "
              << node_ids[i][2] <<", "<<std::endl;
   std::cout<<std::endl;
-
 
   // Check multi-index diff
   std::cout<< "node_ids=" <<std::endl;
@@ -265,6 +266,8 @@ int main(int, char **){
 //      else std::cout<< C[rc+i-j-1] << ", ";
 //    } std::cout<<std::endl;
 //  } std::cout<<std::endl;
+
+  }// display some extra results for low orders
 
   // In 1D the Zero Padding consists in
   // inserting ORDER-1 zeros in the multipole exp
@@ -324,9 +327,10 @@ int main(int, char **){
   FBlas::setzero(rc,PLocalExp);
 
   // Init DFT
-  // NB: only one FFTor is defined a since scalar problems involve scalar r/lhs and scalar matrix kernel. All dimensions are 1. 
+  const int dimfft = 1;
+  const int steps[dimfft] = {rc};
   //FDft Dft(rc); // direct version
-  FFft<1> Dft(rc); // fast version
+  FFft<dimfft> Dft(steps); // fast version
 
   // Get first COLUMN of K and Store in T
   FReal T[rc];
@@ -460,6 +464,13 @@ int main(int, char **){
   FReal*        p = new FReal[M];
   FBlas::setzero(M, p);
 
+  // null vectors for easy calculation of relative errors
+  FReal*        null_p = new FReal[M];
+  FBlas::setzero(M, null_p);
+  FReal*        null_f = new FReal [M * 3];
+  FBlas::setzero(M*3, null_f);
+
+
   { // start direct computation
     unsigned int counter = 0;
 
@@ -520,10 +531,12 @@ int main(int, char **){
 //  std::cout << std::endl;
 
   std::cout << "\nPotential error:" << std::endl;
-  std::cout << "Absolute error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
+  std::cout << "Relative Inf error   = " << FMath::FAccurater( p, approx_p, M).getRelativeInfNorm() << std::endl;
+  std::cout << "Relative L2 error   = " << FMath::FAccurater( p, approx_p, M).getRelativeL2Norm() << std::endl;
 
   std::cout << "\nForce error:" << std::endl;
-  std::cout << "Absolute L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
+  std::cout << "Relative Inf error   = " << FMath::FAccurater( f, approx_f, M*3).getRelativeInfNorm() << std::endl;
+  std::cout << "Relative L2 error   = " << FMath::FAccurater( f, approx_f, M*3).getRelativeL2Norm() << std::endl;
   std::cout << std::endl;
 
   // free memory

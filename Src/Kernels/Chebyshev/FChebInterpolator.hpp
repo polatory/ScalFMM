@@ -47,7 +47,8 @@ class FChebInterpolator : FNoCopyable
   // compile time constants and types
   enum {nnodes = TensorTraits<ORDER>::nnodes,
         nRhs = MatrixKernelClass::NRHS,
-        nLhs = MatrixKernelClass::NLHS};
+        nLhs = MatrixKernelClass::NLHS,
+        nPV = MatrixKernelClass::NPV};
   typedef FChebRoots< ORDER>  BasisType;
   typedef FChebTensor<ORDER> TensorType;
 
@@ -861,8 +862,15 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
         }
       }
 
-      for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
-        FReal*const potentials = inParticles->getPotentials(idxLhs);
+      for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){      
+        // distribution over potential components:
+        // We sum the multidim contribution of PhysValue
+        // This was originally done at M2L step but moved here 
+        // because their storage is required by the force computation.
+        // In fact : f_{ik}(x)=w_j(x) \nabla_{x_i} K_{ij}(x,y)w_j(y))
+        const unsigned int idxPot = idxLhs / nPV; 
+
+        FReal*const potentials = inParticles->getPotentials(idxPot);
 
         // interpolate and increment target value
         FReal targetValue = potentials[idxPart];
@@ -1110,6 +1118,8 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2PGradient(const F
         }
 
         for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
+          const unsigned int idxPot = idxLhs / nPV; 
+          const unsigned int idxPV  = idxLhs % nPV; 
 
           // scale forces
           forces[idxLhs][0] *= jacobian[0] / nnodes;
@@ -1117,10 +1127,10 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2PGradient(const F
           forces[idxLhs][2] *= jacobian[2] / nnodes;
 
           // get pointers to PhysValues and force components
-          const FReal*const physicalValues = inParticles->getPhysicalValues(idxLhs);
-          FReal*const forcesX = inParticles->getForcesX(idxLhs);
-          FReal*const forcesY = inParticles->getForcesY(idxLhs);
-          FReal*const forcesZ = inParticles->getForcesZ(idxLhs);
+          const FReal*const physicalValues = inParticles->getPhysicalValues(idxPV);
+          FReal*const forcesX = inParticles->getForcesX(idxPot);
+          FReal*const forcesY = inParticles->getForcesY(idxPot);
+          FReal*const forcesZ = inParticles->getForcesZ(idxPot);
 
           // set computed forces
           forcesX[idxPart] += forces[idxLhs][0] * physicalValues[idxPart];
@@ -1342,12 +1352,15 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2PTotal(const FPoi
             forces[idxLhs][2] = (     FReal(2.)*f2[3] + FReal(4.)*f4[3] + FReal(8.)*f8[3]) * jacobian[2] / nnodes; // 7 flops
         } // 28 + (ORDER-1) * ((ORDER-1) * (27 + (ORDER-1) * 16)) flops
 
+        const unsigned int idxPot = idxLhs / nPV; 
+        const unsigned int idxPV  = idxLhs % nPV; 
+
         // get potentials, physValues and forces components 
-        const FReal*const physicalValues = inParticles->getPhysicalValues(idxLhs);
-        FReal*const forcesX = inParticles->getForcesX(idxLhs);
-        FReal*const forcesY = inParticles->getForcesY(idxLhs);
-        FReal*const forcesZ = inParticles->getForcesZ(idxLhs);
-        FReal*const potentials = inParticles->getPotentials(idxLhs);
+        const FReal*const physicalValues = inParticles->getPhysicalValues(idxPV);
+        FReal*const forcesX = inParticles->getForcesX(idxPot);
+        FReal*const forcesY = inParticles->getForcesY(idxPot);
+        FReal*const forcesZ = inParticles->getForcesZ(idxPot);
+        FReal*const potentials = inParticles->getPotentials(idxPot);
 
         // set computed potential
         potentials[idxPart] += (potential[idxLhs]); // 1 flop

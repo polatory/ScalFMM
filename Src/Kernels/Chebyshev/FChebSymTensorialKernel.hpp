@@ -56,9 +56,9 @@ class FChebSymTensorialKernel
   : public FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
   typedef FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	AbstractBaseClass;
-  typedef SymmetryHandler<ORDER, MatrixKernelClass::DIM, MatrixKernelClass::Type> SymmetryHandlerClass;
+  typedef SymmetryHandler<ORDER, MatrixKernelClass::NCMP, MatrixKernelClass::Type> SymmetryHandlerClass;
   enum {nnodes = AbstractBaseClass::nnodes,
-        dim = MatrixKernelClass::DIM,
+        ncmp = MatrixKernelClass::NCMP,
         nRhs = MatrixKernelClass::NRHS,
         nLhs = MatrixKernelClass::NLHS};
 

@@ -70,17 +70,39 @@ struct DirectInteractionComputer<ID_OVER_R, 1>
 template <>
 struct DirectInteractionComputer<R_IJ, 1>
 {
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
-    FP2P::FullMutualRIJ(TargetParticles,NeighborSourceParticles,14);
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullMutualRIJ(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
   }
 
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
                          ContainerClass* const inNeighbors[27],
-                         const int inSize){
-    FP2P::FullRemoteRIJ(inTargets,inNeighbors,inSize);
+                         const int inSize,
+                         const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullRemoteRIJ(inTargets,inNeighbors,inSize,MatrixKernel);
+  }
+};
+
+/*! Specialization for GradGradGradR potential */
+template <>
+struct DirectInteractionComputer<R_IJK, 1>
+{
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2P( ContainerClass* const FRestrict TargetParticles,
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullMutualRIJK(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+  }
+
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                         ContainerClass* const inNeighbors[27],
+                         const int inSize,
+                         const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullRemoteRIJK(inTargets,inNeighbors,inSize,MatrixKernel);
   }
 };
 
@@ -160,20 +182,46 @@ struct DirectInteractionComputer<ID_OVER_R, NVALS>
 template <int NVALS>
 struct DirectInteractionComputer<R_IJ, NVALS>
 {
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const MatrixKernel){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-    FP2P::FullMutualRIJ(TargetParticles,NeighborSourceParticles,14);
+    FP2P::FullMutualRIJ(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
     }
   }
 
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
                          ContainerClass* const inNeighbors[27],
-                         const int inSize){
+                         const int inSize,
+                         const MatrixKernelClass *const MatrixKernel){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-    FP2P::FullRemoteRIJ(inTargets,inNeighbors,inSize);
+    FP2P::FullRemoteRIJ(inTargets,inNeighbors,inSize,MatrixKernel);
+    }
+  }
+};
+
+/*! Specialization for GradGradGradR potential */
+template <int NVALS>
+struct DirectInteractionComputer<R_IJK, NVALS>
+{
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2P( ContainerClass* const FRestrict TargetParticles,
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const MatrixKernel){
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+    FP2P::FullMutualRIJK(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+    }
+  }
+
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                         ContainerClass* const inNeighbors[27],
+                         const int inSize,
+                         const MatrixKernelClass *const MatrixKernel){
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+    FP2P::FullRemoteRIJK(inTargets,inNeighbors,inSize,MatrixKernel);
     }
   }
 };

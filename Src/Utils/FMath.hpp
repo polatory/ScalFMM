@@ -103,6 +103,16 @@ struct FMath{
 		return (1 << power);
 	}
 
+  /** To get factorial */
+	static double factorial(int inValue){
+    if(inValue==0) return 1.;
+    else {
+      double result = inValue;
+      while(--inValue > 1) result *= inValue;
+      return result;
+    }
+	}
+
 	/** To know if a value is between two others */
 	template <class NumType>
 	static bool Between(const NumType inValue, const NumType inMin, const NumType inMax){

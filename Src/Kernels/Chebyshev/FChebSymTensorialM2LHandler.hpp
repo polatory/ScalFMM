@@ -512,11 +512,11 @@ static void precompute(const int idxK, const FReal CellWidth,
   because it allows us to use to associate the far-field interactions based on
   the index \f$t = 7^2(i+3) + 7(j+3) + (k+3)\f$ where \f$(i,j,k)\f$ denotes
   the relative position of the source cell to the target cell. */
-template <int ORDER, int DIM, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
+template <int ORDER, int NCMP, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
 
 /*! Specialization for homogeneous kernel functions */
-template <int ORDER, int DIM>
-class SymmetryHandler<ORDER, DIM, HOMOGENEOUS>
+template <int ORDER, int NCMP>
+class SymmetryHandler<ORDER, NCMP, HOMOGENEOUS>
 {
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -539,10 +539,10 @@ public:
 	{
     // For each component of kernel matrix
 		// init all 343 item to zero, because effectively only 16 exist
-    K       = new FReal** [DIM];
-    LowRank = new int* [DIM];
+    K       = new FReal** [NCMP];
+    LowRank = new int* [NCMP];
 
-    for (unsigned int d=0; d<DIM; ++d) {
+    for (unsigned int d=0; d<NCMP; ++d) {
       K[d]       = new FReal* [343];
 			LowRank[d] = new int    [343];
 
@@ -565,7 +565,7 @@ public:
 
 		// precompute 16 M2L operators
 		const FReal ReferenceCellWidth = FReal(2.);
-    for (unsigned int d=0; d<DIM; ++d)
+    for (unsigned int d=0; d<NCMP; ++d)
       precompute<ORDER,MatrixKernelClass>(d, ReferenceCellWidth, Epsilon, K[d], LowRank[d]);
 
 	}
@@ -575,7 +575,7 @@ public:
 	/** Destructor */
 	~SymmetryHandler()
 	{
-    for (unsigned int d=0; d<DIM; ++d)
+    for (unsigned int d=0; d<NCMP; ++d)
       for (unsigned int t=0; t<343; ++t) if (K[d][t]!=NULL) delete [] K[d][t];
 	}
 
@@ -598,8 +598,8 @@ public:
 
 
 /*! Specialization for non-homogeneous kernel functions */
-template <int ORDER, int DIM>
-class SymmetryHandler<ORDER, DIM, NON_HOMOGENEOUS>
+template <int ORDER, int NCMP>
+class SymmetryHandler<ORDER, NCMP, NON_HOMOGENEOUS>
 {
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -625,9 +625,9 @@ public:
 		: TreeHeight(inTreeHeight)
 	{
 		// init all 343 item to zero, because effectively only 16 exist
-    K       = new FReal*** [DIM];
-    LowRank = new int** [DIM];
-    for (unsigned int d=0; d<DIM; ++d) {
+    K       = new FReal*** [NCMP];
+    LowRank = new int** [NCMP];
+    for (unsigned int d=0; d<NCMP; ++d) {
       K[d]       = new FReal** [TreeHeight];
       LowRank[d] = new int*    [TreeHeight];
       K[d][0]       = NULL; K[d][1]       = NULL;
@@ -654,7 +654,7 @@ public:
 				}
 
 		// precompute 16 M2L operators at all levels having far-field interactions
-    for (unsigned int d=0; d<DIM; ++d) {
+    for (unsigned int d=0; d<NCMP; ++d) {
       FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
       CellWidth /= FReal(2.);                      // at level 2
       for (unsigned int l=2; l<TreeHeight; ++l) {
@@ -669,7 +669,7 @@ public:
 	/** Destructor */
 	~SymmetryHandler()
 	{
-    for (unsigned int d=0; d<DIM; ++d) {
+    for (unsigned int d=0; d<NCMP; ++d) {
       for (unsigned int l=0; l<TreeHeight; ++l) {
         if (K[d][l]!=NULL) {
           for (unsigned int t=0; t<343; ++t) if (K[d][l][t]!=NULL) delete [] K[d][l][t];

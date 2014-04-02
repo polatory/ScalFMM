@@ -69,19 +69,36 @@ int main(int argc, char* argv[])
 
   // typedefs
 //  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+//  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
+  typedef FInterpMatrixKernel_R_IJK MatrixKernelClass;
 
+  // usefull features of matrix kernel
   const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
+  const unsigned int NPV  = MatrixKernelClass::NPV;
+  const unsigned int NPOT = MatrixKernelClass::NPOT;
   const unsigned int NRHS = MatrixKernelClass::NRHS;
   const unsigned int NLHS = MatrixKernelClass::NLHS;
+
+  const double CoreWidth = 10;
+  const MatrixKernelClass DirectMatrixKernel(CoreWidth);
+  std::cout<< "Interaction kernel: ";
+  if(MK_ID == ONE_OVER_R) std::cout<< "1/R";
+  else if(MK_ID == ID_OVER_R) std::cout<< "Id/R";
+  else if(MK_ID == R_IJ)
+    std::cout<< "Ra_{,ij}" << " with core width a=" << CoreWidth <<std::endl;
+  else if(MK_ID == R_IJK)
+    std::cout<< "Ra_{,ijk}"<< " with core width a=" << CoreWidth <<std::endl;
+  else std::runtime_error("Provide a valid matrix kernel!");
 
   // init particles position and physical value
   struct TestParticle{
     FPoint position;
-    FReal forces[3][NLHS];
-    FReal physicalValue[NRHS];
-    FReal potential[NLHS];
+    FReal forces[3][NPOT];
+    FReal physicalValue[NPV];
+    FReal potential[NPOT];
   };
+
+  const FReal FRandMax = FReal(RAND_MAX);
 
   // open particle file
   FFmaScanfLoader loader(filename);
@@ -92,15 +109,21 @@ int main(int argc, char* argv[])
     FPoint position;
     FReal physicalValue = 0.0;
     loader.fillParticle(&position,&physicalValue);
+
     // get copy
     particles[idxPart].position       = position;
-    for(unsigned idxRhs = 0; idxRhs<NRHS;++idxRhs)
-      particles[idxPart].physicalValue[idxRhs]  = physicalValue; // copy same physical value in each component
-    for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
-      particles[idxPart].potential[idxLhs]      = 0.0;
-      particles[idxPart].forces[0][idxLhs]      = 0.0;
-      particles[idxPart].forces[1][idxLhs]      = 0.0;
-      particles[idxPart].forces[2][idxLhs]      = 0.0;
+    // Set physical values
+    for(unsigned idxPV = 0; idxPV<NPV;++idxPV){
+//    //   Either copy same physical value in each component
+        particles[idxPart].physicalValue[idxPV]  = physicalValue;
+    // ... or set random value
+//      particles[idxPart].physicalValue[idxPV]  = physicalValue*FReal(rand())/FRandMax;
+    }
+    for(unsigned idxPot = 0; idxPot<NPOT;++idxPot){
+      particles[idxPart].potential[idxPot]      = 0.0;
+      particles[idxPart].forces[0][idxPot]      = 0.0;
+      particles[idxPart].forces[1][idxPot]      = 0.0;
+      particles[idxPart].forces[2][idxPot]      = 0.0;
     }
   }
 
@@ -120,7 +143,8 @@ int main(int argc, char* argv[])
                                      particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                      particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
-                                     particles[idxOther].forces[2], particles[idxOther].potential);
+                                     particles[idxOther].forces[2], particles[idxOther].potential,
+                                     &DirectMatrixKernel);
           else if(MK_ID == ID_OVER_R)
             FP2P::MutualParticlesIOR(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                      particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
@@ -130,6 +154,16 @@ int main(int argc, char* argv[])
                                      particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
                                      particles[idxOther].forces[2], particles[idxOther].potential);
+          else if(MK_ID == R_IJK)
+            FP2P::MutualParticlesRIJK(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                      particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+                                      particles[idxTarget].forces[0], particles[idxTarget].forces[1],
+                                      particles[idxTarget].forces[2], particles[idxTarget].potential,
+                                      particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                      particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
+                                      particles[idxOther].forces[2], particles[idxOther].potential,
+                                      &DirectMatrixKernel);
           else 
             std::runtime_error("Provide a valid matrix kernel!");
         }
@@ -146,7 +180,7 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 7;
+    const unsigned int ORDER = 6 ;
 
     typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
 
@@ -163,14 +197,26 @@ int main(int argc, char* argv[])
 
     { // -----------------------------------------------------
       std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                << " particles ..." << std::endl;
+                << " particles ..." << std::endl; 
+
+
+
+
       std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
       time.tic();
 
       for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         // put in tree
-        // PB: here we have to know the number of NRHS...
-        tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
+        if(NPV==3) // R_IJ or IOR
+          tree.insert(particles[idxPart].position, idxPart, 
+                      particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
+        else if(NPV==9) // R_IJK
+          tree.insert(particles[idxPart].position, idxPart, 
+                      particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2],
+                      particles[idxPart].physicalValue[3], particles[idxPart].physicalValue[4], particles[idxPart].physicalValue[5],
+                      particles[idxPart].physicalValue[6], particles[idxPart].physicalValue[7], particles[idxPart].physicalValue[8]);
+        else
+          std::runtime_error("NPV not yet supported in test! Add new case.");
       }
 
       time.tac();
@@ -181,7 +227,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),CoreWidth);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();
@@ -191,23 +237,21 @@ int main(int argc, char* argv[])
 
     { // -----------------------------------------------------
       std::cout << "\nError computation ... " << std::endl;
-      FMath::FAccurater potentialDiff[NLHS];
-      FMath::FAccurater fx[NLHS], fy[NLHS], fz[NLHS];
+      FMath::FAccurater potentialDiff[NPOT];
+      FMath::FAccurater fx[NPOT], fy[NPOT], fz[NPOT];
 
-      FReal checkPhysVal[20000][NRHS];
-      FReal checkPotential[20000][NLHS];
-      FReal checkfx[20000][NLHS];
+      FReal checkPotential[20000][NPOT];
+      FReal checkfx[20000][NPOT];
 
       { // Check that each particle has been summed with all other
 
         tree.forEachLeaf([&](LeafClass* leaf){
-            for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
+            for(unsigned idxPot = 0; idxPot<NPOT;++idxPot){
 
-              const FReal*const physVals = leaf->getTargets()->getPhysicalValues(idxLhs);
-              const FReal*const potentials = leaf->getTargets()->getPotentials(idxLhs);
-              const FReal*const forcesX = leaf->getTargets()->getForcesX(idxLhs);
-              const FReal*const forcesY = leaf->getTargets()->getForcesY(idxLhs);
-              const FReal*const forcesZ = leaf->getTargets()->getForcesZ(idxLhs);
+              const FReal*const potentials = leaf->getTargets()->getPotentials(idxPot);
+              const FReal*const forcesX = leaf->getTargets()->getForcesX(idxPot);
+              const FReal*const forcesY = leaf->getTargets()->getForcesY(idxPot);
+              const FReal*const forcesZ = leaf->getTargets()->getForcesZ(idxPot);
               const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
               const FVector<int>& indexes = leaf->getTargets()->getIndexes();
 
@@ -215,41 +259,52 @@ int main(int argc, char* argv[])
                 const int indexPartOrig = indexes[idxPart];
 
                 //PB: store potential in array[nbParticles]
-                checkPhysVal[indexPartOrig][idxLhs]=physVals[idxPart];              
-                checkPotential[indexPartOrig][idxLhs]=potentials[idxPart];              
-                checkfx[indexPartOrig][idxLhs]=forcesX[idxPart];              
+                checkPotential[indexPartOrig][idxPot]=potentials[idxPart];              
+                checkfx[indexPartOrig][idxPot]=forcesX[idxPart];              
 
-                potentialDiff[idxLhs].add(particles[indexPartOrig].potential[idxLhs],potentials[idxPart]);
-                fx[idxLhs].add(particles[indexPartOrig].forces[0][idxLhs],forcesX[idxPart]);
-                fy[idxLhs].add(particles[indexPartOrig].forces[1][idxLhs],forcesY[idxPart]);
-                fz[idxLhs].add(particles[indexPartOrig].forces[2][idxLhs],forcesZ[idxPart]);
+                potentialDiff[idxPot].add(particles[indexPartOrig].potential[idxPot],potentials[idxPart]);
+                fx[idxPot].add(particles[indexPartOrig].forces[0][idxPot],forcesX[idxPart]);
+                fy[idxPot].add(particles[indexPartOrig].forces[1][idxPot],forcesY[idxPart]);
+                fz[idxPot].add(particles[indexPartOrig].forces[2][idxPot],forcesZ[idxPart]);
               }
-            }// NLHS
+            }// NPOT
           });
       }
 
-//      std::cout << "Check Potential, forceX " << std::endl;
-//      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-//        for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs){
-//          std::cout << checkPhysVal[idxPart][idxLhs] << ", "<< particles[idxPart].physicalValue[idxLhs]<< "|| ";
-//          std::cout << checkPotential[idxPart][idxLhs] << ", "<< particles[idxPart].potential[idxLhs]<< "|| ";
-//          std::cout << checkfx[idxPart][idxLhs] << ", "<< particles[idxPart].forces[0][idxLhs] << std::endl;
-//        }
-//      std::cout << std::endl;
 
       // Print for information
-      std::cout << "\nAbsolute errors: " << std::endl;
-      std::cout << "Potential: ";
-      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << potentialDiff[idxLhs] << ", " ;
+      std::cout << "\nRelative Inf/L2 errors: " << std::endl;
+      std::cout << "  Potential: " << std::endl;
+      for(unsigned idxPot = 0; idxPot<NPOT;++idxPot) {
+        std::cout << "    " << idxPot << ": "
+                  << potentialDiff[idxPot].getRelativeInfNorm() << ", " 
+                  << potentialDiff[idxPot].getRelativeL2Norm() 
+                  << std::endl;
+      }
       std::cout << std::endl;
-      std::cout << "Fx: "; 
-      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fx[idxLhs] << ", " ;
+      std::cout << "  Fx: " << std::endl; 
+      for(unsigned idxPot = 0; idxPot<NPOT;++idxPot) {
+        std::cout << "    " << idxPot << ": "
+                  << fx[idxPot].getRelativeInfNorm() << ", " 
+                  << fx[idxPot].getRelativeL2Norm()
+                  << std::endl;
+      }
       std::cout  << std::endl;
-      std::cout << "Fy: "; 
-      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fy[idxLhs] << ", " ;
+      std::cout << "  Fy: " << std::endl; 
+      for(unsigned idxPot = 0; idxPot<NPOT;++idxPot) {
+        std::cout << "    " << idxPot << ": "
+                  << fy[idxPot].getRelativeInfNorm() << ", " 
+                  << fy[idxPot].getRelativeL2Norm()
+                  << std::endl;
+      }
       std::cout  << std::endl;
-      std::cout << "Fz: "; 
-      for(unsigned idxLhs = 0; idxLhs<NLHS;++idxLhs) std::cout << fz[idxLhs] << ", " ;
+      std::cout << "  Fz: " << std::endl; 
+      for(unsigned idxPot = 0; idxPot<NPOT;++idxPot) {
+        std::cout << "    " << idxPot << ": "
+                  << fz[idxPot].getRelativeInfNorm() << ", " 
+                  << fz[idxPot].getRelativeL2Norm()
+                  << std::endl;
+      }
       std::cout << std::endl;
 
     } // -----------------------------------------------------

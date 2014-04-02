@@ -36,7 +36,7 @@
 
 /**
  * @author Pierre Blanchard (pierre.blanchard@inria.fr)
- * @class FDft and @class FFft
+ * @class FDft, @class FFft and @class FCFft
  * Please read the license
  *
  * These classes handle the forward and backward Discete Fourier Transform 
@@ -44,6 +44,10 @@
  * @class FDft implements a direct method while @class FFft uses the Fast 
  * Fourier Transform (FFT). The FFT algorithm can either be provided by the 
  * FFTW(3) library itself or a version that is wrapped in Intel MKL.
+ *
+ * The direct DFT is templatized with the input value type (FReal or FComplexe),
+ * while 2 distinct classes resp. @class FFft and @class FCFft are defined 
+ * resp. for the real and complex valued FFT.
  *
  * The aim of writing these specific classes is to allow further customization 
  * of the DFT such as implementing a tensorial variant, a weighted variant 
@@ -59,25 +63,25 @@
  *
  * @tparam nsteps number of sampled values \f$N\f$
  */
-
+template<typename ValueType>
 class FDft
 {
 
-  FReal* fftR_;
-  FComplexe* fftC_;
+  ValueType* data_;  //< data in physical space
+  FComplexe* dataF_; //< data in Fourier space
 
   FReal *cosRS_, *sinRS_; 
 
 private:
-  unsigned int nsteps_;
+  unsigned int nsteps_; //< number of steps
 
 public:
 
   FDft(const unsigned int nsteps)
   : nsteps_(nsteps)
   {
-    fftR_ = new FReal[nsteps_];
-    fftC_ = new FComplexe[nsteps_];
+    data_  = new ValueType[nsteps_];
+    dataF_ = new FComplexe[nsteps_];
 
     // Beware this is extremely HEAVY to store!!! => Use FDft only for debug!
     cosRS_ = new FReal[nsteps_*nsteps_];
@@ -93,67 +97,104 @@ public:
 
   virtual ~FDft()
   {
-    delete [] fftR_;
-    delete [] fftC_;
+    delete [] data_;
+    delete [] dataF_;
     delete [] cosRS_;
     delete [] sinRS_;
   }
 
+  /// Forward DFT
+  // Real valued DFT
   void applyDFT(const FReal* sampledData,
                 FComplexe* transformedData) const
   {
-//    FTic time;
-
     // read sampled data
-//    std::cout<< "copy(";
-//    time.tic();
-    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(fftC_));
-    FBlas::copy(nsteps_, sampledData,fftR_);
-//    std::cout << time.tacAndElapsed() << ")";
+    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
+    FBlas::copy(nsteps_, sampledData,data_);
 
-//    std::cout<< " - exe(";
-//    time.tic();
+    // perform direct forward transformation
     for(unsigned int r=0; r<nsteps_; ++r)
       for(unsigned int s=0; s<nsteps_; ++s){
-        fftC_[r] += FComplexe(fftR_[s]*cosRS_[r*nsteps_+s], 
-                              -fftR_[s]*sinRS_[r*nsteps_+s]);
+        dataF_[r] += FComplexe(data_[s]*cosRS_[r*nsteps_+s], 
+                              -data_[s]*sinRS_[r*nsteps_+s]);
       }
-//    std::cout << time.tacAndElapsed() << ")";
 
     // write transformed data
-//    std::cout<< " - copy(";
-//    time.tic();
-    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(fftC_),
+    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(dataF_),
                   reinterpret_cast<FReal*>(transformedData));
-//    std::cout << time.tacAndElapsed() << ") ";
+  }
+  // Complexe valued DFT
+  void applyDFT(const FComplexe* sampledData,
+                FComplexe* transformedData) const
+  {
+    // read sampled data
+    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
+    FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(sampledData),
+                  reinterpret_cast<FReal*>(data_));
 
+    // perform direct forward transformation
+    for(unsigned int r=0; r<nsteps_; ++r)
+      for(unsigned int s=0; s<nsteps_; ++s){
+        dataF_[r] += FComplexe(data_[s].getReal()*cosRS_[r*nsteps_+s]
+                               + data_[s].getImag()*sinRS_[r*nsteps_+s], 
+                               data_[s].getImag()*cosRS_[r*nsteps_+s]
+                               - data_[s].getReal()*sinRS_[r*nsteps_+s]);
+      }
+
+    // write transformed data
+    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(dataF_),
+                  reinterpret_cast<FReal*>(transformedData));
   }
 
-
+  /// Backward DFT
+  // Real valued IDFT
   void applyIDFT(const FComplexe* transformedData,
                  FReal* sampledData) const
   {
     // read transformed data
-    FBlas::setzero(nsteps_,fftR_);
+    FBlas::setzero(nsteps_,data_);
     FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(transformedData),
-                  reinterpret_cast<FReal*>(fftC_));
+                  reinterpret_cast<FReal*>(dataF_));
 
+    // perform direct backward transformation
     for(unsigned int r=0; r<nsteps_; ++r){
       for(unsigned int s=0; s<nsteps_; ++s){
-        fftR_[r] += fftC_[s].getReal()*cosRS_[r*nsteps_+s]
-          -fftC_[s].getImag()*sinRS_[r*nsteps_+s];
+        data_[r] += dataF_[s].getReal()*cosRS_[r*nsteps_+s]
+          + dataF_[s].getImag()*sinRS_[r*nsteps_+s];
       }
-      fftR_[r]*=1./nsteps_;
+      data_[r]*=1./nsteps_;
     }  
 
     // write sampled data
-    FBlas::copy(nsteps_,fftR_,sampledData);
-
+    FBlas::copy(nsteps_,data_,sampledData);
   }
 
+  // Complexe valued IDFT
+  void applyIDFT(const FComplexe* transformedData,
+                 FComplexe* sampledData) const
+  {
+    // read transformed data
+    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(data_));
+    FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(transformedData),
+                  reinterpret_cast<FReal*>(dataF_));
+
+    // perform direct backward transformation
+    for(unsigned int r=0; r<nsteps_; ++r){
+      for(unsigned int s=0; s<nsteps_; ++s){
+        data_[r] += FComplexe(dataF_[s].getReal()*cosRS_[r*nsteps_+s]
+                              - dataF_[s].getImag()*sinRS_[r*nsteps_+s],
+                              dataF_[s].getImag()*cosRS_[r*nsteps_+s]
+                              + dataF_[s].getReal()*sinRS_[r*nsteps_+s]);
+      }
+      data_[r]*=1./nsteps_;
+    }  
+
+    // write sampled data
+    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(data_),
+                  reinterpret_cast<FReal*>(sampledData));
+  }
 
 };
-
 
 
 /**
@@ -167,50 +208,56 @@ class FFft
   enum{dim = DIM};
 
   // arrays
-  FReal* fftR_;
-  FComplexe* fftC_;
+  FReal* data_;      //< data in physical space
+  FComplexe* dataF_; //< data in Fourier space
 
   // plans
-  fftw_plan plan_c2r_; // backward FFT plan
-  fftw_plan plan_r2c_; // forward FFT plan 
+  fftw_plan plan_c2r_; //< backward FFT plan
+  fftw_plan plan_r2c_; //< forward FFT plan 
 
 private:
-  /*unsigned*/ int nsteps_; // all dimensions have same nb of steps
-  /*unsigned*/ int nsteps_opt_;
+  int steps_[dim]; //< number of steps per dimension
+  int nsteps_;     //< total number of steps
+  int nsteps_opt_; //< reduced number of steps for real valued FFT
 
 public:
 
-  FFft(const unsigned int nsteps)
-    : nsteps_(nsteps),
-      nsteps_opt_(nsteps/2+1) // SPECIFIC TO REAL VALUED FTT
+  FFft(const int steps[dim])
   {
-    // allocate arrays
-    fftR_ = (FReal*) fftw_malloc(dim * sizeof(FReal) * dim * nsteps_);
-    fftC_ = (FComplexe*) fftw_malloc(dim * sizeof(FComplexe) * dim * nsteps_opt_);
+    // init number of steps
+    nsteps_=1; nsteps_opt_=1;
+    for(int d = 0; d<dim;++d){
+      steps_[d]=steps[d];
+      nsteps_*=steps[d];
+      nsteps_opt_*=steps[d]/2+1; // real valued DFT specific
+    }
 
-//    // fftw plans
+    // allocate arrays
+    data_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
+    dataF_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_opt_);
+
+//    // unidim fftw plans
 //    plan_c2r_ =
 //      fftw_plan_dft_c2r_1d(nsteps_, 
-//                           reinterpret_cast<fftw_complex*>(fftC_),
-//                           fftR_, 
+//                           reinterpret_cast<fftw_complex*>(dataF_),
+//                           data_, 
 //                           FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
 //    plan_r2c_ =
 //      fftw_plan_dft_r2c_1d(nsteps_, 
-//                           fftR_, 
-//                           reinterpret_cast<fftw_complex*>(fftC_), 
+//                           data_, 
+//                           reinterpret_cast<fftw_complex*>(dataF_), 
 //                           FFTW_MEASURE);
 
     // multidim fftw plans
-    const int steps[2] = {dim, nsteps_};
     plan_c2r_ =
-      fftw_plan_dft_c2r(2, steps, 
-                        reinterpret_cast<fftw_complex*>(fftC_),
-                        fftR_, 
+      fftw_plan_dft_c2r(dim, steps_, 
+                        reinterpret_cast<fftw_complex*>(dataF_),
+                        data_, 
                         FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
     plan_r2c_ =
-      fftw_plan_dft_r2c(2, steps, 
-                        fftR_, 
-                        reinterpret_cast<fftw_complex*>(fftC_), 
+      fftw_plan_dft_r2c(dim, steps_, 
+                        data_, 
+                        reinterpret_cast<fftw_complex*>(dataF_), 
                         FFTW_MEASURE);
 
   }
@@ -219,38 +266,22 @@ public:
   {
     fftw_destroy_plan(plan_c2r_);
     fftw_destroy_plan(plan_r2c_);
-    fftw_free(fftR_);
-    fftw_free(fftC_);
+    fftw_free(data_);
+    fftw_free(dataF_);
   }
 
   void applyDFT(const FReal* sampledData,
                 FComplexe* transformedData) const
   {
-//    FTic time;
-
-    // read sampled data
-//    std::cout<< "copy(";
-//    time.tic();
-    FBlas::c_setzero(dim*nsteps_opt_,reinterpret_cast<FReal*>(fftC_));
-    FBlas::copy(dim*nsteps_, sampledData,fftR_);
-//    std::cout << time.tacAndElapsed() << ")";
+    FBlas::c_setzero(nsteps_opt_,reinterpret_cast<FReal*>(dataF_));
+    FBlas::copy(nsteps_, sampledData,data_);
 
     // perform fft
-//    std::cout<< " - exe(";
-//    time.tic();
     fftw_execute( plan_r2c_ );
-//    std::cout << time.tacAndElapsed() << ")";
 
     // write transformed data
-//    std::cout<< " - copy(";
-//    time.tic();
-    FBlas::c_copy(dim*nsteps_opt_,reinterpret_cast<FReal*>(fftC_),
+    FBlas::c_copy(nsteps_opt_,reinterpret_cast<FReal*>(dataF_),
                   reinterpret_cast<FReal*>(transformedData));
-//    for(unsigned int s=0; s<nsteps_opt_; ++s)
-//      transformedData[s]=fftC_[s];
-
-//    std::cout << time.tacAndElapsed() << ") ";
-
   }
 
 
@@ -258,18 +289,118 @@ public:
                  FReal* sampledData) const
   {
     // read transformed data
-    FBlas::setzero(dim*nsteps_,fftR_);
-    FBlas::c_copy(dim*nsteps_opt_,reinterpret_cast<const FReal*>(transformedData),
-                  reinterpret_cast<FReal*>(fftC_));
+    FBlas::setzero(nsteps_,data_);
+    FBlas::c_copy(nsteps_opt_,reinterpret_cast<const FReal*>(transformedData),
+                  reinterpret_cast<FReal*>(dataF_));
 
     // perform ifft
     fftw_execute( plan_c2r_ );
 
     for(unsigned int s=0; s<dim*nsteps_; ++s)
-      fftR_[s]/=(dim*nsteps_); // the fft from fftw is not scaled !!!!!!!!
+      data_[s]/=nsteps_; // the fft from fftw is not scaled !!!!!!!!
 
     // write sampled data
-    FBlas::copy(dim*nsteps_,fftR_,sampledData);
+    FBlas::copy(nsteps_,data_,sampledData);
+
+  }
+
+
+};
+
+
+/**
+ * @class FCFft
+ *
+ * @tparam nsteps number of sampled values \f$N\f$
+ */
+template<int DIM = 1>
+class FCFft
+{
+  enum{dim = DIM};
+
+  // arrays
+  FComplexe* data_;  //< data in physical space
+  FComplexe* dataF_; //< data in Fourier space
+
+  // plans
+  fftw_plan plan_b_; // backward FFT plan
+  fftw_plan plan_f_; // forward FFT plan 
+
+private:
+  int steps_[dim]; //< number of steps per dimension
+  int nsteps_;     //< total number of steps 
+public:
+
+  FCFft(const int steps[dim])
+  {
+    // init number of steps
+    nsteps_=1;
+    for(int d = 0; d<dim;++d){
+      steps_[d]=steps[d];
+      nsteps_*=steps[d];
+    }
+
+    // allocate arrays
+    data_  = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_);
+    dataF_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_);
+
+    // multidim fftw plans
+    plan_b_ =
+      fftw_plan_dft(dim, steps_, 
+                    reinterpret_cast<fftw_complex*>(dataF_),
+                    reinterpret_cast<fftw_complex*>(data_), 
+                    FFTW_BACKWARD,
+                    FFTW_MEASURE);// TODO: test FFTW_ESTIMATE
+    plan_f_ =
+      fftw_plan_dft(dim, steps_, 
+                    reinterpret_cast<fftw_complex*>(data_), 
+                    reinterpret_cast<fftw_complex*>(dataF_), 
+                    FFTW_FORWARD,
+                    FFTW_MEASURE);
+
+  }
+
+  virtual ~FCFft()
+  {
+    fftw_destroy_plan(plan_b_);
+    fftw_destroy_plan(plan_f_);
+    fftw_free(data_);
+    fftw_free(dataF_);
+  }
+
+  void applyDFT(const FComplexe* sampledData,
+                FComplexe* transformedData) const
+  {
+    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
+    FBlas::c_copy(nsteps_, reinterpret_cast<const FReal*>(sampledData),
+                  reinterpret_cast<FReal*>(data_));
+
+    // perform fft
+    fftw_execute( plan_f_ );
+
+    // write transformed data
+    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(dataF_),
+                  reinterpret_cast<FReal*>(transformedData));
+  }
+
+
+  void applyIDFT(const FComplexe* transformedData,
+                 FComplexe* sampledData) const
+  {
+    // read transformed data
+    FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(data_));
+    FBlas::c_copy(nsteps_,reinterpret_cast<const FReal*>(transformedData),
+                  reinterpret_cast<FReal*>(dataF_));
+
+    // perform ifft
+    fftw_execute( plan_b_ );
+
+    for(unsigned int s=0; s<nsteps_; ++s)
+      data_[s]*=1./(nsteps_); // the fft from fftw is not scaled !!!!!!!!
+
+    // write sampled data
+    FBlas::c_copy(nsteps_,reinterpret_cast<FReal*>(data_),
+                  reinterpret_cast<FReal*>(sampledData));
 
   }
 

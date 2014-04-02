@@ -60,8 +60,10 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 	_FC = new FComplexe [rc]; // TODO: do it in the non-sym version!!!
 
   // init Discrete Fourier Transformator
+  const int dimfft = 1; // unidim FFT since fully circulant embedding
+  const int steps[dimfft] = {rc};
 //	FDft Dft(rc);
-	FFft Dft(rc);
+	FFft<dimfft> Dft(steps);
 
   // reduce storage if real valued kernel
   const unsigned int opt_rc = rc/2+1;

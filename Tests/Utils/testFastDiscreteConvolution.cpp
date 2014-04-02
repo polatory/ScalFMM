@@ -106,8 +106,10 @@ int main(int, char **){
   // Init DFTor
   std::cout<< "Set DFT: ";
   time.tic();
+  const int dim = 1;
+  const int steps[dim] = {N};
   //FDft Dft(N);// direct version
-  FFft<1> Dft(N);// fast version
+  FFft<dim> Dft(steps);// fast version
   std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
   // Initialize manually
@@ -135,7 +137,8 @@ int main(int, char **){
 
   // Transform first column of K
   FReal tK[N];
-  for(unsigned int i=0; i<N; ++i) tK[i]=K[i*N];
+  for(unsigned int i=0; i<N; ++i) tK[i]=K[i*N]; // first column
+//  for(unsigned int i=0; i<N; ++i) tK[i]=K[i]; // first row
   std::cout<< "Transform tK->FK: ";
   time.tic();
   Dft.applyDFT(tK,FK);

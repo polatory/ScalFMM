@@ -21,6 +21,7 @@
 #include <cassert>
 
 #include "../../Utils/FNoCopyable.hpp"
+#include "../../Utils/FMath.hpp"
 
 
 /**
@@ -48,7 +49,9 @@ struct FUnifRoots : FNoCopyable
   const static double roots[];
 
   /**
-   * Lagrange polynomials \f$ L_n(x) = \Pi_{m=1 \atop m\neq n}^\ell \frac{x-\bar x_m}{\bar x_n-\bar x_m} \f$
+   * Lagrange polynomials \f$ L_n(x) = \Pi_{m=0 \atop m\neq n}^{\ell-1} \frac{x-\bar x_m}{\bar x_n-\bar x_m} \f$
+   * Expression with reduced roundoff errors:
+   * \f$ L_n(x) = \frac{(-1)^(\ell-n-1)(\ell-1)^(\ell-1)}{(2h)^(\ell-1)n!(\ell-n-1)!} \Pi_{m=0 \atop m\neq n}^{\ell-1} (x-\bar x_m) \f$
    *
    * @param[in] n index
    * @param[in] x coordinate in [-1,1]
@@ -56,19 +59,36 @@ struct FUnifRoots : FNoCopyable
    */
   static FReal L(const unsigned int n, FReal x)
   {
-    //std::cout << x << std::endl;
     assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
     if (std::fabs(x)>1.) {
+      //std::cout << "x=" << x << " out of bounds!" << std::endl;
       x = (x > FReal( 1.) ? FReal( 1.) : x);
       x = (x < FReal(-1.) ? FReal(-1.) : x);
     }
 
+    // Specific precomputation of scale factor 
+    // in order to minimize round-off errors
+    // NB: scale factor could be hardcoded (just as the roots)
+    FReal scale;
+    int omn = order-n-1;
+    if(omn%2) scale=-1.; // (-1)^(n-1-(k+1)+1)=(-1)^(omn-1)
+    else scale=1.;
+    scale/=FMath::pow(2.,order-1)*FMath::factorial(n)*FMath::factorial(omn);
+
+    // compute L
     FReal L=FReal(1.);
     for(unsigned int m=0;m<order;++m){
-      if(m!=n)
-        L *= (x-FUnifRoots<order>::roots[m])/(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[m]);
-      
+      if(m!=n){
+        // previous version with risks of round-off error
+        //L *= (x-FUnifRoots<order>::roots[m])/(FUnifRoots<order>::roots[n]-FUnifRoots<order>::roots[m]);
+
+        // new version (reducing round-off)
+        // regular grid on [-1,1] (h simplifies, only the size of the domain and a remains i.e. 2. and -1.)
+        L *= ((order-1)*(x+1.)-2.*m); 
+      }
     }
+    
+    L*=scale;
 
     return FReal(L);
   }

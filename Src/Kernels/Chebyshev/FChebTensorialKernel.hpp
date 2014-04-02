@@ -46,7 +46,9 @@ class FChebTensorialKernel
     : public FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
   enum {nRhs = MatrixKernelClass::NRHS,
-        nLhs = MatrixKernelClass::NLHS};
+        nLhs = MatrixKernelClass::NLHS,
+        nPot = MatrixKernelClass::NPOT,
+        nPv = MatrixKernelClass::NPV};
 
 protected://PB: for OptiDis
 
@@ -137,19 +139,19 @@ public:
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
-        // update local index
-        int idxLoc = idxV*nLhs + idxLhs;
+          // update local index
+          const int idxLoc = idxV*nLhs + idxLhs;
 
-        FReal *const CompressedLocalExpansion = TargetCell->getLocal(idxLoc) + AbstractBaseClass::nnodes;
+          FReal *const CompressedLocalExpansion = TargetCell->getLocal(idxLoc) + AbstractBaseClass::nnodes;
       
-        for (int idxRhs=0; idxRhs < nRhs; ++idxRhs){
+          // update idxRhs
+          const int idxRhs = idxLhs % nPv; 
           // update multipole index
-          int idxMul = idxV*nRhs + idxRhs;
-          // update kernel index such that: x_i = K_{ij}y_j 
-          int idxK = idxLhs*nRhs + idxRhs;
+          const int idxMul = idxV*nRhs + idxRhs;
+
           // get index in matrix kernel
-          unsigned int d 
-            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxK);
+          const unsigned int d 
+            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxLhs);
 
           for (int idx=0; idx<343; ++idx){
             if (SourceCells[idx]){
@@ -158,8 +160,7 @@ public:
                                  CompressedLocalExpansion);
             }
           }
-        }// NRHS
-      }// NLHS
+      }// NLHS=NPOT*NPV
     }// NVALS
 
   }
@@ -223,14 +224,14 @@ public:
                      ContainerClass* const NeighborSourceParticles[27],
                      const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles);
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27);
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
     }
 
 };

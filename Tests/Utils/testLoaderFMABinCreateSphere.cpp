@@ -65,7 +65,6 @@ int main(int argc, char ** argv){
 
     // System properties
     const int sizeOfFreal = int(sizeof(FReal));
-    const FReal FRandMax = FReal(RAND_MAX);
 
     fwrite(&sizeOfFreal, sizeof(int),   1, myfile);
     fwrite(&NbParticles, sizeof(FSize), 1, myfile);
@@ -86,12 +85,12 @@ int main(int argc, char ** argv){
 
         // Generate particles
         for( long idx = 0 ; idx < NbParticles ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[2] = rayon * FMath::Cos(theta) + ZCenter + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + thresh * (FReal(drand48())) - threshDiv2;
+            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * (FReal(drand48())) - threshDiv2;
+            data[2] = rayon * FMath::Cos(theta) + ZCenter + thresh * (FReal(drand48())) - threshDiv2;
 
             fwrite(&data, sizeof(FReal), 4, myfile);
         }
@@ -105,23 +104,23 @@ int main(int argc, char ** argv){
 
         // Generate particles
         for( long idx = 0 ; idx < NbParticles/2 ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[2] = rayon * FMath::Cos(theta) + ZCenter - offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
+            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
+            data[2] = rayon * FMath::Cos(theta) + ZCenter - offset + thresh * (FReal(drand48())) - threshDiv2;
 
             fwrite(&data, sizeof(FReal), 4, myfile);
         }
 
         for( long idx = 0 ; idx < NbParticles/2 ; ++idx ){
-            const FReal theta = (FReal(rand())/FRandMax) * FMath::FPi;
-            const FReal omega = (FReal(rand())/FRandMax) * FMath::FPi * FReal(2);
+            const FReal theta = (FReal(drand48())) * FMath::FPi;
+            const FReal omega = (FReal(drand48())) * FMath::FPi * FReal(2);
 
-            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
-            data[2] = rayon * FMath::Cos(theta) + ZCenter + offset + thresh * (FReal(rand())/FRandMax) - threshDiv2;
+            data[0] = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
+            data[1] = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
+            data[2] = rayon * FMath::Cos(theta) + ZCenter + offset + thresh * (FReal(drand48())) - threshDiv2;
 
             fwrite(&data, sizeof(FReal), 4, myfile);
         }

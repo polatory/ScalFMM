@@ -87,11 +87,10 @@ int main(int argc, char ** argv){
     const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
     const int NbPart            = FParameters::getValue(argc,argv,"-nb", 20000);
-    const FReal FRandMax        = FReal(RAND_MAX);
 
     FTic counter;
 
-    srand ( 1 ); // volontary set seed to constant
+    srand48 ( 1 ); // volontary set seed to constant
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -112,9 +111,9 @@ int main(int argc, char ** argv){
         TestParticle* particles = new TestParticle[NbPart];
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particles[idxPart].position.setPosition(
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))),
-                        (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/FReal(2.0))));
+                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))),
+                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))),
+                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))));
         }
 
         FVector<TestParticle> finalParticles;
@@ -145,9 +144,9 @@ int main(int argc, char ** argv){
         do{
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
             for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
-                particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
-                particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
-                particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(rand())/FRandMax) + (BoxCenter-(BoxWidth/2));
+                particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
+                particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
+                particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
             }
         } while(octreeIterator.moveRight());
     }

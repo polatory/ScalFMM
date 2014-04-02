@@ -33,7 +33,7 @@
 #include "./FUnifTensor.hpp"
 
 
-/*!  Precomputation of the 316 interactions by evaluation of the matrix kernel on the uniform grid and transformation into Fourier space. These interactions can be tensorial (of size dim) and are computed blockwise
+/*!  Precomputation of the 316 interactions by evaluation of the matrix kernel on the uniform grid and transformation into Fourier space. These interactions can be tensorial (of size ncmp) and are computed blockwise
 PB: Compute() does not belong to the M2LHandler like it does in the Chebyshev kernel. This allows much nicer specialization of the M2LHandler class with respect to the homogeneity of the kernel of interaction like in the ChebyshevSym kernel.*/
 template <int ORDER, class MatrixKernelClass>
 static void Compute(const MatrixKernelClass *const MatrixKernel, 
@@ -44,12 +44,12 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
   const unsigned int order = ORDER;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   const unsigned int ninteractions = 316;
-  const unsigned int dim = MatrixKernelClass::DIM;
+  const unsigned int ncmp = MatrixKernelClass::NCMP;
 
   typedef FUnifTensor<ORDER> TensorType;
 
 	// allocate memory and store compressed M2L operators
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     if (FC[d]) throw std::runtime_error("M2L operators are already set");
 
 	// interpolation points of source (Y) and target (X) cell
@@ -63,11 +63,11 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 
   // reduce storage from nnodes^2=order^6 to (2order-1)^3
   const unsigned int rc = (2*order-1)*(2*order-1)*(2*order-1);
-	_C  = new FReal* [dim];
-	_FC = new FComplexe* [dim];
-  for (unsigned int d=0; d<dim; ++d) 
+	_C  = new FReal* [ncmp];
+	_FC = new FComplexe* [ncmp];
+  for (unsigned int d=0; d<ncmp; ++d) 
     _C[d]  = new FReal[rc];
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     _FC[d] = new FComplexe[rc * ninteractions];
 
   // initialize root node ids pairs
@@ -75,8 +75,10 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
   TensorType::setNodeIdsPairs(node_ids_pairs);
 
   // init Discrete Fourier Transformator
+  const int dimfft = 1; // unidim FFT since fully circulant embedding
+  const int steps[dimfft] = {rc};
 //	FDft Dft(rc);
-	FFft<1> Dft(rc);
+	FFft<dimfft> Dft(steps);
 
   // get first column of K via permutation
   unsigned int perm[rc];
@@ -98,7 +100,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
           
                 // Compute current M2L interaction (block matrix)
                 FReal* block; 
-                block = new FReal[dim]; 
+                block = new FReal[ncmp]; 
                 MatrixKernel->evaluateBlock(X[node_ids_pairs[ido][0]], 
                                             Y[node_ids_pairs[ido][1]],
                                             block);
@@ -109,15 +111,14 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
                 // i.e. C[0] C[rc-1] C[rc-2] .. C[1] < WRONG!
                 // i.e. C[rc-1] C[0] C[1] .. C[rc-2] < RIGHT!
                 //                _C[counter*rc + ido]
-                for (unsigned int d=0; d<dim; ++d) 
+                for (unsigned int d=0; d<ncmp; ++d) 
                   _C[d][perm[ido]] = block[d];
-
 
                 ido++;
               }
 
           // Apply Discrete Fourier Transformation
-          for (unsigned int d=0; d<dim; ++d) 
+          for (unsigned int d=0; d<ncmp; ++d) 
             Dft.applyDFT(_C[d],_FC[d]+counter*rc);
 
 					// increment interaction counter
@@ -130,7 +131,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 		throw std::runtime_error("Number of interactions must correspond to 316");
 
   // Free _C
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     delete [] _C[d];
 
 	// store FC
@@ -138,15 +139,15 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
   // reduce storage if real valued kernel
   const unsigned int opt_rc = rc/2+1;
   // allocate M2L
-  for (unsigned int d=0; d<dim; ++d) 
-    FC[d] = new FComplexe[343 * opt_rc]; //PB: allocation already done wr DIM
+  for (unsigned int d=0; d<ncmp; ++d) 
+    FC[d] = new FComplexe[343 * opt_rc]; //PB: allocation already done wr NCMP
 
 	for (int i=-3; i<=3; ++i)
 		for (int j=-3; j<=3; ++j)
 			for (int k=-3; k<=3; ++k) {
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
-          for (unsigned int d=0; d<dim; ++d) 
+          for (unsigned int d=0; d<ncmp; ++d) 
             FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC[d] + counter*rc), 
                           reinterpret_cast<FReal*>(FC[d] + idx*opt_rc));
 //          for (unsigned int n=0; n<rc; ++n){
@@ -154,7 +155,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 //          }
 					counter++;
 				} else{ 
-          for (unsigned int d=0; d<dim; ++d) 
+          for (unsigned int d=0; d<ncmp; ++d) 
             FBlas::c_setzero(opt_rc, reinterpret_cast<FReal*>(FC[d] + idx*opt_rc));
 //          for (unsigned int n=0; n<rc; ++n){
 //            FC[idx*rc+n]=FComplexe(0.0,0.0);
@@ -164,7 +165,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 
 	if (counter != ninteractions)
 		throw std::runtime_error("Number of interactions must correspond to 316");
-  for (unsigned int d=0; d<dim; ++d) 
+  for (unsigned int d=0; d<ncmp; ++d) 
     delete [] _FC[d];  	
 }
 
@@ -192,21 +193,22 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        ncmp = MatrixKernelClass::NCMP};
 
   // Tensorial MatrixKernel specific
 	FComplexe** FC;
 
-  // for real valued kernel only n/2+1 complex values are stored 
-  // after performing the DFT (the rest is deduced by conjugation)
-  unsigned int opt_rc; 
-
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
-  //  FDft Dft; // Direct Discrete Fourier Transformator
-  FFft<1> Dft; // Fast Discrete Fourier Transformator
+  // DFT specific
+  static const int dimfft = 1; // unidim FFT since fully circulant embedding
+//  FDft Dft; // Direct Discrete Fourier Transformator
+  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
+
+  const unsigned int opt_rc; // specific to real valued kernel
+
 
 	static const std::string getFileName()
 	{
@@ -220,12 +222,15 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	
 public:
 	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: opt_rc(rc/2+1), 
-      Dft(rc) // initialize Discrete Fourier Transformator
+		: opt_rc(rc/2+1)
 	{
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft = new DftClass(steps);
+
     // allocate FC
-    FC = new FComplexe*[dim];
-    for (unsigned int d=0; d<dim; ++d)
+    FC = new FComplexe*[ncmp];
+    for (unsigned int d=0; d<ncmp; ++d)
       FC[d]=NULL;
 
     // initialize root node ids
@@ -237,7 +242,7 @@ public:
 
 	~FUnifTensorialM2LHandler()
 	{
-    for (unsigned int d=0; d<dim; ++d)
+    for (unsigned int d=0; d<ncmp; ++d)
       if (FC[d] != NULL) delete [] FC[d];
 	}
 
@@ -250,7 +255,7 @@ public:
 		FTic time; time.tic();
 
     // check if aready set
-    for (unsigned int d=0; d<dim; ++d)
+    for (unsigned int d=0; d<ncmp; ++d)
       if (FC[d]) throw std::runtime_error("M2L operator already set");
 
     // Compute matrix of interactions
@@ -258,7 +263,7 @@ public:
     Compute<order>(MatrixKernel,ReferenceCellWidth,FC);
     
     // Compute memory usage
-    unsigned long sizeM2L = 343*dim*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = 343*ncmp*opt_rc*sizeof(FComplexe);
 
 		// write info
 		std::cout << "Compute and Set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
@@ -277,7 +282,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
+    Dft->applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -344,7 +349,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
+    Dft->applyDFT(Py,FY);
 
   }
 
@@ -360,8 +365,7 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1),
-        dim = MatrixKernelClass::DIM,
-        nidx = MatrixKernelClass::NIDX};
+        ncmp = MatrixKernelClass::NCMP};
 
   // Tensorial MatrixKernel and homogeneity specific
 	FComplexe*** FC;
@@ -369,15 +373,17 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
   const unsigned int TreeHeight;
   const FReal RootCellWidth;
 
-  // for real valued kernel only n/2+1 complex values are stored 
-  // after performing the DFT (the rest is deduced by conjugation)
-  unsigned int opt_rc; 
-
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
-  //  FDft Dft; // Direct Discrete Fourier Transformator
-  FFft<1> Dft; // Fast Discrete Fourier Transformator
+  // DFT specific
+  static const int dimfft = 1; // unidim FFT since fully circulant embedding
+//  FDft Dft; // Direct Discrete Fourier Transformator
+  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
+
+  const unsigned int opt_rc; // specific to real valued kernel
+
 
 	static const std::string getFileName()
 	{
@@ -393,14 +399,17 @@ public:
 	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
 		: TreeHeight(inTreeHeight),
       RootCellWidth(inRootCellWidth),
-      opt_rc(rc/2+1), 
-      Dft(rc) // initialize Discrete Fourier Transformator
+      opt_rc(rc/2+1)
 	{
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft = new DftClass(steps);
+
     // allocate FC
     FC = new FComplexe**[TreeHeight];
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
-      FC[l] = new FComplexe*[dim];
-      for (unsigned int d=0; d<dim; ++d)
+      FC[l] = new FComplexe*[ncmp];
+      for (unsigned int d=0; d<ncmp; ++d)
         FC[l][d]=NULL;
     }
 
@@ -414,7 +423,7 @@ public:
 	~FUnifTensorialM2LHandler()
 	{
     for (unsigned int l=0; l<TreeHeight; ++l) 
-      for (unsigned int d=0; d<dim; ++d)
+      for (unsigned int d=0; d<ncmp; ++d)
         if (FC[l][d] != NULL) delete [] FC[l][d];
 	}
 
@@ -432,14 +441,14 @@ public:
 		for (unsigned int l=2; l<TreeHeight; ++l) {
 //			precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
       // check if aready set
-      for (unsigned int d=0; d<dim; ++d)
+      for (unsigned int d=0; d<ncmp; ++d)
         if (FC[l][d]) throw std::runtime_error("M2L operator already set");
       Compute<order>(MatrixKernel,CellWidth,FC[l]);
 			CellWidth /= FReal(2.);                    // at level l+1 
 		}
 
     // Compute memory usage
-    unsigned long sizeM2L = (TreeHeight-2)*343*dim*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = (TreeHeight-2)*343*ncmp*opt_rc*sizeof(FComplexe);
 
 		// write info
 		std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
@@ -458,7 +467,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
+    Dft->applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -524,7 +533,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
+    Dft->applyDFT(Py,FY);
 
   }
 
