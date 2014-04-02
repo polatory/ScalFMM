@@ -49,7 +49,9 @@ struct FUnifRoots : FNoCopyable
   const static double roots[];
 
   /**
-   * Lagrange polynomials \f$ L_n(x) = \Pi_{m=1 \atop m\neq n}^\ell \frac{x-\bar x_m}{\bar x_n-\bar x_m} \f$
+   * Lagrange polynomials \f$ L_n(x) = \Pi_{m=0 \atop m\neq n}^{\ell-1} \frac{x-\bar x_m}{\bar x_n-\bar x_m} \f$
+   * Expression with reduced roundoff errors:
+   * \f$ L_n(x) = \frac{(-1)^(\ell-n-1)(\ell-1)^(\ell-1)}{(2h)^(\ell-1)n!(\ell-n-1)!} \Pi_{m=0 \atop m\neq n}^{\ell-1} (x-\bar x_m) \f$
    *
    * @param[in] n index
    * @param[in] x coordinate in [-1,1]
@@ -71,7 +73,7 @@ struct FUnifRoots : FNoCopyable
     int omn = order-n-1;
     if(omn%2) scale=-1.; // (-1)^(n-1-(k+1)+1)=(-1)^(omn-1)
     else scale=1.;
-    scale*=FMath::pow(2.,order-1)*FMath::factorial(n)*FMath::factorial(omn);
+    scale/=FMath::pow(2.,order-1)*FMath::factorial(n)*FMath::factorial(omn);
 
     // compute L
     FReal L=FReal(1.);
