@@ -12,33 +12,54 @@
 #include <string>
 #include "Utils/FMath.hpp"
 #include  "Utils/FGenerateDistribution.hpp"
-/// \file
-//! \example  generateDistributions.cpp
-//! \brief generateDistributions: Driver to generate N points (non)uniformly distributed on a geometry
-
-//! Options
-//!       -h     to see the parameters available in this driver
-//!      -N     The number of points in the distribution
-//!    Geometry
-//!      \arg     \b -unitSphere uniform distribution on unit sphere
-//!      \arg  -sphere  uniform distribution on  sphere of radius given by
+//
+/// \file  generateDistributions.cpp
+//!
+//! \brief generateDistributions: Driver to generate N points (non)uniformly distributed on a given geometry
+//!
+//! The goal of this driver is to generate uniform or non uniform points on the following geometries
+//!
+//!   Uniform : sphere, prolate,
+//!
+//!   Non uniform : ellipsoid, prolate
+//!
+//!  You can set two kind of physical values depending of your problem. By default all values are between 0 and 1.
+//!   If you select the argument -charge (see bellow) the values are between -1 and 1.
+//!  The arguments available are
+//!
+//!  <b> General arguments:</b>
+//!     \param    -h     to see the parameters available in this driver
+//!     \param  -N     The number of points in the distribution
+//!     \param   -filename name: generic name for files (without extension) and save data
+//!                 with following format in name.xxx or name.bin in -bin (not yet implemented) is set
+//!       \param   -visu save output in filename.txt
+//!
+//!  <b> Geometry arguments:</b>
+//!      \param  -unitSphere uniform distribution on unit sphere
+//!      \param  -sphere  uniform distribution on  sphere of radius given by
 //!          \arg         -radius  R - default value for R is 2.0
-//!        \arg   -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by
-//!                  -ar a:b:c   with a, b and c > 0
+//!        \param   -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by
+//!              \arg          -ar a:b:c   with a, b and c > 0
+//!         \param  -prolate ellipsoid with aspect ratio a:a:c  given by
+//!                \arg             -ar a:a:c   with  c > a > 0
+//!          \param   -plummer (Highly non uniform) plummer distribution (astrophysics)
+//!                   \arg         -radius  R - default value 10.0"
 //!
-//!        -prolate ellipsoid with aspect ratio a:a:c
-//!                  -ar a:a:c   with  c > a > 0
-//!          -plummer (Highly non unuiform) plummer distrinution (astrophysics)"
-//!                 -radius  R - default value 10.0"
 //!
-//!        -filename name: generic name for files (without extension) and save data
-//!                 with following format in name.xxx or name.bin in -bin is set
-//!        -visu save output in name.txt
+//!  <b> Physical values argument:</b>
+//!         \param -charge generate physical values between -1 and 1 otherwise generate between 0 and 1
 //!
-//!      \b Physical values
-//!        -charge generate physical values between -1 and 1 otherwise generate between 0 and 1
+//! \b examples
+//!
+//!     generateDistributions -prolate -ar 2:2:4   -N 20000 -filename prolate -visu
+//!
+//!
+
+
+//
+//
 		void genDistusage() {
-			std::cout << "Driver to generate N points (non)uniformly distributed on a geometry"
+			std::cout << "Driver to generate N points (non)uniformly distributed on a given geometry"
  << std::endl;
            std::cout <<	 "Options  "<< std::endl
 		                 <<     "   -h     to see the parameters    " << std::endl

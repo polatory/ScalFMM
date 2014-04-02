@@ -29,7 +29,7 @@ project(ScalFMM)
 
 # ScalFMM version number.  An even minor number corresponds to releases.
 SET(ScalFMM_MAJOR_VERSION 1)
-SET(ScalFMM_MINOR_VERSION 1)
+SET(ScalFMM_MINOR_VERSION 2)
 SET(ScalFMM_PATCH_VERSION 1)
 SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFMM_PATCH_VERSION}" )
 
@@ -216,6 +216,10 @@ add_subdirectory(Src)
 
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
+
+# Build - Examples and drivers
+add_subdirectory(Examples)
+
 
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
