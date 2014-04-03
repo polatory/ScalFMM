@@ -23,7 +23,7 @@
 
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
-
+#include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 
 int main(int argc, char* argv[]){
     static const int P = 9;
@@ -32,7 +32,6 @@ int main(int argc, char* argv[]){
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    //typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
     typedef FGroupTree< CellClass, 4, FReal>  GroupOctreeClass;
 
     FTic counter;
@@ -69,6 +68,11 @@ int main(int argc, char* argv[]){
 
     groupedTree2.printInfoBlocks();
     groupedTree3.printInfoBlocks();
+
+
+
+    typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+    FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::BasicAttachedClass> algo(NULL,NULL);
 
     return 0;
 }
