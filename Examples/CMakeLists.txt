@@ -71,4 +71,8 @@ foreach(exec ${source_tests_files})
 			${SCALFMM_LIBRARIES}
 			)
 	endif()
+	
+# Install bin
+install( TARGETS ${execname}   DESTINATION bin )
+	
 endforeach(exec)

@@ -62,10 +62,10 @@
 			std::cout << "Driver to generate N points (non)uniformly distributed on a given geometry"
  << std::endl;
            std::cout <<	 "Options  "<< std::endl
-		                 <<     "   -h     to see the parameters    " << std::endl
-		                 <<     "   -N     The number of points in the distribution    " << std::endl
-		                 <<    std::endl
-			             <<     "    Distribution    " << std::endl
+		                 <<     "   -h       to see the parameters    " << std::endl
+		                 <<     "   -N       The number of points in the distribution    " << std::endl
+			              <<    std::endl
+			             <<     "    Distributions   " << std::endl
 			             <<     "        Uniform on    " << std::endl
 			             <<     "             -unitSphere  uniform distribution on unit sphere" <<std::endl
 			             <<     "             -sphere  uniform distribution on  sphere of radius given by" <<std::endl
@@ -87,11 +87,11 @@
 
 int main(int argc, char ** argv){
 	//
-	if(FParameters::existParameter(argc, argv, "-h") ||FParameters::existParameter(argc, argv, "-help") ){
+	if(FParameters::existParameter(argc, argv, "-h") ||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
 		genDistusage() ;
 		exit(-1);
 	}
-	const FReal       eps = 0.001 ;
+	const FReal       extraRadius = 0.001 ;
 	const int NbPoints  = FParameters::getValue(argc,argv,"-N",   20);
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-filename",   "unifPointDist"));
 	FReal BoxWith ;
@@ -188,7 +188,7 @@ int main(int argc, char ** argv){
 			std::cout << "Cannot open file."<< std::endl;
 			exit(-1)	 ;
 		}
-		BoxWith += eps ;
+		BoxWith += 2*extraRadius ;
 		std::cout << "Writes in FMA format  in file "<< genericFileName + ".fma" <<std::endl ;
 		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
 		//
