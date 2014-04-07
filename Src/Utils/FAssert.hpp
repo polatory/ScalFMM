@@ -23,11 +23,11 @@
 
 
 /**
- * @brief The SpError class
+ * @brief The FError class
  * It is recommendede to use the macro:
  * FAssertLF( aTest , "some data ", "to ", plot);
  */
-class SpError {
+class FError {
 protected:
     /**
      * @brief ErrPrint private method to end print
@@ -69,9 +69,9 @@ public:
 // Sp error activated
 //////////////////////////////////////////////////////////////
 
-#define SpErrorAssertExit(TEST, args...) \
+#define FErrorAssertExit(TEST, args...) \
     if( !(TEST) ){ \
-        SpError::Print( args ); \
+        FError::Print( args ); \
         throw std::exception(); \
     }
 
@@ -82,7 +82,7 @@ public:
 // Sp error desactivated
 //////////////////////////////////////////////////////////////
 
-#define SpErrorAssertExit(TEST, args...) \
+#define FErrorAssertExit(TEST, args...) \
     if( !(TEST) ){}
 
 
@@ -95,7 +95,7 @@ public:
 #define SPARSETD_ERROR_LINE " At line " , __LINE__ , "."
 #define SPARSETD_ERROR_FILE " In file " , __FILE__ , "."
 
-#define FAssert SpErrorAssertExit
+#define FAssert FErrorAssertExit
 
 #define FAssertLF(args...) FAssert(args, SPARSETD_ERROR_LINE, SPARSETD_ERROR_FILE)
 
