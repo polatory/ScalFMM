@@ -28,8 +28,8 @@
 //!  The arguments available are
 //!
 //!  <b> General arguments:</b>
-//!     \param    -h     to see the parameters available in this driver
-//!     \param  -N     The number of points in the distribution
+//!     \param   -help(-h)      to see the parameters available in this driver
+//!     \param  -N     The number of points in the distribution (default 20000)
 //!     \param   -filename name: generic name for files (without extension) and save data
 //!                 with following format in name.xxx or name.bin in -bin (not yet implemented) is set
 //!       \param   -visu save output in filename.txt
@@ -62,7 +62,7 @@
 			std::cout << "Driver to generate N points (non)uniformly distributed on a given geometry"
  << std::endl;
            std::cout <<	 "Options  "<< std::endl
-		                 <<     "   -h       to see the parameters    " << std::endl
+		                 <<     "   -help       to see the parameters    " << std::endl
 		                 <<     "   -N       The number of points in the distribution    " << std::endl
 			              <<    std::endl
 			             <<     "    Distributions   " << std::endl
@@ -87,12 +87,12 @@
 
 int main(int argc, char ** argv){
 	//
-	if(FParameters::existParameter(argc, argv, "-h") ||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
+	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
 		genDistusage() ;
 		exit(-1);
 	}
 	const FReal       extraRadius = 0.001 ;
-	const int NbPoints  = FParameters::getValue(argc,argv,"-N",   20);
+	const int NbPoints  = FParameters::getValue(argc,argv,"-N",   20000);
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-filename",   "unifPointDist"));
 	FReal BoxWith ;
 	//
