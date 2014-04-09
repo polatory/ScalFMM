@@ -14,7 +14,7 @@ template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf
-    const int nbParticles;
+    int nbParticles;
     //< Pointers to the positions of the particles
     FReal* positionsPointers[3];
     //< Pointers to the attributes of the particles

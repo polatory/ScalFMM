@@ -24,6 +24,7 @@
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
+#include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
 int main(int argc, char* argv[]){
     static const int P = 9;
@@ -32,7 +33,7 @@ int main(int argc, char* argv[]){
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FGroupTree< CellClass, 4, FReal>  GroupOctreeClass;
+    typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 4, FReal>  GroupOctreeClass;
 
     FTic counter;
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);
@@ -71,8 +72,13 @@ int main(int argc, char* argv[]){
 
 
 
-    typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
-    FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::BasicAttachedClass> algo(NULL,NULL);
+    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
+    typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+
+    KernelClass kernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    GroupAlgorithm algo(&groupedTree2,&kernel);
+
+    algo.execute();
 
     return 0;
 }

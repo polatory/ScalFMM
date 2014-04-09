@@ -9,7 +9,7 @@
 #include <list>
 #include <vector>
 
-template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleContainerClass>
+template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
 class FGroupSeqAlgorithm {
 protected:
     struct OutOfBlockInteraction{
@@ -51,11 +51,11 @@ public:
 
 protected:
     void bottomPass(){
-        typename std::list<ParticleContainerClass>::iterator iterParticles = tree->leavesBegin();
-        const typename std::list<ParticleContainerClass>::iterator endParticles = tree->leavesEnd();
+        typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+        const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-        typename std::list<CellContainerClass>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-        const typename std::list<CellContainerClass>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
+        typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
+        const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
 
         while(iterParticles != endParticles && iterCells != endCells){
             { // Can be a task(in:iterParticles, out:iterCells)
@@ -65,7 +65,7 @@ protected:
                 for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                     CellClass* cell = (*iterCells)->getCell(mindex);
                     if(cell){
-                        ParticleContainerClass particles = (*iterParticles)->getLeaf(mindex);
+                        ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                         FAssertLF(particles.isAttachedToSomething());
                         kernels->P2M(cell, &particles);
                     }
@@ -81,11 +81,11 @@ protected:
 
     void upwardPass(){
         for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
-            typename std::list<CellContainerClass>::iterator iterCells = tree->cellsBegin(idxLevel);
-            const typename std::list<CellContainerClass>::iterator endCells = tree->cellsEnd(idxLevel);
+            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
-            typename std::list<CellContainerClass>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
-            const typename std::list<CellContainerClass>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
+            typename std::list<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
+            const typename std::list<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 { // Can be a task(in:iterParticles, out:iterChildCells ...)
@@ -121,8 +121,8 @@ protected:
 
     void transferPass(){
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
-            typename std::list<CellContainerClass>::iterator iterCells = tree->cellsBegin(idxLevel);
-            const typename std::list<CellContainerClass>::iterator endCells = tree->cellsEnd(idxLevel);
+            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
             while(iterCells != endCells){
                 std::vector<OutOfBlockInteraction> outsideInteractions;
@@ -139,7 +139,7 @@ protected:
                             FTreeCoordinate coord(mindex, idxLevel);
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
-                            CellClass* interactions[343];
+                            const CellClass* interactions[343];
                             memset(interactions, 0, 343*sizeof(CellClass*));
                             int counterExistingCell = 0;
 
@@ -167,11 +167,11 @@ protected:
 
 
                 // Manage outofblock interaction
-                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),outsideInteractions.size());
+                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
-                typename std::list<CellContainerClass>::iterator iterLeftCells = tree->cellsBegin(idxLevel);
+                typename std::list<CellContainerClass*>::iterator iterLeftCells = tree->cellsBegin(idxLevel);
                 int currentOutInteraction = 0;
-                while(iterLeftCells != iterCells && currentOutInteraction < outsideInteractions.size()){
+                while(iterLeftCells != iterCells && currentOutInteraction < int(outsideInteractions.size())){
                     const MortonIndex blockStartIdx = (*iterLeftCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterLeftCells)->getEndingIndex();
 
@@ -180,7 +180,7 @@ protected:
                     }
 
                     int lastOutInteraction = currentOutInteraction + 1;
-                    while(lastOutInteraction < outsideInteractions.size() && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                    while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                         lastOutInteraction += 1;
                     }
 
@@ -190,7 +190,7 @@ protected:
                             if(interCell){
                                 CellClass* cell = (*iterCells)->getCell(outsideInteractions[outInterIdx].insideIndex);
                                 FAssertLF(cell);
-                                CellClass* interactions[343];
+                                const CellClass* interactions[343];
                                 memset(interactions, 0, 343*sizeof(CellClass*));
                                 interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
                                 const int counter = 1;
@@ -215,11 +215,11 @@ protected:
 
     void downardPass(){
         for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
-            typename std::list<CellContainerClass>::iterator iterCells = tree->cellsBegin(idxLevel);
-            const typename std::list<CellContainerClass>::iterator endCells = tree->cellsEnd(idxLevel);
+            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
-            typename std::list<CellContainerClass>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
-            const typename std::list<CellContainerClass>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
+            typename std::list<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
+            const typename std::list<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 { // Can be a task(in:iterParticles, inout:iterChildCells ...)
@@ -255,11 +255,11 @@ protected:
 
     void directPass(){
         {
-            typename std::list<ParticleContainerClass>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleContainerClass>::iterator endParticles = tree->leavesEnd();
+            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-            typename std::list<CellContainerClass>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-            const typename std::list<CellContainerClass>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
+            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
+            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
 
             while(iterParticles != endParticles && iterCells != endCells){
                 { // Can be a task(in:iterCells, inout:iterParticles)
@@ -269,7 +269,7 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
-                            ParticleContainerClass particles = (*iterParticles)->getLeaf(mindex);
+                            ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                             FAssertLF(particles.isAttachedToSomething());
                             kernels->P2M(cell, &particles);
                         }
@@ -283,8 +283,8 @@ protected:
             FAssertLF(iterParticles == endParticles && iterCells == endCells);
         }
         {
-            typename std::list<ParticleContainerClass>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleContainerClass>::iterator endParticles = tree->leavesEnd();
+            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
             while(iterParticles != endParticles){
                 typename std::vector<OutOfBlockInteraction> outsideInteractions;
@@ -294,7 +294,7 @@ protected:
                     const MortonIndex blockEndIdx = (*iterParticles)->getEndingIndex();
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        ParticleContainerClass particles = (*iterParticles)->getLeaf(mindex);
+                        ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                         if(particles.isAttachedToSomething()){
                             MortonIndex interactionsIndexes[26];
                             int interactionsPosition[26];
@@ -308,7 +308,7 @@ protected:
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                    interactionsObjects[counterExistingCell] = (*iterParticles)->getLeaf(interactionsIndexes[idxInter]);
+                                    interactionsObjects[counterExistingCell] = (*iterParticles)->template getLeaf<ParticleContainerClass>(interactionsIndexes[idxInter]);
                                     if(interactionsObjects[counterExistingCell].isAttachedToSomething()){
                                         interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
                                         counterExistingCell += 1;
@@ -330,11 +330,11 @@ protected:
 
 
                 // Manage outofblock interaction
-                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),outsideInteractions.size());
+                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
-                typename std::list<ParticleContainerClass>::iterator iterLeftParticles = tree->leavesBegin();
+                typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
                 int currentOutInteraction = 0;
-                while(iterLeftParticles != iterParticles && currentOutInteraction < outsideInteractions.size()){
+                while(iterLeftParticles != iterParticles && currentOutInteraction < int(outsideInteractions.size())){
                     const MortonIndex blockStartIdx = (*iterLeftParticles)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterLeftParticles)->getEndingIndex();
 
@@ -343,17 +343,17 @@ protected:
                     }
 
                     int lastOutInteraction = currentOutInteraction + 1;
-                    while(lastOutInteraction < outsideInteractions.size() && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                    while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                         lastOutInteraction += 1;
                     }
 
                     { // Can be a task(in:currentOutInteraction, in:outsideInteractions, in:lastOutInteraction, inout:iterLeftParticles, inout:iterParticles)
                         for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
-                            ParticleContainerClass interParticles = (*iterLeftParticles)->getLeaf(outsideInteractions[outInterIdx].outIndex);
+                            ParticleContainerClass interParticles = (*iterLeftParticles)->template getLeaf<ParticleContainerClass>(outsideInteractions[outInterIdx].outIndex);
                             if(interParticles.isAttachedToSomething()){
-                                ParticleContainerClass particles = (*iterParticles)->getLeaf(outsideInteractions[outInterIdx].insideIndex);
+                                ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(outsideInteractions[outInterIdx].insideIndex);
                                 FAssertLF(particles.isAttachedToSomething());
-                                CellClass* interactions[27];
+                                ParticleContainerClass* interactions[27];
                                 memset(interactions, 0, 27*sizeof(CellClass*));
                                 interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
                                 const int counter = 1;

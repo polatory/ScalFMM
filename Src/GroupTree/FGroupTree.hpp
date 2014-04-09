@@ -13,10 +13,11 @@
 #include <list>
 #include <functional>
 
-template <class CellClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <class CellClass, class GroupAttachedLeafClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupTree {
 public:
-    typedef FGroupAttachedLeaf<NbAttributesPerParticle,AttributeClass> BasicAttachedClass;
+    typedef GroupAttachedLeafClass BasicAttachedClass;
+    typedef FGroupOfParticles<NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
     typedef FGroupOfCells<CellClass> CellGroupClass;
 
 protected:
@@ -30,7 +31,7 @@ protected:
     //< all the blocks of the tree
     std::list<CellGroupClass*>* cellBlocksPerLevel;
     //< all the blocks of leaves
-    std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*> particleBlocks;
+    std::list<ParticleGroupClass*> particleBlocks;
 
     //< the space system center
     const FPoint boxCenter;
@@ -499,7 +500,7 @@ public:
         }
         delete[] cellBlocksPerLevel;
 
-        for (FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (ParticleGroupClass* block: particleBlocks){
             delete block;
         }
     }
@@ -515,7 +516,7 @@ public:
    */
     template<class ParticlesAttachedClass>
     void forEachLeaf(std::function<void(ParticlesAttachedClass*)> function){
-        for (FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (ParticleGroupClass* block: particleBlocks){
             block->forEachLeaf(function);
         }
     }
@@ -555,8 +556,8 @@ public:
         typename std::list<CellGroupClass*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
         const typename std::list<CellGroupClass*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
 
-        typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator iterLeaves = particleBlocks.begin();
-        const typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator iterEndLeaves = particleBlocks.end();
+        typename std::list<ParticleGroupClass*>::iterator iterLeaves = particleBlocks.begin();
+        const typename std::list<ParticleGroupClass*>::iterator iterEndLeaves = particleBlocks.end();
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CellClass* aCell){
@@ -598,7 +599,7 @@ public:
         std::cout << "There are " << particleBlocks.size() << " leaf-groups.\n";
         int idxGroup = 0;
         int totalNbParticles = 0;
-        for (const FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (const ParticleGroupClass* block: particleBlocks){
             std::cout << "\t Group " << (idxGroup++);
             std::cout << "\t Size = " << block->getNumberOfLeavesInBlock();
             std::cout << "\t Starting Index = " << block->getStartingIndex();
@@ -639,19 +640,19 @@ public:
     }
 
 
-    typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator leavesBegin(){
+    typename std::list<ParticleGroupClass*>::iterator leavesBegin(){
         return particleBlocks.begin();
     }
 
-    typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::const_iterator leavesBegin() const {
+    typename std::list<ParticleGroupClass*>::const_iterator leavesBegin() const {
         return particleBlocks.begin();
     }
 
-    typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator leavesEnd(){
+    typename std::list<ParticleGroupClass*>::iterator leavesEnd(){
         return particleBlocks.end();
     }
 
-    typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::const_iterator leavesEnd() const {
+    typename std::list<ParticleGroupClass*>::const_iterator leavesEnd() const {
         return particleBlocks.end();
     }
 };
