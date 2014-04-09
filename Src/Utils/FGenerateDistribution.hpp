@@ -181,7 +181,7 @@ void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * point
 	}
 
 	std::cout << "Total tested points: "<< cpt << " % of rejected points: "
-			      <<100*static_cast<FReal>(cpt-N)/cpt << " %" <<std::endl;
+			<<100*static_cast<FReal>(cpt-N)/cpt << " %" <<std::endl;
 
 } ;
 //! \fn void exportCVS(std::ofstream& file, const int N, const FReal * particles )
@@ -199,14 +199,93 @@ void exportCVS(std::ofstream& file, const int N, const FReal * particles ){
 		file <<    particles[j]    << " , "    <<   particles[j+1]    << " , "   <<   particles[j+2]    << " , "   <<   particles[j+3]   <<std::endl;
 	}
 }
-void exportVTK(std::ofstream& file, const int N, const FReal * particles ){
+//
+void exportCOSMOS(std::ofstream& file, const int N, const FReal * particles ){
 	int j = 0;
 	file << " x ,  y , z, q " <<std::endl;
 	for(int i = 0 ; i< N; ++i, j+=4){
-		file <<    particles[j]    << " , "    <<   particles[j+1]    << " , "   <<   particles[j+2]    << " , "   <<   particles[j+3]   <<std::endl;
+		file <<    particles[j]    << "  "    <<   particles[j+1]    << "  "   <<   particles[j+2]    << "  0.0 0.0 0.0  "   <<   particles[j+3]   <<"  " << i << std::endl;
 	}
-
 }
+//
+void exportVTK(std::ofstream& VTKfile, const int N, const FReal * particles ){
+	int j = 0;
+	//---------------------------
+	// print generic information
+	//---------------------------
+	VTKfile << "# vtk DataFile Version 3.0" << "\n";
+	VTKfile << "#  Generated bt exportVTK" << "\n";
 
+	VTKfile << "ASCII" << "\n";
+	VTKfile << "DATASET POLYDATA" << "\n";
+	//
+	//---------------------------------
+	// print nodes ordered by their TAG
+	//---------------------------------
+	VTKfile << "POINTS " << N << "  float" << "\n";
+	//
+	for(int i = 0 ; i< N; ++i, j+=4){
+		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      <<std::endl;
+	}
+	// ------------------------------------------
+	VTKfile << "\n";
+	VTKfile << "VERTICES  " <<  N << " " << 2*N << "\n";
+	for(int i = 0 ; i< N; ++i, j+=4){
+		VTKfile <<    "  1 "    << " "    <<i<<std::endl;
+	}
+	VTKfile << "POINT_DATA  " <<  N << "\n";
+	VTKfile << "SCALARS PhysicalValue  float 1" << "\n"
+			<< "LOOKUP_TABLE default" << "\n" ;
+	j = 0 ;
+	for(int i = 0 ; i< N; ++i, j+=4){
+		VTKfile <<    particles[j+3]    << " "    <<std::endl;
+	}
+	VTKfile << "\n";
+};
+
+void exportVTKxml(std::ofstream& VTKfile, const int N, const FReal * particles ){
+	int j = 0;
+
+	VTKfile << "<?xml version=\"1.0\"?>" <<std::endl
+			<< "<VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\"> "<<std::endl
+			<< "<PolyData>"<<std::endl
+			<< "<Piece NumberOfPoints=\" " << N << " \"  NumberOfVerts=\" "<<N <<" \" NumberOfLines=\" 0\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">"<<std::endl
+			<< "<Points>"<<std::endl
+			<< "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
+	j = 0 ;
+	for(int i = 0 ; i< N; ++i, j+=4){
+		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      << "   "   ;
+	}
+	VTKfile <<std::endl<< "</DataArray> "<<std::endl
+			<< "</Points> "<<std::endl
+			<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
+			<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
+	j = 0 ;
+	for(int i = 0 ; i< N; ++i, j+=4){
+		VTKfile <<    particles[j+3]    << " "   ;
+	}
+	VTKfile <<std::endl << "</DataArray>"<<std::endl
+			<< "	</PointData>"<<std::endl
+			<< "	<CellData>"<<" </CellData>"<<std::endl
+			<< "	<Verts>"<<std::endl
+			<< "	<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">"<<std::endl ;
+	for(int i = 0 ; i< N; ++i){
+		VTKfile <<   i   << " "   ;
+	}
+	VTKfile<<std::endl << "</DataArray>" <<std::endl
+			<< "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">"<<std::endl ;
+	for(int i = 1 ; i< N+1; ++i){
+		VTKfile <<   i   << " "   ;
+	}
+	VTKfile<<std::endl  << "</DataArray>"<<std::endl
+			<< "	</Verts>"<<std::endl
+			<< "<Lines></Lines>"<<std::endl
+			<< "<Strips></Strips>"<<std::endl
+			<< "<Polys></Polys>"<<std::endl
+			<< "</Piece>"<<std::endl
+			<< "</PolyData>"<<std::endl
+			<< "</VTKFile>"<<std::endl;
+} ;
+//
 
 #endif
