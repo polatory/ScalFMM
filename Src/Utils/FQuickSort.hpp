@@ -109,13 +109,24 @@ public:
     }
 
 #if _OPENMP < 200805 || defined(__ICC) || defined(__INTEL_COMPILER)
-    struct TaskInterval{
+    class TaskInterval{
+        IndexType left;
+        IndexType right;
+        int deep;
+    public:
         TaskInterval(const IndexType inLeft, const IndexType inRight, const int inDeep)
             : left(inLeft), right(inRight), deep(inDeep){
         }
-        const IndexType left;
-        const IndexType right;
-        const int deep;
+
+        IndexType getLeft() const{
+            return left;
+        }
+        IndexType getRight() const{
+            return right;
+        }
+        int getDeep() const{
+            return deep;
+        }
     };
 
     static void QsOmp(SortType elements[], const int nbElements){
@@ -141,10 +152,10 @@ public:
                     tasks.pop_back();
 
                     // Does this task should create some other?
-                    if(ts.deep == 0){
+                    if(ts.getDeep() == 0){
                         // No release the mutex and run in seq
                         omp_unset_lock(&mutexShareVariable);
-                        QsSequentialStep(elements , ts.left, ts.right);
+                        QsSequentialStep(elements , ts.getLeft(), ts.getRight());
                     }
                     else{
                         // Yes so inform other and release the mutex
@@ -152,12 +163,12 @@ public:
                         omp_unset_lock(&mutexShareVariable);
 
                         // Partition
-                        const IndexType part = QsPartition(elements, ts.left, ts.right);
+                        const IndexType part = QsPartition(elements, ts.getLeft(), ts.getRight());
 
                         // Push the new task in the vector
                         omp_set_lock(&mutexShareVariable);
-                        tasks.push_back(TaskInterval(part+1, ts.right, ts.deep-1));
-                        tasks.push_back(TaskInterval(ts.left, part-1, ts.deep-1));
+                        tasks.push_back(TaskInterval(part+1, ts.getRight(), ts.getDeep()-1));
+                        tasks.push_back(TaskInterval(ts.getLeft(), part-1, ts.getDeep()-1));
                         // We create new task but we are not working so inform other
                         numberOfThreadProceeding -= 1;
                         omp_unset_lock(&mutexShareVariable);
