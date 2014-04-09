@@ -131,8 +131,8 @@ public:
 
     static void QsOmp(SortType elements[], const int nbElements){
         const int nbTasksRequiere = (omp_get_max_threads() * 5);
-        int deep = 1;
-        while( deep < nbTasksRequiere ) deep <<= 1;
+        int deep = 0;
+        while( (1 << deep) < nbTasksRequiere ) deep += 1;
 
         std::vector<TaskInterval> tasks;
         tasks.push_back(TaskInterval(0, nbElements-1, deep));
@@ -193,8 +193,8 @@ public:
     /** The openmp quick sort */
     static void QsOmp(SortType array[], const IndexType size){
         const int nbTasksRequiere = (omp_get_max_threads() * 5);
-        int deep = 1;
-        while( deep < nbTasksRequiere ) deep <<= 1;
+        int deep = 0;
+        while( (1 << deep) < nbTasksRequiere ) deep += 1;
 
         #pragma omp parallel
         {
