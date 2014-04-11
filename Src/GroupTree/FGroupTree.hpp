@@ -13,22 +13,25 @@
 #include <list>
 #include <functional>
 
-template <class CellClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <class CellClass, class GroupAttachedLeafClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupTree {
-    typedef FGroupAttachedLeaf<NbAttributesPerParticle,AttributeClass> BasicAttachedClass;
+public:
+    typedef GroupAttachedLeafClass BasicAttachedClass;
+    typedef FGroupOfParticles<NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
+    typedef FGroupOfCells<CellClass> CellGroupClass;
 
+protected:
     //< This value is for not used cells
     static const int CellIsEmptyFlag = -1;
 
-protected:
     //< height of the tree (1 => only the root)
     const int treeHeight;
     //< max number of cells in a block
     const int nbElementsPerBlock;
     //< all the blocks of the tree
-    std::list<FGroupOfCells<CellClass>*>* cellBlocksPerLevel;
+    std::list<CellGroupClass*>* cellBlocksPerLevel;
     //< all the blocks of leaves
-    std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*> particleBlocks;
+    std::list<ParticleGroupClass*> particleBlocks;
 
     //< the space system center
     const FPoint boxCenter;
@@ -71,7 +74,7 @@ public:
         : treeHeight(inTreeHeight), nbElementsPerBlock(inNbElementsPerBlock), cellBlocksPerLevel(0),
           boxCenter(inOctreeSrc->getBoxCenter()), boxCorner(inOctreeSrc->getBoxCenter(),-(inOctreeSrc->getBoxWidth()/2)),
           boxWidth(inOctreeSrc->getBoxWidth()), boxWidthAtLeafLevel(inOctreeSrc->getBoxWidth()/FReal(1<<inTreeHeight)){
-        cellBlocksPerLevel = new std::list<FGroupOfCells<CellClass>*>[treeHeight];
+        cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
 
         // Iterate on the tree and build
         typename OctreeClass::Iterator octreeIterator(inOctreeSrc);
@@ -92,7 +95,7 @@ public:
                 }
 
                 // Create a block with the apropriate parameters
-                FGroupOfCells<CellClass>*const newBlock = new FGroupOfCells<CellClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
+                CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock);
                 FGroupOfParticles<NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbAttributesPerParticle, AttributeClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
@@ -148,7 +151,7 @@ public:
                 }
 
                 // Create a block with the apropriate parameters
-                FGroupOfCells<CellClass>*const newBlock = new FGroupOfCells<CellClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
+                CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock);
                 // Initialize each cell of the block
@@ -191,7 +194,7 @@ public:
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
             boxWidthAtLeafLevel(inBoxWidth/FReal(1<<inTreeHeight)){
 
-        cellBlocksPerLevel = new std::list<FGroupOfCells<CellClass>*>[treeHeight];
+        cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
 
         MortonIndex* currentBlockIndexes = new MortonIndex[nbElementsPerBlock];
         // First we work at leaf level
@@ -248,7 +251,7 @@ public:
                 }
 
                 // Create a group
-                FGroupOfCells<CellClass>*const newBlock = new FGroupOfCells<CellClass>(currentBlockIndexes[0],
+                CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                  currentBlockIndexes[sizeOfBlock-1]+1,
                                                                  sizeOfBlock);
                 FGroupOfParticles<NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
@@ -292,8 +295,8 @@ public:
 
         // For each level from heigth - 2 to 1
         for(int idxLevel = treeHeight-2; idxLevel > 0 ; --idxLevel){
-            typename std::list<FGroupOfCells<CellClass>*>::const_iterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
-            const typename std::list<FGroupOfCells<CellClass>*>::const_iterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
+            typename std::list<CellGroupClass*>::const_iterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
+            const typename std::list<CellGroupClass*>::const_iterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
 
             MortonIndex currentCellIndex = (*iterChildCells)->getStartingIndex();
             int sizeOfBlock = 0;
@@ -322,7 +325,7 @@ public:
                 // If group is full
                 if(sizeOfBlock == nbElementsPerBlock || (sizeOfBlock && iterChildCells == iterChildEndCells)){
                     // Create a group
-                    FGroupOfCells<CellClass>*const newBlock = new FGroupOfCells<CellClass>(currentBlockIndexes[0],
+                    CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                      currentBlockIndexes[sizeOfBlock-1]+1,
                                                                      sizeOfBlock);
                     // Init cells
@@ -355,7 +358,7 @@ public:
    * create the block and the cells, using the constructor of
    * FGroupOfCells !!
    */
-    /*FGroupOfCells<CellClass> * createBlockFromArray(MortonIndex head[]){
+    /*CellGroupClass * createBlockFromArray(MortonIndex head[]){
         //Store the start and end
         MortonIndex start = head[0];
         MortonIndex end = start;
@@ -371,7 +374,7 @@ public:
             // }
         }
         //allocation of memory
-        FGroupOfCells<CellClass> * newBlock = new FGroupOfCells<CellClass>(start,end+1,count);
+        CellGroupClass * newBlock = new CellGroupClass(start,end+1,count);
         //allocation of cells
         for(int idx=0 ; idx<count ; idx++){
             newBlock->newCell(head[idx], idx);
@@ -389,7 +392,7 @@ public:
     FGroupTree(const int inTreeHeight, const int inNbElementsPerBlock, OctreeClass*const inOctreeSrc, int FLAG):
         treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(0)
     {
-        cellBlocksPerLevel = new std::list<FGroupOfCells<CellClass>*>[treeHeight];
+        cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
         int *nbCellPerLevel = new int[treeHeight];
         inOctreeSrc->getNbCellsPerLevel(nbCellPerLevel);
         int nbLeaf = nbCellPerLevel[treeHeight-1];
@@ -423,7 +426,7 @@ public:
             idxLeafs += inNbElementsPerBlock;
 
             //creation of the block and addition to the list
-            FGroupOfCells<CellClass> * tempBlock = createBlockFromArray(head);
+            CellGroupClass * tempBlock = createBlockFromArray(head);
             cellBlocksPerLevel[treeHeight-1].push_back(tempBlock);
         }
         delete[] leafsIdx;
@@ -438,7 +441,7 @@ public:
             MortonIndex previous = -1;
 
             //Iterator over the list at a deeper level (READ)
-            typename std::list<FGroupOfCells<CellClass>*>::const_iterator curBlockRead;
+            typename std::list<CellGroupClass*>::const_iterator curBlockRead;
             for(curBlockRead = cellBlocksPerLevel[idxLevel+1].begin() ; curBlockRead != cellBlocksPerLevel[idxLevel+1].end() ; ++curBlockRead){
                 //Loop over cells in READ list
                 for(MortonIndex idxCell = (*curBlockRead)->getStartingIndex() ; idxCell < (*curBlockRead)->getEndingIndex() ; ++idxCell){
@@ -461,7 +464,7 @@ public:
                             else{
                                 //Creation of the block from head, then reset head, and
                                 //storage of new idx in new head
-                                FGroupOfCells<CellClass> * tempBlock = createBlockFromArray(head);
+                                CellGroupClass * tempBlock = createBlockFromArray(head);
                                 cellBlocksPerLevel[idxLevel].push_back(tempBlock);
 
                                 //Need a new block
@@ -475,7 +478,7 @@ public:
                 }
             }
             //Before changing Level, need to close current Block
-            FGroupOfCells<CellClass> * tempBlock = createBlockFromArray(head);
+            CellGroupClass * tempBlock = createBlockFromArray(head);
             cellBlocksPerLevel[idxLevel].push_back(tempBlock);
         }
         printf("toto \n");
@@ -490,14 +493,14 @@ public:
     /** This function dealloc the tree by deleting each block */
     ~FGroupTree(){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<FGroupOfCells<CellClass>*>& levelBlocks = cellBlocksPerLevel[idxLevel];
-            for (FGroupOfCells<CellClass>* block: levelBlocks){
+            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            for (CellGroupClass* block: levelBlocks){
                 delete block;
             }
         }
         delete[] cellBlocksPerLevel;
 
-        for (FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (ParticleGroupClass* block: particleBlocks){
             delete block;
         }
     }
@@ -513,7 +516,7 @@ public:
    */
     template<class ParticlesAttachedClass>
     void forEachLeaf(std::function<void(ParticlesAttachedClass*)> function){
-        for (FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (ParticleGroupClass* block: particleBlocks){
             block->forEachLeaf(function);
         }
     }
@@ -524,8 +527,8 @@ public:
    */
     void forEachCell(std::function<void(CellClass*)> function){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<FGroupOfCells<CellClass>*>& levelBlocks = cellBlocksPerLevel[idxLevel];
-            for (FGroupOfCells<CellClass>* block: levelBlocks){
+            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            for (CellGroupClass* block: levelBlocks){
                 block->forEachCell(function);
             }
         }
@@ -537,8 +540,8 @@ public:
    */
     void forEachCellWithLevel(std::function<void(CellClass*,const int)> function){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<FGroupOfCells<CellClass>*>& levelBlocks = cellBlocksPerLevel[idxLevel];
-            for (FGroupOfCells<CellClass>* block: levelBlocks){
+            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            for (CellGroupClass* block: levelBlocks){
                 block->forEachCell(function, idxLevel);
             }
         }
@@ -550,11 +553,11 @@ public:
    */
     template<class ParticlesAttachedClass>
     void forEachCellLeaf(std::function<void(CellClass*,ParticlesAttachedClass*)> function){
-        typename std::list<FGroupOfCells<CellClass>*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
-        const typename std::list<FGroupOfCells<CellClass>*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
+        typename std::list<CellGroupClass*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
+        const typename std::list<CellGroupClass*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
 
-        typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator iterLeaves = particleBlocks.begin();
-        const typename std::list<FGroupOfParticles<NbAttributesPerParticle,AttributeClass>*>::iterator iterEndLeaves = particleBlocks.end();
+        typename std::list<ParticleGroupClass*>::iterator iterLeaves = particleBlocks.begin();
+        const typename std::list<ParticleGroupClass*>::iterator iterEndLeaves = particleBlocks.end();
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CellClass* aCell){
@@ -581,10 +584,10 @@ public:
         std::cout << "\t Group Size = " << nbElementsPerBlock << "\n";
         std::cout << "\t Tree height = " << treeHeight << "\n";
         for(int idxLevel = 1 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<FGroupOfCells<CellClass>*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
             std::cout << "Level " << idxLevel << ", there are " << levelBlocks.size() << " groups.\n";
             int idxGroup = 0;
-            for (const FGroupOfCells<CellClass>* block: levelBlocks){
+            for (const CellGroupClass* block: levelBlocks){
                 std::cout << "\t Group " << (idxGroup++);
                 std::cout << "\t Size = " << block->getNumberOfCellsInBlock();
                 std::cout << "\t Starting Index = " << block->getStartingIndex();
@@ -596,7 +599,7 @@ public:
         std::cout << "There are " << particleBlocks.size() << " leaf-groups.\n";
         int idxGroup = 0;
         int totalNbParticles = 0;
-        for (const FGroupOfParticles<NbAttributesPerParticle,AttributeClass>* block: particleBlocks){
+        for (const ParticleGroupClass* block: particleBlocks){
             std::cout << "\t Group " << (idxGroup++);
             std::cout << "\t Size = " << block->getNumberOfLeavesInBlock();
             std::cout << "\t Starting Index = " << block->getStartingIndex();
@@ -606,6 +609,51 @@ public:
             totalNbParticles += block->getNbParticlesInGroup();
         }
         std::cout << "There are " << totalNbParticles << " particles.\n";
+    }
+
+    /////////////////////////////////////////////////////////
+    // Algorithm function
+    /////////////////////////////////////////////////////////
+
+    int getHeight() const {
+        return treeHeight;
+    }
+
+    typename std::list<CellGroupClass*>::iterator cellsBegin(const int atHeight){
+        FAssertLF(atHeight < treeHeight);
+        return cellBlocksPerLevel[atHeight].begin();
+    }
+
+    typename std::list<CellGroupClass*>::const_iterator cellsBegin(const int atHeight) const {
+        FAssertLF(atHeight < treeHeight);
+        return cellBlocksPerLevel[atHeight].begin();
+    }
+
+    typename std::list<CellGroupClass*>::iterator cellsEnd(const int atHeight){
+        FAssertLF(atHeight < treeHeight);
+        return cellBlocksPerLevel[atHeight].end();
+    }
+
+    typename std::list<CellGroupClass*>::const_iterator cellsEnd(const int atHeight) const {
+        FAssertLF(atHeight < treeHeight);
+        return cellBlocksPerLevel[atHeight].end();
+    }
+
+
+    typename std::list<ParticleGroupClass*>::iterator leavesBegin(){
+        return particleBlocks.begin();
+    }
+
+    typename std::list<ParticleGroupClass*>::const_iterator leavesBegin() const {
+        return particleBlocks.begin();
+    }
+
+    typename std::list<ParticleGroupClass*>::iterator leavesEnd(){
+        return particleBlocks.end();
+    }
+
+    typename std::list<ParticleGroupClass*>::const_iterator leavesEnd() const {
+        return particleBlocks.end();
     }
 };
 

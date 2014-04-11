@@ -3,11 +3,12 @@
 \usepackage{listings}
 \usepackage{geometry}
 \usepackage{graphicx}
+\usepackage{tikz}
 \usepackage[hypertexnames=false, pdftex]{hyperref}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % use:$ pdflatex ParallelDetails.tex
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\author{Berenger Bramas, Olivier Coulaud, Cyrille Piacibelo}
+\author{Berenger Bramas, Olivier Coulaud, Cyrille Piacibello}
 \title{ScalFmm - Parallel Algorithms (Draft)}
 \date{\today}
 
@@ -152,26 +153,64 @@ That is the reason why we need to balance the data among nodes.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Balancing the leaves}
-After sorting, each process has potentially several leaves.
-If we have two processes $P_{i}$ and $P_{j}$ with $i < j$ the sort guarantees that all leaves from node i are inferior than the leaves on the node j in a Morton indexing way.
-But the leaves are randomly distributed among the nodes and we need to balance them.
-It is a simple reordoring of the data, but the data has to stayed sorted.
+After sorting, each process has potentially several leaves.  If we
+have two processes $P_{i}$ and $P_{j}$ with $i < j$ the sort
+guarantees that all leaves from node i are inferior than the leaves on
+the node j in a Morton indexing way.  But the leaves are randomly
+distributed among the nodes and we need to balance them.  It is a
+simple reordoring of the data, but the data has to stayed sorted.
 
 \begin{enumerate}
 \item Each process informs other to tell how many leaves it holds.
-\item Each process compute how many leaves it has to send or to receive from left or right.
+\item Each process compute how many leaves it has to send or to
+  receive from left or right. \label{balRef}
 \end{enumerate}
-At the end of the algorithm our system is completely balanced with the same number of leaves on each process.
+
+At the end of the algorithm our system is completely balanced with the
+same number of leaves on each process.  If another kind of balancing
+algorithm is needed, one can only change the BalanceAlgorithm class
+that is given in parameter to the ArrayToTree static method in the
+step \ref{balRef}.
+
+\subsection{Balancing algorithms supported}
+Any balancing algorithm can be used, but it has to provide at least
+two method, as showed in the class FAbstractBalancingAlgorithm.
+Those methods are :
+\begin{enumerate}
+\item GetLeft : return the number of leaves that will belongs only to
+  proc on the left of given proc.
+\item GetRight : return the number of leaves that will belongs only to
+  proc on the right of given proc.
+\end{enumerate}
+
+In the parameters of those two methods, one can find the total number
+of leaves, the total number of particles, the number of proc, and the
+index of a proc to be treated.
 
 \begin{figure}[h!]
   \begin{center}
     \includegraphics[width=15cm, height=15cm, keepaspectratio=true]{Images/Balance.png}
-    \caption{Balancing Example}
+    \caption{Balancing Example : A process has to send data to the
+      left if its current left limit is upper than its objective
+      limit.  Same in the other side, and we can reverse the calculs
+      to know if a process has to received data.}
   \end{center}
 \end{figure}
 
-A process has to send data to the left if its current left limit is upper than its objective limit.
-Same in the other side, and we can reverse the calculs to know if a process has to received data.
+\clearpage
+\subsection{Mpi calls}
+Once every process know exactly what it needs to compute for itself
+and for any other proc the bound GetRight() and GetLeft(), there is
+only one Mpi communication AllToAll.
+
+To prepare the buffers to be sent and received, each proc count the
+number of leafs (and the size) it holds, and divide them into
+potentially three parts :
+\begin{enumerate}
+\item The datas to send to proc on left (Can be null).
+\item The datas to keep (can be null).
+\item The datas to send to proc on right(can be null).
+\end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,10 +276,10 @@ shared cell at a level.
 
 There are to cases : 
 \begin{itemize}
-  \item My first cell is shared means that I need to send the children I have of
-    this cell to the processus on my left.
-  \item My last cell is shared means that I need to receive some
-    children from the processus on my right.
+\item My first cell is shared means that I need to send the children I have of
+  this cell to the processus on my left.
+\item My last cell is shared means that I need to receive some
+  children from the processus on my right.
 \end{itemize}
 
 
@@ -312,6 +351,46 @@ Example :
   00001011 & Data of cell 5 & Data of cell 7 & Data of cell 8 \\
   \hline
 \end{tabular}
+
+\subsection{Modified M2M}
+The algorithm may not be efficient for special cases. Since the
+communications do not progress (even in asynchrone way) while
+computing the M2M, the algorithm has been modified, in order to set
+one of the OMP thread to the communications.
+
+\begin{algorithm}[H]
+  \RestyleAlgo{boxed}
+  \LinesNumbered
+  \SetAlgoLined
+  \KwData{none}
+  \KwResult{none}
+  \BlankLine
+  \For{idxLevel $\leftarrow$ $Height - 2$ \KwTo 1}{
+    \tcp{pragma omp single}
+    \Begin(To be done by one thread only){ 
+        \uIf{$cells[0]$ not in my working interval}{
+          isend($cells[0].child$)\;
+          hasSend $\leftarrow$ true\;
+        }
+        \uIf{$cells[end]$ in another working interval}{
+          irecv(recvBuffer)\;
+          hasRecv $\leftarrow$ true\;
+        }
+        \emph{Wait send and recv if needed}\;
+        \uIf{hasRecv is true}{
+          M2M($cells[end]$, recvBuffer)\;
+        }
+      }
+      \tcp{pragma omp for}
+      \Begin(To be done by all the other threads){ 
+          \ForAll{Cell c at level idxLevel in working interval}{
+            M2M(c, c.child)\;
+          }
+        }
+  }
+  \BlankLine
+  \caption{Distributed M2M}
+\end{algorithm}
 
 
 \clearpage
@@ -413,13 +492,25 @@ Finally they send and receive data in an asynchronous way and cover it by the P2
   \BlankLine
   \caption{Distributed P2P}
 \end{algorithm}
+
+\subsection{Shared Memory Version}
+The P2P algorithm is computed once for each pair of leafs belonging to
+the same proc. This means that when a proc will compute the force on
+the particles of leaf $1$ due to the particles of leaf $2$, both leafs
+$1$ and $2$ will be updated.
+
+This way of compute the interaction is faster, but leads to
+concurrency problems.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{M2L}
 The M2L operator is relatively similar to the P2P.
-Hence P2P is done at the leaves level, M2L is done on several levels from Height - 2 to 2.
+Hence P2P is done at the leaves level, M2L is done on several levels from $Height - 2$ to 2.
 At each level, a node needs to have access to all the distant neighbors of the cells it is the proprietary and those ones can be hosted by any other node.
 Anyway, each node can compute a part of the M2L with the data it has.
+\subsection{Original Algorithm}
 The algorithm can be viewed as several tasks:
 \begin{enumerate}
 \item Compute to know what data has to be sent
@@ -436,7 +527,7 @@ The algorithm can be viewed as several tasks:
   \KwData{none}
   \KwResult{none}
   \BlankLine
-  \ForAll{Level idxLeve from 2 to Height - 2}{
+  \ForAll{Level idxLevel from 2 to Height - 2}{
     \ForAll{Cell c at level idxLevel}{
       neighborsIndexes $\leftarrow$ $c.potentialDistantNeighbors()$\;
       \ForAll{index in neighborsIndexes}{
@@ -462,6 +553,103 @@ The algorithm can be viewed as several tasks:
   \BlankLine
   \caption{Distributed M2L}
 \end{algorithm}
+
+\subsection{Algorithm Modified}
+The idea in the following version is to cover the communications
+between process with the work (M2L Self) that can be done without
+anything from outside.
+
+\begin{algorithm}[H]
+  \RestyleAlgo{boxed}
+  \LinesNumbered
+  \SetAlgoLined
+  \KwData{none}
+  \KwResult{none}
+  \BlankLine
+  \Begin(To be done by one thread only){ \label{single}
+      \ForAll{Level idxLevel from 2 to Height - 2}{
+        \ForAll{Cell c at level idxLevel}{
+          neighborsIndexes $\leftarrow$ $c.potentialDistantNeighbors()$\;
+          \ForAll{index in neighborsIndexes}{
+            \uIf{index belong to another proc}{
+              isend(c)\;
+              \emph{Mark c as a cell that is linked to another proc}\;
+            }
+          }
+        }
+      }
+      \emph{Wait send and recv if needed}\;
+    }
+    \Begin(To be done by everybody else){\label{multiple}
+        \emph{Normal M2L}\;
+      }
+      \ForAll{Cell c received}{
+        $lightOctree.insert( c )$\;
+      }
+      \ForAll{Level idxLeve from 2 to Height - 1}{
+        \ForAll{Cell c at level idxLevel that are marked}{
+          neighborsIndexes $\leftarrow$ $c.potentialDistantNeighbors()$\;
+          neighbors $\leftarrow$ lightOctree.get(neighborsIndexes)\;
+          M2L( c, neighbors)\;
+        }
+      }
+      \BlankLine
+      \caption{Distributed M2L 2}
+      
+\end{algorithm}
+
+
+\appendix
+
+\clearpage
+\chapter{Cheat sheet about using EZtrace with ViTE on ScalFMM}
+
+In this appendix, one can find usefull information about using EZtrace
+on ScalFMM, and visualisation with ViTE.
+
+\section{EZtrace}
+EZTrace is a tool that aims at generating automatically execution
+trace from HPC (High Performance Computing) programs.
+
+It does not need any source instrumentation.
+Usefull variables :
+
+\begin{itemize}
+\item EZTRACE\_FLUSH : set the value to $1$ in order to flush the
+  event buffer to the disk in case of uge amouts of datas.  
+\item EZTRACE\_TRACE : choice of the type of event one wants to
+  have. Example : EZTRACE\_TRACE="mpi stdio omp memory". Remark : Mpi do a
+  lot of call to pthread, so I suggest to not trace pthread events in
+  order to visualize the results.
+\item EZTRACE\_TRACE\_DIR : path to a directory in wich eztrace will
+  store trace for each MPI Proc. (Set to /lustre/username/smt to avoid
+  overhead)
+\end{itemize}
+
+Once the traces are generated, one need to convert them, in order to
+visualize its.
+
+\section{ViTE}
+ViTE is a high memory consumption software, so in order to use it,
+avoid tracing pthread for example.
+
+One can zoom in and out in the gant chart.
+
+Plugin : One can get a histogram of each proc display the percentage
+of time spend in different section.
+\begin{itemize}
+  \item Got to Preferences $\rightarrow$ Plugin.
+\end{itemize}
+
+Sorting the gant charts : Sometimes the process are badly sorted (like
+0,1,10,11,2,3,4,5,6,7,8,9). It's possible to sort them with the mouse,
+or with editing an xml file : 
+\begin{itemize}
+  \item Got to Preferences $\rightarrow$ Node Selection and then Sort,
+    or export/load xml file .
+\end{itemize}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{thebibliography}{9}

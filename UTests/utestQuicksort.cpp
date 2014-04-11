@@ -70,10 +70,40 @@ class TestQuickSort : public FUTester<TestQuickSort> {
         delete [] array;
     }
 
+    void reversed(){
+        const long Size = 10000000;//100000000;
+        long long* const array = new long long[Size];
+
+        for(long idx = 0 ; idx < Size ; ++idx){
+            array[idx] = Size-idx;
+        }
+
+        FQuickSort<long long, long long, long>::QsOmp(array, Size);
+        uassert(IsSorted(array,Size));
+
+        delete [] array;
+    }
+
+    void alreadySorted(){
+        const long Size = 10000000;//100000000;
+        long long* const array = new long long[Size];
+
+        for(long idx = 0 ; idx < Size ; ++idx){
+            array[idx] = idx;
+        }
+
+        FQuickSort<long long, long long, long>::QsOmp(array, Size);
+        uassert(IsSorted(array,Size));
+
+        delete [] array;
+    }
+
     // set test
     void SetTests(){
         AddTest(&TestQuickSort::manyThreads,"Many threads");
         AddTest(&TestQuickSort::bigSize,"Big sort");
+        AddTest(&TestQuickSort::reversed,"Reversed");
+        AddTest(&TestQuickSort::alreadySorted,"Already Sorted");
     }
 };
 

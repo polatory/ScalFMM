@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, B��renger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -66,6 +66,7 @@ int main(int argc, char ** argv){
     // System properties
     myfile << NbParticles << "\n";
     myfile << BoxWidth << "\t" << XCenter << "\t" << YCenter << "\t" << ZCenter;
+	srand48( static_cast<long>(time(0))) ;
 
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
@@ -73,7 +74,7 @@ int main(int argc, char ** argv){
         const FReal py = ((FReal(drand48())) * BoxWidth * FReal(2)) + YCenter - BoxWidth;
         const FReal pz = ((FReal(drand48())) * BoxWidth * FReal(2)) + ZCenter - BoxWidth;
 
-        const int isTarget = srand48() > 0.5 ? 1 : 0;
+        const int isTarget = drand48() > 0.5 ? 1 : 0;
 
         myfile << "\n" << px << "\t" << py << "\t" <<  pz << "\t" << physicalValue << "\t" << isTarget;
     }

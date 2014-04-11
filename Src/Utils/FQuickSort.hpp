@@ -21,6 +21,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <cstring>
+#include <vector> // For parallel without task
 
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
@@ -41,32 +42,6 @@
 template <class SortType, class CompareType, class IndexType>
 class FQuickSort {
 protected:
-    ////////////////////////////////////////////////////////////
-    // Miscialenous functions
-    ////////////////////////////////////////////////////////////
-
-    template <class T>
-    static T GetLeft(const T inSize, const int inIdProc, const int inNbProc) {
-        const double step = (double(inSize) / inNbProc);
-        return T(ceil(step * inIdProc));
-    }
-
-    /** Compute a right index from data */
-    template <class T>
-    static T GetRight(const T inSize, const int inIdProc, const int inNbProc) {
-        const double step = (double(inSize) / inNbProc);
-        const T res = T(ceil(step * (inIdProc+1)));
-        if(res > inSize) return inSize;
-        else return res;
-    }
-
-    /** Compute a proc id from index & data */
-    template <class T>
-    static int GetProc(const T position, const T inSize, const int inNbProc) {
-        const double step = double(inSize) / double(inNbProc);
-        return int(double(position)/step);
-    }
-
     /** swap to value */
     template <class NumType>
     static inline void Swap(NumType& value, NumType& other){
@@ -81,53 +56,24 @@ protected:
 
     /* Use in the sequential qs */
     static IndexType QsPartition(SortType array[], IndexType left, IndexType right){
-        const IndexType part = right;
-        Swap(array[part],array[((right - left ) / 2) + left]);
-        --right;
+        Swap(array[right],array[((right - left ) / 2) + left]);
 
-        while(true){
-            while(CompareType(array[left]) < CompareType(array[part])){
-                ++left;
-            }
-            while(right >= left && CompareType(array[part]) <= CompareType(array[right])){
-                --right;
-            }
-            if(right < left) break;
+        IndexType idx = left;
+        while( idx < right && CompareType(array[idx]) <= CompareType(array[right])){
+            idx += 1;
+        }
+        left = idx;
 
-            Swap(array[left],array[right]);
-            ++left;
-            --right;
+        for( ; idx < right ; ++idx){
+            if( CompareType(array[idx]) <= CompareType(array[right]) ){
+                Swap(array[idx],array[left]);
+                left += 1;
+            }
         }
 
-        Swap(array[part],array[left]);
+        Swap(array[left],array[right]);
 
         return left;
-    }
-
-    /* A local iteration of qs */
-    static void QsLocal(SortType array[], const CompareType& pivot,
-               IndexType myLeft, IndexType myRight,
-               IndexType& prefix, IndexType& sufix){
-
-        IndexType leftIter = myLeft;
-        IndexType rightIter = myRight;
-
-        while(true){
-            while(CompareType(array[leftIter]) <= pivot && leftIter < rightIter){
-                ++leftIter;
-            }
-            while(leftIter <= rightIter && pivot < CompareType(array[rightIter])){
-                --rightIter;
-            }
-            if(rightIter < leftIter) break;
-
-            Swap(array[leftIter],array[rightIter]);
-            ++leftIter;
-            --rightIter;
-        }
-
-        prefix = leftIter - myLeft;
-        sufix = myRight - myLeft - prefix + 1;
     }
 
     /* The sequential qs */
@@ -142,122 +88,18 @@ protected:
     /** A task dispatcher */
     static void QsOmpTask(SortType array[], const IndexType left, const IndexType right, const int deep){
         if(left < right){
+            const IndexType part = QsPartition(array, left, right);
             if( deep ){
-                const IndexType part = QsPartition(array, left, right);
                 #pragma omp task
                 QsOmpTask(array,part + 1,right, deep - 1);
                 #pragma omp task
                 QsOmpTask(array,left,part - 1, deep - 1);
             }
             else {
-                const IndexType part = QsPartition(array, left, right);
                 QsSequentialStep(array,part + 1,right);
                 QsSequentialStep(array,left,part - 1);
             }
         }
-    }
-
-    /* The openmp qs */
-    static void QsOmpNoTask(SortType array[], const IndexType size){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
-        struct Fix{
-            IndexType pre;
-            IndexType suf;
-        };
-
-        const int NbOfThreads = omp_get_max_threads();
-
-        Fix fixes[NbOfThreads + 1];
-        Fix allFixesSum[NbOfThreads + 1][NbOfThreads];
-
-        memset(fixes,0,sizeof(Fix) * NbOfThreads);
-        memset(allFixesSum,0,sizeof(Fix) * (NbOfThreads + 1) * NbOfThreads);
-
-        SortType*const temporaryArray = reinterpret_cast<SortType*>(new char[sizeof(SortType) * size]);
-
-        FOmpBarrier barriers[NbOfThreads];
-
-        #pragma omp parallel
-        {
-            const int myThreadId = omp_get_thread_num();
-
-            IndexType myLeft = GetLeft(size, myThreadId, omp_get_num_threads());
-            IndexType myRight = GetRight(size, myThreadId, omp_get_num_threads()) - 1;
-
-            IndexType startIndex = 0;
-            IndexType endIndex = size - 1;
-
-            int firstProc = 0;
-            int lastProc = omp_get_num_threads() - 1;
-
-            while( firstProc != lastProc && (endIndex - startIndex + 1) != 0){
-                Fix* const fixesSum = &allFixesSum[0][firstProc];
-                const IndexType nbElements = endIndex - startIndex + 1;
-
-                if(myThreadId == firstProc){
-                    barriers[firstProc].setNbThreads( lastProc - firstProc + 1);
-                }
-
-                // sort QsLocal part of the array
-                const CompareType pivot = (CompareType(array[startIndex]) + CompareType(array[endIndex]) )/2;
-                barriers[firstProc].wait();
-
-                QsLocal(array, pivot, myLeft, myRight, fixes[myThreadId].pre, fixes[myThreadId].suf);
-
-                // wait others that work on this part
-                #pragma omp flush(array)
-                barriers[firstProc].wait();
-
-                // merge result
-                if(myThreadId == firstProc){
-                    fixesSum[firstProc].pre = 0;
-                    fixesSum[firstProc].suf = 0;
-                    for(int idxProc = firstProc ; idxProc <= lastProc ; ++idxProc){
-                        fixesSum[idxProc + 1].pre = fixesSum[idxProc].pre + fixes[idxProc].pre;
-                        fixesSum[idxProc + 1].suf = fixesSum[idxProc].suf + fixes[idxProc].suf;
-                    }
-                    #pragma omp flush(fixesSum)
-                }
-                // prepare copy
-                if(myThreadId == firstProc + 1){
-                    FMemUtils::memcpy(&temporaryArray[startIndex], &array[startIndex], sizeof(SortType) * nbElements );
-                    #pragma omp flush(temporaryArray)
-                }
-
-                barriers[firstProc].wait();
-
-                // copy my result where it belong (< pivot)
-                FMemUtils::memcpy(&array[startIndex + fixesSum[myThreadId].pre], &temporaryArray[myLeft], sizeof(SortType) * fixes[myThreadId].pre);
-
-                // copy my result where it belong (> pivot)
-                const IndexType sufoffset = fixesSum[lastProc + 1].pre + startIndex;
-                FMemUtils::memcpy(&array[sufoffset + fixesSum[myThreadId].suf], &temporaryArray[myLeft + fixes[myThreadId].pre ], sizeof(SortType) * fixes[myThreadId].suf);
-
-                barriers[firstProc].wait();
-
-                // find my next QsLocal part
-                int splitProc = GetProc(sufoffset - startIndex, nbElements, lastProc - firstProc + 1) + firstProc;
-                if(splitProc == lastProc){
-                    --splitProc;
-                }
-
-                if( myThreadId <= splitProc ){
-                    endIndex = sufoffset - 1;
-                    lastProc = splitProc;
-                }
-                else{
-                    startIndex = sufoffset;
-                    firstProc = splitProc + 1;
-                }
-
-                myLeft = GetLeft(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex;
-                myRight = GetRight(endIndex - startIndex + 1, myThreadId - firstProc, lastProc - firstProc + 1) + startIndex - 1;
-            }
-
-            QsSequentialStep(array,myLeft,myRight);
-        }
-
-        delete[] reinterpret_cast<char*>(temporaryArray);
     }
 
 public:
@@ -266,22 +108,103 @@ public:
         QsSequentialStep(array,0,size-1);
     }
 
+#if _OPENMP < 200805 || defined(__ICC) || defined(__INTEL_COMPILER)
+    class TaskInterval{
+        IndexType left;
+        IndexType right;
+        int deep;
+    public:
+        TaskInterval(const IndexType inLeft, const IndexType inRight, const int inDeep)
+            : left(inLeft), right(inRight), deep(inDeep){
+        }
+
+        IndexType getLeft() const{
+            return left;
+        }
+        IndexType getRight() const{
+            return right;
+        }
+        int getDeep() const{
+            return deep;
+        }
+    };
+
+    static void QsOmp(SortType elements[], const int nbElements){
+        const int nbTasksRequiere = (omp_get_max_threads() * 5);
+        int deep = 0;
+        while( (1 << deep) < nbTasksRequiere ) deep += 1;
+
+        std::vector<TaskInterval> tasks;
+        tasks.push_back(TaskInterval(0, nbElements-1, deep));
+        int numberOfThreadProceeding = 0;
+        omp_lock_t mutexShareVariable;
+        omp_init_lock(&mutexShareVariable);
+
+        #pragma omp parallel
+        {
+            bool hasWorkToDo = true;
+            while(hasWorkToDo){
+                // Ask for the mutex
+                omp_set_lock(&mutexShareVariable);
+                if(tasks.size()){
+                    // There is tasks to proceed
+                    const TaskInterval ts(tasks.back());
+                    tasks.pop_back();
+
+                    // Does this task should create some other?
+                    if(ts.getDeep() == 0){
+                        // No release the mutex and run in seq
+                        omp_unset_lock(&mutexShareVariable);
+                        QsSequentialStep(elements , ts.getLeft(), ts.getRight());
+                    }
+                    else{
+                        // Yes so inform other and release the mutex
+                        numberOfThreadProceeding += 1;
+                        omp_unset_lock(&mutexShareVariable);
+
+                        // Partition
+                        const IndexType part = QsPartition(elements, ts.getLeft(), ts.getRight());
+
+                        // Push the new task in the vector
+                        omp_set_lock(&mutexShareVariable);
+                        tasks.push_back(TaskInterval(part+1, ts.getRight(), ts.getDeep()-1));
+                        tasks.push_back(TaskInterval(ts.getLeft(), part-1, ts.getDeep()-1));
+                        // We create new task but we are not working so inform other
+                        numberOfThreadProceeding -= 1;
+                        omp_unset_lock(&mutexShareVariable);
+                    }
+                }
+                else{
+                    // There is not task in the vector
+                    #pragma omp flush(numberOfThreadProceeding)
+                    if(numberOfThreadProceeding == 0){
+                        // And there is no thread that may create some tasks so stop here
+                        hasWorkToDo = false;
+                    }
+                    // Release mutex
+                    omp_unset_lock(&mutexShareVariable);
+                }
+            }
+        }
+
+        omp_destroy_lock(&mutexShareVariable);
+    }
+#else
     /** The openmp quick sort */
     static void QsOmp(SortType array[], const IndexType size){
-        #if _OPENMP >= 200805
+        const int nbTasksRequiere = (omp_get_max_threads() * 5);
+        int deep = 0;
+        while( (1 << deep) < nbTasksRequiere ) deep += 1;
+
         #pragma omp parallel
         {
             #pragma omp single nowait
             {
-                QsOmpTask(array, 0, size - 1 , 15);
+                QsOmpTask(array, 0, size - 1 , deep);
             }
         }
-        #else
-        QsOmpNoTask(array, size);
-        #endif
     }
-
-
+#endif
 };
 
 #endif // FQUICKSORT_HPP

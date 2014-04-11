@@ -29,7 +29,7 @@ project(ScalFMM)
 
 # ScalFMM version number.  An even minor number corresponds to releases.
 SET(ScalFMM_MAJOR_VERSION 1)
-SET(ScalFMM_MINOR_VERSION 1)
+SET(ScalFMM_MINOR_VERSION 2)
 SET(ScalFMM_PATCH_VERSION 1)
 SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFMM_PATCH_VERSION}" )
 
@@ -217,6 +217,10 @@ add_subdirectory(Src)
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
 
+# Build - Examples and drivers
+add_subdirectory(Examples)
+
+
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
 if( ScalFMM_BUILD_TESTS )
@@ -275,7 +279,14 @@ set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/Licence.txt")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${ScalFMM_MAJOR_VERSION}")
 SET(CPACK_PACKAGE_VERSION_NINOR "${ScalFMM_MINOR_VERSION}")
-set(CPACK_PACKAGE_VERSION_PATCH	"${ScalFMM_PATCH_VERSION}")
+#
+# Use git commit number as   CPACK_PACKAGE_VERSION_PATCH
+execute_process(
+        COMMAND git rev-list HEAD --count
+        OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH
+        RESULT_VARIABLE RET
+        ERROR_QUIET
+  )
 SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY "ON")
 #
 SET(CPACK_SOURCE_GENERATOR "TGZ")

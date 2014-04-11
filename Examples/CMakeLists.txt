@@ -4,7 +4,7 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto scalfmm/Build and tapes cmake ../")
 endif(insource)
 
-project(Tests_scalfmm CXX)
+project(Examples_scalfmm CXX)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
 ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS})
 # Find all code files
@@ -71,4 +71,8 @@ foreach(exec ${source_tests_files})
 			${SCALFMM_LIBRARIES}
 			)
 	endif()
+	
+# Install bin
+install( TARGETS ${execname}   DESTINATION bin )
+	
 endforeach(exec)
