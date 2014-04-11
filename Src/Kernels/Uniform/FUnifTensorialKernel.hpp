@@ -154,6 +154,7 @@ public:
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
+
           // update local index
           const int idxLoc = idxV*nLhs + idxLhs;
 
@@ -162,6 +163,7 @@ public:
 
           // update idxRhs
           const int idxRhs = idxLhs % nPV; 
+
           // update multipole index
           const int idxMul = idxV*nRhs + idxRhs;
 
@@ -169,18 +171,15 @@ public:
           const unsigned int d 
             = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxLhs);
 
-//          std::cout<<"idxLhs="<< idxLhs 
-//                   <<" - d="<< d
-//                   <<" - idxRhs="<< idxRhs <<std::endl;
-
           for (int idx=0; idx<343; ++idx){
             if (SourceCells[idx]){
+
               M2LHandler->applyFC(idx, TreeLevel, scale, d,
                                   SourceCells[idx]->getTransformedMultipole(idxMul),
                                   TransformedLocalExpansion);
 
+            }
           }
-        }
       }// NLHS=NPOT*NPV
     }// NVALS
   }

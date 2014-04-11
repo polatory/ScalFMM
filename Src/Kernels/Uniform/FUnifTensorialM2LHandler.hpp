@@ -307,16 +307,13 @@ public:
                const FReal scale, const unsigned int d,
                const FComplexe *const FY, FComplexe *const FX) const
   {
-
-    FComplexe tmpFX; 
-
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      tmpFX=FC[d][idx*opt_rc + j];
-      tmpFX*=FY[j];
-      tmpFX*=scale;
-      FX[j]+=tmpFX;
+      FX[j].addMul(FComplexe(FC[d][idx*opt_rc + j].getReal()*scale,
+                             FC[d][idx*opt_rc + j].getImag()*scale), 
+                   FY[j]);
     }
+    
 
 //    // Perform entrywise product using BLAS and MKL routines
 //    // PB: not necessary faster than the naive version
@@ -492,14 +489,9 @@ public:
                const FReal, const unsigned int d,
                const FComplexe *const FY, FComplexe *const FX) const
   {
-
-    FComplexe tmpFX; 
-
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      tmpFX=FC[TreeLevel][d][idx*opt_rc + j];
-      tmpFX*=FY[j];
-      FX[j]+=tmpFX;
+      FX[j].addMul(FC[TreeLevel][d][idx*opt_rc + j], FY[j]);
     }
 
 //    // Perform entrywise product using BLAS and MKL routines
