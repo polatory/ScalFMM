@@ -135,7 +135,7 @@ int main(int argc, char ** argv){
 	{ // get stats
 		{    // get stats on the leaf level (Particles)
 			long int allLeaves =  (1 << (3* (NbLevels-1) )) ;
-			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << NbLevels << std::endl;
+			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << NbLevels -1<< std::endl;
 			std::cout << "[STAT] potentials leafs number is " << allLeaves<< std::endl;
 
 			FReal averageParticles = 0.0, varianceParticles = 0.0 ;

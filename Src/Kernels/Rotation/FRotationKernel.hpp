@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, B��renger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -193,7 +193,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
     ///////////////////////////////////////////////////////
 
 
-    /** The fallowing comments include formula taken from the original vectors
+    /** The following comments include formula taken from the original vectors
       *
       *
       * This function rotate a multipole vector by an angle azimuth phi
@@ -242,7 +242,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
       *
       * Remark about the structure of the structure of the matrixes DlmkCoef[O/M](Minus)Theta.
       * It is composed of "P" small matrix.
-      * The matrix M(l) (0 <= l <= P) has a size of (l*2+1)²
+      * The matrix M(l) (0 <= l <= P) has a size of (l*2+1)��
       * It means indexes are going from -l to l for column and row.
       * l = 0: ( -0 <= m <= 0 ; -0 <= k <= 0)
       * [X]
@@ -970,7 +970,7 @@ public:
       * and finaly rotate back.
       */
     void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel) {
-        // Get the translation coef for this level (same for all chidl)
+        // Get the translation coef for this level (same for all child)
         const FReal*const coef = M2MTranslationCoef[inLevel];
         // A buffer to copy the source w allocated once
         FComplexe source_w[SizeArray];
@@ -994,7 +994,7 @@ public:
                         FReal w_lm_real = 0.0;
                         FReal w_lm_imag = 0.0;
                         int index_jm = atLm(m,m);   // get atLm(l,m)
-                        int index_l_minus_j = l-m;  // get l-j continously
+                        int index_l_minus_j = l-m;  // get l-j continuously
                         for(int j = m ; j <= l ; ++j, --index_l_minus_j, index_jm += j ){
                             //const coef = (b^l-j) / (l-j)!;
                             w_lm_real += coef[index_l_minus_j] * source_w[index_jm].getReal();
