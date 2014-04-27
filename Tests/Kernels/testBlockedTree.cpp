@@ -27,13 +27,13 @@
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
 int main(int argc, char* argv[]){
-    static const int P = 9;
+    static const int P = 3;
     typedef FRotationCell<P>               CellClass;
     typedef FP2PParticleContainer<>          ContainerClass;
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 4, FReal>  GroupOctreeClass;
+    typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 5, FReal>  GroupOctreeClass;
 
     FTic counter;
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);

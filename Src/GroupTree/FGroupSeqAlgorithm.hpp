@@ -5,6 +5,8 @@
 #include "../Core/FCoreCommon.hpp"
 #include "../Utils/FQuickSort.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
+#include "../Utils/FLog.hpp"
+#include "../Utils/FTic.hpp"
 
 #include <list>
 #include <vector>
@@ -38,6 +40,8 @@ public:
     }
 
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+        FLOG( FLog::Controller << "\tStart FGroupSeqAlgorithm\n" );
+
         if(operationsToProceed & FFmmP2M) bottomPass();
 
         if(operationsToProceed & FFmmM2M) upwardPass();
@@ -51,6 +55,7 @@ public:
 
 protected:
     void bottomPass(){
+        FLOG( FTic timer; );
         typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
         const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
@@ -77,9 +82,11 @@ protected:
         }
 
         FAssertLF(iterParticles == endParticles && iterCells == endCells);
+        FLOG( FLog::Controller << "\t\t bottomPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
     void upwardPass(){
+        FLOG( FTic timer; );
         for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
             typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
             const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -117,9 +124,11 @@ protected:
 
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
+        FLOG( FLog::Controller << "\t\t upwardPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
     void transferPass(){
+        FLOG( FTic timer; );
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
             typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
             const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -151,7 +160,7 @@ protected:
                                         counterExistingCell += 1;
                                     }
                                 }
-                                else if(interactionsPosition[idxInter] < 343/2){
+                                else if(interactionsIndexes[idxInter] < mindex){
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
@@ -179,7 +188,7 @@ protected:
                         currentOutInteraction += 1;
                     }
 
-                    int lastOutInteraction = currentOutInteraction + 1;
+                    int lastOutInteraction = currentOutInteraction;
                     while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                         lastOutInteraction += 1;
                     }
@@ -211,9 +220,11 @@ protected:
             }
 
         }
+        FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
     void downardPass(){
+        FLOG( FTic timer; );
         for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
             typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
             const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -251,9 +262,11 @@ protected:
 
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
+        FLOG( FLog::Controller << "\t\t downardPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
     void directPass(){
+        FLOG( FTic timer; );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
@@ -303,7 +316,7 @@ protected:
 
                             ParticleContainerClass interactionsObjects[27];
                             ParticleContainerClass* interactions[27];
-                            memset(interactions, 0, 27*sizeof(CellClass*));
+                            memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
                             int counterExistingCell = 0;
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -314,7 +327,7 @@ protected:
                                         counterExistingCell += 1;
                                     }
                                 }
-                                else if(interactionsPosition[idxInter] < 27/2){
+                                else if(interactionsIndexes[idxInter] < mindex){
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
@@ -342,7 +355,7 @@ protected:
                         currentOutInteraction += 1;
                     }
 
-                    int lastOutInteraction = currentOutInteraction + 1;
+                    int lastOutInteraction = currentOutInteraction;
                     while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                         lastOutInteraction += 1;
                     }
@@ -354,7 +367,7 @@ protected:
                                 ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(outsideInteractions[outInterIdx].insideIndex);
                                 FAssertLF(particles.isAttachedToSomething());
                                 ParticleContainerClass* interactions[27];
-                                memset(interactions, 0, 27*sizeof(CellClass*));
+                                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
                                 interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
                                 const int counter = 1;
                                 kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1), &particles, &particles , interactions, counter);
@@ -373,6 +386,7 @@ protected:
                 ++iterParticles;
             }
         }
+        FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
     int getOppositeNeighIndex(const int index) const {

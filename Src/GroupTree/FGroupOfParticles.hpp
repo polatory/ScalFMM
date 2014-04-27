@@ -52,7 +52,7 @@ protected:
     size_t attributeOffset;
 
     //< This value is for not used leaves
-    static const MortonIndex LeafIsEmptyFlag = -1;
+    static const int LeafIsEmptyFlag = -1;
 
 public:
     /**
