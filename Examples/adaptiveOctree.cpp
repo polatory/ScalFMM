@@ -54,7 +54,7 @@
 //!  <b> General arguments:</b>
 //!     \param   -help(-h)      to see the parameters available in this driver
 //!     \param   -depth    The depth of the octree
-//!     \param   -sh          Specifies the size of the sub octree
+//!     \param   -subdepth          Specifies the size of the sub octree
 //!
 //!     \param   -infile name   Name of the particles file. The file have to be in our FMA format
 //!     \param   -outfile name Generic name  for output file  (without extension)
@@ -70,8 +70,8 @@ void usage() {
 	std::cout << "Driver to obtain statistics on the octree" << std::endl;
 	std::cout <<	 "Options  "<< std::endl
 			<<     "      -help       to see the parameters    " << std::endl
-			<<	     "      -depth    the depth of the octree   "<< std::endl
-			<<	     "      -sh          specifies the size of the sub octree   " << std::endl
+			<<	     "      -depth        the depth of the octree   "<< std::endl
+			<<	     "      -subdepth   specifies the size of the sub octree   " << std::endl
 			<<     "      -infile name specifies the name of the particle distribution" << std::endl
 			<<     "      -outfile name  specifies the file for the diagnostics" << std::endl
 			<<     "      -histP   build the histogram of the particle number per leaf"<<std::endl
@@ -92,7 +92,7 @@ int main(int argc, char ** argv){
 	//   Octree parameters
 	//
 	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 5);
-	const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 3);
 	const int sminM            = FParameters::getValue(argc,argv,"-sM", 0);
 	const int sminL             = FParameters::getValue(argc,argv,"-sL", 0);
 	//

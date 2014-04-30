@@ -50,8 +50,8 @@
 //!
 //!  <b> General arguments:</b>
 //!     \param   -help(-h)      to see the parameters available in this driver
-//!     \param   -depth    The depth of the octree
-//!     \param   -sh          Specifies the size of the sub octree
+//!     \param   -depth          The depth of the octree
+//!     \param   -subdepth     Specifies the size of the sub octree
 //!
 //!     \param   -infile name   Name of the particles file. The file have to be in our FMA format
 //!     \param   -outfile name Generic name  for output file  (without extension)
@@ -64,12 +64,12 @@
 void usage() {
 	std::cout << "Driver to obtain statistics on the octree" << std::endl;
 	std::cout <<	 "Options  "<< std::endl
-                   <<     "      -help       to see the parameters    " << std::endl
-                   <<	     "      -depth    the depth of the octree   "<< std::endl
-                   <<	     "      -sh          specifies the size of the sub octree   " << std::endl
-                   <<     "      -infile name specifies the name of the particle distribution" << std::endl
+                   <<     "      -help              to see the parameters    " << std::endl
+                   <<	     "      -depth            the depth of the octree   "<< std::endl
+                   <<	     "      -subdepth      specifies the size of the sub octree   " << std::endl
+                   <<     "      -infile name    specifies the name of the particle distribution" << std::endl
                    <<     "      -outfile name  specifies the file for the diagnostics" << std::endl
-                   <<     "      -histP   build the histogram of the particle number per leaf"<<std::endl;
+                   <<     "      -histP              build the histogram of the particle number per leaf"<<std::endl;
 }
 
 int main(int argc, char ** argv){
@@ -83,13 +83,19 @@ int main(int argc, char ** argv){
 	//
 	//   Octree parameters
 	//
-	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 5);
-	const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+	const int TreeHeight        = FParameters::getValue(argc,argv,"-depth", 5);
+	const int SubTreeHeight  = FParameters::getValue(argc,argv,"-subdepth", 3);
 	//
 	//  input and output  Files parameters
 	//
 	const char* const filename = FParameters::getStr(argc,argv,"-infile", "../Data/test20k.fma");
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
+	//
+	std::cout <<	 "Parameters  "<< std::endl
+			<<     "      Octree Depth      "<< TreeHeight <<std::endl
+			<<	  "      SubOctree depth " << SubTreeHeight <<std::endl
+			<<std::endl;
+
 	//
 	std::cout << "Opening : " << filename << "\n";
 	FFmaLoader loader(filename);
@@ -98,7 +104,7 @@ int main(int argc, char ** argv){
 		return 1;
 	}
 	// -----------------------------------------------------
-	OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+	OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 	//
 	// -----------------------------------------------------
 	//     Creating and Inserting particles in the tree
@@ -109,7 +115,7 @@ int main(int argc, char ** argv){
 			<< "         Length:  "<< loader.getBoxWidth()       <<std::endl <<std::endl;
 	//
 	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
+	std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 	FPoint particlePosition, minPos, maxPos;
 	FReal physicalValue;
 	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
@@ -134,8 +140,8 @@ int main(int argc, char ** argv){
 	//
 	{ // get stats
 		{    // get stats on the leaf level (Particles)
-			long int allLeaves =  (1 << (3* (NbLevels-1) )) ;
-			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << NbLevels -1<< std::endl;
+			long int allLeaves =  (1 << (3* (TreeHeight-1) )) ;
+			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << TreeHeight -1<< std::endl;
 			std::cout << "[STAT] potentials leafs number is " << allLeaves<< std::endl;
 
 			FReal averageParticles = 0.0, varianceParticles = 0.0 ;
@@ -199,7 +205,7 @@ int main(int argc, char ** argv){
 				//
 				//  P2P Neighbors
 				//
-				nbBox = tree.getLeafsNeighbors(neighborsP2P, octreeIterator.getCurrentGlobalCoordinate(),NbLevels-1) ;
+				nbBox = tree.getLeafsNeighbors(neighborsP2P, octreeIterator.getCurrentGlobalCoordinate(),TreeHeight-1) ;
 				// need the current particles and neighbors particles
 				minBox                      =  FMath::Min(minBox,nbBox) ;
 				maxBox                     =  FMath::Max(maxBox,nbBox) ;
@@ -230,7 +236,7 @@ int main(int argc, char ** argv){
 			OctreeClass::Iterator octreeIterator(&tree);
 			octreeIterator.gotoBottomLeft();
 
-			for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel){
+			for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel){
 
 				int nbCellsAtLevel = 0;
 				int nbChildAtLevel = 0, adaptiveCell=0 ,nbChildForMyCell;
@@ -243,7 +249,7 @@ int main(int argc, char ** argv){
 				do{
 					++nbCellsAtLevel;
 					// Check number of
-					if( idxLevel != NbLevels - 1 ){
+					if( idxLevel != TreeHeight - 1 ){
 						nbChildForMyCell=0 ;
 						FBasicCell** child = octreeIterator.getCurrentChild();
 						for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -283,7 +289,7 @@ int main(int argc, char ** argv){
 				totalM2L += (long long int)(nbNeighborsAtLevel);
 				totalM2ML2L += (long long int)(nbChildAtLevel);
 				nbCellsAtTop = nbCellsAtLevel;
-				if( idxLevel == NbLevels - 1 ) nbCellsAtBottom = nbCellsAtLevel;
+				if( idxLevel == TreeHeight - 1 ) nbCellsAtBottom = nbCellsAtLevel;
 				std::cout << std::endl;
 				//
 				//  Go to next level
