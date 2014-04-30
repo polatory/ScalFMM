@@ -53,6 +53,7 @@ OPTION( ScalFMM_USE_DOUBLE_PRECISION "Set to ON to compile in double precision" 
 OPTION( ScalFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
 OPTION( ScalFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
 OPTION( ScalFMM_USE_SSE              "Set to ON to compile with SSE support"       ON  )
+OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"       OFF  )
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 # Set scalfmm to default libraries
@@ -198,6 +199,19 @@ if( ScalFMM_USE_SSE )
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
   ENDIF()
 endif()
+
+#Use AVX
+MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
+if(ScalFMM_USE_AVX)
+  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -vec -axAVX")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse -mavx")
+  ENDIF()
+endif()
+
+
+
 if( ScalFMM_USE_MIC_NATIVE ) 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
 

@@ -35,6 +35,18 @@ inline void* Allocate16BAligned(const size_t inSize){
     return reinterpret_cast<void*>( (reinterpret_cast<long long int>(memoryBlock) + 16 + 15) & ~0xFLL);
 }
 
+  /**
+   * @brief Allocate32BAligned
+   * @param inSize in Bytes
+   * @return the address of the allocated block of size inSize
+   */
+  inline void* Allocate32BAligned(const size_t inSize){
+    unsigned char* memoryBlock;
+    int resMemAl = posix_memalign((void**)&memoryBlock,32,inSize);
+    
+    return memoryBlock;
+  }
+
 /**
  * Allocate an array of inNbElements elements of type  ObjectType.
  * The objects are not initialized!
@@ -53,6 +65,15 @@ inline void Dealloc16BAligned(const void*const memoryBlock){
         delete[] reinterpret_cast<const unsigned char*>(*storeRealAddress);
     }
 }
+
+/**
+ * Delete a block allocated with Allocate32BAligned
+ */
+  inline void Dealloc32BAligned(const void*const memoryBlock){
+    const void * toBeFreed = memoryBlock;
+    free((void *)toBeFreed);
+  }
+
 }
 
 
