@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -17,8 +17,9 @@
 #define FABSTRACTKERNELS_HPP
 
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FLog.hpp"
+#include "Utils/FGlobal.hpp"
+#include "Utils/FLog.hpp"
+#include "Containers/FTreeCoordinate.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
