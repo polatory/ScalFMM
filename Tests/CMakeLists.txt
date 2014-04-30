@@ -17,8 +17,9 @@ file(
 
 # Adding the project sources dir as an include dir
 INCLUDE_DIRECTORIES(
-     ${CMAKE_BINARY_DIR}/Src 
-     ${CMAKE_SOURCE_DIR}/Src 
+     ${CMAKE_BINARY_DIR}/Src    
+     ${CMAKE_SOURCE_DIR}/Src   
+     ${SCALFMM_INCLUDES}
 )
 
 
