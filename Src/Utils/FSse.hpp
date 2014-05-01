@@ -4,8 +4,12 @@
 #include <xmmintrin.h>  // SSE
 #include <emmintrin.h>  //SSE2
 #include <pmmintrin.h> //SSE3
+#ifdef __SSSE3__
 #include <tmmintrin.h>  //SSSE3
-//#include <smmintrin.h> // SSE4
+#endif
+#ifdef __SSSE4.1__
+#include <smmintrin.h> // SSE4
+#endif
 
 #ifdef __INTEL_COMPILER
 
