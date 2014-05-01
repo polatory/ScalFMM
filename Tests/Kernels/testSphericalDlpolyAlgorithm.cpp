@@ -535,7 +535,7 @@ int main(int argc, char ** argv){
 			printf("FmmEwald   InfNorm %e\n",fz.getRelativeInfNorm());
 			//
 			double L2error = (fx.getL2Norm()*fx.getL2Norm() + fy.getL2Norm()*fy.getL2Norm()  + fz.getL2Norm() *fz.getL2Norm()  );
-			printf("FmmEwald RMS Force Error= %e\n",FMath::Sqrt(L2error/loader->getNumberOfParticles())) ;
+			printf("FmmEwald RMS Force Error= %e\n",FMath::Sqrt(L2error/static_cast<double>(loader->getNumberOfParticles()))) ;
 //
 			printf("FmmEwald Energy FMM=   %.12e\n",energy);
 			printf("FmmEwald Energy EWALD= %.12e\n",loader->getEnergy());

@@ -7,7 +7,7 @@
 #ifdef __SSSE3__
 #include <tmmintrin.h>  //SSSE3
 #endif
-#ifdef __SSSE4.1__
+#ifdef __SSSE4_1__
 #include <smmintrin.h> // SSE4
 #endif
 
