@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -29,12 +29,12 @@ class FPoint;
 *
 * A loader is the component that fills an octree.
 *
-* If you want to use a specific file format you then need to inherite from this loader
-* and implemente several methods.
+* If you want to use a specific file format you then need to inherit from this loader
+* and implement several methods.
 *
 * Please look at FBasicLoader or FFmaLoader to see an example.
 *
-* @warning Inherite from this class when defining a loader class
+* @warning Inherit from this class when defining a loader class
 */
 class FAbstractLoader {
 public:	

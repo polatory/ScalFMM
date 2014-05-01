@@ -153,7 +153,7 @@ int main(int argc, char ** argv){
 		//
 		//  Set Global id
 		//
-		long int idCell  = setGlobalID(tree);
+//		long int idCell  = setGlobalID(tree);
 		//
 		//  Build CA and FA  lists
 		std::cout << " start building CA and FA lists " <<std::endl;

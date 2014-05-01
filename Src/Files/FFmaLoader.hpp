@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -53,10 +53,10 @@
 */
 class FFmaLoader : public FAbstractLoader {
 protected:
-    std::ifstream file;         //< The file to read
-    FPoint centerOfBox;    //< The center of box read from file
-    FReal boxWidth;            //< the box width read from file
-    int nbParticles;           //< the number of particles read from file
+    std::ifstream file;                   //< The file to read
+    FPoint           centerOfBox;     //< The center of box read from file
+    FReal boxWidth;                     //< the box width read from file
+    int nbParticles;                       //< the number of particles read from file
 
 public:
     /**

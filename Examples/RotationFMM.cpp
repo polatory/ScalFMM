@@ -23,10 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../../Src/Files/FFmaScanfLoader.hpp"
-//#include "../../Src/Files/FFmaBinLoader.hpp"
-
-
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
@@ -56,6 +53,7 @@
 //!     \param   -t                   The number of threads
 //!
 //!     \param   -f name          Name of the particles file. The file have to be in our FMA format
+//!     \param   -bin                 if the file is in binary mode
 //!
 //
 
@@ -66,6 +64,7 @@ void usage() {
 			<<	  "      -depth       the depth of the octree   "<< std::endl
 			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
 			<<     "      -f   name    name specifies the name of the particle distribution" << std::endl
+			<<     "      -bin   if the file is in binary mode" << std::endl
 			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
 }
 
@@ -98,8 +97,14 @@ int main(int argc, char* argv[])
 	FTic time;
 
 	// open particle file
-	FFmaScanfLoader loader(filename);
-	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
+	FFmaGenericLoader  *loader = nullptr ;
+	if(FParameters::existParameter(argc, argv, "-bin")){
+		loader  = new FFmaGenericLoader(filename,true);
+	}
+	else {
+		loader  = new FFmaGenericLoader(filename);
+	}
+	if(!loader->isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
 	////////////////////////////////////////////////////////////////////
 
 
@@ -107,7 +112,7 @@ int main(int argc, char* argv[])
 	// begin spherical kernel
 
 	// accuracy
-	const unsigned int P = 25;
+	const unsigned int P = 22;
 	// typedefs
 	typedef FP2PParticleContainerIndexed<>                     ContainerClass;
 	typedef FSimpleLeaf< ContainerClass >                       LeafClass;
@@ -119,11 +124,11 @@ int main(int argc, char* argv[])
 	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// init oct-tree
-	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+	OctreeClass tree(TreeHeight, SubTreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
 
 
 	{ // -----------------------------------------------------
-		std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+		std::cout << "Creating & Inserting " << loader->getNumberOfParticles()
                 														<< " particles ..." << std::endl;
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
@@ -131,9 +136,9 @@ int main(int argc, char* argv[])
 		FPoint position;
 		FReal physicalValue = 0.0;
 		//
-		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+		for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
 			// Read particles from file
-			loader.fillParticle(&position,&physicalValue);
+			loader->fillParticle(&position,&physicalValue);
 
 			// put particles in octree
 			tree.insert(position, idxPart, physicalValue);
@@ -151,7 +156,7 @@ int main(int argc, char* argv[])
 		//
 		// Here we use a pointer due to the limited size of the stack
 		//
-		KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		KernelClass *kernels = new KernelClass(TreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
 		//
 		FmmClass algorithm(&tree, kernels);
 		//
@@ -166,7 +171,7 @@ int main(int argc, char* argv[])
 	//
 	//
 	{ // -----------------------------------------------------
-		long int N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
+		long int N1=0, N2= loader->getNumberOfParticles()/2, N3= loader->getNumberOfParticles() -1; ;
 		FReal energy =0.0 ;
 		//
 		//   Loop over all leaves

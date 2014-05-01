@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -15,6 +15,8 @@
 // ===================================================================================
 #ifndef FALIGNEDMEMORY_HPP
 #define FALIGNEDMEMORY_HPP
+
+#include <cstdint>
 
 /**
  * This should be used to allocate and deallocate aligned memory.
@@ -42,7 +44,7 @@ inline void* Allocate16BAligned(const size_t inSize){
    */
   inline void* Allocate32BAligned(const size_t inSize){
     unsigned char* memoryBlock;
-    int resMemAl = posix_memalign((void**)&memoryBlock,32,inSize);
+    /*int resMemAl = */posix_memalign((void**)&memoryBlock,32,inSize);
     
     return memoryBlock;
   }
@@ -71,7 +73,7 @@ inline void Dealloc16BAligned(const void*const memoryBlock){
  */
   inline void Dealloc32BAligned(const void*const memoryBlock){
     const void * toBeFreed = memoryBlock;
-    free((void *)toBeFreed);
+    free(const_cast<void *>(toBeFreed));
   }
 
 }
