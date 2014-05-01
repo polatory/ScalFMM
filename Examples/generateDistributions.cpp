@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include "Utils/FMath.hpp"
+#include "Utils/FPoint.hpp"
 #include  "Utils/FGenerateDistribution.hpp"
 //
 /// \file  generateDistributions.cpp
@@ -19,7 +20,7 @@
 //!
 //! The goal of this driver is to generate uniform or non uniform points on the following geometries
 //!
-//!   Uniform : sphere, prolate,
+//!   Uniform : cube, cuboid, sphere, prolate,
 //!
 //!   Non uniform : ellipsoid, prolate
 //!
@@ -28,14 +29,17 @@
 //!  The arguments available are
 //!
 //!  <b> General arguments:</b>
-//!     \param   -help(-h)      to see the parameters available in this driver
+//!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param  -N     The number of points in the distribution (default 20000)
 //!     \param   -filename name: generic name for files (without extension) and save data
 //!                 with following format in name.xxx or name.bin in -bin (not yet implemented) is set
-//!       \param   -visu save output in filename.txt
-//!       \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
+//!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
+//!      \param -extraLength   value    extra length to add to the boxWidth
 //!
 //!  <b> Geometry arguments:</b>
+//!      \param  -unitCube uniform distribution on unit cube
+//!      \param  -cube uniform distribution on a cube
+//!          \arg         -length  R - default value for R is 2.0
 //!      \param  -unitSphere uniform distribution on unit sphere
 //!      \param  -sphere  uniform distribution on  sphere of radius given by
 //!          \arg         -radius  R - default value for R is 2.0
@@ -49,11 +53,16 @@
 //!
 //!  <b> Physical values argument:</b>
 //!         \param -charge generate physical values between -1 and 1 otherwise generate between 0 and 1
+//!         \param -zeromean  the average of the physical values is zero
+//!
 //!
 //! \b examples
 //!
-//!     generateDistributions -prolate -ar 2:2:4   -N 20000 -filename prolate -visu
+//!   generateDistributions -prolate -ar 2:2:4   -N 20000 -filename prolate
 //!
+//! or
+//!
+//!   generateDistributions  -cuboid 2:2:4 -filename cuboid  -visufmt vtp -charge  -zeromean
 //!
 
 
@@ -65,9 +74,13 @@ void genDistusage() {
 	std::cout <<	 "Options  "<< std::endl
 			<<     "   -help       to see the parameters    " << std::endl
 			<<     "   -N       The number of points in the distribution    " << std::endl
+			<<     "   -extraLength   value    extra length to add to the boxWidth"<< std::endl
 			<<    std::endl
 			<<     "    Distributions   " << std::endl
 			<<     "        Uniform on    " << std::endl
+			<<     "             -unitCube  uniform distribution on unit cube" <<std::endl
+			<<     "             -cuboid  uniform distribution on rectangular cuboid of size  a:a:c" <<std::endl
+			<<     "                     -lengths   a:a:c - default value for R is 1.0:1.0:2.0" <<std::endl
 			<<     "             -unitSphere  uniform distribution on unit sphere" <<std::endl
 			<<     "             -sphere  uniform distribution on  sphere of radius given by" <<std::endl
 			<<     "                     -radius  R - default value for R is 2.0" <<std::endl
@@ -80,10 +93,11 @@ void genDistusage() {
 			<<     "                     -radius  R - default value 10.0" <<std::endl
 			<<     "    Physical values" <<std::endl
 			<<     "             -charge generate physical values between -1 and 1 otherwise generate between 0 and 1		" <<std::endl<<std::endl
+			<<     "             -zeromean  the average of the physical values is zero		" <<std::endl<<std::endl
 			<<     "     Output " << std::endl
 			<<     "             -filename name: generic name for files (without extension) and save data" <<std::endl
 			<<     "                     with following format in name.xxx or name.bin in -bin is set" <<std::endl
-			<<     "             -visu save output in name.txt" <<std::endl
+			//			<<     "             -visu save output in name.txt" <<std::endl
 			<<     "             -visufmt  vtk, vtp, cosmo or cvs format " <<std::endl;
 }
 
@@ -93,10 +107,11 @@ int main(int argc, char ** argv){
 		genDistusage() ;
 		exit(-1);
 	}
-	const FReal       extraRadius = 0.001 ;
+	 FReal       extraRadius = 0.000 ;
 	const int NbPoints  = FParameters::getValue(argc,argv,"-N",   20000);
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-filename",   "unifPointDist"));
-	FReal BoxWith ;
+	FReal BoxWith = 0.0;
+	FPoint Centre(0.0, 0.0,0.0);
 	//
 	// Allocation
 	//
@@ -121,13 +136,37 @@ int main(int argc, char ** argv){
 		sum              += phyVal ;
 		particles[j]       = phyVal ;
 	}
+	if(FParameters::existParameter(argc, argv, "-zeromean")){
+		FReal  rm = sum/NbPoints ; sum = 0.0 ;
+		j = 3 ;
+		for(int i = 0 ; i< NbPoints; ++i, j+=4){
+			particles[j]    -= rm ;
+			sum              += particles[j]   ;
+		}
+	}
 	std::cout << "Sum physical value "<< sum << "   Mean Value " << sum/NbPoints<<std::endl ;
 	//
 	// Point  generation
 	//
-	if(FParameters::existParameter(argc, argv, "-unitSphere")){
+	if(FParameters::existParameter(argc, argv, "-unitCube")){
+		unifRandonPointsOnUnitCube(NbPoints, particles) ;
+		Centre.setPosition(0.5,0.5,0.5);
+		BoxWith = 0.5 ;
+	}
+	else if(FParameters::existParameter(argc, argv, "-cuboid")){
+		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-lengths",  "1:1:2");
+		FReal A,B,C ;
+		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
+		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
+		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
+		unifRandonPointsOnCube(NbPoints, A,B,C,particles) ;
+		BoxWith = 0.5*FMath::Max(A,FMath::Max(B,C) );
+		FReal halfBW = BoxWith;
+		Centre.setPosition(halfBW,halfBW,halfBW);
+	}
+	else if(FParameters::existParameter(argc, argv, "-unitSphere")){
 		unifRandonPointsOnUnitSphere(NbPoints, particles) ;
-		BoxWith = 2.0 ;
+		BoxWith = 1.0 ;
 	}
 	else if(FParameters::existParameter(argc, argv, "-sphere")){
 		const FReal Radius  = FParameters::getValue(argc,argv,"-radius",  2.0);
@@ -145,7 +184,7 @@ int main(int argc, char ** argv){
 		}
 		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
 		unifRandonPointsOnProlate(NbPoints,A,C,particles);
-		BoxWith =  C;
+		BoxWith =  2.0*C;
 	}
 	else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
@@ -155,7 +194,7 @@ int main(int argc, char ** argv){
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
 		//		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
 		nonunifRandonPointsOnElipsoid(NbPoints,A,B,C,particles);
-		BoxWith =  FMath::Max( A,FMath::Max( B,C)) ;
+		BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
 	}
 	else if(FParameters::existParameter(argc, argv, "-plummer")){
 		const FReal Radius  = FParameters::getValue(argc,argv,"-radius",  10.0);
@@ -167,8 +206,11 @@ int main(int argc, char ** argv){
 		std::cout << "Bad geometry option"<< std::endl;
 		exit(-1) ;
 	}
+    /////////////////////////////////////////////////////////////////////////
+	//                                           Save data
+    /////////////////////////////////////////////////////////////////////////
 
-	if(FParameters::existParameter(argc, argv, "-visu")){
+	if(FParameters::existParameter(argc, argv, "-visufmt")){
 		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));
 		if( fmt == "vtp" ){
 			visufile = genericFileName + ".vtp" ;
@@ -210,19 +252,41 @@ int main(int argc, char ** argv){
 	//
 	//  Generate file for ScalFMM Loader
 	//
-	std::ofstream outfile( genericFileName + ".fma", std::ofstream::out);
-	if(!outfile) {
-		std::cout << "Cannot open file."<< std::endl;
-		exit(-1)	 ;
+	if(FParameters::existParameter(argc, argv, "-extraLength")){
+		extraRadius  = FParameters::getValue(argc,argv,"-extraLength",  0.0);
+		BoxWith += 2*extraRadius ;
 	}
-	BoxWith += 2*extraRadius ;
-	std::cout << "Writes in FMA format  in file "<< genericFileName + ".fma" <<std::endl ;
-	std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
-	//
-	outfile << 	NbPoints << "  " << BoxWith << "   0.0   0.0  0.0 " << std::endl;
-	j=0;
-	for(int i = 0 ; i< NbPoints; ++i, j+=4){
-		outfile <<    particles[j]    << "       "    <<   particles[j+1]    << "       "   <<   particles[j+2]    << "       "   <<   particles[j+3]   <<std::endl;
+	if( ! FParameters::existParameter(argc, argv, "-bin")){
+		std::ofstream outfileA( genericFileName + ".fma", std::ofstream::out);
+		if(!outfileA) {
+			std::cout << "Cannot open file."<< std::endl;
+			exit(-1)	 ;
+		}
+		std::cout << "Writes in ascii FMA format  in file "<< genericFileName + ".fma" <<std::endl ;
+		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
+		//
+		outfileA << 	NbPoints << "  " << BoxWith << "  " << Centre.getX() << "  " << Centre.getY() << "  " << Centre.getZ() << std::endl;
+		j=0;
+		for(int i = 0 ; i< NbPoints; ++i, j+=4){
+			outfileA <<    particles[j]    << "       "    <<   particles[j+1]    << "       "   <<   particles[j+2]    << "       "   <<   particles[j+3]   <<std::endl;
+		}
+	}
+	else{
+		std::cout << "Writes in binary FMA format  in file "<< genericFileName + ".bfma" <<std::endl ;
+		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
+		//
+		std::fstream outfile(genericFileName + ".bfma",std::ifstream::out| std::ios::binary| std::ios::trunc);
+		if(!outfile) {
+			std::cout << "Cannot open file."<< std::endl;
+			return 1;
+		}
+		outfile.write((char* )(&NbPoints),sizeof(NbPoints));
+		outfile.write((char*)&BoxWith,sizeof(BoxWith));
+		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);
+		//
+		outfile.write ((char* )&particles[0], 4*sizeof(FReal)*NbPoints);
+		outfile.flush();
+		//
 	}
 	//
 	delete particles ;
