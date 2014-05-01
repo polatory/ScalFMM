@@ -2,6 +2,7 @@
 #define FGENERATEDISTRIBUTION_HPP
 
 
+
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -16,12 +17,53 @@
 //	return drand48();
 //} ;
 void initRandom() {
-	srand( static_cast<unsigned int>(time(0))) ;
+	srand48( static_cast<unsigned int>(time(0))) ;
 } ;
 FReal getRandom() {
-	//	return static_cast<FReal>(rdand48());
-	return static_cast<FReal>(rand()/FReal(RAND_MAX));
+	return static_cast<FReal>(drand48());
+	//return static_cast<FReal>(rand()/FReal(RAND_MAX));
 } ;
+//!  \fn   unifRandonPointsOnUnitCube(const int N , FReal * points)
+
+//! \brief Generate N points uniformly distributed on the unit cube
+
+//!
+//! \param N the number of points uniformly randomly sample on the unit cube
+//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+//! \example  generateDistributions.cpp
+void unifRandonPointsOnUnitCube(const int N , FReal * points) {
+	//
+	initRandom() ;
+	int j = 0;
+	for (int i = 0 ; i< N ; ++i, j+=4)  {
+		//
+		points[j]	  =	getRandom()  ;
+		points[j+1] =	getRandom()  ;
+		points[j+2] =	getRandom()  ;
+		//
+	}
+};
+//!  \fn   unifRandonPointsOnCube(const int N , FReal * points)
+
+//! \brief Generate N points uniformly distributed on the cube of length R
+
+//!
+//! \param N the number of points uniformly randomly sample on the unit cube
+//! \param Lx the the X-length of the  cube
+//! \param Ly the the Y-length of the  cube
+//! \param Lz the the Z-length of the  cube
+//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+//! \example  generateDistributions.cpp
+void unifRandonPointsOnCube(const int N , const FReal Lx,  const FReal Ly,  const FReal Lz, FReal * points) {
+	//
+	unifRandonPointsOnUnitCube(N , points) ;
+	int j =0 ;
+	for (int i = 0 ; i< N ; ++i, j+=4)  {
+		points[j]	   *= Lx ;
+		points[j+1]  *= Ly ;
+		points[j+2]  *= Lz ;
+	}
+};
 //!  \fn   unifRandonPointsOnUnitSphere(const int N , FReal * points)
 
 //! \brief Generate N points uniformly distributed on the unit sphere
