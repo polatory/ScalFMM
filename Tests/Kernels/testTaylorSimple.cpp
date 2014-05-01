@@ -16,8 +16,8 @@
 #include "../../Src/Containers/FOctree.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../../Src/Core/FFmmAlgorithmTask.hpp"
+//#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+//#include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
 #include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
@@ -41,8 +41,8 @@
    typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
 
    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-   typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
-   typedef FFmmAlgorithmTask<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
+//   typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
+ //  typedef FFmmAlgorithmTask<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassTask;
 
 
    FTic counter;

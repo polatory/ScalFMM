@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Cyrille Piacibello
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -43,8 +43,8 @@ FPoint centerBox = FPoint(0,0,0);
 typedef FTaylorCell<P,order> CellClass;
  typedef FP2PParticleContainer<> ContainerClass;
 typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
-typedef FSimpleLeaf< ContainerClass > LeafClass;
-typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;
+//typedef FSimpleLeaf< ContainerClass > LeafClass;
+//typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;
 
 KernelClass kernel(9,1.0,centerBox);
 
