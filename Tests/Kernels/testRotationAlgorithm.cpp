@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -38,7 +38,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
-#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 
 int main(int argc, char** argv){
@@ -58,14 +58,14 @@ int main(int argc, char** argv){
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     std::cout << ">> You can pass -sequential or -task (thread by default).\n";
     //////////////////////////////////////////////////////////////
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
     FTic counter;
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
 
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaLoader loader(filename);
+    FFmaGenericLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
