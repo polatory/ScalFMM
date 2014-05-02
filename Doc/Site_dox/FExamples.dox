@@ -23,9 +23,9 @@
  * Tests/Utils/testStatsTree.cpp:
 
  \code{.cpp}
- const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);	
+ const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);	
 
- const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+ const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
 
  const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma"); 
  \endcode
@@ -33,14 +33,14 @@
  * This means that in the console, you can tape: 
 
  \code{.cpp}
- ./Tests/Release/testStatsTree -h [an height] -sh [a sub height] -f [a file to load]
+ ./Tests/Release/testStatsTree -depth [an height] -subdepth [a sub height] -f [a file to load]
  \endcode
 
 
  * \subsection concrete A Concrete example : SH FMM
 
- * In this part we will run a simulation with Spherical Harmonics :
- * Tests/Kernels/testSphericalAlgorithm.cpp.
+ * In this part we will run a simulation with Spherical Harmonics and rotation optimization:
+ *  ./Examples/Release/RotationFMM .
 
  * \subsubsection create Create a particles file 
 
@@ -68,9 +68,14 @@
  * kernel.
 
  \code{.cpp}
- * ./Tests/Release/testSphericalAlgorithm -f my2kkpartfile.fma -h 5 -sh 3 -p 4 
+ * ./Examples/Release/RotationFMM -f my2kkpartfile.fma -depth 5 -subdepth 3 -p 4 
  \endcode
 
+
+* \section driver Driver
+*   <a href="../html/files.html"> Here</a> some drivers.
+*
+html/files.html
  \section example_from_test Examples from Tests
 
  \subsection tests_utils From Tests/Utils

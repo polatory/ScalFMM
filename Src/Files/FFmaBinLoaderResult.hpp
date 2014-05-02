@@ -17,7 +17,7 @@
 #ifndef FFMABINLOADERRESULT_HPP
 #define FFMABINLOADERRESULT_HPP
 
-#include "./FFmaBinLoader.hpp"
+#include "./FFmaGenericLoader.hpp"
 
 /**
  * @author Cyrille Piacibello (cyrille.piacibello@inria.fr)
@@ -29,44 +29,52 @@
  * file, to compare with results from any Fmm Kernel.
  */
 
-class FFmaBinLoaderResult : public  FFmaBinLoader {
+class FFmaBinLoaderResult : public  FFmaGenericLoader {
 
 protected:
 
-  typedef FFmaBinLoader Parent;
-  
-  size_t removeWarning;
-  
+	typedef FFmaGenericLoader Parent;
+
+	size_t removeWarning;
+
 public:
 
-  FFmaBinLoaderResult(const char * filename):
-    Parent::FFmaBinLoader(filename)
-  {
-  }
+	FFmaBinLoaderResult(const char * filename):
+		Parent::FFmaGenericLoader(filename,true)
+	{
+	}
 
-  void fillParticle(FPoint*const inParticlePosition, FReal*const physicalValue, FReal* forceX, FReal* forceY, FReal* forceZ, FReal * const potential){
-    FReal x,y,z,data,fx,fy,fz,pot;
-    
-    //Same data as particle files
-    removeWarning += fread(&x,    sizeof(FReal), 1, file);
-    removeWarning += fread(&y,    sizeof(FReal), 1, file);
-    removeWarning += fread(&z,    sizeof(FReal), 1, file);
-    removeWarning += fread(&data, sizeof(FReal), 1, file);
+	void fillParticle(FPoint*const outParticlePosition, FReal*const outphysicalValue,
+				             FReal* forceX, FReal* forceY, FReal* forceZ, FReal * const potential){
+	//	FReal x,y,z,data,fx,fy,fz,pot;
 
-    //results data
-    removeWarning += fread(&fx,  sizeof(FReal), 1, file);
-    removeWarning += fread(&fy,  sizeof(FReal), 1, file);
-    removeWarning += fread(&fz,  sizeof(FReal), 1, file);
-    removeWarning += fread(&pot, sizeof(FReal), 1, file);
-    
-    //return
-    inParticlePosition->setPosition(x,y,z);
-    (*physicalValue) = data;
-    *forceX = fx;
-    *forceY = fy;
-    *forceZ = fz;
-    *potential = pot;
-  }
+		//Same data as particle files
+		//    removeWarning += fread(&x,    sizeof(FReal), 1, file);
+		//    removeWarning += fread(&y,    sizeof(FReal), 1, file);
+		//    removeWarning += fread(&z,    sizeof(FReal), 1, file);
+		//    removeWarning += fread(&data, sizeof(FReal), 1, file);
+		this->Parent::fillParticle(outParticlePosition,outphysicalValue);
+//			file->read((char*)(outParticlePositions), sizeof(FReal)*3);
+//		file->read((char*)(outPhysicalValue), sizeof(FReal));
+		//
+		file->read((char*)(forceX), sizeof(FReal)*3);
+		file->read((char*)(forceY), sizeof(FReal));
+		file->read((char*)(forceZ), sizeof(FReal)*3);
+		file->read((char*)(potential), sizeof(FReal));
+
+		//results data
+		//    removeWarning += fread(&fx,  sizeof(FReal), 1, file);
+		//    removeWarning += fread(&fy,  sizeof(FReal), 1, file);
+		//    removeWarning += fread(&fz,  sizeof(FReal), 1, file);
+		//    removeWarning += fread(&pot, sizeof(FReal), 1, file);
+
+		//    inParticlePosition->setPosition(x,y,z);
+		//    (*physicalValue) = data;
+		//    *forceX = fx;
+		//    *forceY = fy;
+		//    *forceZ = fz;
+		//    *potential = pot;
+	}
 };
 
 

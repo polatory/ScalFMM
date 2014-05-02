@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -31,7 +31,6 @@
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Files/FFmaLoader.hpp"
 #include "../../Src/Files/FRandomLoader.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -215,11 +214,11 @@ int main(int argc, char ** argv){
     }
 
     const int NbParticles = FParameters::getValue(argc,argv,"-nb", 60000);
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 6);
+    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
     const int DevP = FParameters::getValue(argc,argv,"-p", 30);
     const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", 1.0);
     const bool neutral = FParameters::existParameter(argc,argv,"-neutral");
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
 
     if( FParameters::existParameter(argc,argv,"-test-hp") ){
         std::cout << "Execute : test-hp\n";

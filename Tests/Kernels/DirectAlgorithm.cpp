@@ -91,13 +91,14 @@ int main(int argc, char ** argv){
 	///////////////////////What we do/////////////////////////////
 	if( FParameters::existParameter(argc, argv, "-help")){
 		std::cout << ">> This executable has to be used to compute direct interaction either for periodic or non periodic system.\n";
-		std::cout << ">> options are -h H -sh SH  [-per perdeep,  -noper] -fin filenameIN (-bin)  -fout filenameOUT \n";
+		std::cout << ">> options are -depth H -subdepth SH  [-per perdeep,  -noper] -fin filenameIN (-bin)  -fout filenameOUT \n";
 		std::cout << ">> Recommended files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
 		std::cout << " Options " << std::endl;
+		std::cout <<"      -bin if input file is in binary mode "<< std::endl;
 		std::cout << "     -per perDeep    " << std::endl;
 		std::cout << "     -noper no periodic boundary conditions   " << std::endl;
 		std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
-		std::cout << "     -fout filenameOUT  bunary output file " << std::endl;
+		std::cout << "     -fout filenameOUT  binary output file " << std::endl;
 		exit(-1);
 
 	}
@@ -108,8 +109,8 @@ int main(int argc, char ** argv){
 
 	//////////////////////////////////////////////////////////////
 
-	const int NbLevels         = FParameters::getValue(argc,argv,"-h",   4);
-	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-sh",  2);
+	const int NbLevels         = FParameters::getValue(argc,argv,"-depth",   4);
+	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-subdepth",  2);
 	const int PeriodicDeep     = FParameters::getValue(argc,argv,"-per", 3);
 	const std::string filenameIn(FParameters::getStr(argc,argv,"-fin", "../Data/forceNacl_128_dlpolyPer.bin"));
 	const char* const filenameOut = FParameters::getStr(argc,argv,"-fout", "periodicDirect.out");

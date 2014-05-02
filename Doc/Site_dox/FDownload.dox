@@ -29,12 +29,16 @@
   * <li> Go to scalfmm/Build directory </li>
   * <li> type <b> $> cmake .. </b> 
     * <ul>
-      * <li> If you want to enable MPI, use <b> $> cmake .. -DSCALFMM_USE_MPI=ON </b> </li>
+      * <li> If you want to enable MPI, use <b> $> cmake .. -DScaLFMM_USE_MPI=ON </b> </li>
       * </ul>
     * </li>
   * <li> then configure your build with <b> $> ccmake .. </b> if needed </li>
   * <li> then type <b> $> make name_of_exec </b> </li>
   * </ul>
+*
+* an example : <br>
+*        <b> cmake -DScalFMM_USE_BLAS=ON -DScalFMM_USE_MKL_AS_BLAS=ON \  <br>
+*                           -DScalFMM_USE_SSE=OFF -DScalFMM_USE_AVX=ON ../ </b>
 *
 * \subsection conf Configuration of the build
 * 
@@ -42,28 +46,36 @@
 *
 * <ul>
   * <li> CMAKE_INSTALL_PREFIX : to choose where to install ScalFmm </li>
-  * <li> DSCALFMM_USE_MPI : to use and enable MPI. Warning, you need to use this parameter at the first cmake command you write. </li>
-  * <li> SCALFMM_ATTACHE_SOURCE : to build with -g </li>
-  * <li> SCALFMM_BUILD_DEBUG : to build in debug mode of cmake (with -O0) </li>
-  * <li> SCALFMM_BUILD_TESTS : to build the text and the examples </li>
-  * <li> SCALFMM_BUILD_UTESTS : to build the unit tests </li>
-  * <li> SCALFMM_USE_ADDONS : to activate add ons </li>
+  * <li> ScalFMM_USE_MPI : to use and enable MPI. Warning, you need to use this parameter at the first cmake command you write. </li>
+  * <li> ScalFMM_ATTACHE_SOURCE : to build with -g </li>
+  * <li> SScalFMM_BUILD_TESTS : to build the text and the examples </li>
+  * <li> ScalFMM_BUILD_UTESTS : to build the unit tests </li>
+  * <li> SScalFMM_USE_ADDONS : to activate add ons </li>
   * <ul>
     * <li> SCALFMM_ADDON_FMMAPI : to build Fmm Api </li>
     * </ul>
-  * <li> SCALFMM_USE_DOUBLE_PRECISION : to build in double precision </li>
-  * <li> SCALFMM_USE_MEM_STATS : to use memory stats (which count any new/delete done during a simulation) </li>
-  * <li> SCALFMM_USE_BLAS : to enable blas (needed by most of the kernel) </li>
+  * <li> ScalFMM_USE_DOUBLE_PRECISION : to build in double precision </li>
+  * <li> ScalFMMUSE_MEM_STATS : to use memory stats (which count any new/delete done during a simulation) </li>
+  * <li> ScalFMM_USE_BLAS : to enable BLAS (needed by Chebyshev interpolation kernel) </li>
   * <ul>
     * <li> SCALFMM_USE_MKL_AS_BLAS : to use MKL as blas </li>
     * </ul>
-  * <li> SCALFMM_USE_TRACE : to create trace </li>
-  * <ul>
-    * <li> SCALFMM_USE_ITAC : to use Intel ITAC tool as trace generator </li>
+    * <li> ScalFMM_USE_FFT : Use FFTW needed for  uniform point for interpolation kernel</li> 
+      * <ul>
+    * <li> ( ScalFMM_USE_MKL_AS_FFTW : to use MKL as FFTW </li>
     * </ul>
+  * <li> ScalFMM_USE_TRACE : to create trace </li>
+  * <ul>
+    * <li> ScalFMM_USE_ITAC : to use Intel ITAC tool as trace generator </li>
+    * </ul>
+    * <li> ScalFMM_USE_LOG        to print output debug information
+    * <li> ScalFMM_USE_ASSERT   enable safe tests during execution
+    * <li> ScalFMM_USE_MEM_STATS to profile memory
+     * <li> ScalFMM_USE_SSE  compile with SEE support
+     * <li> ScalFMM_USE_AVX      compile with AVX support
+                    * <li> 
   * </ul>
 *
-
 * Once the library is built, you may want to install it : <b> $> make
 * install </b>. Note that it is not an obligation to install ScalFmm
 * to use it. You can build it and use it from the Build directory.

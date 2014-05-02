@@ -1,17 +1,17 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria d��tient tous les droits de propri��t�� sur le LOGICIEL, et souhaite que
-// la communaut�� scientifique l'utilise afin de le tester et de l'��valuer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou �� des fins commerciales est interdite sauf autorisation
-// expresse et pr��alable d'Inria.
-// Toute utilisation hors des limites pr��cis��es ci-dessus et r��alis��e sans l'accord
-// expresse pr��alable d'Inria constituerait donc le d��lit de contrefa��on.
-// Le LOGICIEL ��tant un produit en cours de d��veloppement, Inria ne saurait assurer
-// aucune responsabilit�� et notamment en aucune mani��re et en aucun cas, ��tre tenu
-// de r��pondre d'��ventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage �� communiquer �� Inria ses remarques
-// relatives �� l'usage du LOGICIEL
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
 // ===================================================================================
 
 // ==== CMAKE =====
@@ -24,8 +24,6 @@
 #include <cstdlib>
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
-#include "../../Src/Files/FFmaBinLoader.hpp"
-
 
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -52,8 +50,8 @@
 int main(int argc, char* argv[])
 {
   const char* const filename             = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-h", 5);
-  const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-sh", 2);
+  const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
+  const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
   const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
 
 #ifdef _OPENMP

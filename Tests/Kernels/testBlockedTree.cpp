@@ -21,7 +21,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
-#include "../../Src/Files/FFmaBinLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
@@ -36,11 +36,11 @@ int main(int argc, char* argv[]){
     typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 5, FReal>  GroupOctreeClass;
 
     FTic counter;
-    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels      = FParameters::getValue(argc,argv,"-depth", 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma.double");
 
-    FFmaBinLoader loader(filename);
+    FFmaGenericLoader loader(filename,true);
     FAssertLF(loader.isOpen());
 
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());

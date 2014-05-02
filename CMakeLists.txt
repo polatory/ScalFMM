@@ -195,7 +195,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
 if( ScalFMM_USE_MIC_NATIVE ) 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
 else()
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
+ # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
 ENDIF()
 ##################################################################
 #                             Use SSE                            #
