@@ -23,12 +23,12 @@
 #include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
 
 
-#include "../../Src/Files/FFmaLoader.hpp"
+//#include "../../Src/Files/FFmaGenericLoader.hpp"
 
  int main(int argc,char* argv[]){
    const int P             = 3;
-   const int NbLevels      = FParameters::getValue(argc, argv, "-h",  4);
-   const int SizeSubLevels = FParameters::getValue(argc, argv, "-sh", 2);
+   const int NbLevels      = FParameters::getValue(argc, argv, "-depth",  4);
+   const int SizeSubLevels = FParameters::getValue(argc, argv, "-subdepth", 2);
    static const int order = 1;
    FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
    FReal boxWidth = FReal(4);

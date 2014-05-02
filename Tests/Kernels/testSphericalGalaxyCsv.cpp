@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -32,7 +32,7 @@
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
 #include "../../Src/Files/FTreeCsvSaver.hpp"
-#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 #include "../../Src/Arranger/FOctreeArranger.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
@@ -69,14 +69,14 @@ public:
 };
 
 
-class GalaxyLoader : public FFmaLoader {
+class GalaxyLoader : public FFmaGenericLoader {
 public:
-    GalaxyLoader(const char* const filename) : FFmaLoader(filename) {
+    GalaxyLoader(const char* const filename) : FFmaGenericLoader(filename) {
     }
 
     void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
         FReal x,y,z,data, vx, vy, vz;
-        this->file >> x >> y >> z >> data >> vx >> vy >> vz;
+        *(this->file) >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
         *physivalValue = (data);
         velocity->setPosition(vx,vy,vz);
@@ -142,8 +142,8 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 6);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
     const FReal DT          = FParameters::getValue(argc,argv,"-dt", FReal(0.1));
     const int DevP          = FParameters::getValue(argc,argv,"-p", 5);
 

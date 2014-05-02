@@ -101,8 +101,8 @@ int main(int argc, char ** argv){
 
 	}	//////////////////////////////////////////////////////////////
 
-	const int NbLevels         = FParameters::getValue(argc,argv,"-h",   4);
-	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-sh",  2);
+	const int NbLevels         = FParameters::getValue(argc,argv,"-depth",   4);
+	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-subdepth",  2);
 	const int PeriodicDeep     = FParameters::getValue(argc,argv,"-per", 3);
 	const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/EwalTest_Periodic.run");
 	//  file for -saveError option

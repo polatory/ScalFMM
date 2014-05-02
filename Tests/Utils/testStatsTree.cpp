@@ -35,7 +35,7 @@
 
 #include "../../Src/Utils/FMath.hpp"
 
-#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
@@ -63,7 +63,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaLoader loader(filename);
+    FFmaGenericLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

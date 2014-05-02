@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -52,8 +52,8 @@ template <class CellClass, class ContainerClass, class LeafClass, class OctreeCl
 int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     FTic counter;
     // Retrieve parameters
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
     // Get working file
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.tsm.fma");
     std::cout << "Opening : " << filename << "\n";

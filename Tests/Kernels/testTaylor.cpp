@@ -1,17 +1,17 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Copyright ScalFmm 2013 INRIA, Olivier Coulaud, Berenger Bramas,
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
 // ===================================================================================
 
 // ==== CMAKE =====
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
 {
     // get info from commandline
     const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
-    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
     const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
 #ifdef _OPENMP
     omp_set_num_threads(NbThreads);

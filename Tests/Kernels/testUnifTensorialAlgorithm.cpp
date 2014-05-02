@@ -26,8 +26,6 @@
 #include <cstdlib>
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
-#include "../../Src/Files/FFmaBinLoader.hpp"
-
 
 
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -54,8 +52,8 @@
 int main(int argc, char* argv[])
 {
   const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 3);
-  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
+  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 3);
+  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
   const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
 
 #ifdef _OPENMP

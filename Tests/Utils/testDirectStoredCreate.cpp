@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -42,7 +42,7 @@
 #include "../../Src/Kernels/P2P/FP2P.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Files/FFmaBinLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Utils/FTic.hpp"
 
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
   //Direct Computation and Storage of result
   //open particle file
-  FFmaBinLoader loader(filename);
+  FFmaGenericLoader loader(filename);
   if(!loader.isOpen()){
     std::cout << "Loader Error, " << filename << " is missing\n";
     return 1;

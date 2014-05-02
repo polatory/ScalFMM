@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -26,7 +26,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 
-#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 #include "../../Src/Files/FTreeIO.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -53,7 +53,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaLoader loader(filename);
+    FFmaGenericLoader loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

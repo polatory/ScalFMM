@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -233,8 +233,8 @@ int main(int argc, char ** argv){
   FMpi app( argc, argv);
 
   const int DevP = FParameters::getValue(argc,argv,"-p", 8);
-  const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-  const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+  const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
+  const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
   FTic counter;
   const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
     "../Data/test20k.bin.fma.single":

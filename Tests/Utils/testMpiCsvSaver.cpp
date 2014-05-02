@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -31,7 +31,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Files/FTreeMpiCsvSaver.hpp"
-#include "../../Src/Files/FFmaLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
@@ -67,9 +67,9 @@ public:
 };
 
 
-class GalaxyLoader : public FFmaLoader {
+class GalaxyLoader : public FFmaGenericLoader {
 public:
-    GalaxyLoader(const char* const filename) : FFmaLoader(filename) {
+    GalaxyLoader(const char* const filename) : FFmaGenericLoader(filename) {
     }
 
     void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
@@ -138,8 +138,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
     FMpi app( argc, argv);
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 6);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
 
     GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
 
