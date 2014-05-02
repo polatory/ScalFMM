@@ -68,7 +68,7 @@
  * kernel.
 
  \code{.cpp}
- * ./Examples/Release/RotationFMM -f my2kkpartfile.fma -depth 5 -subdepth 3 -p 4 
+ * ./Examples/Release/RotationFMM -f my2kkpartfile.fma -depth 5 -subdepth 3 
  \endcode
 
 
