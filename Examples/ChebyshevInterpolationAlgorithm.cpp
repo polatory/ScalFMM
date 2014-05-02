@@ -24,8 +24,6 @@
 #include <cstdlib>
 
 #include "Files/FFmaGenericLoader.hpp"
-//#include "../../Src/Files/FFmaBinLoader.hpp"
-
 
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -105,14 +103,13 @@ int main(int argc, char* argv[])
 	// open particle file
 	////////////////////////////////////////////////////////////////////
 
-	FFmaGenericLoader  *loader = nullptr ;
+	bool binaryMode = false;
 	if(FParameters::existParameter(argc, argv, "-bin")){
-		loader  = new FFmaGenericLoader(filename,true);
+		binaryMode = true;
 	}
-	else {
-		loader  = new FFmaGenericLoader(filename);
-	}
-	if(!loader->isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
+	FFmaGenericLoader loader(filename,binaryMode);
+
+	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
 
 	// begin Chebyshev kernel
 
@@ -130,11 +127,11 @@ int main(int argc, char* argv[])
 	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 	// init oct-tree
-	OctreeClass tree(TreeHeight, SubTreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
+	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
 
 	{ // -----------------------------------------------------
-		std::cout << "Creating & Inserting " << loader->getNumberOfParticles()
+		std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
 																			<< " particles ..." << std::endl;
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
@@ -142,9 +139,9 @@ int main(int argc, char* argv[])
 		FPoint position;
 		FReal physicalValue = 0.0;
 		//
-		for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
+		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 			// Read particles from file
-			loader->fillParticle(&position,&physicalValue);
+			loader.fillParticle(&position,&physicalValue);
 
 			// put particles in octree
 			tree.insert(position, idxPart, physicalValue);
@@ -160,7 +157,7 @@ int main(int argc, char* argv[])
 
 		time.tic();
 		//
-		KernelClass kernels(TreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
+		KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 		//
 		FmmClass algorithm(&tree, &kernels);
 		//
@@ -175,7 +172,7 @@ int main(int argc, char* argv[])
 	//
 	//
 	{ // -----------------------------------------------------
-		long int N1=0, N2= loader->getNumberOfParticles()/2, N3= loader->getNumberOfParticles() -1; ;
+		long int N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
 		FReal energy =0.0 ;
 		//
 		//   Loop over all leaves
