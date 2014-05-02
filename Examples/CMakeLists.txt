@@ -70,9 +70,9 @@ foreach(exec ${source_tests_files})
 			${scalfmm_lib}
 			${SCALFMM_LIBRARIES}
 			)
-	endif()
 	
-# Install bin
-install( TARGETS ${execname}   DESTINATION bin )
-	
+                   # Install bin
+                   install( TARGETS ${execname}   DESTINATION bin )
+		endif()
+
 endforeach(exec)
