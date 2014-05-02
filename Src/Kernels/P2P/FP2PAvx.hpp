@@ -1,10 +1,11 @@
 #ifndef FP2PAVX_HPP
-#define  FP2PAVX_HPP
+#define FP2PAVX_HPP
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FMath.hpp"
 
 #include "../../Utils/FAvx.hpp"
+
 
 namespace FP2P{
 
@@ -23,6 +24,7 @@ namespace FP2P{
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
+    std::cout << "   OK AVX " << std::endl;
     const __m256d mOne = _mm256_set1_pd(1.0);
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
@@ -257,8 +259,8 @@ namespace FP2P{
 
 #else //Float, ScalFMM_USE_DOUBLE_PRECISION not set
 
+#error("NOT IMPLMEENTED")
 
-
-
+#endif
 }
 #endif //FP2PAVX_HPP
