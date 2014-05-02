@@ -87,9 +87,9 @@ if( ScalFMM_BUILD_DEBUG )
   SET(CMAKE_BUILD_TYPE Debug)
   ADD_DEFINITIONS(-O0)
   IF( APPLE ) 
-    SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+    SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ELSE(APPLE)
-    SET(SCALFMM_FLAGS_OPTI_DEBUG "${FLAGS_64bits} -fp-model strict -march=native -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+    SET(SCALFMM_FLAGS_OPTI_DEBUG "${FLAGS_64bits} -fp-model strict  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ENDIF(APPLE)
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
@@ -112,9 +112,9 @@ else()
   ELSE(APPLE)
     # Not apple system - Check the compilater flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -fp-model precise -fp-model source -fimf-precision=low  -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -flto -march=native -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -flto -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
 #
@@ -189,25 +189,38 @@ endif()
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
 		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 
+##################################################################
+#                     Use  native MIC compilation                #
+##################################################################
+if( ScalFMM_USE_MIC_NATIVE ) 
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
+else()
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
+ENDIF()
+##################################################################
+#                             Use SSE                            #
+##################################################################
 
-# Use SSE
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
 if( ScalFMM_USE_SSE )
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -vec -axAVX")
+#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -vec -axSSE4.2")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
   ENDIF()
 endif()
+##################################################################
+#                             Use AVX                            #
+##################################################################
 
-#Use AVX
 MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
 if(ScalFMM_USE_AVX)
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -vec -axAVX")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse -mavx")
   ENDIF()
+MESSAGE(STATUS ${CMAKE_CXX_FLAGS} )
 endif()
 
 
