@@ -103,7 +103,7 @@ else()
   STRING(REPLACE "-O2" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
   # if compiler is intel add -ip
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip } -no-prec-div -no-prec-sqrt")
+    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
   ENDIF()
 
   # Compile optimization
