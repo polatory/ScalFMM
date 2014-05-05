@@ -243,7 +243,7 @@ int main(int argc, char ** argv){
 			std::cout << "Cannot open file."<< std::endl;
 			return 1;
 		}
-		outfile.write((char* )(&NbPoints),sizeof(NbPoints));
+		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(NbPoints));
 		outfile.write((char*)&BoxWith,sizeof(BoxWith));
 		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);
 		//

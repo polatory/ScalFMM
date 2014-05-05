@@ -24,7 +24,7 @@ namespace FP2P{
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-    std::cout << "   OK AVX " << std::endl;
+    //    std::cout << "   OK AVX " << std::endl;
     const __m256d mOne = _mm256_set1_pd(1.0);
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
@@ -209,10 +209,10 @@ namespace FP2P{
 	const __m256d*const sourcesZ = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[2];
 
 	for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-	  const __m256d tx = _mm_load1_pd(&targetsX[idxTarget]);
-	  const __m256d ty = _mm_load1_pd(&targetsY[idxTarget]);
-	  const __m256d tz = _mm_load1_pd(&targetsZ[idxTarget]);
-	  const __m256d tv = _mm_load1_pd(&targetsPhysicalValues[idxTarget]);
+	  const __m256d tx = _mm256_broadcast_sd(&targetsX[idxTarget]);
+	  const __m256d ty = _mm256_broadcast_sd(&targetsY[idxTarget]);
+	  const __m256d tz = _mm256_broadcast_sd(&targetsZ[idxTarget]);
+	  const __m256d tv = _mm256_broadcast_sd(&targetsPhysicalValues[idxTarget]);
 	  __m256d  tfx = _mm256_setzero_pd();
 	  __m256d  tfy = _mm256_setzero_pd();
 	  __m256d  tfz = _mm256_setzero_pd();
