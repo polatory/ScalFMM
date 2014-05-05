@@ -6,19 +6,19 @@
 #ifdef __INTEL_COMPILER
 
 //Side effect operators DOUBLE
-inline __m256d& operator+=(__m256d & a, __m256d & b){
+inline __m256d& operator+=(__m256d & a, const __m256d & b){
   return (a = _mm256_add_pd (a,b));
 }
 
-inline __m256d& operator-=(__m256d& a, __m256d& b){
+inline __m256d& operator-=(__m256d& a, const __m256d& b){
   return (a = _mm256_sub_pd (a,b));
 }
 
-inline __m256d& operator*=(__m256d& a, __m256d& b){
+inline __m256d& operator*=(__m256d& a, const __m256d& b){
   return (a = _mm256_mul_pd (a,b));
 }
 
-inline __m256d& operator/=(__m256d& a, __m256d& b){
+inline __m256d& operator/=(__m256d& a, const __m256d& b){
   return (a = _mm256_div_pd (a,b));
 }
 
