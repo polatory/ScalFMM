@@ -92,4 +92,10 @@
 
 #cmakedefine ScalFMM_USE_ASSERT
 
+
+#ifdef __INTEL_COMPILER
+#pragma warning (disable : 858 ) 
+#pragma warning (disable : 2326 ) 
+#endif
+
 #endif // CONFIG_H
