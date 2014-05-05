@@ -32,7 +32,7 @@
 //!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param  -N     The number of points in the distribution (default 20000)
 //!     \param   -filename name: generic name for files (without extension) and save data
-//!                 with following format in name.xxx or name.bin in -bin (not yet implemented) is set
+//!                  with following format in name.fma or name.bfma in -bin is set"
 //!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 //!      \param -extraLength   value    extra length to add to the boxWidth
 //!
@@ -96,10 +96,11 @@ void genDistusage() {
 			<<     "             -zeromean  the average of the physical values is zero		" <<std::endl<<std::endl
 			<<     "     Output " << std::endl
 			<<     "             -filename name: generic name for files (without extension) and save data" <<std::endl
-			<<     "                     with following format in name.xxx or name.bin in -bin is set" <<std::endl
-			//			<<     "             -visu save output in name.txt" <<std::endl
+			<<     "                     with following format in name.fma or name.bfma in -bin is set" <<std::endl
+					<<     "      -bin save output in binary file name.txt" <<std::endl
 			<<     "             -visufmt  vtk, vtp, cosmo or cvs format " <<std::endl;
 }
+
 
 int main(int argc, char ** argv){
 	//
@@ -210,45 +211,7 @@ int main(int argc, char ** argv){
 	//                                           Save data
     /////////////////////////////////////////////////////////////////////////
 
-	if(FParameters::existParameter(argc, argv, "-visufmt")){
-		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));
-		if( fmt == "vtp" ){
-			visufile = genericFileName + ".vtp" ;
-		}
-		else	if( fmt == "vtk" ){
-			visufile = genericFileName + ".vtk" ;
-		}
-		else if( fmt == "cosmo" ){
-			visufile = genericFileName + ".cosmo" ;
-		}
-		else {
-			visufile =   genericFileName + ".csv" ;
-		}
-		std::ofstream file( visufile, std::ofstream::out);
-		if(!file) {
-			std::cout << "Cannot open file."<< std::endl;
-			exit(-1)	;
-		}	//
-		//
-		// Export data in cvs format
-		//
-		if( fmt == "vtp" ){
-			std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTKxml( file, NbPoints, particles)  ;
-		}
-		else		if( fmt == "vtk" ){
-			std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTK( file, NbPoints, particles)  ;
-		}
-		else if( fmt == "cosmo" ){
-			std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
-			exportCOSMOS( file, NbPoints, particles)  ;
-		}
-		else {
-			std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
-			exportCVS( file, NbPoints, particles)  ;
-		}
-	}
+
 	//
 	//  Generate file for ScalFMM Loader
 	//
@@ -287,6 +250,48 @@ int main(int argc, char ** argv){
 		outfile.write ((char* )&particles[0], 4*sizeof(FReal)*NbPoints);
 		outfile.flush();
 		//
+	}
+	//
+	//
+	//
+	if(FParameters::existParameter(argc, argv, "-visufmt")){
+		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));
+		if( fmt == "vtp" ){
+			visufile = genericFileName + ".vtp" ;
+		}
+		else	if( fmt == "vtk" ){
+			visufile = genericFileName + ".vtk" ;
+		}
+		else if( fmt == "cosmo" ){
+			visufile = genericFileName + ".cosmo" ;
+		}
+		else {
+			visufile =   genericFileName + ".csv" ;
+		}
+		std::ofstream file( visufile, std::ofstream::out);
+		if(!file) {
+			std::cout << "Cannot open file."<< std::endl;
+			exit(-1)	;
+		}	//
+		//
+		// Export data in cvs format
+		//
+		if( fmt == "vtp" ){
+			std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
+			exportVTKxml( file, NbPoints, particles)  ;
+		}
+		else		if( fmt == "vtk" ){
+			std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
+			exportVTK( file, NbPoints, particles)  ;
+		}
+		else if( fmt == "cosmo" ){
+			std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
+			exportCOSMOS( file, NbPoints, particles)  ;
+		}
+		else {
+			std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
+			exportCVS( file, NbPoints, particles)  ;
+		}
 	}
 	//
 	delete particles ;
