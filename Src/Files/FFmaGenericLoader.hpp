@@ -13,61 +13,69 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+// author Berenger Bramas and Olivier Coulaud
+//
 #ifndef FFmaGenericLoader_HPP
 #define FFmaGenericLoader_HPP
-
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string>
-
-#include "../Utils/FGlobal.hpp"
+//
+#include "Utils/FGlobal.hpp"
 #include "FAbstractLoader.hpp"
-#include "../Utils/FPoint.hpp"
+#include "Utils/FPoint.hpp"
 
-/**
- * @author Berenger Bramas and Olivier Coulaud
- * @class FFmaLoader
- * Please read the license
- *
- * Load a file with a format like :
- * NB_particles Box_width Center_X Center_Y Center_Z // init
- * X Y Z PhysicalValue // one particle by line
- * ....
- * @code
- *    FFmaLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
- *    if(!loader.isOpen()){ <br>
- *        std::cout << "Loader Error\n"; <br>
- *        return 1; <br>
- *    } <br>
- * <br>
- *    FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
- * <br>
- *    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){ <br>
- *        FBasicParticle* const part = new FBasicParticle(); <br>
- *        loader.fillParticle(part); <br>
- *        tree.insert(part); <br>
- *    } <br>
- * @endcode
- *
- * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
- */
+//
+//! \class  FFmaGenericLoader
+//!
+//! \brief Read a set of particles in FMA format
+//!
+//! The FMA format is a simplest format to store the particles in a file.
+//!
+//!  It is organized as follow<br>
+//!    NB_particles half_Box_width Center_X Center_Y Center_Z <br>
+//!    X Y Z PhysicalValue // one particle by line
+//!
+//!  \code
+//!     FFmaGenericLoader  loader("../ADir/Tests/particles.basic.txt");    // default ascii format
+//!     if(!loader.isOpen()){
+//!         std::cout << "Loader Error\n";
+//!        return 1;
+//!    }
+//!
+//!   FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox());
+//!
+//!    FPoint position ;
+//!    Freal   physicalValue ;
+//!    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){
+//!        loader.fillParticle(&position, &physicalValue);
+//!        tree.insert(position, physicalValue);
+//!    }
+//! \endcode
+//!
+//!
+//!
+ //
 class FFmaGenericLoader : public FAbstractLoader {
 protected:
-	std::fstream *file;                   //< The file to read
-	bool binaryFile  ;                     //< if true the file to read is in binary mode
-	FPoint     centerOfBox;     //< The center of box read from file
-	FReal boxWidth;                     //< the box width read from file
-	int nbParticles;                       //< the number of particles read from file
+	std::fstream *file;                   ///< the stream used to read the file
+	bool binaryFile  ;                    ///< if true the file to read is in binary mode
+	FPoint     centerOfBox;            ///< The center of box (read from file)
+	FReal boxWidth;                     ///< the box width (read from file)
+	int nbParticles;                       ///< the number of particles (read from file)
 
 public:
 	/**
 	 * The constructor need the file name
 	 * @param filename the name of the file to open
+	 * @param binary   true if the file to open is in binary mode
+	 *
+	 *  This function also read the header of the fma file (First line)
+	 *  This means that we can obtain after the call the number of particles, ...
 	 * you can test if file is successfully open by calling hasNotFinished()
 	 */
-//	FFmaGenericLoader(const char* const filename,const bool binary = false) :file(nullptr),binaryFile(binary),
 	FFmaGenericLoader(const std::string & filename,const bool binary = false) :file(nullptr),binaryFile(binary),
 	centerOfBox(0.0,0.0,0.0),boxWidth(0.0),nbParticles(0){
 		if(binary) {
@@ -99,21 +107,6 @@ public:
 	 */
 	virtual ~FFmaGenericLoader(){
 		file->close();
-	}
-	void readAscciHeader() {
-		FReal x,y,z;
-		(*this->file) >> this->nbParticles >> this->boxWidth >> x >> y >> z;
-		this->centerOfBox.setPosition(x,y,z);
-		this->boxWidth *= 2;
-	}
-	void readBinaryHeader() {
-		file->seekg (std::ios::beg);
-		file->read( (char*)&(this->nbParticles), sizeof(int) );
-		file->read( (char*)&(this->boxWidth) ,sizeof(this->boxWidth) );
-		this->boxWidth *= 2;
-		FReal x[3];
-		file->read( (char*)x,sizeof(FReal)*3);
-		this->centerOfBox.setPosition(x[0],x[1],x[2]);
 	}
 
 	/**
@@ -149,24 +142,41 @@ public:
 	}
 
 	/**
-	 * Fill a particle
+	 * Fill a particle form th curent position in the file
 	 * @warning to work with the loader, particles has to expose a setPosition method
 	 * @param the particle to fill
 	 */
 	void fillParticle(FPoint*const outParticlePositions, FReal*const outPhysicalValue){
-		FReal x,y,z,data;
 		if(binaryFile){
 			file->read((char*)(outParticlePositions), sizeof(FReal)*3);
 			file->read((char*)(outPhysicalValue), sizeof(FReal));
 		}
 		else{
-			(*this->file)  >> x >> y >> z >> data;
+			FReal x,y,z;
+//			(*this->file)  >> &outParticlePositions>> &outPhysicalValue;
+			(*this->file)  >> x >> y >> z >> (*outPhysicalValue);
 			outParticlePositions->setPosition(x,y,z);
-			(*outPhysicalValue) = data;
 		}
 //		std::cout <<  "X Y Z Q " << *outParticlePositions<<" "<<*outPhysicalValue <<std::endl;
 
 	}
+private:
+	void readAscciHeader() {
+		FReal x,y,z;
+		(*this->file) >> this->nbParticles >> this->boxWidth >> x >> y >> z;
+		this->centerOfBox.setPosition(x,y,z);
+		this->boxWidth *= 2;
+	}
+	void readBinaryHeader() {
+		file->seekg (std::ios::beg);
+		file->read( (char*)&(this->nbParticles), sizeof(int) );
+		file->read( (char*)&(this->boxWidth) ,sizeof(this->boxWidth) );
+		this->boxWidth *= 2;
+		FReal x[3];
+		file->read( (char*)x,sizeof(FReal)*3);
+		this->centerOfBox.setPosition(x[0],x[1],x[2]);
+	}
+
 };
 
 
