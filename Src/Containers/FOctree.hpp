@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -1027,6 +1027,48 @@ public:
                         const MortonIndex mortonOther = other.getMortonIndex(inLevel);
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
+                        // add to list if not null
+                        if(leaf){
+                            inNeighbors[(((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1] = leaf;
+                            ++idxNeighbors;
+                        }
+                    }
+                }
+            }
+        }
+
+        return idxNeighbors;
+    }
+    /** This function fill an array with the neighbors of a cell
+     * @param inNeighbors the array to store the elements
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
+    int getLeafsNeighbors(const CellClass*  inNeighbors[27], const FTreeCoordinate& center, const int inLevel){
+        memset( inNeighbors, 0 , 27 * sizeof(CellClass*));
+        const int boxLimite = FMath::pow2(inLevel);
+
+        int idxNeighbors = 0;
+
+        // We test all cells around
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(center.getX() + idxX,0,boxLimite)) continue;
+
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(center.getY() + idxY,0,boxLimite)) continue;
+
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(center.getZ() + idxZ,0,boxLimite)) continue;
+
+                    // if we are not on the current cell
+                    if( idxX || idxY || idxZ ){
+                        const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
+                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        // get cell
+//                        ContainerClass* const leaf = getLeafSrc(mortonOther);
+                        CellClass** const leaf = getCellPt(mortonOther, inLevel);
+
                         // add to list if not null
                         if(leaf){
                             inNeighbors[(((idxX + 1) * 3) + (idxY +1)) * 3 + idxZ + 1] = leaf;
