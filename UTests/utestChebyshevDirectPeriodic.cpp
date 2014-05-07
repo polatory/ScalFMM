@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -59,10 +59,10 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		// Warning in make test the exec dir it Build/UTests
 		// Load particles
 
-        const int NbLevels      = 3;
+        const int NbLevels        = 4;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 1;
-        const int NbParticles   = 6;
+        const int PeriodicDeep  = 2;
+        const int NbParticles   = 100;
 
         FRandomLoader loader(NbParticles);
 
@@ -78,19 +78,23 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
             FReal physicalValue;
             FReal potential;
         };
+        FReal coeff = -1.0, value = 0.10, sum = 0.0;
         TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FPoint position;
             loader.fillParticle(&position);
             // put in tree
-            tree.insert(position, idxPart, 0.10);
+            value *= coeff ;
+            sum += value ;
+            // put in tree
+            tree.insert(position, idxPart, value);
             // get copy
-            particles[idxPart].position = position;
-            particles[idxPart].physicalValue = 0.10;
-            particles[idxPart].potential = 0.0;
-            particles[idxPart].forces[0] = 0.0;
-            particles[idxPart].forces[1] = 0.0;
-            particles[idxPart].forces[2] = 0.0;
+            particles[idxPart].position         = position;
+            particles[idxPart].physicalValue = value;
+            particles[idxPart].potential        = 0.0;
+            particles[idxPart].forces[0]        = 0.0;
+            particles[idxPart].forces[1]        = 0.0;
+            particles[idxPart].forces[2]        = 0.0;
         }
 
         // Run FMM
@@ -117,7 +121,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                                 particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 &particles[idxOther].forces[0],&particles[idxOther].forces[1],
                                 &particles[idxOther].forces[2],&particles[idxOther].potential);
-            }
+
+          }
             for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
                 for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
                     for(int idxZ = min.getZ() ; idxZ <= max.getZ() ; ++idxZ){
@@ -149,10 +154,13 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
+        FReal energy= 0.0 , energyD = 0.0 ;
+
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const potentials        = leaf->getTargets()->getPotentials();
+                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
                 const FReal*const forcesX = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
@@ -165,6 +173,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                    energy   += potentials[idxPart]*physicalValues[idxPart];
+                    energyD +=particles[indexPartOrig].potential*particles[indexPartOrig].potential;
                 }
             });
         }
@@ -172,31 +182,40 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         delete[] particles;
 
         // Print for information
-        Print("Potential diff is = ");
-        Print(potentialDiff.getL2Norm());
-        Print(potentialDiff.getInfNorm());
-        Print("Fx diff is = ");
-        Print(fx.getL2Norm());
-        Print(fx.getInfNorm());
-        Print("Fy diff is = ");
-        Print(fy.getL2Norm());
-        Print(fy.getInfNorm());
-        Print("Fz diff is = ");
-        Print(fz.getL2Norm());
-        Print(fz.getInfNorm());
 
-        // Assert
+        Print("Potential diff is = ");
+        printf("         L2Norm   %e\n",potentialDiff.getRelativeL2Norm());
+		printf("         RMSError %e\n",potentialDiff.getRMSError());
+        Print("Fx diff is = ");
+		printf("         L2Norm   %e\n",fx.getRelativeL2Norm());
+		printf("         RMSError %e\n",fx.getRMSError());
+        Print(fx.getRelativeL2Norm());
+        Print(fx.getRelativeInfNorm());
+        Print("Fy diff is = ");
+		printf("        L2Norm   %e\n",fy.getRelativeL2Norm());
+		printf("        RMSError %e\n",fy.getRMSError());
+        Print("Fz diff is = ");
+		printf("        L2Norm   %e\n",fz.getRelativeL2Norm());
+		printf("        RMSError %e\n",fz.getRMSError());
+        FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
+		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("  Energy Error =   %.12e\n",FMath::Abs(energy-energyD));
+		printf("  Energy FMM =   %.12e\n",FMath::Abs(energy));
+		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
+       //
+		// Assert
+		//
         const FReal MaximumDiffPotential = FReal(9e-4);
         const FReal MaximumDiffForces = FReal(9e-3);
 
-        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);
-        uassert(potentialDiff.getInfNorm() < MaximumDiffPotential);
-        uassert(fx.getL2Norm()  < MaximumDiffForces);
-        uassert(fx.getInfNorm() < MaximumDiffForces);
-        uassert(fy.getL2Norm()  < MaximumDiffForces);
-        uassert(fy.getInfNorm() < MaximumDiffForces);
-        uassert(fz.getL2Norm()  < MaximumDiffForces);
-        uassert(fz.getInfNorm() < MaximumDiffForces);
+        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);    //1
+        uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+        uassert(fx.getL2Norm()  < MaximumDiffForces);                       //3
+        uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+        uassert(fy.getL2Norm()  < MaximumDiffForces);                       //5
+        uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+        uassert(fz.getL2Norm()  < MaximumDiffForces);                      //8
+        uassert(fz.getRMSError() < MaximumDiffForces);                     //8
 
     }
 
@@ -220,8 +239,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** TestChebKernel */
 	void TestChebKernel(){
-        const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+        const unsigned int ORDER = 6;
+        const FReal epsilon = FReal(1e-6);
         typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR MatrixKernelClass;
@@ -230,6 +249,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
+		std::cout <<" TEST 1  "<<std::endl;
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
 	}
 
@@ -245,6 +265,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
+		std::cout <<std::endl<<" TEST 2 "<<std::endl;
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
 	}
 
@@ -256,8 +277,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** set test */
 	void SetTests(){
-		AddTest(&TestChebyshevDirect::TestChebKernel,"Test Chebyshev Kernel with one big SVD");
-        AddTest(&TestChebyshevDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
+		AddTest(&TestChebyshevDirect::TestChebKernel,"Test Chebyshev Kernel with one big SVD") ;
+      AddTest(&TestChebyshevDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
 	}
 };
 

@@ -33,7 +33,7 @@
 class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
-        static const int P = 9;
+        static const int P = 18;
         typedef FRotationCell<P>            CellClass;
         typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
@@ -45,9 +45,9 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
-        const int NbLevels      = 4;
+        const int NbLevels         = 4;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = -1;
+        const int PeriodicDeep  = 2;
         const int NbParticles   = 100;
 
         FRandomLoader loader(NbParticles);
@@ -58,26 +58,32 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
             FReal physicalValue;
             FReal potential;
         };
+        FReal coeff = -1.0, value = 0.10, sum = 0.0;
         TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FPoint position;
             loader.fillParticle(&position);
+            value *= coeff ;
+            sum += value ;
             // put in tree
-            tree.insert(position, idxPart, 0.10);
+            tree.insert(position, idxPart, value);
             // get copy
-            particles[idxPart].position = position;
-            particles[idxPart].physicalValue = 0.10;
+            particles[idxPart].position         = position;
+            particles[idxPart].physicalValue = value;
             particles[idxPart].potential = 0.0;
             particles[idxPart].forces[0] = 0.0;
             particles[idxPart].forces[1] = 0.0;
             particles[idxPart].forces[2] = 0.0;
         }
-
+        if (FMath::Abs(sum)> 0.00001){
+        		std::cerr << "Sum of charges is not equal zero!!! (sum=<<"<<sum<<" )"<<std::endl;
+        		exit(-1);
+        }
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep);
-        KernelClass kernels( algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
-        algo.setKernel(&kernels);
+        KernelClass *kernels = new KernelClass( algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
+        algo.setKernel(kernels);
         algo.execute();
 
         // Run Direct
@@ -127,11 +133,13 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+        FReal energy = 0.0 ;
+       { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
                 const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+              const FReal*const forcesX = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
                 const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
@@ -143,38 +151,40 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
+                    energy +=  potentials[idxPart]*physicalValues[idxPart];
+               }
             });
         }
 
         Print("Potential diff is = ");
-        printf("   L2Norm  %e\n",potentialDiff.getRelativeL2Norm());
-		printf("   RMSError %e\n",potentialDiff.getRMSError());
+        printf("         L2Norm   %e\n",potentialDiff.getRelativeL2Norm());
+		printf("         RMSError %e\n",potentialDiff.getRMSError());
         Print("Fx diff is = ");
-		printf("   L2Norm  %e\n",fx.getRelativeL2Norm());
-		printf("   RMSError %e\n",fx.getRMSError());
+		printf("         L2Norm   %e\n",fx.getRelativeL2Norm());
+		printf("         RMSError %e\n",fx.getRMSError());
         Print(fx.getRelativeL2Norm());
         Print(fx.getRelativeInfNorm());
         Print("Fy diff is = ");
-		printf("   L2Norm  %e\n",fy.getRelativeL2Norm());
-		printf("   RMSError %e\n",fy.getRMSError());
+		printf("        L2Norm   %e\n",fy.getRelativeL2Norm());
+		printf("        RMSError %e\n",fy.getRMSError());
         Print("Fz diff is = ");
-		printf("   L2Norm  %e\n",fz.getRelativeL2Norm());
-		printf("   RMSError %e\n",fz.getRMSError());
+		printf("        L2Norm   %e\n",fz.getRelativeL2Norm());
+		printf("        RMSError %e\n",fz.getRMSError());
         FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
-		printf("     L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
 
 
-        const FReal MaximumDiff = FReal(0.0001);
+        const FReal MaximumDiffPotential = FReal(9e-4);
+        const FReal MaximumDiffForces = FReal(9e-3);
 
-        uassert(potentialDiff.getRelativeL2Norm() < MaximumDiff);  // 1
-        uassert(potentialDiff.getRMSError() < MaximumDiff);  // 2
-        uassert(fx.getRelativeL2Norm()  < MaximumDiff);     // 3
-        uassert(fx.getRMSError() < MaximumDiff);                // 4
-        uassert(fy.getRelativeL2Norm()  < MaximumDiff);     // 5
-        uassert(fy.getRMSError() < MaximumDiff);                 // 6
-        uassert(fz.getRelativeL2Norm()  < MaximumDiff);    // 7
-        uassert(fz.getRMSError() < MaximumDiff);                // 8
+        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);    //1
+        uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+        uassert(fx.getL2Norm()  < MaximumDiffForces);                       //3
+        uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+        uassert(fy.getL2Norm()  < MaximumDiffForces);                       //5
+        uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+        uassert(fz.getL2Norm()  < MaximumDiffForces);                      //8
+        uassert(fz.getRMSError() < MaximumDiffForces);                     //8
 
         delete[] particles;
     }

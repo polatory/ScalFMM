@@ -23,19 +23,19 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../../Src/Files/FFmaGenericLoader.hpp"
+#include "Utils/FParameters.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Utils/FParameters.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
+#include "Containers/FOctree.hpp"
 
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 
 /// \file  RotationFMM.cpp

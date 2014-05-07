@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -39,7 +39,7 @@ int main(void){\
 * Please refer to testUTest.cpp to see an example
 * @warning Create a derived class that implement SetTests() and use TestClass() macro
 *
-* We recommand to have a look to a unit test to better understand how it works,
+* We recommend to have a look to a unit test to better understand how it works,
 * as for example @example TestList
 */
 template <class TestClass>
@@ -61,8 +61,8 @@ class FUTester{
 	int currentTest;			//< current processing test in the run
 	int currentStep;			//< current processing step in the run
 
-	int failledSteps;			//< number of failled step in the current test
-	int failledTests;			//< number of failled tests
+	int failledSteps;			//< number of failed step in the current test
+	int failledTests;			//< number of failed tests
 	
 protected:
 	/** Constructor */
@@ -94,7 +94,7 @@ protected:
 	*/
         void AddTest(TestFunc inFunc){
 		char buff[256];
-		sprintf(buff,"Unamed Test number %d",totalTests+1);
+		sprintf(buff,"Unnamed Test number %d",totalTests+1);
 		AddTest(inFunc,buff);
 	}
 	
@@ -119,11 +119,11 @@ protected:
 	void Print(const Output& value){
 		std::cout<< "--- Output from program : " << value << "\n";
 	}
-	
-	/**
+
+		/**
 	* To test
 	* @param result the test result
-	* if result is false test failled
+	* if result is false test failed
 	*/
         void uassert(const bool result){
 		++currentStep;
