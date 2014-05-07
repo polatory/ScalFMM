@@ -48,7 +48,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         // Parameters
         const int NbLevels        = 4;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = 1;
+        const int PeriodicDeep  = 2;
         const int DevP              = 14;
         const int NbParticles     = 100;
 
