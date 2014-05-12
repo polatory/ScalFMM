@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_MPI
+// @FUSE_BLAS
 // ================
 
 #include <iostream>
@@ -34,8 +35,9 @@
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
-#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -63,14 +65,14 @@
 //
 
 void usage() {
-  std::cout << "Driver for Rotation Spherical kernel using MPI  (1/r kernel)" << std::endl;
+  std::cout << "Driver for Chebyshev Interpolation kernel using MPI  (1/r kernel)" << std::endl;
   std::cout <<	 "Options  "<< std::endl
 	    <<     "      -help         to see the parameters    " << std::endl
 	    <<	  "      -depth       the depth of the octree   "<< std::endl
 	    <<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
 	    <<     "      -f   name    name specifies the name of the particle distribution" << std::endl
 	    <<     "      -t  n  specifies the number of threads used in the computations" << std::endl
-	    <<     "  CMD >> mpirun -np nb_proc_needed ./RotationFMMProc ....."  << std::endl;
+	    <<     "  CMD >> mpirun -np nb_proc_needed ./ChebyshevInterpolationAlgorithm ....."  << std::endl;
 }
 
 // Simply create particles and try the kernels
@@ -113,14 +115,16 @@ int main(int argc, char* argv[])
 	// begin spherical kernel
 
 	// accuracy
-	const unsigned int P = 22;
+	const unsigned int ORDER = 7;
 	// typedefs
-	typedef FP2PParticleContainerIndexed<>                     ContainerClass;
+	typedef FP2PParticleContainerIndexed<>                      ContainerClass;
 	typedef FSimpleLeaf< ContainerClass >                       LeafClass;
-	typedef FRotationCell<P>                                             CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
-	//
-	typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+	typedef FChebCell<ORDER>                                    CellClass;
+	typedef FOctree<CellClass,ContainerClass,LeafClass>         OctreeClass;
+	typedef FInterpMatrixKernelR                                MatrixKernelClass;
+
+	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+
 	//
 	typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
 
@@ -167,7 +171,7 @@ int main(int argc, char* argv[])
 	} // -----------------------------------------------------
 
 	{ // -----------------------------------------------------
-	  std::cout << "\nRotation harmonic Spherical FMM Proc (P="<< P << ") ... " << std::endl;
+	  std::cout << "\nChebyshev Interpolation  FMM Proc (P="<< ORDER << ") ... " << std::endl;
 	  
 	  time.tic();
 	  //
