@@ -381,7 +381,7 @@ private:
                     //// TODO REMOVE WHEN DEBUG printf("Proc :: %d send %d bytes to %d (from leaf %d to %d)\n",
                     //// TODO REMOVE WHEN DEBUG        myRank, int(offsetLeafToSend - offetSetToSend), idxProcToProceed, firstLeafToSend, lastLeafToSend);
                     MPI_Isend(&leavesArray[offetSetToSend], int(offsetLeafToSend - offetSetToSend), MPI_BYTE,
-                              idxProcToProceed, firstLeafToSend + currentLeafsOnMyLeft, communicator.getComm(), &requests[counterRequest++]);
+                              idxProcToProceed, firstLeafToSend + int(currentLeafsOnMyLeft), communicator.getComm(), &requests[counterRequest++]);
                 }
                 idxProcToProceed += 1;
             }
@@ -466,7 +466,7 @@ private:
         //// TODO REMOVE WHEN DEBUG        currentLeafsOnMyLeft, correctLeftLeavesNumber, currentRightLeafIdx, correctRightLeavesIndex);
         if((currentLeafsOnMyLeft <= correctLeftLeavesNumber && correctLeftLeavesNumber < currentRightLeafIdx)
                 || (currentLeafsOnMyLeft < correctRightLeavesIndex && correctRightLeavesIndex <= currentRightLeafIdx)){
-            const int nbLeavesToSkip = correctLeftLeavesNumber-currentLeafsOnMyLeft;
+	  const int nbLeavesToSkip = int(correctLeftLeavesNumber-currentLeafsOnMyLeft);
             size_t offsetBuffer = 0;
             //// TODO REMOVE WHEN DEBUG printf("%d] skip %d leaves\n", myRank, nbLeavesToSkip);
             for(int idxToSkip = 0 ; idxToSkip < nbLeavesToSkip ; ++idxToSkip){

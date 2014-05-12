@@ -430,6 +430,7 @@ template <class ContainerClass>
 	targetsPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
       }
     }
+
   }
   
   template <class ContainerClass>

@@ -44,8 +44,10 @@ inline void* Allocate16BAligned(const size_t inSize){
    */
   inline void* Allocate32BAligned(const size_t inSize){
     unsigned char* memoryBlock;
-    /*int resMemAl = */posix_memalign((void**)&memoryBlock,32,inSize);
-    
+    int resMemAl = posix_memalign((void**)&memoryBlock,32,inSize);
+    if(resMemAl != 0){
+      fprintf(stderr,"Allocation failed : Error Code : %d",resMemAl);
+    }
     return memoryBlock;
   }
 
