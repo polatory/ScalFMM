@@ -114,7 +114,7 @@ public:
   }
   
   static constexpr int GetSize(){
-    return sizeof(FReal) * VectorSize*(NRHS+NLHS)*NVALS;
+    return int(sizeof(FReal)) * VectorSize*(NRHS+NLHS)*NVALS;
   }
 
 };
