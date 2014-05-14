@@ -10,9 +10,10 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include "Utils/FGlobal.hpp"
 #include "Utils/FMath.hpp"
 #include "Utils/FPoint.hpp"
-#include  "Utils/FGenerateDistribution.hpp"
+#include "Utils/FGenerateDistribution.hpp"
 //
 /// \file  generateDistributions.cpp
 //!
@@ -243,9 +244,10 @@ int main(int argc, char ** argv){
 			std::cout << "Cannot open file."<< std::endl;
 			return 1;
 		}
-		int typeFReal = sizeof( particles[0]) ;
+		int typeFReal = sizeof(FReal) ;
 		outfile.write((char* )&typeFReal,sizeof(int));
-		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(NbPoints));
+		std::cout << "typeFReal "<<typeFReal<<std::endl;
+		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(FSize));
 		outfile.write((char*)&BoxWith,sizeof(BoxWith));
 		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);
 		//
