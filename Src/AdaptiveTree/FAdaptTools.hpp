@@ -22,7 +22,7 @@
 //#include "Components/FSimpleLeaf.hpp"
 #include "Components/FBasicParticleContainer.hpp"
 
-#include "adaptiveTree/FAdaptCell.hpp"
+#include "AdaptiveTree/FAdaptCell.hpp"
 
 //!  \fn   adaptiveTreeBuilSminC(OctreeClass  & tree) {
 
