@@ -65,7 +65,7 @@ protected:
 	FPoint     centerOfBox;            ///< The center of box (read from file)
 	FReal boxWidth;                     ///< the box width (read from file)
 	int nbParticles;                       ///< the number of particles (read from file)
-
+  
 public:
 	/**
 	 * The constructor need the file name
@@ -87,7 +87,7 @@ public:
 		// test if open
 		if(this->file->is_open()){
 			if(binaryFile){
-				this->readBinaryHeader();
+			    this->readBinaryHeader();
 			}
 			else {
 				this->readAscciHeader();
@@ -168,13 +168,22 @@ private:
 		this->boxWidth *= 2;
 	}
 	void readBinaryHeader() {
-		file->seekg (std::ios::beg);
-		file->read( (char*)&(this->nbParticles), sizeof(int) );
-		file->read( (char*)&(this->boxWidth) ,sizeof(this->boxWidth) );
-		this->boxWidth *= 2;
-		FReal x[3];
-		file->read( (char*)x,sizeof(FReal)*3);
-		this->centerOfBox.setPosition(x[0],x[1],x[2]);
+	  int sizeOfElement;
+	  file->seekg (std::ios::beg);
+	  file->read((char*)&sizeOfElement,sizeof(int));
+	  if(sizeOfElement != sizeof(FReal)){
+	    std::cout << "Size of elements in part file " << sizeOfElement << " is different from size of FReal" << std::endl;
+	    exit(0);
+	  }
+	  else{
+	    file->read( (char*)&(this->nbParticles), sizeof(FSize) );
+	    printf("NbPart found %d \n",this->nbParticles);
+	    file->read( (char*)&(this->boxWidth) ,sizeof(this->boxWidth) );
+	    this->boxWidth *= 2;
+	    FReal x[3];
+	    file->read( (char*)x,sizeof(FReal)*3);
+	    this->centerOfBox.setPosition(x[0],x[1],x[2]);
+	  }
 	}
 
 };
