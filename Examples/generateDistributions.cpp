@@ -34,7 +34,7 @@
 //!     \param   -filename name: generic name for files (without extension) and save data
 //!                  with following format in name.fma or name.bfma in -bin is set"
 //!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
-//!      \param -extraLength   value    extra length to add to the boxWidth
+//!      \param -extraLength   value    extra length to add to the boxWidth (default 0.0)
 //!
 //!  <b> Geometry arguments:</b>
 //!      \param  -unitCube uniform distribution on unit cube
@@ -243,6 +243,8 @@ int main(int argc, char ** argv){
 			std::cout << "Cannot open file."<< std::endl;
 			return 1;
 		}
+		int typeFReal = sizeof( particles[0]) ;
+		outfile.write((char* )&typeFReal,sizeof(int));
 		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(NbPoints));
 		outfile.write((char*)&BoxWith,sizeof(BoxWith));
 		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);
