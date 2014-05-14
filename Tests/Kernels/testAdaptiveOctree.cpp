@@ -31,9 +31,9 @@
 //
 #include "Containers/FOctree.hpp"
 //
-#include "adaptiveTree/FAdaptCell.hpp"
-#include "adaptiveTree/FAdaptTools.hpp"
-#include "adaptiveTree/FAdaptSeqAlgorithm.hpp"
+#include "AdaptiveTree/FAdaptCell.hpp"
+#include "AdaptiveTree/FAdaptTools.hpp"
+#include "AdaptiveTree/FAdaptSeqAlgorithm.hpp"
 
 
 /// \file  testadaptiveOnOctree.cpp
