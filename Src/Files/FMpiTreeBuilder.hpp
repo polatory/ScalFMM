@@ -308,7 +308,6 @@ private:
 	    }
 	    idxInLeafArray += sizeof(ParticleClass)*nbPartInLeaf;
 	  }
-	  printf("nbLeavesInIntervals %d \n",nbLeavesInIntervals);
 	}
 	else{
 	  
