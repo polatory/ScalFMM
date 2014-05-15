@@ -182,6 +182,10 @@ int main(int argc, char* argv[])
 		std::cout.precision(10) ;
 
 		tree.forEachLeaf([&](LeafClass* leaf){
+		    const FReal*const posX = leaf->getTargets()->getPositions()[0];
+		    const FReal*const posY = leaf->getTargets()->getPositions()[1];
+		    const FReal*const posZ = leaf->getTargets()->getPositions()[2];
+	 
 			const FReal*const potentials = leaf->getTargets()->getPotentials();
 			const FReal*const forcesX = leaf->getTargets()->getForcesX();
 			const FReal*const forcesY = leaf->getTargets()->getForcesY();
@@ -195,7 +199,8 @@ int main(int argc, char* argv[])
 				const int indexPartOrig = indexes[idxPart];
 				if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
 					std::cout << "Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
-					                                                                      << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
+						  << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]  
+						  << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
 				}
 				energy += potentials[idxPart]*physicalValues[idxPart] ;
 			}

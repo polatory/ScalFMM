@@ -45,12 +45,12 @@
 #include "../../Src/Utils/FParameters.hpp"
 
 
-/// \file  RotationFMMProc.cpp
+/// \file ChebyshevInterpolationAlgorithmProc
 //!
-//! \brief This program runs the FMM Algorithm Proc (i.e. using MPI) with harmonic spherical approximation of 1/r kernel
+//! \brief This program runs the FMM Algorithm Proc (i.e. using MPI) with Chebyshev interpolation of 1/r kernel
 //!  \authors B. Bramas, O. Coulaud
 //!
-//!  This code is a short example to use the rotation harmonic spherical approximation for the 1/r kernel
+//!  This code is a short example to use the FMM Algorithm Proc with Chebyshev Interpolation for the 1/r kernel
 //!
 //!
 //!  <b> General arguments:</b>
@@ -130,7 +130,8 @@ int main(int argc, char* argv[])
 
 	// init oct-tree
 	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-
+	printf("There \n");
+	
 
 	{ // -----------------------------------------------------
 	  std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
@@ -138,8 +139,9 @@ int main(int argc, char* argv[])
 	  std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 	  time.tic();
 	  //
-
+	  
 	  struct TestParticle{
+	    int index;
 	    FPoint position;
 	    FReal physicalValue;
 	    const FPoint& getPosition(){
@@ -148,11 +150,18 @@ int main(int argc, char* argv[])
 	  };
 	  TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
 	  memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
-    
+	  	  
+	  //idx (in file) of the first part that will be used by this proc. 
+	  int idxStart = loader.getStart();
+	  printf("Proc %d idxStart %d \n",app.global().processId(),idxStart);
+	  
 	  for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+	    //Storage of the index (in the original file) of each part.
+	    particles[idxPart].index = idxPart + idxStart;
 	    // Read particles from file
 	    loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
 	  }
+	  		
 	  FVector<TestParticle> finalParticles;
 	  FLeafBalance balancer;
 	  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
@@ -161,8 +170,9 @@ int main(int argc, char* argv[])
 						 tree.getHeight(), &finalParticles,&balancer);
 
 	  for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
-	    tree.insert(finalParticles[idx].position,idx,finalParticles[idx].physicalValue);
+	    tree.insert(finalParticles[idx].position,finalParticles[idx].index,finalParticles[idx].physicalValue);
 	  }
+	  printf("%d parts have been inserted in Tree \n",finalParticles.getSize());
 	  delete[] particles;
 	  
 	  time.tac();
@@ -192,7 +202,7 @@ int main(int argc, char* argv[])
 	//
 	//
 	{ // -----------------------------------------------------
-	  long int N1=0, N2= loader.getNumberOfParticles()/4, N3= (loader.getNumberOfParticles() -1)/2; ;
+	  long int N1=0, N2= loader.getTotalNumberOfParticles()/2, N3= (loader.getTotalNumberOfParticles()-1); ;
 	  FReal energy =0.0 ;
 	  //
 	  //   Loop over all leaves
@@ -202,6 +212,10 @@ int main(int argc, char* argv[])
 	  std::cout.precision(10) ;
 
 	  tree.forEachLeaf([&](LeafClass* leaf){
+	      const FReal*const posX = leaf->getTargets()->getPositions()[0];
+	      const FReal*const posY = leaf->getTargets()->getPositions()[1];
+	      const FReal*const posZ = leaf->getTargets()->getPositions()[2];
+	      
 	      const FReal*const potentials = leaf->getTargets()->getPotentials();
 	      const FReal*const forcesX = leaf->getTargets()->getForcesX();
 	      const FReal*const forcesY = leaf->getTargets()->getForcesY();
@@ -215,14 +229,17 @@ int main(int argc, char* argv[])
 		const int indexPartOrig = indexes[idxPart];
 		if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
 		  std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
+			    << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]  
 			    << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
 		}
 		energy += potentials[idxPart]*physicalValues[idxPart] ;
 	      }
 	    });
-	  std::cout <<std::endl<<"Energy: "<< energy<<std::endl;
-	  std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
-
+	  FReal gloEnergy = app.global().reduceSum(energy);
+	  if(0 == app.global().processId()){
+	    std::cout <<std::endl << "Proc "<< app.global().processId() << " Energy: "<< gloEnergy <<std::endl;
+	    std::cout <<std::endl <<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
+	  }
 	}
 	// -----------------------------------------------------
 
