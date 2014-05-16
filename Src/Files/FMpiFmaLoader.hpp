@@ -24,66 +24,66 @@
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
 #include "../Utils/FMpi.hpp"
-
+#include "../Utils/FLog.hpp"
 /**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FMpiFmaLoader
-* Please read the license
-*
-* Load a file with a format like :
-* NB_particles Box_width Box_X Box_Y Box_Z // init
-* X Y Z // one particle by line
-* ....
-* @code
-*    FMpiFmaLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
-*    if(!loader.isOpen()){ <br>
-*        std::cout << "Loader Error\n"; <br>
-*        return 1; <br>
-*    } <br>
-* <br>
-*    FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
-* <br>
-*    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){ <br>
-*        FBasicParticle* const part = new FBasicParticle(); <br>
-*        loader.fillParticle(part); <br>
-*        tree.insert(part); <br>
-*    } <br>
-* @endcode
-*
-* Particle has to extend {FExtendPhysicalValue,FExtendPosition}
-*/
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FMpiFmaLoader
+ * Please read the license
+ *
+ * Load a file with a format like :
+ * NB_particles Box_width Box_X Box_Y Box_Z // init
+ * X Y Z // one particle by line
+ * ....
+ * @code
+ *    FMpiFmaLoader<FBasicParticle> loader("../ADir/Tests/particles.basic.txt"); <br>
+ *    if(!loader.isOpen()){ <br>
+ *        std::cout << "Loader Error\n"; <br>
+ *        return 1; <br>
+ *    } <br>
+ * <br>
+ *    FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
+ * <br>
+ *    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){ <br>
+ *        FBasicParticle* const part = new FBasicParticle(); <br>
+ *        loader.fillParticle(part); <br>
+ *        tree.insert(part); <br>
+ *    } <br>
+ * @endcode
+ *
+ * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
+ */
 class FMpiFmaLoader : public FAbstractLoader {
 protected:
-    FPoint centerOfBox;    //< The center of box read from file
-    FReal boxWidth;             //< the box width read from file
-    FSize totalNbParticles;     //< the number of particles read from file
-    FSize nbParticles;          //< the number of particles read from file
-    bool isOpenFlag;            //< to knwo if the file is open now
-    FReal* particles;           //< the particles loaded from the binary file
-    MPI_Offset idxParticles;    //< to iterate on the particles array
-
+  FPoint centerOfBox;         //< The center of box read from file
+  FReal boxWidth;             //< the box width read from file
+  FSize totalNbParticles;     //< the number of particles read from file
+  FSize nbParticles;          //< the number of particles read from file for this proc
+  bool isOpenFlag;            //< to knwo if the file is open now
+  FReal* particles;           //< the particles loaded from the binary file
+  MPI_Offset idxParticles;    //< to iterate on the particles array
+  int start;
 public:
-    /**
-    * The constructor need the file name
-    * @param filename the name of the file to open
-    * you can test if file is successfuly open by calling hasNotFinished()
-    */
-    FMpiFmaLoader(const char* const filename, const FMpi::FComm& comm, const bool useMpiIO = false)
-            : boxWidth(0), totalNbParticles(0), nbParticles(0), isOpenFlag(false), particles(0), idxParticles(0) {
-        if( useMpiIO ){
-            char nonConstFilename[512];
-            strcpy(nonConstFilename,filename);
-            MPI_File file;
-            if(MPI_File_open(comm.getComm(), nonConstFilename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file) == MPI_SUCCESS){
-                int sizeOfElement(0);
-                FReal xyzBoxWidth[4];
+  /**
+   * The constructor need txhe file name
+   * @param filename the name of the file to open
+   * you can test if file is successfuly open by calling hasNotFinished()
+   */
+  FMpiFmaLoader(const char* const filename, const FMpi::FComm& comm, const bool useMpiIO = false)
+    : boxWidth(0), totalNbParticles(0), nbParticles(0), isOpenFlag(false), particles(0), idxParticles(0), start(0) {
+    if( useMpiIO ){
+      char nonConstFilename[512];
+      strcpy(nonConstFilename,filename);
+      MPI_File file;
+      if(MPI_File_open(comm.getComm(), nonConstFilename, MPI_MODE_RDONLY, MPI_INFO_NULL, &file) == MPI_SUCCESS){
+	int sizeOfElement(0);
+	FReal xyzBoxWidth[4];
 
-                MPI_Status status;
-                if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
-                    && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
-                        && MPI_File_read(file, xyzBoxWidth, 4, FMpi::GetType(xyzBoxWidth[0]), &status) == MPI_SUCCESS ){
+	MPI_Status status;
+	if( MPI_File_read(file, &sizeOfElement, 1, MPI_INT, &status) == MPI_SUCCESS
+	    && MPI_File_read(file, &this->totalNbParticles, 1, MPI_LONG_LONG, &status) == MPI_SUCCESS
+	    && MPI_File_read(file, xyzBoxWidth, 4, FMpi::GetType(xyzBoxWidth[0]), &status) == MPI_SUCCESS ){
 
-                    FLOG(if(sizeOfElement != sizeof(FReal)){)
+	  FLOG(if(sizeOfElement != sizeof(FReal)){)
                         FLOG( FLog::Controller.writeFromLine("Warning type size between file and FReal are differents\n", __LINE__, __FILE__); )
                     FLOG(})
 
@@ -106,6 +106,7 @@ public:
                     const FSize startPart = comm.getLeft(this->totalNbParticles);
                     const FSize endPart   = comm.getRight(this->totalNbParticles);
                     nbParticles = (endPart - startPart);
+		    this->start = int(startPart);
                     const FSize bufsize = nbParticles * 4;
                     // local number to read
                     particles = new FReal[bufsize];
@@ -160,10 +161,11 @@ public:
                 const FSize startPart = comm.getLeft(this->totalNbParticles);
                 const FSize endPart   = comm.getRight(this->totalNbParticles);
                 nbParticles = (endPart - startPart);
+		this->start = int(startPart);
                 const FSize bufsize = nbParticles * 4;
                 // local number to read
                 particles = new FReal[bufsize];
-
+		
                 fseek(file, long(headDataOffSet + startPart * 4 * sizeof(FReal)), SEEK_SET);
 
                 if( fread(particles, sizeof(FReal), int(bufsize), file) != unsigned(bufsize)){
@@ -194,13 +196,21 @@ public:
     }
 
     /**
-      * To get the number of particles from this loader
-      * @param the number of particles the loader can fill
+      * To get the number of particles to be used by this proc from this loader
+      * @param the number of particles for this proc the loader can fill
       */
     FSize getNumberOfParticles() const{
         return this->nbParticles;
     }
 
+  /**
+   * To get the number of particles to be used by this proc from this loader
+   * @param the number of particles for this proc the loader can fill
+   */
+  FSize getTotalNumberOfParticles() const{
+        return this->totalNbParticles;
+  }
+  
     /**
       * The center of the box from the simulation file opened by the loader
       * @return box center
@@ -216,6 +226,15 @@ public:
     FReal getBoxWidth() const{
         return this->boxWidth;
     }
+
+  /**
+   * The starting index of calling processus
+   * @return start
+   */
+  int getStart() const{
+    return int(this->start);
+  }
+  
 
     /**
       * Fill a particle
