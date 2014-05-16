@@ -48,7 +48,7 @@
 //!
 //!  This code is a short example to use the Chebyshev Interpolation approach for the 1/r kernel
 //!
-//!
+//!@Algorithm
 //!  <b> General arguments:</b>
 //!     \param   -help(-h)      to see the parameters available in this driver
 //!     \param   -depth          The depth of the octree
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 
 		time.tac();
 		std::cout << "Done  " << "(@Creating and Inserting Particles = "
-				<< time.elapsed() << "s)." << std::endl;
+				<< time.elapsed() << " s) ." << std::endl;
 	} // -----------------------------------------------------
 
 	{ // -----------------------------------------------------
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 		algorithm.execute();   // Here the call of the FMM algorithm
 		//
 		time.tac();
-		std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+		std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s) ." << std::endl;
 	}
 	// -----------------------------------------------------
 	//

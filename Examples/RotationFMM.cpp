@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 		exit(-1);
 	}
 #ifdef _OPENMP
-	omp_set_num_threads(NbThreads);
+	omp_set_num_threads(NbThreads) ;
 	std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
 #else
 	std::cout << "\n>> Sequential version.\n" << std::endl;
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 
 		time.tac();
 		std::cout << "Done  " << "(@Creating and Inserting Particles = "
-				<< time.elapsed() << "s)." << std::endl;
+				<< time.elapsed() << "  s) ." << std::endl;
 	} // -----------------------------------------------------
 
 	{ // -----------------------------------------------------
@@ -157,12 +157,12 @@ int main(int argc, char* argv[])
 		//
 		KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 		//
-		FmmClass algorithm(&tree, kernels);
+		FmmClass algorithm(&tree, kernels) ;
 		//
 		algorithm.execute();   // Here the call of the FMM algorithm
 		//
 		time.tac();
-		std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+		std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s) ." << std::endl;
 	}
 	// -----------------------------------------------------
 	//
