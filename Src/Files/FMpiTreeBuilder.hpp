@@ -297,10 +297,8 @@ private:
 	if(nbProcs == 1){
 	  //there is no need to equalize tree between if there is one process
 	  //Saving directly the particles
-	  int counter = 0;
 	  FSize idxInLeafArray = 0;
 	  for(FSize idxLeaf = 0 ; idxLeaf < nbLeavesInIntervals ; idxLeaf++){
-	    counter++;
 	    int nbPartInLeaf = *(reinterpret_cast<int*>(&leavesArray[idxInLeafArray]));
 	    idxInLeafArray += sizeof(int);
 	    for(FSize idxPartInLeaf = 0 ; idxPartInLeaf<nbPartInLeaf ; idxPartInLeaf++){

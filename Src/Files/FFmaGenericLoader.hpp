@@ -177,7 +177,6 @@ private:
 	  }
 	  else{
 	    file->read( (char*)&(this->nbParticles), sizeof(FSize) );
-	    printf("NbPart found %d \n",this->nbParticles);
 	    file->read( (char*)&(this->boxWidth) ,sizeof(this->boxWidth) );
 	    this->boxWidth *= 2;
 	    FReal x[3];
