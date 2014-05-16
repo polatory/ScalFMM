@@ -23,7 +23,7 @@
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTrace.hpp"
 #include "../Utils/FTic.hpp"
-#include "../Utils/FMPILog.hpp"
+
 #include "../Utils/FGlobal.hpp"
 
 #include "../Containers/FBoolArray.hpp"
@@ -80,7 +80,6 @@ class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
   
   const int OctreeHeight;            //<Height of the tree
 
-  FMPILog* sharedLogger;             //< Shared Logger to store all the information needed
   
   /** An interval is the morton index interval
    * that a proc use (it holds data in this interval)
@@ -121,7 +120,6 @@ public:
       OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
       workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()])
   {
-    FLOG(sharedLogger = new FMPILog(comm));
     FAssertLF(tree, "tree cannot be null");
 
     this->kernels = new KernelClass*[MaxThreads];
@@ -149,7 +147,6 @@ public:
    */
   void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
     FTRACE( FTrace::FFunction functionTrace( __FUNCTION__, "Fmm" , __FILE__ , __LINE__ ) );
-    FLOG(sharedLogger->newCounter("Prolog"));
     // Count leaf
     this->numberOfLeafs = 0;
     {
@@ -200,8 +197,6 @@ public:
       delete[] myIntervals;
     }
 
-    FLOG(sharedLogger->tac("Prolog"));
-
     // run;
     if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -229,8 +224,8 @@ private:
   void bottomPass(){
     FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
     FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
-    //FLOG(sharedLogger->newCounter(std::string("counterTimeP2M")));
-    
+    FLOG(FTic counterTime);
+    FLOG(FTic computationCounter);
     typename OctreeClass::Iterator octreeIterator(tree);
 
     // Iterate on leafs
@@ -240,8 +235,7 @@ private:
       iterArray[leafs++] = octreeIterator;
     } while(octreeIterator.moveRight());
 
-    //FLOG(sharedLogger->newCounter("ParallelSectionP2M"));
-    //FLOG(sharedLogger->newCounter("ParallelSection"));
+    FLOG(computationCounter.tic());
 #pragma omp parallel
     {
       KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -250,11 +244,10 @@ private:
 	myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
       }
     }
-    //FLOG(sharedLogger->tac("ParallelSection"));
-    //FLOG(sharedLogger->tac("ParallelSectionP2M"));
-    //FLOG(sharedLogger->tac("counterTimeP2M"));
-    // FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
-    // FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+    FLOG(computationCounter.tac());
+    
+    FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
+    FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -396,9 +389,7 @@ private:
 	  {
 	    // Are we sending or waiting anything?
 	    if(iterRequests){
-	      //FLOG(sharedLogger->tic("waitCounterM2M"));
 	      MPI_Waitall( iterRequests, requests, status);
-	      //FLOG(sharedLogger->tac("waitCounterM2M"));
 	      // we were receiving data
 	      if( hasToReceive ){
 		CellClass* currentChild[8];
@@ -427,9 +418,7 @@ private:
 		}
 
 		// Finally compute
-		//FLOG(sharedLogger->tic("ParallelSectionM2M"));
 		(*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
-		//FLOG(sharedLogger->tac("ParallelSectionM2M"));
 		
 		firstProcThatSend = endProcThatSend - 1;
 	      }
@@ -689,8 +678,6 @@ private:
 	  octreeIterator = avoidGotoLeftIterator;
 	  
 	  FLOG(computationCounter.tic());
-	  //FLOG(sharedLogger->tic("ParallelSection"));
-	  //FLOG(sharedLogger->newCounter("TestParallelM2L"));
 
 	  {
 	    KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -703,9 +690,7 @@ private:
 	    }
 	    myThreadkernels->finishedLevelM2L(idxLevel);
 	  }
-	  //FLOG(sharedLogger->tac("TestParallelM2L"));
 	  FLOG(computationCounter.tac());
-	  //FLOG(sharedLogger->tac("ParallelSection"));
 	}
       }
       FLOG(m2lSelf.tac());
@@ -768,7 +753,6 @@ private:
 
       // Compute this cells
       FLOG(computationCounter.tic());
-      //FLOG(sharedLogger->tic("ParallelSection"));
       FLOG(m2lFar.tic());
 #pragma omp parallel
       {
@@ -806,7 +790,6 @@ private:
 
 	myThreadkernels->finishedLevelM2L(idxLevel);
       }
-      //FLOG(sharedLogger->tac("ParallelSection"));
       FLOG(computationCounter.tac());
       FLOG(m2lFar.tac());
     }
@@ -953,7 +936,6 @@ private:
 	FLOG(prepareCounter.tac());
 
 	FLOG(computationCounter.tic());
-	//FLOG(sharedLogger->tic("ParallelSection"));
 	//#pragma omp parallel
 	KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
 #pragma omp for nowait
@@ -962,7 +944,6 @@ private:
 	}
       }
       FLOG(computationCounter.tac());
-      //FLOG(sharedLogger->tac("ParallelSection"));
 
       sendBuffer.reset();
       recvBuffer.seek(0);
@@ -1273,9 +1254,7 @@ private:
       FTRACE( FTrace::FRegion regionP2PTrace("Compute P2P", __FUNCTION__ , __FILE__ , __LINE__) );
 
       FLOG(computationCounter.tic());
-      //FLOG(sharedLogger->tic("ParallelSection"));
-      //#pragma omp parallel
-      //{
+
       KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
       // There is a maximum of 26 neighbors
       ContainerClass* neighbors[27];
@@ -1306,7 +1285,7 @@ private:
       }
       //}
     
-      //FLOG(sharedLogger->tac("ParallelSection"));
+
       FLOG(computationCounter.tac());
       FTRACE( regionP2PTrace.end() );
       
@@ -1316,9 +1295,7 @@ private:
       //////////////////////////////////////////////////////////
       
       FTRACE( FTrace::FRegion regionOtherTrace("Compute P2P Other", __FUNCTION__ , __FILE__ , __LINE__) );
-      //FLOG( computation2Counter.tic() );
-      //FLOG(sharedLogger->tic("ParallelSection"));
-      //#pragma omp parallel
+
       {
 	/*KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);*/
 	// There is a maximum of 26 neighbors
@@ -1355,7 +1332,6 @@ private:
 	
       }
     }//End parallel section
-    //FLOG(sharedLogger->tac("ParallelSection"));
     
     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
       delete sendBuffer[idxProc];
