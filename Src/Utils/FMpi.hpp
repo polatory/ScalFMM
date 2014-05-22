@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -235,8 +235,13 @@ public:
 
     Erreur pour le proc1
     [[13237,1],1][btl_openib_component.c:3227:handle_wc] from fourmi062 to: fourmi056 error polling LP CQ with status LOCAL LENGTH ERROR status number 1 for wr_id 7134664 opcode 0  vendor error 105 qp_idx 3
-    Tous on la meme erreur le 2e 1 est remplacé par le rang.
+    Tous on la meme erreur le 2e 1 est remplace par le rang.
   */
+  FMpi( ) : communicator(0) {
+    int provided = 0;
+    FMpi::Assert( MPI_Init_thread(NULL,NULL, MPI_THREAD_MULTIPLE, &provided), __LINE__);
+    communicator = new FComm(MPI_COMM_WORLD);
+  }
   FMpi(int inArgc, char **  inArgv ) : communicator(0) {
     int provided = 0;
     FMpi::Assert( MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_MULTIPLE, &provided), __LINE__);

@@ -246,7 +246,6 @@ int main(int argc, char ** argv){
 		}
 		int typeFReal = sizeof(FReal) ;
 		outfile.write((char* )&typeFReal,sizeof(int));
-		std::cout << "typeFReal "<<typeFReal<<std::endl;
 		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(FSize));
 		outfile.write((char*)&BoxWith,sizeof(BoxWith));
 		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);

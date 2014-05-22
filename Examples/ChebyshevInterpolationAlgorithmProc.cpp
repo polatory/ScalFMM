@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	  algorithm.execute();   // Here the call of the FMM algorithm
 	  //
 	  time.tac();
-	  std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+	  std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s)." << std::endl;
 	}
 	// -----------------------------------------------------
 	//
