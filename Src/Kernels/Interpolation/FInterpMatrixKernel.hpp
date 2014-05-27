@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -266,7 +266,7 @@ struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
   {}
 
   // returns position in reduced storage from position in full 3x3 matrix
-  int getPosition(const unsigned int n) const
+  unsigned int getPosition(const unsigned int n) const
   {return applyTab[n];} 
 
   FReal evaluate(const FPoint& x, const FPoint& y) const

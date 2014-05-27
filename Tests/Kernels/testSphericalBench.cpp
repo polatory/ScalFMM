@@ -223,7 +223,8 @@ int main(int argc, char ** argv){
     if( FParameters::existParameter(argc,argv,"-test-hp") ){
         std::cout << "Execute : test-hp\n";
 
-        FMath::FAccurater allPotentialDiff[(NbLevels+1-2)*(DevP+1-2)];
+//        FMath::FAccurater allPotentialDiff[(NbLevels+1-2)*(DevP+1-2)];
+        FMath::FAccurater *allPotentialDiff = new  FMath::FAccurater [(NbLevels+1-2)*(DevP+1-2)];
         printf("Size array %d \n", (NbLevels+1-2)*(DevP+1-2));
 
         doATest(NbParticles,2,DevP,2,NbLevels,
@@ -460,7 +461,7 @@ int main(int argc, char ** argv){
     }
     if( FParameters::existParameter(argc,argv,"-test-p") ){
         std::cout << "Execute : test-p\n";
-        FMath::FAccurater potentialDiff[DevP+1];
+        FMath::FAccurater *potentialDiff = new  FMath::FAccurater[DevP+1];
         FReal potentialAbsoluteDiff[DevP+1];
 
         doATest(NbParticles,1,DevP,NbLevels,NbLevels,

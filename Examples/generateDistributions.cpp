@@ -221,12 +221,13 @@ int main(int argc, char ** argv){
 		BoxWith += 2*extraRadius ;
 	}
 	if( ! FParameters::existParameter(argc, argv, "-bin")){
-		std::ofstream outfileA( genericFileName + ".fma", std::ofstream::out);
+		std::string name( genericFileName+ ".fma");
+		std::ofstream outfileA(name.c_str(), std::ofstream::out);
 		if(!outfileA) {
 			std::cout << "Cannot open file."<< std::endl;
 			exit(-1)	 ;
 		}
-		std::cout << "Writes in ascii FMA format  in file "<< genericFileName + ".fma" <<std::endl ;
+		std::cout << "Writes in ascii FMA format  in file "<<name <<std::endl ;
 		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
 		//
 		outfileA << 	NbPoints << "  " << BoxWith << "  " << Centre.getX() << "  " << Centre.getY() << "  " << Centre.getZ() << std::endl;
@@ -236,14 +237,15 @@ int main(int argc, char ** argv){
 		}
 	}
 	else{
-		std::cout << "Writes in binary FMA format  in file "<< genericFileName + ".bfma" <<std::endl ;
-		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
-		//
-		std::fstream outfile(genericFileName + ".bfma",std::ifstream::out| std::ios::binary| std::ios::trunc);
+		std::string name( genericFileName+ ".bfma");
+		std::fstream outfile(name.c_str(),std::ifstream::out| std::ios::binary| std::ios::trunc);
 		if(!outfile) {
 			std::cout << "Cannot open file."<< std::endl;
 			return 1;
 		}
+		std::cout << "Writes in binary FMA format  in file "<< name<<std::endl ;
+		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
+		//
 		int typeFReal = sizeof(FReal) ;
 		outfile.write((char* )&typeFReal,sizeof(int));
 		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(FSize));
@@ -271,7 +273,7 @@ int main(int argc, char ** argv){
 		else {
 			visufile =   genericFileName + ".csv" ;
 		}
-		std::ofstream file( visufile, std::ofstream::out);
+		std::ofstream file( visufile.c_str(), std::ofstream::out);
 		if(!file) {
 			std::cout << "Cannot open file."<< std::endl;
 			exit(-1)	;

@@ -192,7 +192,8 @@ int main(int argc, char ** argv){
 				//
 				// write data
 				//
-				std::ofstream outfile( genericFileName + ".txt", std::ofstream::out);
+				std::string name(genericFileName + ".txt");
+				std::ofstream outfile( name.c_str(), std::ofstream::out);
 				if(!outfile) {
 					std::cout << "Cannot open file "<< std::endl;
 					exit(-1)	;

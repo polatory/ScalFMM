@@ -79,10 +79,10 @@ public:
 	FFmaGenericLoader(const std::string & filename,const bool binary = false) :file(nullptr),binaryFile(binary),
 	centerOfBox(0.0,0.0,0.0),boxWidth(0.0),nbParticles(0){
 		if(binary) {
-			this->file = new std::fstream (filename,std::ifstream::in| std::ios::binary);
+			this->file = new std::fstream (filename.c_str(),std::ifstream::in| std::ios::binary);
 		}
 		else {
-			this->file = new std::fstream(filename,std::ifstream::in) ;
+			this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
 		}
 		// test if open
 		if(this->file->is_open()){

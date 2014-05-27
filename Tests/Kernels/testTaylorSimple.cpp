@@ -51,7 +51,7 @@
 
    int nbPart = 3;
 
-   FPoint tabPart[nbPart];
+   FPoint tabPart[3];
    tabPart[0] = FPoint(FReal(-1.9),FReal(-1.9),FReal(1.6));
    tabPart[1] = FPoint(FReal(0.9),FReal(1.1),FReal(1.6));
    tabPart[2] = FPoint(FReal(1.9),FReal(0.1),FReal(1.6));
