@@ -3,7 +3,7 @@
 
 #include "immintrin.h"
 
-#ifdef __INTEL_COMPILER
+#ifdef __OLD_INTEL_COMPILER
 
 //Side effect operators DOUBLE
 inline __m256d& operator+=(__m256d & a, const __m256d & b){
