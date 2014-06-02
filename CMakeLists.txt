@@ -176,19 +176,21 @@ endif(ScalFMM_USE_FFT)
 # 
 # C++ 2011
 #ADD_DEFINITIONS(-std=c++11)
-IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" AND APPLE)
+    MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
+IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
-  string(FIND ${CMAKE_CXX_COMPILER}  "icl++" NAME)
-  MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
-  MESSAGE( "Intel:   ${INTEL_VERSION}")
-  if( ${NAME} GREATER  0)
+    MESSAGE( "Intel:   ${INTEL_VERSION}")
+  IF(APPLE)
+    string(FIND ${CMAKE_CXX_COMPILER}  "icl++" NAME)
+    if( ${NAME} GREATER  0)
       if(  ${INTEL_VERSION} EQUAL 15. OR  ${INTEL_VERSION} GREATER 15.0.0) 
-              MESSAGE( "  Intel compiler is icl++ ( version >= 15.0.0)")	
+        MESSAGE( "  Intel compiler is icl++ ( version >= 15.0.0)")	
       else()
-          MESSAGE(FATAL_ERROR  "  Intel compiler should be icl++ ( version >= 15.0.0)")  
+        MESSAGE(FATAL_ERROR  "  Intel compiler should be icl++ ( version >= 15.0.0)")  
+      endif()
+    else()
+      MESSAGE(FATAL_ERROR  "  Intel compiler should be icl++ ( version >= 15.0.0)")
     endif()
-  else()
-    MESSAGE(FATAL_ERROR  "  Intel compiler should be icl++ ( version >= 15.0.0)")
   endif()
 endif()
 
@@ -213,10 +215,10 @@ if( ScalFMM_USE_SSE )
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
  # Set flag for old intel compiler          TODO
         MESSAGE(STATUS "INTEL COMPILER IS ${INTEL_VERSION} ")
-    if(  ${INTEL_VERSION} LESS "15.0.0") 
+ #   if(  ${INTEL_VERSION} LESS "15.0.0") 
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__OLD_INTEL_COMPILER")
         MESSAGE(STATUS "INTEL COMPILER LOWER 15.0.0")
-    ENDIF()
+ #   ENDIF()
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
   ENDIF()
@@ -322,6 +324,7 @@ INSTALL(FILES
 # build a CPack driven installer package
 #
 # Use git commit number as   CPACK_PACKAGE_VERSION_PATCH
+set(CPACK_PACKAGE_VERSION_PATCH 0)
 execute_process(
         COMMAND git rev-list HEAD --count
         OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH
