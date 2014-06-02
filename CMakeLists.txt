@@ -8,6 +8,7 @@ STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
+SET(CMAKE_MODULE_PATH  ${CMAKE_SOURCE_DIR}/Modules)
 
 #
 # MPI option has to be set before project, cannot be changed in the cache!
@@ -211,17 +212,17 @@ ENDIF()
 
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
 if( ScalFMM_USE_SSE )
-  
-  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
- # Set flag for old intel compiler          TODO
-        MESSAGE(STATUS "INTEL COMPILER IS ${INTEL_VERSION} ")
- #   if(  ${INTEL_VERSION} LESS "15.0.0") 
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__OLD_INTEL_COMPILER")
-        MESSAGE(STATUS "INTEL COMPILER LOWER 15.0.0")
- #   ENDIF()
-  ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
-  ENDIF()
+	TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR} 
+ 					     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp )
+  	IF( NOT ${COMPILE_RESULT_VAR})
+    	  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__SSEPE_INTEL_COMPILER")
+  	ENDIF()
+  	IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+		    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
+		    MESSAGE(WARNING "INTEL CXX_FLAG__SSE ${CMAKE_CXX_FLAGS} ")
+  	ELSE()
+  	  	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse")
+  	ENDIF()
 endif()
 ##################################################################
 #                             Use AVX                            #
@@ -229,11 +230,15 @@ endif()
 
 MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
 if(ScalFMM_USE_AVX)
-  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      if(  ${INTEL_VERSION} LESS "15.0.0") 
-      	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__OLD_INTEL_COMPILER")
-       	 MESSAGE(STATUS "INTEL COMPILER LOWER 15.0.0")
-    ENDIF()
+	TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR} 
+ 					     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp )
+	  	IF( NOT ${COMPILE_RESULT_VAR})
+ 		   	  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVXPE_INTEL_COMPILER")
+  		ENDIF()
+  	IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse -mavx")
+		    MESSAGE(WARNING "INTEL CXX_FLAG__SSE ${CMAKE_CXX_FLAGS} ")
+
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse -mavx")
   ENDIF()

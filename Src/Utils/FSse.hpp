@@ -11,7 +11,7 @@
 #include <smmintrin.h> // SSE4
 #endif
 
-#ifdef __OLD_INTEL_COMPILER
+#ifdef __SSEPE_INTEL_COMPILER
 
 inline __m128d& operator+=(__m128d& v1, const __m128d& v2){
     return (v1 = _mm_add_pd(v1, v2));
