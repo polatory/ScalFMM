@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -1314,7 +1314,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2PTotal(const FPoi
             forces[idxLhs][i] = FReal(0.);
         }
 
-        for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
+        for( int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
         {
             FReal f2[4], f4[4], f8[4];
@@ -1352,8 +1352,8 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyL2PTotal(const FPoi
             forces[idxLhs][2] = (     FReal(2.)*f2[3] + FReal(4.)*f4[3] + FReal(8.)*f8[3]) * jacobian[2] / nnodes; // 7 flops
         } // 28 + (ORDER-1) * ((ORDER-1) * (27 + (ORDER-1) * 16)) flops
 
-        const unsigned int idxPot = idxLhs / nPV; 
-        const unsigned int idxPV  = idxLhs % nPV; 
+        const  int idxPot = idxLhs / nPV;
+        const  int idxPV  = idxLhs % nPV;
 
         // get potentials, physValues and forces components 
         const FReal*const physicalValues = inParticles->getPhysicalValues(idxPV);

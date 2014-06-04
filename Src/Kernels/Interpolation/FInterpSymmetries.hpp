@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -43,10 +43,10 @@ class FInterpSymmetries
 	unsigned int getQuadIdx(const int i, const int j, const int k) const
 	{
 		// find right quadrant index (if < 0 then 0, else 1)
-		const int si = ((unsigned int)i >> (sizeof(int)*CHAR_BIT-1));
-		const int sj = ((unsigned int)j >> (sizeof(int)*CHAR_BIT-2)) & 2;
-		const int sk = ((unsigned int)k >> (sizeof(int)*CHAR_BIT-3)) & 4;
-		return  (sk | sj | si);
+		const  int si = ((unsigned int)i >> (sizeof(int)*CHAR_BIT-1));
+		const  int sj = ((unsigned int)j >> (sizeof(int)*CHAR_BIT-2)) & 2;
+		const  int sk = ((unsigned int)k >> (sizeof(int)*CHAR_BIT-3)) & 4;
+		return  static_cast<unsigned int>(sk | sj | si);
 	}
 
   
@@ -113,17 +113,17 @@ class FInterpSymmetries
 
 
 
-	unsigned int getPermutationArrayAndIndex(const int i, const int j, const int k,
-																					 unsigned int permutation[nnodes]) const
+	  unsigned int getPermutationArrayAndIndex(const  int i, const  int j, const  int k,
+			  unsigned int permutation[nnodes]) const
 	{
 		// find right quadrant index (if < 0 then 0, else 1)
 		const unsigned int qidx = getQuadIdx(i,j,k);
 
-		// store absolut values of (i,j,k) in (u[0],u[1],u[2]) 
-        const unsigned int imask = i >> (sizeof(int)*CHAR_BIT-1);
-        const unsigned int jmask = j >> (sizeof(int)*CHAR_BIT-1);
-        const unsigned int kmask = k >> (sizeof(int)*CHAR_BIT-1);
-		const unsigned int u[3] = {(i+imask)^imask, (j+jmask)^jmask, (k+kmask)^kmask};
+		// store absolute values of (i,j,k) in (u[0],u[1],u[2])
+        const  int imask = i >> (sizeof(int)*CHAR_BIT-1);
+        const  int jmask = j >> (sizeof(int)*CHAR_BIT-1);
+        const  int kmask = k >> (sizeof(int)*CHAR_BIT-1);
+		const  int u[3] = {(i+imask)^imask, (j+jmask)^jmask, (k+kmask)^kmask};
 
 		// find right cone index
 		const int q0 = (u[1]>u[0]) << 2;
@@ -135,7 +135,7 @@ class FInterpSymmetries
 		for (unsigned int n=0; n<nnodes; ++n)	permutation[n] = permutations[qidx*8 + cidx][n];
 		
 		// set permutation index /////////////////////////////////////////
-		return (u[perms[cidx][0]]+3)*7*7 + (u[perms[cidx][1]]+3)*7 + (u[perms[cidx][2]]+3);
+		return static_cast<unsigned> (u[perms[cidx][0]]+3)*7*7 + (u[perms[cidx][1]]+3)*7 + (u[perms[cidx][2]]+3);
 	}
 	
 

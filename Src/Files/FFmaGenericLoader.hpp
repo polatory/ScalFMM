@@ -107,6 +107,7 @@ public:
 	 */
 	virtual ~FFmaGenericLoader(){
 		file->close();
+		delete file ;
 	}
 
 	/**

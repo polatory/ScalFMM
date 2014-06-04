@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -23,10 +23,10 @@
 #include <fstream>
 #include <typeinfo>
 
-#include "../../Utils/FBlas.hpp"
-#include "../../Utils/FTic.hpp"
+#include "Utils/FBlas.hpp"
+#include "Utils/FTic.hpp"
 
-#include "./FChebTensor.hpp"
+#include "FChebTensor.hpp"
 
 
 template <int ORDER>
@@ -518,8 +518,11 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 	const unsigned int info_col
 		= FBlas::gesvd(ninteractions*nnodes, nnodes, K_col, S, Q, nnodes,
 									 LWORK, WORK);
-	if (info_col!=0)
-		throw std::runtime_error("SVD did not converge with " + info_col);
+	if (info_col!=0){
+		std::stringstream stream;
+		stream << info_col;
+		throw std::runtime_error("SVD did not converge with " + stream.str());
+	}
 	delete [] K_col;
 	const unsigned int k_col = getRank<ORDER>(S, epsilon);
 
@@ -534,8 +537,11 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 	const unsigned int info_row
 		= FBlas::gesvdSO(nnodes, ninteractions*nnodes, K_row, S, Q, nnodes,
 										 LWORK, WORK);
-	if (info_row!=0)
-		throw std::runtime_error("SVD did not converge with " + info_row);
+	if (info_row!=0){
+		std::stringstream stream;
+		stream << info_row;
+		throw std::runtime_error("SVD did not converge with " + stream.str());
+	}
 	const unsigned int k_row = getRank<ORDER>(S, epsilon);
 	delete [] WORK;
 
