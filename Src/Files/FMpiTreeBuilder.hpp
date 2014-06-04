@@ -95,7 +95,7 @@ private:
         // sort particles
         if(type == QuickSort){
             FQuickSortMpi<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, loader.getNumberOfParticles(), *outputArray, *outputSize,communicator);
-            delete [] (realParticlesIndexed);
+	    delete [] (realParticlesIndexed);
         }
         else {
             FBitonicSort<IndexedParticle,MortonIndex, FSize>::Sort( realParticlesIndexed, loader.getNumberOfParticles(), communicator );
@@ -130,7 +130,8 @@ private:
         // sort particles
         if(type == QuickSort){
             FQuickSortMpi<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, size, *outputArray, *outputSize,communicator);
-            delete [] (realParticlesIndexed);
+            printf("Proc : %d, nb of parts : %lld\n",communicator.processId(),*outputSize);
+	    delete [] (realParticlesIndexed);
         }
         else {
             FBitonicSort<IndexedParticle,MortonIndex, FSize>::Sort( realParticlesIndexed, size, communicator );
@@ -144,8 +145,8 @@ private:
     // To merge the leaves
     //////////////////////////////////////////////////////////////////////////
 
-    static void MergeLeaves(const FMpi::FComm& communicator, IndexedParticle*& workingArray, FSize& workingSize,
-                            char** leavesArray, FSize* const leavesSize){
+    static void MergeLeaves(const FMpi::FComm& communicator, IndexedParticle*& workingArray, FSize* workingSize,
+                            FSize ** leavesIndices, ParticleClass** leavesArray, FSize* const leavesSize){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int rank = communicator.processId();
         const int nbProcs = communicator.processCount();
@@ -159,7 +160,7 @@ private:
             FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
 
             MortonIndex otherFirstIndex = -1;
-            if(workingSize != 0 && rank != 0 && rank != nbProcs - 1){
+            if((*workingSize) != 0 && rank != 0 && rank != nbProcs - 1){
 	      MPI_Sendrecv(&workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs,
 			   &otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs,
 			   communicator.getComm(), MPI_STATUS_IGNORE);
@@ -176,18 +177,18 @@ private:
             }
 
             // at this point every one know the first index of his right neighbors
-            const bool needToRecvBeforeSend = (rank != 0 && ((workingSize && otherFirstIndex == workingArray[0].index ) || !workingSize));
+            const bool needToRecvBeforeSend = (rank != 0 && (((*workingSize) && otherFirstIndex == workingArray[0].index ) || !(*workingSize)));
             MPI_Request requestSendLeaf;
 
             IndexedParticle* sendBuffer = 0;
             if(rank != nbProcs - 1 && needToRecvBeforeSend == false){
-	      FSize idxPart = workingSize - 1 ;
+	      FSize idxPart = (*workingSize) - 1 ;
 	      while(idxPart >= 0 && workingArray[idxPart].index == otherFirstIndex){
 		--idxPart;
 	      }
-	      const int particlesToSend = int(workingSize - 1 - idxPart);
+	      const int particlesToSend = int((*workingSize) - 1 - idxPart);
 	      if(particlesToSend){
-		workingSize -= particlesToSend;
+		(*workingSize) -= particlesToSend;
 		sendBuffer = new IndexedParticle[particlesToSend];
 		memcpy(sendBuffer, &workingArray[idxPart + 1], particlesToSend * sizeof(IndexedParticle));
 
@@ -210,10 +211,10 @@ private:
 		sendByOther /= int(sizeof(IndexedParticle));
 
 		const IndexedParticle* const reallocOutputArray = workingArray;
-		const FSize reallocOutputSize = workingSize;
+		const FSize reallocOutputSize = (*workingSize);
 
-		workingSize += sendByOther;
-		workingArray = new IndexedParticle[workingSize];
+		(*workingSize) += sendByOther;
+		workingArray = new IndexedParticle[(*workingSize)];
 		FMemUtils::memcpy(&workingArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
 		delete[] reallocOutputArray;
 
@@ -226,11 +227,11 @@ private:
             }
 
             if(rank != nbProcs - 1 && needToRecvBeforeSend == true){
-	      MPI_Send( workingArray, int(workingSize * sizeof(IndexedParticle)), MPI_BYTE,
+	      MPI_Send( workingArray, int((*workingSize) * sizeof(IndexedParticle)), MPI_BYTE,
 			rank + 1, FMpi::TagSplittedLeaf, communicator.getComm());
 	      delete[] workingArray;
 	      workingArray = 0;
-	      workingSize  = 0;
+	      (*workingSize)  = 0;
             }
             else if(rank != nbProcs - 1){
 	      MPI_Wait( &requestSendLeaf, MPI_STATUS_IGNORE);
@@ -239,42 +240,42 @@ private:
             }
 	  }
 	}
-	{
-	  FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
-	  // We now copy the data from a sorted type into real particles array + counter
+	{//Filling the Array with leaves and parts //// COULD BE MOVED IN AN OTHER FUCTION
 	  
-	  (*leavesSize)  = 0;
-	  (*leavesArray) = 0;
+	  (*leavesSize)    = 0; //init ptr
+	  (*leavesArray)   = 0; //init ptr
+	  (*leavesIndices) = 0; //init ptr
 	  
-	  if(workingSize){
-	    (*leavesArray) = new char[workingSize * (sizeof(ParticleClass) + sizeof(int))];
+	  if((*workingSize)){
 	    
+	    //Array of particles
+	    *leavesArray = new ParticleClass[(*workingSize)];
+	    
+	    //Temporary array, we don't know yet how many leaves there will be 
+	    FSize * tempIndicesArray = new FSize[(*workingSize)];
+	    memset(tempIndicesArray,0,sizeof(FSize)*(*workingSize));
+	    
+	    FSize idxInIndices = 0;
 	    MortonIndex previousIndex = -1;
-	    char* writeIndex = (*leavesArray);
-	    int* writeCounter = 0;
-	    
-	    for( FSize idxPart = 0; idxPart < workingSize ; ++idxPart){
-	      if( workingArray[idxPart].index != previousIndex ){
-		previousIndex = workingArray[idxPart].index;
-		++(*leavesSize);
-		
-		writeCounter = reinterpret_cast<int*>( writeIndex );
-		writeIndex += sizeof(int);
-		
-		(*writeCounter) = 0;
+	    for(FSize idxPart = 0 ; idxPart < (*workingSize) ; ++idxPart){
+	      if(workingArray[idxPart].index != previousIndex){
+		previousIndex = workingArray[idxPart];
+		tempIndicesArray[idxInIndices] = idxPart;
+		idxInIndices++;
 	      }
-	      
-	      memcpy(writeIndex, &workingArray[idxPart].particle, sizeof(ParticleClass));
-	      
-	      writeIndex += sizeof(ParticleClass);
-	      ++(*writeCounter);
+	      memcpy(&(*leavesArray)[idxPart],&workingArray[idxPart].particle,sizeof(ParticleClass));
 	    }
+	    *leavesSize = idxInIndices;
+	    
+	    *leavesIndices = new FSize[idxInIndices];
+	    memcpy(*leavesIndices,tempIndicesArray,(*leavesSize)*sizeof(FSize));
+
 	  }
 	  
-	  delete [] workingArray;
+	  delete []  workingArray;
 	  
 	  workingArray = 0;
-	  workingSize = 0;
+	
 	}
     }
 
@@ -286,40 +287,32 @@ private:
     /** Put the interval into a tree */
     template <class ContainerClass>
     static void EqualizeAndFillTree(const FMpi::FComm& communicator,  ContainerClass* particlesSaver,
-                                    char*& leavesArray, FSize& nbLeavesInIntervals, FAbstractBalanceAlgorithm * balancer){
+                                    FSize * leavesIndices, ParticleClass* leavesArray, FSize& nbLeavesInIntervals, FSize nbParts, 
+				    FAbstractBalanceAlgorithm * balancer){
 
 
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
-        const FSize myNumberOfLeaves = nbLeavesInIntervals;
-	//Test if -np 1
-	if(nbProcs == 1){
-	  //there is no need to equalize tree between if there is one process
-	  //Saving directly the particles
-	  FSize idxInLeafArray = 0;
-	  for(FSize idxLeaf = 0 ; idxLeaf < nbLeavesInIntervals ; idxLeaf++){
-	    int nbPartInLeaf = *(reinterpret_cast<int*>(&leavesArray[idxInLeafArray]));
-	    idxInLeafArray += sizeof(int);
-	    for(FSize idxPartInLeaf = 0 ; idxPartInLeaf<nbPartInLeaf ; idxPartInLeaf++){
-	      particlesSaver->push(*(reinterpret_cast<ParticleClass*>(&leavesArray[idxInLeafArray+idxPartInLeaf*sizeof(ParticleClass)])));
-	    }
-	    idxInLeafArray += sizeof(ParticleClass)*nbPartInLeaf;
+	const FSize myCurrentsParts = nbParts;
+	
+	if(nbProcs == 1){ //I'm the only one !
+	  //Just copy each part into the Particle Saver
+	  for(FSize idxPart =0 ; idxPart < myCurrentsParts ; ++idxPart){
+	    particlesSaver->push(leavesArray[idxPart]);
 	  }
 	}
 	else{
-	  
 	  // We have to know the number of leaves each procs holds
-	  int*const numberOfLeavesPerProc = new int[nbProcs];
-	  memset(numberOfLeavesPerProc, 0, sizeof(int) * nbProcs);
-	  int intNbLeavesInIntervals = int(nbLeavesInIntervals);
-	  MPI_Allgather(&intNbLeavesInIntervals, 1, MPI_INT, numberOfLeavesPerProc, 1, MPI_INT, communicator.getComm());
-	  printf("Proc : %d : Currently have %lld leaves \n", myRank, myNumberOfLeaves);
-
-	  //Start working THERE
-
+	  FSize*const numberOfLeavesPerProc = new FSize[nbProcs];
+	  memset(numberOfLeavesPerProc, 0, sizeof(FSize) * nbProcs);
+	  FSize intNbLeavesInIntervals = nbLeavesInIntervals;
+	  MPI_Allgather(&intNbLeavesInIntervals, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc, 1, MPI_LONG_LONG_INT, communicator.getComm());
+	  //For debug, print the input datas for each proc
+	  //printf("Proc : %d : Currently have %lld parts in %lld leaves \n", myRank, myCurrentsParts, myNumberOfLeaves);
+	  
 	  //We need the max number of leafs over th procs
-	  int*const leavesOffsetPerProc = new int[nbProcs + 1];
+	  FSize*const leavesOffsetPerProc = new FSize[nbProcs + 1];
 	  FSize totalNumberOfLeaves  = 0;
 
 	  leavesOffsetPerProc[0] = 0;
@@ -328,213 +321,180 @@ private:
             leavesOffsetPerProc[idxProc] = leavesOffsetPerProc[idxProc-1] + numberOfLeavesPerProc[idxProc-1];
             totalNumberOfLeaves += numberOfLeavesPerProc[idxProc];
 	  }
-	  leavesOffsetPerProc[nbProcs] = int(totalNumberOfLeaves);
+	  leavesOffsetPerProc[nbProcs] = totalNumberOfLeaves;
+	  const FSize currentLeafOnL = leavesOffsetPerProc[myRank];   //current leaf on my left
+	  const FSize currentLeafOnR = leavesOffsetPerProc[myRank+1]; //current leaf on my left + my number of particles
+	  
+	  //Building of counter send buffer
+	  FSize * toSend = new FSize[nbProcs];
+	  memset(toSend,0,sizeof(FSize)*nbProcs);
 
-	  const FSize currentLeafsOnMyLeft  = leavesOffsetPerProc[myRank];
-	  const FSize currentRightLeafIdx   = leavesOffsetPerProc[myRank+1];
+	  //Building of array of indices to send
+	  FSize * idxToSend = new FSize[nbProcs];
+	  memset(idxToSend,0,sizeof(FSize)*nbProcs);
+	  
 
-	  //Creation of an array to store how many parts are in each leaf
-	  int*const numberOfParticlesPerLeaf = new int[totalNumberOfLeaves];
-	  int*const myParticlesCounterArray  = &numberOfParticlesPerLeaf[leavesOffsetPerProc[myRank]];
+	  for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
+	    if(idxProc != myRank){
+	      const FSize correctLeftLeafNumber  = balancer->getLeft(totalNumberOfLeaves,NULL,0,0,nbProcs,idxProc);
+	      const FSize correctRightLeafNumber = balancer->getRight(totalNumberOfLeaves,NULL,0,0,nbProcs,idxProc);
 
-	  memset(numberOfParticlesPerLeaf, 0, sizeof(int)*totalNumberOfLeaves);
-
-	  //Loop over leafArray to fill myParts
-	  size_t idxOfParticlesNumber = 0;
-	  for(int idxLeaf = 0 ; idxLeaf < nbLeavesInIntervals ; ++idxLeaf){
-            const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&leavesArray[idxOfParticlesNumber]));
-            myParticlesCounterArray[idxLeaf] += numberOfParticlesInThisLeaf;
-            idxOfParticlesNumber += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-	  }
-
-	  MPI_Allgatherv(myParticlesCounterArray,numberOfLeavesPerProc[myRank], MPI_INT,
-			 numberOfParticlesPerLeaf, numberOfLeavesPerProc, leavesOffsetPerProc, MPI_INT, communicator.getComm());
-
-	  FSize totalNumberOfParticles = 0;
-	  for(int idxLeaf = 0 ; idxLeaf < totalNumberOfLeaves ; ++idxLeaf){
-            totalNumberOfParticles += numberOfParticlesPerLeaf[idxLeaf];
-	  }
-
-	  const FSize correctLeftLeavesNumber     = balancer->getLeft( totalNumberOfLeaves,numberOfParticlesPerLeaf,totalNumberOfParticles,
-								       NULL,nbProcs,myRank);
-	  const FSize correctRightLeavesIndex     = balancer->getRight(totalNumberOfLeaves,numberOfParticlesPerLeaf,totalNumberOfParticles,
-								       NULL,nbProcs,myRank);
-
-	  //// TODO REMOVE WHEN DEBUG printf("Proc [%d] :: will work from leaf %lld \t to leaf %lld \n",myRank,correctLeftLeavesNumber,correctRightLeavesIndex);
-
-	  MPI_Request* requests = new MPI_Request[nbProcs * 2];
-	  int counterRequest = 0;
-
-	  if(currentLeafsOnMyLeft < correctLeftLeavesNumber || correctRightLeavesIndex < currentRightLeafIdx){
-            size_t offsetLeafToSend = 0;
-            int counterLeafToSend = 0;
-            int idxProcToProceed  = 0;
-
-            while( idxProcToProceed < nbProcs && (balancer->getLeft(totalNumberOfLeaves,numberOfParticlesPerLeaf,totalNumberOfParticles,NULL,nbProcs,idxProcToProceed) < currentRightLeafIdx)){
-	      const FSize procToProceedRightIdx = balancer->getRight(totalNumberOfLeaves,numberOfParticlesPerLeaf,totalNumberOfParticles,NULL,nbProcs,idxProcToProceed);
-	      const FSize procToProceedLeftIdx  = balancer->getLeft(totalNumberOfLeaves,numberOfParticlesPerLeaf,totalNumberOfParticles,NULL,nbProcs,idxProcToProceed);
-	      const bool procToProceedHasLeftInMyInterval  = (currentLeafsOnMyLeft <= procToProceedLeftIdx && procToProceedLeftIdx < currentRightLeafIdx);
-	      const bool procToProceedHasRightInMyInterval = (currentLeafsOnMyLeft <= procToProceedRightIdx && procToProceedRightIdx < currentRightLeafIdx);
-	      const bool procIncludeMyInterval = (procToProceedLeftIdx <= currentLeafsOnMyLeft  && currentRightLeafIdx <= procToProceedRightIdx);
-	      //// TODO REMOVE WHEN DEBUG printf("%d] idxProcToProceed %d procToProceedRightIdx %llu procToProceedLeftIdx %llu procToProceedHasLeftInMyInterval %d procToProceedHasRightInMyInterval %d\n",
-	      //// TODO REMOVE WHEN DEBUG        myRank, idxProcToProceed, procToProceedRightIdx, procToProceedLeftIdx, procToProceedHasLeftInMyInterval, procToProceedHasRightInMyInterval);
-
-	      if(idxProcToProceed != myRank && (procToProceedHasLeftInMyInterval || procToProceedHasRightInMyInterval || procIncludeMyInterval) ){
-		const int firstLeafToSend = FMath::Max(int(procToProceedLeftIdx - currentLeafsOnMyLeft), 0);
-		const int lastLeafToSend  = int(FMath::Min(procToProceedRightIdx - currentLeafsOnMyLeft, myNumberOfLeaves ));
-
-		//// TODO REMOVE WHEN DEBUG printf("Proc :: %d (from leaf %d to %d)\n", myRank, firstLeafToSend, lastLeafToSend);
-
-		while(counterLeafToSend != firstLeafToSend){
-		  const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&leavesArray[offsetLeafToSend]));
-		  offsetLeafToSend  += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-		  counterLeafToSend += 1;
-		}
-		const size_t offetSetToSend = offsetLeafToSend;
-		while(counterLeafToSend != lastLeafToSend){
-		  const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&leavesArray[offsetLeafToSend]));
-		  offsetLeafToSend  += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-		  counterLeafToSend += 1;
-		}
-
-		//// TODO REMOVE WHEN DEBUG printf("Proc :: %d send %d bytes to %d (from leaf %d to %d)\n",
-		//// TODO REMOVE WHEN DEBUG        myRank, int(offsetLeafToSend - offetSetToSend), idxProcToProceed, firstLeafToSend, lastLeafToSend);
-		MPI_Isend(&leavesArray[offetSetToSend], int(offsetLeafToSend - offetSetToSend), MPI_BYTE,
-			  idxProcToProceed, firstLeafToSend + int(currentLeafsOnMyLeft), communicator.getComm(), &requests[counterRequest++]);
-	      }
-	      idxProcToProceed += 1;
-            }
-	  }
-
-	  struct RecvBlockInfo{
-            char* buffer;
-            int nbLeaves;
-	  };
-	  RecvBlockInfo* recvBlockInfo = new RecvBlockInfo[nbProcs];
-	  int nbBlocksToRecv = 0;
-
-	  if(correctLeftLeavesNumber < currentLeafsOnMyLeft || currentRightLeafIdx < correctRightLeavesIndex){
-            FSize iterCorrectLeafIdx = correctLeftLeavesNumber;
-            int idxProcToProceed = 0;
-            while(iterCorrectLeafIdx < correctRightLeavesIndex){
-	      if(currentLeafsOnMyLeft <= iterCorrectLeafIdx && iterCorrectLeafIdx < currentRightLeafIdx){
-		//// TODO REMOVE WHEN DEBUG printf("%d] currentLeafsOnMyLeft %llu iterCorrectLeafIdx %llu iterCorrectLeafIdx %llu currentRightLeafIdx %llu\n",
-		//// TODO REMOVE WHEN DEBUG        myRank, currentLeafsOnMyLeft, iterCorrectLeafIdx, iterCorrectLeafIdx, currentRightLeafIdx);
-		iterCorrectLeafIdx = currentRightLeafIdx;
-		idxProcToProceed   = myRank + 1;
+	      //5 cases : Refer to ParalleleDetails.pdf to know more
+	      
+	      //First and Last : there are no particles in my current interval that belongs to this proc
+	      if((correctRightLeafNumber < currentLeafOnL) || (correctLeftLeafNumber > currentLeafOnR)){
+		toSend[idxProc] = 0;
 	      }
 	      else{
-		//// TODO REMOVE WHEN DEBUG printf("%d] currentLeafsOnMyLeft %llu iterCorrectLeafIdx %llu iterCorrectLeafIdx %llu currentRightLeafIdx %llu correctRightLeavesIndex %llu\n",
-		//// TODO REMOVE WHEN DEBUG        myRank, currentLeafsOnMyLeft, iterCorrectLeafIdx, iterCorrectLeafIdx, currentRightLeafIdx, correctRightLeavesIndex);
-		while(leavesOffsetPerProc[idxProcToProceed+1] <= iterCorrectLeafIdx){
-		  //// TODO REMOVE WHEN DEBUG     printf("%d] leavesOffsetPerProc[%d+1] %llu iterCorrectLeafIdx %lld\n",
-		  //// TODO REMOVE WHEN DEBUG            myRank, idxProcToProceed, leavesOffsetPerProc[idxProcToProceed+1], iterCorrectLeafIdx);
-		  idxProcToProceed += 1;
+		//Second : the first part of my current interval belongs to idxProc
+		if((correctLeftLeafNumber <= currentLeafOnL) && (correctRightLeafNumber < currentLeafOnR)){
+		  idxToSend[idxProc] = 0;
+		  FSize maxToSendLeft = leavesIndices[correctRightLeafNumber-currentLeafOnL+1];
+		  toSend[idxProc] = maxToSendLeft - leavesIndices[idxToSend[idxProc]];
 		}
-		const int nbLeafToReceive  = FMath::Min(leavesOffsetPerProc[idxProcToProceed+1], int(correctRightLeavesIndex)) - int(iterCorrectLeafIdx);
-		FSize nbParticlesToReceive = 0;
-		for(int idxLeaf = 0 ; idxLeaf < nbLeafToReceive ; ++idxLeaf){
-		  nbParticlesToReceive += numberOfParticlesPerLeaf[idxLeaf + iterCorrectLeafIdx];
+		else{//Third : all i have belongs to idxProc
+		  if((correctLeftLeafNumber <= currentLeafOnL) && (correctRightLeafNumber >= currentLeafOnR)){
+		    toSend[idxProc] = myCurrentsParts;
+		    idxToSend[idxProc] = 0;
+		  }
+		  else{
+		    //Forth : In my interval, there is currently all the datas belonging by idxProc
+		    if((correctLeftLeafNumber >= currentLeafOnL) && (correctRightLeafNumber <= currentLeafOnR)){
+		      idxToSend[idxProc] = (correctLeftLeafNumber - currentLeafOnL+1);
+		      FSize maxToSend  = (correctRightLeafNumber == currentLeafOnR)? 
+			(myCurrentsParts) : leavesIndices[correctRightLeafNumber-currentLeafOnL +1];
+		      toSend[idxProc] = maxToSend - leavesIndices[idxToSend[idxProc]];
+		    }
+		    else{
+		      //Fifth The right part of my current interval belongs to idxProc 
+		      if((correctLeftLeafNumber >= currentLeafOnL) && (correctRightLeafNumber > currentLeafOnR)){
+			idxToSend[idxProc] = correctLeftLeafNumber-currentLeafOnL+1;
+			FSize sizeToSend = (correctLeftLeafNumber == currentLeafOnR)?
+			  myCurrentsParts : myCurrentsParts-leavesIndices[correctLeftLeafNumber-currentLeafOnL+1];
+			toSend[idxProc] = sizeToSend;
+		      }
+		    }
+		  }
 		}
-
-		FSize bytesToRecv     = (sizeof(ParticleClass)*nbParticlesToReceive) + sizeof(int)*nbLeafToReceive;
-		char* bufferToReceive = new char[bytesToRecv];
-
-		//// TODO REMOVE WHEN DEBUG printf("Proc :: %d recv %d bytes to %d (from leaf %d to %d)\n",
-		//// TODO REMOVE WHEN DEBUG        myRank, bytesToRecv, idxProcToProceed, iterCorrectLeafIdx, iterCorrectLeafIdx + nbLeafToReceive);
-
-		MPI_Irecv(bufferToReceive, int(bytesToRecv), MPI_BYTE, idxProcToProceed, int(iterCorrectLeafIdx),
-			  communicator.getComm(), &requests[counterRequest++]);
-
-		recvBlockInfo[nbBlocksToRecv].buffer   = bufferToReceive;
-		recvBlockInfo[nbBlocksToRecv].nbLeaves = nbLeafToReceive;
-		nbBlocksToRecv += 1;
-
-		iterCorrectLeafIdx += nbLeafToReceive;
 	      }
-            }
+	    }
 	  }
-
-	  //// TODO REMOVE WHEN DEBUG printf("%d Wait!\n", myRank);
-	  MPI_Waitall(counterRequest, requests, MPI_STATUSES_IGNORE);
-	  //// TODO REMOVE WHEN DEBUG printf("%d Done!\n", myRank);
-
-	  int idxBlockRecvInLeft = 0;
-	  if(correctLeftLeavesNumber < currentLeafsOnMyLeft){
-            const int nbLeavesRecv = int(FMath::Min(currentLeafsOnMyLeft, correctRightLeavesIndex) - correctLeftLeavesNumber);
-            //// TODO REMOVE WHEN DEBUG printf("%d] has receive %d from left\n", myRank, nbLeavesRecv);
-            int idxLeaf  = 0;
-            while(idxLeaf < nbLeavesRecv){
-	      //// TODO REMOVE WHEN DEBUG printf("%d] block %d has %d leaves\n", myRank, idxBlockRecvInLeft, recvBlockInfo[idxBlockRecvInLeft].nbLeaves);
-	      size_t offsetBuffer = 0;
-	      for(int idxLeafInBlock = 0 ; idxLeafInBlock < recvBlockInfo[idxBlockRecvInLeft].nbLeaves ; ++idxLeafInBlock){
-		const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&recvBlockInfo[idxBlockRecvInLeft].buffer[offsetBuffer]));
-		const ParticleClass*const particles   = reinterpret_cast<ParticleClass*>(&recvBlockInfo[idxBlockRecvInLeft].buffer[offsetBuffer] + sizeof(int));
-		//// TODO REMOVE WHEN DEBUG printf("%d] block %d leaf %d has %d part\n", myRank, idxBlockRecvInLeft, idxLeafInBlock, numberOfParticlesInThisLeaf);
-		for(int idxParticle = 0 ; idxParticle < numberOfParticlesInThisLeaf ; ++idxParticle){
-		  particlesSaver->push(particles[idxParticle]);
+	  //Then, we exchange the datas to send
+	  FSize * globalSendRecvMap = new FSize[nbProcs*nbProcs];
+	  memset(globalSendRecvMap,0,sizeof(FSize)*nbProcs*nbProcs);
+	  //This could be replace by an array toRecv buildt in the same way as toSend
+	  MPI_Allgather(toSend,nbProcs,MPI_LONG_LONG,globalSendRecvMap,nbProcs,MPI_LONG_LONG,communicator.getComm());
+	  
+	  // { // ----------------For debug---------------------------------
+	  //   FSize totRemaining = 0;
+	  //   { //This is a sum of all parts to know if we forgot some of them
+	  //     FSize totToSend = 0;
+	  //     for(int t=0;t<nbProcs;++t){
+	  // 	if(t==myRank){
+	  // 	  for(int k=0;k<nbProcs ; ++k){
+	  // 	    totToSend += toSend[k];
+	  // 	    printf("Proc : %d will send %lld parts to %d starting (leavesIndices[%lld] = %lld)\n",
+	  // 		   myRank,toSend[k],k,idxToSend[k],leavesIndices[idxToSend[k]]);
+	  // 	  }
+	  // 	}
+	  // 	MPI_Barrier(MPI_COMM_WORLD);
+	  //     }
+	  //     totRemaining = myCurrentsParts-totToSend;
+	  //   }
+	  //   if(myRank == 0){
+	  //     for(int k=0;k<nbProcs ; ++k){
+	  // 	for(int t=0 ; t<nbProcs ; ++t){
+	  // 	  printf("%lld\t",globalSendRecvMap[k*nbProcs+t]);
+	  // 	}
+	  // 	printf("\n");
+	  //     }
+	  //   }
+	  //   MPI_Barrier(MPI_COMM_WORLD);
+	  //   for(int k=0;k<nbProcs ; ++k){
+	  //     totRemaining += globalSendRecvMap[k*nbProcs+myRank];
+	  //   }
+	  //   printf("Proc : %d, will have %lld parts \n",myRank,totRemaining);
+	  //   FSize totfor0 = communicator.reduceSum(totRemaining);
+	  //   if(myRank==0){
+	  //     printf("================ %lld ================\n",totfor0);
+	  //   }
+	  // }
+	  
+	  //Then, we have our global recv map.
+	  //We just need to send and recv for real.
+	  
+	  //Finally, store the remaining parts, recv the parts, send my parts
+	  ParticleClass * finalPartBuffer;
+	  FSize finalTotParts;
+	  {
+	    finalTotParts = myCurrentsParts;     //We need to know how many particles we will have
+	    FSize finalCurrentParts = myCurrentsParts; //Parts that I had and that belongs to me
+	    
+	    for(int idxProc=0 ; idxProc<nbProcs ; ++idxProc){
+	      finalCurrentParts -= toSend[idxProc]; //substract the parts sent
+	      finalTotParts -= toSend[idxProc];     //substract the parts sent
+	      finalTotParts += globalSendRecvMap[idxProc*nbProcs+myRank]; //add the parts received
+	    }
+	    finalPartBuffer = new ParticleClass[finalTotParts];
+	    memset(finalPartBuffer,0,sizeof(ParticleClass)*finalTotParts);
+	    
+	    //Copy of the parts we already hold
+	    FSize finalIdxToStart = 0; //idx of the start of my parts inside leavesArray
+	    FSize idxToWrite = 0;      //idx to write my parts 
+	    {//we go from idxProc==0 to idxProc==myRank to increment the self starter
+	      for(int idxProc=0 ; idxProc<myRank ; ++idxProc){
+		idxToWrite += globalSendRecvMap[idxProc*nbProcs+myRank];
+		finalIdxToStart += toSend[idxProc];
+	      }
+	      memcpy(&finalPartBuffer[idxToWrite],&leavesArray[finalIdxToStart],sizeof(ParticleClass)*finalCurrentParts);
+	    }
+	    
+	  
+	    //Second, receive in place: 
+	    
+	    MPI_Request* requests = new MPI_Request[nbProcs * 2];
+	    int counterRequest = 0;
+	    int tag = 99;
+	    FSize idxToWriteRecvedDatas = 0;
+	    //While I received from left, i write the datas at the start of the buffer
+	    for(int idxProc=0 ; idxProc<nbProcs ; ++idxProc){
+	      if(idxProc == myRank){ //When I myRank==idxProc, I increment the idxToWrite of What I kept to avoid erasing my parts with received parts
+		idxToWriteRecvedDatas += finalCurrentParts;
+	      }
+	      else{ //I received and inc the write index of what I get
+		if(globalSendRecvMap[idxProc*nbProcs+myRank]){//If i expect something from idxProc
+		  MPI_Irecv(&finalPartBuffer[idxToWriteRecvedDatas],int(sizeof(ParticleClass))*int(globalSendRecvMap[idxProc*nbProcs+myRank]),MPI_BYTE,
+			    idxProc,tag,communicator.getComm(),&requests[counterRequest++]);
+		  idxToWriteRecvedDatas += globalSendRecvMap[idxProc*nbProcs+myRank];
 		}
-		offsetBuffer  += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
 	      }
-	      idxLeaf += recvBlockInfo[idxBlockRecvInLeft].nbLeaves;
-	      delete[] recvBlockInfo[idxBlockRecvInLeft].buffer;
-	      idxBlockRecvInLeft += 1;
-            }
-	  }
-	  //// TODO REMOVE WHEN DEBUG printf("currentLeafsOnMyLeft %lld correctLeftLeavesNumber %lld currentRightLeafIdx %lld correctRightLeavesIndex %lld \n",
-	  //// TODO REMOVE WHEN DEBUG        currentLeafsOnMyLeft, correctLeftLeavesNumber, currentRightLeafIdx, correctRightLeavesIndex);
-	  if((currentLeafsOnMyLeft <= correctLeftLeavesNumber && correctLeftLeavesNumber < currentRightLeafIdx)
-	     || (currentLeafsOnMyLeft < correctRightLeavesIndex && correctRightLeavesIndex <= currentRightLeafIdx)){
-	    const int nbLeavesToSkip = int(correctLeftLeavesNumber-currentLeafsOnMyLeft);
-            size_t offsetBuffer = 0;
-            //// TODO REMOVE WHEN DEBUG printf("%d] skip %d leaves\n", myRank, nbLeavesToSkip);
-            for(int idxToSkip = 0 ; idxToSkip < nbLeavesToSkip ; ++idxToSkip){
-	      const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&leavesArray[offsetBuffer]));
-	      offsetBuffer += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-	      //// TODO REMOVE WHEN DEBUG printf("%d] leaf %d had %d part\n", myRank, idxToSkip, numberOfParticlesInThisLeaf);
-            }
-            const int nbLeafToCopy = int(FMath::Min(currentRightLeafIdx, correctRightLeavesIndex) - FMath::Max(currentLeafsOnMyLeft, correctLeftLeavesNumber));
-            //// TODO REMOVE WHEN DEBUG printf("%d] Need to copy %d leaves\n", myRank, nbLeafToCopy);
-            for(int idxToProcess = 0 ; idxToProcess < nbLeafToCopy ; ++idxToProcess){
-	      const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&leavesArray[offsetBuffer]));
-	      //// TODO REMOVE WHEN DEBUG printf("%d] leaf %d had %d part\n", myRank, idxToProcess, numberOfParticlesInThisLeaf);
-	      const ParticleClass*const particles   = reinterpret_cast<ParticleClass*>(&leavesArray[offsetBuffer] + sizeof(int));
-	      for(int idxParticle = 0 ; idxParticle < numberOfParticlesInThisLeaf ; ++idxParticle){
-		particlesSaver->push(particles[idxParticle]);
+	    }
+	    
+	    //Third, send
+	    for(int idxProc=0 ; idxProc<nbProcs ; ++idxProc){
+	      if(toSend[idxProc]){ //If i have something for idxProc
+		MPI_Isend(&leavesArray[leavesIndices[idxToSend[idxProc]]],int(sizeof(ParticleClass))*int(globalSendRecvMap[myRank*nbProcs+idxProc]),MPI_BYTE,
+			  idxProc,tag,communicator.getComm(),&requests[counterRequest++]);
 	      }
-
-	      offsetBuffer += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-            }
+	    }
+	    //Wait for the comm :
+	    MPI_Waitall(counterRequest,requests,MPI_STATUSES_IGNORE);
+	    delete[] requests;
 	  }
-	  if(currentRightLeafIdx < correctRightLeavesIndex){
-            const int nbLeavesRecv = int(correctRightLeavesIndex - FMath::Max(currentRightLeafIdx, correctLeftLeavesNumber));
-            //// TODO REMOVE WHEN DEBUG printf("%d] has receive %d from right\n", myRank, nbLeavesRecv);
-            int idxLeaf  = 0;
-            while(idxLeaf < nbLeavesRecv){
-	      //// TODO REMOVE WHEN DEBUG printf("%d] block %d has %d leaves\n", myRank, idxBlockRecvInLeft, recvBlockInfo[idxBlockRecvInLeft].nbLeaves);
-	      size_t offsetBuffer = 0;
-	      for(int idxLeafInBlock = 0 ; idxLeafInBlock < recvBlockInfo[idxBlockRecvInLeft].nbLeaves ; ++idxLeafInBlock){
-		const int numberOfParticlesInThisLeaf = (*reinterpret_cast<int*>(&recvBlockInfo[idxBlockRecvInLeft].buffer[offsetBuffer]));
-		const ParticleClass*const particles   = reinterpret_cast<ParticleClass*>(&recvBlockInfo[idxBlockRecvInLeft].buffer[offsetBuffer] + sizeof(int));
-		//// TODO REMOVE WHEN DEBUG printf("%d] block %d leaf %d has %d part\n", myRank, idxBlockRecvInLeft, idxLeafInBlock, numberOfParticlesInThisLeaf);
-		for(int idxParticle = 0 ; idxParticle < numberOfParticlesInThisLeaf ; ++idxParticle){
-		  particlesSaver->push(particles[idxParticle]);
-		}
-		offsetBuffer  += (sizeof(ParticleClass)*numberOfParticlesInThisLeaf+sizeof(int));
-	      }
-	      idxLeaf += recvBlockInfo[idxBlockRecvInLeft].nbLeaves;
-	      delete[] recvBlockInfo[idxBlockRecvInLeft].buffer;
-	      idxBlockRecvInLeft += 1;
-            }
+	  
+	  for(FSize idPartsToStore=0; idPartsToStore<finalTotParts ; ++idPartsToStore){
+	    particlesSaver->push(finalPartBuffer[idPartsToStore]);
 	  }
-
-	  delete[] leavesArray;
+	  
+	  delete[] finalPartBuffer;
+	  delete[] globalSendRecvMap;
+	  delete[] idxToSend;
+	  delete[] toSend;
 	  delete[] numberOfLeavesPerProc;
 	  delete[] leavesOffsetPerProc;
-	  delete[] numberOfParticlesPerLeaf;
-	  delete[] requests;
-	  delete[] recvBlockInfo;
 	}
+	delete[] leavesArray;
+	delete[] leavesIndices;
     }
 
 public:
@@ -547,15 +507,17 @@ public:
     static void ArrayToTree(const FMpi::FComm& communicator, const ParticleClass array[], const FSize size,
                             const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
                             ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer,const SortingType type = QuickSort){
-
+      
         IndexedParticle* particlesArray = 0;
         FSize particlesSize = 0;
         SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, treeHeight,
                                &particlesArray, &particlesSize);
 
         char* leavesArray = 0;
-        FSize leavesSize = 0;
-        MergeLeaves(communicator, particlesArray, particlesSize, &leavesArray, &leavesSize);
+	FSize leavesSize = 0;
+	FSize * leavesIndices = 0;
+
+        MergeLeaves(communicator, particlesArray, &particlesSize, &leavesIndices, &leavesArray, &leavesSize);
 
         EqualizeAndFillTree(communicator, particleSaver, leavesArray, leavesSize, balancer);
     }
