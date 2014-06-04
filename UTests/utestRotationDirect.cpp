@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -45,8 +45,8 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         const char* const filename = (sizeof(FReal) == sizeof(float))?
-                                        "../../Data/utestDirect.bin.fma.single":
-                                        "../../Data/utestDirect.bin.fma.double";
+                                        "../Data/UTest/Direct.bin.fma.single":
+                                        "../Data/UTest/Direct.bin.fma.double";
         FFmaBinLoader loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
