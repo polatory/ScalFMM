@@ -347,7 +347,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   {}
 
   // returns position in reduced storage from position in full 3x3 matrix
-  int getPosition(const unsigned int n) const
+ unsigned  int getPosition(const unsigned int n) const
   {return applyTab[n];} 
 
   // returns Core Width squared
@@ -450,7 +450,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   {}
 
   // returns position in reduced storage from position in full 3x3x3 matrix
-  int getPosition(const unsigned int n) const
+  unsigned int getPosition(const unsigned int n) const
   {return applyTab[n];} 
 
   // returns Core Width squared

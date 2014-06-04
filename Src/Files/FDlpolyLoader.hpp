@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -219,7 +219,8 @@ public:
           -4406.48579000       6815.52906417       10340.2577024
       */
     void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
-    	FReal x, y, z, fx, fy, fz, vx, vy, vz;
+
+    	FReal x, y, z, fx=0.0, fy=0.0, fz=0.0, vx=0.0, vy=0.0, vz=0.0;
     	int index;
 
 

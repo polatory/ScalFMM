@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -17,12 +17,13 @@
 #define FCHEBSYMM2LHANDLER_HPP
 
 #include <climits>
+#include <sstream>
 
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FBlas.hpp"
 
-#include "./FChebTensor.hpp"
+#include "FChebTensor.hpp"
 #include "../Interpolation/FInterpSymmetries.hpp"
-#include "./FChebM2LHandler.hpp"
+#include "FChebM2LHandler.hpp"
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -32,7 +33,7 @@
 
 /*!  Choose either \a FULLY_PIVOTED_ACASVD or \a PARTIALLY_PIVOTED_ACASVD or
 	\a ONLY_SVD.
-*/
+ */
 //#define ONLY_SVD
 //#define FULLY_PIVOTED_ACASVD
 #define PARTIALLY_PIVOTED_ACASVD
@@ -53,10 +54,10 @@
 	@param[out] U matrix containing \a k column vectors
 	@param[out] V matrix containing \a k row vectors
 	@param[out] k final low-rank depends on prescribed accuracy \a eps
-*/
+ */
 void fACA(FReal *const K,
-					const unsigned int nx, const unsigned int ny,
-					const double eps, FReal* &U, FReal* &V, unsigned int &k)
+		const unsigned int nx, const unsigned int ny,
+		const double eps, FReal* &U, FReal* &V, unsigned int &k)
 {
 	// control vectors (true if not used, false if used)
 	bool *const r = new bool[nx];
@@ -73,7 +74,7 @@ void fACA(FReal *const K,
 
 	// initialize rank k and UV'
 	k = 0;
-	const int maxk = (nx + ny) / 2;
+	const unsigned int maxk = (nx + ny) / 2;
 	U = new FReal[nx * maxk];
 	V = new FReal[ny * maxk];
 	FBlas::setzero(nx*maxk, U);
@@ -83,10 +84,10 @@ void fACA(FReal *const K,
 	////////////////////////////////////////////////
 	// start fully pivoted ACA
 	do {
-		
+
 		// find max(K) and argmax(K)
 		FReal maxK = 0.;
-		int pi=0, pj=0;
+		unsigned int pi=0, pj=0;
 		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
 				const FReal *const colK = K + j*nx;
@@ -104,11 +105,11 @@ void fACA(FReal *const K,
 		const FReal pivot = K[pj*nx + pi];
 		for (unsigned int i=0; i<nx; ++i) if (r[i]) colU[i] = K[pj*nx + i];
 		for (unsigned int j=0; j<ny; ++j) if (c[j]) colV[j] = K[j *nx + pi] / pivot;
-		
-		// dont use these cols and rows anymore
+
+		// don't use these cols and rows anymore
 		c[pj] = false;
 		r[pi] = false;
-		
+
 		// subtract k-th outer product from K
 		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
@@ -117,7 +118,7 @@ void fACA(FReal *const K,
 			}
 
 		// compute Frobenius norm of updated K
-		norm2R = 0.;
+		norm2R = 0.0;
 		for (unsigned int j=0; j<ny; ++j)
 			if (c[j]) {
 				const FReal *const colK = K + j*nx;
@@ -125,8 +126,8 @@ void fACA(FReal *const K,
 			}
 
 		// increment rank k
-		k++;
-		
+		++k ;
+
 	} while (norm2R > eps*eps * norm2K);
 	////////////////////////////////////////////////
 
@@ -151,7 +152,7 @@ void fACA(FReal *const K,
 	\f$\varepsilon\f$. The matrix K will be destroyed as a result.
 
 	@tparam ComputerType the functor type which allows to compute matrix entries
-	
+
 	@param[in] Computer the entry-computer functor
 	@param[in] eps prescribed accuracy
 	@param[in] nx number of rows
@@ -159,37 +160,37 @@ void fACA(FReal *const K,
 	@param[out] U matrix containing \a k column vectors
 	@param[out] V matrix containing \a k row vectors
 	@param[out] k final low-rank depends on prescribed accuracy \a eps
-*/
+ */
 template <typename ComputerType>
 void pACA(const ComputerType& Computer,
-					const unsigned int nx, const unsigned int ny,
-					const FReal eps, FReal* &U, FReal* &V, unsigned int &k)
+		const unsigned int nx, const unsigned int ny,
+		const FReal eps, FReal* &U, FReal* &V, unsigned int &k)
 {
 	// control vectors (true if not used, false if used)
 	bool *const r = new bool[nx];
 	bool *const c = new bool[ny];
 	for (unsigned int i=0; i<nx; ++i) r[i] = true;
 	for (unsigned int j=0; j<ny; ++j) c[j] = true;
-	
+
 	// initialize rank k and UV'
 	k = 0;
 	const FReal eps2 = eps * eps;
-	const int maxk = (nx + ny) / 2;
+	const unsigned int maxk = (nx + ny) / 2;
 	U = new FReal[nx * maxk];
 	V = new FReal[ny * maxk];
-	
+
 	// initialize norm
 	FReal norm2S(0.);
 	FReal norm2uv(0.);
-	
+
 	////////////////////////////////////////////////
 	// start partially pivoted ACA
 	unsigned int J = 0, I = 0;
-	
+
 	do {
 		FReal *const colU = U + nx*k;
 		FReal *const colV = V + ny*k;
-		
+
 		////////////////////////////////////////////
 		// compute row I and its residual
 		Computer(I, I+1, 0, ny, colV);
@@ -199,7 +200,7 @@ void pACA(const ComputerType& Computer,
 			FReal *const v = V + ny*l;
 			FBlas::axpy(ny, FReal(-1. * u[I]), v, colV);
 		}
-		
+
 		// find max of residual and argmax
 		FReal maxval = 0.;
 		for (unsigned int j=0; j<ny; ++j) {
@@ -212,7 +213,7 @@ void pACA(const ComputerType& Computer,
 		// find pivot and scale column of V
 		const FReal pivot = FReal(1.) / colV[J];
 		FBlas::scal(ny, pivot, colV);
-		
+
 		////////////////////////////////////////////
 		// compute col J and its residual
 		Computer(0, nx, J, J+1, colU);
@@ -222,9 +223,9 @@ void pACA(const ComputerType& Computer,
 			FReal *const v = V + ny*l;
 			FBlas::axpy(nx, FReal(-1. * v[J]), u, colU);
 		}
-		
+
 		// find max of residual and argmax
-		maxval = 0.;
+		maxval = 0.0;
 		for (unsigned int i=0; i<nx; ++i) {
 			const FReal abs_val = FMath::Abs(colU[i]);
 			if (r[i] && maxval < abs_val) {
@@ -232,21 +233,21 @@ void pACA(const ComputerType& Computer,
 				I = i;
 			}
 		}
-		
+
 		////////////////////////////////////////////
-			// increment Frobenius norm: |Sk|^2 += |uk|^2 |vk|^2 + 2 sumj ukuj vjvk
+		// increment Frobenius norm: |Sk|^2 += |uk|^2 |vk|^2 + 2 sumj ukuj vjvk
 		FReal normuuvv(0.);
 		for (unsigned int l=0; l<k; ++l)
 			normuuvv += FBlas::scpr(nx, colU, U + nx*l) * FBlas::scpr(ny, V + ny*l, colV);
 		norm2uv = FBlas::scpr(nx, colU, colU) * FBlas::scpr(ny, colV, colV);
 		norm2S += norm2uv + 2*normuuvv;
-		
+
 		////////////////////////////////////////////
 		// increment low-rank
-		k++;
+		++k;
 
 	} while (norm2uv > eps2 * norm2S);
-	
+
 	delete [] r;
 	delete [] c;
 }
@@ -260,10 +261,10 @@ void pACA(const ComputerType& Computer,
   them. */
 template <int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
-											 const FReal Epsilon, FReal* K[343], int LowRank[343])
+		const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
-  //	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
-  //						<< ") for cells of width w = " << CellWidth << std::endl;
+	//	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
+	//						<< ") for cells of width w = " << CellWidth << std::endl;
 
 	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -275,7 +276,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 	FReal* U = new FReal [nnodes*nnodes];
 
 	// needed for the SVD
-	unsigned int INFO;
+	 int INFO;
 	const unsigned int LWORK = 2 * (3*nnodes + nnodes);
 	FReal *const WORK = new FReal [LWORK];
 	FReal *const VT = new FReal [nnodes*nnodes];
@@ -318,7 +319,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 					FBlas::scal(nnodes, weights[n], U + n,  nnodes); // scale rows
 					FBlas::scal(nnodes, weights[n], U + n * nnodes); // scale cols
 				}
-				*/
+				 */
 
 				//////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
@@ -369,16 +370,20 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 					delete [] tauU;
 					delete [] tauV;
 				}
-				
+
 				const unsigned int aca_rank = rank;
 
 				// SVD
 				{
 					INFO = FBlas::gesvd(aca_rank, aca_rank, phi, S, VT, aca_rank, LWORK, WORK);
-					if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
+					if (INFO!=0){
+						std::stringstream stream;
+						stream << INFO;
+						throw std::runtime_error("SVD did not converge with " + stream.str());
+					}
 					rank = getRank(S, aca_rank, Epsilon);
 				}					
-				
+
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 
 				// store
@@ -386,10 +391,10 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 					// allocate
 					assert(K[idx]==NULL);
 					K[idx] = new FReal [2*rank*nnodes];
-					
+
 					// set low rank
-					LowRank[idx] = rank;
-					
+					LowRank[idx] = static_cast<int>(rank);
+
 					// (U Sigma)
 					for (unsigned int r=0; r<rank; ++r)
 						FBlas::scal(aca_rank, S[r], phi + r*aca_rank);
@@ -413,7 +418,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				//LowRank[idx] = rank;
 				//FBlas::copy(rank*nnodes, UU,  K[idx]);
 				//FBlas::copy(rank*nnodes, VV,  K[idx] + rank*nnodes);
-			
+
 				delete [] UU;
 				delete [] VV;
 
@@ -434,9 +439,13 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 #elif defined ONLY_SVD
 				// truncated singular value decomposition of matrix
 				INFO = FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
-				if (INFO!=0) throw std::runtime_error("SVD did not converge with " + INFO);
+				if (INFO!=0){
+					std::stringstream stream;
+					stream << INFO;
+					throw std::runtime_error("SVD did not converge with " + stream.str());
+				}
 				const unsigned int rank = getRank<ORDER>(S, Epsilon);
-				
+
 				// store 
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
 				assert(K[idx]==NULL);
@@ -458,7 +467,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 #endif ///////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
 
-				
+
 				//////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////////////////////
@@ -475,16 +484,16 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				}
 				//////////////////////////////////////////////////////////		
 
-				counter++;
+				++counter;
 			}
 		}
 	}
-		std::cout << "The approximation of the " << counter
-              << " far-field interactions (overall rank " << overall_rank 
-              << " / " << 16*nnodes 
-              << " , sizeM2L= " << 2*overall_rank*nnodes*sizeof(FReal) << ""
-              << " / " << 16*nnodes*nnodes*sizeof(FReal) << " B"
-              << ") took " << overall_time << "s\n" << std::endl;
+	std::cout << "The approximation of the " << counter
+			<< " far-field interactions (overall rank " << overall_rank
+			<< " / " << 16*nnodes
+			<< " , sizeM2L= " << 2*overall_rank*nnodes*sizeof(FReal) << ""
+			<< " / " << 16*nnodes*nnodes*sizeof(FReal) << " B"
+			<< ") took " << overall_time << "s\n" << std::endl;
 	delete [] U;
 	delete [] WORK;
 	delete [] VT;
@@ -514,14 +523,14 @@ template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
 template <int ORDER>
 class SymmetryHandler<ORDER, HOMOGENEOUS>
 {
-  static const unsigned int nnodes = ORDER*ORDER*ORDER;
+	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// M2L operators
 	FReal*    K[343];
 	int LowRank[343];
 
 public:
-	
+
 	// permutation vectors and permutated indices
 	unsigned int pvectors[343][nnodes];
 	unsigned int pindices[343];
@@ -530,14 +539,14 @@ public:
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
 	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon,
-									const FReal, const unsigned int)
-	{
+			const FReal, const unsigned int)
+			{
 		// init all 343 item to zero, because effectively only 16 exist
 		for (unsigned int t=0; t<343; ++t) {
-			K[t] = NULL;
+			K[t]            = nullptr;
 			LowRank[t] = 0;
 		}
-			
+
 		// set permutation vector and indices
 		const FInterpSymmetries<ORDER> Symmetries;
 		for (int i=-3; i<=3; ++i)
@@ -550,25 +559,25 @@ public:
 				}
 
 		// precompute 16 M2L operators
-		const FReal ReferenceCellWidth = FReal(2.);
+		const FReal ReferenceCellWidth = FReal(2.0);
 		precompute<ORDER>(MatrixKernel, ReferenceCellWidth, Epsilon, K, LowRank);
-	}
+			}
 
 
 
 	/** Destructor */
 	~SymmetryHandler()
 	{
-		for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+		for (unsigned int t=0; t<343; ++t) if (K[t]!=nullptr) delete [] K[t];
 	}
 
 
 	/*! return the t-th approximated far-field interactions*/
-	const FReal *const getK(const unsigned int, const unsigned int t) const
+	const FReal *const getK(const  int, const unsigned int t) const
 	{	return K[t]; }
 
 	/*! return the t-th approximated far-field interactions*/
-	const int getLowRank(const unsigned int, const unsigned int t) const
+	const int getLowRank(const int, const unsigned int t) const
 	{	return LowRank[t]; }
 
 };
@@ -582,7 +591,7 @@ public:
 template <int ORDER>
 class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
 {
-  static const unsigned int nnodes = ORDER*ORDER*ORDER;
+	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// Height of octree; needed only in the case of non-homogeneous kernel functions
 	const unsigned int TreeHeight;
@@ -592,7 +601,7 @@ class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
 	int** LowRank;
 
 public:
-	
+
 	// permutation vectors and permutated indices
 	unsigned int pvectors[343][nnodes];
 	unsigned int pindices[343];
@@ -601,9 +610,9 @@ public:
 	/** Constructor: with 16 small SVDs */
 	template <typename MatrixKernelClass>
 	SymmetryHandler(const MatrixKernelClass *const MatrixKernel, const double Epsilon,
-									const FReal RootCellWidth, const unsigned int inTreeHeight)
-		: TreeHeight(inTreeHeight)
-	{
+			const FReal RootCellWidth, const unsigned int inTreeHeight)
+			: TreeHeight(inTreeHeight)
+			  {
 		// init all 343 item to zero, because effectively only 16 exist
 		K       = new FReal** [TreeHeight];
 		LowRank = new int*    [TreeHeight];
@@ -617,7 +626,7 @@ public:
 				LowRank[l][t] = 0;
 			}
 		}
-		
+
 
 		// set permutation vector and indices
 		const FInterpSymmetries<ORDER> Symmetries;
@@ -637,7 +646,7 @@ public:
 			precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
 			CellWidth /= FReal(2.);                    // at level l+1 
 		}
-	}
+			  }
 
 
 
@@ -656,11 +665,11 @@ public:
 	}
 
 	/*! return the t-th approximated far-field interactions*/
-	const FReal *const getK(const unsigned int l, const unsigned int t) const
+	const FReal *const getK(const  int l, const unsigned int t) const
 	{	return K[l][t]; }
 
 	/*! return the t-th approximated far-field interactions*/
-	const int getLowRank(const unsigned int l, const unsigned int t) const
+	const int getLowRank(const  int l, const unsigned int t) const
 	{	return LowRank[l][t]; }
 
 };
@@ -698,7 +707,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	sstream << "sym2l_" << precision << "_o" << ORDER << "_e" << Epsilon << ".bin";
 	const std::string filename(sstream.str());
 	std::ofstream stream(filename.c_str(),
-											 std::ios::out | std::ios::binary | std::ios::trunc);
+			std::ios::out | std::ios::binary | std::ios::trunc);
 	if (stream.good()) {
 		stream.seekp(0);
 		for (unsigned int idx=0; idx<343; ++idx)
@@ -734,7 +743,7 @@ void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
 	// compile time constants
 	const unsigned int nnodes = ORDER*ORDER*ORDER;
-	
+
 	// find filename
 	const char precision = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 	std::stringstream sstream;
@@ -743,10 +752,10 @@ void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
 
 	// read binary file
 	std::ifstream istream(filename.c_str(),
-												std::ios::in | std::ios::binary | std::ios::ate);
+			std::ios::in | std::ios::binary | std::ios::ate);
 	const std::ifstream::pos_type size = istream.tellg();
 	if (size<=0) throw std::runtime_error("The requested binary file does not yet exist. Exit.");
-	
+
 	if (istream.good()) {
 		istream.seekg(0);
 		// 1) read index (int)
