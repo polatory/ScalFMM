@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -55,11 +55,11 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
     void TestTree(){
         // Warning in make test the exec dir it Build/UTests
         const char* const DataFile = (sizeof(FReal) == sizeof(float))?
-                    "../../Data/utestSphericalPrevious.data.single":
-                    "../../Data/utestSphericalPrevious.data.double";
+                    "../Data/UTest/SphericalPrevious.data.single":
+                    "../Data/utest/SphericalPrevious.data.double";
         const char* const ParticleFile = (sizeof(FReal) == sizeof(float))?
-                    "../../Data/utestDirect.bin.fma.single":
-                    "../../Data/utestDirect.bin.fma.double";
+                    "../Data/UTest/Direct.bin.fma.single":
+                    "../Data/UTest/Direct.bin.fma.double";
 
         const int NbLevels      = 5;
         const int SizeSubLevels = 3;
