@@ -56,7 +56,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	
     template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
 						class LeafClass, class OctreeClass, class FmmClass>
-	void RunTest(const FReal epsilon)	{
+	void RunTest()	{
 		// Warning in make test the exec dir it Build/UTests
 		// Load particles
         const char* const filename = (sizeof(FReal) == sizeof(float))?
@@ -71,9 +71,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
 
-		const int NbLevels      = 4;
+		const int NbLevels        = 4;
 		const int SizeSubLevels = 2;
-		//const FReal epsilon = FReal(1e-5);
 
 		// Create octree
         struct TestParticle{
@@ -105,7 +104,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 		// Run FMM
 		Print("Fmm...");
-		KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
+		KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		FmmClass algo(&tree,&kernels);
 		algo.execute();
 
@@ -167,7 +166,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 		// Assert
         const FReal MaximumDiffPotential = FReal(9e-5);
-        const FReal MaximumDiffForces = FReal(9e-3);
+        const FReal MaximumDiffForces     = FReal(9e-3);
 
 		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);
 		uassert(potentialDiff.getRelativeInfNorm() < MaximumDiffPotential);
@@ -199,8 +198,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** TestChebKernel */
 	void TestChebKernel(){
-		const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+		const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR MatrixKernelClass;
@@ -209,13 +207,12 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
 	}
 
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
-		const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+		const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR MatrixKernelClass;
@@ -224,7 +221,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
 	}
 
 

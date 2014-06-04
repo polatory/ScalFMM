@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -60,9 +60,7 @@ public:
 	 * precomputed and compressed M2L operators from a binary file (an
 	 * runtime_error is thrown if the required file is not valid).
 	 */
-	FChebKernel(const int inTreeHeight,
-		    const FReal inBoxWidth,
-		    const FPoint& inBoxCenter,
+	FChebKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint& inBoxCenter,
 		    const FReal Epsilon)
         : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
 											   inBoxWidth,
@@ -74,6 +72,11 @@ public:
 		M2LHandler->ComputeAndCompressAndSet();
 	}
 
+	FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+		: 	FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,FReal(1.0/FMath::pow(10,ORDER)))
+	{
+
+	}
 
 	void P2M(CellClass* const LeafCell,
 					 const ContainerClass* const SourceParticles)
