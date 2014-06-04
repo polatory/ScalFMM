@@ -39,7 +39,7 @@ public:
         BitonicSort,
     };
 
-private:
+  //private:
     /** This method has been tacken from the octree
    * it computes a tree coordinate (x or y or z) from real position
    */
@@ -130,7 +130,6 @@ private:
         // sort particles
         if(type == QuickSort){
             FQuickSortMpi<IndexedParticle,MortonIndex, FSize>::QsMpi(realParticlesIndexed, size, *outputArray, *outputSize,communicator);
-            printf("Proc : %d, nb of parts : %lld\n",communicator.processId(),*outputSize);
 	    delete [] (realParticlesIndexed);
         }
         else {
@@ -497,6 +496,7 @@ private:
 	delete[] leavesIndices;
     }
 
+ 
 public:
 
     //////////////////////////////////////////////////////////////////////////
@@ -513,13 +513,43 @@ public:
         SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, treeHeight,
                                &particlesArray, &particlesSize);
 
-        char* leavesArray = 0;
+        ParticleClass* leavesArray = 0;
 	FSize leavesSize = 0;
 	FSize * leavesIndices = 0;
 
         MergeLeaves(communicator, particlesArray, &particlesSize, &leavesIndices, &leavesArray, &leavesSize);
 
-        EqualizeAndFillTree(communicator, particleSaver, leavesArray, leavesSize, balancer);
+	EqualizeAndFillTree(communicator, particleSaver, leavesIndices, leavesArray, leavesSize, particlesSize, balancer);
+
+	/** To produce stats after the Equalize phase
+	 */
+	int* nbPartsPerProc = {0};
+	int myParts = particleSaver->getSize();
+	int nbProc = communicator.processCount();
+	
+	if(communicator.processId()==0){
+	  nbPartsPerProc = new int[nbProc];
+	}
+	
+	MPI_Gather(&myParts,1,MPI_INT,nbPartsPerProc,1,MPI_INT,0,communicator.getComm());
+
+	if(communicator.processId()==0){
+	  float av=0;
+	  int min=myParts, max=myParts;
+	  for(int id=0; id<nbProc ; id++){
+	    if(nbPartsPerProc[id] > max){
+	      max=nbPartsPerProc[id];
+	    }
+	    if(nbPartsPerProc[id] < min){
+	      min=nbPartsPerProc[id];
+	    }
+	    av += float(nbPartsPerProc[id]);
+	  }
+	  av /= float(nbProc);
+	  printf("End of Equalize Phase : \n \t Min number of parts : %d \n \t Max number of parts : %d \n \t Average number of parts : %e \n",
+		 min,max,av);
+	  delete[] nbPartsPerProc;
+	}
     }
 
 
