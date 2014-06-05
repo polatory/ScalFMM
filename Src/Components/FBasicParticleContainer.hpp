@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -19,9 +19,9 @@
 #include "FAbstractParticleContainer.hpp"
 #include "FAbstractSerializable.hpp"
 
-#include "../Utils/FAlignedMemory.hpp"
-#include "../Utils/FMath.hpp"
-#include "../Utils/FPoint.hpp"
+#include "Utils/FAlignedMemory.hpp"
+#include "Utils/FMath.hpp"
+#include "Utils/FPoint.hpp"
 #include "FParticleType.hpp"
 
 /**
@@ -53,7 +53,7 @@ protected:
   AttributeClass* attributes[NbAttributesPerParticle];
 
   /** The allocated memory */
-  int allocatedParticles;
+   int allocatedParticles;
 
   /////////////////////////////////////////////////////
   /////////////////////////////////////////////////////

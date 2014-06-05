@@ -18,28 +18,28 @@
 // @FUSE_BLAS
 // ================
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Files/FFmaBinLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
+#include "Files/FFmaBinLoader.hpp"
+#include "Files/FTreeIO.hpp"
 
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
 
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 /*
   In this test we compare the spherical fmm results and the direct results.
 */
@@ -128,15 +128,17 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
+        FReal energy= 0.0 , energyD = 0.0 ;
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                const FReal*const potentials        = leaf->getTargets()->getPotentials();
+                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+                const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
 
                 for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                     const int indexPartOrig = indexes[idxPart];
@@ -144,6 +146,9 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
                     fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                    energy   += potentials[idxPart]*physicalValues[idxPart];
+                    energyD +=particles[indexPartOrig].potential*particles[indexPartOrig].potential;
+
                 }
             });
         }
@@ -151,31 +156,45 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		delete[] particles;
 
 		// Print for information
-		Print("Potential diff is = ");
-		Print(potentialDiff.getRelativeL2Norm());
-		Print(potentialDiff.getRelativeInfNorm());
-		Print("Fx diff is = ");
-		Print(fx.getRelativeL2Norm());
-		Print(fx.getRelativeInfNorm());
-		Print("Fy diff is = ");
-		Print(fy.getRelativeL2Norm());
-		Print(fy.getRelativeInfNorm());
-		Print("Fz diff is = ");
-		Print(fz.getRelativeL2Norm());
-		Print(fz.getRelativeInfNorm());
+        // Print for information
+
+        Print("Potential diff is = ");
+        printf("         Pot L2Norm   %e\n",potentialDiff.getRelativeL2Norm());
+		printf("         Pot RMSError %e\n",potentialDiff.getRMSError());
+        Print("Fx diff is = ");
+		printf("         Fx L2Norm   %e\n",fx.getRelativeL2Norm());
+		printf("         Fx RMSError %e\n",fx.getRMSError());
+        Print(fx.getRelativeL2Norm());
+        Print(fx.getRelativeInfNorm());
+        Print("Fy diff is = ");
+		printf("        Fy L2Norm   %e\n",fy.getRelativeL2Norm());
+		printf("        Fy RMSError %e\n",fy.getRMSError());
+        Print("Fz diff is = ");
+		printf("        Fz L2Norm   %e\n",fz.getRelativeL2Norm());
+		printf("        Fz RMSError %e\n",fz.getRMSError());
+        FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
+		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("  Energy Error =   %.12e\n",FMath::Abs(energy-energyD));
+		printf("  Energy FMM =   %.12e\n",FMath::Abs(energy));
+		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
 		// Assert
         const FReal MaximumDiffPotential = FReal(9e-5);
         const FReal MaximumDiffForces     = FReal(9e-3);
 
-		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);
-		uassert(potentialDiff.getRelativeInfNorm() < MaximumDiffPotential);
-		uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);
-		uassert(fx.getRelativeInfNorm() < MaximumDiffForces);
-		uassert(fy.getRelativeL2Norm()  < MaximumDiffForces);
-		uassert(fy.getRelativeInfNorm() < MaximumDiffForces);
-		uassert(fz.getRelativeL2Norm()  < MaximumDiffForces);
-		uassert(fz.getRelativeInfNorm() < MaximumDiffForces);
+
+        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);    //1
+        uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+        uassert(fx.getL2Norm()  < MaximumDiffForces);                       //3
+        uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+        uassert(fy.getL2Norm()  < MaximumDiffForces);                       //5
+        uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+        uassert(fz.getL2Norm()  < MaximumDiffForces);                      //8
+        uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
+        uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
+        uassert(FMath::Abs(energy-energyD) < MaximumDiffPotential);                     //10  Total Energy
+
+
 	}
 
 	/** If memstas is running print the memory used */
