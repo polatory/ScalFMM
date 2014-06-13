@@ -42,7 +42,7 @@
 class FmaBasicParticle {
 public:
 	FPoint position;            ///< position of the particle
-//	FReal  x,y,z;                 ///< position of the particle
+	//	FReal  x,y,z;                 ///< position of the particle
 	FReal  physicalValue;    ///<  its physical value
 	/**
 	 *  return a pointer on the first value of the structure
@@ -128,6 +128,10 @@ public:
 	int getReadDataNumber()
 	{ return 8;}
 };
+
+typedef FmaBasicParticle FmaR4W4Particle ;
+typedef FmaRParticle       FmaR4W8Particle ;
+typedef FmaParticle         FmaR8W8Particle ;
 //
 //! \class  FFmaGenericLoader
 //!
@@ -345,11 +349,11 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart &dataToRead){
-		int otherDataToRead = typeData[1] - dataToRead.getReadDataNumber() ;
-	if(binaryFile){
+		int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
+		if(binaryFile){
 			file->read((char*)(dataToRead.getPtrFirstData()), sizeof(FReal)*(dataToRead.getReadDataNumber()));
-			if( otherDataToRead > 0){
-				file->read((char*)(this->tmpVal), sizeof(FReal)*(otherDataToRead));
+			if( otherDataRead > 0){
+				file->read((char*)(this->tmpVal), sizeof(FReal)*(otherDataRead));
 			}
 		}
 		else{
@@ -358,9 +362,9 @@ public:
 				(*this->file)  >>*val;
 				++val;
 			}
-			if( otherDataToRead > 0){
+			if( otherDataRead > 0){
 				FReal x;
-				for (int i = 0 ; i <otherDataToRead ;++i){
+				for (int i = 0 ; i <otherDataRead ;++i){
 					(*this->file)  >>x;
 				}
 			}
@@ -374,8 +378,8 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart *dataToRead, const int N){
-		int otherDataToRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
-		if(binaryFile && otherDataToRead == 0 ){
+		int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
+		if(binaryFile && otherDataRead == 0 ){
 			file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
 		}
 		else {
@@ -638,7 +642,8 @@ public:
 		}
 		else{ // ASCII part
 			const int ndata = dataToWrite[0].getWriteDataNumber();
-			std::cout << "typeData "<< sizeof(FReal) << " "<<ndata << std::endl;
+//			std::cout << "typeData "<< sizeof(FReal) << " "<<ndata << std::endl;
+			this->file->precision(10);
 
 			for (int i = 0 ; i <N ; ++i){
 				const FReal * val = dataToWrite[i].getPtrFirstData() ;
@@ -673,6 +678,7 @@ public:
 			file->write((char*)(dataToWrite), N*nbData*sizeof(FReal));
 		}
 		else{
+			this->file->precision(10);
 			//			std::cout << "N "<< N << " nbData "<< nbData<<std::endl;
 			//			exit(-1);
 			int k = 0;
@@ -691,6 +697,7 @@ public:
 private:
 	void writerAscciHeader( const FPoint &centerOfBox,const FReal &boxWidth,
 			const FSize &nbParticles, const unsigned int *typeFReal) {
+		this->file->precision(10);
 		(*this->file) << typeFReal[0] <<"   "<<typeFReal[1]<<std::endl;
 		(*this->file) << nbParticles << "   "<<  boxWidth << "   "
 				<<  centerOfBox.getX()  << "  " << centerOfBox.getY() << " "<<centerOfBox.getZ()
