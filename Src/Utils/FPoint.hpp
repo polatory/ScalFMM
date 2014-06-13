@@ -180,6 +180,14 @@ public:
 		return this->data ;
 	}
 	/**
+	 * Get a pointer on the coordinate of FPoint
+	 * @return the data value array
+	 */
+	const FReal *  getDataValue()  const{
+		return this->data ;
+	}
+
+	/**
 	 *Compute the distance to the origin
 	 * @return the norm of the Fpoint
 	 */

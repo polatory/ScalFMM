@@ -6,8 +6,47 @@ endif(insource)
 
 project(UTests_scalfmm CXX)
 
+FIND_PROGRAM( TESTS_GCOV_PATH gcov )
+FIND_PROGRAM( TESTS_LCOV_PATH lcov )
+FIND_PROGRAM( TESTS_GENHTML_PATH genhtml )
+FIND_PROGRAM( TESTS_GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/Modules)
+
+MESSAGE(STATUS  "GG ${TESTS_GCOV_PATH} ${TESTS_LCOV_PATH} ${TESTS_GENHTML_PATH} ${TESTS_GCOVR_PATH}" )
+IF( TESTS_GCOV_PATH AND TESTS_LCOV_PATH AND TESTS_GCOVR_PATH )
+  #Script for launching lcov and generating an html report
+  ADD_CUSTOM_TARGET(coverage)
+  ADD_CUSTOM_COMMAND(TARGET coverage 
+           COMMAND mkdir -p CoverageReport
+          COMMAND ${TESTS_LCOV_PATH} --directory  . --zerocounters
+          COMMAND make test
+  # Capturing lcov counters and generating report
+		COMMAND ${TESTS_LCOV_PATH} --directory . --capture --output-file ${_outputname}.info
+		COMMAND ${TESTS_LCOV_PATH} --remove ${_outputname}.info 'tests/*' '/usr/*' --output-file ${_outputname}.info.cleaned
+		COMMAND ${TESTS_GENHTML_PATH} -o ${_outputname} ${_outputname}.info.cleaned
+		COMMAND ${CMAKE_COMMAND} -E remove ${_outputname}.info ${_outputname}.info.cleaned
+           COMMAND echo "Open ${CMAKE_BINARY_DIR}/CoverageReport/index.html to view the report on the coverage of the code."
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+          )
+MESSAGE(STATUS " GCOV ${COVERAGE_COMMAND}")
+MESSAGE(STATUS "CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}")
+  IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        SET(TESTS_GCOV_CXX_FLAGS "-g -fprofile-arcs -ftest-coverage")
+        SET(TESTS_GCOV_LINKER_FLAGS "-g -fprofile-arcs -ftest-coverage -lgcov")
+  ENDIF()
+ #
+ ELSE()
+        SET(GCOV_CXX_FLAGS "")
+        SET(GCOV_LINKER_FLAGS "")
+	   MESSAGE(WARNING  "Could not find gcov - No Coverage option for Tests")
+ENDIF()
+
+
+
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
-ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS})
+
+
+
+ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS} ${TESTS_GCOV_CXX_FLAGS})
 
 # Find all code files
 file(	
@@ -62,6 +101,7 @@ foreach(exec ${source_tests_files})
 			${scalfmm_lib}
 			${BLAS_LIBRARIES}
 			${LAPACK_LIBRARIES}
+			${TESTS_GCOV_LINKER_FLAGS}
 		)
 
 		add_test(
