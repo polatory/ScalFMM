@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -17,7 +17,7 @@
 #ifdef ScalFMM_USE_TRACE
 
 #if !defined (ScalFMM_USE_ITAC) && !defined (ScalFMM_USE_EZTRACE)
-int FTrace::Deep = 0;
+int   FTrace::Deep = 0;
 FTic FTrace::TimeSinceBegining;
 #endif
 

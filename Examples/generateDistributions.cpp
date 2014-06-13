@@ -10,10 +10,13 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+//
 #include "Utils/FGlobal.hpp"
 #include "Utils/FMath.hpp"
 #include "Utils/FPoint.hpp"
 #include "Utils/FGenerateDistribution.hpp"
+#include "Files/FFmaGenericLoader.hpp"
+
 //
 /// \file  generateDistributions.cpp
 //!
@@ -32,7 +35,7 @@
 //!  <b> General arguments:</b>
 //!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param  -N     The number of points in the distribution (default 20000)
-//!     \param   -filename name: generic name for files (without extension) and save data
+//!     \param   -filename name: generic name for files (with extension) and save data
 //!                  with following format in name.fma or name.bfma in -bin is set"
 //!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 //!      \param -extraLength   value    extra length to add to the boxWidth (default 0.0)
@@ -65,7 +68,7 @@
 //!
 //!   generateDistributions  -cuboid 2:2:4 -filename cuboid  -visufmt vtp -charge  -zeromean
 //!
-
+//
 
 //
 //
@@ -98,7 +101,6 @@ void genDistusage() {
 			<<     "     Output " << std::endl
 			<<     "             -filename name: generic name for files (without extension) and save data" <<std::endl
 			<<     "                     with following format in name.fma or name.bfma in -bin is set" <<std::endl
-					<<     "      -bin save output in binary file name.txt" <<std::endl
 			<<     "             -visufmt  vtk, vtp, cosmo or cvs format " <<std::endl;
 }
 
@@ -120,6 +122,8 @@ int main(int argc, char ** argv){
 	FReal * particles ;
 	particles = new FReal[4*NbPoints] ;
 	memset(particles,0,4*NbPoints*sizeof(FReal));
+	FmaBasicParticle *ppart = (FmaBasicParticle*)(&particles[0]);
+
 	//
 	// Generate physical values
 	//
@@ -153,7 +157,7 @@ int main(int argc, char ** argv){
 	if(FParameters::existParameter(argc, argv, "-unitCube")){
 		unifRandonPointsOnUnitCube(NbPoints, particles) ;
 		Centre.setPosition(0.5,0.5,0.5);
-		BoxWith = 0.5 ;
+		BoxWith = 1.0 ;
 	}
 	else if(FParameters::existParameter(argc, argv, "-cuboid")){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-lengths",  "1:1:2");
@@ -162,13 +166,13 @@ int main(int argc, char ** argv){
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
 		unifRandonPointsOnCube(NbPoints, A,B,C,particles) ;
-		BoxWith = 0.5*FMath::Max(A,FMath::Max(B,C) );
+		BoxWith = FMath::Max(A,FMath::Max(B,C) );
 		FReal halfBW = BoxWith;
 		Centre.setPosition(halfBW,halfBW,halfBW);
 	}
 	else if(FParameters::existParameter(argc, argv, "-unitSphere")){
 		unifRandonPointsOnUnitSphere(NbPoints, particles) ;
-		BoxWith = 1.0 ;
+		BoxWith = 2.0 ;
 	}
 	else if(FParameters::existParameter(argc, argv, "-sphere")){
 		const FReal Radius  = FParameters::getValue(argc,argv,"-radius",  2.0);
@@ -211,53 +215,28 @@ int main(int argc, char ** argv){
     /////////////////////////////////////////////////////////////////////////
 	//                                           Save data
     /////////////////////////////////////////////////////////////////////////
-
-
 	//
-	//  Generate file for ScalFMM Loader
+	//  Generate FMA file for FFmaGenericLoader Loader
 	//
 	if(FParameters::existParameter(argc, argv, "-extraLength")){
 		extraRadius  = FParameters::getValue(argc,argv,"-extraLength",  0.0);
 		BoxWith += 2*extraRadius ;
 	}
-	if( ! FParameters::existParameter(argc, argv, "-bin")){
-		std::string name( genericFileName+ ".fma");
-		std::ofstream outfileA(name.c_str(), std::ofstream::out);
-		if(!outfileA) {
-			std::cout << "Cannot open file."<< std::endl;
-			exit(-1)	 ;
-		}
-		std::cout << "Writes in ascii FMA format  in file "<<name <<std::endl ;
-		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
-		//
-		outfileA << 	NbPoints << "  " << BoxWith << "  " << Centre.getX() << "  " << Centre.getY() << "  " << Centre.getZ() << std::endl;
-		j=0;
-		for(int i = 0 ; i< NbPoints; ++i, j+=4){
-			outfileA <<    particles[j]    << "       "    <<   particles[j+1]    << "       "   <<   particles[j+2]    << "       "   <<   particles[j+3]   <<std::endl;
-		}
+	bool binaryMode = false;
+	std::string name(genericFileName);
+
+	if(  FParameters::existParameter(argc, argv, "-bin")){
+		binaryMode = true;
+		name += ".bfma";
 	}
-	else{
-		std::string name( genericFileName+ ".bfma");
-		std::fstream outfile(name.c_str(),std::ifstream::out| std::ios::binary| std::ios::trunc);
-		if(!outfile) {
-			std::cout << "Cannot open file."<< std::endl;
-			return 1;
-		}
-		std::cout << "Writes in binary FMA format  in file "<< name<<std::endl ;
-		std::cout << " Points are in a cube of size  "<< BoxWith << "  Centered in the Origin"<<std::endl;
-		//
-		int typeFReal = sizeof(FReal) ;
-		outfile.write((char* )&typeFReal,sizeof(int));
-		outfile.write((char* )const_cast<int*>(&NbPoints),sizeof(FSize));
-		outfile.write((char*)&BoxWith,sizeof(BoxWith));
-		outfile.write((char*)Centre.getDataValue(),sizeof(FReal)*3);
-		//
-		outfile.write ((char* )&particles[0], 4*sizeof(FReal)*NbPoints);
-		outfile.flush();
-		//
+	else {
+		name += ".fma";
 	}
+	FFmaGenericWriter  writer(name,binaryMode) ;
+	writer.writeHeader(Centre,BoxWith, NbPoints, *ppart) ;
+	writer.writeArrayOfParticles(ppart, NbPoints);
 	//
-	//
+	//  Generate  file for visualization
 	//
 	if(FParameters::existParameter(argc, argv, "-visufmt")){
 		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));

@@ -62,8 +62,8 @@ SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
 #
 # Compile option
-#
-SET(ScaLFMM_CXX_FLAGS "-std=c++11 -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic")
+# -Wall Wnosign-conversion 
+SET(ScaLFMM_CXX_FLAGS "-std=c++11  -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic")
 #
 # Test if openmp is here
 #

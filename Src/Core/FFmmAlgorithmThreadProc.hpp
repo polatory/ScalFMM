@@ -450,9 +450,9 @@ private:
 
 
 		FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
-		FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-		FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-		FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+		FLOG( FLog::Controller << "\t\t Computation :                          " << computationCounter.cumulated() << " s\n" );
+		FLOG( FLog::Controller << "\t\t Prepare :                                  " << prepareCounter.cumulated() << " s\n" );
+		FLOG( FLog::Controller << "\t\t Wait :                                       " << waitCounter.cumulated() << " s\n" );
 	}
 
 

@@ -62,7 +62,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		const int NbLevels        = 4;
 		const int SizeSubLevels = 2;
 		const int PeriodicDeep  = 2;
-		const int NbParticles     = 500;
+		const int NbParticles     = 250;
 
 		FRandomLoader loader(NbParticles);
 

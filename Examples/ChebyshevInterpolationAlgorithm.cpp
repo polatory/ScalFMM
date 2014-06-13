@@ -25,18 +25,18 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 
-#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Utils/FParameters.hpp"
+#include "Utils/FParameters.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
+#include "Containers/FOctree.hpp"
 
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 /**
  * This program runs the FMM Algorithm with the Chebyshev kernel and compares the results with a direct computation.
@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////
 
 	bool binaryMode = false;
+
 	if(FParameters::existParameter(argc, argv, "-bin")){
 		binaryMode = true;
 	}
