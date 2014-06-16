@@ -77,153 +77,169 @@ void usage() {
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
-	const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
-	const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
-	const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
-		usage() ;
-		exit(-1);
-	}
+  const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
+  const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
+  const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
+  const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
+  const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
+  if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
+    usage() ;
+    exit(-1);
+  }
 #ifdef _OPENMP
-	omp_set_num_threads(NbThreads);
-	std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+  omp_set_num_threads(NbThreads);
+  std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
 #else
-	std::cout << "\n>> Sequential version.\n" << std::endl;
+  std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
-	//
-	std::cout <<	 "Parameters  "<< std::endl
-		  <<     "      Octree Depth      "<< TreeHeight <<std::endl
-		  <<	 "      SubOctree depth "<< SubTreeHeight <<std::endl
-		  <<     "      Input file  name: " <<filename <<std::endl
-		  <<     "      Thread number:  " << NbThreads <<std::endl
-		  <<std::endl;
-	//init values for MPI
-	FMpi app(argc,argv);
-	//
-	// init timer
-	FTic time;
+  //
+  std::cout <<	 "Parameters  "<< std::endl
+	    <<     "      Octree Depth      "<< TreeHeight <<std::endl
+	    <<	 "      SubOctree depth "<< SubTreeHeight <<std::endl
+	    <<     "      Input file  name: " <<filename <<std::endl
+	    <<     "      Thread number:  " << NbThreads <<std::endl
+	    <<std::endl;
+  //init values for MPI
+  FMpi app(argc,argv);
+  //
+  // init timer
+  FTic time;
 
-	FMpiFmaLoader loader(filename,app.global());
+  FMpiFmaLoader loader(filename,app.global(),true);
 
-	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
-	////////////////////////////////////////////////////////////////////
-
-
-
-	// begin spherical kernel
-
-	// accuracy
-	const unsigned int P = 22;
-	// typedefs
-	typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                       LeafClass;
-	typedef FRotationCell<P>                                             CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
-	//
-	typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
-	//
-	typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
-
-	// init oct-tree
-	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+  if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
+  ////////////////////////////////////////////////////////////////////
 
 
-	{ // -----------------------------------------------------
-	  std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-		    << " particles ..." << std::endl;
-	  std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-	  time.tic();
-	  //
 
-	  struct TestParticle{
-	    FPoint position;
-	    FReal physicalValue;
-	    const FPoint& getPosition(){
-	      return position;
-	    }
-	  };
-	  TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-	  memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
+  // begin spherical kernel
+
+  // accuracy
+  const unsigned int P = 22;
+  // typedefs
+  typedef FP2PParticleContainerIndexed<>                     ContainerClass;
+  typedef FSimpleLeaf< ContainerClass >                       LeafClass;
+  typedef FRotationCell<P>                                             CellClass;
+  typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+  //
+  typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+  //
+  typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
+
+  // init oct-tree
+  OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
+
+  { // -----------------------------------------------------
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+	      << " particles ..." << std::endl;
+    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+    time.tic();
+    //
+
+    struct TestParticle{
+      int indexInFile;
+      FPoint position;
+      FReal physicalValue;
+      const FPoint& getPosition(){
+	return position;
+      }
+    };
+    TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
+    memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
     
-	  for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-	    // Read particles from file
-	    loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
-	  }
-	  FVector<TestParticle> finalParticles;
-	  FLeafBalance balancer;
-	  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+    //idx (in file) of the first part that will be used by this proc. 
+    int idxStart = loader.getStart();
+        
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+      //Storage of the index (in the original file) of each part.
+      particles[idxPart].indexInFile = idxPart + idxStart;
+      
+      // Read particles from file
+      loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
+    }
+    
+    FVector<TestParticle> finalParticles;
+    FLeafBalance balancer;
+    FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
 						 tree.getBoxCenter(),
 						 tree.getBoxWidth(),
 						 tree.getHeight(), &finalParticles,&balancer);
 
-	  for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
-	    tree.insert(finalParticles[idx].position,idx,finalParticles[idx].physicalValue);
+    for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+      tree.insert(finalParticles[idx].position,finalParticles[idx].indexInFile,finalParticles[idx].physicalValue);
+    }
+    
+    delete[] particles;
+	  
+    time.tac();
+    std::cout << "Done  " << "(@Creating and Inserting Particles = "
+	      << time.elapsed() << "s)." << std::endl;
+  } // -----------------------------------------------------
+
+  { // -----------------------------------------------------
+    std::cout << "\nRotation harmonic Spherical FMM Proc (P="<< P << ") ... " << std::endl;
+	  
+    time.tic();
+    //
+    // Here we use a pointer due to the limited size of the stack
+    //
+    KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+    //
+    FmmClassProc algorithm(app.global(),&tree, kernels);
+    //
+    algorithm.execute();   // Here the call of the FMM algorithm
+    //
+    time.tac();
+    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+  }
+  // -----------------------------------------------------
+  //
+  // Some output
+  //
+  //
+
+  { // -----------------------------------------------------
+    long int N1=0, N2= loader.getTotalNumberOfParticles()/2, N3= (loader.getTotalNumberOfParticles()-1); ;
+    FReal energy =0.0 ;
+    //
+    //   Loop over all leaves
+    //
+    std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
+    std::cout << std::scientific;
+    std::cout.precision(10) ;
+	  
+    tree.forEachLeaf([&](LeafClass* leaf){
+	const FReal*const posX = leaf->getTargets()->getPositions()[0];
+	const FReal*const posY = leaf->getTargets()->getPositions()[1];
+	const FReal*const posZ = leaf->getTargets()->getPositions()[2];
+	const FReal*const potentials = leaf->getTargets()->getPotentials();
+	const FReal*const forcesX = leaf->getTargets()->getForcesX();
+	const FReal*const forcesY = leaf->getTargets()->getForcesY();
+	const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+	const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+	const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+	      
+	const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+	      
+	for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+	  const int indexPartOrig = indexes[idxPart];
+	  if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
+	    std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig << "  potential  " << potentials[idxPart]
+		      << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]  
+		      << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
 	  }
-	  delete[] particles;
-	  
-	  time.tac();
-	  std::cout << "Done  " << "(@Creating and Inserting Particles = "
-		    << time.elapsed() << "s)." << std::endl;
-	} // -----------------------------------------------------
-
-	{ // -----------------------------------------------------
-	  std::cout << "\nRotation harmonic Spherical FMM Proc (P="<< P << ") ... " << std::endl;
-	  
-	  time.tic();
-	  //
-	  // Here we use a pointer due to the limited size of the stack
-	  //
-	  KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-	  //
-	  FmmClassProc algorithm(app.global(),&tree, kernels);
-	  //
-	  algorithm.execute();   // Here the call of the FMM algorithm
-	  //
-	  time.tac();
-	  std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+	  energy += potentials[idxPart]*physicalValues[idxPart] ;
 	}
-	// -----------------------------------------------------
-	//
-	// Some output
-	//
-	//
-	{ // -----------------------------------------------------
-	  long int N1=0, N2= loader.getNumberOfParticles()/4, N3= (loader.getNumberOfParticles() -1)/2; ;
-	  FReal energy =0.0 ;
-	  //
-	  //   Loop over all leaves
-	  //
-	  std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
-	  std::cout << std::scientific;
-	  std::cout.precision(10) ;
+      });
+	  
+    FReal gloEnergy = app.global().reduceSum(energy);
+    if(0 == app.global().processId()){
+      std::cout <<std::endl << "Proc "<< app.global().processId() << " Energy: "<< gloEnergy <<std::endl;
+      std::cout <<std::endl <<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
+    }
+  }
+  // -----------------------------------------------------
 
-	  tree.forEachLeaf([&](LeafClass* leaf){
-	      const FReal*const potentials = leaf->getTargets()->getPotentials();
-	      const FReal*const forcesX = leaf->getTargets()->getForcesX();
-	      const FReal*const forcesY = leaf->getTargets()->getForcesY();
-	      const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-	      const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-	      const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-	      
-	      const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-	      
-	      for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-		const int indexPartOrig = indexes[idxPart];
-		if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
-		  std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
-			    << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
-		}
-		energy += potentials[idxPart]*physicalValues[idxPart] ;
-	      }
-	    });
-	  std::cout <<std::endl<<"Energy: "<< energy<<std::endl;
-	  std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
-
-	}
-	// -----------------------------------------------------
-
-
-	return 0;
+  return 0;
 }
