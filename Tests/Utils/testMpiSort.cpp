@@ -21,6 +21,9 @@
 
 #include "../../Src/Utils/FParameters.hpp"
 
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
 
 
 /* Struct Test particle : classic particle but with index In file,
