@@ -8,8 +8,9 @@
 
 #include <iostream>
 #include <fstream>
-//#include <sstream>
 #include <string>
+#include <cstdlib>
+//
 #include "Utils/FGlobal.hpp"
 #include "Utils/FPoint.hpp"
 #include "Files/FFmaGenericLoader.hpp"
@@ -17,11 +18,12 @@
 #include "Utils/FGenerateDistribution.hpp"
 
 //
-/// \file  changeFormat.cpp
+/// \file  changeFmaFormat.cpp
 //!
 //! \brief changeFormat: Driver to transform a FMA format and to build a visualization file
 //!
-//!
+//!  Driver to transform a FMA format and/or to build a visualization file<br>
+//! For a description of the FMA format see FFmaGenericLoader<br>
 //!  <b> General arguments:</b>
 //!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param   -fin name:  file name  to convert (with extension .fma (ascii) or bfma (binary)
@@ -66,47 +68,48 @@ int main(int argc, char ** argv){
 	//
 	// Allocation
 	//
-	long int NbPoints     = loader.getNumberOfParticles();
+	FSize NbPoints                       = loader.getNumberOfParticles();
 	const unsigned int nbData   = loader.getNbRecordPerline() ;
 	const unsigned int arraySize =nbData*NbPoints;
-    FReal	 * particles ;
+	FReal	 * particles ;
 	particles = new FReal[arraySize] ;
-	memset(particles,0,arraySize*sizeof(FReal));
+	std::memset(particles,0,arraySize*sizeof(FReal));
 	//
 	// Read Data
 	int j = 0, k=0 ;
 	for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
-//		//
+		//		//
 		loader.fillParticle(&particles[j],nbData);
-//		std::cout << "idxPart "<< idxPart << "  ";
-//		for (int jj= 0 ; jj<nbData ; ++jj, ++k){
-//			std::cout << particles[k] << "    ";
-//		}
-//		std::cout << std::endl;
+		//		std::cout << "idxPart "<< idxPart << "  ";
+		//		for (int jj= 0 ; jj<nbData ; ++jj, ++k){
+		//			std::cout << particles[k] << "    ";
+		//		}
+		//		std::cout << std::endl;
 	}
 	//
 	/////////////////////////////////////////////////////////////////////////
 	//                                           Save data
 	/////////////////////////////////////////////////////////////////////////
 	//
-	//  Generate file for ScalFMM Loader
+	//  Generate file for ScalFMM FMAGenericLoader
 	//
-	bool binaryMode = false;
-    std::string outfilename(FParameters::getStr(argc,argv,"-fout",   "output"));
-	if(  FParameters::existParameter(argc, argv, "-bin")){
-		binaryMode = true;
-		outfilename += ".bfma";
+	if(FParameters::existParameter(argc, argv, "-fout")){
+		std::string name(FParameters::getStr(argc,argv,"-fout",   "output"));
+		if(  FParameters::existParameter(argc, argv, "-bin")){
+			name += ".bfma";
+		}
+		else {
+			name += ".fma";
+		}
+		FFmaGenericWriter writer(name) ;
+		writer.writeHeader( loader.getCenterOfBox(), loader.getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
+		writer.writeArrayOfReal(particles, nbData, NbPoints);
 	}
-	else {
-		outfilename += ".fma";
-	}
-	FFmaGenericWriter writer(outfilename,binaryMode) ;
-	writer.writeHeader( loader.getCenterOfBox(), loader.getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
-	writer.writeArrayOfReal(particles, nbData, NbPoints);
 	//
-	//
+	//   Generate file for visualization purpose
 	//
 	if(FParameters::existParameter(argc, argv, "-visufmt")){
+		std::string outfilename(FParameters::getStr(argc,argv,"-fout",   "output"));
 		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));
 		if( fmt == "vtp" ){
 			visufile = outfilename + ".vtp" ;
@@ -115,6 +118,10 @@ int main(int argc, char ** argv){
 			visufile = outfilename + ".vtk" ;
 		}
 		else if( fmt == "cosmo" ){
+			if(nbData !=4) {
+				std::cerr << "Cosmos export accept only 4 data per particles. here: "<<nbData<<std::endl;
+				std::exit(EXIT_FAILURE);
+			}
 			visufile = outfilename + ".cosmo" ;
 		}
 		else {
@@ -130,19 +137,24 @@ int main(int argc, char ** argv){
 		//
 		if( fmt == "vtp" ){
 			std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTKxml( file, NbPoints,  particles)   ;
+			if(nbData==4){
+				exportVTKxml( file,  particles, NbPoints)   ;
+			}
+			else {
+				exportVTKxml( file,  particles, NbPoints,nbData)   ;
+			}
 		}
 		else		if( fmt == "vtk" ){
 			std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTK( file, NbPoints, particles)  ;
+			exportVTK( file, particles, NbPoints,nbData)  ;
 		}
 		else if( fmt == "cosmo" ){
 			std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
-			exportCOSMOS( file, NbPoints,  particles)   ;
+			exportCOSMOS( file,  particles, NbPoints)   ;
 		}
 		else {
 			std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
-			exportCVS( file, NbPoints,  particles)  ;
+			exportCVS( file,  particles, NbPoints,nbData)  ;
 		}
 	}
 	//

@@ -37,7 +37,7 @@
  \endcode
 
 
- * \subsection concrete A Concrete example : SH FMM
+ * \subsection concrete A Concrete example : Spherical Harmonics FMM
 
  * In this part we will run a simulation with Spherical Harmonics and rotation optimization:
  *  ./Examples/Release/RotationFMM .
@@ -47,32 +47,32 @@
  In the test file we can read: 
 
  \code{.cpp}
- * const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma"); 
- * FFmaLoader<ParticleClass> loader(filename); 
+ * std::string filename = FParameters::getStr(argc, argv,"-fin", "../Data/test20k.fma"); 
+ * FFmaGenericLoader  loader(filename); 
  \endcode
 
- * It means, that the test file is reading FMA file (with FFmaLoader)
+ * It means, that the test file is reading FMA file (see <a href="class_f_fma_generic_loader.html#details">FMA format</a>)
  * which can be changed but here we still use this format. We can pass a
- * file in parameter with the -f command. So let first create a 2.000.000
- * particles file in the FMA test format:
+ * file in parameter with the -fin option. So let first create with <a href=generate_distributions_8cpp.html> generateDistributions</a> 2.000.000
+ * particles in a unit cube and store the particle in a file with the FMA  format:
 
  \code{.cpp}
- * ./Tests/Release/testLoaderFMACreate -nb 2000000 -f my2kkpartfile.fma 
+ * ./Exemple/Release/generateDistributions -N 2000000  -unitcube -filename my2kkpartfile.fma 
  \endcode
 
  Which create a file called my2kkpartfile.fma. 
 
  * \subsubsection running Running the Simulation
 
- * With the SH kernel we can choose the P=4 accuracy parameter for this
- * kernel.
+ * With the Spherical harmonic expansion  kernel we can choose the P=4 accuracy parameter for this
+ * kernel.  RotationFMM
 
  \code{.cpp}
  * ./Examples/Release/RotationFMM -f my2kkpartfile.fma -depth 5 -subdepth 3 
  \endcode
 
 
-* \section driver Driver
+* \section driver Drivers
 *   <a href="../html/files.html"> Here</a> some drivers.
 *
 html/files.html
@@ -86,7 +86,6 @@ html/files.html
  <li> testBlas.cpp : this file tests the blas, it simply validate that the link was OK </li>
  <li> testLoaderFMABinCreate.cpp : this file creates a particles file in binary in the FMA format.  </li>
  <li> testChebBinaryM2L.cpp :  </li>
- <li> testLoaderFMABinCreateSphere.cpp : this file creates particles file in binary and FMA format with a spherical distribution.  </li>
  <li> testChebBinarySymM2L.cpp  </li>
  <li> testLoaderFMA.cpp : this file illustrates how to load particles from a FMA file.  </li>
  <li> testChebInterpolator.cpp :  </li>

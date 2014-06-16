@@ -25,16 +25,26 @@
 
 #include  "ScalFmmConfig.h"
 #include "Utils/FTic.hpp"
-//#include "Utils/FMath.hpp"
 #include "Utils/FParameters.hpp"
-//#include "Utils/FIOVtk.hpp"
 
-//#include "Containers/FVector.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 #include "Kernels/P2P/FP2P.hpp"
 
 
-
+//
+/// \file  DirectComputation.cpp
+//!
+//! \brief DirectComputation: Driver to compute direct interaction between N particles for 1/r kernel.
+//!
+//! DirectComputation: Driver to compute direct interaction between N particles for 1/r kernel.
+//! the particles are read from file given by -fin argument and potential, forces are stored in FMA format.
+//!  <b> General arguments:</b>
+//!     \param   -help (-h)      to see the parameters available in this driver
+//!     \param   -fin name:  file name  to convert (with extension .fma (ascii) or bfma (binary).
+//!                             Only our FMA (.bma, .bfma) is allowed "
+//!     \param    -fout filenameOUT   output file  with extension (default output.bfma)
+//!      \param   -verbose : print index x y z Q V fx fy fz
+//!
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -55,7 +65,8 @@ int main(int argc, char ** argv){
 
 	//////////////////////////////////////////////////////////////
 
-	const std::string filenameIn(FParameters::getStr(argc,argv,"-fin", "../Data/unitCubeXYZQ20k.fma"));
+	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
+	const std::string filenameIn(FParameters::getStr(argc,argv,"-fin",  defaultFile.c_str()));
 	const std::string filenameOut(FParameters::getStr(argc,argv,"-fout", "output.bfma"));
 	//
 	FTic counter;
