@@ -18,13 +18,13 @@
 // @FUSE_BLAS
 // ================
 
+#include "ScalFmmConfig.h"
 #include "Utils/FGlobal.hpp"
 
 #include "Containers/FOctree.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
 
-#include "Core/FFmmAlgorithmThread.hpp"
 #include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
@@ -60,12 +60,14 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		//
 		if(sizeof(FReal) == sizeof(float) ) {
 			std::cerr << "No input data available for Float "<< std::endl;
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
-		const char* const filename = (sizeof(FReal) == sizeof(float))?
-				"../Data/UTest/DirectFloatbfma":
-				"../Data/UTest/DirectDouble.bfma";
-		//checkDirect.bfma
+		const std::string parFile( (sizeof(FReal) == sizeof(float))?
+				"Test/DirectFloatbfma":
+				"UTest/DirectDouble.bfma");
+		//
+		std::string filename(SCALFMMDataPath+parFile);
+		//
 		FFmaGenericLoader loader(filename);
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
