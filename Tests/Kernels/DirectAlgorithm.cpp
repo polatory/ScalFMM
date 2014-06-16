@@ -18,10 +18,13 @@
 #include <iostream>
 #include <iomanip>
 
-#include <cstdio>
+#include <cstdio>  //printf
 #include <cstdlib>
+#include <cstring>  //memset
+
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 #include  "ScalFmmConfig.h"
 #include "../../Src/Utils/FTic.hpp"
@@ -99,12 +102,12 @@ int main(int argc, char ** argv){
 		std::cout << "     -noper no periodic boundary conditions   " << std::endl;
 		std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
 		std::cout << "     -fout filenameOUT  binary output file " << std::endl;
-		exit(-1);
+		std::exit( EXIT_FAILURE);
 
 	}
 	if(FParameters::existParameter(argc, argv, "-per") &&FParameters::existParameter(argc, argv, "-noper")  ){
 		std::cerr <<" Error -per X and -noper are forbidden together " << std::endl;
-		exit(-1);
+		std::exit( EXIT_FAILURE);
 	}
 
 	//////////////////////////////////////////////////////////////
@@ -147,10 +150,10 @@ int main(int argc, char ** argv){
 	FPoint electricMoment(0.0,0.0,0.0) ;
 	// const --> then shared
 	MDParticle * const particles = new MDParticle[loader->getNumberOfParticles()];
-	memset(particles, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
+	std::memset(particles, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
 	MDParticle* particlesDirect = nullptr;
 	particlesDirect = new MDParticle[loader->getNumberOfParticles()];
-	memset(particlesDirect, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
+	std::memset(particlesDirect, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
 	//
 	int nbParticles = static_cast<int>(loader->getNumberOfParticles());
 	double totalCharge = 0.0;

@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -42,7 +42,7 @@
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 #include "../../Src/Files/FFmaBinLoader.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "BalanceTree/FLeafBalance.hpp"
 
 #include <iostream>
 
@@ -284,7 +284,7 @@ int main(int argc, char ** argv){
     }
 
     FVector<TestParticle> finalParticles;
-    FleafBalance balancer;
+    FLeafBalance balancer;
     FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
 						 tree.getBoxCenter(),
 						 tree.getBoxWidth(),

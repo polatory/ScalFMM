@@ -171,7 +171,7 @@ void unifRandonPointsOnSphere(const int N , const FReal R, FReal * points) {
 		points[j+2]  *= R ;
 	}
 };
-//!  \fn FReal plummerDist(int & cpt, const FReal &R)
+//!  \fn void plummerDist(int & cpt, const FReal &R)
 
 //! \brief   Radial Plummer distribution
 
@@ -180,11 +180,11 @@ void unifRandonPointsOnSphere(const int N , const FReal R, FReal * points) {
 //! \param R    : Radius of the sphere that contains the particles
 //! @return Return the radius according to the Plummer distribution either double type or float type
 //!
-FReal plummerDist(int & cpt, const FReal &R) {
+FReal  plummerDist(int & cpt, const FReal &R) {
 	//
 	FReal radius ,u ;
 	do  {
-		//radius =  getRandom() ;
+		//
 		u        = FMath::pow (getRandom() , 2.0/3.0) ;
 		radius = FMath::Sqrt (u/(1.0-u));
 		cpt++;
@@ -226,23 +226,48 @@ void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * point
 			<<100*static_cast<FReal>(cpt-N)/cpt << " %" <<std::endl;
 
 } ;
-//! \fn void exportCVS(std::ofstream& file, const int N, const FReal * particles )
+//! \fn void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4)
 
 //! \brief  Export particles in CVS Format
 //!
 //! Export particles in CVS Format as follow
-//!      x ,  y  , z , physicalValue
+//!      x ,  y  , z , physicalValue, P, FX,  FY,  FY
 //! It is useful to plot the distribution with paraView
 //!
-void exportCVS(std::ofstream& file, const int N, const FReal * particles ){
+//!  @param file stream to save the data
+//!  @param  N number of particles
+//!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
+//!  @param  nbDataPerParticle number of values per particles (default value 4)
+//!
+void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4){
 	int j = 0;
-	file << " x ,  y , z, q " <<std::endl;
-	for(int i = 0 ; i< N; ++i, j+=4){
-		file <<    particles[j]    << " , "    <<   particles[j+1]    << " , "   <<   particles[j+2]    << " , "   <<   particles[j+3]   <<std::endl;
+	if (nbDataPerParticle==4){
+		file << " x ,  y , z, q  " <<std::endl;
+	}
+	else {
+		file << " x ,  y , z, q P FX FY FZ" <<std::endl;
+	}
+	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+		file <<    particles[j]   ;
+		for (int k = 1 ; k< nbDataPerParticle ; ++k) {
+			file   << "  , "  <<    particles[j+k]     ;
+		}
+		file   << std::endl;
 	}
 }
 //
-void exportCOSMOS(std::ofstream& file, const int N, const FReal * particles ){
+//! \fn void exportCOSMOS(std::ofstream& file,  const FReal * particles, const int N )
+
+//! \brief  Export particles in CVS Format
+//!
+//! Export particles in CVS Format as follow
+//!      x ,  y  , z , 0.0, 0.0, 0.0, physicalValue
+//!
+//!  @param file stream to save the data
+//!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
+//!  @param  N number of particles
+//!
+void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 	int j = 0;
 	file << " x ,  y , z, q " <<std::endl;
 	for(int i = 0 ; i< N; ++i, j+=4){
@@ -250,7 +275,20 @@ void exportCOSMOS(std::ofstream& file, const int N, const FReal * particles ){
 	}
 }
 //
-void exportVTK(std::ofstream& VTKfile, const int N, const FReal * particles ){
+//
+//! \fn void exportVTK(std::ofstream& file,  const FReal * particles, const int N )
+
+//! \brief  Export particles in CVS Format
+//!
+//! Export particles in old polydata Format.
+//!   A particle is composed of 4 fields    x ,  y  , z ,  physicalValue
+//! It is useful to plot the distribution with paraView
+//!
+//!  @param file stream to save the data
+//!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
+//!  @param  N number of particles
+//!
+void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle=4 ){
 	int j = 0;
 	//---------------------------
 	// print generic information
@@ -266,26 +304,39 @@ void exportVTK(std::ofstream& VTKfile, const int N, const FReal * particles ){
 	//---------------------------------
 	VTKfile << "POINTS " << N << "  float" << "\n";
 	//
-	for(int i = 0 ; i< N; ++i, j+=4){
+	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      <<std::endl;
 	}
 	// ------------------------------------------
 	VTKfile << "\n";
 	VTKfile << "VERTICES  " <<  N << " " << 2*N << "\n";
-	for(int i = 0 ; i< N; ++i, j+=4){
+	for(int i = 0 ; i< N; ++i){
 		VTKfile <<    "  1 "    << " "    <<i<<std::endl;
 	}
 	VTKfile << "POINT_DATA  " <<  N << "\n";
 	VTKfile << "SCALARS PhysicalValue  float 1" << "\n"
 			<< "LOOKUP_TABLE default" << "\n" ;
 	j = 0 ;
-	for(int i = 0 ; i< N; ++i, j+=4){
+	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		VTKfile <<    particles[j+3]    << " "    <<std::endl;
 	}
 	VTKfile << "\n";
 };
+//
+//
+//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const int N )
 
-void exportVTKxml(std::ofstream& VTKfile, const int N, const FReal * particles ){
+//! \brief  Export particles in xml polydata VTK  Format
+//!
+//! Export particles in the xml polydata VTK  Format.
+//!   A particle is composed of 4 fields    x ,  y  , z ,  physicalValue
+//! It is useful to plot the distribution with paraView
+//!
+//!  @param file stream to save the data
+//!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
+//!  @param  N number of particles
+//!
+void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N ){
 	int j = 0;
 
 	VTKfile << "<?xml version=\"1.0\"?>" <<std::endl
@@ -329,5 +380,87 @@ void exportVTKxml(std::ofstream& VTKfile, const int N, const FReal * particles )
 			<< "</VTKFile>"<<std::endl;
 } ;
 //
+//
+//
+//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const int N, const int nbDataPerParticle )
 
+//! \brief  Export particles in CVS Format
+//!
+//! Export particles in the new PolyData Format.
+//!   A particle is composed of 4 fields    x ,  y  , z ,  physicalValue
+//! It is useful to plot the distribution with paraView
+//!
+//!  @param file stream to save the data
+//!  @param  particles array of particles of type FReal (float or double) Its size is nbDataPerParticle*N
+//!  @param  N number of particles
+//!  @param  nbDataPerParticle number of values per particles (default value 4)
+//!
+void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle ){
+	int j = 0;
+
+	VTKfile << "<?xml version=\"1.0\"?>" <<std::endl
+			<< "<VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\"> "<<std::endl
+			<< "<PolyData>"<<std::endl
+			<< "<Piece NumberOfPoints=\" " << N << " \"  NumberOfVerts=\" "<<N <<" \" NumberOfLines=\" 0\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">"<<std::endl
+			<< "<Points>"<<std::endl
+			<< "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
+	j = 0 ;
+	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      << "   "   ;
+	}
+	VTKfile <<std::endl<< "</DataArray> "<<std::endl
+			<< "</Points> "<<std::endl ;
+	if (nbDataPerParticle==8 ) {
+		VTKfile<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
+				<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
+		j = 0 ;
+		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+			VTKfile <<    particles[j+3]    << " "   ;
+		}
+		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
+		VTKfile  << "<DataArray type=\"Float64\" Name=\"Potential\"  format=\"ascii\">"<<std::endl ;
+		j = 0 ;
+		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+			VTKfile <<    particles[j+4]    << " "   ;
+		}
+		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
+		VTKfile<< "<DataArray type=\"Float64\"  Name=\"Force\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
+		j = 0 ;
+		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+			VTKfile <<    particles[j+5]    << "  "    <<   particles[j+6]    << "   "   <<   particles[j+7]      << "   "   ;
+		}
+		VTKfile <<std::endl<< "</DataArray> "<<std::endl;
+	}
+	else {
+		VTKfile		<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
+				<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
+		j = 0 ;
+		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+			VTKfile <<    particles[j+3]    << " "   ;
+		}
+		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
+	}
+
+	VTKfile		<< "	</PointData>"<<std::endl
+			<< "	<CellData>"<<" </CellData>"<<std::endl
+			<< "	<Verts>"<<std::endl
+			<< "	<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">"<<std::endl ;
+	for(int i = 0 ; i< N; ++i){
+		VTKfile <<   i   << " "   ;
+	}
+	VTKfile<<std::endl << "</DataArray>" <<std::endl
+			<< "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">"<<std::endl ;
+	for(int i = 1 ; i< N+1; ++i){
+		VTKfile <<   i   << " "   ;
+	}
+	VTKfile<<std::endl  << "</DataArray>"<<std::endl
+			<< "	</Verts>"<<std::endl
+			<< "<Lines></Lines>"<<std::endl
+			<< "<Strips></Strips>"<<std::endl
+			<< "<Polys></Polys>"<<std::endl
+			<< "</Piece>"<<std::endl
+			<< "</PolyData>"<<std::endl
+			<< "</VTKFile>"<<std::endl;
+} ;
+//
 #endif

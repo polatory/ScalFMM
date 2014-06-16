@@ -1052,7 +1052,8 @@ private:
 		FMpiBufferWriter** sendBuffer;
 		FMpiBufferReader** recvBuffer;
 
-#pragma omp parallel /*default(none)*/ shared(m2lSelf,computationCounter,globalReceiveMap,requests,sendBuffer,recvBuffer,iterRequest,status,singleCounter,toSend,gatherCounter,sendCounter)
+// #pragma omp parallel /*default(none)*/ shared(m2lSelf,globalReceiveMap,requests,sendBuffer,recvBuffer,iterRequest,status,singleCounter,toSend,gatherCounter,sendCounter)
+#pragma omp parallel /*default(none)*/ shared(globalReceiveMap,requests,sendBuffer,recvBuffer,iterRequest,status,toSend)
 		{
 	int threadIdx = omp_get_thread_num();
 	typename OctreeClass::Iterator octreeIterator(tree);

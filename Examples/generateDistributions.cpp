@@ -258,23 +258,23 @@ int main(int argc, char ** argv){
 			exit(-1)	;
 		}	//
 		//
-		// Export data in cvs format
+		// Export data in VTK format
 		//
 		if( fmt == "vtp" ){
 			std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTKxml( file, NbPoints, particles)  ;
+			exportVTKxml( file, particles, NbPoints)  ;
 		}
 		else		if( fmt == "vtk" ){
 			std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTK( file, NbPoints, particles)  ;
+			exportVTK( file, particles, NbPoints)  ;
 		}
 		else if( fmt == "cosmo" ){
 			std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
-			exportCOSMOS( file, NbPoints, particles)  ;
+			exportCOSMOS( file, particles, NbPoints)  ;
 		}
 		else {
 			std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
-			exportCVS( file, NbPoints, particles)  ;
+			exportCVS( file, particles, NbPoints)  ;
 		}
 	}
 	//

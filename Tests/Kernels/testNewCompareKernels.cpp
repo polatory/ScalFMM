@@ -65,7 +65,8 @@
 #ifdef ScalFMM_USE_FFT
 // Uniform grid kernel
 #include "../../Src/Kernels/Uniform/FUnifCell.hpp"
-//#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+
 #include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
@@ -299,14 +300,14 @@ int main(int argc, char* argv[])
       const unsigned int ORDER = 7;
 
       // typedefs
-      typedef FP2PParticleContainerIndexed<> ContainerClass;
-      typedef FSimpleLeaf<ContainerClass> LeafClass;
-      typedef FInterpMatrixKernelR MatrixKernelClass;
-      typedef FUnifCell<ORDER> CellClass;
-      typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
-      typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-      typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+	    typedef FP2PParticleContainerIndexed<> ContainerClass;
+	    typedef FSimpleLeaf< ContainerClass >  LeafClass;
+	    typedef FInterpMatrixKernelR MatrixKernelClass;
+	    typedef FUnifCell<ORDER> CellClass;
+	    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+	    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
       // init oct-tree

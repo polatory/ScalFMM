@@ -18,6 +18,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FParameters.hpp"
@@ -34,64 +35,74 @@
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
-
+void usage() {
+	std::cout << "Exemple to store and load a tree" << std::endl;
+	std::cout <<	 "Options  "<< std::endl
+			<<     "      -help         to see the parameters    " << std::endl
+			<<	  "      -depth       the depth of the octree   "<< std::endl
+			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
+			<<     "      -fin    name    name specifies the file of the particle distribution" << std::endl
+			<<     "      -fout   name    file name of the octree  " << std::endl;
+}
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalCell                 CellClass;
-    typedef FP2PParticleContainer<>         ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
+		usage() ;
+		exit(EXIT_SUCCESS);
+	}
+	typedef FSphericalCell                 CellClass;
+	typedef FP2PParticleContainer<>         ContainerClass;
 
-    ///////////////////////What we do/////////////////////////////
-    std::cout << ">> This executable has to be used to load or retrieve an entier tree.\n";
-    //////////////////////////////////////////////////////////////
+	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    FTic counter;
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-    std::cout << "Opening : " << filename << "\n";
+	///////////////////////What we do/////////////////////////////
+	std::cout << ">> This executable has to be used to load or retrieve an entier tree.\n";
+	//////////////////////////////////////////////////////////////
+	const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
+	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
 
-    FFmaGenericLoader loader(filename);
-    if(!loader.isOpen()){
-        std::cout << "Loader Error, " << filename << " is missing\n";
-        return 1;
-    }
+	FTic counter;
+	const std::string filenameIN     = FParameters::getStr(argc,argv,"-fin", "../Data/test20k.fma");
+	const std::string filenameOUT = FParameters::getStr(argc,argv,"-fout", "tmp_tree.data");
+	std::cout << "Opening : " << filenameIN << "\n";
 
-    // -----------------------------------------------------
-    CellClass::Init(5);
-    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+	FFmaGenericLoader loader(filenameIN);
+	//
+	// -----------------------------------------------------
+	CellClass::Init(5);
+	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    // -----------------------------------------------------
+	// -----------------------------------------------------
 
-    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
-    counter.tic();
+	std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+	std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+	counter.tic();
 
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
-        FReal physicalValue = 0.0;
-        loader.fillParticle(&particlePosition,&physicalValue);
-        tree.insert(particlePosition, physicalValue );
-    }
+	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+		FPoint particlePosition;
+		FReal physicalValue = 0.0;
+		loader.fillParticle(&particlePosition,&physicalValue);
+		tree.insert(particlePosition, physicalValue );
+	}
 
-    counter.tac();
-    std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
+	counter.tac();
+	std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.elapsed() << "s)." << std::endl;
 
-    // -----------------------------------------------------
+	// -----------------------------------------------------
 
-    std::cout << "Save tree ..." << std::endl;
+	std::cout << "Save tree in binary format ..." << std::endl;
 
-    FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >("/tmp/tree.data", tree);
+	FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(), tree);
 
-    // -----------------------------------------------------
+	// -----------------------------------------------------
 
-    std::cout << "Load tree ..." << std::endl;
+	std::cout << "Load tree in binary format  ..." << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >("/tmp/tree.data", tree);
+	FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(),tree);
 
-    return 0;
+	return 0;
 }
 
 

@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -18,7 +18,7 @@
 
 
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
 
 
 #include "../Utils/FGlobal.hpp"
@@ -41,13 +41,18 @@ protected:
 public:
     /**
     * The constructor need the simulation data
+    *  @param   inNbParticles Number of partcles to generate randomly
+    *  @param  inBoxWidth     the width of the box
+    *  @param  inCenterOfBox the center of the box
+    *  @param  inSeed The seed for the random generator (default value time(0))
+    *
     */
     FRandomLoader(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
-                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(0))
+                  const FPoint& inCenterOfBox = FPoint(0,0,0),
+                  const unsigned int inSeed = static_cast<long int>(time(0)))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
         srand48(inSeed);
     }
-
     /**
     * Default destructor
     */
@@ -110,7 +115,7 @@ public:
 class FRandomLoaderTsm : public FRandomLoader {
 public:
     FRandomLoaderTsm(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
-                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(NULL)))
+                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(0)))
         : FRandomLoader(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
     }
 

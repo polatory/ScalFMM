@@ -19,9 +19,9 @@
 // ================
 
 #include <iostream>
-
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FParameters.hpp"
@@ -69,12 +69,12 @@ public:
 
 class GalaxyLoader : public FFmaGenericLoader {
 public:
-    GalaxyLoader(const char* const filename) : FFmaGenericLoader(filename) {
+    GalaxyLoader(const std::string & filename) : FFmaGenericLoader(filename) {
     }
 
     void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
         FReal x,y,z,data, vx, vy, vz;
-        this->file >> x >> y >> z >> data >> vx >> vy >> vz;
+        (*this->file)  >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
         *physivalValue = (data);
         velocity->setPosition(vx,vy,vz);
@@ -84,10 +84,10 @@ public:
 struct TestParticle{
     FPoint position;
     FReal physicalValue;
-    FReal forces[3];
     FReal potential;
-    FPoint velocity;
-    const FPoint& getPosition(){
+     FReal forces[3];
+     FPoint velocity;
+   const FPoint& getPosition(){
         return position;
     }
 };
@@ -141,7 +141,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
 
-    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
+    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma"));
 
     // -----------------------------------------------------
 

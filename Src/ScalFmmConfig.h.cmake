@@ -98,4 +98,10 @@
 #pragma warning (disable : 2326 ) 
 #endif
 
+///////////////////////////////////////////////////////
+// Path to the ScalFMM DATA (For UTests)
+///////////////////////////////////////////////////////
+#include <string>
+const std::string SCALFMMDataPath("@CMAKE_SOURCE_DIR@/Data/");
+
 #endif // CONFIG_H

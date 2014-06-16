@@ -15,16 +15,15 @@
 // ===================================================================================
 
 // ==== CMAKE =====
-// @FUSE_BLAS
+// @FUSE_FFT
 // ================
-
+#include "ScalFmmConfig.h"
 #include "Utils/FGlobal.hpp"
 
 #include "Containers/FOctree.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
 
-#include "Core/FFmmAlgorithmThread.hpp"
 #include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
@@ -59,12 +58,14 @@ class TestLagrange : public FUTester<TestLagrange> {
 		//
 		if(sizeof(FReal) == sizeof(float) ) {
 			std::cerr << "No input data available for Float "<< std::endl;
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
-		const char* const filename = (sizeof(FReal) == sizeof(float))?
-				"../Data/UTest/DirectFloatbfma":
-				"../Data/UTest/DirectDouble.bfma";
-		//checkDirect.bfma
+		const std::string parFile( (sizeof(FReal) == sizeof(float))?
+				"Test/DirectFloatbfma":
+				"UTest/DirectDouble.bfma");
+		//
+		std::string filename(SCALFMMDataPath+parFile);
+		//
 		FFmaGenericLoader loader(filename);
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
@@ -213,8 +214,6 @@ class TestLagrange : public FUTester<TestLagrange> {
 	    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 	    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	    //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-
 		// run test
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
 	}

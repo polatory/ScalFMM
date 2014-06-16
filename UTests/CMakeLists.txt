@@ -108,5 +108,9 @@ foreach(exec ${source_tests_files})
 			${execname}
 			${CMAKE_CURRENT_BINARY_DIR}/${execname}
 		)
+#			add_test(
+#			${execname}
+#			${CMAKE_CURRENT_BINARY_DIR}/${execname}
+#		)
 	endif()
 endforeach(exec)

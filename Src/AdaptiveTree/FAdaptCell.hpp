@@ -17,6 +17,7 @@
 #define FADAPTCELL_HPP
 
 #include <cstddef>
+#include <iostream>
 #include <vector>
 //
 #include "Components/FBasicCell.hpp"
@@ -58,7 +59,7 @@ protected:
 	//
 	CellClass   * trueFMMCell ;                   //<a pointer on the cell that contains Multipole and local values
 public:
-	FAdaptCell(): gID(-1), nbP(0), adaptive(false),trueFMMCell(nullptr) {
+	FAdaptCell(): gID(-1), nbP(0), adaptive(false),sminMCriteria(false),trueFMMCell(nullptr) {
 	}
 	/** Default destructor */
 	virtual ~FAdaptCell(){

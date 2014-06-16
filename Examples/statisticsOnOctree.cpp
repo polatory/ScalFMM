@@ -99,16 +99,7 @@ int main(int argc, char ** argv){
 			<<std::endl;
 
 	//
-	std::cout << "Opening : " << filename << "\n";
-	bool binaryMode = false;
-	if(FParameters::existParameter(argc, argv, "-bin")){
-		binaryMode = true;
-	}
-	FFmaGenericLoader loader(filename,binaryMode);
-	if(!loader.isOpen()){
-		std::cout << "Loader Error, " << filename << " is missing\n";
-		return 1;
-	}
+	FFmaGenericLoader loader(filename);
 	// -----------------------------------------------------
 	OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 	//
