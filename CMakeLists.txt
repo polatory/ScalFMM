@@ -341,6 +341,7 @@ CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
                ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
                @ONLY IMMEDIATE
                )
+#
 INSTALL(FILES 
   ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake
   DESTINATION lib/
@@ -369,7 +370,7 @@ SET(CPACK_PACKAGE_VERSION_NINOR "${ScalFMM_MINOR_VERSION}")
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME  "ScalFMM-${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}") 
 SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;/*.ind;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*" )
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*,noDist" )
 message("CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
 message("CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
 #
