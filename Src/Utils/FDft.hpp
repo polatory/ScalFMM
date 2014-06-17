@@ -63,7 +63,7 @@
  *
  * @tparam nsteps number of sampled values \f$N\f$
  */
-template<typename ValueType>
+template<typename ValueType = FReal>
 class FDft
 {
 
@@ -75,11 +75,9 @@ class FDft
 private:
   unsigned int nsteps_; //< number of steps
 
-public:
-
-  FDft(const unsigned int nsteps)
-  : nsteps_(nsteps)
+  void initDFT()
   {
+    // allocate arrays
     data_  = new ValueType[nsteps_];
     dataF_ = new FComplexe[nsteps_];
 
@@ -93,6 +91,22 @@ public:
         cosRS_[r*nsteps_+s]=FMath::Cos(thetaRS);
         sinRS_[r*nsteps_+s]=FMath::Sin(thetaRS);
       }
+  }
+
+public:
+
+  FDft(const unsigned int nsteps)
+    : nsteps_(nsteps)
+  {
+    // init DFT
+    initDFT();
+  }
+
+  FDft(const FDft& other)
+  : nsteps_(other.nsteps_)
+  {
+    // init DFT
+    initDFT();
   }
 
   virtual ~FDft()
@@ -220,18 +234,8 @@ private:
   int nsteps_;     //< total number of steps
   int nsteps_opt_; //< reduced number of steps for real valued FFT
 
-public:
-
-  FFft(const int steps[dim])
+  void initDFT()
   {
-    // init number of steps
-    nsteps_=1; nsteps_opt_=1;
-    for(int d = 0; d<dim;++d){
-      steps_[d]=steps[d];
-      nsteps_*=steps[d];
-      nsteps_opt_*=steps[d]/2+1; // real valued DFT specific
-    }
-
     // allocate arrays
     data_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
     dataF_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_opt_);
@@ -259,7 +263,38 @@ public:
                         data_, 
                         reinterpret_cast<fftw_complex*>(dataF_), 
                         FFTW_MEASURE);
+  }
 
+public:
+
+  FFft()
+    : nsteps_(0), nsteps_opt_(0)
+  {
+    for(int d = 0; d<dim;++d){steps_[d]=0;}
+  }
+
+  void buildDFT(const int steps[dim])
+  {
+    // init number of steps
+    nsteps_=1; nsteps_opt_=1;
+    for(int d = 0; d<dim;++d){
+      steps_[d]=steps[d];
+      nsteps_*=steps[d];
+      nsteps_opt_*=steps[d]/2+1; // real valued DFT specific
+    }
+
+    // init DFT
+    initDFT();
+
+  }
+
+  FFft(const FFft& other)
+  : nsteps_(other.nsteps_),nsteps_opt_(other.nsteps_opt_)
+  {
+    // mem copies
+    memcpy(steps_,other.steps_,dim*sizeof(int));
+    // init DFT
+    initDFT();
   }
 
   virtual ~FFft()

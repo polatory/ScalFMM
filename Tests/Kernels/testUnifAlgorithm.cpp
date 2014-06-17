@@ -28,24 +28,24 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
 
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Utils/FMemUtils.hpp"
+#include "Utils/FParameters.hpp"
+#include "Utils/FMemUtils.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
-#include "../../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 /**
  * This program runs the FMM Algorithm with the Uniform kernel and compares the results with a direct computation.
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
   };
 
   // open particle file
-  FFmaScanfLoader loader(filename);
+  FFmaGenericLoader loader(filename);
   if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
   TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
@@ -135,7 +135,6 @@ int main(int argc, char* argv[])
     typedef FUnifCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
     typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-    //typedef FUnifSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -199,11 +198,6 @@ int main(int argc, char* argv[])
             }
           });
       }
-
-//      std::cout << "Check Potential " << std::endl;
-//      for(int idxPart = 0 ; idxPart < 20 ; ++idxPart)
-//        std::cout << checkPotential[idxPart] << ", "<< particles[idxPart].potential << std::endl;
-//      std::cout << std::endl;
 
       // Print for information
       std::cout << "Potential " << potentialDiff << std::endl;

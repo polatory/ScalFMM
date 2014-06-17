@@ -27,7 +27,6 @@
 enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
                                  ONE_OVER_R_SQUARED,
                                  LENNARD_JONES_POTENTIAL,
-                                 ID_OVER_R,
                                  R_IJ,
                                  R_IJK};
 
@@ -68,7 +67,7 @@ struct FInterpAbstractMatrixKernel : FNoCopyable
 /// One over r
 struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 {
-  static const KERNEL_FUNCTION_TYPE Type = /*NON_*/HOMOGENEOUS;
+  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
   static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R;
   static const unsigned int NCMP = 1; //< number of components
   static const unsigned int NPV  = 1; //< dim of physical values
@@ -105,18 +104,6 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   {
     return FReal(2.) / CellWidth;
   }
-
-//  FReal getScaleFactor(const FReal, const int) const
-//  {
-//    // return 1 because non homogeneous kernel functions cannot be scaled!!!
-//    return FReal(1.);
-//  }
-//
-//  FReal getScaleFactor(const FReal) const
-//  {
-//    // return 1 because non homogeneous kernel functions cannot be scaled!!!
-//    return FReal(1.);
-//  }
 
 };
 
@@ -160,7 +147,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 
   FReal getScaleFactor(const FReal CellWidth) const
   {
-    return FReal(4.) / CellWidth;
+    return FReal(4.) / (CellWidth*CellWidth);
   }
 };
 
@@ -241,80 +228,6 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Test Tensorial kernel 1/R*Id_3
-struct FInterpMatrixKernel_IOR : FInterpAbstractMatrixKernel
-{
-  static const KERNEL_FUNCTION_TYPE Type = /*NON_*/HOMOGENEOUS;
-  static const KERNEL_FUNCTION_IDENTIFIER Identifier = ID_OVER_R;
-  static const unsigned int NK   = 3*3; //< total number of components
-  static const unsigned int NCMP = 6;   //< number of components after symmetry
-  static const unsigned int NPV  = 3;   //< dim of physical values
-  static const unsigned int NPOT = 3;   //< dim of potentials
-  static const unsigned int NRHS = NPV; //< dim of mult exp
-  static const unsigned int NLHS = NPOT*NRHS; //< dim of loc exp
-
-  // store indices (i,j) corresponding to sym idx
-  static const unsigned int indexTab[/*2*NCMP=12*/];
-
-  // store positions in sym tensor 
-  static const unsigned int applyTab[/*9*/];
-
-  const unsigned int _i,_j;
-
-  FInterpMatrixKernel_IOR(const double = 0.0, const unsigned int d = 0)
-  : _i(indexTab[d]), _j(indexTab[d+NCMP])
-  {}
-
-  // returns position in reduced storage from position in full 3x3 matrix
-  unsigned int getPosition(const unsigned int n) const
-  {return applyTab[n];} 
-
-  FReal evaluate(const FPoint& x, const FPoint& y) const
-  {
-    const FPoint xy(x-y);
-
-    // low rank approx does not support nul kernels
-//    if(_i==_j)
-      return FReal(1.)/xy.norm();
-//    else
-//      return FReal(0.);
-
-  }
-
-  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
-  {
-    const FPoint xy(x-y);
-    const FReal one_over_r = FReal(1.)/xy.norm();
-
-    for(unsigned int d=0;d<NCMP;++d){
-//      unsigned int i = indexTab[d];
-//      unsigned int j = indexTab[d+NCMP];
-
-//      if(i==j)
-        block[d] = one_over_r;
-//      else
-//        block[d] = 0.0;
-    }        
-  }
-
-  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
-  {
-    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
-    return getScaleFactor(CellWidth);
-  }
-
-  FReal getScaleFactor(const FReal CellWidth) const
-  {
-        return FReal(2.) / CellWidth;
-  }
-
-//  FReal getScaleFactor(const FReal) const
-//  {
-//    // return 1 because non homogeneous kernel functions cannot be scaled!!!
-//    return FReal(1.);
-//  }
-
-};
 
 /// R_{,ij}
 // PB: IMPORTANT! This matrix kernel does not present the symmetries 
@@ -412,12 +325,6 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   {
         return FReal(2.) / CellWidth;
   }
-
-//  // R_{,ij} is set non-homogeneous
-//  FReal getScaleFactor(const FReal CellWidth) const
-//  {
-//    return FReal(1.);
-//  }
 
 };
 
@@ -549,12 +456,6 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   {
     return FReal(4.) / (CellWidth*CellWidth);
   }
-
-//  // R_{,ijk} is set non-homogeneous
-//  FReal getScaleFactor(const FReal CellWidth) const
-//  {
-//    return FReal(1.);
-//  }
 
 };
 

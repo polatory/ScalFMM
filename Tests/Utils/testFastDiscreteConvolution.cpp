@@ -108,8 +108,9 @@ int main(int, char **){
   time.tic();
   const int dim = 1;
   const int steps[dim] = {N};
-  //FDft Dft(N);// direct version
-  FFft<dim> Dft(steps);// fast version
+  //FDft<FReal> Dft(N);// direct version (Beware! Ordering of output differs from REAL valued-FFT)
+  FFft<dim> Dft;// fast version
+  Dft.buildDFT(steps);// fast version
   std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
   // Initialize manually

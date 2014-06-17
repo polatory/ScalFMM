@@ -48,24 +48,6 @@ struct DirectInteractionComputer<LENNARD_JONES_POTENTIAL, 1>
   }
 };
 
-/*! Specialization for ID_OVER_R potential */
-template <>
-struct DirectInteractionComputer<ID_OVER_R, 1>
-{
-  template <typename ContainerClass>
-  static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
-    FP2P::FullMutualIOR(TargetParticles,NeighborSourceParticles,14);
-  }
-
-  template <typename ContainerClass>
-  static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[27],
-                         const int inSize){
-    FP2P::FullRemoteIOR(inTargets,inNeighbors,inSize);
-  }
-};
-
 /*! Specialization for GradGradR potential */
 template <>
 struct DirectInteractionComputer<R_IJ, 1>
@@ -156,27 +138,6 @@ struct DirectInteractionComputer<LENNARD_JONES_POTENTIAL, NVALS>
   }
 };
 
-/*! Specialization for ID_OVER_R potential */
-template <int NVALS>
-struct DirectInteractionComputer<ID_OVER_R, NVALS>
-{
-  template <typename ContainerClass>
-  static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
-    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-    FP2P::FullMutualIOR(TargetParticles,NeighborSourceParticles,14);
-    }
-  }
-
-  template <typename ContainerClass>
-  static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[27],
-                         const int inSize){
-    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-    FP2P::FullRemoteIOR(inTargets,inNeighbors,inSize);
-    }
-  }
-};
 
 /*! Specialization for GradGradR potential */
 template <int NVALS>
