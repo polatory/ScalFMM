@@ -205,8 +205,38 @@ public :
 
 };
 
+#ifdef ScalFMM_USE_MPI
 
+#include "../Src/Utils/FMpi.hpp"
 
+#define TestClassMpi(X)						\
+  int main(int argc, char** argv){				\
+    X Controller(argc,argv);					\
+    return Controller.Run();					\
+  }								\
+  
+template <class TestClass>
+class FUTesterMpi : public FUTester<TestClass>{
+protected:
+  FMpi app;
+  
+  //Constructor with params to initialize FMpi
+  FUTesterMpi(int argc, char ** argv) : app(argc,argv){
+  }
 
+  /**
+   * To print a message manually in the test
+   * @param value a object that ostream can work on
+   */
+  template <class Output>
+  void Print(const Output& value){
+    if(app.global().processId()==0){
+      std::cout<< "--- Output from program : " << value << "\n";
+    }
+  }
 
+  
+};
+ 
+#endif  
 #endif
