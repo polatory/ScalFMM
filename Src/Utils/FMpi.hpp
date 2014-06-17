@@ -239,12 +239,12 @@ public:
   */
   FMpi( ) : communicator(0) {
     int provided = 0;
-    FMpi::Assert( MPI_Init_thread(NULL,NULL, MPI_THREAD_MULTIPLE, &provided), __LINE__);
+    FMpi::Assert( MPI_Init_thread(NULL,NULL, MPI_THREAD_SERIALIZED, &provided), __LINE__);
     communicator = new FComm(MPI_COMM_WORLD);
   }
   FMpi(int inArgc, char **  inArgv ) : communicator(0) {
     int provided = 0;
-    FMpi::Assert( MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_MULTIPLE, &provided), __LINE__);
+    FMpi::Assert( MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_SERIALIZED, &provided), __LINE__);
     communicator = new FComm(MPI_COMM_WORLD);
   }
 
