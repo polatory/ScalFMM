@@ -1,0 +1,61 @@
+// ===================================================================================
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.  
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info". 
+// "http://www.gnu.org/licenses".
+// ===================================================================================
+
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
+
+
+#ifndef FMPIFMAGENERICLOADER_HPP
+#define FMPIFMAGENERICLOADER_HPP
+
+class FMpiFmaGenericLoader : public FFmaGenericLoader {
+protected:
+  FSize myNbOfParticles;     //Number of particles that the calling process will manage
+  MPI_Offset idxParticles;   //
+  FSize start;               // number of my first parts in file
+
+public:
+  FMpiFmaGenericLoader(const std::string inFilename,const FMpi::FComm& comm, const bool useMpiIO = false)
+    : FFmaGenericLoader(inFilename,true),myNbOfParticles(0),idxParticles(0)
+  {
+    FSize startPart = comm.getLeft(nbParticles);
+    FSize endPart   = comm.getRight(nbParticles);
+    this->start = startPart;
+    this->myNbOfParticles = endPart-startPart;
+    std::cout << "Proc " << comm.processId() << " will hold " << myNbOfParticles << std::endl;
+    
+    //This is header size in bytes
+    //   MEANING :      sizeof(FReal)+nbAttr, nb of parts, boxWidth+boxCenter
+    size_t headerSize = sizeof(int)*2 + sizeof(FSize) + sizeof(FReal)*4;
+    //To this header size, we had the parts that belongs to proc on my left
+    file->seekg(headerSize + startPart*typeData[1]*sizeof(FReal));
+  }
+
+  ~FMpiFmaGenericLoader(){
+  }
+  
+  FSize getMyNumberOfParticles() const{
+    return myNbOfParticles;
+  }
+
+  FSize getStart() const{
+    return start;
+  }
+  
+};
+
+#endif //FMPIFMAGENERICLOADER_HPP
