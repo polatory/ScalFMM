@@ -25,24 +25,24 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
 
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
-#include "../../Src/Kernels/Uniform/FUnifTensorialKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
+#include "Kernels/Uniform/FUnifTensorialKernel.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Utils/FMemUtils.hpp"
+#include "Utils/FParameters.hpp"
+#include "Utils/FMemUtils.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
-#include "../../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 /**
  * This program runs the FMM Algorithm with the Uniform kernel and compares the results with a direct computation.
@@ -68,26 +68,26 @@ int main(int argc, char* argv[])
 
 
   // typedefs
-//  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-//  typedef FInterpMatrixKernel_IOR MatrixKernelClass;
-  typedef FInterpMatrixKernel_R_IJK MatrixKernelClass;
+  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+//  typedef FInterpMatrixKernel_R_IJK MatrixKernelClass;
 
-  // usefull features of matrix kernel
+  // useful features of matrix kernel
   const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
   const unsigned int NPV  = MatrixKernelClass::NPV;
   const unsigned int NPOT = MatrixKernelClass::NPOT;
   const unsigned int NRHS = MatrixKernelClass::NRHS;
   const unsigned int NLHS = MatrixKernelClass::NLHS;
 
-  const double CoreWidth = 10;
+  const double CoreWidth = 0.1;
   const MatrixKernelClass DirectMatrixKernel(CoreWidth);
   std::cout<< "Interaction kernel: ";
   if(MK_ID == ONE_OVER_R) std::cout<< "1/R";
-  else if(MK_ID == ID_OVER_R) std::cout<< "Id/R";
   else if(MK_ID == R_IJ)
-    std::cout<< "Ra_{,ij}" << " with core width a=" << CoreWidth <<std::endl;
+    std::cout<< "Ra_{,ij}" 
+             << " with core width a=" << CoreWidth <<std::endl;
   else if(MK_ID == R_IJK)
-    std::cout<< "Ra_{,ijk}"<< " with core width a=" << CoreWidth <<std::endl;
+    std::cout<< "Ra_{,ijk} (BEWARE! Forces NOT YET IMPLEMENTED)" 
+             << " with core width a=" << CoreWidth <<std::endl;
   else std::runtime_error("Provide a valid matrix kernel!");
 
   // init particles position and physical value
@@ -99,7 +99,8 @@ int main(int argc, char* argv[])
   };
 
   // open particle file
-  FFmaScanfLoader loader(filename);
+  FFmaGenericLoader loader(filename);
+
   if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
   TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
@@ -143,15 +144,6 @@ int main(int argc, char* argv[])
                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
                                      particles[idxOther].forces[2], particles[idxOther].potential,
                                      &DirectMatrixKernel);
-          else if(MK_ID == ID_OVER_R)
-            FP2P::MutualParticlesIOR(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                     particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                     particles[idxTarget].forces[0], particles[idxTarget].forces[1],
-                                     particles[idxTarget].forces[2], particles[idxTarget].potential,
-                                     particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                     particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                     particles[idxOther].forces[0], particles[idxOther].forces[1],
-                                     particles[idxOther].forces[2], particles[idxOther].potential);
           else if(MK_ID == R_IJK)
             FP2P::MutualParticlesRIJK(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                       particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,

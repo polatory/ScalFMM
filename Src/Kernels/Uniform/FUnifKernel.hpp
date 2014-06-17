@@ -52,7 +52,8 @@ class FUnifKernel
   AbstractBaseClass;
 
   /// Needed for M2L operator
-  FSmartPointer<  M2LHandlerClass,FSmartPointerMemory> M2LHandler;
+  const M2LHandlerClass M2LHandler;
+
 
 public:
   /**
@@ -64,9 +65,9 @@ public:
               const FReal inBoxWidth,
               const FPoint& inBoxCenter)
     : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
-      M2LHandler(new M2LHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(),
-                                     inTreeHeight,
-                                     inBoxWidth))// PB: for non homogeneous case
+      M2LHandler(AbstractBaseClass::MatrixKernel.getPtr(),
+                 inTreeHeight,
+                 inBoxWidth) 
   { }
 
 
@@ -79,7 +80,7 @@ public:
       AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
                                                 LeafCell->getMultipole(idxRhs), SourceParticles);
       // 2) apply Discrete Fourier Transform
-      M2LHandler->applyZeroPaddingAndDFT(LeafCell->getMultipole(idxRhs), 
+      M2LHandler.applyZeroPaddingAndDFT(LeafCell->getMultipole(idxRhs), 
                                          LeafCell->getTransformedMultipole(idxRhs));
 
     }
@@ -100,7 +101,7 @@ public:
         }
       }
       // 2) Apply Discete Fourier Transform
-      M2LHandler->applyZeroPaddingAndDFT(ParentCell->getMultipole(idxRhs), 
+      M2LHandler.applyZeroPaddingAndDFT(ParentCell->getMultipole(idxRhs), 
                                          ParentCell->getTransformedMultipole(idxRhs));
     }
   }
@@ -137,7 +138,7 @@ public:
 
       for (int idx=0; idx<343; ++idx){
         if (SourceCells[idx]){
-          M2LHandler->applyFC(idx, TreeLevel, scale, 
+          M2LHandler.applyFC(idx, TreeLevel, scale, 
                               SourceCells[idx]->getTransformedMultipole(idxRhs),
                               TransformedLocalExpansion);
         }
@@ -168,7 +169,7 @@ public:
   {
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       // 1) Apply Inverse Discete Fourier Transform
-      M2LHandler->unapplyZeroPaddingAndDFT(ParentCell->getTransformedLocal(idxRhs),
+      M2LHandler.unapplyZeroPaddingAndDFT(ParentCell->getTransformedLocal(idxRhs),
                                            const_cast<CellClass*>(ParentCell)->getLocal(idxRhs));
       // 2) apply Sx
       for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
@@ -187,7 +188,7 @@ public:
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
       // 1)  Apply Inverse Discete Fourier Transform
-      M2LHandler->unapplyZeroPaddingAndDFT(LeafCell->getTransformedLocal(idxRhs), 
+      M2LHandler.unapplyZeroPaddingAndDFT(LeafCell->getTransformedLocal(idxRhs), 
                                            const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
 
       // 2.a) apply Sx

@@ -40,7 +40,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
 	// allocate memory and store compressed M2L operators
   if (FC) throw std::runtime_error("M2L operators are already set");
 
-  // PB: need to redefine some constant since not function from m2lhandler class
+  // dimensions of operators
   const unsigned int order = ORDER;
   const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
   const unsigned int ninteractions = 316;
@@ -68,8 +68,8 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
   // init Discrete Fourier Transformator
   const int dimfft = 1; // unidim FFT since fully circulant embedding
   const int steps[dimfft] = {rc};
-//	FDft Dft(rc);
-	FFft<dimfft> Dft(steps);
+  FFft<dimfft> Dft;
+  Dft.buildDFT(steps);
 
   // get first column of K via permutation
   unsigned int perm[rc];
@@ -97,7 +97,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
                 //                _C[counter*rc + ido]
                 _C[perm[ido]]
                   = MatrixKernel->evaluate(X[node_ids_pairs[ido][0]], 
-                                          Y[node_ids_pairs[ido][1]]);
+                                           Y[node_ids_pairs[ido][1]]);
                 ido++;
               }
 
@@ -130,15 +130,9 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC + counter*rc), 
                         reinterpret_cast<FReal*>(FC + idx*opt_rc));
-//          for (unsigned int n=0; n<rc; ++n){
-//            FC[idx*rc+n]=_FC[counter*rc+n];
-//          }
 					counter++;
 				} else{ 
           FBlas::c_setzero(opt_rc, reinterpret_cast<FReal*>(FC + idx*opt_rc));
-//          for (unsigned int n=0; n<rc; ++n){
-//            FC[idx*rc+n]=FComplexe(0.0,0.0);
-//          }
         }
       }
 
@@ -169,25 +163,24 @@ template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class FUnifM2LHandler;
 
 /*! Specialization for homogeneous kernel functions */
 template <int ORDER>
-class FUnifM2LHandler<ORDER,HOMOGENEOUS> : FNoCopyable
+class FUnifM2LHandler<ORDER,HOMOGENEOUS>
 {
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
+  /// M2L Operators (stored in Fourier space)
+  FSmartPointer< FComplexe,FSmartArrayMemory> FC;
 
-	FComplexe *FC;
-
+  /// Utils
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
   /// DFT specific
   static const int dimfft = 1; // unidim FFT since fully circulant embedding
-//  FDft Dft; // Direct Discrete Fourier Transformator
   typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
-  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
-
+  DftClass Dft;
   const unsigned int opt_rc; // specific to real valued kernel
 
 
@@ -204,12 +197,11 @@ class FUnifM2LHandler<ORDER,HOMOGENEOUS> : FNoCopyable
 public:
 	template <typename MatrixKernelClass>
 	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: FC(NULL),
-      opt_rc(rc/2+1)
+		: FC(NULL), opt_rc(rc/2+1), Dft()
 	{    
     // init DFT
     const int steps[dimfft] = {rc};
-    Dft = new DftClass(steps);
+    Dft.buildDFT(steps);
 
     // initialize root node ids
     TensorType::setNodeIdsDiff(node_diff);
@@ -220,9 +212,7 @@ public:
   }
 
 	~FUnifM2LHandler()
-	{
-		if (FC != NULL) delete [] FC;
-	}
+	{ }
 
 	/**
 	 * Computes and sets the matrix \f$C_t\f$
@@ -236,7 +226,9 @@ public:
     if (FC) throw std::runtime_error("M2L operator already set");
     // Compute matrix of interactions
 		const FReal ReferenceCellWidth = FReal(2.);
-		Compute<order>(MatrixKernel,ReferenceCellWidth,FC);
+    FComplexe* pFC = NULL;
+		Compute<order>(MatrixKernel,ReferenceCellWidth,pFC);
+    FC.assign(pFC);
 
     // Compute memory usage
     unsigned long sizeM2L = 343*opt_rc*sizeof(FComplexe);
@@ -260,7 +252,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft->applyIDFT(FX,Px);
+    Dft.applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -284,28 +276,12 @@ public:
   void applyFC(const unsigned int idx, const unsigned int, const FReal scale,
                const FComplexe *const FY, FComplexe *const FX) const
   {
-
-    FComplexe tmpFX; 
-
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      tmpFX=FC[idx*opt_rc + j];
-      tmpFX*=FY[j];
-      tmpFX*=scale;
-      FX[j]+=tmpFX;
+      FX[j].addMul(FComplexe(scale*FC[idx*opt_rc + j].getReal(),
+                             scale*FC[idx*opt_rc + j].getImag()),
+                   FY[j]);
     }
-
-//    // Perform entrywise product using BLAS and MKL routines
-//    // PB: not necessary faster than the naive version
-//    FComplexe tmpFX[rc]; 
-//    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
-//    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
-//                reinterpret_cast<const FReal* const>(FY),
-//                reinterpret_cast<FReal* const>(tmpFX));
-//    // Scale
-//    FBlas::c_axpy(rc,&scale,reinterpret_cast<FReal* const>(tmpFX),
-//                  reinterpret_cast<FReal* const>(FX));
-
   }
 
 
@@ -326,8 +302,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft->applyDFT(Py,FY);
-
+    Dft.applyDFT(Py,FY);
   }
 
 
@@ -336,28 +311,27 @@ public:
 
 /*! Specialization for non-homogeneous kernel functions */
 template <int ORDER>
-class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS> : FNoCopyable
+class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
 {
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
-  // Homogeneity specific
-	FComplexe** FC;
-
+  /// M2L Operators (stored in Fourier space for each level)
+  FSmartPointer< FComplexe*,FSmartArrayMemory> FC;
+  /// Homogeneity specific variables
   const unsigned int TreeHeight;
   const FReal RootCellWidth;
 
+  /// Utils
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
 
-  // DFT specific
+  /// DFT specific
   static const int dimfft = 1; // unidim FFT since fully circulant embedding
-//  FDft Dft; // Direct Discrete Fourier Transformator
   typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
-  FSmartPointer<DftClass,FSmartPointerMemory> Dft;
-
+  DftClass Dft;
   const unsigned int opt_rc; // specific to real valued kernel
 
 
@@ -376,11 +350,12 @@ public:
 	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
 		: TreeHeight(inTreeHeight),
       RootCellWidth(inRootCellWidth),
-      opt_rc(rc/2+1)
+      opt_rc(rc/2+1),
+      Dft()
 	{
     // init DFT
     const int steps[dimfft] = {rc};
-    Dft = new DftClass(steps);
+    Dft.buildDFT(steps);
 
     // initialize root node ids
     TensorType::setNodeIdsDiff(node_diff);
@@ -443,7 +418,7 @@ public:
     FReal Px[rc];
     FBlas::setzero(rc,Px);
     // Apply forward Discrete Fourier Transform
-    Dft->applyIDFT(FX,Px);
+    Dft.applyIDFT(FX,Px);
 
     // Unapply Zero Padding
     for (unsigned int j=0; j<nnodes; ++j)
@@ -467,27 +442,10 @@ public:
   void applyFC(const unsigned int idx, const unsigned int TreeLevel, const FReal,
                const FComplexe *const FY, FComplexe *const FX) const
   {
-
-    FComplexe tmpFX; 
-
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      tmpFX=FC[TreeLevel][idx*opt_rc + j];
-      tmpFX*=FY[j];
-      FX[j]+=tmpFX;
+      FX[j].addMul(FC[TreeLevel][idx*opt_rc + j],FY[j]);
     }
-
-//    // Perform entrywise product using BLAS and MKL routines
-//    // PB: not necessary faster than the naive version
-//    FComplexe tmpFX[rc]; 
-//    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
-//    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
-//                reinterpret_cast<const FReal* const>(FY),
-//                reinterpret_cast<FReal* const>(tmpFX));
-//    // Scale
-//    FBlas::c_axpy(rc,&scale,reinterpret_cast<FReal* const>(tmpFX),
-//                  reinterpret_cast<FReal* const>(FX));
-
   }
 
 
@@ -508,7 +466,7 @@ public:
       Py[node_diff[i*nnodes]]=y[i];
 
     // Apply forward Discrete Fourier Transform
-    Dft->applyDFT(Py,FY);
+    Dft.applyDFT(Py,FY);
 
   }
 
