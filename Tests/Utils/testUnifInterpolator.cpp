@@ -330,7 +330,8 @@ int main(int, char **){
   const int dimfft = 1;
   const int steps[dimfft] = {rc};
   //FDft Dft(rc); // direct version
-  FFft<dimfft> Dft(steps); // fast version
+  FFft<dimfft> Dft; // fast version
+  Dft.buildDFT(steps);
 
   // Get first COLUMN of K and Store in T
   FReal T[rc];
