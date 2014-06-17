@@ -31,7 +31,7 @@
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
-#include "../../Src/Files/FMpiFmaLoader.hpp"
+#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
-	FMpiFmaLoader loader(filename,app.global());
+	FMpiFmaGenericLoader loader(filename,app.global());
 
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
 	////////////////////////////////////////////////////////////////////
@@ -132,32 +132,34 @@ int main(int argc, char* argv[])
 
 	// init oct-tree
 	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-	printf("There \n");
 	
 
 	{ // -----------------------------------------------------
-	  std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-		    << " particles ..." << std::endl;
-	  std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+	  if(app.global().processId() == 0){
+	    std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+		      << " particles ..." << std::endl;
+	    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+	  }
 	  time.tic();
 	  //
 	  
 	  struct TestParticle{
-	    int index;
+	    FSize index;
 	    FPoint position;
 	    FReal physicalValue;
 	    const FPoint& getPosition(){
 	      return position;
 	    }
 	  };
-	  TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-	  memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
+	  
+	  TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
+	  memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
 	  	  
 	  //idx (in file) of the first part that will be used by this proc. 
-	  int idxStart = loader.getStart();
-	  printf("Proc %d idxStart %d \n",app.global().processId(),idxStart);
+	  FSize idxStart = loader.getStart();
+	  printf("Proc %d idxStart %lld \n",app.global().processId(),idxStart);
 	  
-	  for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+	  for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
 	    //Storage of the index (in the original file) of each part.
 	    particles[idxPart].index = idxPart + idxStart;
 	    // Read particles from file
@@ -166,7 +168,7 @@ int main(int argc, char* argv[])
 	  		
 	  FVector<TestParticle> finalParticles;
 	  FLeafBalance balancer;
-	  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+	  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
 						 tree.getBoxCenter(),
 						 tree.getBoxWidth(),
 						 tree.getHeight(), &finalParticles,&balancer);
@@ -204,7 +206,7 @@ int main(int argc, char* argv[])
 	//
 	//
 	{ // -----------------------------------------------------
-	  long int N1=0, N2= loader.getTotalNumberOfParticles()/2, N3= (loader.getTotalNumberOfParticles()-1); ;
+	  long int N1=0, N2= loader.getNumberOfParticles()/2, N3= (loader.getNumberOfParticles()-1); ;
 	  FReal energy =0.0 ;
 	  //
 	  //   Loop over all leaves

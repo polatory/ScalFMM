@@ -30,7 +30,7 @@
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
-#include "../../Src/Files/FMpiFmaLoader.hpp"
+#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
@@ -105,9 +105,9 @@ int main(int argc, char* argv[])
   // init timer
   FTic time;
 
-  FMpiFmaLoader loader(filename,app.global(),true);
+  FMpiFmaGenericLoader* loader = new FMpiFmaGenericLoader(filename,app.global());
 
-  if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
+  if(!loader->isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
   ////////////////////////////////////////////////////////////////////
 
 
@@ -127,13 +127,15 @@ int main(int argc, char* argv[])
   typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
 
   // init oct-tree
-  OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+  OctreeClass tree(TreeHeight, SubTreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
 
 
   { // -----------------------------------------------------
-    std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-	      << " particles ..." << std::endl;
-    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+    if(app.global().processId() == 0){
+      std::cout << "Creating & Inserting " << loader->getNumberOfParticles()
+		<< " particles ..." << std::endl;
+      std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+    }
     time.tic();
     //
 
@@ -145,23 +147,23 @@ int main(int argc, char* argv[])
 	return position;
       }
     };
-    TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-    memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
+    TestParticle* particles = new TestParticle[loader->getMyNumberOfParticles()];
+    memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader->getMyNumberOfParticles()));
     
     //idx (in file) of the first part that will be used by this proc. 
-    int idxStart = loader.getStart();
+    int idxStart = loader->getStart();
         
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(int idxPart = 0 ; idxPart < loader->getMyNumberOfParticles() ; ++idxPart){
       //Storage of the index (in the original file) of each part.
       particles[idxPart].indexInFile = idxPart + idxStart;
       
       // Read particles from file
-      loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
+      loader->fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
     }
     
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
-    FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+    FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader->getMyNumberOfParticles(),
 						 tree.getBoxCenter(),
 						 tree.getBoxWidth(),
 						 tree.getHeight(), &finalParticles,&balancer);
@@ -184,7 +186,7 @@ int main(int argc, char* argv[])
     //
     // Here we use a pointer due to the limited size of the stack
     //
-    KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+    KernelClass *kernels = new KernelClass(TreeHeight, loader->getBoxWidth(), loader->getCenterOfBox());
     //
     FmmClassProc algorithm(app.global(),&tree, kernels);
     //
@@ -200,7 +202,7 @@ int main(int argc, char* argv[])
   //
 
   { // -----------------------------------------------------
-    long int N1=0, N2= loader.getTotalNumberOfParticles()/2, N3= (loader.getTotalNumberOfParticles()-1); ;
+    long int N1=0, N2= loader->getNumberOfParticles()/2, N3= (loader->getNumberOfParticles()-1); ;
     FReal energy =0.0 ;
     //
     //   Loop over all leaves
@@ -239,7 +241,8 @@ int main(int argc, char* argv[])
       std::cout <<std::endl <<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
     }
   }
+  delete loader;
   // -----------------------------------------------------
-
+  
   return 0;
 }
