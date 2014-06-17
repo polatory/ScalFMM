@@ -305,7 +305,7 @@ endif()
 # Build - UTests
 MESSAGE( STATUS "ScalFMM_BUILD_UTESTS         = ${ScalFMM_BUILD_UTESTS}" )
 if( ScalFMM_BUILD_UTESTS )
-	INCLUDE(CTEST)
+	INCLUDE(CTest)
 	ENABLE_TESTING()
 	add_subdirectory(UTests)
 endif()
