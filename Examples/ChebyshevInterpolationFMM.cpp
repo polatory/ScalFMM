@@ -82,7 +82,7 @@ void usage() {
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
+	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma" );
 	const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
 	const unsigned int TreeHeight        = FParameters::getValue(argc, argv, "-depth", 5);
 	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);

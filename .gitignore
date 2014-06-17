@@ -7,6 +7,12 @@ Doc/html/
 
 #ignore executables
 *.exe
+*.o
+
+#ignore eclipse file
+org.eclipse.core.resources.prefs
+.cproject
+.project
 
 #ignore temporary files
 tmp/
@@ -17,6 +23,10 @@ tmp/
 *TAGS
 *#*#
 *nogit*
+*.swp
+
+#ignore build repository
+Build*
 
 #ignore latex temporary files
 *.out
@@ -25,3 +35,10 @@ tmp/
 *.log
 *.aux
 *.brf
+*.bbl
+*.blg
+*.synctex.*
+*_latexmk
+*.fls
+*-converted-*
+
