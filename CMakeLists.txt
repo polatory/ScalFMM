@@ -305,6 +305,7 @@ endif()
 # Build - UTests
 MESSAGE( STATUS "ScalFMM_BUILD_UTESTS         = ${ScalFMM_BUILD_UTESTS}" )
 if( ScalFMM_BUILD_UTESTS )
+	INCLUDE(CTEST)
 	ENABLE_TESTING()
 	add_subdirectory(UTests)
 endif()
@@ -346,6 +347,10 @@ INSTALL(FILES
   ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake
   DESTINATION lib/
   )
+INSTALL(FILES 
+	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
+  DESTINATION Data/
+  )	
 #
 # Add CPACK Module
 # ----------------
