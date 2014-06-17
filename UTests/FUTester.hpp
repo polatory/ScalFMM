@@ -61,8 +61,8 @@ class FUTester{
 	int currentTest;			//< current processing test in the run
 	int currentStep;			//< current processing step in the run
 
-	int failledSteps;			//< number of failed step in the current test
-	int failledTests;			//< number of failed tests
+	int failedSteps;			//< number of failed step in the current test
+	int failedTests;			//< number of failed tests
 	
 protected:
 	/** Constructor */
@@ -128,8 +128,8 @@ protected:
         void uassert(const bool result){
 		++currentStep;
 		if(!result){
-			std::cout << ">> Step " << currentStep << " Failled\n";
-			++failledSteps;
+			std::cout << ">> Step " << currentStep << " Failed\n";
+			++failedSteps;
 		}
 	}
 	
@@ -137,7 +137,7 @@ protected:
 	* To test equality
 	* @param v1 value one
 	* @param v2 value 2
-	* if v1 is not equal v2 test failled
+	* if v1 is not equal v2 test failed
 	*/
 	template <class T>
         void equal(const T& v1, const T& v2){
@@ -148,7 +148,7 @@ protected:
 	* To test equality
 	* @param v1 value one
 	* @param v2 value 2
-	* if v1 is equal v2 test failled
+	* if v1 is equal v2 test failed
 	*/
 	template <class T>
         void different(const T& v1, const T& v2){
@@ -167,7 +167,7 @@ public :
 	
 		TestClass* const toTest = static_cast<TestClass*>(this);
 		currentTest = 0;
-		failledTests = 0;
+		failedTests = 0;
 
 		Before();
 		
@@ -175,7 +175,7 @@ public :
                 const typename std::list<TestFuncDescriptor>::const_iterator end = tests.end();
                 for(typename std::list<TestFuncDescriptor>::iterator iter = tests.begin() ; iter != end ; ++iter){
 			currentStep = 0;
-			failledSteps = 0;
+			failedSteps = 0;
 			
 			std::cout << "[Start] " << (*iter).name << "\n";
 			
@@ -184,9 +184,9 @@ public :
 			(toTest->*ff)();
 			PostTest();
 			
-			if(failledSteps){
-				std::cout << "[Finished] FAILLED (" << failledSteps << "/" << currentStep<< " steps failled)\n";
-				++failledTests;
+			if(failedSteps){
+				std::cout << "[Finished] FAILED (" << failedSteps << "/" << currentStep<< " steps failed)\n";
+				++failedTests;
 			}
                         else{
 				std::cout << "[Finished] PASSED (" << currentStep << " steps)\n";
@@ -198,9 +198,9 @@ public :
 		
 		After();
 
-		std::cout <<"Test is over, " << (totalTests-failledTests) << " Passed, " << failledTests << " Failled\n";
+		std::cout <<"Test is over, " << (totalTests-failedTests) << " Passed, " << failedTests << " Failed\n";
 
-                return failledTests;
+                return failedTests;
 	}
 
 };
