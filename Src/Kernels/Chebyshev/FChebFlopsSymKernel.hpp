@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -111,7 +111,7 @@ public:
 		:	MatrixKernel(new MatrixKernelClass()),
 			SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)), inTreeHeight(_inTreeHeight),
 			flopsP2M(0), flopsM2M(0), flopsM2L(0), flopsL2L(0), flopsL2P(0), flopsP2P(0),
-			flopsPerLevelM2M(NULL), flopsPerLevelM2L(NULL), flopsPerLevelL2L(NULL)
+			flopsPerLevelM2M(nullptr), flopsPerLevelM2L(nullptr), flopsPerLevelL2L(nullptr)
 	{
 		countExp = new unsigned int [343];
 		flopsPerLevelM2M = new unsigned long long [inTreeHeight];
@@ -317,7 +317,7 @@ struct FChebFlopsSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
 	{
 		// init all 343 item to zero, because effectively only 16 exist
 		for (unsigned int t=0; t<343; ++t) {
-			K[t] = NULL;
+			K[t] = nullptr;
 			LowRank[t] = 0;
 		}
 			
@@ -341,7 +341,7 @@ struct FChebFlopsSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
 	~SymmetryHandler()
 	{
 		for (unsigned int t=0; t<343; ++t)
-			if (K[  t]!=NULL) delete [] K[  t];
+			if (K[  t]!=nullptr) delete [] K[  t];
 	}
 
 
@@ -390,7 +390,7 @@ private:
 
 					// store 
 					const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-					assert(K[idx]==NULL);
+					assert(K[idx]==nullptr);
 					K[idx] = new FReal [2*rank*nnodes];
 					LowRank[idx] = rank;
 					for (unsigned int r=0; r<rank; ++r)

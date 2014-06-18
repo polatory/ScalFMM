@@ -17,7 +17,7 @@
 //	return drand48();
 //} ;
 void initRandom() {
-	srand48( static_cast<long int>(time(0))) ;
+	srand48( static_cast<long int>(time(nullptr))) ;
 } ;
 FReal getRandom() {
 	return static_cast<FReal>(drand48());

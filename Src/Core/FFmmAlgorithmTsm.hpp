@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -146,7 +146,7 @@ public:
                 CellClass** const realChild = octreeIterator.getCurrentChild();
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    potentialChild[idxChild] = 0;
+                    potentialChild[idxChild] = nullptr;
                     if(realChild[idxChild]){
                         if(realChild[idxChild]->hasSrcChild()){
                             currentCell->setSrcChildTrue();
@@ -205,7 +205,7 @@ public:
                                 ++counterWithSrc;
                             }
                             else{
-                                neighbors[idxRealNeighbors] = 0;
+                                neighbors[idxRealNeighbors] = nullptr;
                             }
                         }
                         if(counterWithSrc){
@@ -258,7 +258,7 @@ public:
                             potentialChild[idxChild] = realChild[idxChild];
                         }
                         else{
-                            potentialChild[idxChild] = 0;
+                            potentialChild[idxChild] = nullptr;
                         }
                     }
                     kernels->L2L( currentCell , potentialChild, idxLevel);

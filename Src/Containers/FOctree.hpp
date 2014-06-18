@@ -112,17 +112,17 @@ public:
      */
     FOctree(const int inHeight, const int inSubHeight,
             const FReal inBoxWidth, const FPoint& inBoxCenter)
-        : root(0), boxWidthAtLevel(new FReal[inHeight]),
+        : root(nullptr), boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
           boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
     {
         FAssertLF(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
         if(subHeight == height - 1){
-            root = new FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(0, 0, this->subHeight, 1);
+            root = new FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
         }
         else {// if(subHeight < height - 1)
-            root = new FSubOctree< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(0, 0, this->subHeight, 1);
+            root = new FSubOctree< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
         }
 
         FReal tempWidth = this->boxWidth;
@@ -304,7 +304,7 @@ public:
         }
 
         Iterator() : currentLocalIndex(0),currentLocalLevel(0) {
-            current.tree = 0;
+            current.tree = nullptr;
         }
 
         /** Copy constructor
@@ -777,13 +777,13 @@ public:
             const MortonIndex fullIndex = inIndex >> 3 * (inLevel + 1 - (workingTree.tree->getSubOctreeHeight() + workingTree.tree->getSubOctreePosition()) );
             // point to next suboctree
             workingTree.tree = workingTree.middleTree->leafs(int(treeMiddleMask & fullIndex));
-            if(!workingTree.tree) return 0;
+            if(!workingTree.tree) return nullptr;
         }
 
         // Be sure there is a parent allocated
         const int levelInTree = inLevel - workingTree.tree->getSubOctreePosition();
         if( levelInTree && !workingTree.tree->cellsAt(levelInTree - 1)[~(~0x00LL << (3 * levelInTree )) & (inIndex>>3)]){
-            return 0;
+            return nullptr;
         }
 
         // compute correct index in the array and return the @ in array
@@ -991,7 +991,7 @@ public:
             const MortonIndex fullIndex = inIndex >> (3 * (leafIndex + 1  - (workingTree.tree->getSubOctreeHeight() + workingTree.tree->getSubOctreePosition()) ) );
             // point to next suboctree
             workingTree.tree = workingTree.middleTree->leafs(int(treeSubLeafMask & fullIndex));
-            if(!workingTree.tree) return 0;
+            if(!workingTree.tree) return nullptr;
         }
 
         // compute correct index in the array

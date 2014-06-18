@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -36,16 +36,16 @@ public:
     typedef ClassType ValueType;
 
     /** Empty constructor */
-    FSmartPointer() : pointer(0), counter(0) {
+    FSmartPointer() : pointer(nullptr), counter(nullptr) {
     }
 
     /** Constructor from the memory pointer */
-    FSmartPointer(ClassType* const inPointer) : pointer(0), counter(0) {
+    FSmartPointer(ClassType* const inPointer) : pointer(nullptr), counter(nullptr) {
         assign(inPointer);
     }
 
     /** Constructor from a smart pointer */
-    FSmartPointer(const FSmartPointer& inPointer) : pointer(0), counter(0) {
+    FSmartPointer(const FSmartPointer& inPointer) : pointer(nullptr), counter(nullptr) {
         assign(inPointer);
     }
 
@@ -91,14 +91,14 @@ public:
                 else if(MemoryType == FSmartPointerMemory) delete pointer;
                 delete counter;
             }
-            pointer = 0;
-            counter = 0;
+            pointer = nullptr;
+            counter = nullptr;
         }
     }
 
     /** To know if the smart pointer is pointing to a memory */
     bool isAssigned() const{
-        return pointer != 0;
+        return pointer != nullptr;
     }
 
     /** Is last => counter == 0 */

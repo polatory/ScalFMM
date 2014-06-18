@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -42,12 +42,12 @@
     public:
         class FRegion {
         public:
-            FRegion(const char*, const char*, const char* = 0, const int = 0){}
+            FRegion(const char*, const char*, const char* = nullptr, const int = 0){}
             void end(){}
         };
         class FFunction {
         public:
-            FFunction(const char*, const char*, const char* = 0, const int = 0){}
+            FFunction(const char*, const char*, const char* = nullptr, const int = 0){}
         };
     };
 

@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -110,7 +110,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	
 public:
 	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal _epsilon)
-		: U(NULL), B(NULL), epsilon(_epsilon), rank(0)
+		: U(nullptr), B(nullptr), epsilon(_epsilon), rank(0)
 	{
 		// measure time
 		FTic time; time.tic();
@@ -120,7 +120,7 @@ public:
     // allocate C
     C = new FReal*[ncmp];
     for (unsigned int d=0; d<ncmp; ++d)
-      C[d]=NULL;
+      C[d]=nullptr;
 
     for (unsigned int d=0; d<ncmp; ++d)
       if (C[d]) throw std::runtime_error("Compressed M2L operator already set");
@@ -139,10 +139,10 @@ public:
 
 	~FChebTensorialM2LHandler()
 	{
-		if (U != NULL) delete [] U;
-		if (B != NULL) delete [] B;
+		if (U != nullptr) delete [] U;
+		if (B != nullptr) delete [] B;
     for (unsigned int d=0; d<ncmp; ++d)
-      if (C[d] != NULL) delete [] C[d];
+      if (C[d] != nullptr) delete [] C[d];
 	}
 
 	/**
@@ -243,7 +243,7 @@ public:
     U = new FReal*[TreeHeight]; 
     B = new FReal*[TreeHeight]; 
 		for (unsigned int l=0; l<TreeHeight; ++l){
-       B[l]=NULL; U[l]=NULL;
+       B[l]=nullptr; U[l]=nullptr;
     }
 
     // allocate C
@@ -251,7 +251,7 @@ public:
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
       C[l] = new FReal*[ncmp];
       for (unsigned int d=0; d<ncmp; ++d)
-        C[l][d]=NULL;
+        C[l][d]=nullptr;
     }
 
     for (unsigned int l=0; l<TreeHeight; ++l) {
@@ -277,12 +277,12 @@ public:
 
 	~FChebTensorialM2LHandler()
 	{
-    if (rank != NULL) delete [] rank;
+    if (rank != nullptr) delete [] rank;
     for (unsigned int l=0; l<TreeHeight; ++l) {
-      if (U[l] != NULL) delete [] U[l];
-      if (B[l] != NULL) delete [] B[l];
+      if (U[l] != nullptr) delete [] U[l];
+      if (B[l] != nullptr) delete [] B[l];
       for (unsigned int d=0; d<ncmp; ++d)
-        if (C[l][d] != NULL) delete [] C[l][d];
+        if (C[l][d] != nullptr) delete [] C[l][d];
     }
 	}
 
@@ -489,7 +489,7 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 //	FTic time; time.tic();
 //	// start computing process
 //	FReal *U, *C, *B;
-//	U = C = B = NULL;
+//	U = C = B = nullptr;
 //	const unsigned int rank = ComputeAndCompress(epsilon, U, C, B);
 //	// store into binary file
 //	const std::string filename(getFileName(epsilon));
@@ -512,9 +512,9 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 //	} 	else throw std::runtime_error("File could not be opened to write");
 //	stream.close();
 //	// free memory
-//	if (U != NULL) delete [] U;
-//	if (B != NULL) delete [] B;
-//	if (C != NULL) delete [] C;
+//	if (U != nullptr) delete [] U;
+//	if (B != nullptr) delete [] B;
+//	if (C != nullptr) delete [] C;
 //	// write info
 //	std::cout << "Compressed M2L operators ("<< rank << ") stored in binary file "	<< filename
 //						<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;

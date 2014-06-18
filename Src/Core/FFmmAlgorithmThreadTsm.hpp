@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -62,7 +62,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels)
-                      : tree(inTree) , kernels(0), iterArray(0),
+                      : tree(inTree) , kernels(nullptr), iterArray(nullptr),
                       MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()) {
 
         FAssertLF(tree, "tree cannot be null");
@@ -111,7 +111,7 @@ public:
         if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
 
         delete [] iterArray;
-        iterArray = 0;
+        iterArray = nullptr;
 
 
     }
@@ -194,7 +194,7 @@ public:
                     CellClass** const realChild = iterArray[idxCell].getCurrentChild();
                     CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        potentialChild[idxChild] = 0;
+                        potentialChild[idxChild] = nullptr;
                         if(realChild[idxChild]){
                             if(realChild[idxChild]->hasSrcChild()){
                                 currentCell->setSrcChildTrue();
@@ -260,7 +260,7 @@ public:
                                         ++counterWithSrc;
                                     }
                                     else{
-                                        neighbors[idxRealNeighbors] = 0;
+                                        neighbors[idxRealNeighbors] = nullptr;
                                     }
                                 }
                                 if(counterWithSrc){
@@ -322,7 +322,7 @@ public:
                                     potentialChild[idxChild] = realChild[idxChild];
                                 }
                                 else{
-                                    potentialChild[idxChild] = 0;
+                                    potentialChild[idxChild] = nullptr;
                                 }
                             }
                             myThreadkernels->L2L( currentCell , potentialChild, idxLevel);

@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -53,7 +53,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
 	TensorType::setRoots(FPoint(0.,0.,0.), CellWidth, X);
 
 	// allocate memory and compute 316 m2l operators
-	FReal *_C;
+	FReal           *_C;
 	FComplexe *_FC;
 
   // reduce storage from nnodes^2=order^6 to (2order-1)^3
@@ -197,7 +197,7 @@ class FUnifM2LHandler<ORDER,HOMOGENEOUS>
 public:
 	template <typename MatrixKernelClass>
 	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: FC(NULL), opt_rc(rc/2+1), Dft()
+		: FC(nullptr), Dft(), opt_rc(rc/2+1)
 	{    
     // init DFT
     const int steps[dimfft] = {rc};

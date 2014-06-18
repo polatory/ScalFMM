@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -144,16 +144,16 @@ public:
     explicit FHarmonic(const int inDevP)
         : devP(inDevP),expSize(int(((inDevP)+1) * ((inDevP)+2) * 0.5)),
           nExpSize((inDevP + 1) * (inDevP + 1)),
-          harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
-          sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0), preExpRedirJ(0)  {
+          harmonic(nullptr), cosSin(nullptr), legendre(nullptr), thetaDerivatedResult(nullptr),
+          sphereHarmoInnerCoef(nullptr), sphereHarmoOuterCoef(nullptr), preExpRedirJ(nullptr)  {
 
         allocAndInit();
     }
 
     FHarmonic(const FHarmonic& other)
         : devP(other.devP),expSize(other.expSize), nExpSize(other.expSize),
-          harmonic(0), cosSin(0), legendre(0), thetaDerivatedResult(0),
-          sphereHarmoInnerCoef(0), sphereHarmoOuterCoef(0), preExpRedirJ(0)  {
+          harmonic(nullptr), cosSin(nullptr), legendre(nullptr), thetaDerivatedResult(nullptr),
+          sphereHarmoInnerCoef(nullptr), sphereHarmoOuterCoef(nullptr), preExpRedirJ(nullptr)  {
 
         allocAndInit();
     }

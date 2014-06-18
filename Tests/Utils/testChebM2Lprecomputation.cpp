@@ -1,17 +1,17 @@
 // ===================================================================================
-// Ce LOGICIEL "ScalFmm" est couvert par le copyright Inria 20xx-2012.
-// Inria détient tous les droits de propriété sur le LOGICIEL, et souhaite que
-// la communauté scientifique l'utilise afin de le tester et de l'évaluer.
-// Inria donne gracieusement le droit d'utiliser ce LOGICIEL. Toute utilisation
-// dans un but lucratif ou à des fins commerciales est interdite sauf autorisation
-// expresse et préalable d'Inria.
-// Toute utilisation hors des limites précisées ci-dessus et réalisée sans l'accord
-// expresse préalable d'Inria constituerait donc le délit de contrefaçon.
-// Le LOGICIEL étant un produit en cours de développement, Inria ne saurait assurer
-// aucune responsabilité et notamment en aucune manière et en aucun cas, être tenu
-// de répondre d'éventuels dommages directs ou indirects subits par l'utilisateur.
-// Tout utilisateur du LOGICIEL s'engage à communiquer à Inria ses remarques
-// relatives à l'usage du LOGICIEL
+// Copyright ScalFmm 2011 INRIA
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
 // ===================================================================================
 
 // ==== CMAKE =====
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 	/*
 	// allocate memory
 	FReal *Qu, *C, *Qb;
-	Qu = Qb = C = NULL;
+	Qu = Qb = C = nullptr;
 	unsigned int ninteractions = 0;
 
 	////////////////////////////////////////////////
@@ -106,15 +106,15 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////
 
 	// free memory
-	if (C  != NULL) delete [] C;
-	if (Qu != NULL) delete [] Qu;
-	if (Qb != NULL) delete [] Qb;
+	if (C  != nullptr) delete [] C;
+	if (Qu != nullptr) delete [] Qu;
+	if (Qb != nullptr) delete [] Qb;
 	*/
 
 	////////////////////////////////////////////////
 	// allocate memory
 	FReal *Qu1, *C1, *Qb1;
-	Qu1 = Qb1 = C1 = NULL;
+	Qu1 = Qb1 = C1 = nullptr;
 	////////////////////////////////////////////////
 	std::cout << "\nAssembly of an " << nnodes << "x" << nnodes << " M2L operator";
 	time.tic();
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////
 	// get a copy C2 of the M2L operator C1
 	FReal *Qu2, *C2, *Qb2;
-	Qu2 = Qb2 = C2 = NULL;
+	Qu2 = Qb2 = C2 = nullptr;
 	C2 = new FReal [nnodes * nnodes];
 	FBlas::copy(nnodes*nnodes, C1, C2);
 	// Omega_x^{1/2} C2 Omega_y^{1/2}
@@ -164,13 +164,13 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////
 
 	// free memory
-	if (C1  != NULL) delete [] C1;
-	if (Qu1 != NULL) delete [] Qu1;
-	if (Qb1 != NULL) delete [] Qb1;
+	if (C1  != nullptr) delete [] C1;
+	if (Qu1 != nullptr) delete [] Qu1;
+	if (Qb1 != nullptr) delete [] Qb1;
 
-	if (C2  != NULL) delete [] C2;
-	if (Qu2 != NULL) delete [] Qu2;
-	if (Qb2 != NULL) delete [] Qb2;
+	if (C2  != nullptr) delete [] C2;
+	if (Qu2 != nullptr) delete [] Qu2;
+	if (Qb2 != nullptr) delete [] Qb2;
 
 
 	return 0;

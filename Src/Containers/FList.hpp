@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -28,7 +28,7 @@
  * This class is a linked list container.
  * It is a very basic list to enable strong performance.
  *
- * Please refere to unit test utestList.cpp to know more.
+ * Please refer to unit test utestList.cpp to know more.
  */
 template< class Object >
 class FList {
@@ -38,7 +38,7 @@ class FList {
         Node* next;	//< Next node
     };
 
-    Node* root; //< Root node, NULL if size is 0
+    Node* root; //< Root node, nullptr if size is 0
     int size;   //< Elements in the list
 
     /**
@@ -58,7 +58,7 @@ class FList {
             otherRoot = otherRoot->next;
         }
         // End with null
-        *myRoot = 0;
+        *myRoot = nullptr;
         this->size = other.size;
     }
 
@@ -66,7 +66,7 @@ public:
     typedef Object ValueType; /**< data type of data in FVector */
 
     /** Constructor (of an empty list) */
-    FList() : root(0) , size(0) {
+    FList() : root(nullptr) , size(0) {
     }
 
     /** Desctructor */
@@ -92,7 +92,7 @@ public:
         * Copy constructor
         * @param other the source/original list
         */
-    FList(const FList& other): root(0) , size(0)  {
+    FList(const FList& other): root(nullptr) , size(0)  {
         copy(other);
     }
 

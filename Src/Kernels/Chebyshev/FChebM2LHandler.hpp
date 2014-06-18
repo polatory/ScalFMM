@@ -89,14 +89,14 @@ class FChebM2LHandler : FNoCopyable
 	
 public:
 	FChebM2LHandler(const FReal _epsilon)
-		: MatrixKernel(), U(NULL), C(NULL), B(NULL), epsilon(_epsilon), rank(0)
+		: MatrixKernel(), U(nullptr), C(nullptr), B(nullptr), epsilon(_epsilon), rank(0)
 	{}
 
 	~FChebM2LHandler()
 	{
-		if (U != NULL) delete [] U;
-		if (B != NULL) delete [] B;
-		if (C != NULL) delete [] C;
+		if (U != nullptr) delete [] U;
+		if (B != nullptr) delete [] B;
+		if (C != nullptr) delete [] C;
 	}
 
 	/**
@@ -246,7 +246,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 
 	// allocate memory and compute 316 m2l operators
 	FReal *_U, *_C, *_B;
-	_U = _B = NULL;
+	_U = _B = nullptr;
 	_C = new FReal [nnodes*nnodes * ninteractions];
 	unsigned int counter = 0;
 	for (int i=-3; i<=3; ++i) {
@@ -336,7 +336,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFil
 	FTic time; time.tic();
 	// start computing process
 	FReal *U, *C, *B;
-	U = C = B = NULL;
+	U = C = B = nullptr;
 	const unsigned int rank = ComputeAndCompress(epsilon, U, C, B);
 	// store into binary file
 	const std::string filename(getFileName(epsilon));
@@ -359,9 +359,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFil
 	} 	else throw std::runtime_error("File could not be opened to write");
 	stream.close();
 	// free memory
-	if (U != NULL) delete [] U;
-	if (B != NULL) delete [] B;
-	if (C != NULL) delete [] C;
+	if (U != nullptr) delete [] U;
+	if (B != nullptr) delete [] B;
+	if (C != nullptr) delete [] C;
 	// write info
 	std::cout << "Compressed M2L operators ("<< rank << ") stored in binary file "	<< filename
 						<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;

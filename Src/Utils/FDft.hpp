@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -331,7 +331,7 @@ public:
     // perform ifft
     fftw_execute( plan_c2r_ );
 
-    for(unsigned int s=0; s<dim*nsteps_; ++s)
+    for( int s=0; s<dim*nsteps_; ++s)
       data_[s]/=nsteps_; // the fft from fftw is not scaled !!!!!!!!
 
     // write sampled data

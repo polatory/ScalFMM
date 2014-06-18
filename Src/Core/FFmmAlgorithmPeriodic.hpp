@@ -46,7 +46,7 @@ public:
       *
       */
     FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0)
-        : tree(inTree) , kernels(0), OctreeHeight(tree->getHeight()),
+        : tree(inTree) , kernels(nullptr), OctreeHeight(tree->getHeight()),
           nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3) {
 
         FAssertLF(tree, "tree cannot be null");
@@ -273,7 +273,7 @@ public:
                     if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
                         // Put periodic neighbors into other array
                         periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                        neighbors[idxNeig] = 0;
+                        neighbors[idxNeig] = nullptr;
                         ++periodicNeighborsCounter;
 
                         FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];

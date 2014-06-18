@@ -164,7 +164,7 @@ public:
 				} while(octreeIterator.moveRight());
 				myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
 			}
-			iterArray     = new typename OctreeClass::Iterator[numberOfLeafs];
+			iterArray           = new typename OctreeClass::Iterator[numberOfLeafs];
 			iterArrayComm = new typename OctreeClass::Iterator[numberOfLeafs];
 			FAssertLF(iterArray,     "iterArray     bad alloc");
 			FAssertLF(iterArrayComm, "iterArrayComm bad alloc");
@@ -216,8 +216,8 @@ public:
 		// delete array
 		delete []     iterArray;
 		delete [] iterArrayComm;
-		iterArray     = 0;
-		iterArrayComm = 0;
+		iterArray           = nullptr;
+		iterArrayComm = nullptr;
 	}
 
 private:
@@ -946,7 +946,7 @@ private:
 				octreeIterator = avoidGotoLeftIterator;
 
 				delete leafsNeedOther[idxLevel];
-				leafsNeedOther[idxLevel] = 0;
+				leafsNeedOther[idxLevel] = nullptr;
 
 				// Compute this cells
 				FLOG(computationCounter.tic());
@@ -1332,7 +1332,7 @@ for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
 	octreeIterator = avoidGotoLeftIterator;
 	printf("Proc :: %d Lvl %d, numberOfCells : %d that need other datas \n",idProcess,idxLevel,numberOfCells);
 	delete leafsNeedOther[idxLevel];
-	leafsNeedOther[idxLevel] = 0;
+	leafsNeedOther[idxLevel] = nullptr;
 
 	// Compute this cells
 	FLOG(computationCounter.tic());
@@ -1977,7 +1977,7 @@ FLOG( FLog::Controller << "\t\t M2L Send : " << sendCounter.elapsed() << " s\n" 
 						otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
 					}
 					delete recvBuffer[idxProc];
-					recvBuffer[idxProc] = 0;
+					recvBuffer[idxProc] = nullptr;
 				}
 			}
 		}

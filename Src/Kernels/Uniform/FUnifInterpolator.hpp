@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -427,7 +427,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass>::applyL2P(const FPoint& c
   const FReal*const positionsY = inParticles->getPositions()[1];
   const FReal*const positionsZ = inParticles->getPositions()[2];
 
-  const unsigned int nParticles = inParticles->getNbParticles();
+  const  int nParticles = inParticles->getNbParticles();
 
   for(int idxPart = 0 ; idxPart < nParticles ; ++ idxPart){
 

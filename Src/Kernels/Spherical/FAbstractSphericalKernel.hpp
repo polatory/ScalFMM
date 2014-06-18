@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -113,8 +113,8 @@ public:
           widthAtLeafLevelDiv2(widthAtLeafLevel/2),
           boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),inBoxCenter.getZ()-(inBoxWidth/2)),
           harmonic(inDevP),
-          preL2LTransitions(0),
-          preM2MTransitions(0) {
+          preL2LTransitions(nullptr),
+          preM2MTransitions(nullptr) {
 
         allocAndInit();
     }

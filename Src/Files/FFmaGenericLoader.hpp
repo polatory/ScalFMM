@@ -180,7 +180,7 @@ protected:
 	unsigned int typeData[2];      ///< {Size of the data to read, number of data on 1 line}
 private:
 	FReal   *tmpVal ;                         ///  Temporary array to read data
-	int       otherDataToRead  ;       ///< <<number of other data (>4)to read in a particle record
+	 int  otherDataToRead  ;       ///< <<number of other data (>4)to read in a particle record
 public:
 	/**
 	 * The constructor need the file name
@@ -323,7 +323,7 @@ public:
 	 * @param dataToRead is an array of type FReal. It contains all the values of a particles (for instance X,Y,Z,Q, ..
 	 * @param nbDataToRead number of value to read (I.e. size of the array)
 	 */
-	void fillParticle(FReal* dataToRead, const int nbDataToRead){
+	void fillParticle(FReal* dataToRead, const unsigned int nbDataToRead){
 		if(binaryFile){
 			file->read((char*)(dataToRead), sizeof(FReal)*nbDataToRead);
 			if(nbDataToRead< typeData[1]){
@@ -332,12 +332,12 @@ public:
 		}
 		else{
 
-			for (int i = 0 ; i <nbDataToRead; ++i){
+			for (unsigned int i = 0 ; i <nbDataToRead; ++i){
 				(*this->file)  >>dataToRead[i];
 			}
 			if(nbDataToRead< typeData[1]){
 				FReal x;
-				for (int 	i = 0 ; i <typeData[1]-nbDataToRead; ++i){
+				for (unsigned int 	i = 0 ; i <typeData[1]-nbDataToRead; ++i){
 					(*this->file) >> x ;
 				}
 			}
@@ -686,7 +686,7 @@ public:
 			int k = 0;
 			for (int i = 0 ; i <N ; ++i){
 				//				std::cout << "i "<< i << "  ";
-				for (int jj= 0 ; jj<nbData ; ++jj, ++k){
+				for (unsigned int jj= 0 ; jj<nbData ; ++jj, ++k){
 					(*this->file)  << dataToWrite[k] << "    ";
 					//					std::cout      << dataToWrite[k]<< "  ";
 				}
@@ -707,7 +707,6 @@ private:
 	}
 	void writerBinaryHeader(const FPoint &centerOfBox,const FReal &boxWidth,
 			const FSize &nbParticles, const unsigned int *typeFReal) {
-		int sizeOfElement;
 		file->seekg (std::ios::beg);
 		file->write((char*)typeFReal,2*sizeof(unsigned int));
 		if(typeFReal[0]  != sizeof(FReal)){

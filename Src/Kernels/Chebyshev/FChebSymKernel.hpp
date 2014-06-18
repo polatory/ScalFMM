@@ -9,7 +9,7 @@
 #include "./FAbstractChebKernel.hpp"
 #include "./FChebInterpolator.hpp"
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -73,14 +73,14 @@ class FChebSymKernel
 	 */
 	void allocateMemoryForPermutedExpansions()
 	{
-		assert(Loc==NULL && Mul==NULL && countExp==NULL);
+		assert(Loc==nullptr && Mul==nullptr && countExp==nullptr);
 		Loc = new FReal* [343];
 		Mul = new FReal* [343];
 		countExp = new unsigned int [343];
 
-		// set all 343 to NULL
+		// set all 343 to nullptr
 		for (unsigned int idx=0; idx<343; ++idx) {
-			Mul[idx] = Loc[idx] = NULL;
+			Mul[idx] = Loc[idx] = nullptr;
 		}
 
 		// init only 16 of 343 possible translations due to symmetries
@@ -88,7 +88,7 @@ class FChebSymKernel
 			for (int j=0; j<=i; ++j)
 				for (int k=0; k<=j; ++k) {
 					const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-					assert(Mul[idx]==NULL || Loc[idx]==NULL);
+					assert(Mul[idx]==nullptr || Loc[idx]==nullptr);
 					Mul[idx] = new FReal [24 * nnodes];
 					Loc[idx] = new FReal [24 * nnodes];
 				}
@@ -112,7 +112,7 @@ public:
 		       const FReal Epsilon)
 	  : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
 			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon, inBoxWidth, inTreeHeight)),
-			Loc(NULL), Mul(NULL), countExp(NULL)
+			Loc(nullptr), Mul(nullptr), countExp(nullptr)
 	{
 		this->allocateMemoryForPermutedExpansions();
 
@@ -139,7 +139,7 @@ public:
 	FChebSymKernel(const FChebSymKernel& other)
 		: AbstractBaseClass(other),
 			SymHandler(other.SymHandler),
-			Loc(NULL), Mul(NULL), countExp(NULL)
+			Loc(nullptr), Mul(nullptr), countExp(nullptr)
 	{
 		this->allocateMemoryForPermutedExpansions();
 	}
@@ -150,12 +150,12 @@ public:
 	~FChebSymKernel()
 	{
 		for (unsigned int t=0; t<343; ++t) {
-			if (Loc[t]!=NULL) delete [] Loc[t];
-			if (Mul[t]!=NULL) delete [] Mul[t];
+			if (Loc[t]!=nullptr) delete [] Loc[t];
+			if (Mul[t]!=nullptr) delete [] Mul[t];
 		}
-		if (Loc!=NULL)      delete [] Loc;
-		if (Mul!=NULL)      delete [] Mul;
-		if (countExp!=NULL) delete [] countExp;
+		if (Loc!=nullptr)      delete [] Loc;
+		if (Mul!=nullptr)      delete [] Mul;
+		if (countExp!=nullptr) delete [] countExp;
 
 #ifdef LOG_TIMINGS
 		std::cout << "- Permutation took " << t_m2l_1 << "s"
@@ -402,7 +402,7 @@ public:
 		for (unsigned int n=0; n<nnodes; ++n) PermMultiExp[pvectors[idx][n]] = MultiExp[n];
 
 		// mat-vec-mult (svd)
-		assert(K[pindices[idx]]!=NULL);
+		assert(K[pindices[idx]]!=nullptr);
 		const int rank = LowRank[pindices[idx]];
 		FBlas::gemtv(nnodes, rank, FReal(1.), K[pindices[idx]]+rank*nnodes, PermMultiExp, Compressed);
 		FBlas::gemv( nnodes, rank, scale, K[pindices[idx]], Compressed, PermLocalExp);

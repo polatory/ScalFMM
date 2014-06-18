@@ -102,7 +102,7 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
-                            CellClass* child[8] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+                            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                                 while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() < ((mindex<<3)+idxChild) ){
@@ -205,7 +205,7 @@ protected:
                                 const int counter = 1;
                                 kernels->M2L( cell , interactions, counter, idxLevel);
 
-                                interactions[outsideInteractions[outInterIdx].outPosition] = NULL;
+                                interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
                                 interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = cell;
                                 kernels->M2L( interCell , interactions, counter, idxLevel);
                             }
@@ -240,7 +240,7 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
-                            CellClass* child[8] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+                            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                                 while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() < ((mindex<<3)+idxChild) ){
@@ -372,7 +372,7 @@ protected:
                                 const int counter = 1;
                                 kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1), &particles, &particles , interactions, counter);
 
-                                interactions[outsideInteractions[outInterIdx].outPosition] = NULL;
+                                interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
                                 interactions[getOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition)] = &particles;
                                 kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1), &interParticles, &interParticles , interactions, counter);
                             }

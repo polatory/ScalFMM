@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -56,7 +56,7 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmTask(OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(0),
+        : tree(inTree) , kernels(nullptr),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight())
     {
 

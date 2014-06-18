@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -61,14 +61,14 @@ public:
 
     /** Default constructor */
     FSphericalCell()
-        : multipole_exp(0), local_exp(0){
+        : multipole_exp(nullptr), local_exp(nullptr){
         multipole_exp = new FComplexe[PoleSize];
         local_exp = new FComplexe[LocalSize];
     }
 
     /** Constructor */
     FSphericalCell(const FSphericalCell& other)
-        : multipole_exp(0), local_exp(0){
+        : multipole_exp(nullptr), local_exp(nullptr){
         multipole_exp = new FComplexe[PoleSize];
         local_exp = new FComplexe[LocalSize];
         (*this) = other;

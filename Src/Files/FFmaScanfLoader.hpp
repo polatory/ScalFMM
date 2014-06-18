@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -64,7 +64,7 @@ public:
     * @param filename the name of the file to open
     * you can test if file is successfuly open by calling hasNotFinished()
     */
-    FFmaScanfLoader(const char* const filename): file(0){
+    FFmaScanfLoader(const char* const filename): file(nullptr){
         file = fopen(filename,"r");
         // test if open
         if(this->file){
@@ -76,7 +76,7 @@ public:
             }
             else{
                 fclose(file);
-                file = NULL;
+                file = nullptr;
             }
         }
         else {
@@ -97,7 +97,7 @@ public:
       * @return true if loader can work
       */
     bool isOpen() const{
-        return this->file != NULL;
+        return this->file != nullptr;
     }
 
     /**

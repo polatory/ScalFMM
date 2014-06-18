@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -84,7 +84,7 @@ protected:
     }
 
     /**
-     * This function creats all the intermediates cells between
+     * This function creates all the intermediates cells between
      * a leaf and the root.
      * It is used after inserting a new leaf to have cells from leaf to root
      * when computing
@@ -147,7 +147,7 @@ protected:
 
         // remove the last cells
         cellAllocator.deleteObject(this->cells[indexLevel][arrayIndex]);
-        this->cells[indexLevel][arrayIndex] = 0;
+        this->cells[indexLevel][arrayIndex] =nullptr;
         // progress upper
         --indexLevel;
         arrayIndex >>= 3;
@@ -159,7 +159,7 @@ protected:
         // continue while we are not in the last level and our child are empty
         while(indexLevel >= 0 && memcmp(&this->cells[indexLevel+1][arrayIndex<<3], emptyArray, 8 * sizeof(CellClass*)) == 0 ){
             cellAllocator.deleteObject( this->cells[indexLevel][arrayIndex] );
-            this->cells[indexLevel][arrayIndex] = 0;
+            this->cells[indexLevel][arrayIndex] = nullptr;
 
             --indexLevel;
             arrayIndex >>= 3;
@@ -183,7 +183,7 @@ public:
     */
     FAbstractSubOctree(FAbstractSubOctree* const inParent, const int inIndexInParent,
                        const int inSubOctreeHeight, const int inSubOctreePosition, const bool inIsLeafSubtree) :
-                        cells(0), parent( inParent ), indexInParent(inIndexInParent), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1),
+                        cells(nullptr), parent( inParent ), indexInParent(inIndexInParent), leftLeafIndex(1 << (3 * inSubOctreeHeight)), rightLeafIndex(-1),
                         subOctreeHeight( inSubOctreeHeight ), subOctreePosition( inSubOctreePosition ), isLeafSubtree(inIsLeafSubtree) {
 
         this->cells = new CellClass**[this->subOctreeHeight];
@@ -229,8 +229,8 @@ public:
 
     /**
     * Insert a particle on the subtree
-    * @param index the morton index of the particle to insert
-    * @param inParticle the particle to insert (must inherite from FAbstractParticle)
+    * @param index the Morton index of the particle to insert
+    * @param inParticle the particle to insert (must inherit from FAbstractParticle)
     * @param inParticle the inTreeHeight the height of the tree
     */
     /*template<typename... Args>
@@ -343,7 +343,7 @@ private:
     LeafClass** leafs;            //< Leafs array
 
 public:
-    FSubOctreeWithLeafs(const FSubOctreeWithLeafs&) = delete;
+    FSubOctreeWithLeafs(const FSubOctreeWithLeafs&)                  = delete;
     FSubOctreeWithLeafs& operator=(const FSubOctreeWithLeafs&) = delete;
 
     /**
@@ -417,7 +417,7 @@ public:
         if( this->leafs[arrayIndex] ){
             // remove container
             delete this->leafs[arrayIndex];
-            this->leafs[arrayIndex] = 0;
+            this->leafs[arrayIndex] = nullptr;
 
             return Parent::removeCellsFromLeaf( int(arrayIndex) );
         }
@@ -429,7 +429,7 @@ public:
       * @return the list of particles at this index */
     ContainerClass* getLeafSrc(const int index){
         LeafClass* const leaf = this->leafs[index];
-        return (leaf ? leaf->getSrc(): 0);
+        return (leaf ? leaf->getSrc(): nullptr);
     }
 
     /** To get access to leafs elements
@@ -437,7 +437,7 @@ public:
       * @return the list of particles at this index */
     ContainerClass* getLeafTargets(const int index){
         LeafClass* const leaf = this->leafs[index];
-        return (leaf ? leaf->getTargets(): 0);
+        return (leaf ? leaf->getTargets(): nullptr);
     }
 
     /** To get access to leafs elements
@@ -445,7 +445,7 @@ public:
       * @return the list of particles at this index */
     const ContainerClass* getLeafSrc(const int index) const {
         LeafClass* const leaf = this->leafs[index];
-        return (leaf ? leaf->getSrc(): 0);
+        return (leaf ? leaf->getSrc(): nullptr);
     }
 
     /** To get access to leafs elements
@@ -453,7 +453,7 @@ public:
       * @return the list of particles at this index */
     const ContainerClass* getLeafTargets(const int index) const {
         LeafClass* const leaf = this->leafs[index];
-        return (leaf ? leaf->getTargets() : 0);
+        return (leaf ? leaf->getTargets() : nullptr);
     }
 
     LeafClass* getLeaf(const int index){
@@ -606,7 +606,7 @@ public:
         if( this->subleafs[arrayIndex]->removeLeaf(index, inTreeHeight) ){
             // remove container
             delete this->subleafs[arrayIndex];
-            this->subleafs[arrayIndex] = 0;
+            this->subleafs[arrayIndex] = nullptr;
 
             return Parent::removeCellsFromLeaf( int(arrayIndex) );
         }

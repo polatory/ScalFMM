@@ -1,5 +1,7 @@
 #ifndef FGROUPTREE_HPP
 #define FGROUPTREE_HPP
+#include <list>
+#include <functional>
 
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FPoint.hpp"
@@ -10,8 +12,7 @@
 #include "FGroupOfParticles.hpp"
 #include "FGroupAttachedLeaf.hpp"
 
-#include <list>
-#include <functional>
+
 
 template <class CellClass, class GroupAttachedLeafClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupTree {

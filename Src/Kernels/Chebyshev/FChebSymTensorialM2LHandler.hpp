@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -385,7 +385,7 @@ static void precompute(const int idxK, const FReal CellWidth,
 				// store
 				{
 					// allocate
-					assert(K[idx]==NULL);
+					assert(K[idx]==nullptr);
 					K[idx] = new FReal [2*rank*nnodes];
 					
 					// set low rank
@@ -409,7 +409,7 @@ static void precompute(const int idxK, const FReal CellWidth,
 
 				//// store recompressed UV
 				//const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-				//assert(K[idx]==NULL);
+				//assert(K[idx]==nullptr);
 				//K[idx] = new FReal [2*rank*nnodes];
 				//LowRank[idx] = rank;
 				//FBlas::copy(rank*nnodes, UU,  K[idx]);
@@ -440,7 +440,7 @@ static void precompute(const int idxK, const FReal CellWidth,
 				
 				// store 
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-				assert(K[idx]==NULL);
+				assert(K[idx]==nullptr);
 				K[idx] = new FReal [2*rank*nnodes];
 				LowRank[idx] = rank;
 				for (unsigned int r=0; r<rank; ++r)
@@ -547,7 +547,7 @@ public:
 			LowRank[d] = new int    [343];
 
       for (unsigned int t=0; t<343; ++t) {
-        K[d][t]       = NULL;
+        K[d][t]       = nullptr;
         LowRank[d][t] = 0;
       }
     }
@@ -576,7 +576,7 @@ public:
 	~SymmetryHandler()
 	{
     for (unsigned int d=0; d<NCMP; ++d)
-      for (unsigned int t=0; t<343; ++t) if (K[d][t]!=NULL) delete [] K[d][t];
+      for (unsigned int t=0; t<343; ++t) if (K[d][t]!=nullptr) delete [] K[d][t];
 	}
 
 
@@ -630,13 +630,13 @@ public:
     for (unsigned int d=0; d<NCMP; ++d) {
       K[d]       = new FReal** [TreeHeight];
       LowRank[d] = new int*    [TreeHeight];
-      K[d][0]       = NULL; K[d][1]       = NULL;
-      LowRank[d][0] = NULL; LowRank[d][1] = NULL;
+      K[d][0]       = nullptr; K[d][1]       = nullptr;
+      LowRank[d][0] = nullptr; LowRank[d][1] = nullptr;
       for (unsigned int l=2; l<TreeHeight; ++l) {
         K[d][l]       = new FReal* [343];
         LowRank[d][l] = new int    [343];
         for (unsigned int t=0; t<343; ++t) {
-          K[d][l][t]       = NULL;
+          K[d][l][t]       = nullptr;
           LowRank[d][l][t] = 0;
         }
       }
@@ -671,11 +671,11 @@ public:
 	{
     for (unsigned int d=0; d<NCMP; ++d) {
       for (unsigned int l=0; l<TreeHeight; ++l) {
-        if (K[d][l]!=NULL) {
-          for (unsigned int t=0; t<343; ++t) if (K[d][l][t]!=NULL) delete [] K[d][l][t];
+        if (K[d][l]!=nullptr) {
+          for (unsigned int t=0; t<343; ++t) if (K[d][l][t]!=nullptr) delete [] K[d][l][t];
           delete [] K[d][l];
         }
-        if (LowRank[d][l]!=NULL)	delete [] LowRank[d][l];
+        if (LowRank[d][l]!=nullptr)	delete [] LowRank[d][l];
       }      
       delete [] K[d];
       delete [] LowRank[d];
@@ -716,7 +716,7 @@ public:
 //	// compute and compress ////////////
 //	FReal* K[343];
 //	int LowRank[343];
-//	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
+//	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = nullptr; LowRank[idx] = 0;	}
 //	precompute<ORDER,MatrixKernelClass>(FReal(2.), Epsilon, K, LowRank);
 //
 //	// write to binary file ////////////
@@ -731,7 +731,7 @@ public:
 //	if (stream.good()) {
 //		stream.seekp(0);
 //		for (unsigned int idx=0; idx<343; ++idx)
-//			if (K[idx]!=NULL) {
+//			if (K[idx]!=nullptr) {
 //				// 1) write index
 //				stream.write(reinterpret_cast<char*>(&idx), sizeof(int));
 //				// 2) write low rank (int)
@@ -750,7 +750,7 @@ public:
 //	//					<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
 //
 //	// free memory /////////////////////
-//	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+//	for (unsigned int t=0; t<343; ++t) if (K[t]!=nullptr) delete [] K[t];
 //}
 //
 //
@@ -783,7 +783,7 @@ public:
 //		istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
 //		// loop to find 16 compressed m2l operators
 //		for (int idx=0; idx<343; ++idx) {
-//			K[idx] = NULL;
+//			K[idx] = nullptr;
 //			LowRank[idx] = 0;
 //			// if it exists
 //			if (idx == _idx) {

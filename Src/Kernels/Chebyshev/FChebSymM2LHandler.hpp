@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -389,7 +389,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				// store
 				{
 					// allocate
-					assert(K[idx]==NULL);
+					assert(K[idx]==nullptr);
 					K[idx] = new FReal [2*rank*nnodes];
 
 					// set low rank
@@ -448,7 +448,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 				// store 
 				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-				assert(K[idx]==NULL);
+				assert(K[idx]==nullptr);
 				K[idx] = new FReal [2*rank*nnodes];
 				LowRank[idx] = rank;
 				for (unsigned int r=0; r<rank; ++r)
@@ -616,13 +616,13 @@ public:
 		// init all 343 item to zero, because effectively only 16 exist
 		K       = new FReal** [TreeHeight];
 		LowRank = new int*    [TreeHeight];
-		K[0]       = NULL; K[1]       = NULL;
-		LowRank[0] = NULL; LowRank[1] = NULL;
+		K[0]       = nullptr; K[1]       = nullptr;
+		LowRank[0] = nullptr; LowRank[1] = nullptr;
 		for (unsigned int l=2; l<TreeHeight; ++l) {
 			K[l]       = new FReal* [343];
 			LowRank[l] = new int    [343];
 			for (unsigned int t=0; t<343; ++t) {
-				K[l][t]       = NULL;
+				K[l][t]       = nullptr;
 				LowRank[l][t] = 0;
 			}
 		}
@@ -654,11 +654,11 @@ public:
 	~SymmetryHandler()
 	{
 		for (unsigned int l=0; l<TreeHeight; ++l) {
-			if (K[l]!=NULL) {
-				for (unsigned int t=0; t<343; ++t) if (K[l][t]!=NULL) delete [] K[l][t];
+			if (K[l]!=nullptr) {
+				for (unsigned int t=0; t<343; ++t) if (K[l][t]!=nullptr) delete [] K[l][t];
 				delete [] K[l];
 			}
-			if (LowRank[l]!=NULL)	delete [] LowRank[l];
+			if (LowRank[l]!=nullptr)	delete [] LowRank[l];
 		}
 		delete [] K;
 		delete [] LowRank;
@@ -696,7 +696,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	// compute and compress ////////////
 	FReal* K[343];
 	int LowRank[343];
-	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = NULL; LowRank[idx] = 0;	}
+	for (unsigned int idx=0; idx<343; ++idx) { K[idx] = nullptr; LowRank[idx] = 0;	}
 	precompute<ORDER>(MatrixKernel, FReal(2.), Epsilon, K, LowRank);
 
 	// write to binary file ////////////
@@ -711,7 +711,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	if (stream.good()) {
 		stream.seekp(0);
 		for (unsigned int idx=0; idx<343; ++idx)
-			if (K[idx]!=NULL) {
+			if (K[idx]!=nullptr) {
 				// 1) write index
 				stream.write(reinterpret_cast<char*>(&idx), sizeof(int));
 				// 2) write low rank (int)
@@ -730,7 +730,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
 	//					<< " in " << time.tacAndElapsed() << "sec."	<< std::endl;
 
 	// free memory /////////////////////
-	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+	for (unsigned int t=0; t<343; ++t) if (K[t]!=nullptr) delete [] K[t];
 }
 
 
@@ -763,7 +763,7 @@ void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
 		istream.read(reinterpret_cast<char*>(&_idx), sizeof(int));
 		// loop to find 16 compressed m2l operators
 		for (int idx=0; idx<343; ++idx) {
-			K[idx] = NULL;
+			K[idx] = nullptr;
 			LowRank[idx] = 0;
 			// if it exists
 			if (idx == _idx) {

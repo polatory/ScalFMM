@@ -107,7 +107,7 @@ class FListBlockAllocator : public FAbstractBlockAllocator<ObjectClass>{
                 }
             }
 
-            return 0;
+            return nullptr;
         }
 
         int isEmpty() const{

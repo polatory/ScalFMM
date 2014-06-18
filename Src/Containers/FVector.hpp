@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -48,7 +48,7 @@ public:
     * @brief Constructor
     * Create a vector with a default size capacity
     */
-    FVector() : array(0), capacity(DefaultSize), index(0) {
+    FVector() : array(nullptr), capacity(DefaultSize), index(0) {
         array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * DefaultSize] );
     }
 
@@ -56,7 +56,7 @@ public:
     * @brief Constructor
     * @param inCapacity the memory to allocate
     */
-    explicit FVector(const int inCapacity): array(0), capacity(inCapacity), index(0) {
+    explicit FVector(const int inCapacity): array(nullptr), capacity(inCapacity), index(0) {
         if( inCapacity ){
             array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * inCapacity]);
         }
@@ -67,7 +67,7 @@ public:
      * @param other original vector
      * object must have an copy constructor
      */
-    FVector(const FVector& other): array(0), capacity(other.capacity), index(other.index) {
+    FVector(const FVector& other): array(nullptr), capacity(other.capacity), index(other.index) {
         if( other.capacity ){
             array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * other.capacity]);
             // Copy each element
@@ -132,7 +132,7 @@ public:
             }
 
             // Copy elements
-            ObjectType* const nextArray = reinterpret_cast< ObjectType* >( inCapacity ? new char[sizeof(ObjectType) * inCapacity] : 0);
+            ObjectType* const nextArray = reinterpret_cast< ObjectType* >( inCapacity ? new char[sizeof(ObjectType) * inCapacity] : nullptr);
             for(int idx = 0 ; idx < index ; ++idx){
                 new((void*)&nextArray[idx]) ObjectType(array[idx]);
                 (&array[idx])->~ObjectType();
@@ -249,7 +249,7 @@ public:
     }
 
     /** To take values from C array but copy with = operator
-      * @param inArray the array to copie values
+      * @param inArray the array to copy values
       * @param inSize the size of the array
       */
     void extractValues(const ObjectType*const inArray, const int inSize){

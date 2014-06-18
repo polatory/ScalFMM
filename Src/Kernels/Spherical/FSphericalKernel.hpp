@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -76,7 +76,7 @@ public:
     FSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
           devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
-          preM2LTransitions(0) {
+          preM2LTransitions(nullptr) {
         allocAndInit();
     }
 
