@@ -76,7 +76,7 @@ int main(int argc, char ** argv){
 	std::memset(particles,0,arraySize*sizeof(FReal));
 	//
 	// Read Data
-	int j = 0, k=0 ;
+	int j = 0 ;
 	for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
 		//		//
 		loader.fillParticle(&particles[j],nbData);

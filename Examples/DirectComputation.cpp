@@ -95,7 +95,7 @@ int main(int argc, char ** argv){
 	//
 	double totalCharge = 0.0;
 	//
-	int nbDataToRead = particles[0].getReadDataNumber();
+//	int nbDataToRead = particles[0].getReadDataNumber();
 	for(int idx = 0 ; idx<nbParticles ; ++idx){
 		//
 		loader.fillParticle(&particles[idx].position, &particles[idx].physicalValue);
