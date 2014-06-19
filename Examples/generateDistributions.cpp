@@ -167,7 +167,7 @@ int main(int argc, char ** argv){
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
 		unifRandonPointsOnCube(NbPoints, A,B,C,particles) ;
 		BoxWith = FMath::Max(A,FMath::Max(B,C) );
-		FReal halfBW = BoxWith;
+		FReal halfBW = BoxWith*0.5;
 		Centre.setPosition(halfBW,halfBW,halfBW);
 	}
 	else if(FParameters::existParameter(argc, argv, "-unitSphere")){
