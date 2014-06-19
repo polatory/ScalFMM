@@ -120,7 +120,7 @@ else()
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
       SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -flto -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
 #
