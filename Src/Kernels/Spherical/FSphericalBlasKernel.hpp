@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -18,8 +18,8 @@
 
 #include "FAbstractSphericalKernel.hpp"
 
-#include "../../Utils/FMemUtils.hpp"
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FMemUtils.hpp"
+#include "Utils/FBlas.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -123,7 +123,7 @@ public:
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
           temporaryMultiSource(new FComplexe[FF_MATRIX_COLUMN_DIM]),
-          preM2LTransitions(0){
+          preM2LTransitions(nullptr){
         allocAndInit();
     }
 

@@ -57,6 +57,7 @@ OPTION( ScalFMM_USE_SSE              "Set to ON to compile with SSE support"    
 OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"       OFF  )
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
+OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile ionly the lib (examples are not compiled) " OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
@@ -301,9 +302,10 @@ add_subdirectory(Src)
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
 
+if( ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
-
+endif
 
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
