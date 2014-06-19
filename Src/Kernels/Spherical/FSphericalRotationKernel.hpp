@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA,
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -17,7 +17,7 @@
 #define FSPHERICALROTATIONKERNEL_HPP
 
 #include "FAbstractSphericalKernel.hpp"
-#include "../../Utils/FMemUtils.hpp"
+#include "Utils/FMemUtils.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -393,7 +393,7 @@ public:
     FSphericalRotationKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
         : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
           devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
-          preM2LTransitions(0),
+          preM2LTransitions(nullptr),
           rotation_Info(inDevP) {
         allocAndInit();
     }

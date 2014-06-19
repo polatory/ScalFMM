@@ -63,7 +63,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 			exit(EXIT_FAILURE);
 		}
 		const std::string parFile( (sizeof(FReal) == sizeof(float))?
-				"Test/DirectFloatbfma":
+				"Test/DirectFloat.bfma":
 				"UTest/DirectDouble.bfma");
 		//
 		std::string filename(SCALFMMDataPath+parFile);
@@ -75,16 +75,16 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		const int NbLevels        = 4;
 		const int SizeSubLevels = 2;
 
-		// Create octree
 
 		FSize nbParticles = loader.getNumberOfParticles() ;
 		FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
          //
+		// Create octree
+		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//   Insert particle in the tree
 		//
-		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 			tree.insert(particles[idxPart].position , idxPart, particles[idxPart].physicalValue );
 		}

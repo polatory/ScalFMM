@@ -57,6 +57,7 @@ OPTION( ScalFMM_USE_SSE              "Set to ON to compile with SSE support"    
 OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"       OFF  )
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
+OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile ionly the lib (examples are not compiled) " OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
@@ -116,11 +117,11 @@ else()
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE(APPLE)
-    # Not apple system - Check the compilater flags 
+    # Not apple system - Check the compiler flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
       SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -flto -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
 #
@@ -181,8 +182,7 @@ endif(ScalFMM_USE_FFT)
 #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
 # 
 # C++ 2011
-#ADD_DEFINITIONS(-std=c++11)
-    MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
+   MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
     MESSAGE( "Intel:   ${INTEL_VERSION}")
@@ -301,9 +301,10 @@ add_subdirectory(Src)
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
 
+if( NOT ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
-
+endif()
 
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
