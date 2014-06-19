@@ -22,15 +22,18 @@
 #ifndef FMPIFMAGENERICLOADER_HPP
 #define FMPIFMAGENERICLOADER_HPP
 
+
+#include "../Utils/FMpi.hpp"
+
 class FMpiFmaGenericLoader : public FFmaGenericLoader {
 protected:
   FSize myNbOfParticles;     //Number of particles that the calling process will manage
   MPI_Offset idxParticles;   //
   FSize start;               // number of my first parts in file
-
+  size_t headerSize;
 public:
   FMpiFmaGenericLoader(const std::string inFilename,const FMpi::FComm& comm, const bool useMpiIO = false)
-    : FFmaGenericLoader(inFilename,true),myNbOfParticles(0),idxParticles(0)
+    : FFmaGenericLoader(inFilename,true),myNbOfParticles(0),idxParticles(0),headerSize(0)
   {
     FSize startPart = comm.getLeft(nbParticles);
     FSize endPart   = comm.getRight(nbParticles);
@@ -40,7 +43,7 @@ public:
     
     //This is header size in bytes
     //   MEANING :      sizeof(FReal)+nbAttr, nb of parts, boxWidth+boxCenter
-    size_t headerSize = sizeof(int)*2 + sizeof(FSize) + sizeof(FReal)*4;
+    headerSize = sizeof(int)*2 + sizeof(FSize) + sizeof(FReal)*4;
     //To this header size, we had the parts that belongs to proc on my left
     file->seekg(headerSize + startPart*typeData[1]*sizeof(FReal));
   }
@@ -54,6 +57,14 @@ public:
 
   FSize getStart() const{
     return start;
+  }
+  
+  /**
+   * Given an index, get the one particle from this index
+   */
+  void fill1Particle(FReal*datas,FSize indexInFile){
+    file->seekg(headerSize+(int(indexInFile)*getNbRecordPerline()*sizeof(FReal)));
+    file->read((char*) datas,getNbRecordPerline()*sizeof(FReal));
   }
   
 };
