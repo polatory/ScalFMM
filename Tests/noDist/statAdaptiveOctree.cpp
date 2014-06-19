@@ -22,8 +22,8 @@
 #include "Utils/FParameters.hpp"
 #include "Containers/FOctree.hpp"
 
-#include "adaptiveTree/FAdaptCell.hpp"
-#include "adaptiveTree/FAdaptTools.hpp"
+#include "AdaptiveTree/FAdaptCell.hpp"
+#include "AdaptiveTree/FAdaptTools.hpp"
 
 #include "Components/FSimpleIndexedLeaf.hpp"
 #include "Components/FBasicParticleContainer.hpp"
