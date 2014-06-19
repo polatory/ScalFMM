@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -16,7 +16,7 @@
 #ifndef FP2PPARTICLECONTAINER_HPP
 #define FP2PPARTICLECONTAINER_HPP
 
-#include "../../Components/FBasicParticleContainer.hpp"
+#include "Components/FBasicParticleContainer.hpp"
 
 template<int NRHS = 1, int NLHS = 1>
 class FP2PParticleContainer : public FBasicParticleContainer<NRHS+4*NLHS> {

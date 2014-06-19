@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, B��renger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -16,11 +16,12 @@
 #ifndef FROTATIONKERNEL_HPP
 #define FROTATIONKERNEL_HPP
 
-#include "../../Components/FAbstractKernels.hpp"
-#include "../../Utils/FSmartPointer.hpp"
-#include "../../Utils/FComplexe.hpp"
-#include "../../Utils/FMemUtils.hpp"
-#include "../../Utils/FSpherical.hpp"
+#include "Components/FAbstractKernels.hpp"
+#include "Utils/FSmartPointer.hpp"
+#include "Utils/FComplexe.hpp"
+#include "Utils/FMemUtils.hpp"
+#include "Utils/FSpherical.hpp"
+#include "Utils/FMath.hpp"
 
 #include "../P2P/FP2P.hpp"
 
@@ -242,7 +243,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
       *
       * Remark about the structure of the structure of the matrixes DlmkCoef[O/M](Minus)Theta.
       * It is composed of "P" small matrix.
-      * The matrix M(l) (0 <= l <= P) has a size of (l*2+1)��
+      * The matrix M(l) (0 <= l <= P) has a size of (l*2+1)
       * It means indexes are going from -l to l for column and row.
       * l = 0: ( -0 <= m <= 0 ; -0 <= k <= 0)
       * [X]
