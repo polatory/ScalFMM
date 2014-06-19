@@ -9,8 +9,8 @@ version 1.1
 
 
 
-1.2.
----
+1.2 ()
+-----
 
 - New FMA format to read/write particles
 - Add examples repository
@@ -20,5 +20,10 @@ version 1.1
 - Now we use MPI THREAD SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm. 
 - Add Uniform interpolation based on Lagrange polynomials
 - Improve tests -> now we use CTest and CDash (Thanks F Rue to Inria)
+- Add support for Intel icl++ compiler (Intel 2015 compiler) on MacOS X and Clang on linux system
+- Add SSE and AVX support 
+- Add SSE and AVX code for 1/r kernel 
+- CMake improvements
+
 
  
