@@ -237,12 +237,12 @@ public:
     [[13237,1],1][btl_openib_component.c:3227:handle_wc] from fourmi062 to: fourmi056 error polling LP CQ with status LOCAL LENGTH ERROR status number 1 for wr_id 7134664 opcode 0  vendor error 105 qp_idx 3
     Tous on la meme erreur le 2e 1 est remplace par le rang.
   */
-  FMpi( ) : communicator(0) {
+  FMpi() : communicator(nullptr) {
     int provided = 0;
     FMpi::Assert( MPI_Init_thread(NULL,NULL, MPI_THREAD_SERIALIZED, &provided), __LINE__);
     communicator = new FComm(MPI_COMM_WORLD);
   }
-  FMpi(int inArgc, char **  inArgv ) : communicator(0) {
+  FMpi(int inArgc, char **  inArgv ) : communicator(nullptr) {
     int provided = 0;
     FMpi::Assert( MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_SERIALIZED, &provided), __LINE__);
     communicator = new FComm(MPI_COMM_WORLD);
@@ -298,7 +298,7 @@ public:
   ////////////////////////////////////////////////////////////
 
   /** generic mpi assert function */
-  static void Assert(const int test, const unsigned line, const char* const message = 0){
+  static void Assert(const int test, const unsigned line, const char* const message = nullptr){
     if(test != MPI_SUCCESS){
       printf("[ERROR-QS] Test failled at line %d, result is %d", line, test);
       if(message) printf(", message: %s",message);
@@ -332,9 +332,9 @@ public:
   }
 
   /** assert if mpi error */
-  static void MpiAssert(const int test, const unsigned line, const char* const message = 0){
+  static void MpiAssert(const int test, const unsigned line, const char* const message = nullptr){
     if(test != MPI_SUCCESS){
-      printf("[ERROR] Test failled at line %d, result is %d", line, test);
+      printf("[ERROR] Test failed at line %d, result is %d", line, test);
       if(message) printf(", message: %s",message);
       printf("\n");
       fflush(stdout);
