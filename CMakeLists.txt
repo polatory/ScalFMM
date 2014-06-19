@@ -218,8 +218,12 @@ ENDIF()
 
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
 if( ScalFMM_USE_SSE )
-	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} 
- 					     ${CMAKE_MODULE_PATH}/compileTestSse.cpp )
+	if(NOT EXISTS ${CMAKE_MODULE_PATH}/compileTestSse.cpp)
+		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestSse.cpp)" )
+	endif()
+	
+	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestSse.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} -msse3")	
+	
    	IF(${COMPILE_SSE})			     
 		TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR} 
  						     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp )
@@ -249,8 +253,12 @@ endif()
 
 MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
 if(ScalFMM_USE_AVX)
-	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} 
- 					     ${CMAKE_MODULE_PATH}/compileTestAvx.cpp )
+	if(NOT EXISTS ${CMAKE_MODULE_PATH}/compileTestAvx.cpp)
+		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestAvx.cpp)" )
+	endif()
+	
+	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} -mavx")
+		
    	IF(${COMPILE_AVX})
    	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
  						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp )
