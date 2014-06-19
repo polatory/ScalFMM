@@ -1,16 +1,15 @@
-Copyright (c) 2013-2014 Intel, Inc.  All rights reserved.
- Copyright ScalFmm 2011 INRIA,
+Copyright (c) 2011-2014 Inria,   All rights reserved.
  
  
 ===========================================================================
 
 This file contains the main features as well as overviews of specific
 bug fixes (and other actions) for each version of ScalFMM since
-version 1.1.
+version 1.1
 
 
 
-1.2
+1.2.
 ---
 
 - New FMA format to read/write particles
@@ -20,5 +19,6 @@ version 1.1.
 - Fix bug and performance improvements in MPI thread algorithms
 - Now we use MPI THREAD SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm. 
 - Add Uniform interpolation based on Lagrange polynomials
-- Improve tests -> now we use Ctest and CDash (Thanks F Rue to Inria)
+- Improve tests -> now we use CTest and CDash (Thanks F Rue to Inria)
+
  
