@@ -22,10 +22,8 @@
 #include "../Src/Utils/FGlobal.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithm.hpp"
@@ -56,8 +54,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
     ///////////////////////////////////////////////////////////
 
     template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
-                        class LeafClass, class OctreeClass, class FmmClass, const int NbRhs>
-    void RunTest(const FReal epsilon)	{
+                        class LeafClass, class OctreeClass, class FmmClass, const int NVals>
+    void RunTest()	{
         // Warning in make test the exec dir it Build/UTests
         // Load particles
 		//
@@ -84,7 +82,6 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         const int NbLevels        = 4;
         const int SizeSubLevels = 2;
-        //const FReal epsilon = FReal(1e-5);
 
         //
 		FSize nbParticles = loader.getNumberOfParticles() ;
@@ -97,7 +94,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		//   Insert particle in the tree
 		//
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-			tree.insert(particles[idxPart].position , idxPart, particles[idxPart].physicalValue );
+			tree.insert(particles[idxPart].position , idxPart, particles[idxPart].physicalValue ,0.0,0.0,0.0);
 		}
 //		//
 //        // Create octree
@@ -119,7 +116,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         // Run FMM
         Print("Fmm...");
-        KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
+        KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algo(&tree,&kernels);
         algo.execute();
 //
@@ -128,51 +125,40 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         // Run direct computation
         Print("Direct...");
 		for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+			particles[idx].potential *= NVals ;
+			particles[idx].forces[0] *= NVals ;
+			particles[idx].forces[1] *= NVals ;
+			particles[idx].forces[2] *= NVals ;
 			energyD +=  particles[idx].potential*particles[idx].physicalValue ;
 		}
-//        for( int idxRhs = 0 ; idxRhs < NbRhs ; ++idxRhs){
-//            for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-//                for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-//                    FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-//                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-//                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-//                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-//                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-//                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-//                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-//                                    &particles[idxOther].forces[2],&particles[idxOther].potential);
-//                }
-//            }
-//        }
-
+		//
         // Compare
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+		{ // Check that each particle has been summed with all other
 
-            tree.forEachLeaf([&](LeafClass* leaf){
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
 				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
 					energy   += potentials[idxPart]*physicalValues[idxPart];
+				}
+			});
+		}
 
-                }
-            });
-        }
-
-        delete[] particles;
+		delete[] particles;
 
         // Print for information
 		Print("Potential diff is = ");
@@ -198,8 +184,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
         // Assert
-        const FReal MaximumDiffPotential = FReal(9e-5);
-        const FReal MaximumDiffForces     = FReal(9e-3);
+        const FReal MaximumDiffPotential = FReal(9e-3);
+        const FReal MaximumDiffForces     = FReal(9e-2);
 
 		Print("Test1 - Error Relative L2 norm Potential ");
 		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);    //1
@@ -227,7 +213,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         FMath::FAccurater localDiff;
         FMath::FAccurater multiPoleDiff;
         tree.forEachCell([&](CellClass* cell){
-            for( int idxRhs = 1 ; idxRhs < NbRhs ; ++idxRhs){
+            for( int idxRhs = 1 ; idxRhs < NVals ; ++idxRhs){
                 localDiff.add(cell->getLocal(0), cell->getLocal(idxRhs), cell->getVectorSize());
                 multiPoleDiff.add(cell->getMultipole(0), cell->getMultipole(idxRhs), cell->getVectorSize());
             }
@@ -265,34 +251,32 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
     /** TestChebKernel */
     void TestChebKernel(){
-        const int NbRhs = 4;
-        const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+        const int NVals = 4;
+        const unsigned int ORDER = 6 ;
         typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;
+        typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;
+        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NbRhs>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
     /** TestChebSymKernel */
     void TestChebSymKernel(){
-        const int NbRhs = 4;
-        const unsigned int ORDER = 5;
-        const FReal epsilon = FReal(1e-5);
+        const int NVals = 4;
+        const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER, 1, 1, NbRhs> CellClass;
+        typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
         typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NbRhs> KernelClass;
+        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NbRhs>(epsilon);
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
 
