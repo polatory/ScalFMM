@@ -301,7 +301,7 @@ add_subdirectory(Src)
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
 
-if( ScalFMM_BUILD_ONLY_LIB ) 
+if( NOT ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
 endif()
