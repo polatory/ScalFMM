@@ -117,7 +117,7 @@ else()
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE(APPLE)
-    # Not apple system - Check the compilater flags 
+    # Not apple system - Check the compiler flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
       SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
@@ -182,8 +182,7 @@ endif(ScalFMM_USE_FFT)
 #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
 # 
 # C++ 2011
-#ADD_DEFINITIONS(-std=c++11)
-    MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
+   MESSAGE( "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
     MESSAGE( "Intel:   ${INTEL_VERSION}")
@@ -305,7 +304,7 @@ set(scalfmm_lib scalfmm)
 if( ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
-endif
+endif()
 
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
