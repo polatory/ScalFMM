@@ -45,7 +45,7 @@ public:
 
         // receiving buffer
         IndexType bufferSize = 0;
-        SortType* buffer = 0;
+        SortType* buffer = nullptr;
 
         // Create the first com
         FMpi::FComm currentComm(originalComm.getComm());

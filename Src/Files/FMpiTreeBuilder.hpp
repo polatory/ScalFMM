@@ -45,6 +45,7 @@ public:
    * so this struct store a particle + its index
    */
   struct IndexedParticle{
+  public:
     MortonIndex index;
     ParticleClass particle;
 
@@ -181,7 +182,7 @@ private:
 	const bool needToRecvBeforeSend = (rank != 0 && (((*workingSize) && otherFirstIndex == workingArray[0].index ) || !(*workingSize)));
 	MPI_Request requestSendLeaf;
 
-	IndexedParticle* sendBuffer = 0;
+	IndexedParticle* sendBuffer = nullptr;
 	if(rank != nbProcs - 1 && needToRecvBeforeSend == false){
 	  FSize idxPart = (*workingSize) - 1 ;
 	  while(idxPart >= 0 && workingArray[idxPart].index == otherFirstIndex){
@@ -197,7 +198,7 @@ private:
 		       rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
 	  }
 	  else{
-	    MPI_Isend( 0, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
+	    MPI_Isend( nullptr, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
 	  }
 	}
 
@@ -223,7 +224,7 @@ private:
 		     rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
 	  }
 	  else{
-	    MPI_Recv( 0, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
+	    MPI_Recv( nullptr, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
 	  }
 	}
 
@@ -231,21 +232,21 @@ private:
 	  MPI_Send( workingArray, int((*workingSize) * sizeof(IndexedParticle)), MPI_BYTE,
 		    rank + 1, FMpi::TagSplittedLeaf, communicator.getComm());
 	  delete[] workingArray;
-	  workingArray = 0;
+	  workingArray = nullptr;
 	  (*workingSize)  = 0;
 	}
 	else if(rank != nbProcs - 1){
 	  MPI_Wait( &requestSendLeaf, MPI_STATUS_IGNORE);
 	  delete[] sendBuffer;
-	  sendBuffer = 0;
+	  sendBuffer = nullptr;
 	}
       }
     }
     {//Filling the Array with leaves and parts //// COULD BE MOVED IN AN OTHER FUCTION
 	  
       (*leavesSize)    = 0; //init ptr
-      (*leavesArray)   = 0; //init ptr
-      (*leavesIndices) = 0; //init ptr
+      (*leavesArray)   = nullptr; //init ptr
+      (*leavesIndices) = nullptr; //init ptr
 	  
       if((*workingSize)){
 	    
@@ -275,7 +276,7 @@ private:
 	  
       delete []  workingArray;
 	  
-      workingArray = 0;
+      workingArray = nullptr;
 	
     }
   }
@@ -337,8 +338,8 @@ private:
 
       for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
 	if(idxProc != myRank){
-	  const FSize correctLeftLeafNumber  = balancer->getLeft(totalNumberOfLeaves,NULL,0,0,nbProcs,idxProc);
-	  const FSize correctRightLeafNumber = balancer->getRight(totalNumberOfLeaves,NULL,0,0,nbProcs,idxProc);
+	  const FSize correctLeftLeafNumber  = balancer->getLeft(totalNumberOfLeaves,nullptr,0,nullptr,nbProcs,idxProc);
+	  const FSize correctRightLeafNumber = balancer->getRight(totalNumberOfLeaves,nullptr,0,nullptr,nbProcs,idxProc);
 
 	  //5 cases : Refer to ParalleleDetails.pdf to know more
 	      
@@ -532,14 +533,14 @@ public:
 			  const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
 			  ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer,const SortingType type = QuickSort){
       
-    IndexedParticle* particlesArray = 0;
+    IndexedParticle* particlesArray = nullptr;
     FSize particlesSize = 0;
     SortParticlesFromArray(communicator, array, size, type, boxCenter, boxWidth, treeHeight,
 			   &particlesArray, &particlesSize);
 
-    ParticleClass* leavesArray = 0;
+    ParticleClass* leavesArray = nullptr;
     FSize leavesSize = 0;
-    FSize * leavesIndices = 0;
+    FSize * leavesIndices = nullptr;
     
     MergeLeaves(communicator, particlesArray, &particlesSize, &leavesIndices, &leavesArray, &leavesSize);
 
@@ -547,7 +548,7 @@ public:
 
     /** To produce stats after the Equalize phase
      */
-    int* nbPartsPerProc = {0};
+    int* nbPartsPerProc;
     int myParts = particleSaver->getSize();
     int nbProc = communicator.processCount();
 	
