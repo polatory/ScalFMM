@@ -132,15 +132,32 @@ if( ScalFMM_ATTACHE_SOURCE )
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
 
 endif()
-# Compile option
+##############################################################################
+#                                              Compile option
+##############################################################################
+#  -xHost -mfpmath=sse
 # -Wall Wnosign-conversion 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+#
 SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
+#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+#
+#                                         INTEL
+SET(AVXFLAGS  "-xHost")
+SET(SSEFLAGS  "-axSSE4.2")
 #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 else()
-SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic -Wzero-as-null-pointer-constant -Wall ") 
+#
+#                                    NOT      INTEL
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
+#
+SET(AVXFLAGS "-mtune=native -march=native")
+SET(SSEFLAGS  "-mtune=native -march=native -mno-avx")   # -mtune=native -march=native
+#
 endif()
-# Trace
+##############################################################################
+#                                                   Trace
+##############################################################################
 MESSAGE( STATUS "ScalFMM_USE_TRACE            = ${ScalFMM_USE_TRACE}" )
 if( ScalFMM_USE_TRACE )
   OPTION( ScalFMM_USE_ITAC "Set to ON to use itac trace" OFF )
@@ -148,6 +165,7 @@ if( ScalFMM_USE_TRACE )
     ADD_DEFINITIONS(-I$VT_ROOT/include -trace)
   endif()
 endif()
+##############################################################################
 
 # Blas option
 if( ScalFMM_USE_BLAS )
@@ -224,31 +242,20 @@ if( ScalFMM_USE_SSE )
 	if(NOT EXISTS ${CMAKE_MODULE_PATH}/compileTestSse.cpp)
 		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestSse.cpp)" )
 	endif()
+	MESSAGE("SSEFLAGS ${SSEFLAGS}  -- ${CMAKE_CXX_FLAGS}  ")
+	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestSse.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSEFLAGS}")	
 	
-	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestSse.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} -msse4.2")	
-	
-   	IF(${COMPILE_SSE})			     
+   	IF(${COMPILE_SSE})		
+   	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SSEFLAGS}")
+   		     
 		TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR} 
- 						     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} -msse4.2")
+ 						     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSEFLAGS}")
   		IF( NOT ${COMPILE_RESULT_VAR})
     	 		 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__SSEPE_INTEL_COMPILER")
   		ENDIF()
-  		IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-  			if(INTEL_ICL_COMPILER) 
-  #				 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -xHost -mfpmath=sse")
-  				 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -msse4.2 ")
- 				MESSAGE(WARNING "Need to check for SSE2 and SSE3 ")
-  			else()
-			    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
-			ENDIF()
-		    	MESSAGE(WARNING "INTEL  SSE CXX FLAGS: ${CMAKE_CXX_FLAGS} ")
-  		ELSE()
-  		  	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2 -mfpmath=sse")
-  		ENDIF()
-  	ELSE()
-  		 MESSAGE(FATAL_ERROR "SSE NOT SUPPORTED ; Set ScalFMM_USE_SSE  to OFF")
-  		
-  	ENDIF()
+  	ELSE(${COMPILE_SSE})
+  		 MESSAGE(FATAL_ERROR "SSE NOT SUPPORTED ; Set ScalFMM_USE_SSE  to OFF")	
+  	ENDIF(${COMPILE_SSE})
 endif()
 ##################################################################
 #                             Use AVX                            #
@@ -260,25 +267,22 @@ if(ScalFMM_USE_AVX)
 		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestAvx.cpp)" )
 	endif()
 	
-	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} -mavx")
+	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}  ${AVXFLAGS}")
 		
    	IF(${COMPILE_AVX})
+   	          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVXFLAGS}")
+   	      
    	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
- 						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp )
+ 						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ")
 	  		IF( NOT ${COMPILE_RESULT_AVSPE})
  		   		  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVXPE_INTEL_COMPILER")
   			ENDIF()
-  		IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    			SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -mavx")
-		    MESSAGE(WARNING "INTEL AVX CXX FLAGS:  ${CMAKE_CXX_FLAGS} ")
-  		ELSE()
-    			SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -mfpmath=sse -mavx")
-  		ENDIF()
+ 
 		MESSAGE(STATUS ${CMAKE_CXX_FLAGS} )
-  	ELSE()
+  	ELSE(${COMPILE_AVX})
   		 MESSAGE(FATAL_ERROR "AVS NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF")
-  	ENDIF()
-endif()
+  	ENDIF(${COMPILE_AVX})
+endif(ScalFMM_USE_AVX)
 
 
 
