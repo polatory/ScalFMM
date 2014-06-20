@@ -62,10 +62,6 @@ OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile ionly the lib (examp
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
 #
-# Compile option
-# -Wall Wnosign-conversion 
-SET(ScaLFMM_CXX_FLAGS "-std=c++11  -fpic -Wzero-as-null-pointer-constant -Wall ") 
-#-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 #
 # Test if openmp is here
 #
@@ -136,7 +132,14 @@ if( ScalFMM_ATTACHE_SOURCE )
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
 
 endif()
-
+# Compile option
+# -Wall Wnosign-conversion 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
+#-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
+else()
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic -Wzero-as-null-pointer-constant -Wall ") 
+endif()
 # Trace
 MESSAGE( STATUS "ScalFMM_USE_TRACE            = ${ScalFMM_USE_TRACE}" )
 if( ScalFMM_USE_TRACE )
