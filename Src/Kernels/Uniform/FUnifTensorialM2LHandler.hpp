@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -225,7 +225,7 @@ public:
     // allocate FC
     FC = new FComplexe*[ncmp];
     for (unsigned int d=0; d<ncmp; ++d)
-      FC[d]=NULL;
+      FC[d]=nullptr;
 
     // initialize root node ids
     TensorType::setNodeIdsDiff(node_diff);
@@ -237,7 +237,7 @@ public:
 	~FUnifTensorialM2LHandler()
 	{
     for (unsigned int d=0; d<ncmp; ++d)
-      if (FC[d] != NULL) delete [] FC[d];
+      if (FC[d] != nullptr) delete [] FC[d];
 	}
 
 	/**
@@ -401,7 +401,7 @@ public:
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
       FC[l] = new FComplexe*[ncmp];
       for (unsigned int d=0; d<ncmp; ++d)
-        FC[l][d]=NULL;
+        FC[l][d]=nullptr;
     }
 
     // initialize root node ids
@@ -415,7 +415,7 @@ public:
 	{
     for (unsigned int l=0; l<TreeHeight; ++l) 
       for (unsigned int d=0; d<ncmp; ++d)
-        if (FC[l][d] != NULL) delete [] FC[l][d];
+        if (FC[l][d] != nullptr) delete [] FC[l][d];
 	}
 
 	/**
