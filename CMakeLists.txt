@@ -80,8 +80,32 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 else()
   SET(FLAGS_64bits "")
 endif()
+##############################################################################
+#                                              Compile option
+##############################################################################
+#  -xHost -mfpmath=sse
+# -Wall Wnosign-conversion 
 #
-# Debug
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
+#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+#
+#                                         INTEL
+SET(AVXFLAGS  "-mavx")
+SET(SSEFLAGS  "-axSSE4.2")
+#-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
+else()
+#
+#                                    NOT      INTEL
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
+#
+SET(AVXFLAGS "-mtune=native -march=native")
+SET(SSEFLAGS  "-mtune=native -march=native -mno-avx")   # -mtune=native -march=native
+#
+endif()
+##############################################################################
+#                                                      Debug
+##############################################################################
 #
 if( ScalFMM_BUILD_DEBUG )
 #
@@ -97,9 +121,9 @@ if( ScalFMM_BUILD_DEBUG )
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
 else()
-#
-# Compile Release flags
-#
+##############################################################################
+#                                                Compile Release flags
+##############################################################################
   SET(CMAKE_BUILD_TYPE Release)
   # force -O3 in release
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
@@ -123,38 +147,15 @@ else()
 #
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
 endif()
-#
-# Attach source code to exec
+##############################################################################
+#                                           Attach source code to exec
+##############################################################################
 MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
 if( ScalFMM_ATTACHE_SOURCE )
   MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
 #  ADD_DEFINITIONS(-g)
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
-
-endif()
-##############################################################################
-#                                              Compile option
-##############################################################################
-#  -xHost -mfpmath=sse
-# -Wall Wnosign-conversion 
-#
-SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
-#
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-#
-#                                         INTEL
-SET(AVXFLAGS  "-xHost")
-SET(SSEFLAGS  "-axSSE4.2")
-#-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
-else()
-#
-#                                    NOT      INTEL
-SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
-#
-SET(AVXFLAGS "-mtune=native -march=native")
-SET(SSEFLAGS  "-mtune=native -march=native -mno-avx")   # -mtune=native -march=native
-#
-endif()
+endif(ScalFMM_ATTACHE_SOURCE)
 ##############################################################################
 #                                                   Trace
 ##############################################################################
@@ -258,7 +259,7 @@ if( ScalFMM_USE_SSE )
   	ENDIF(${COMPILE_SSE})
 endif()
 ##################################################################
-#                             Use AVX                            #
+#                             Use AVX                            
 ##################################################################
 
 MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
@@ -283,24 +284,24 @@ if(ScalFMM_USE_AVX)
   		 MESSAGE(FATAL_ERROR "AVS NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF")
   	ENDIF(${COMPILE_AVX})
 endif(ScalFMM_USE_AVX)
-
-
-
+##################################################################
+#                                          ScalFMM_USE_MIC_NATIVE
+##################################################################
 if( ScalFMM_USE_MIC_NATIVE ) 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
-
 ENDIF()
-# Use Mem stats
-MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
-
-# Use Log
-MESSAGE( STATUS "ScalFMM_USE_LOG              = ${ScalFMM_USE_LOG}" )
-
-# Use Assert
-MESSAGE( STATUS "ScalFMM_USE_ASSERT           = ${ScalFMM_USE_ASSERT}" )
+##################################################################
+#                                
+##################################################################
 
 # Add CBLAS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
+
+##################################################################
+#
+#                     END SETTING VARIABLES
+#
+##################################################################
 
 # Build - lib
 add_subdirectory(Src)
@@ -349,11 +350,12 @@ if("${CMAKE_GENERATOR}" MATCHES "Make")
 		)
 endif()
 #
+##################################################################
 #
-#===========================================================================
-#    Build and export cmake files 
-#===========================================================================
+#                                   Build and export cmake files 
 #
+##################################################################
+
 MESSAGE(STATUS "ScalFMM_BINARY_DIR:          " ${ScalFMM_BINARY_DIR})
 CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
                ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
@@ -368,11 +370,12 @@ INSTALL(FILES
 	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
   DESTINATION Data/
   )	
+ ##################################################################
 #
-# Add CPACK Module
-# ----------------
+#                               build a CPack driven installer package
 #
-# build a CPack driven installer package
+##################################################################
+INCLUDE(CPack)
 #
 # Use git commit number as   CPACK_PACKAGE_VERSION_PATCH
 set(CPACK_PACKAGE_VERSION_PATCH 0)
@@ -395,12 +398,23 @@ SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.ou
 LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*,noDist" )
 message("CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
 message("CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
+ ##################################################################
 #
-INCLUDE(CPack)
+#                                   PRINT MESSAGES
 #
-# OUTPUT
-#
+ ##################################################################
+ #                    Use Mem stats
+MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
+#                    Use Log
+MESSAGE( STATUS "ScalFMM_USE_LOG              = ${ScalFMM_USE_LOG}" )
+#                    Use Assert
+MESSAGE( STATUS "ScalFMM_USE_ASSERT           = ${ScalFMM_USE_ASSERT}" )
+ #
 MESSAGE(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "ScaLFMM_CXX_FLAGS   =  ${ScaLFMM_CXX_FLAGS}")
 MESSAGE(STATUS "SCALFMM_LIBRARIES   =  ${SCALFMM_LIBRARIES}")
 MESSAGE(STATUS "SCALFMM_INCLUDES   =  ${SCALFMM_INCLUDES}")
+ ##################################################################
+#                                   END
+ ##################################################################
+ 

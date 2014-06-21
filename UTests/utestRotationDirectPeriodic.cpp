@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, B��renger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA,
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -128,12 +128,19 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                 }
             }
         }
+		FReal energy= 0.0 , energyD = 0.0 ;
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// Compute direct energy
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+
+		for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+			energyD +=  particles[idx].potential*particles[idx].physicalValue ;
+		}
 
         // Compare
         Print("Compute Diff...");
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
-        FReal energy = 0.0 ;
        { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
@@ -156,35 +163,52 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
             });
         }
 
-        Print("Potential diff is = ");
-        printf("         L2Norm   %e\n",potentialDiff.getRelativeL2Norm());
-		printf("         RMSError %e\n",potentialDiff.getRMSError());
-        Print("Fx diff is = ");
-		printf("         L2Norm   %e\n",fx.getRelativeL2Norm());
-		printf("         RMSError %e\n",fx.getRMSError());
-        Print(fx.getRelativeL2Norm());
-        Print(fx.getRelativeInfNorm());
-        Print("Fy diff is = ");
-		printf("        L2Norm   %e\n",fy.getRelativeL2Norm());
-		printf("        RMSError %e\n",fy.getRMSError());
-        Print("Fz diff is = ");
-		printf("        L2Norm   %e\n",fz.getRelativeL2Norm());
-		printf("        RMSError %e\n",fz.getRMSError());
-        FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
+		Print("Potential diff is = ");
+		printf("         Pot L2Norm     %e\n",potentialDiff.getL2Norm());
+		printf("         Pot RL2Norm   %e\n",potentialDiff.getRelativeL2Norm());
+		printf("         Pot RMSError   %e\n",potentialDiff.getRMSError());
+		Print("Fx diff is = ");
+		printf("         Fx L2Norm     %e\n",fx.getL2Norm());
+		printf("         Fx RL2Norm   %e\n",fx.getRelativeL2Norm());
+		printf("         Fx RMSError   %e\n",fx.getRMSError());
+		Print("Fy diff is = ");
+		printf("        Fy L2Norm     %e\n",fy.getL2Norm());
+		printf("        Fy RL2Norm   %e\n",fy.getRelativeL2Norm());
+		printf("        Fy RMSError   %e\n",fy.getRMSError());
+		Print("Fz diff is = ");
+		printf("        Fz L2Norm     %e\n",fz.getL2Norm());
+		printf("        Fz RL2Norm   %e\n",fz.getRelativeL2Norm());
+		printf("        Fz RMSError   %e\n",fz.getRMSError());
+		FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
 		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("  Energy Error  =   %.12e\n",FMath::Abs(energy-energyD));
+		printf("  Energy FMM    =   %.12e\n",FMath::Abs(energy));
+		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
+		// Assert
+		const FReal MaximumDiffPotential = FReal(9e-3);
+		const FReal MaximumDiffForces     = FReal(9e-2);
 
-        const FReal MaximumDiffPotential = FReal(9e-4);
-        const FReal MaximumDiffForces = FReal(9e-3);
-
-        uassert(potentialDiff.getL2Norm() < MaximumDiffPotential);    //1
-        uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
-        uassert(fx.getL2Norm()  < MaximumDiffForces);                       //3
-        uassert(fx.getRMSError() < MaximumDiffForces);                      //4
-        uassert(fy.getL2Norm()  < MaximumDiffForces);                       //5
-        uassert(fy.getRMSError() < MaximumDiffForces);                      //6
-        uassert(fz.getL2Norm()  < MaximumDiffForces);                      //8
-        uassert(fz.getRMSError() < MaximumDiffForces);                     //8
+		Print("Test1 - Error Relative L2 norm Potential ");
+		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);    //1
+		Print("Test2 - Error RMS L2 norm Potential ");
+		uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+		Print("Test3 - Error Relative L2 norm FX ");
+		uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);                       //3
+		Print("Test4 - Error RMS L2 norm FX ");
+		uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+		Print("Test5 - Error Relative L2 norm FY ");
+		uassert(fy.getRelativeL2Norm()  < MaximumDiffForces);                       //5
+		Print("Test6 - Error RMS L2 norm FY ");
+		uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+		Print("Test7 - Error Relative L2 norm FZ ");
+		uassert(fz.getRelativeL2Norm()  < MaximumDiffForces);                      //8
+		Print("Test8 - Error RMS L2 norm FZ ");
+		uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
+		Print("Test9 - Error Relative L2 norm F ");
+		uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
+		Print("Test10 - Relative error Energy ");
+		uassert(FMath::Abs(energy-energyD) /energyD< MaximumDiffPotential);                     //10  Total Energy
 
         delete[] particles;
     }

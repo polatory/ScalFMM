@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
     std::cout << "Fy " << fy << std::endl;
     std::cout << "Fz " << fz << std::endl;
     
-  } // end Chebyshev kernel
+  } // end Unif kernel
 
 
   return 0;

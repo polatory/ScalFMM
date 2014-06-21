@@ -13,6 +13,10 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+
+
+#include "../Src/Utils/FGlobal.hpp"
+
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
@@ -20,7 +24,8 @@
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../Src/Components/FSimpleLeaf.hpp"
 
-#include "../Src/Files/FFmaBinLoader.hpp"
+#include "../Src/Files/FFmaGenericLoader.hpp"
+
 #include "../Src/Files/FTreeIO.hpp"
 
 #include "../Src/Core/FFmmAlgorithm.hpp"
@@ -29,8 +34,8 @@
 #include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /**
-  * This test compare a previous FMM result with a previous simulation result.
-  */
+ * This test compare a previous FMM result with a previous simulation result.
+ */
 
 
 typedef FSphericalCell           CellClass;
@@ -45,157 +50,173 @@ typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafC
 
 /** To check if a value is correct */
 bool IsSimilar(const FReal good, const FReal other){
-    const FReal Epsilon = FReal(0.0001);
-    return (FMath::Abs(good-other)/FMath::Abs(good)) < Epsilon;
+	const FReal Epsilon = FReal(0.0001);
+	return (FMath::Abs(good-other)/FMath::Abs(good)) < Epsilon;
 }
 
 /** The test class */
 class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
-    /** the test */
-    void TestTree(){
-        // Warning in make test the exec dir it Build/UTests
-        const char* const DataFile = (sizeof(FReal) == sizeof(float))?
-                    "../Data/UTest/SphericalPrevious.data.single":
-                    "../Data/utest/SphericalPrevious.data.double";
-        const char* const ParticleFile = (sizeof(FReal) == sizeof(float))?
-                    "../Data/UTest/Direct.bin.fma.single":
-                    "../Data/UTest/Direct.bin.fma.double";
+	/** the test */
+	void TestTree(){
+		if(sizeof(FReal) == sizeof(float) ) {
+			std::cerr << "No input data available for Float "<< std::endl;
+			uassert(false);
+		}
+		//
+		//  Load a Tree
+		const std::string DataFile = (sizeof(FReal) == sizeof(float))?
+				SCALFMMDataPath+"UTest/SphericalPrevious.data.single":
+				SCALFMMDataPath+"UTest/SphericalPrevious.data.double";
+		//
+		// Load particles
+		//
 
-        const int NbLevels      = 5;
-        const int SizeSubLevels = 3;
-        const int DevP = 9;
+		const std::string parFile( (sizeof(FReal) == sizeof(float))?
+				"UTest/DirectFloat.bfma":
+				"UTest/DirectDouble.bfma");
+		//
+		std::string filename(SCALFMMDataPath+parFile);
+		//
+		FFmaGenericLoader loader(filename);
+		if(!loader.isOpen()){
+			Print("Cannot open particles file.");
+			uassert(false);
+			return;
+		}
+		FSize nbParticles = loader.getNumberOfParticles() ;
+		//
+		const int NbLevels      = 5;
+		const int SizeSubLevels = 3;
+		const int DevP = 9;
+		//
+		// Create octree
+		//
+		FSphericalCell::Init(DevP);
+		//
+		OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+		//
+		for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+			FPoint position;
+			FReal physicalValue = 0.0;
+			loader.fillParticle(&position,&physicalValue);
+			// put in tree
+			testTree.insert(position, idxPart, physicalValue);
+		}
+		//
+		//  Run simulation 1
+		KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+		FmmClass algo(&testTree,&kernels);
+		Print("Run simulation 1 ...");
 
-        // Load the particles file
-        FFmaBinLoader loader(ParticleFile);
-        if(!loader.isOpen()){
-            Print("Cannot open particles file.");
-            uassert(false);
-            return;
-        }
+		algo.execute();
 
-        // Create octree
-        FSphericalCell::Init(DevP);
-        OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            FPoint position;
-            FReal physicalValue = 0.0;
-            loader.fillParticle(&position,&physicalValue);
-            // put in tree
-            testTree.insert(position, idxPart, physicalValue);
-        }
+		// If needed save the result
+		//FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), testTree);
 
-        // Run simulation
-        KernelClass kernels(DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algo(&testTree,&kernels);
-        algo.execute();
+		// Load previous result
+		OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+		FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), goodTree);
 
-        // If needed save the result
-        //FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile, testTree);
+		// Compare the two simulations
+		Print("Check the particles...");
+		{ // Check that each particle has been summed with all other
+			OctreeClass::Iterator testOctreeIterator(&testTree);
+			OctreeClass::Iterator goodOctreeIterator(&goodTree);
 
-        // Load previous result
-        OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile, goodTree);
+			testOctreeIterator.gotoBottomLeft();
+			goodOctreeIterator.gotoBottomLeft();
 
-        // Compare the two simulations
-        Print("Check the particles...");
-        { // Check that each particle has been summed with all other
-            OctreeClass::Iterator testOctreeIterator(&testTree);
-            OctreeClass::Iterator goodOctreeIterator(&goodTree);
+			do{
+				if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
+					uassert(false);
+					break;
+				}
 
-            testOctreeIterator.gotoBottomLeft();
-            goodOctreeIterator.gotoBottomLeft();
+				if(testOctreeIterator.getCurrentListSrc()->getNbParticles() != goodOctreeIterator.getCurrentListSrc()->getNbParticles()){
+					uassert(false);
+					break;
+				}
 
-            do{
-                if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                    uassert(false);
-                    break;
-                }
+				const ContainerClass* testLeaf = testOctreeIterator.getCurrentListSrc();
+				const ContainerClass* goodLeaf = goodOctreeIterator.getCurrentListSrc();
 
-                if(testOctreeIterator.getCurrentListSrc()->getNbParticles() != goodOctreeIterator.getCurrentListSrc()->getNbParticles()){
-                    uassert(false);
-                    break;
-                }
+				for(int idxPart = 0 ; idxPart < testLeaf->getNbParticles() ; ++idxPart ){
+					uassert( IsSimilar(goodLeaf->getPotentials()[idxPart], testLeaf->getPotentials()[idxPart]) );
+					uassert( IsSimilar(goodLeaf->getForcesX()[idxPart], testLeaf->getForcesX()[idxPart]) );
+					uassert( IsSimilar(goodLeaf->getForcesY()[idxPart], testLeaf->getForcesY()[idxPart]) );
+					uassert( IsSimilar(goodLeaf->getForcesZ()[idxPart], testLeaf->getForcesZ()[idxPart]) );
+				}
 
-                const ContainerClass* testLeaf = testOctreeIterator.getCurrentListSrc();
-                const ContainerClass* goodLeaf = goodOctreeIterator.getCurrentListSrc();
+				if(!testOctreeIterator.moveRight()){
+					if(goodOctreeIterator.moveRight()){
+						uassert(false);
+					}
+					break;
+				}
+				if(!goodOctreeIterator.moveRight()){
+					uassert(false);
+					break;
+				}
 
-                for(int idxPart = 0 ; idxPart < testLeaf->getNbParticles() ; ++idxPart ){
-                    uassert( IsSimilar(goodLeaf->getPotentials()[idxPart], testLeaf->getPotentials()[idxPart]) );
-                    uassert( IsSimilar(goodLeaf->getForcesX()[idxPart], testLeaf->getForcesX()[idxPart]) );
-                    uassert( IsSimilar(goodLeaf->getForcesY()[idxPart], testLeaf->getForcesY()[idxPart]) );
-                    uassert( IsSimilar(goodLeaf->getForcesZ()[idxPart], testLeaf->getForcesZ()[idxPart]) );
-                }
+			} while(true);
+		}
+		Print("Check the leaves...");
+		{ // Ceck if there is number of NbPart summed at level 1
+			OctreeClass::Iterator testOctreeIterator(&testTree);
+			OctreeClass::Iterator goodOctreeIterator(&goodTree);
 
-                if(!testOctreeIterator.moveRight()){
-                    if(goodOctreeIterator.moveRight()){
-                        uassert(false);
-                    }
-                    break;
-                }
-                if(!goodOctreeIterator.moveRight()){
-                    uassert(false);
-                    break;
-                }
+			testOctreeIterator.gotoBottomLeft();
+			goodOctreeIterator.gotoBottomLeft();
 
-            } while(true);
-        }
-        Print("Check the leaves...");
-        { // Ceck if there is number of NbPart summed at level 1
-            OctreeClass::Iterator testOctreeIterator(&testTree);
-            OctreeClass::Iterator goodOctreeIterator(&goodTree);
+			for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
+				do{
+					if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
+						uassert(false);
+						break;
+					}
 
-            testOctreeIterator.gotoBottomLeft();
-            goodOctreeIterator.gotoBottomLeft();
+					for(int idxLocal = 0 ; idxLocal < CellClass::GetLocalSize() ; ++idxLocal){
+						IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal(),
+								goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal());
+						IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag(),
+								goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag());
+					}
 
-            for(int idxLevel = NbLevels - 1 ; idxLevel > 1 ; --idxLevel ){
-                do{
-                    if(testOctreeIterator.getCurrentGlobalIndex() != goodOctreeIterator.getCurrentGlobalIndex()){
-                        uassert(false);
-                        break;
-                    }
+					for(int idxPole = 0 ; idxPole < CellClass::GetPoleSize() ; ++idxPole){
+						IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal(),
+								goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal());
+						IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag(),
+								goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag());
+					}
 
-                    for(int idxLocal = 0 ; idxLocal < CellClass::GetLocalSize() ; ++idxLocal){
-                        IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal(),
-                                         goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getReal());
-                        IsSimilar(testOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag(),
-                                         goodOctreeIterator.getCurrentCell()->getLocal()[idxLocal].getImag());
-                    }
+					if(!testOctreeIterator.moveRight()){
+						if(goodOctreeIterator.moveRight()){
+							uassert(false);
+						}
+						break;
+					}
+					if(!goodOctreeIterator.moveRight()){
+						uassert(false);
+						break;
+					}
 
-                    for(int idxPole = 0 ; idxPole < CellClass::GetPoleSize() ; ++idxPole){
-                        IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal(),
-                                         goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getReal());
-                        IsSimilar(testOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag(),
-                                         goodOctreeIterator.getCurrentCell()->getMultipole()[idxPole].getImag());
-                    }
+				} while(true);
 
-                    if(!testOctreeIterator.moveRight()){
-                        if(goodOctreeIterator.moveRight()){
-                            uassert(false);
-                        }
-                        break;
-                    }
-                    if(!goodOctreeIterator.moveRight()){
-                        uassert(false);
-                        break;
-                    }
+				testOctreeIterator.moveUp();
+				testOctreeIterator.gotoLeft();
 
-                } while(true);
-
-                testOctreeIterator.moveUp();
-                testOctreeIterator.gotoLeft();
-
-                goodOctreeIterator.moveUp();
-                goodOctreeIterator.gotoLeft();
-            }
-        }
-        Print("Over...");
-    }
+				goodOctreeIterator.moveUp();
+				goodOctreeIterator.gotoLeft();
+			}
+		}
+		Print("Over...");
+	}
 
 
-    // set test
-    void SetTests(){
-        AddTest(&TestSphericalWithPrevious::TestTree,"Test Simu and compare tree");
-    }
+	// set test
+	void SetTests(){
+		AddTest(&TestSphericalWithPrevious::TestTree,"Test Simu and compare tree");
+	}
 };
 
 

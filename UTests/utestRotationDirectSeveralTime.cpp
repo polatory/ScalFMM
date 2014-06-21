@@ -1,20 +1,6 @@
 
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
-//
-// This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info".
-// "http://www.gnu.org/licenses".
-// ===================================================================================
-
+// Copyright ScalFmm 2011 INRIA
 #include "../Src/Utils/FGlobal.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
@@ -26,8 +12,7 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/Rotation/FRotationKernel.hpp"
 
-#include "../Src/Files/FFmaBinLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
+#include "../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithm.hpp"
@@ -36,181 +21,199 @@
 
 
 /** the test class run a simulation several times
-  * so it has to reset the cell information to ensure that results are correct.
-  */
+ * so it has to reset the cell information to ensure that results are correct.
+ */
 class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralTime> {
-    /** The test method to factorize all the test based on different kernels */
-    template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
-              class OctreeClass, class FmmClass>
-    void RunTest(){
-        // Warning in make test the exec dir it Build/UTests
-        // Load particles
-        const char* const filename = (sizeof(FReal) == sizeof(float))?
-                                        "../../Data/utestDirect.bin.fma.single":
-                                        "../../Data/utestDirect.bin.fma.double";
-        FFmaBinLoader loader(filename);
-        if(!loader.isOpen()){
-            Print("Cannot open particles file.");
-            uassert(false);
-            return;
-        }
-        Print("Number of particles:");
-        Print(loader.getNumberOfParticles());
+	/** The test method to factorize all the test based on different kernels */
+	template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+	class OctreeClass, class FmmClass>
+	void RunTest(){
+		//
+		// Load particles
+		//
+		if(sizeof(FReal) == sizeof(float) ) {
+			std::cerr << "No input data available for Float "<< std::endl;
+			exit(EXIT_FAILURE);
+		}
+		const std::string parFile( (sizeof(FReal) == sizeof(float))?
+				"Test/DirectFloat.bfma":
+				"UTest/DirectDouble.bfma");
+		//
+		std::string filename(SCALFMMDataPath+parFile);
+		//
+		FFmaGenericLoader loader(filename);
+		if(!loader.isOpen()){
+			Print("Cannot open particles file.");
+			uassert(false);
+			return;
+		}
+		Print("Number of particles:");
+		Print(loader.getNumberOfParticles());
 
-        const int NbLevels      = 4;
-        const int SizeSubLevels = 2;
+		const int NbLevels      = 4;
+		const int SizeSubLevels = 2;
+		//
+		FSize nbParticles = loader.getNumberOfParticles() ;
+		FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
 
-        // To have a particle type for direct computation
-        struct TestParticle{
-            FPoint position;
-            FReal forces[3];
-            FReal physicalValue;
-            FReal potential;
-        };
+		loader.fillParticle(particles,nbParticles);
+		//
+		// Create octree
+		//
+		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+		//   Insert particle in the tree
+		//
+		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+			tree.insert(particles[idxPart].position , idxPart, particles[idxPart].physicalValue );
+		}
+		//
+		FReal energy= 0.0 , energyD = 0.0 ;
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// Compute direct energy
+		/////////////////////////////////////////////////////////////////////////////////////////////////
 
-        TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
+		for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+			energyD +=  particles[idx].potential*particles[idx].physicalValue ;
+		}
+		// Run FMM
+		Print("Fmm...");
+		KernelClass kernels(NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
+		FmmClass algo(&tree,&kernels);
 
-        // Create octree
-        OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            FPoint position;
-            FReal physicalValue;
-            loader.fillParticle(&position,&physicalValue);
-            // put in tree
-            tree.insert(position, idxPart, physicalValue);
-            // get copy
-            particles[idxPart].position = position;
-            particles[idxPart].physicalValue = physicalValue;
-            particles[idxPart].potential = 0.0;
-            particles[idxPart].forces[0] = 0.0;
-            particles[idxPart].forces[1] = 0.0;
-            particles[idxPart].forces[2] = 0.0;
-        }
+		// execute FMM algorithm twice
+		for(int idxTime = 0 ; idxTime < 2 ; ++idxTime){
+			Print(idxTime);
+			algo.execute();
+			//
+			// Reset cells information
+			Print("Reset all cells in the Octree...");
+			tree.forEachCell([&](CellClass* cell){
+				cell->resetToInitialState();
+			});
+			//  To implement if we want the test works
+			//			tree.forEachLeaf([&](LeafClass* leaf){
+			//					leaf->resetToInitialState();
+			//			}
+		}
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		// Compare
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		Print("Compute Diff...");
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
 
-        // Run FMM
-        Print("Fmm...");
-        KernelClass kernels(NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algo(&tree,&kernels);
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
 
-        // Compute FMM and direct several times
-        for(int idxTime = 0 ; idxTime < 2 ; ++idxTime){
-            Print(idxTime);
-            algo.execute();
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy   += potentials[idxPart]*physicalValues[idxPart];
+				}
+			});
+		}
+		delete[] particles;
 
-            // Run direct computation
-            Print("Direct...");
-            for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-                for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                    FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                    &particles[idxOther].forces[2],&particles[idxOther].potential);
-                }
-            }
+		// Print for information
 
-            // Reset cells information
-            Print("Reset tree...");
-            {
-                tree.forEachCell([&](CellClass* cell){
-                    cell->resetToInitialState();
-                });
-            }
-        }
+		Print("Potential diff is = ");
+		printf("         Pot L2Norm     %e\n",potentialDiff.getL2Norm());
+		printf("         Pot RL2Norm   %e\n",potentialDiff.getRelativeL2Norm());
+		printf("         Pot RMSError   %e\n",potentialDiff.getRMSError());
+		Print("Fx diff is = ");
+		printf("         Fx L2Norm     %e\n",fx.getL2Norm());
+		printf("         Fx RL2Norm   %e\n",fx.getRelativeL2Norm());
+		printf("         Fx RMSError   %e\n",fx.getRMSError());
+		Print("Fy diff is = ");
+		printf("        Fy L2Norm     %e\n",fy.getL2Norm());
+		printf("        Fy RL2Norm   %e\n",fy.getRelativeL2Norm());
+		printf("        Fy RMSError   %e\n",fy.getRMSError());
+		Print("Fz diff is = ");
+		printf("        Fz L2Norm     %e\n",fz.getL2Norm());
+		printf("        Fz RL2Norm   %e\n",fz.getRelativeL2Norm());
+		printf("        Fz RMSError   %e\n",fz.getRMSError());
+		FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
+		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
+		printf("  Energy Error  =   %.12e\n",FMath::Abs(energy-energyD));
+		printf("  Energy FMM    =   %.12e\n",FMath::Abs(energy));
+		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
-        // Compare
-        Print("Compute Diff...");
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+		// Assert
+		const FReal MaximumDiffPotential = FReal(9e-3);
+		const FReal MaximumDiffForces     = FReal(9e-2);
 
-            tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+		Print("Test1 - Error Relative L2 norm Potential ");
+		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);    //1
+		Print("Test2 - Error RMS L2 norm Potential ");
+		uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+		Print("Test3 - Error Relative L2 norm FX ");
+		uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);                       //3
+		Print("Test4 - Error RMS L2 norm FX ");
+		uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+		Print("Test5 - Error Relative L2 norm FY ");
+		uassert(fy.getRelativeL2Norm()  < MaximumDiffForces);                       //5
+		Print("Test6 - Error RMS L2 norm FY ");
+		uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+		Print("Test7 - Error Relative L2 norm FZ ");
+		uassert(fz.getRelativeL2Norm()  < MaximumDiffForces);                      //8
+		Print("Test8 - Error RMS L2 norm FZ ");
+		uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
+		Print("Test9 - Error Relative L2 norm F ");
+		uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
+		Print("Test10 - Relative error Energy ");
+		uassert(FMath::Abs(energy-energyD) /energyD< MaximumDiffPotential);                     //10  Total Energy
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
-            });
-        }
+	}
 
-        delete[] particles;
+	/** If memstas is running print the memory used */
+	void PostTest() {
+		if( FMemStats::controler.isUsed() ){
+			std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+			std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+			std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
+		}
+	}
 
-        // Print for information
-        Print("Potential diff is = ");
-        Print(potentialDiff.getRelativeL2Norm());
-        Print(potentialDiff.getRelativeInfNorm());
-        Print("Fx diff is = ");
-        Print(fx.getRelativeL2Norm());
-        Print(fx.getRelativeInfNorm());
-        Print("Fy diff is = ");
-        Print(fy.getRelativeL2Norm());
-        Print(fy.getRelativeInfNorm());
-        Print("Fz diff is = ");
-        Print(fz.getRelativeL2Norm());
-        Print(fz.getRelativeInfNorm());
+	///////////////////////////////////////////////////////////
+	// The tests!
+	///////////////////////////////////////////////////////////
 
-        // Assert
-        const FReal MaximumDiff = FReal(0.0001);
-        uassert(potentialDiff.getRelativeL2Norm() < MaximumDiff);
-        uassert(potentialDiff.getRelativeInfNorm() < MaximumDiff);
-        uassert(fx.getRelativeL2Norm()  < MaximumDiff);
-        uassert(fx.getRelativeInfNorm() < MaximumDiff);
-        uassert(fy.getRelativeL2Norm()  < MaximumDiff);
-        uassert(fy.getRelativeInfNorm() < MaximumDiff);
-        uassert(fz.getRelativeL2Norm()  < MaximumDiff);
-        uassert(fz.getRelativeInfNorm() < MaximumDiff);
-    }
+	static const int P = 9;
 
-    /** If memstas is running print the memory used */
-    void PostTest() {
-        if( FMemStats::controler.isUsed() ){
-            std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
-            std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
-            std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
-        }
-    }
+	/** Rotation */
+	void TestRotation(){
+		typedef FRotationCell<P>              CellClass;
+		typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
-    ///////////////////////////////////////////////////////////
-    // The tests!
-    ///////////////////////////////////////////////////////////
+		typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-    static const int P = 9;
+		typedef FSimpleLeaf<ContainerClass >                     LeafClass;
+		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-    /** Rotation */
-    void TestRotation(){
-        typedef FRotationCell<P>              CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+		typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
+		RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
+	}
 
-        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	///////////////////////////////////////////////////////////
+	// Set the tests!
+	///////////////////////////////////////////////////////////
 
-        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-        RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
-    }
-
-    ///////////////////////////////////////////////////////////
-    // Set the tests!
-    ///////////////////////////////////////////////////////////
-
-    /** set test */
-    void SetTests(){
-        AddTest(&TestRotationDirectSeveralTime::TestRotation,"Test Rotation Kernel");
-    }
+	/** set test */
+	void SetTests(){
+		AddTest(&TestRotationDirectSeveralTime::TestRotation,"Test Rotation Kernel");
+		std::cout << "WARNING THIS TEST NEEDS TO IMPLEMENT leaf->resetToInitialState();"<<std::endl;
+	}
 };
 
 
