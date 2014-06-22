@@ -74,7 +74,7 @@ void usage() {
 			<<	     "      -depth        the depth of the octree   "<< std::endl
 			<<	     "      -subdepth   specifies the size of the sub octree   " << std::endl
 			<<     "      -infile name specifies the name of the particle distribution" << std::endl
-            <<    "        -bin              if the input file in binary mode"<< std::endl
+			<<    "        -bin              if the input file in binary mode"<< std::endl
 			<<     "      -outfile name  specifies the file for the diagnostics" << std::endl
 			<<     "      -histP   build the histogram of the particle number per leaf"<<std::endl
 			<<     "      -sM    s_min^M threshold for Multipole (l+1)^2 for Spherical harmonics"<<std::endl;
@@ -100,19 +100,10 @@ int main(int argc, char ** argv){
 	//
 	//  input and output  Files parameters
 	//
-	const char* const filename = FParameters::getStr(argc,argv,"-infile", "../Data/test20k.fma");
+	const  std::string filename(FParameters::getStr(argc,argv,"-infile", "../Data/prolate50.fma"));
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
 	//
-	std::cout << "Opening : " << filename << "\n";
-	bool binaryMode = false;
-	if(FParameters::existParameter(argc, argv, "-bin")){
-		binaryMode = true;
-	}
-	FFmaGenericLoader loader(filename,binaryMode);
-	if(!loader.isOpen()){
-		std::cout << "Loader Error, " << filename << " is missing\n";
-		return 1;
-	}
+	FFmaGenericLoader loader(filename);
 	//
 	// -----------------------------------------------------
 	OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
@@ -162,7 +153,7 @@ int main(int argc, char ** argv){
 		//
 		//  Set Global id
 		//
-//		long int idCell  = setGlobalID(tree);
+		//		long int idCell  = setGlobalID(tree);
 		//
 		//  Build CA and FA  lists
 		std::cout << " start building CA and FA lists " <<std::endl;
@@ -170,13 +161,13 @@ int main(int argc, char ** argv){
 		adaptiveTreeBuildLists(tree) ;
 		//
 	}
-	//
-	// -----------------------------------------------------
-	//     Start statistics
-	// -----------------------------------------------------
-	//
 	int removeM = 0 ;
 	if(FParameters::existParameter(argc, argv, "-stat")){ // get stats
+		//
+		// -----------------------------------------------------
+		//     Start statistics
+		// -----------------------------------------------------
+		//
 		{    // get stats on the leaf level (Particles)
 			long int allLeaves =  (1 << (3* (NbLevels-1) )) ;
 			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << NbLevels << std::endl;
