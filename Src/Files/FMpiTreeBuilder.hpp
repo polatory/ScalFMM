@@ -311,13 +311,14 @@ private:
             memset(numberOfLeavesPerProc, 0, sizeof(FSize) * nbProcs);
             FSize intNbLeavesInIntervals = nbLeavesInIntervals;
             MPI_Allgather(&intNbLeavesInIntervals, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc, 1, MPI_LONG_LONG_INT, communicator.getComm());
-            //For debug, print the input datas for each proc
-            //printf("Proc : %d : Currently have %lld parts in %lld leaves \n", myRank, myCurrentsParts, myNumberOfLeaves);
 
             //We need the max number of leafs over th procs
-            FSize totalNumberOfLeaves  = numberOfLeavesPerProc[0];
-            for(int idxProc = 1 ; idxProc < nbProcs ; ++idxProc ){
+            FSize*const diffNumberOfLeavesPerProc = new FSize[nbProcs+1];
+            diffNumberOfLeavesPerProc[0] = 0;
+            FSize totalNumberOfLeaves  = 0;
+            for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc ){
                 totalNumberOfLeaves += numberOfLeavesPerProc[idxProc];
+                diffNumberOfLeavesPerProc[idxProc+1] = diffNumberOfLeavesPerProc[idxProc] + numberOfLeavesPerProc[idxProc];
             }
 
             //Building of counter send buffer
@@ -335,12 +336,14 @@ private:
                 allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeaves,NULL,0,0,nbProcs,idxProc);
             }
 
-            std::pair<size_t, size_t> myCurrentInter = allObjectives[myRank];
+            std::pair<size_t, size_t> myCurrentInter = {diffNumberOfLeavesPerProc[myRank], diffNumberOfLeavesPerProc[myRank+1]};
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
 
             for(const FEqualize::Package& pack : packsToSend){
+                printf("%d] to %d from %llu to %llu\n", myRank, pack.idProc, pack.elementFrom, pack.elementTo);
                 idxToSend[pack.idProc] = pack.elementFrom;
-                toSend[pack.idProc]    = leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom];
+                toSend[pack.idProc]    = (pack.elementTo ? leavesIndices[pack.elementTo-1] : 0)
+                                        - (pack.elementFrom ? leavesIndices[pack.elementFrom-1] : 0);
             }
 
             //Then, we exchange the datas to send
