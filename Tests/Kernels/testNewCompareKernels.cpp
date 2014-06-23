@@ -59,6 +59,10 @@
 #include "Components/FSimpleLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
+//Classical Spherical kernel
+#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+
 //Rotation kernel
 #include "Kernels/Rotation/FRotationKernel.hpp"
 #include "Kernels/Rotation/FRotationCell.hpp"
@@ -442,7 +446,81 @@ int main(int argc, char* argv[])
 
 	} // end Lagrange/Uniform Grid kernel
 #endif
+	//
+	//         Spherical approximation
+	//
+	{
+		//const static int P = 10;
+		typedef FSphericalCell               CellClass;
+		typedef FP2PParticleContainerIndexed<>          ContainerClass;
+		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	    typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		std::cout << "\nFFmaSpherical FMM ... P: " << DevP<< std::endl;
+
+		{ // -----------------------------------------------------
+			time.tic();
+
+			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
+
+			time.tac();
+			std::cout << "(FFmaSpherical @Inserting Particles = "<< time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
+
+		// -----------------------------------------------------
+		time.tic();
+	    CellClass::Init(DevP);
+		KernelClass *kernels = new KernelClass(DevP, TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		FmmClass algorithm(&tree, kernels);
+
+
+		algorithm.execute();
+		time.tac();
+		std::cout << "(FFmaSpherical @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		// -----------------------------------------------------
+
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
+
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
+
+		// Print for information
+		std::cout << "FFmaSpherical Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FFmaSpherical Potential " << potentialDiff << std::endl;
+		std::cout << "FFmaSpherical Fx " << fx << std::endl;
+		std::cout << "FFmaSpherical Fy " << fy << std::endl;
+		std::cout << "FFmaSpherical Fz " << fz << std::endl;
+
+	}
+	//
+	//         Spherical Rotation
+	//
 	{
 		const static int P = 18;
 		typedef FRotationCell<P>               CellClass;
