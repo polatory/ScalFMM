@@ -5,6 +5,9 @@
 #include <iostream>
 #include <vector>
 
+#include "../Utils/FAssert.hpp"
+#include "../Utils/FMath.hpp"
+
 /**
  * This class proposes a method to distribute an interval own by a worker
  * to some others.
@@ -57,7 +60,8 @@ public:
             Package pack;
             pack.idProc = idxProc;
             // The current element must start where the previous one end
-            // We can assert currentElement == allObjectives[idxProc].first - myCurrentInterval.first
+            FAssertLF(allObjectives[idxProc].first < myCurrentInterval.first
+                      || currentElement == allObjectives[idxProc].first - myCurrentInterval.first );
             pack.elementFrom = currentElement;
             pack.elementTo   = Min(allObjectives[idxProc].second , myCurrentInterval.second) - myCurrentInterval.first;
             // Next time give from the previous end
@@ -66,7 +70,7 @@ public:
             // Progress
             idxProc += 1;
         }
-        // We can assert that currentElement == myCurrentInterval.second
+        FAssertLF(currentElement == myCurrentInterval.second - myCurrentInterval.first);
 
         return packToSend;
     }
