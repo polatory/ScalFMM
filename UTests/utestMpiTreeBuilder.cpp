@@ -14,6 +14,10 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
+
 #include "ScalFmmConfig.h"
 #include <cstdlib>
 #include <string.h>
@@ -121,12 +125,12 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
       std::cerr << "No input data available for Float "<< std::endl;
       exit(EXIT_FAILURE);
     }
-    // const std::string parFile( (sizeof(FReal) == sizeof(float))?
-    // 			       "Test/DirectFloatbfma":
-    // 			       "UTest/DirectDouble.bfma");
-    // //
-    // std::string filename(SCALFMMDataPath+parFile);
-    std::string filename("../Data/unitCubeXYZQ100.bfma");
+    const std::string parFile( (sizeof(FReal) == sizeof(float))?
+    			       "Test/DirectFloatbfma":
+    			       "UTest/DirectDouble.bfma");
+    //
+    std::string filename(SCALFMMDataPath+parFile);
+    //std::string filename("../Data/unitCubeXYZQ100.bfma");
     //std::string filename("../Data/UTest/DirectDouble.bfma");
     int TreeHeight =4;
     
