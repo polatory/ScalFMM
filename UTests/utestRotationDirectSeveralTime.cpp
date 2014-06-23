@@ -92,7 +92,7 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 			});
             //  If we want to reset the leaf
             //tree.forEachLeaf([&](LeafClass* leaf){
-            //		leaf->resetToInitialState();
+            //		leaf->resetForcesAndPotential();
             //}
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////

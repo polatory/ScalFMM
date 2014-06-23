@@ -306,6 +306,11 @@ public:
             memset(attributes[idx], 0, sizeof(AttributeClass) * allocatedParticles);
         }
     }
+
+    /** Reset the attributes to zeros */
+    void resetToInitialState(const int idxAttribute){
+        memset(attributes[idxAttribute], 0, sizeof(AttributeClass) * allocatedParticles);
+    }
 };
 
 
