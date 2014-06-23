@@ -90,10 +90,10 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 			tree.forEachCell([&](CellClass* cell){
 				cell->resetToInitialState();
 			});
-			//  To implement if we want the test works
-			//			tree.forEachLeaf([&](LeafClass* leaf){
-			//					leaf->resetToInitialState();
-			//			}
+            //  If we want to reset the leaf
+            //tree.forEachLeaf([&](LeafClass* leaf){
+            //		leaf->resetToInitialState();
+            //}
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compare
