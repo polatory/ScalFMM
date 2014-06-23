@@ -20,6 +20,7 @@
 #include <cstdio>
 
 #include "../Utils/FGlobal.hpp"
+#error(" FFmaBinLoader.hpp ")
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
 #include "../Utils/FLog.hpp"

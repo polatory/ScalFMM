@@ -18,56 +18,57 @@
 //
 // ================
 
+
 #include <iostream>
-
-#include <cstdio>
-#include <cstdlib>
 #include <stdexcept>
+#include <string>
+#include <cstdlib>
+#include <cstdio>
+//
 #include "ScalFmmConfig.h"
-#include "../../Src/Utils/FTic.hpp"
-#include "../../Src/Utils/FParameters.hpp"
+#include "Utils/FTic.hpp"
+#include "Utils/FParameters.hpp"
 
-#include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
-#include "../../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 #ifdef ScalFMM_USE_BLAS
 // chebyshev kernel
 
-#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 #endif
 //
 // spherical kernel
-#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
+#include "Kernels/Spherical/FSphericalCell.hpp"
 #ifdef ScalFMM_USE_BLAS
-#include "../../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "Kernels/Spherical/FSphericalBlasKernel.hpp"
+#include "Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
 #endif
 //
 // taylor kernel
-#include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
-#include "../../Src/Kernels/Taylor/FTaylorKernel.hpp"
+#include "Kernels/Taylor/FTaylorCell.hpp"
+#include "Kernels/Taylor/FTaylorKernel.hpp"
 //
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 //Rotation kernel
-#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
 
 #ifdef ScalFMM_USE_FFT
 // Uniform grid kernel
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
 
@@ -76,440 +77,515 @@
  * the SphericalBlas kernel.
  */
 
+void usage() {
+	std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
+	std::cout <<	 "Options  "<< std::endl
+			<<     "      -help         to see the parameters    " << std::endl
+			<<	  "      -depth       the depth of the octree   "<< std::endl
+			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
+			<<     "      -f   name    name specifies the name of the particle distribution" << std::endl
+			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
+}
 
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-    // get info from commandline
-    const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-    const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
-    const int DevP                   = FParameters::getValue(argc, argv, "-p", 11);
+	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
+		usage() ;
+		std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
+
+		exit(EXIT_SUCCESS);
+	}
+
+	// get info from commande line
+	const std::string  filename(FParameters::getStr(argc,argv,"-f", "../Data/UTest/unitCubeRef20kDouble.bfma"));
+	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
+	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
+	const unsigned int NbThreads      = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
+	const int DevP                                = FParameters::getValue(argc, argv, "-p", 11);
+
+	//
 #ifdef _OPENMP
-    omp_set_num_threads(NbThreads);
-    std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+	omp_set_num_threads(NbThreads);
 #else
-    std::cout << "\n>> Sequential version.\n" << std::
+	std::cout << "\n>> Sequential version.\n" << std::
 #endif
-    // init timer
-    FTic time;
 
-    struct TestParticle{
-        FPoint position;
-        FReal forces[3];
-        FReal physicalValue;
-        FReal potential;
-    };
-    // open particle file
-    FFmaScanfLoader loader(filename);
-    if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
+	std::cout <<	 "Parameters  "<< std::endl
+			<<     "      Octree Depth      \t"<< TreeHeight <<std::endl
+			<<	  "      SubOctree depth \t"<< SubTreeHeight <<std::endl
+			<<     "      Input file  name: \t" <<filename <<std::endl
+			<<     "      Thread number:  \t" << NbThreads <<std::endl
+			<<std::endl;
 
-    TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint position;
-        FReal physicalValue = 0.0;
-        loader.fillParticle(&position,&physicalValue);
-        // get copy
-        particles[idxPart].position       = position;
-        particles[idxPart].physicalValue  = physicalValue;
-        particles[idxPart].potential      = 0.0;
-        particles[idxPart].forces[0]      = 0.0;
-        particles[idxPart].forces[1]      = 0.0;
-        particles[idxPart].forces[2]      = 0.0;
-    }
-    time.tic();
-    {
-        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-            for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                      particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-                                      &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                      &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                                &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                &particles[idxOther].forces[2],&particles[idxOther].potential);
-            }
-        }
-    }
-    time.tac();
-    printf("Elapsed Time for direct computation: %f\n",time.elapsed());
-    //
-    ////////////////////////////////////////////////////////////////////
-    //
+	// init timer
+	FTic time;
+
+	FFmaGenericLoader loader(filename);
+	//  if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
+	//
+
+	FSize nbParticles = loader.getNumberOfParticles() ;
+	FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
+	//
+	loader.fillParticle(particles,nbParticles);
+	//
+	////////////////////////////////////////////////////////////////////
+	//  Compute direct energy
+	FReal energyD =0.0, totPhysicalValue =0.0;
+
+#pragma omp parallel for reduction(+:energyD,totPhysicalValue)
+	for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+		energyD             +=  particles[idx].potential*particles[idx].physicalValue ;
+		totPhysicalValue += particles[idx].physicalValue ;
+	}
+	std::cout << " Total Physical values: "<< totPhysicalValue <<std::endl;
+	std::cout << " Energy of the system: "<< energyD <<std::endl;
+	////////////////////////////////////////////////////////////////////
+
 #ifdef  ScalFMM_USE_BLAS
-    {	// begin Chebyshev kernel
+	{	// begin Chebyshev kernel
 
-        // accuracy
-        const unsigned int ORDER = 7;
+		// accuracy
+		const unsigned int ORDER = 7;
+		std::cout << "\nFChebKernel FMM ... ORDER: " << ORDER <<std::endl;
 
-        // typedefs
-        typedef FP2PParticleContainerIndexed<> ContainerClass;
-        typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+		// typedefs
+		typedef FP2PParticleContainerIndexed<> ContainerClass;
+		typedef FSimpleLeaf<ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR MatrixKernelClass;
+		typedef FChebCell<ORDER> CellClass;
+		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        //        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
-        // init oct-tree
-        OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		// init oct-tree
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
-        { // -----------------------------------------------------
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                      << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-            time.tic();
+		{ // -----------------------------------------------------
+			time.tic();
+			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
+			time.tac();
+			std::cout << "(FChebKernel @ Inserting Particles = "<< time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
 
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                // put in tree
-                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
-            }
+		{ // -----------------------------------------------------
+			time.tic();
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			FmmClass algorithm(&tree, &kernels);
+			algorithm.execute();
+			time.tac();
+			std::cout <<"(FChebKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
 
-            time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                      << time.elapsed() << "s)." << std::endl;
-        } // -----------------------------------------------------
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
 
-        { // -----------------------------------------------------
-            std::cout << "\nChebyshev FMM ... ORDER: " << ORDER <<std::endl;
-            time.tic();
-            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-            FmmClass algorithm(&tree, &kernels);
-            algorithm.execute();
-            time.tac();
-            std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-        } // -----------------------------------------------------
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+		// Print for information
+		std::cout << "FChebKernel Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FChebKernel Potential " << potentialDiff << std::endl;
+		std::cout << "FChebKernel Fx " << fx << std::endl;
+		std::cout << "FChebKernel Fy " << fy << std::endl;
+		std::cout << "FChebKernel Fz " << fz << std::endl;
 
-            tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+	} // end Chebyshev kernel
+	{	// begin ChebSymKernel kernel
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
-            });
-        }
+		// accuracy
+		const unsigned int ORDER = 7;
+		std::cout << "\nFChebSymKernel FMM ... ORDER: " << ORDER <<std::endl;
 
-        // Print for information
-        std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << fx << std::endl;
-        std::cout << "Fy " << fy << std::endl;
-        std::cout << "Fz " << fz << std::endl;
+		// typedefs
+		typedef FP2PParticleContainerIndexed<> ContainerClass;
+		typedef FSimpleLeaf<ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR MatrixKernelClass;
+		typedef FChebCell<ORDER> CellClass;
+		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
 
-    } // end Chebyshev kernel
-    //
-    ////////////////////////////////////////////////////////////////////
-    //
-    {	// begin FFmaBlas kernel
+		typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
-        // typedefs
-        typedef FSphericalCell                 CellClass;
-        typedef FP2PParticleContainerIndexed<>         ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-        typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
-        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        // init cell class and oct-tree
-        CellClass::Init(DevP, true); // only for blas
-        OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		// init oct-tree
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
-        { // -----------------------------------------------------
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                      << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
-                      << SubTreeHeight << std::endl;
-            time.tic();
+		{ // -----------------------------------------------------
+			time.tic();
 
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                // put in tree
-                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
-            }
+			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
 
-            time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                      << time.elapsed() << "s)." << std::endl;
-        } // -----------------------------------------------------
+			time.tac();
+			std::cout <<  "(FChebSymKernel @Inserting Particles = "<< time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
 
-        // -----------------------------------------------------
-        std::cout << "\nFFmaBlas FMM ... P: " <<DevP << std::endl;
-        time.tic();
-        KernelClass kernels(DevP, TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algorithm(&tree, &kernels);
-        algorithm.execute();
-        time.tac();
-        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-        // -----------------------------------------------------
+		{ // -----------------------------------------------------
+			time.tic();
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			FmmClass algorithm(&tree, &kernels);
+			algorithm.execute();
+			time.tac();
+			std::cout << "(FChebSymKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
 
-            tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                }
-            });
-        }
+		// Print for information
+		std::cout << "FChebSymKernel Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FChebSymKernel Potential " << potentialDiff << std::endl;
+		std::cout << "FChebSymKernel Fx " << fx << std::endl;
+		std::cout << "FChebSymKernel Fy " << fy << std::endl;
+		std::cout << "FChebSymKernel Fz " << fz << std::endl;
 
-        // Print for information
-        std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << fx << std::endl;
-        std::cout << "Fy " << fy << std::endl;
-        std::cout << "Fz " << fz << std::endl;
-    } // end FFmaBlas kernel
+	} // end Chebyshev kernel
+	//
+	////////////////////////////////////////////////////////////////////
+	//
+	{	// begin FFmaBlas kernel
+		std::cout << "\nFFmaBlas FMM ... P: " <<DevP << std::endl;
+
+		// typedefs
+		typedef FSphericalCell                 CellClass;
+		typedef FP2PParticleContainerIndexed<>         ContainerClass;
+		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+		typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+		// init cell class and oct-tree
+		CellClass::Init(DevP, true); // only for blas
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
+		{ // -----------------------------------------------------
+			time.tic();
+
+			for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
+
+			time.tac();
+			std::cout << "( FFmaBlas@Inserting Particles = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
+
+		// -----------------------------------------------------
+		time.tic();
+		KernelClass kernels(DevP, TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		FmmClass algorithm(&tree, &kernels);
+		algorithm.execute();
+		time.tac();
+		std::cout << "(FFmaBlas @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		// -----------------------------------------------------
+
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
+
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
+
+		// Print for information
+		std::cout << "FFmaBlas Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FFmaBlas Potential " << potentialDiff << std::endl;
+		std::cout << "FFmaBlas Fx " << fx << std::endl;
+		std::cout << "FFmaBlas Fy " << fy << std::endl;
+		std::cout << "FFmaBlas Fz " << fz << std::endl;
+	} // end FFmaBlas kernel
 #endif
 
 #ifdef  ScalFMM_USE_FFT
-    //
-    ////////////////////////////////////////////////////////////////////
-    //
-    {	// begin Lagrange/Uniform Grid kernel
+	//
+	////////////////////////////////////////////////////////////////////
+	//
+	{	// begin Lagrange/Uniform Grid kernel
 
-      // TODO 
+		// TODO
 
-      // accuracy
-      const unsigned int ORDER = 7;
+		// accuracy
+		const unsigned int ORDER = 7;
+		std::cout << "\nLagrange FMM ... ORDER " << ORDER <<std::endl;
 
-      // typedefs
+		// typedefs
 
-	    typedef FP2PParticleContainerIndexed<> ContainerClass;
-	    typedef FSimpleLeaf< ContainerClass >  LeafClass;
-	    typedef FInterpMatrixKernelR MatrixKernelClass;
-	    typedef FUnifCell<ORDER> CellClass;
-	    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-	    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-	    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FP2PParticleContainerIndexed<> ContainerClass;
+		typedef FSimpleLeaf< ContainerClass >  LeafClass;
+		typedef FInterpMatrixKernelR MatrixKernelClass;
+		typedef FUnifCell<ORDER> CellClass;
+		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+		typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
-      // init oct-tree
-      OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		// init oct-tree
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
-      { // -----------------------------------------------------
-        std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                  << " particles ..." << std::endl;
-        std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-        time.tic();
+		{ // -----------------------------------------------------
+				time.tic();
 
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-          // put in tree
-          tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
-        }
+			for(int idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
 
-        time.tac();
-        std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                  << time.elapsed() << "s)." << std::endl;
-      } // -----------------------------------------------------
+			time.tac();
+			std::cout << "(Lagrange @Inserting Particles = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
 
-      { // -----------------------------------------------------
-        std::cout << "\nLagrange FMM ... ORDER " << ORDER <<std::endl;
-        time.tic();
-        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algorithm(&tree, &kernels);
-        algorithm.execute();
-        time.tac();
-        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-      } // -----------------------------------------------------
+		{ // -----------------------------------------------------
+			time.tic();
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			FmmClass algorithm(&tree, &kernels);
+			algorithm.execute();
+			time.tac();
+			std::cout <<  "(Lagrange @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
 
-      FMath::FAccurater potentialDiff;
-      FMath::FAccurater fx, fy, fz;
-      { // Check that each particle has been summed with all other
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
 
-        tree.forEachLeaf([&](LeafClass* leaf){
-            const FReal*const potentials = leaf->getTargets()->getPotentials();
-            const FReal*const forcesX = leaf->getTargets()->getForcesX();
-            const FReal*const forcesY = leaf->getTargets()->getForcesY();
-            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-              const int indexPartOrig = indexes[idxPart];
-              potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-              fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-              fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-              fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-            }
-          });
-      }
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
 
-      // Print for information
-      std::cout << "Potential " << potentialDiff << std::endl;
-      std::cout << "Fx " << fx << std::endl;
-      std::cout << "Fy " << fy << std::endl;
-      std::cout << "Fz " << fz << std::endl;
+		// Print for information
+		std::cout << "Lagrange Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "Lagrange Potential " << potentialDiff << std::endl;
+		std::cout << "Lagrange Fx " << fx << std::endl;
+		std::cout << "Lagrange Fy " << fy << std::endl;
+		std::cout << "Lagrange Fz " << fz << std::endl;
 
-    } // end Lagrange/Uniform Grid kernel
+	} // end Lagrange/Uniform Grid kernel
 #endif
 
-{
-  const static int P = 12;
-  typedef FRotationCell<P>               CellClass;
-  typedef FP2PParticleContainerIndexed<>          ContainerClass;
-  typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-  typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-  typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
-  typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-  
-  OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-  
-        { // -----------------------------------------------------
-	  printf("Rotation kernel\n");
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                      << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
-                      << SubTreeHeight << std::endl;
-            time.tic();
+	{
+		const static int P = 18;
+		typedef FRotationCell<P>               CellClass;
+		typedef FP2PParticleContainerIndexed<>          ContainerClass;
+		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+		typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                // put in tree
-                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
-            }
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		std::cout << "\nFFmaRotation FMM ... P: " << P<< std::endl;
 
-            time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                      << time.elapsed() << "s)." << std::endl;
-        } // -----------------------------------------------------
+		{ // -----------------------------------------------------
+			time.tic();
 
-        // -----------------------------------------------------
-        std::cout << "\nFFmaRotation FMM ... P: " << P<< std::endl;
-        time.tic();
-        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algorithm(&tree, &kernels);
-        algorithm.execute();
-        time.tac();
-        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-        // -----------------------------------------------------
+			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+			time.tac();
+			std::cout << "(FFmaRotation @Inserting Particles = "<< time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
 
-            tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-               }
-            });
-        }
+		// -----------------------------------------------------
+		time.tic();
+		KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+	   FmmClass algorithm(&tree, kernels);
 
-        // Print for information
-        std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << fx << std::endl;
-        std::cout << "Fy " << fy << std::endl;
-        std::cout << "Fz " << fz << std::endl;
-    }
-    ////////////////////////////////////////////////////////////////////
-    {	// begin Taylor kernel
 
-        // accuracy
-        const unsigned int ORDER = 8;
+		algorithm.execute();
+		time.tac();
+		std::cout << "(FFmaRotation @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		// -----------------------------------------------------
 
-        // typedefs
-	typedef FTaylorCell<ORDER,1>                                 CellClass;
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
 
-        typedef FP2PParticleContainerIndexed<>                          ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                         LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
-	typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;
-        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
 
-        // init cell class and oct-tree
-        OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-	
-        { // -----------------------------------------------------
-          printf("TAylor Kernel\n");
-	  std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                      << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : "
-                      << SubTreeHeight << std::endl;
-            time.tic();
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
 
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-                // put in tree
-                tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
-            }
+		// Print for information
+		std::cout << "FFmaRotation Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FFmaRotation Potential " << potentialDiff << std::endl;
+		std::cout << "FFmaRotation Fx " << fx << std::endl;
+		std::cout << "FFmaRotation Fy " << fy << std::endl;
+		std::cout << "FFmaRotation Fz " << fz << std::endl;
 
-            time.tac();
-            std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                      << time.elapsed() << "s)." << std::endl;
-        } // -----------------------------------------------------
+	}
 
-        // -----------------------------------------------------
-        std::cout << "\nFFmaTaylor FMM ... ORDER: " << ORDER << std::endl;
-        time.tic();
-        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algorithm(&tree, &kernels);
-        algorithm.execute();
-        time.tac();
-        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-        // -----------------------------------------------------
+	////////////////////////////////////////////////////////////////////
+	{	// begin Taylor kernel
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        { // Check that each particle has been summed with all other
+		// accuracy
+		const unsigned int ORDER = 10;
 
-            tree.forEachLeaf([&](LeafClass* leaf){
-                const FReal*const potentials = leaf->getTargets()->getPotentials();
-                const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
-                    potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                    fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                    fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                    fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-               }
-            });
-        }
+		// typedefs
+		typedef FTaylorCell<ORDER,1>                                 CellClass;
+		std::cout << "\nFFmaTaylor FMM ... ORDER: " << ORDER << std::endl;
 
-        // Print for information
-        std::cout << "Potential " << potentialDiff << std::endl;
-        std::cout << "Fx " << fx << std::endl;
-        std::cout << "Fy " << fy << std::endl;
-        std::cout << "Fz " << fz << std::endl;
-    } // end FFTaylor kernel
-    delete[] particles;
+		typedef FP2PParticleContainerIndexed<>                          ContainerClass;
+		typedef FSimpleLeaf< ContainerClass >                         LeafClass;
+		typedef FOctree< CellClass, ContainerClass , LeafClass >      OctreeClass;
+		typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;
+		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-    return 0;
+		// init cell class and oct-tree
+		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
+		{ // -----------------------------------------------------
+			time.tic();
+
+			for(int idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
+				// put in tree
+				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+			}
+
+			time.tac();
+			std::cout <<"(FFmaTaylor @Inserting Particles = " << time.elapsed() << " s)." << std::endl;
+		} // -----------------------------------------------------
+
+		// -----------------------------------------------------
+		time.tic();
+		KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		FmmClass algorithm(&tree, &kernels);
+		algorithm.execute();
+		time.tac();
+		std::cout << "(FFmaTaylor @Algorithm = " << time.elapsed() << " s)." << std::endl;
+		// -----------------------------------------------------
+
+		FReal energy = 0.0;
+		FMath::FAccurater potentialDiff;
+		FMath::FAccurater fx, fy, fz;
+		{ // Check that each particle has been summed with all other
+
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+				const FReal*const potentials        = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+
+				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const int indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					energy += potentials[idxPart]*physicalValues[idxPart] ;
+				}
+			});
+		}
+
+		// Print for information
+		std::cout << "FFmaTaylor Energy "  << FMath::Abs(energy-energyD) /energyD << std::endl;
+		std::cout << "FFmaTaylor Potential " << potentialDiff << std::endl;
+		std::cout << "FFmaTaylor Fx " << fx << std::endl;
+		std::cout << "FFmaTaylor Fy " << fy << std::endl;
+		std::cout << "FFmaTaylor Fz " << fz << std::endl;
+	} // end FFTaylor kernel
+	delete[] particles;
+
+	return 0;
+
 }

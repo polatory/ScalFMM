@@ -20,9 +20,9 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <cstdio>
 #include <string>
 #include <cstdlib>
+#include <cstdio>
 
 #include "ScalFmmConfig.h"
 #include "Utils/FParameters.hpp"
@@ -63,7 +63,7 @@
 //
 
 void usage() {
-	std::cout << "Driver for Chebyshev interpolation kernel  (1/r kernel)" << std::endl;
+	std::cout << "Driver for HArmonic Spherical + Rotation  --  kernel  (1/r kernel)" << std::endl;
 	std::cout <<	 "Options  "<< std::endl
 			<<     "      -help         to see the parameters    " << std::endl
 			<<	  "      -depth       the depth of the octree   "<< std::endl
@@ -101,8 +101,9 @@ int main(int argc, char* argv[])
 	//
 	// init timer
 	FTic time;
-
+	//
 	// open particle file
+	//
 	////////////////////////////////////////////////////////////////////
 	//
 	FFmaGenericLoader loader(filename);

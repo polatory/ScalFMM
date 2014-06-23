@@ -16,14 +16,14 @@
 #ifndef FADAPTSEQALGORITHM_HPP
 #define FADAPTSEQALGORITHM_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FAssert.hpp"
-#include "../Utils/FLog.hpp"
-#include "../Utils/FTrace.hpp"
-#include "../Utils/FTic.hpp"
+#include "Utils/FGlobal.hpp"
+#include "Utils/FAssert.hpp"
+#include "Utils/FLog.hpp"
+#include "Utils/FTrace.hpp"
+#include "Utils/FTic.hpp"
 
-#include "../Containers/FOctree.hpp"
-#include "../Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
 #include "Core/FCoreCommon.hpp"
 

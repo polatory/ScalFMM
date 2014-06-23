@@ -96,7 +96,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		FmmClass algo(&tree,&kernels);
 		algo.execute();
-		//0
+		//
 		FReal energy= 0.0 , energyD = 0.0 ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compute direct energy

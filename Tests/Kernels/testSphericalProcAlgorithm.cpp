@@ -38,9 +38,8 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
-#include "../../Src/Files/FMpiFmaLoader.hpp"
+#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
-#include "../../Src/Files/FFmaBinLoader.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
@@ -243,7 +242,7 @@ int main(int argc, char ** argv){
 
   std::cout << "Opening : " << filename << "\n";
 
-  FMpiFmaLoader loader(filename, app.global());
+  FMpiFmaGenericLoader loader(filename, app.global());
   if(!loader.isOpen()){
     std::cout << "Loader Error, " << filename << " is missing\n";
     return 1;
@@ -371,7 +370,7 @@ int main(int argc, char ** argv){
   {
     OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
     {
-      FFmaBinLoader loaderSeq(filename);
+      FFmaGenericLoader loaderSeq(filename);
       FPoint position;
       FReal physicalValue;
       for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){

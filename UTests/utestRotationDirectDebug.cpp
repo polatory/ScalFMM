@@ -25,9 +25,6 @@
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
 
-#include "../Src/Files/FFmaBinLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
-
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithm.hpp"
 

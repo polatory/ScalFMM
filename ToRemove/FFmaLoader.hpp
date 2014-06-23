@@ -15,7 +15,7 @@
 // ===================================================================================
 #ifndef FFMALOADER_HPP
 #define FFMALOADER_HPP
-
+#error("FFMALOADER_HPP ")
 
 #include <iostream>
 #include <fstream>

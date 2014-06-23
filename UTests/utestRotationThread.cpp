@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -14,40 +14,32 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 #include "FUTester.hpp"
 
-/*
-  In this test we compare the spherical fmm results and the direct results.
- */
 
 /** the test class
- *
- */
-class TestSphericalDirect : public FUTester<TestSphericalDirect> {
-	/** The test method to factorize all the test based on different kernels */
-	template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
-	class OctreeClass, class FmmClass>
-	void RunTest( const bool isBlasKernel){
-		//
-		const int DevP = 9;
+  *
+  */
+class TestRotationDirect : public FUTester<TestRotationDirect> {
+    /** The test method to factorize all the test based on different kernels */
+    template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+              class OctreeClass, class FmmClass>
+    void RunTest(){
 		//
 		// Load particles
 		//
@@ -62,25 +54,23 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		std::string filename(SCALFMMDataPath+parFile);
 		//
 		FFmaGenericLoader loader(filename);
-		if(!loader.isOpen()){
-			Print("Cannot open particles file.");
-			uassert(false);
-			return;
-		}
+        if(!loader.isOpen()){
+            Print("Cannot open particles file.");
+            uassert(false);
+            return;
+        }
 		Print("Number of particles:");
-		Print(loader.getNumberOfParticles());
+        Print(loader.getNumberOfParticles());
 
-		const int NbLevels      = 4;
-		const int SizeSubLevels = 2;
-		//
+        const int NbLevels      = 4;
+        const int SizeSubLevels = 2;
+//
 		FSize nbParticles = loader.getNumberOfParticles() ;
 		FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
-		//
+         //
 		// Create octree
-		//
-		FSphericalCell::Init(DevP);
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//   Insert particle in the tree
 		//
@@ -89,13 +79,13 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		}
 
 
+        // Run FMM
+        Print("Fmm...");
+        //KernelClass kernels(NbLevels,loader.getBoxWidth());
+        KernelClass kernels(NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
+        FmmClass algo(&tree,&kernels);
+        algo.execute();
 
-		// Run FMM
-		Print("Fmm...");
-		//KernelClass kernels(NbLevels,loader.getBoxWidth());
-		KernelClass kernels(DevP,NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-		FmmClass algo(&tree,&kernels);
-		algo.execute();
 		//
 		FReal energy= 0.0 , energyD = 0.0 ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,90 +174,51 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		Print("Test10 - Relative error Energy ");
 		uassert(FMath::Abs(energy-energyD) /energyD< MaximumDiffPotential);                     //10  Total Energy
 
-	}
+    }
 
-	/** If memstas is running print the memory used */
-	void PostTest() {
-		if( FMemStats::controler.isUsed() ){
-			std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
-			std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
-			std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
-		}
-	}
+    /** If memstas is running print the memory used */
+    void PostTest() {
+        if( FMemStats::controler.isUsed() ){
+            std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+            std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+            std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
+        }
+    }
 
-	///////////////////////////////////////////////////////////
-	// The tests!
-	///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // The tests!
+    ///////////////////////////////////////////////////////////
 
-	/** Classic */
-	void TestSpherical(){
-		typedef FSphericalCell            CellClass;
-		typedef FP2PParticleContainerIndexed<>  ContainerClass;
+    static const int P = 9;
 
-		typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+    /** Rotation */
+    void TestRotation(){
+        typedef FRotationCell<P>              CellClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
-		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(false);
-	}
+        typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+        RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
+    }
 
+    ///////////////////////////////////////////////////////////
+    // Set the tests!
+    ///////////////////////////////////////////////////////////
 
-#ifdef ScalFMM_USE_BLAS
-	/** Blas */
-	void TestSphericalBlas(){
-		typedef FSphericalCell            CellClass;
-		typedef FP2PParticleContainerIndexed<>  ContainerClass;
-
-		typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
-
-		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-
-		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(true);
-	}
-
-	/** Block blas */
-	void TestSphericalBlockBlas(){
-		typedef FSphericalCell            CellClass;
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-
-		typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
-
-		typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-
-		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(true);
-	}
-#endif
-
-	///////////////////////////////////////////////////////////
-	// Set the tests!
-	///////////////////////////////////////////////////////////
-
-	/** set test */
-	void SetTests(){
-		AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
-#ifdef ScalFMM_USE_BLAS
-		AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
-		AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
-#endif
-	}
+    /** set test */
+    void SetTests(){
+        AddTest(&TestRotationDirect::TestRotation,"Test Rotation Kernel");
+    }
 };
 
 
 // You must do this
-TestClass(TestSphericalDirect)
+TestClass(TestRotationDirect)
 
 
 

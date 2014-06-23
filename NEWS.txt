@@ -17,11 +17,11 @@ version 1.1
 - Add distributions generator 
 - Fix bugs in periodic model 
 - Fix bug and performance improvements in MPI thread algorithms
-- Now we use MPI THREAD SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm. 
+- Now we use MPI_THREAD_SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm. 
 - Add Uniform interpolation based on Lagrange polynomials
-- Improve tests -> now we use CTest and CDash (Thanks F Rue to Inria)
+- Improve tests -> now we use CTest and CDash (Thanks to  F Rue  (Inria))
 - Add support for Intel icl++ compiler (Intel 2015 compiler) on MacOS X and Clang on linux system
-- Add SSE and AVX support 
+- Add SSE and AVX support in CMake
 - Add SSE and AVX code for 1/r kernel 
 - CMake improvements
 

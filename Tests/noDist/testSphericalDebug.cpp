@@ -18,7 +18,6 @@
 
 #include "../Src/Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
 
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -30,13 +29,10 @@
 #include "../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
 #include "../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
 
-#include "../Src/Files/FFmaBinLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
-
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
-#include "FUTester.hpp"
+#include "../UTests/FUTester.hpp"
 
 /*
   In this test we compare the spherical fmm results and the direct results.
