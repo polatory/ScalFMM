@@ -127,6 +127,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
     // //
     // std::string filename(SCALFMMDataPath+parFile);
     std::string filename("../Data/unitCubeXYZQ100.bfma");
+    //std::string filename("../Data/UTest/DirectDouble.bfma");
     int TreeHeight =4;
     
     
@@ -271,28 +272,40 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
     //Ok now count the Particles at the end of the Equalize
     int finalNbPart = finalParticles.getSize();
     int finalStart = 0;
-    MPI_Exscan(&finalNbPart,&finalStart,1,MPI_INT,MPI_SUM,app.global().getComm());
     
+    MPI_Exscan(&finalNbPart,&finalStart,1,MPI_INT,MPI_SUM,app.global().getComm());
+
     for (int k=0; k<finalNbPart ; k++){
       if(finalParticles[k].indexInFile != arrayOfParticles[k+finalStart].indexInFile){
-    	printf("Equalize :: Proc %d, finalParticles : %lld,%lld, sortedArray %lld,%lld \n",
-    	       app.global().processId(),
+	printf("Equalize :: Proc %d, k=[%d+%d] finalParticles : %lld,%lld, sortedArray %lld,%lld \n",
+	       app.global().processId(),k,finalStart,
     	       finalParticles[k].index,finalParticles[k].indexInFile,
     	       arrayOfParticles[k+finalStart].index,arrayOfParticles[k+finalStart].indexInFile);
     	resultEqualize = false;
-      }
+    }
     }
     
     Print("Test 3 : Output of Equalize Tree is tested");
     uassert(resultEqualize);
-  
+    MPI_Barrier(MPI_COMM_WORLD);
     delete [] originalArray;
     delete [] arrayOfParticles;
     delete [] arrayToBeSorted;
     delete [] outputArray;
 
   }
-  
+  /** If memstas is running print the memory used */
+  void PostTest() {
+    if( FMemStats::controler.isUsed() ){
+      std::cout << app.global().processId() << "-> Memory used at the end " << FMemStats::controler.getCurrentAllocated()
+		<< " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+      std::cout << app.global().processId() << "-> Max memory used " << FMemStats::controler.getMaxAllocated()
+		<< " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+      std::cout << app.global().processId() << "-> Total memory used " << FMemStats::controler.getTotalAllocated()
+		<< " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
+    }
+  }
+
   void SetTests(){
     AddTest(&TestMpiTreeBuilder::RunTest,"Load a File, sort it, merge it, and Equalize it (4 steps)");
   }
