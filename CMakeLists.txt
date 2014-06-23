@@ -187,7 +187,7 @@ endif(ScalFMM_USE_BLAS)
 
 # FFT option
 if( ScalFMM_USE_FFT )
-  OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" ON )
+  OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" OFF )
   if( ScalFMM_USE_MKL_AS_FFTW )
     SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
     SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
