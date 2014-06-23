@@ -37,7 +37,7 @@ MESSAGE(STATUS "CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}")
  ELSE()
         SET(GCOV_CXX_FLAGS "")
         SET(GCOV_LINKER_FLAGS "")
-	   MESSAGE(WARNING  "Could not find gcov - No Coverage option for Tests")
+	   MESSAGE(STATUS  "Could not find gcov in your path - No Coverage option for Tests")
 ENDIF()
 
 
