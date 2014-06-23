@@ -62,6 +62,12 @@ public:
     const FReal* getForcesZ(const int idxLhs = 0) const {
         return Parent::getAttribute(NRHS+3*NLHS+idxLhs);
     }
+
+    void resetForcesAndPotential(){
+        for(int idx = 0 ; idx < 4*NLHS ; ++idx){
+            Parent::resetToInitialState(idx + NRHS);
+        }
+    }
 };
 
 #endif // FP2PPARTICLECONTAINER_HPP

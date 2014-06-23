@@ -81,19 +81,24 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 		FmmClass algo(&tree,&kernels);
 
 		// execute FMM algorithm twice
-		for(int idxTime = 0 ; idxTime < 2 ; ++idxTime){
+		int nbloops = 2;
+		for(int idxTime = 0 ; idxTime < nbloops ; ++idxTime){
 			Print(idxTime);
 			algo.execute();
 			//
 			// Reset cells information
-			Print("Reset all cells in the Octree...");
-			tree.forEachCell([&](CellClass* cell){
-				cell->resetToInitialState();
-			});
-			//  To implement if we want the test works
-			//			tree.forEachLeaf([&](LeafClass* leaf){
-			//					leaf->resetToInitialState();
-			//			}
+			if(idxTime != nbloops-1 ){
+				Print("Reset all cells in the Octree...");
+				tree.forEachCell([&](CellClass* cell){
+					cell->resetToInitialState();
+				});
+				Print("Reset all leafs in the Octree...");
+
+				//  If we want to reset the leaf
+				tree.forEachLeaf([&](LeafClass* leaf){
+					leaf->getTargets()->resetForcesAndPotential();
+				});
+			}
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compare
@@ -212,7 +217,6 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 	/** set test */
 	void SetTests(){
 		AddTest(&TestRotationDirectSeveralTime::TestRotation,"Test Rotation Kernel");
-		std::cout << "WARNING THIS TEST NEEDS TO IMPLEMENT leaf->resetToInitialState();"<<std::endl;
 	}
 };
 
