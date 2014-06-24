@@ -22,7 +22,7 @@
 #include "FTrace.hpp"
 #include "FMpi.hpp"
 #include "FQuickSort.hpp"
-
+#include "FAssert.hpp"
 
 /** This class is a parallel bitonic sort
   * it is based on the paper :
@@ -147,6 +147,12 @@ public:
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Bitonic" , __FILE__ , __LINE__) );
         const int np = comm.processCount();
         const int rank = comm.processId();
+
+        {// Work only for power of 2!
+            int flag = 1;
+            while(!(np & flag)) flag <<= 1;
+            FAssert(np == flag, "Bitonic sort work only with power of 2 for now.")
+        }
 
         FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
 
