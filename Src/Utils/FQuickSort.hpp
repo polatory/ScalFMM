@@ -76,31 +76,6 @@ protected:
         return left;
     }
 
-  /* A local iteration of qs */
-  static void QsLocal(SortType array[], const CompareType& pivot,
-		      IndexType myLeft, IndexType myRight,
-		      IndexType& prefix, IndexType& sufix){
-    
-    IndexType leftIter = myLeft;
-    IndexType rightIter = myRight;
-    
-    while(true){
-      while(CompareType(array[leftIter]) <= pivot && leftIter < rightIter){
-	++leftIter;
-      }
-      while(leftIter <= rightIter && pivot < CompareType(array[rightIter])){
-	--rightIter;
-      }
-      if(rightIter < leftIter) break;
-
-      Swap(array[leftIter],array[rightIter]);
-      ++leftIter;
-      --rightIter;
-    }
- 
-    prefix = leftIter - myLeft;
-    sufix = myRight - myLeft - prefix + 1;
-  }
 
     /* The sequential qs */
     static void QsSequentialStep(SortType array[], const IndexType left, const IndexType right){

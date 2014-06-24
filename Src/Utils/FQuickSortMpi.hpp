@@ -18,225 +18,367 @@
 
 #include "FQuickSort.hpp"
 #include "FMpi.hpp"
+#include "FLog.hpp"
 
+#include <memory>
 
 template <class SortType, class CompareType, class IndexType>
 class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
-public:
-    /* the mpi qs */
-    static void QsMpi(const SortType originalArray[], IndexType size, SortType* & outputArray, IndexType& outputSize, const FMpi::FComm& originalComm){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Quicksort" , __FILE__ , __LINE__) );
-        // We need a structure see the algorithm detail to know more
-        struct Fix{
-            IndexType pre;
-            IndexType suf;
+    // We need a structure see the algorithm detail to know more
+    struct Partition{
+        IndexType lowerPart;
+        IndexType greaterPart;
+    };
+
+    struct PackData {
+        int idProc;
+        IndexType fromElement;
+        IndexType toElement;
+    };
+
+
+    static void Swap(SortType& value, SortType& other){
+        SortType temp = value;
+        value = other;
+        other = temp;
+    }
+
+    /* A local iteration of qs */
+    static IndexType QsPartition(SortType array[], IndexType left, IndexType right, const CompareType& pivot){
+        IndexType idx = left;
+        while( idx <= right && CompareType(array[idx]) <= pivot){
+            idx += 1;
+        }
+        left = idx;
+
+        for( ; idx <= right ; ++idx){
+            if( CompareType(array[idx]) <= pivot ){
+                Swap(array[idx],array[left]);
+                left += 1;
+            }
+        }
+
+        return left;
+    }
+
+    static std::vector<PackData> Distribute(const int currentRank, const int currentNbProcs ,
+                                            const Partition globalElementBalance[], const Partition globalElementBalanceSum[],
+                                            const int procInTheMiddle, const bool inFromRightToLeft){
+        // First agree on who send and who recv
+        const int firstProcToSend = (inFromRightToLeft ? procInTheMiddle+1 : 0);
+        const int lastProcToSend  = (inFromRightToLeft ? currentNbProcs : procInTheMiddle+1);
+        const int firstProcToRecv = (inFromRightToLeft ? 0 : procInTheMiddle+1);
+        const int lastProcToRecv  = (inFromRightToLeft ? procInTheMiddle+1 : currentNbProcs);
+        // Get the number of element depending on the lower or greater send/recv
+        const IndexType totalElementToProceed = (inFromRightToLeft ?
+                                                     globalElementBalanceSum[lastProcToSend].lowerPart - globalElementBalanceSum[firstProcToSend].lowerPart :
+                                                     globalElementBalanceSum[lastProcToSend].greaterPart - globalElementBalanceSum[firstProcToSend].greaterPart);
+        const IndexType totalElementAlreadyOwned = (inFromRightToLeft ?
+                                                        globalElementBalanceSum[lastProcToRecv].lowerPart - globalElementBalanceSum[firstProcToRecv].lowerPart :
+                                                        globalElementBalanceSum[lastProcToRecv].greaterPart - globalElementBalanceSum[firstProcToRecv].greaterPart);
+
+        const int nbProcsToRecv = (lastProcToRecv-firstProcToRecv);
+        const int nbProcsToSend = (lastProcToSend-firstProcToSend);
+        const IndexType totalElements = (totalElementToProceed+totalElementAlreadyOwned);
+
+        std::vector<IndexType> nbElementsToRecvPerProc;
+        nbElementsToRecvPerProc.resize(nbProcsToRecv);
+        {
+            // Get the number of elements each proc should recv
+            IndexType totalRemainingElements = totalElements;
+
+            for(int idxProc = firstProcToRecv; idxProc < lastProcToRecv ; ++idxProc){
+                const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
+                const IndexType averageNbElementForRemainingProc = (totalRemainingElements)/(lastProcToRecv-idxProc);
+                totalRemainingElements -= nbElementsAlreadyOwned;
+                if(nbElementsAlreadyOwned < averageNbElementForRemainingProc){
+                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = (averageNbElementForRemainingProc - nbElementsAlreadyOwned);
+                    totalRemainingElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
+                }
+                else{
+                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = 0;
+                }
+                ////FLOG( FLog::Controller << currentRank << "] nbElementsToRecvPerProc[" << idxProc << "] = " << nbElementsToRecvPerProc[idxProc - firstProcToRecv] << "\n"; )
+            }
+        }
+
+        // Store in an array the number of element to send
+        std::vector<IndexType> nbElementsToSendPerProc;
+        nbElementsToSendPerProc.resize(nbProcsToSend);
+        for(int idxProc = firstProcToSend; idxProc < lastProcToSend ; ++idxProc){
+            const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
+            nbElementsToSendPerProc[idxProc-firstProcToSend] = nbElementsAlreadyOwned;
+            ////FLOG( FLog::Controller << currentRank << "] nbElementsToSendPerProc[" << idxProc << "] = " << nbElementsToSendPerProc[idxProc-firstProcToSend] << "\n"; )
+        }
+
+        // Compute all the send recv but keep only the ones related to currentRank
+        std::vector<PackData> packs;
+        int idxProcSend = 0;
+        IndexType positionElementsSend = 0;
+        int idxProcRecv = 0;
+        IndexType positionElementsRecv = 0;
+        while(idxProcSend != nbProcsToSend && idxProcRecv != nbProcsToRecv){
+            if(nbElementsToSendPerProc[idxProcSend] == 0){
+                idxProcSend += 1;
+                positionElementsSend = 0;
+            }
+            else if(nbElementsToRecvPerProc[idxProcRecv] == 0){
+                idxProcRecv += 1;
+                positionElementsRecv = 0;
+            }
+            else {
+                const IndexType nbElementsInPack = FMath::Min(nbElementsToSendPerProc[idxProcSend], nbElementsToRecvPerProc[idxProcRecv]);
+                if(idxProcSend + firstProcToSend == currentRank){
+                    PackData pack;
+                    pack.idProc      = idxProcRecv + firstProcToRecv;
+                    pack.fromElement = positionElementsSend;
+                    pack.toElement   = pack.fromElement + nbElementsInPack;
+                    packs.push_back(pack);
+                }
+                else if(idxProcRecv + firstProcToRecv == currentRank){
+                    PackData pack;
+                    pack.idProc      = idxProcSend + firstProcToSend;
+                    pack.fromElement = positionElementsRecv;
+                    pack.toElement   = pack.fromElement + nbElementsInPack;
+                    packs.push_back(pack);
+                }
+                nbElementsToSendPerProc[idxProcSend] -= nbElementsInPack;
+                nbElementsToRecvPerProc[idxProcRecv] -= nbElementsInPack;
+                positionElementsSend += nbElementsInPack;
+                positionElementsRecv += nbElementsInPack;
+            }
+        }
+
+        return packs;
+    }
+
+    static void RecvDistribution(SortType ** inPartRecv, IndexType* inNbElementsRecv,
+                                 const Partition globalElementBalance[], const Partition globalElementBalanceSum[],
+                                 const int procInTheMiddle, const FMpi::FComm& currentComm, const bool inFromRightToLeft){
+        // Compute to know what to recv
+        const std::vector<PackData> whatToRecvFromWho = Distribute(currentComm.processId(), currentComm.processCount(),
+                                                                   globalElementBalance, globalElementBalanceSum,
+                                                                   procInTheMiddle, inFromRightToLeft);
+        // Count the total number of elements to recv
+        IndexType totalToRecv = 0;
+        for(const PackData& pack : whatToRecvFromWho){
+            totalToRecv += pack.toElement - pack.fromElement;
+        }
+        // Alloc buffer
+        SortType* recvBuffer = new SortType[totalToRecv];
+
+        // Recv all data
+        MPI_Request requests[whatToRecvFromWho.size()];
+        for(int idxPack = 0 ; idxPack < int(whatToRecvFromWho.size()) ; ++idxPack){
+            const PackData& pack = whatToRecvFromWho[idxPack];
+            ////FLOG( FLog::Controller << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; )
+            FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
+                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+        }
+        // Wait to complete
+        FMpi::Assert( MPI_Waitall(whatToRecvFromWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        // Copy to ouput variables
+        (*inPartRecv) = recvBuffer;
+        (*inNbElementsRecv) = totalToRecv;
+    }
+
+    static void SendDistribution(const SortType * inPartToSend, const IndexType inNbElementsToSend,
+                                 const Partition globalElementBalance[], const Partition globalElementBalanceSum[],
+                                 const int procInTheMiddle, const FMpi::FComm& currentComm, const bool inFromRightToLeft){
+        // Compute to know what to send
+        const std::vector<PackData> whatToSendToWho = Distribute(currentComm.processId(), currentComm.processCount(),
+                                                                 globalElementBalance, globalElementBalanceSum,
+                                                                 procInTheMiddle, inFromRightToLeft);
+
+        // Post send messages
+        MPI_Request requests[whatToSendToWho.size()];
+        for(int idxPack = 0 ; idxPack < int(whatToSendToWho.size()) ; ++idxPack){
+            const PackData& pack = whatToSendToWho[idxPack];
+            ////FLOG( FLog::Controller << currentComm.processId() << "] Send to " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; )
+            FMpi::Assert( MPI_Isend((SortType*)&inPartToSend[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE , pack.idProc,
+                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+        }
+        // Wait to complete
+        FMpi::Assert( MPI_Waitall(whatToSendToWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+    }
+
+    static CompareType SelectPivot(const SortType workingArray[], const IndexType currentSize, const FMpi::FComm& currentComm, bool* shouldStop){
+        enum ValuesState{
+            ALL_THE_SAME,
+            NO_VALUES,
+            AVERAGE_2
         };
+        // Check if all the same
+        bool allTheSame = true;
+        for(int idx = 1 ; idx < currentSize && allTheSame; ++idx){
+            if(workingArray[0] != workingArray[idx]){
+                allTheSame = false;
+            }
+        }
+        // Check if empty
+        const bool noValues = (currentSize == 0);
+        // Get the local pivot if not empty
+        CompareType localPivot = CompareType(0);
+        if(!noValues){
+            localPivot = (CompareType(workingArray[currentSize/3])+CompareType(workingArray[(2*currentSize)/3]))/2;
+        }
 
-        // first we copy data into our working buffer : outputArray
-        outputArray = new SortType[size];
-        FMemUtils::memcpy(outputArray, originalArray, sizeof(SortType) * size);
-        outputSize = size;
+        ////FLOG( FLog::Controller << currentComm.processId() << "] localPivot = " << localPivot << "\n" );
 
-        // alloc outputArray to store pre/sufixe, maximum needed is nb procs[comm world] + 1
-        Fix fixes[originalComm.processCount() + 1];
-        Fix fixesSum[originalComm.processCount() + 1];
-        memset(fixes,0,sizeof(Fix) * originalComm.processCount());
-        memset(fixesSum,0,sizeof(Fix) * (originalComm.processCount() + 1) );
+        const int myRank = currentComm.processId();
+        const int nbProcs = currentComm.processCount();
+        // Exchange the pivos and the state
+        std::unique_ptr<int[]> allProcStates(new int[nbProcs]);
+        std::unique_ptr<CompareType[]> allProcPivots(new CompareType[nbProcs]);
+        {
+            int myState = (noValues?NO_VALUES:(allTheSame?ALL_THE_SAME:AVERAGE_2));
+            FMpi::Assert( MPI_Allgather( &myState, 1, MPI_INT, allProcStates.get(),
+                                         1, MPI_INT, currentComm.getComm()),  __LINE__ );
+            FMpi::Assert( MPI_Allgather( &localPivot, sizeof(CompareType), MPI_BYTE, allProcPivots.get(),
+                                         sizeof(CompareType), MPI_BYTE, currentComm.getComm()),  __LINE__ );
+        }
+        // Test if all the procs have ALL_THE_SAME and the same value
+        bool allProcsAreSame = true;
+        for(int idxProc = 0 ; idxProc < nbProcs && allProcsAreSame; ++idxProc){
+            if(allProcStates[idxProc] != NO_VALUES && (allProcStates[idxProc] != ALL_THE_SAME || allProcPivots[0] != allProcPivots[idxProc])){
+                allProcsAreSame = false;
+            }
+        }
 
-        // receiving buffer
-        IndexType bufferSize = 0;
-        SortType* buffer = nullptr;
+        if(allProcsAreSame){
+            // All the procs are the same so we need to stop
+            (*shouldStop) = true;
+            return CompareType(0);
+        }
+        else{
+            CompareType globalPivot = 0;
+            CompareType counterValuesInPivot = 0;
+            // Compute the pivos
+            for(int idxProc = 0 ; idxProc < nbProcs; ++idxProc){
+                if(allProcStates[idxProc] != NO_VALUES){
+                    globalPivot += allProcPivots[idxProc];
+                    counterValuesInPivot += 1;
+                }
+            }
+            (*shouldStop) = false;
+            return globalPivot/counterValuesInPivot;
+        }
+    }
 
-        // Create the first com
+public:
+
+    static void QsMpi(const SortType originalArray[], const IndexType originalSize,
+                      SortType** outputArray, IndexType* outputSize, const FMpi::FComm& originalComm){
+        // We do not work in place, so create a new array
+        IndexType currentSize = originalSize;
+        SortType* workingArray = new SortType[currentSize];
+        FMemUtils::memcpy(workingArray, originalArray, sizeof(SortType) * currentSize);
+
+        // Clone the MPI group because we will reduce it after each partition
         FMpi::FComm currentComm(originalComm.getComm());
 
-        // While I am not working alone on my own data
+        // Parallel sharing until I am alone on the data
         while( currentComm.processCount() != 1 ){
+            // Agree on the Pivot
+            bool shouldStop;
+            const CompareType globalPivot = SelectPivot(workingArray, currentSize, currentComm, &shouldStop);
+            if(shouldStop){
+                ////FLOG( FLog::Controller << currentComm.processId() << "] shouldStop = " << shouldStop << "\n" );
+                break;
+            }
+
+            ////FLOG( FLog::Controller << currentComm.processId() << "] globalPivot = " << globalPivot << "\n" );
+
+            // Split the array in two parts lower equal to pivot and greater than pivot
+            const IndexType nbLowerElements = QsPartition(workingArray, 0, currentSize-1, globalPivot);
+            const IndexType nbGreaterElements = currentSize - nbLowerElements;
+
+            ////FLOG( FLog::Controller << currentComm.processId() << "] After Partition: lower = " << nbLowerElements << " greater = " << nbGreaterElements << "\n"; )
+
             const int currentRank = currentComm.processId();
             const int currentNbProcs = currentComm.processCount();
 
-            MPI_Request requests[currentNbProcs * 2];
-            int iterRequest = 0;
+            // We need to know what each process is holding
+            Partition currentElementsBalance = { nbLowerElements, nbGreaterElements};
+            Partition globalElementBalance[currentNbProcs];
 
-            /////////////////////////////////////////////////
-            // Local sort
-            /////////////////////////////////////////////////
+            // Every one in the group need to know
+            FMpi::Assert( MPI_Allgather( &currentElementsBalance, sizeof(Partition), MPI_BYTE, globalElementBalance,
+                                         sizeof(Partition), MPI_BYTE, currentComm.getComm()),  __LINE__ );
 
-            // sort QsLocal part of the outputArray
-            const CompareType pivot = currentComm.reduceAverageAll( CompareType(outputArray[size/2]) );
-            Fix myFix;
-            FQuickSort< SortType, CompareType, IndexType>::QsLocal(outputArray, pivot, 0, size - 1, myFix.pre, myFix.suf);
-
-            // exchange fixes
-            FMpi::Assert( MPI_Allgather( &myFix, sizeof(Fix), MPI_BYTE, fixes, sizeof(Fix), MPI_BYTE, currentComm.getComm()),  __LINE__ );
-
-            // each procs compute the summation
-            fixesSum[0].pre = 0;
-            fixesSum[0].suf = 0;
+            // Find the number of elements lower or greater
+            IndexType globalNumberOfElementsGreater = 0;
+            IndexType globalNumberOfElementsLower = 0;
+            Partition globalElementBalanceSum[currentNbProcs + 1];
+            globalElementBalanceSum[0].lowerPart = 0;
+            globalElementBalanceSum[0].greaterPart = 0;
             for(int idxProc = 0 ; idxProc < currentNbProcs ; ++idxProc){
-                fixesSum[idxProc + 1].pre = fixesSum[idxProc].pre + fixes[idxProc].pre;
-                fixesSum[idxProc + 1].suf = fixesSum[idxProc].suf + fixes[idxProc].suf;
+                globalElementBalanceSum[idxProc + 1].lowerPart = globalElementBalanceSum[idxProc].lowerPart + globalElementBalance[idxProc].lowerPart;
+                globalElementBalanceSum[idxProc + 1].greaterPart = globalElementBalanceSum[idxProc].greaterPart + globalElementBalance[idxProc].greaterPart;
+                globalNumberOfElementsGreater += globalElementBalance[idxProc].greaterPart;
+                globalNumberOfElementsLower   += globalElementBalance[idxProc].lowerPart;
             }
 
-            // then I need to know which procs will be in the middle
-            int splitProc = FMpi::GetProc(fixesSum[currentNbProcs].pre - 1, fixesSum[currentNbProcs].pre + fixesSum[currentNbProcs].suf, currentNbProcs);
-            if(splitProc == currentNbProcs - 1){
-                --splitProc;
+            ////FLOG( FLog::Controller << currentComm.processId() << "] globalNumberOfElementsGreater = " << globalNumberOfElementsGreater << "\n"; )
+            ////FLOG( FLog::Controller << currentComm.processId() << "] globalNumberOfElementsLower   = " << globalNumberOfElementsLower << "\n"; )
+
+            // The proc rank in the middle from the percentage
+            int procInTheMiddle;
+            if(globalNumberOfElementsLower == 0)        procInTheMiddle = -1;
+            else if(globalNumberOfElementsGreater == 0) procInTheMiddle = currentNbProcs-1;
+            else procInTheMiddle = FMath::Min(currentNbProcs-2, (currentNbProcs*globalNumberOfElementsLower)
+                                              /(globalNumberOfElementsGreater + globalNumberOfElementsLower));
+
+            ////FLOG( FLog::Controller << currentComm.processId() << "] procInTheMiddle = " << procInTheMiddle << "\n"; )
+
+            // Send or receive depending on the state
+            if(currentRank <= procInTheMiddle){
+                // I am in the group of the lower elements
+                SendDistribution(workingArray + nbLowerElements, nbGreaterElements,
+                                 globalElementBalance, globalElementBalanceSum, procInTheMiddle, currentComm, false);
+                SortType* lowerPartRecv = nullptr;
+                IndexType nbLowerElementsRecv = 0;
+                RecvDistribution(&lowerPartRecv, &nbLowerElementsRecv,
+                                 globalElementBalance, globalElementBalanceSum, procInTheMiddle, currentComm, true);
+                // Merge previous part and just received elements
+                const IndexType fullNbLowerElementsRecv = nbLowerElementsRecv + nbLowerElements;
+                SortType* fullLowerPart = new SortType[fullNbLowerElementsRecv];
+                memcpy(fullLowerPart, workingArray, sizeof(SortType)* nbLowerElements);
+                memcpy(fullLowerPart + nbLowerElements, lowerPartRecv, sizeof(SortType)* nbLowerElementsRecv);
+                delete[] workingArray;
+                delete[] lowerPartRecv;
+                workingArray = fullLowerPart;
+                currentSize = fullNbLowerElementsRecv;
+                // Reduce working group
+                currentComm.groupReduce( 0, procInTheMiddle);
             }
-
-            /////////////////////////////////////////////////
-            // Send my data
-            /////////////////////////////////////////////////
-
-            // above pivot (right part)
-            if( fixes[currentRank].suf ){
-                const int procsInSuf = currentNbProcs - 1 - splitProc;
-                const int firstProcInSuf = splitProc + 1;
-                const IndexType elementsInSuf = fixesSum[currentNbProcs].suf;
-
-                const int firstProcToSend = FMpi::GetProc(fixesSum[currentRank].suf, elementsInSuf, procsInSuf) + firstProcInSuf;
-                const int lastProcToSend = FMpi::GetProc(fixesSum[currentRank + 1].suf - 1, elementsInSuf, procsInSuf) + firstProcInSuf;
-
-                IndexType sent = 0;
-                for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
-                    const IndexType thisProcRight = FMpi::GetRight(elementsInSuf, idxProc - firstProcInSuf, procsInSuf);
-                    IndexType sendToProc = thisProcRight - fixesSum[currentRank].suf - sent;
-
-                    if(sendToProc + sent > fixes[currentRank].suf){
-                        sendToProc = fixes[currentRank].suf - sent;
-                    }
-                    if( sendToProc ){
-                        FMpi::Assert( MPI_Isend(&outputArray[sent + fixes[currentRank].pre], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
-                    }
-                    sent += sendToProc;
-                }
+            else {
+                // I am in the group of the greater elements
+                SortType* greaterPartRecv = nullptr;
+                IndexType nbGreaterElementsRecv = 0;
+                RecvDistribution(&greaterPartRecv, &nbGreaterElementsRecv,
+                                 globalElementBalance, globalElementBalanceSum, procInTheMiddle, currentComm, false);
+                SendDistribution(workingArray, nbLowerElements,
+                                 globalElementBalance, globalElementBalanceSum, procInTheMiddle, currentComm, true);
+                // Merge previous part and just received elements
+                const IndexType fullNbGreaterElementsRecv = nbGreaterElementsRecv + nbGreaterElements;
+                SortType* fullGreaterPart = new SortType[fullNbGreaterElementsRecv];
+                memcpy(fullGreaterPart, workingArray + nbLowerElements, sizeof(SortType)* nbGreaterElements);
+                memcpy(fullGreaterPart + nbGreaterElements, greaterPartRecv, sizeof(SortType)* nbGreaterElementsRecv);
+                delete[] workingArray;
+                delete[] greaterPartRecv;
+                workingArray = fullGreaterPart;
+                currentSize = fullNbGreaterElementsRecv;
+                // Reduce working group
+                currentComm.groupReduce( procInTheMiddle + 1, currentNbProcs - 1);
             }
-
-            // under pivot (left part)
-            if( fixes[currentRank].pre ){
-                const int procsInPre = splitProc + 1;
-                const IndexType elementsInPre = fixesSum[currentNbProcs].pre;
-
-                const int firstProcToSend = FMpi::GetProc(fixesSum[currentRank].pre, elementsInPre, procsInPre);
-                const int lastProcToSend = FMpi::GetProc(fixesSum[currentRank + 1].pre - 1, elementsInPre, procsInPre);
-
-                IndexType sent = 0;
-                for(int idxProc = firstProcToSend ; idxProc <= lastProcToSend ; ++idxProc){
-                    const IndexType thisProcRight = FMpi::GetRight(elementsInPre, idxProc, procsInPre);
-                    IndexType sendToProc = thisProcRight - fixesSum[currentRank].pre - sent;
-
-                    if(sendToProc + sent > fixes[currentRank].pre){
-                        sendToProc = fixes[currentRank].pre - sent;
-                    }
-                    if(sendToProc){
-                        FMpi::Assert( MPI_Isend(&outputArray[sent], int(sendToProc * sizeof(SortType)), MPI_BYTE , idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
-                    }
-                    sent += sendToProc;
-                }
-            }
-
-            /////////////////////////////////////////////////
-            // Receive data that belong to me
-            /////////////////////////////////////////////////
-
-            if( currentRank <= splitProc ){
-                // I am in S-Part (smaller than pivot)
-                const int procsInPre = splitProc + 1;
-                const IndexType elementsInPre = fixesSum[currentNbProcs].pre;
-
-                IndexType myLeft = FMpi::GetLeft(elementsInPre, currentRank, procsInPre);
-                IndexType myRightLimit = FMpi::GetRight(elementsInPre, currentRank, procsInPre);
-
-                size = myRightLimit - myLeft;
-                if(bufferSize < size){
-                    bufferSize = size;
-                    delete[] buffer;
-                    buffer = new SortType[bufferSize];
-                }
-
-                int idxProc = 0;
-                while( idxProc < currentNbProcs && fixesSum[idxProc + 1].pre <= myLeft ){
-                    ++idxProc;
-                }
-
-                IndexType indexArray = 0;
-
-                while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const IndexType firstIndex = FMath::Max(myLeft , fixesSum[idxProc].pre );
-                    const IndexType endIndex = FMath::Min(fixesSum[idxProc + 1].pre,  myRightLimit);
-                    if( (endIndex - firstIndex) ){
-                        FMpi::Assert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
-                    }
-                    indexArray += endIndex - firstIndex;
-                    ++idxProc;
-                }
-                // Proceed all send/receive
-                FMpi::Assert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
-
-                currentComm.groupReduce( 0, splitProc);
-            }
-            else{
-                // I am in L-Part (larger than pivot)
-                const int procsInSuf = currentNbProcs - 1 - splitProc;
-                const IndexType elementsInSuf = fixesSum[currentNbProcs].suf;
-
-                const int rankInL = currentRank - splitProc - 1;
-                IndexType myLeft = FMpi::GetLeft(elementsInSuf, rankInL, procsInSuf);
-                IndexType myRightLimit = FMpi::GetRight(elementsInSuf, rankInL, procsInSuf);
-
-                size = myRightLimit - myLeft;
-                if(bufferSize < size){
-                    bufferSize = size;
-                    delete[] buffer;
-                    buffer = new SortType[bufferSize];
-                }
-
-                int idxProc = 0;
-                while( idxProc < currentNbProcs && fixesSum[idxProc + 1].suf <= myLeft ){
-                    ++idxProc;
-                }
-
-                IndexType indexArray = 0;
-
-                while( idxProc < currentNbProcs && indexArray < myRightLimit - myLeft){
-                    const IndexType firstIndex = FMath::Max(myLeft , fixesSum[idxProc].suf );
-                    const IndexType endIndex = FMath::Min(fixesSum[idxProc + 1].suf,  myRightLimit);
-                    if( (endIndex - firstIndex) ){
-                        FMpi::Assert( MPI_Irecv(&buffer[indexArray], int((endIndex - firstIndex) * sizeof(SortType)), MPI_BYTE, idxProc, FMpi::TagQuickSort, currentComm.getComm(), &requests[iterRequest++]),  __LINE__ );
-                    }
-                    indexArray += endIndex - firstIndex;
-                    ++idxProc;
-                }
-                // Proceed all send/receive
-                FMpi::Assert( MPI_Waitall(iterRequest, requests, MPI_STATUSES_IGNORE),  __LINE__ );
-
-                currentComm.groupReduce( splitProc + 1, currentNbProcs - 1);
-            }
-
-
-
-            // Copy res into outputArray
-            if(outputSize < size){
-                delete[] outputArray;
-                outputArray = new SortType[size];
-                outputSize = size;
-            }
-
-            FMemUtils::memcpy(outputArray, buffer, sizeof(SortType) * size);
         }
 
-        /////////////////////////////////////////////////
-        // End QsMpi sort
-        /////////////////////////////////////////////////
-
-        // Clean
-        delete[] buffer;
-
-        // Normal Quick sort
-        FQuickSort< SortType, CompareType, IndexType>::QsOmp(outputArray, size);
-        outputSize = size;
+        // Finish by a local sort
+        FQuickSort< SortType, CompareType, IndexType>::QsOmp(workingArray, currentSize);
+        (*outputSize)  = currentSize;
+        (*outputArray) = workingArray;
     }
-
 };
 
 #endif // FQUICKSORTMPI_HPP
