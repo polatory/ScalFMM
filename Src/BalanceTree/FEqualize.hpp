@@ -74,6 +74,18 @@ public:
 
         return packToSend;
     }
+
+
+    /**
+     * To know what to recv from who.
+     * @param myObjectiveInterval Interval I should have
+     * @param allCurrentIntervals the intevals that each process currently contains
+     * @return the package that the current worker should recv from others
+     */
+    static std::vector<Package> GetPackToRecv(const std::pair<size_t, size_t> myObjectiveInterval,
+                                              const std::vector< std::pair<size_t,size_t> >& allCurrentIntervals){
+        return GetPackToSend(myObjectiveInterval,allCurrentIntervals);
+    }
 };
 
 #endif // FEQUALIZE_HPP
