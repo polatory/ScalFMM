@@ -22,6 +22,7 @@
 
 #include "../Utils/FMemUtils.hpp"
 #include "../Utils/FTrace.hpp"
+#include "../Containers/FVector.hpp"
 
 #include "../BalanceTree/FLeafBalance.hpp"
 #include "../BalanceTree/FEqualize.hpp"
@@ -148,99 +149,134 @@ private:
     // To merge the leaves
     //////////////////////////////////////////////////////////////////////////
 
+    struct LeafInfo {
+        MortonIndex mindex;
+        int nbParts;
+        FSize startingPoint;
+    };
+
     static void MergeLeaves(const FMpi::FComm& communicator, IndexedParticle*& workingArray, FSize* workingSize,
                             FSize ** leavesIndices, ParticleClass** leavesArray, FSize* const leavesSize){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
-        const int rank = communicator.processId();
+        const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
-        if(nbProcs == 1){
-            //Nothing to do there : there is no need to verify if leaves are split, if there is one process...
+
+        FVector<LeafInfo> leavesInfo;
+        { // Get the information of the leaves
+            leavesInfo.clear();
+            if((*workingSize)){
+                leavesInfo.push({workingArray[0].index, 1, 0});
+                for(FSize idxPart = 1 ; idxPart < (*workingSize) ; ++idxPart){
+                    if(leavesInfo.data()[leavesInfo.getSize()-1].mindex == workingArray[idxPart].index){
+                        leavesInfo.data()[leavesInfo.getSize()-1].nbParts += 1;
+                    }
+                    else{
+                        leavesInfo.push({workingArray[idxPart].index, 1, idxPart});
+                    }
+                }
+            }
         }
-        else{
-            // be sure there is no splited leaves
-            // to do that we exchange the first index with the left proc
+
+        if(nbProcs != 1){
+            // Some leaf might be divived on several processes, we should move them to the first process
+            const MortonIndex noDataFlag = std::numeric_limits<MortonIndex>::max();
+
+            LeafInfo borderLeavesState[2] = { {noDataFlag, 0, 0}, {noDataFlag, 0, 0} };
+            if( (*workingSize) != 0 ){
+                borderLeavesState[0] = leavesInfo[0];
+                borderLeavesState[1] = leavesInfo[leavesInfo.getSize()-1];
+            }
+
+            std::unique_ptr<LeafInfo[]> allProcFirstLeafStates(new LeafInfo[nbProcs*2]);
+            MPI_Allgather(&borderLeavesState, sizeof(LeafInfo)*2, MPI_BYTE,
+                          allProcFirstLeafStates.get(), sizeof(LeafInfo)*2, MPI_BYTE, communicator.getComm());
+
+            FVector<MPI_Request> requests;
+
+            // Find what to send/recv from who
+            bool hasSentFirstLeaf = false;
+            if( (*workingSize) != 0 ){
+                // Find the owner of the leaf
+                int idProcToSendTo = myRank;
+                while(0 < idProcToSendTo &&
+                      (allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex == borderLeavesState[0].mindex
+                       || allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex == noDataFlag)){
+                    idProcToSendTo -= 1;
+                }
+                // We found someone
+                if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
+                    // Post and send message for the first leaf
+                    requests.push(0);
+                    MPI_Isend(&workingArray[0], borderLeavesState[0].nbParts, MPI_BYTE, idProcToSendTo,
+                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
+                    hasSentFirstLeaf = true;
+                }
+            }
+
+            bool hasExtendLastLeaf = false;
+            std::vector<IndexedParticle> receivedParticles;
+
             {
-                FTRACE( FTrace::FRegion regionTrace("Remove Splited leaves", __FUNCTION__ , __FILE__ , __LINE__) );
-
-                MortonIndex otherFirstIndex = -1;
-                if((*workingSize) != 0 && rank != 0 && rank != nbProcs - 1){
-                    MPI_Sendrecv(&workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs,
-                            &otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs,
-                            communicator.getComm(), MPI_STATUS_IGNORE);
+                // Count all the particle of our first leaf on other procs
+                FSize totalNbParticlesToRecv = 0;
+                int idProcToRecvFrom = myRank;
+                while(idProcToRecvFrom+1 < nbProcs &&
+                      (borderLeavesState[1].mindex == allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex
+                       || allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex == noDataFlag)){
+                    idProcToRecvFrom += 1;
+                    totalNbParticlesToRecv += allProcFirstLeafStates[(idProcToRecvFrom)*2].nbParts;
                 }
-                else if( rank == 0){
-                    MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, communicator.getComm(), MPI_STATUS_IGNORE);
-                }
-                else if( rank == nbProcs - 1){
-                    MPI_Send( &workingArray[0].index, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, communicator.getComm());
-                }
-                else {
-                    MPI_Recv(&otherFirstIndex, 1, MPI_LONG_LONG, rank + 1, FMpi::TagExchangeIndexs, communicator.getComm(), MPI_STATUS_IGNORE);
-                    MPI_Send(&otherFirstIndex, 1, MPI_LONG_LONG, rank - 1, FMpi::TagExchangeIndexs, communicator.getComm());
-                }
-
-                // at this point every one know the first index of his right neighbors
-                const bool needToRecvBeforeSend = (rank != 0 && (((*workingSize) && otherFirstIndex == workingArray[0].index ) || !(*workingSize)));
-                MPI_Request requestSendLeaf;
-
-                IndexedParticle* sendBuffer = nullptr;
-                if(rank != nbProcs - 1 && needToRecvBeforeSend == false){
-                    FSize idxPart = (*workingSize) - 1 ;
-                    while(idxPart >= 0 && workingArray[idxPart].index == otherFirstIndex){
-                        --idxPart;
+                // If there are some
+                if(totalNbParticlesToRecv){
+                    // Alloc a received buffer
+                    receivedParticles.resize(totalNbParticlesToRecv);
+                    // Post the recv
+                    FSize postPositionRecv = 0;
+                    for(int postRecvIdx = (myRank+1); postRecvIdx <= idProcToRecvFrom ; ++postRecvIdx){
+                        // If there are some on this proc
+                        if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
+                            requests.push(0);
+                            MPI_Irecv(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, MPI_BYTE, postRecvIdx,
+                                    FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
+                            // Inc the write position
+                            postPositionRecv += allProcFirstLeafStates[(postRecvIdx)*2].nbParts;
+                        }
                     }
-                    const int particlesToSend = int((*workingSize) - 1 - idxPart);
-                    if(particlesToSend){
-                        (*workingSize) -= particlesToSend;
-                        sendBuffer = new IndexedParticle[particlesToSend];
-                        memcpy(sendBuffer, &workingArray[idxPart + 1], particlesToSend * sizeof(IndexedParticle));
-
-                        MPI_Isend( sendBuffer, particlesToSend * int(sizeof(IndexedParticle)), MPI_BYTE,
-                                   rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
-                    }
-                    else{
-                        MPI_Isend( nullptr, 0, MPI_BYTE, rank + 1, FMpi::TagSplittedLeaf, communicator.getComm(), &requestSendLeaf);
-                    }
+                    hasExtendLastLeaf = true;
                 }
+            }
 
-                if( rank != 0 ){
-                    int sendByOther = 0;
+            // Finalize communication
+            MPI_Waitall(requests.getSize(), requests.data(), MPI_STATUSES_IGNORE);
 
-                    MPI_Status probStatus;
-                    MPI_Probe(rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), &probStatus);
-                    MPI_Get_count( &probStatus,  MPI_BYTE, &sendByOther);
-
-                    if(sendByOther){
-                        sendByOther /= int(sizeof(IndexedParticle));
-
-                        const IndexedParticle* const reallocOutputArray = workingArray;
-                        const FSize reallocOutputSize = (*workingSize);
-
-                        (*workingSize) += sendByOther;
-                        workingArray = new IndexedParticle[(*workingSize)];
-                        FMemUtils::memcpy(&workingArray[sendByOther], reallocOutputArray, reallocOutputSize * sizeof(IndexedParticle));
-                        delete[] reallocOutputArray;
-
-                        MPI_Recv(workingArray, int(sizeof(IndexedParticle)) * sendByOther, MPI_BYTE,
-                                 rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
-                    }
-                    else{
-                        MPI_Recv( nullptr, 0, MPI_BYTE, rank - 1, FMpi::TagSplittedLeaf, communicator.getComm(), MPI_STATUS_IGNORE);
-                    }
+            // IF we sent we need to remove the first leaf
+            if(hasSentFirstLeaf){
+                const int offsetParticles = borderLeavesState[0].nbParts;
+                // Move all the particles
+                for(int idxPart = offsetParticles ; idxPart < (*workingSize) ; ++idxPart){
+                    workingArray[idxPart - offsetParticles] = workingArray[idxPart];
                 }
+                // Move all the leaf
+                for(int idxLeaf = 1 ; idxLeaf < leavesInfo.getSize() ; ++idxLeaf){
+                    leavesInfo[idxLeaf].startingPoint -= offsetParticles;
+                    leavesInfo[idxLeaf - 1] = leavesInfo[idxLeaf];
+                }
+                (*workingSize) -= offsetParticles;
+            }
 
-                if(rank != nbProcs - 1 && needToRecvBeforeSend == true){
-                    MPI_Send( workingArray, int((*workingSize) * sizeof(IndexedParticle)), MPI_BYTE,
-                              rank + 1, FMpi::TagSplittedLeaf, communicator.getComm());
-                    delete[] workingArray;
-                    workingArray = nullptr;
-                    (*workingSize)  = 0;
-                }
-                else if(rank != nbProcs - 1){
-                    MPI_Wait( &requestSendLeaf, MPI_STATUS_IGNORE);
-                    delete[] sendBuffer;
-                    sendBuffer = nullptr;
-                }
+            // If we received we need to merge both arrays
+            if(hasExtendLastLeaf){
+                // Allocate array
+                const FSize finalParticlesNumber = (*workingSize) + receivedParticles.size();
+                IndexedParticle* particlesWithExtension = new IndexedParticle[finalParticlesNumber];
+                // Copy old data
+                memcpy(particlesWithExtension, workingArray, (*workingSize)*sizeof(IndexedParticle));
+                // Copy received data
+                memcpy(particlesWithExtension + (*workingSize), receivedParticles.data(), receivedParticles.size()*sizeof(IndexedParticle));
+                // Move ptr
+                delete[] workingArray;
+                workingArray   = particlesWithExtension;
+                (*workingSize) = finalParticlesNumber;
             }
         }
         {//Filling the Array with leaves and parts //// COULD BE MOVED IN AN OTHER FUCTION
@@ -250,36 +286,23 @@ private:
             (*leavesIndices) = nullptr; //init ptr
 
             if((*workingSize)){
-
-                //Array of particles
-                *leavesArray = new ParticleClass[(*workingSize)];
-
-                //Temporary array, we don't know yet how many leaves there will be
-                FSize * tempIndicesArray = new FSize[(*workingSize)];
-                memset(tempIndicesArray,0,sizeof(FSize)*(*workingSize));
-
-                FSize idxInIndices = 0;
-                MortonIndex previousIndex = -1;
+                //Copy all the particles
+                (*leavesArray) = new ParticleClass[(*workingSize)];
                 for(FSize idxPart = 0 ; idxPart < (*workingSize) ; ++idxPart){
-                    if(workingArray[idxPart].index != previousIndex){
-                        previousIndex = workingArray[idxPart];
-                        tempIndicesArray[idxInIndices] = idxPart;
-                        idxInIndices++;
-                    }
                     memcpy(&(*leavesArray)[idxPart],&workingArray[idxPart].particle,sizeof(ParticleClass));
                 }
-		*leavesSize = idxInIndices;
-		
-		*leavesIndices = new FSize[idxInIndices+1];
-		memcpy(*leavesIndices,tempIndicesArray,(*leavesSize)*sizeof(FSize));
-		(*leavesIndices)[idxInIndices] = *workingSize;
-		//printf("leaves Indices : %lld : %lld\n",*leavesSize,*workingSize);
+                // Assign the number of leaf
+                (*leavesSize) = leavesInfo.getSize();
+                // Store the offset position for each leaf
+                (*leavesIndices) = new FSize[leavesInfo.getSize() + 1];
+                for(int idxLeaf = 0 ; idxLeaf < leavesInfo.getSize() ; ++idxLeaf){
+                    (*leavesIndices)[idxLeaf] = leavesInfo[idxLeaf].startingPoint;
+                }
+                (*leavesIndices)[leavesInfo.getSize()] = (*workingSize);
             }
 
             delete []  workingArray;
-
             workingArray = nullptr;
-
         }
     }
 
@@ -339,14 +362,14 @@ private:
 
             std::pair<size_t, size_t> myCurrentInter = {diffNumberOfLeavesPerProc[myRank], diffNumberOfLeavesPerProc[myRank+1]};
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
-	    
+
             for(const FEqualize::Package& pack : packsToSend){
-		if(pack.idProc != myRank){
-		    //printf("%d] to %d from %llu to %llu, will be %lld  myNbLeaf : %lu\n", myRank, pack.idProc, pack.elementFrom, pack.elementTo,leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom],nbLeavesInIntervals);
-		    idxToSend[pack.idProc] = pack.elementFrom;
-		    toSend[pack.idProc]    = leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom];
-		}
-	    }
+                if(pack.idProc != myRank){
+                    //printf("%d] to %d from %llu to %llu, will be %lld  myNbLeaf : %lu\n", myRank, pack.idProc, pack.elementFrom, pack.elementTo,leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom],nbLeavesInIntervals);
+                    idxToSend[pack.idProc] = pack.elementFrom;
+                    toSend[pack.idProc]    = leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom];
+                }
+            }
 
             //Then, we exchange the datas to send
             FSize * globalSendRecvMap = new FSize[nbProcs*nbProcs];
@@ -368,7 +391,7 @@ private:
                     finalCurrentParts -= toSend[idxProc]; //substract the parts sent
                     finalTotParts -= toSend[idxProc];     //substract the parts sent
                     finalTotParts += globalSendRecvMap[idxProc*nbProcs+myRank]; //add the parts received
-		}
+                }
                 finalPartBuffer = new ParticleClass[finalTotParts];
                 memset(finalPartBuffer,0,sizeof(ParticleClass)*finalTotParts);
 
