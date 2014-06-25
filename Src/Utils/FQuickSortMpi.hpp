@@ -326,7 +326,7 @@ public:
             int procInTheMiddle;
             if(globalNumberOfElementsLower == 0)        procInTheMiddle = -1;
             else if(globalNumberOfElementsGreater == 0) procInTheMiddle = currentNbProcs-1;
-            else procInTheMiddle = FMath::Min(currentNbProcs-2, (currentNbProcs*globalNumberOfElementsLower)
+            else procInTheMiddle = FMath::Min(IndexType(currentNbProcs-2), (currentNbProcs*globalNumberOfElementsLower)
                                               /(globalNumberOfElementsGreater + globalNumberOfElementsLower));
 
             ////FLOG( FLog::Controller << currentComm.processId() << "] procInTheMiddle = " << procInTheMiddle << "\n"; )
