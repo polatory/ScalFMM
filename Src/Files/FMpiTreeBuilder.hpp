@@ -50,7 +50,7 @@ public:
         MortonIndex index;
         ParticleClass particle;
 
-        operator MortonIndex(){
+        operator MortonIndex() const {
             return this->index;
         }
     };
@@ -268,11 +268,12 @@ private:
                     }
                     memcpy(&(*leavesArray)[idxPart],&workingArray[idxPart].particle,sizeof(ParticleClass));
                 }
-                *leavesSize = idxInIndices;
-
-                *leavesIndices = new FSize[idxInIndices];
-                memcpy(*leavesIndices,tempIndicesArray,(*leavesSize)*sizeof(FSize));
-
+		*leavesSize = idxInIndices;
+		
+		*leavesIndices = new FSize[idxInIndices+1];
+		memcpy(*leavesIndices,tempIndicesArray,(*leavesSize)*sizeof(FSize));
+		(*leavesIndices)[idxInIndices] = *workingSize;
+		//printf("leaves Indices : %lld : %lld\n",*leavesSize,*workingSize);
             }
 
             delete []  workingArray;
@@ -338,13 +339,14 @@ private:
 
             std::pair<size_t, size_t> myCurrentInter = {diffNumberOfLeavesPerProc[myRank], diffNumberOfLeavesPerProc[myRank+1]};
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
-
+	    
             for(const FEqualize::Package& pack : packsToSend){
-                printf("%d] to %d from %llu to %llu\n", myRank, pack.idProc, pack.elementFrom, pack.elementTo);
-                idxToSend[pack.idProc] = pack.elementFrom;
-                toSend[pack.idProc]    = (pack.elementTo ? leavesIndices[pack.elementTo-1] : 0)
-                        - (pack.elementFrom ? leavesIndices[pack.elementFrom-1] : 0);
-            }
+		if(pack.idProc != myRank){
+		    //printf("%d] to %d from %llu to %llu, will be %lld  myNbLeaf : %lu\n", myRank, pack.idProc, pack.elementFrom, pack.elementTo,leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom],nbLeavesInIntervals);
+		    idxToSend[pack.idProc] = pack.elementFrom;
+		    toSend[pack.idProc]    = leavesIndices[pack.elementTo] - leavesIndices[pack.elementFrom];
+		}
+	    }
 
             //Then, we exchange the datas to send
             FSize * globalSendRecvMap = new FSize[nbProcs*nbProcs];
@@ -366,7 +368,7 @@ private:
                     finalCurrentParts -= toSend[idxProc]; //substract the parts sent
                     finalTotParts -= toSend[idxProc];     //substract the parts sent
                     finalTotParts += globalSendRecvMap[idxProc*nbProcs+myRank]; //add the parts received
-                }
+		}
                 finalPartBuffer = new ParticleClass[finalTotParts];
                 memset(finalPartBuffer,0,sizeof(ParticleClass)*finalTotParts);
 
