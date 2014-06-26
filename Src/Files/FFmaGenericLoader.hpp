@@ -29,8 +29,61 @@
 #include "FAbstractLoader.hpp"
 #include "Utils/FPoint.hpp"
 
+template<int READ, int WRITE>
+class FmaRWParticle {
+    //Data stored
+    FReal data[WRITE];
+public:
+    FmaRWParticle(){
+	if(WRITE<4){
+	    std::cout << "Cannot create FmaRWParticle with less than 4 as value for WRITE" << std::endl;
+	    exit(0);
+	}
+    }
+    
+    //Read functions (const)
+    FPoint getPosition() const{
+	return FPoint(data[0],data[1],data[2]);
+    }
+    
+    FReal * setPosition(){
+	return data;
+    }
+    
+    FReal getPhysicalValue() const{
+	return data[3];
+    }
+    FReal* setPhysicalValue() {
+	return &data[3];
+    }
 
-//
+    FReal getPotential() const{
+	return data[4];
+    }
+    
+    FReal* getForces() {
+	return &data[5];
+    }
+
+    FReal  * getPtrFirstData(){
+	return data;
+    }
+    const  FReal * getPtrFirstData() const{
+	return data;
+    }
+    int getReadDataNumber() const{
+	return READ;
+    }
+    int getWriteDataNumber() const{
+	return WRITE;
+    }
+    unsigned int getWriteDataSize() const { 
+	return sizeof(FmaRWParticle<READ,WRITE>);
+    }
+    long unsigned int getClassSize() const {
+	return WRITE*sizeof(FReal);
+    }
+};
 
 
 //! \class  FmaR4W4Particle
@@ -296,7 +349,7 @@ public:
 	 *
 	 */
 	void fillParticle(FPoint*const outParticlePositions, FReal*const outPhysicalValue){
-		if(binaryFile){
+	    if(binaryFile){
 			file->read((char*)(outParticlePositions), sizeof(FReal)*3);
 			file->read((char*)(outPhysicalValue), sizeof(FReal));
 			if(otherDataToRead> 0){
@@ -308,7 +361,7 @@ public:
 			//			(*this->file)  >> &outParticlePositions>> &outPhysicalValue;
 			(*this->file)  >> x >> y >> z >> (*outPhysicalValue);
 			outParticlePositions->setPosition(x,y,z);
-
+			
 			if(otherDataToRead> 0){
 				for (int 	i = 0 ; i <otherDataToRead; ++i){
 					(*this->file) >> x ;
@@ -351,7 +404,7 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart &dataToRead){
-		int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
+	    int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
 		if(binaryFile){
 			file->read((char*)(dataToRead.getPtrFirstData()), sizeof(FReal)*(dataToRead.getReadDataNumber()));
 			if( otherDataRead > 0){
@@ -380,9 +433,9 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart *dataToRead, const int N){
-		int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
+	    int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
 		if(binaryFile && otherDataRead == 0 ){
-			file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
+		    file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
 		}
 		else {
 			for (int i = 0 ; i <N; ++i){

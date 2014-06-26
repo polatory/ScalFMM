@@ -66,7 +66,7 @@ int main(int argc, char ** argv){
     // System properties
     myfile << NbParticles << "\n";
     myfile << BoxWidth << "\t" << XCenter << "\t" << YCenter << "\t" << ZCenter;
-	srand48( static_cast<long>(time(0))) ;
+	srand48( static_cast<long>(time(nullptr))) ;
 
     // Generate particles
     for( long idx = 0 ; idx < NbParticles ; ++idx ){
