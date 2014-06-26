@@ -43,7 +43,7 @@ public:
                                               const std::vector< std::pair<size_t,size_t> >& allObjectives){
         std::vector<Package> packToSend;
 
-        int idxProc = 0;
+        unsigned int idxProc = 0;
 
         // Find the first proc to send to
         while( idxProc != allObjectives.size()
