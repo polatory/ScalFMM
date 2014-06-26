@@ -36,7 +36,7 @@ public:
     /**
      * To know what to send to who.
      * @param myCurrentInterval current process interval
-     * @param allObjectives the intevals that each process should have (in ascendant order, exclusive)
+     * @param allObjectives the intervals that each process should have (in ascendant order, exclusive)
      * @return the package that the current worker should sent to others
      */
     static std::vector<Package> GetPackToSend(const std::pair<size_t, size_t> myCurrentInterval,

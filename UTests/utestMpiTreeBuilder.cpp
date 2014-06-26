@@ -115,7 +115,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 				   "UTest/DirectDouble.bfma");
 	//Let the choice there to test 
 	//std::string filename(SCALFMMDataPath+parFile);
-	//std::string filename("../Data/unitCubeXYZQ100.bfma");
+	std::string filename("../Data/unitCubeXYZQ100.bfma");
 	
 	int TreeHeight =4;
     
@@ -231,7 +231,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	FSize * leavesIndices = nullptr;
 	FSize leaveSize = 0;
     
-	FMpiTreeBuilder<TestParticle>::testMergeLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
+	FMpiTreeBuilder<TestParticle>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
     
 	//Compare again the results with the output of std::qsort
     
@@ -258,13 +258,12 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
     
 	bool resultEqualize = true;
 
-	FMpiTreeBuilder<TestParticle>::testEqualizeAndFillTree(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
+	FMpiTreeBuilder<TestParticle>::EqualizeAndFillContainer(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
 	//Ok now count the Particles at the end of the Equalize
 	int finalNbPart = finalParticles.getSize();
 	int finalStart = 0;
     
 	MPI_Exscan(&finalNbPart,&finalStart,1,MPI_INT,MPI_SUM,app.global().getComm());
-
 	for (int k=0; k<finalNbPart ; k++){
 	    if(finalParticles[k].indexInFile != arrayOfParticles[k+finalStart].indexInFile){
 		printf("Equalize :: Proc %d, k=[%d+%d] finalParticles : %lld,%lld, sortedArray %lld,%lld \n",
