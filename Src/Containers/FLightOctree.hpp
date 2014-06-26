@@ -71,7 +71,7 @@ public:
         while(level){
             const int host = (index >> (3 * (level-1))) & 0x07;
             if(!iter->next[host]){
-                return 0;
+                return nullptr;
             }
             iter = iter->next[host];
             level -= 1;
