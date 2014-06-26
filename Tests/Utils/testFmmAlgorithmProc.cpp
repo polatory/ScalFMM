@@ -359,11 +359,15 @@ FMpiFmaGenericLoader loader(filename,app.global());
 
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
-    FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-						 realTree.getBoxCenter(),
-						 realTree.getBoxWidth(),
-						 realTree.getHeight(), &finalParticles,&balancer);
-
+    // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+    // 						 realTree.getBoxCenter(),
+    // 						 realTree.getBoxWidth(),
+    // 						 realTree.getHeight(), &finalParticles,&balancer);
+    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+								loader.getMyNumberOfParticles(),
+								realTree.getBoxCenter(),
+								realTree.getBoxWidth(),realTree.getHeight(),
+								&finalParticles, &balancer);
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       realTree.insert(finalParticles[idx].position);
     }
