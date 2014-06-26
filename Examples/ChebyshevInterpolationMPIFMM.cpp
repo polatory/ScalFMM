@@ -168,11 +168,15 @@ int main(int argc, char* argv[])
 	  		
 	  FVector<TestParticle> finalParticles;
 	  FLeafBalance balancer;
-	  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
-						 tree.getBoxCenter(),
-						 tree.getBoxWidth(),
-						 tree.getHeight(), &finalParticles,&balancer);
-
+	  // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
+	  // 					 tree.getBoxCenter(),
+	  // 					 tree.getBoxWidth(),
+	  // 					 tree.getHeight(), &finalParticles,&balancer);
+	  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+								      loader.getMyNumberOfParticles(),
+								      tree.getBoxCenter(),
+								      tree.getBoxWidth(),tree.getHeight(),
+								      &finalParticles, &balancer);
 	  for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
 	    tree.insert(finalParticles[idx].position,finalParticles[idx].index,finalParticles[idx].physicalValue);
 	  }
