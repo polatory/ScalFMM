@@ -125,7 +125,7 @@ public:
       */
     FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree,
                                     const int inUpperLevel = 2)
-        : tree(inTree) , kernels(0), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(GetFackLevel(inUpperLevel)),
+        : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(GetFackLevel(inUpperLevel)),
            numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
@@ -219,7 +219,7 @@ public:
 
         // delete array
         delete [] iterArray;
-        iterArray = 0;
+        iterArray = nullptr;
     }
 
 private:
@@ -808,7 +808,7 @@ private:
                 octreeIterator = avoidGotoLeftIterator;
 
                 delete leafsNeedOther[idxLevel];
-                leafsNeedOther[idxLevel] = 0;
+                leafsNeedOther[idxLevel] = nullptr;
 
                 // Compute this cells
                 FLOG(computationCounter.tic());
@@ -1279,7 +1279,7 @@ private:
                             if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
                                 // Put periodic neighbors into other array
                                 periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                                neighbors[idxNeig] = 0;
+                                neighbors[idxNeig] = nullptr;
                                 ++periodicNeighborsCounter;
 
                                 FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
@@ -1353,7 +1353,7 @@ private:
                         otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
                     }
                     delete recvBuffer[idxProc];
-                    recvBuffer[idxProc] = 0;
+                    recvBuffer[idxProc] = nullptr;
                 }
             }
         }
