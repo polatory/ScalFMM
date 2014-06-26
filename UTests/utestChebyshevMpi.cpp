@@ -93,11 +93,15 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
     OctreeClass tree(nbLevels,sizeOfSubLevel,loader.getBoxWidth(),loader.getCenterOfBox());
-    FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
-						 tree.getBoxCenter(),
-						 tree.getBoxWidth(),
-						 tree.getHeight(), &finalParticles,&balancer);
-    
+    // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
+    // 						 tree.getBoxCenter(),
+    // 						 tree.getBoxWidth(),
+    // 						 tree.getHeight(), &finalParticles,&balancer);
+    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+								loader.getMyNumberOfParticles(),
+								tree.getBoxCenter(),
+								tree.getBoxWidth(),tree.getHeight(),
+								&finalParticles, &balancer);
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       tree.insert(finalParticles[idx].position,int(finalParticles[idx].index),finalParticles[idx].physicalValue);
     }
