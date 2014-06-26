@@ -1,4 +1,4 @@
-/ ===================================================================================
+// ===================================================================================
 // Copyright ScalFmm 2013 INRIA
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
@@ -40,8 +40,7 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Files/FFmaScanfLoader.hpp"
-#include "../../Src/Files/FFmaBinLoader.hpp"
-#include "../../Src/Files/FMpiFmaLoader.hpp"
+#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
@@ -101,7 +100,7 @@ int main(int argc, char* argv[])
   };
 
   // open particle file
-  FMpiFmaLoader loader(filename,app.global());
+  FMpiFmaGenericLoader loader(filename,app.global());
   if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
   
   OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
@@ -113,12 +112,16 @@ int main(int argc, char* argv[])
   }
   FVector<TestParticle> finalParticles;
   FLeafBalance balancer;
-  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-					       tree.getBoxCenter(),
-					       tree.getBoxWidth(),
-					       tree.getHeight(), &finalParticles, &balancer);		 
-
-  { // -----------------------------------------------------
+  // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+  // 					       tree.getBoxCenter(),
+  // 					       tree.getBoxWidth(),
+  // 					       tree.getHeight(), &finalParticles, &balancer);		 
+  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+							      loader.getMyNumberOfParticles(),
+							      tree.getBoxCenter(),
+							      tree.getBoxWidth(),tree.getHeight(),
+							      &finalParticles, &balancer);
+    { // -----------------------------------------------------
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
 	      << " particles ..." << std::endl;
     std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
