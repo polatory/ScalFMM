@@ -113,11 +113,15 @@ int main(int argc, char* argv[])
   }
   FVector<TestParticle> finalParticles;
   FLeafBalance balancer;
-  FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-					       tree.getBoxCenter(),
-					       tree.getBoxWidth(),
-					       tree.getHeight(), &finalParticles,&balancer);
-
+  // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+  // 					       tree.getBoxCenter(),
+  // 					       tree.getBoxWidth(),
+  // 					       tree.getHeight(), &finalParticles,&balancer);
+  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+							      loader.getMyNumberOfParticles(),
+							      tree.getBoxCenter(),
+							      tree.getBoxWidth(),tree.getHeight(),
+							      &finalParticles, &balancer);
   { // -----------------------------------------------------
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
 	      << " particles ..." << std::endl;
