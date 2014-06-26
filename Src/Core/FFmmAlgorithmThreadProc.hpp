@@ -116,7 +116,7 @@ public:
 	 * An assert is launched if one of the arguments is null
 	 */
 	FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
-	: tree(inTree) , kernels(0), comm(inComm), iterArray(nullptr),iterArrayComm(nullptr),numberOfLeafs(0),
+	: tree(inTree) , kernels(nullptr), comm(inComm), iterArray(nullptr),iterArrayComm(nullptr),numberOfLeafs(0),
 	  MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
 	  OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
 	  workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()])
