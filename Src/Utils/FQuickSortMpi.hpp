@@ -225,7 +225,7 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
 
         ////FLOG( FLog::Controller << currentComm.processId() << "] localPivot = " << localPivot << "\n" );
 
-        const int myRank = currentComm.processId();
+        //const int myRank = currentComm.processId();
         const int nbProcs = currentComm.processCount();
         // Exchange the pivos and the state
         std::unique_ptr<int[]> allProcStates(new int[nbProcs]);
