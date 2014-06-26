@@ -197,7 +197,7 @@ public:
         }
 
         // To send and recv
-        ParticleClass* toReceive = 0;
+        ParticleClass* toReceive = nullptr;
         MPI_Request*const requests = new MPI_Request[comm.processCount()*2];
         memset(requests, 0, sizeof(MPI_Request) * comm.processCount() * 2);
         long long int*const indexToReceive = new long long int[comm.processCount() + 1];
