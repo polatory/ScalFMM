@@ -210,7 +210,7 @@ public:
                 // We found someone
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
-                    requests.push(0);
+                    requests.push(nullptr);
                     MPI_Isend(&workingArray[0], borderLeavesState[0].nbParts, MPI_BYTE, idProcToSendTo,
                             FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
                     hasSentFirstLeaf = true;
@@ -239,7 +239,7 @@ public:
                     for(int postRecvIdx = (myRank+1); postRecvIdx <= idProcToRecvFrom ; ++postRecvIdx){
                         // If there are some on this proc
                         if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
-                            requests.push(0);
+                            requests.push(nullptr);
                             MPI_Irecv(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, MPI_BYTE, postRecvIdx,
                                     FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
                             // Inc the write position
@@ -345,8 +345,8 @@ public:
             std::vector< std::pair<size_t,size_t> > allObjectives;
             allObjectives.resize(nbProcs);
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
-                allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,NULL,0,0,nbProcs,idxProc);
-                allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,NULL,0,0,nbProcs,idxProc);
+                allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
+                allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
             }
 	    
             // Ask for the pack to send
