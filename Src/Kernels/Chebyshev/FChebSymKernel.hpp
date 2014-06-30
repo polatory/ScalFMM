@@ -1,16 +1,7 @@
 #ifndef FCHEBSYMKERNEL_HPP
 #define FCHEBSYMKERNEL_HPP
-// [--License--]
-
-#include "../../Utils/FGlobal.hpp"
-#include "../../Utils/FTrace.hpp"
-#include "../../Utils/FSmartPointer.hpp"
-
-#include "./FAbstractChebKernel.hpp"
-#include "./FChebInterpolator.hpp"
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// Copyright ScalFmm 2011 INRIA,
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
@@ -23,7 +14,14 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#include "./FChebSymM2LHandler.hpp"
+
+#include "Utils/FGlobal.hpp"
+#include "Utils/FTrace.hpp"
+#include "Utils/FSmartPointer.hpp"
+
+#include "FAbstractChebKernel.hpp"
+#include "FChebInterpolator.hpp"
+#include "FChebSymM2LHandler.hpp"
 
 class FTreeCoordinate;
 
@@ -172,7 +170,7 @@ public:
 
 
 	void P2M(CellClass* const LeafCell,
-					 const ContainerClass* const SourceParticles)
+					 const ContainerClass* const SourceParticles/*, const int level = AbstractBaseClass::TreeHeight*/)
 	{
 		// apply Sy
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
@@ -189,10 +187,11 @@ public:
                      const int /*TreeLevel*/)
 	{
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // apply Sy
-            FBlas::scal(nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
+        // Reset to zero the Parent expansion
+         //   FBlas::scal(nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
-                if (ChildCells[ChildIndex]){
+                // apply Sy
+               if (ChildCells[ChildIndex]){
                     AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs));
                 }
             }

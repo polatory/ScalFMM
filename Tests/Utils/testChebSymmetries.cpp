@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	
 	// allocate 343 pointers to K, but only 16 are actually filled
 	FReal** K = new FReal* [343];
-	for (unsigned int t=0; t<343; ++t) K[t] = NULL;
+	for (unsigned int t=0; t<343; ++t) K[t] = nullptr;
 
 	{ 
 		unsigned int counter = 0;

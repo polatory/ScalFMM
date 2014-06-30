@@ -455,7 +455,7 @@ public:
 		}
 		else{
 			FReal * val = dataToRead.getPtrFirstData();
-			for (int i = 0 ; i <dataToRead.getReadDataNumber(); ++i){
+			for (unsigned int i = 0 ; i <dataToRead.getReadDataNumber(); ++i){
 				(*this->file)  >>*val;
 				++val;
 			}

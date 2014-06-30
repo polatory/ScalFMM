@@ -16,6 +16,7 @@
 #ifndef FADAPTSEQALGORITHM_HPP
 #define FADAPTSEQALGORITHM_HPP
 
+#include <array>
 #include "Utils/FGlobal.hpp"
 #include "Utils/FAssert.hpp"
 #include "Utils/FLog.hpp"
@@ -41,8 +42,8 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FAdaptSeqAlgorithm :  public FAbstractAlgorithm {
 
-	OctreeClass* const tree;       //< The octree to work on
-	KernelClass* const kernels;    //< The kernels
+	OctreeClass* const tree;        //< The octree to work on
+	KernelClass* const kernels;   //< The kernels
 
 	const int OctreeHeight;
 
@@ -105,9 +106,12 @@ private:
 			// and the list of particles
 			FLOG(computationCounter.tic());
 			if( !octreeIterator.getCurrentCell()->isSminMCriteria()){
+				auto   * currentCell  = octreeIterator.getCurrentCell() ;
+
 				//
-				std::cout << "  P2M operator on cell " <<octreeIterator.getCurrentCell()->getGlobalId() <<std::endl;
-				//		kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
+				std::cout << "  P2M operator on cell " <<currentCell->getGlobalId() <<std::endl;
+				// Classical P2M operator
+				kernels->P2M( currentCell, octreeIterator.getCurrentListSrc());
 			}
 			FLOG(computationCounter.tac());
 		} while(octreeIterator.moveRight());
@@ -138,6 +142,10 @@ private:
 		for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
 			FLOG(FTic counterTimeLevel);
 			std::cout << "  Level "<<idxLevel<<std::endl;
+			//
+			std::array<int,8> m2m_child_level{ {0,0,0,0,0,0,0,0}}  ;
+			//			std::array<KernelClass*,8> m2m_child_cell{ {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr}},
+			CellClass*          m2m_child_cell[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
 			// for each cells
 			do{
@@ -146,24 +154,36 @@ private:
 				FLOG(computationCounter.tic());
 				//
 				if(octreeIterator.getCurrentCell()->isadaptive() &&  !octreeIterator.getCurrentCell()->isSminMCriteria() ){
+					m2m_child_level.fill(-1) ;
 					// adaptive cell and enough work
 					// Need only adaptive child !!!!!
-					const auto  * v =octreeIterator.getCurrentCell()->getadaptiveChild() ;
-					// M2MAdapt(*octreeIterator.getCurrentCell(), idxLevel,nb_fils,fils_level[],fils_cell[]);
-					if (octreeIterator.getCurrentCell()->sizeofadaptiveChild()> 0 ){
-						for (int i=0; i < v->getSize() ; ++i){
-							if (! v->operator [](i).cell->isSminMCriteria() ){
-								std::cout << "     M2M operator to do between " <<octreeIterator.getCurrentCell()->getGlobalId() <<" and "
-										<< v->operator [](i).cell->getGlobalId() << std::endl;
+					auto   * currentCell  = octreeIterator.getCurrentCell() ;
+//				auto     currentKCell = currentCell->getKernelCell();
+					int nbM2M =0;
+					//
+					for(int i=0 ; i<8 ; ++i){
+						m2m_child_cell[i] =nullptr ;
+					}
+					if (currentCell->sizeofadaptiveChild()> 0 ){
+						const auto  & cellChild      = currentCell->getAdaptiveChild() ;
+						for (int i=0; i < cellChild.getSize() ; ++i){
+							if (! cellChild[i].cell->isSminMCriteria() ){
+								m2m_child_level[nbM2M] = cellChild[i].getLevel();
+								std::cout << "     M2M operator to do between " <<currentCell->getGlobalId() <<" and "
+										<< cellChild[i].cell->getGlobalId() << std::endl;
+								nbM2M++ ;
 							}
 							else {
-								std::cout << "     P2M operator to do between " <<octreeIterator.getCurrentCell()->getGlobalId() <<" and "
-										<< v->operator [](i).cell->getGlobalId() << std::endl;
-							}
-						}
-					}
-					//					this->M2MAdapt(*octreeIterator.getCurrentCell(), idxLevel,nb_fils,fils_level[],fils_cell[]);
-					//kernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
+								std::cout << "     P2M operator to do between " <<currentCell->getGlobalId() <<" and "
+										<< cellChild[i].cell->getGlobalId() << std::endl;
+								kernels->P2MAdapt( currentCell, idxLevel );
+
+							} //end if
+
+						} // end loop
+						kernels->M2MAdapt(currentCell, idxLevel, nbM2M,m2m_child_level.data(),m2m_child_cell);
+					} // end if cell adaptive
+					// Build Multipolaire vectors
 				}
 				FLOG(computationCounter.tac());
 			} while(octreeIterator.moveRight());
@@ -291,7 +311,7 @@ private:
 
 		typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-		const int heightMinusOne = OctreeHeight - 1;
+//		const int heightMinusOne = OctreeHeight - 1;
 		// for each levels exepted leaf level
 		//		for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
 		for(int idxLevel = 3 ; idxLevel < OctreeHeight ; ++idxLevel ){

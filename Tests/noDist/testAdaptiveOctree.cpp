@@ -26,8 +26,9 @@
 #include "Components/FSimpleIndexedLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 //
-#include "Kernels/Rotation/FRotationKernel.hpp"
-#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "AdaptiveTree/FAdaptChebSymKernel.hpp"
 //
 #include "Containers/FOctree.hpp"
 //
@@ -90,12 +91,14 @@ int main(int argc, char ** argv){
 	const unsigned int P =8;
 	//
 	typedef FP2PParticleContainerIndexed<>                             ContainerClass;
-	typedef FSimpleIndexedLeaf<ContainerClass>                     LeafClass;
-	typedef FRotationCell<P>                                                     KernelCellClass;
+	typedef FSimpleIndexedLeaf<ContainerClass>                     		        LeafClass;
+    typedef FChebCell<P>                                                          KernelCellClass;
+
 	//
-	typedef FAdaptCell<KernelCellClass,LeafClass>                         CellClass;
-	typedef FOctree<CellClass, ContainerClass, LeafClass >             OctreeClass;
-	typedef FRotationKernel< KernelCellClass, ContainerClass , P>   KernelClass;
+	typedef FAdaptCell<KernelCellClass,LeafClass>                                                CellClass;
+	typedef FOctree<CellClass, ContainerClass, LeafClass >                                    OctreeClass;
+    typedef FInterpMatrixKernelR                                                                            MatrixKernelClass;
+    typedef FAdaptChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
 	//
 	typedef FAdaptSeqAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 	//
@@ -203,7 +206,7 @@ int main(int argc, char ** argv){
 	//
 	// -----------------------------------------------------
 	//
-
+/*
 	//
 	//  Set Global id for tulip export
 	//
@@ -260,6 +263,8 @@ int main(int argc, char ** argv){
 		std::cout << " Level " <<octreeIterator.level() <<std::endl;
 	}while(octreeIterator.moveUp() );
 	//
+
+	 */
 	return 0;
 }
 

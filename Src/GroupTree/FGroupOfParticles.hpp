@@ -62,7 +62,7 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const int inNbParticles)
-        : memoryBuffer(0), blockHeader(0), blockIndexesTable(0), leafHeader(0), nbParticlesInGroup(inNbParticles),
+        : memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
           positionOffset(0), attributeOffset(0) {
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));

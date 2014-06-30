@@ -42,7 +42,7 @@ public:
  * @param inNumberOfCells total number of cells in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells)
-        : memoryBuffer(0), blockHeader(0), blockIndexesTable(0), blockCells(0) {
+        : memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr) {
         // Find the number of cell to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfCells <= blockIndexesTableSize);
@@ -114,13 +114,13 @@ public:
     /** Return the address of the cell if it exists (or NULL) */
     CellClass* getCell(const MortonIndex inIndex){
         if( exists(inIndex) ) return &blockCells[blockIndexesTable[inIndex-blockHeader->startingIndex]];
-        else return 0;
+        else return nullptr;
     }
 
     /** Return the address of the cell if it exists (or NULL) */
     const CellClass* getCell(const MortonIndex inIndex) const {
         if( exists(inIndex) ) return &blockCells[blockIndexesTable[inIndex-blockHeader->startingIndex]];
-        else return 0;
+        else return nullptr;
     }
 
     /** Allocate a new cell by calling its constructor */

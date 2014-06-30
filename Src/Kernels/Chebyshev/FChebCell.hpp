@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA,
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -34,10 +34,12 @@
 template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FChebCell : public FBasicCell
 {
+	// nnodes = ORDER^3
+	// we multiply by 2 because we store the  Multipole expansion end the compressed one.
   static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
 
   FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
-  FReal     local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
+  FReal         local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
 
 public:
   FChebCell(){

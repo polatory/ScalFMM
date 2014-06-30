@@ -36,11 +36,16 @@
 template <class CellClass,  class LeafClass>
 class FAdaptCell : public FBasicCell  {
 public:
-	struct  FExtACell {
+	class  FExtACell {
+	public:
 		FAdaptCell<CellClass, LeafClass> * cell ;
 		int               level  ;  //< Level in the octree of cell
 		FExtACell() { cell=nullptr ; level =-1 ; } ;
+		int getLevel() { return level;}
+		int getLevel() const  { return level;}
+
 	};
+
 protected:
 	// Global Index of the cell in the octree (This id is unique)
 	long int gID;
@@ -52,14 +57,14 @@ protected:
 	//
 	//  Lists
 	//
-	FExtACell                  adaptiveParent ; //< adaptive Parent of the cell
-	FVector<FExtACell> adaptiveChild ;   //< list of adaptive child of the cell
+	FExtACell                  adaptiveParent ;    //< adaptive Parent of the cell
+	FVector<FExtACell> adaptiveChild ;      //< list of adaptive child of the cell
 	FVector<LeafClass*> leaves ;               //< list of leaf child of the cell
 	//
 	//
 	CellClass   * trueFMMCell ;                   //<a pointer on the cell that contains Multipole and local values
 public:
-	FAdaptCell(): gID(-1), nbP(0), adaptive(false),sminMCriteria(false),trueFMMCell(nullptr) {
+	FAdaptCell(): gID(-1), nbP(0), adaptive(false),sminMCriteria(false),trueFMMCell(new CellClass) {
 	}
 	/** Default destructor */
 	virtual ~FAdaptCell(){
@@ -147,7 +152,14 @@ public:
 	 FExtACell* getAdaptiveChild(const int i) {
 		return &this->adaptiveChild[0];
 	}
-
+		const  FVector<FExtACell> getAdaptiveChild() const{
+			return this->adaptiveChild;
+		}
+//
+		//
+		CellClass* getKernelCell(){
+			return 	   trueFMMCell ;
+		}
 	//
 	//! Add the adaptive child of the cell
 	void addLeafptr( LeafClass * leaf)  {
@@ -162,9 +174,10 @@ public:
 		return this->leaves[i];
 	}
 	//! Return the number of leaves
-	LeafClass* getLeaf(const int i ) const {
+	const LeafClass*  getLeaf(const int i ) const {
 		return this->leaves[i];
 	}
+
 	/** Make it like the beginning */
 	void resetToInitialState(){
 		//this->dataDown = 0;
@@ -188,8 +201,26 @@ public:
 	//	buffer >> dataDown >> dataUp >> nbP;
 	}
 
+	  /** Get Multipole */
+	  FReal* getMultipole(const int inRhs){
+	    return this->trueFMMCell->getMultipole(inRhs);
+	  }
+	  /** Get Local */
+	  FReal* getLocal(const int inRhs){
+	    return this->trueFMMCell->getLocal(inRhs);
+	  }
+	  /** Get Multipole */
+	  const FReal* getMultipole(const int inRhs) const
+	  {	return this->trueFMMCell->getMultipole(inRhs);
+	  }
+	  /** Get Local */
+	  const FReal* getLocal(const int inRhs) const{
+	    return this->trueFMMCell->getLocal(inRhs);
+	  }
 
-
+//	  void resetToInitialState(){
+//		    return this->trueFMMCell->resetToInitialState();
+//	  }
 	/////////////////////////////////////////////////
 
 	/** Serialize only up data in a buffer */

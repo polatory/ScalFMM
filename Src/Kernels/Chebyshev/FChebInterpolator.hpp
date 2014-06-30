@@ -17,12 +17,12 @@
 #define FCHEBINTERPOLATOR_HPP
 
 
-#include "./../Interpolation/FInterpMapping.hpp"
-#include "./../Interpolation/FInterpMatrixKernel.hpp" //PB
-#include "./FChebTensor.hpp"
-#include "./FChebRoots.hpp"
+#include "../Interpolation/FInterpMapping.hpp"
+#include "../Interpolation/FInterpMatrixKernel.hpp" //PB
+#include "FChebTensor.hpp"
+#include "FChebRoots.hpp"
 
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FBlas.hpp"
 
 
 
