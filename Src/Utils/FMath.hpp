@@ -226,6 +226,8 @@ struct FMath{
 		:  nbElements(0),l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0)  {
 			add(inGood, inBad, nbValues);
 		}
+	  
+	  
 		/** Add value to the current list */
 		void add(const FReal inGood, const FReal inBad){
 			l2Diff          += (inBad - inGood) * (inBad - inGood);
@@ -241,6 +243,29 @@ struct FMath{
 			}
 			nbElements += nbValues ;
 		}
+	  
+	  /** Add an accurater*/
+	  void add(const FAccurater& inAcc){
+	    l2Diff += inAcc.getl2Diff();
+	    l2Dot +=  inAcc.getl2Dot();
+	    max = Max(max,inAcc.getmax());
+	    maxDiff = Max(maxDiff,inAcc.getInfNorm());
+	    nbElements += inAcc.getnbElements();
+	  }
+
+	  FReal getl2Diff() const{
+	    return l2Diff;
+	  }
+	  FReal getl2Dot() const{
+	    return l2Dot;
+	  }
+	  FReal getmax() const{
+	    return max;
+	  }
+	  FReal getnbElements() const{
+	    return nbElements;
+	  }
+
 		/** Get the root mean squared error*/
 		FReal getL2Norm() const{
 			return Sqrt(l2Diff );
