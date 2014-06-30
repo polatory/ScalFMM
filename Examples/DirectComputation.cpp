@@ -98,13 +98,13 @@ int main(int argc, char ** argv){
 //	int nbDataToRead = particles[0].getReadDataNumber();
 	for(int idx = 0 ; idx<nbParticles ; ++idx){
 		//
-		loader.fillParticle(&particles[idx].position, &particles[idx].physicalValue);
+	    loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
 		//	loader.fillParticle(particles[idx].getPtrFirstData(), nbDataToRead);    // OK
 		//  loader.fillParticle(particles[idx]); // OK
-		std::cout << idx <<"  "<<  particles[idx].position << " "<<particles[idx].physicalValue << " "<<particles[idx].potential
-				<<"  " << particles[idx].forces[0]<<"  " <<particles[idx].forces[1]<<"  " <<particles[idx].forces[2]<<"  " <<std::endl;
+	    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
+				<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
 		//
-		totalCharge += particles[idx].physicalValue ;
+	    totalCharge += particles[idx].getPhysicalValue() ;
 	}
 
 	counter.tac();
@@ -137,19 +137,19 @@ int main(int argc, char ** argv){
 				for(int idxOther = 0; idxOther < nbParticles ; ++idxOther){
 					if( idxOther != idxTarget ){
 						FP2P::NonMutualParticles(
-								particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-								particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-								particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-								particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-								&particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-								&particles[idxTarget].forces[2],&particles[idxTarget].potential);
+								particles[idxOther].getPosition().getX(), particles[idxOther].getPosition().getY(),
+								particles[idxOther].getPosition().getZ(),particles[idxOther].getPhysicalValue(),
+								particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
+								particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
+								&particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
+								&particles[idxTarget].setForces()[2],particles[idxTarget].setPotential());
 					}
 				}
 			} // end for
 			// Compute the energy
 #pragma omp  for reduction(+:denergy)
 			for(int idx = 0 ; idx < nbParticles ; ++idx){
-				denergy +=  particles[idx].potential*particles[idx].physicalValue ;
+			    denergy +=  particles[idx].getPotential()*(particles[idx].getPhysicalValue()) ;
 			}
 		} // end pragma parallel
 		//
@@ -187,11 +187,11 @@ int main(int argc, char ** argv){
 		denergy = 0 ;
 		for(int idx = 0 ; idx < nbParticles ; ++idx){
 			std::cout << ">> index " << idx << std::endl;
-			std::cout << " x   " << particles[idx].position.getX() << " y  " << particles[idx].position.getY() << " z  " << particles[idx].position.getZ() << std::endl;
-			std::cout << " Q   " << particles[idx].physicalValue   << " V  " << particles[idx].potential << std::endl;
-			std::cout << " fx  " << particles[idx].forces[0]       << " fy " << particles[idx].forces[1]       << " fz " << particles[idx].forces[2] << std::endl;
+			std::cout << " x   " << particles[idx].getPosition().getX() << " y  " << particles[idx].getPosition().getY() << " z  " << particles[idx].getPosition().getZ() << std::endl;
+			std::cout << " Q   " << particles[idx].getPhysicalValue()   << " V  " << particles[idx].getPotential() << std::endl;
+			std::cout << " fx  " << particles[idx].getForces()[0]       << " fy " << particles[idx].getForces()[1]       << " fz " << particles[idx].getForces()[2] << std::endl;
 			std::cout << "\n";
-			denergy +=  particles[idx].potential*particles[idx].physicalValue ;
+			denergy +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
 		}
 	}
 	std::cout << " ENERGY " << denergy << std::endl;
