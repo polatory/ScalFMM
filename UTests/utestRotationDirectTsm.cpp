@@ -62,30 +62,30 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
 		const FReal physicalValue = 0.10;
 		//
-		FmaR8W8Particle* const particlesTargets = new FmaR8W8Particle[nbTargets];
+		FmaRWParticle<8,8>* const particlesTargets = new FmaRWParticle<8,8>[nbTargets];
 		for(int idxPart = 0 ; idxPart < nbTargets ; ++idxPart){
 			FPoint position;
 			loader.fillParticle(&position);
 			// put in tree
 			tree.insert(position, FParticleTypeTarget, idxPart, physicalValue);
 			// get copy
-			particlesTargets[idxPart].position         = position;
-			particlesTargets[idxPart].physicalValue = physicalValue;
-			particlesTargets[idxPart].potential        = 0.0;
-			particlesTargets[idxPart].forces[0]        = 0.0;
-			particlesTargets[idxPart].forces[1]        = 0.0;
-			particlesTargets[idxPart].forces[2]        = 0.0;
+			particlesTargets[idxPart].setPosition(position);
+			*(particlesTargets[idxPart].setPhysicalValue()) = physicalValue;
+			*(particlesTargets[idxPart].setPotential())        = 0.0;
+			particlesTargets[idxPart].setForces()[0]        = 0.0;
+			particlesTargets[idxPart].setForces()[1]        = 0.0;
+			particlesTargets[idxPart].setForces()[2]        = 0.0;
 		}
 
-		FmaR8W8Particle* const particlesSources = new FmaR8W8Particle[nbSources];
+		FmaRWParticle<8,8>* const particlesSources = new FmaRWParticle<8,8>[nbSources];
 		for(int idxPart = 0 ; idxPart < nbSources ; ++idxPart){
 			FPoint position;
 			loader.fillParticle(&position);
 			// put in tree
 			tree.insert(position, FParticleTypeSource, idxPart, physicalValue);
 			// get copy
-			particlesSources[idxPart].position          = position;
-			particlesSources[idxPart].physicalValue = physicalValue;
+			particlesSources[idxPart].setPosition(position);
+			*(particlesSources[idxPart].setPhysicalValue()) = physicalValue;
 		}
 
 
@@ -103,12 +103,12 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		for(int idxTarget = 0 ; idxTarget < nbTargets ; ++idxTarget){
 			for(int idxOther = 0 ; idxOther < nbSources ; ++idxOther){
 				FP2P::NonMutualParticles(
-						particlesSources[idxOther].position.getX(), particlesSources[idxOther].position.getY(),
-						particlesSources[idxOther].position.getZ(),particlesSources[idxOther].physicalValue,
-						particlesTargets[idxTarget].position.getX(), particlesTargets[idxTarget].position.getY(),
-						particlesTargets[idxTarget].position.getZ(),particlesTargets[idxTarget].physicalValue,
-						&particlesTargets[idxTarget].forces[0],&particlesTargets[idxTarget].forces[1],
-						&particlesTargets[idxTarget].forces[2],&particlesTargets[idxTarget].potential);
+						particlesSources[idxOther].getPosition().getX(), particlesSources[idxOther].getPosition().getY(),
+						particlesSources[idxOther].getPosition().getZ(),particlesSources[idxOther].getPhysicalValue(),
+						particlesTargets[idxTarget].getPosition().getX(), particlesTargets[idxTarget].getPosition().getY(),
+						particlesTargets[idxTarget].getPosition().getZ(),particlesTargets[idxTarget].getPhysicalValue(),
+						&particlesTargets[idxTarget].setForces()[0],&particlesTargets[idxTarget].setForces()[1],
+						&particlesTargets[idxTarget].setForces()[2],particlesTargets[idxTarget].setPotential());
 			}
 		}
 
@@ -119,7 +119,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		FReal energy= 0.0 , energyD = 0.0 ;
 		for(int idx = 0 ; idx <  nbTargets  ; ++idx){
-			energyD +=  particlesTargets[idx].potential*particlesTargets[idx].physicalValue ;
+			energyD +=  particlesTargets[idx].getPotential()*particlesTargets[idx].getPhysicalValue() ;
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compare
@@ -141,10 +141,10 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
 					for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 						const int indexPartOrig = indexes[idxPart];
-						potentialDiff.add(particlesTargets[indexPartOrig].potential,potentials[idxPart]);
-						fx.add(particlesTargets[indexPartOrig].forces[0],forcesX[idxPart]);
-						fy.add(particlesTargets[indexPartOrig].forces[1],forcesY[idxPart]);
-						fz.add(particlesTargets[indexPartOrig].forces[2],forcesZ[idxPart]);
+						potentialDiff.add(particlesTargets[indexPartOrig].getPotential(),potentials[idxPart]);
+						fx.add(particlesTargets[indexPartOrig].getForces()[0],forcesX[idxPart]);
+						fy.add(particlesTargets[indexPartOrig].getForces()[1],forcesY[idxPart]);
+						fz.add(particlesTargets[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 						energy   += potentials[idxPart]*physicalValues[idxPart];
 					}
 				}

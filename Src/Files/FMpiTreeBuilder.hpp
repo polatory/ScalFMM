@@ -474,7 +474,7 @@ public:
             const int finalNbParticles = particleSaver->getSize();
 
             if(communicator.processId() != 0){
-                MPI_Gather((int*)&finalNbParticles,1,MPI_INT,0,1,MPI_INT,0,communicator.getComm());
+                MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm());
             }
             else{
                 const int nbProcs = communicator.processCount();

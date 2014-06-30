@@ -66,7 +66,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         const int SizeSubLevels = 2;
 //
 		FSize nbParticles = loader.getNumberOfParticles() ;
-		FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
+		FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
          //
@@ -75,7 +75,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 		//   Insert particle in the tree
 		//
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-			tree.insert(particles[idxPart].position , idxPart, particles[idxPart].physicalValue );
+		    tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
 		}
 
 
@@ -93,7 +93,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 
 		for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
-			energyD +=  particles[idx].potential*particles[idx].physicalValue ;
+		    energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compare
@@ -114,10 +114,10 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy   += potentials[idxPart]*physicalValues[idxPart];
 				}
 			});

@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 	//
 
 	FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaR8W8Particle* const particles = new FmaR8W8Particle[nbParticles];
+	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
 	//
 	loader.fillParticle(particles,nbParticles);
 	//
@@ -140,8 +140,8 @@ int main(int argc, char* argv[])
 
 #pragma omp parallel for reduction(+:energyD,totPhysicalValue)
 	for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
-		energyD             +=  particles[idx].potential*particles[idx].physicalValue ;
-		totPhysicalValue += particles[idx].physicalValue ;
+		energyD             +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
+		totPhysicalValue += particles[idx].getPhysicalValue() ;
 	}
 	std::cout << " Total Physical values: "<< totPhysicalValue <<std::endl;
 	std::cout << " Energy of the system: "<< energyD <<std::endl;
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 			time.tic();
 			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 			time.tac();
 			std::cout << "(FChebKernel @ Inserting Particles = "<< time.elapsed() << " s)." << std::endl;
@@ -202,10 +202,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -275,10 +275,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -347,10 +347,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -396,7 +396,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -428,10 +428,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -501,10 +501,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -538,7 +538,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -572,10 +572,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});
@@ -614,7 +614,7 @@ int main(int argc, char* argv[])
 
 			for(int idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
 				// put in tree
-				tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
+				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
 
 			time.tac();
@@ -646,10 +646,10 @@ int main(int argc, char* argv[])
 
 				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-					fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-					fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					energy += potentials[idxPart]*physicalValues[idxPart] ;
 				}
 			});

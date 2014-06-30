@@ -46,10 +46,15 @@ public:
 	return FPoint(data[0],data[1],data[2]);
     }
     
-    FReal * setPosition(){
-	return data;
+    // FReal * setPosition(){
+    // 	return data;
+    // }
+    void setPosition(FPoint & inPoint){
+	data[0] = inPoint.getX();
+	data[1] = inPoint.getY();
+	data[2] = inPoint.getZ();
     }
-    
+
     FReal getPhysicalValue() const{
 	return data[3];
     }
@@ -61,7 +66,15 @@ public:
 	return data[4];
     }
     
+    FReal* setPotential() {
+	return &data[4];
+    }
+    
     FReal* getForces() {
+	return &data[5];
+    }
+    
+    FReal* setForces() {
 	return &data[5];
     }
 
@@ -170,22 +183,22 @@ public:
 //! and you want to compare your result with the read values .
 
 //!
-class FmaR8W8Particle : public FmaR4W8Particle {
-public:
-	/**
-	 *  return The number of data to read. it is used in FMAGenericLoader  (here 8)
-	 *  Useful to read the result of the output of DirectComputation and to compare the potential and the force
-	 *  with the FMM computation
-	 */
-	int getReadDataNumber()
-	{ return 8;}
-};
+// class FmaR8W8Particle : public FmaR4W8Particle {
+// public:
+// 	/**
+// 	 *  return The number of data to read. it is used in FMAGenericLoader  (here 8)
+// 	 *  Useful to read the result of the output of DirectComputation and to compare the potential and the force
+// 	 *  with the FMM computation
+// 	 */
+// 	int getReadDataNumber()
+// 	{ return 8;}
+// };
 //!\typedef FmaBasicParticle an alias of FmaR4W4Particle
 //!  Particle contains 4 values of type FReal and we read and write the four values
 //!
 typedef FmaR4W4Particle FmaBasicParticle  ;
 typedef FmaR4W8Particle FmaRParticle        ;
-typedef FmaR8W8Particle FmaParticle          ;
+typedef FmaRWParticle<8,8> FmaParticle          ;
 //
 //! \class  FFmaGenericLoader
 //!

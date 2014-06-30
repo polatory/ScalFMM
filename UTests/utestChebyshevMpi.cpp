@@ -69,11 +69,11 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
 
     // Create octree
     
-    struct TestParticle : public FmaR8W8Particle{
+    struct TestParticle : public FmaRWParticle<8,8>{
       FSize index;
-      const FPoint& getPosition(){
-	return position;
-      }
+      // const FPoint& getPosition(){
+      // 	return position;
+      // }
     };
 
     FSize nbParticles = loader.getMyNumberOfParticles();
@@ -103,7 +103,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
 								tree.getBoxWidth(),tree.getHeight(),
 								&finalParticles, &balancer);
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
-      tree.insert(finalParticles[idx].position,int(finalParticles[idx].index),finalParticles[idx].physicalValue);
+	tree.insert(finalParticles[idx].getPosition(),int(finalParticles[idx].index),finalParticles[idx].getPhysicalValue());
     }
     
     
@@ -160,10 +160,10 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
 	      }
 	      //I already have this part
 	      else{
-		potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-		fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-		fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-		fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+		potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+		fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+		fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+		fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 		energy   += potentials[idxPart]*physicalValues[idxPart];
 		//if(particles[indexPartOrig].getPosition().getX() != leaf->getTargets()->getPositions()[0][idxPart]){
 		// printf("%d - Problem %d !! [%e,%e,%e,%e] [%e,%e,%e,%e] \n",
@@ -180,7 +180,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
       //Compute Direct Energy
       FReal energyD = 0.0;
       for(int idx = 0 ; idx <  loader.getMyNumberOfParticles()  ; ++idx){
-      	energyD +=  particles[idx].potential*particles[idx].physicalValue ;
+	  energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
       }
       
       FReal energyDTot = 0.0;
