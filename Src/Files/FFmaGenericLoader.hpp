@@ -26,9 +26,20 @@
 #include <cstdlib>
 //
 #include "Utils/FGlobal.hpp"
+#include "Utils/FAssert.hpp"
 #include "FAbstractLoader.hpp"
 #include "Utils/FPoint.hpp"
 
+
+//! \class  FmaRWParticle
+//!
+//! \brief The Particle class used in FMA loader and writer
+//!
+//! In this class, we use template parameters in order to let the user choose how many datas he wish to store.
+//! The datas are all FReal.
+//! The first ones are : PosX,PosY,PosZ,physicalValue ==> Required
+//! The following ones are : Potential,forceX,forceY,forceZ == optionnal
+//!
 template<int READ, int WRITE>
 class FmaRWParticle {
     //Data stored
@@ -41,58 +52,76 @@ public:
 	}
     }
     
-    //Read functions (const)
+    //Get a FPoint from the position
     FPoint getPosition() const{
 	return FPoint(data[0],data[1],data[2]);
     }
     
-    // FReal * setPosition(){
-    // 	return data;
-    // }
+    //Set the position from a FPoint
     void setPosition(FPoint & inPoint){
 	data[0] = inPoint.getX();
 	data[1] = inPoint.getY();
 	data[2] = inPoint.getZ();
     }
 
+    //Get a FReal from the physicalValue
     FReal getPhysicalValue() const{
 	return data[3];
     }
+    
+    //Get a ptr to be able to set the physicalValue
     FReal* setPhysicalValue() {
 	return &data[3];
     }
 
+    //Get a FReal from the potential
     FReal getPotential() const{
+	FAssertLF(READ>4,"Cannot access to Potential with READ<=4");
 	return data[4];
     }
     
+    //Get a ptr to be able to set the potential
     FReal* setPotential() {
+	FAssertLF(WRITE>4,"Cannot set Potential with WRITE<=4");
 	return &data[4];
     }
     
+    //Get a ptr to read the forces
     FReal* getForces() {
+	FAssertLF(READ>7,"Cannot access to forces[] with READ<=8");
 	return &data[5];
     }
     
+    //Get a ptr to write the forces
     FReal* setForces() {
+	FAssertLF(WRITE>7,"Cannot set Forces[] with WRITE<=7");
 	return &data[5];
     }
 
+    //Get directly a ptr to the data
     FReal  * getPtrFirstData(){
 	return data;
     }
+    //Same as above with const qualifier
     const  FReal * getPtrFirstData() const{
 	return data;
     }
+    
+    //Get READ
     unsigned int getReadDataNumber() const{
 	return (unsigned int) (READ);
     }
-    int getWriteDataNumber() const{
+    
+    //Get WRITE
+    unsigned int getWriteDataNumber() const{
 	return WRITE;
     }
+
+    //Get size of Class Particle
     unsigned int getWriteDataSize() const { 
 	return sizeof(FmaRWParticle<READ,WRITE>);
     }
+    //Get Size of array (should be same as above...)
     long unsigned int getClassSize() const {
 	return WRITE*sizeof(FReal);
     }
@@ -107,33 +136,33 @@ public:
 //!  We read (R4) and write  (W4)  the four values: the position, the physical value.
 //!  This class is used in the generateDistributions example.
 //!
-class FmaR4W4Particle {
-public:
-	FPoint position;            ///< position of the particle
-	FReal  physicalValue;    ///<  its physical value
-	/**
-	 *  return a pointer on the first value of the structure
-	 */
-	FReal  * getPtrFirstData()
-	{return position.getDataValue() ;}
-	const  FReal * getPtrFirstData() const
-	{return position.getDataValue() ;}
-	/**
-	 *  return The number of data to read. it is used in FMAGenericLoader  (here 4)
-	 */
-	int getReadDataNumber()
-	{ return 4;}
-	/**
-	 *  return The number of data to write. it is used in FMAGenericWriter (here 4)
-	 */
-	int getWriteDataNumber() const
-	{ return 4;}
-	/**
-	 *  return size in byte of the structure. it is used in FMAGenericWriter
-	 */
-	unsigned int getWriteDataSize() const
-	{ return sizeof(FmaR4W4Particle);}
-};
+// class FmaR4W4Particle {
+// public:
+// 	FPoint position;            ///< position of the particle
+// 	FReal  physicalValue;    ///<  its physical value
+// 	/**
+// 	 *  return a pointer on the first value of the structure
+// 	 */
+// 	FReal  * getPtrFirstData()
+// 	{return position.getDataValue() ;}
+// 	const  FReal * getPtrFirstData() const
+// 	{return position.getDataValue() ;}
+// 	/**
+// 	 *  return The number of data to read. it is used in FMAGenericLoader  (here 4)
+// 	 */
+// 	int getReadDataNumber()
+// 	{ return 4;}
+// 	/**
+// 	 *  return The number of data to write. it is used in FMAGenericWriter (here 4)
+// 	 */
+// 	int getWriteDataNumber() const
+// 	{ return 4;}
+// 	/**
+// 	 *  return size in byte of the structure. it is used in FMAGenericWriter
+// 	 */
+// 	unsigned int getWriteDataSize() const
+// 	{ return sizeof(FmaR4W4Particle);}
+// };
 
 //! \class  FmaR4W8Particle
 //!
@@ -196,7 +225,7 @@ public:
 //!\typedef FmaBasicParticle an alias of FmaR4W4Particle
 //!  Particle contains 4 values of type FReal and we read and write the four values
 //!
-typedef FmaR4W4Particle FmaBasicParticle  ;
+typedef FmaRWParticle<4,4> FmaBasicParticle  ;
 typedef FmaRWParticle<4,8> FmaRParticle        ;
 typedef FmaRWParticle<8,8> FmaParticle          ;
 //
