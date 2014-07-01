@@ -101,8 +101,8 @@ int main(int argc, char ** argv){
 	    loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
 		//	loader.fillParticle(particles[idx].getPtrFirstData(), nbDataToRead);    // OK
 		//  loader.fillParticle(particles[idx]); // OK
-	    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
-				<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
+	//    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
+	//			<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
 		//
 	    totalCharge += particles[idx].getPhysicalValue() ;
 	}
