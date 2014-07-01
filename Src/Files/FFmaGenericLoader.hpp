@@ -76,7 +76,7 @@ public:
 
     //Get a FReal from the potential
     FReal getPotential() const{
-	FAssertLF(READ>4,"Cannot access to Potential with READ<=4");
+	FAssertLF(WRITE>4,"Cannot access to Potential with READ<=4");
 	return data[4];
     }
     
@@ -88,7 +88,7 @@ public:
     
     //Get a ptr to read the forces
     FReal* getForces() {
-	FAssertLF(READ>7,"Cannot access to forces[] with READ<=8");
+	FAssertLF(WRITE>7,"Cannot access to forces[] with READ<=8");
 	return &data[5];
     }
     
