@@ -114,12 +114,11 @@ public:
 	{
 		for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 			//            // apply Sy
-			//            FBlas::scal(nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
-			//            for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
-			//                if (ChildCells[ChildIndex]){
-			//                    AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs));
-			//                }
-			//            }
+			for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
+				if (ChildCells[ChildIndex]){
+		//			KernelBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs));
+				}
+			}
 		}
 	}
 
