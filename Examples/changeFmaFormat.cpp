@@ -95,6 +95,11 @@ int main(int argc, char ** argv){
 	//
 	if(FParameters::existParameter(argc, argv, "-fout")){
 		std::string name(FParameters::getStr(argc,argv,"-fout",   "output"));
+		std::string ext(".");
+		if(name.find(ext) !=std::string::npos) {
+		    std::cout << "No file with extension permitted for output name : " << name << std::endl;
+		    exit(-1);
+		}
 		if(  FParameters::existParameter(argc, argv, "-bin")){
 			name += ".bfma";
 		}
