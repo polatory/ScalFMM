@@ -36,19 +36,19 @@
 
 #include "Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
 
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /*
- * In this test, we compare the results of the Chebyshev FMM over
- * multiple processus and the direct results.
+ * In this test, we compare the results of the Lagrange FMM on uniform point over
+ * multiple processes and the direct results.
  */
 
 
-class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
+class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
 
   template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
 	    class LeafClass, class OctreeClass, class FmmClassProc>
