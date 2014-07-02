@@ -59,8 +59,8 @@ protected: // PB for OptiDis
   unsigned int node_ids[nnodes][3];
 
   // 8 Non-leaf (i.e. M2M/L2L) interpolators 
-  // 1 per level if box is extended
-  // TODO only 1 is required for all levels if extension is 0
+  // x1 per level if box is extended
+  // only 1 is required for all levels if extension is 0
   FReal*** ChildParentInterpolator;
 
   // Tree height (needed by M2M/L2L if cell width is extended)

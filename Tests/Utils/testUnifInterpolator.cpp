@@ -25,27 +25,27 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../../Src/Utils/FTic.hpp"
-#include "../../Src/Utils/FMath.hpp"
-#include "../../Src/Utils/FBlas.hpp"
+#include "Utils/FTic.hpp"
+#include "Utils/FMath.hpp"
+#include "Utils/FBlas.hpp"
 
-#include "../../Src/Containers/FVector.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../../Src/Utils/FAssert.hpp"
-#include "../../Src/Utils/FPoint.hpp"
+#include "Utils/FAssert.hpp"
+#include "Utils/FPoint.hpp"
 
 
-#include "../../Src/Kernels/Uniform/FUnifInterpolator.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifTensor.hpp"
+#include "Kernels/Uniform/FUnifInterpolator.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Uniform/FUnifTensor.hpp"
 
 // Check DFT
-#include "../../Src/Utils/FDft.hpp"
-#include "../../Src/Utils/FComplexe.hpp"
+#include "Utils/FDft.hpp"
+#include "Utils/FComplexe.hpp"
 
 
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
-#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainer.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
 
 

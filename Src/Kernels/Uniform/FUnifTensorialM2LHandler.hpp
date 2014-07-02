@@ -38,6 +38,7 @@ PB: Compute() does not belong to the M2LHandler like it does in the Chebyshev ke
 template <int ORDER, class MatrixKernelClass>
 static void Compute(const MatrixKernelClass *const MatrixKernel, 
                     const FReal CellWidth, 
+                    const FReal CellWidthExtension, 
                     FComplexe** &FC)
 {
   // dimensions of operators
@@ -56,7 +57,8 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 	// interpolation points of source (Y) and target (X) cell
 	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FUnifTensor<order>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
+  const FReal ExtendedCellWidth(CellWidth+CellWidthExtension);
+	FUnifTensor<order>::setRoots(FPoint(0.,0.,0.), ExtendedCellWidth, X);
 
 	// allocate memory and compute 316 m2l operators
 	FReal** _C;
@@ -92,7 +94,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					// set roots of source cell (Y)
 					const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-					FUnifTensor<order>::setRoots(cy, CellWidth, Y);
+					FUnifTensor<order>::setRoots(cy, ExtendedCellWidth, Y);
 					// evaluate m2l operator
           unsigned int ido=0;
           for(unsigned int l=0; l<2*order-1; ++l)
@@ -193,6 +195,8 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
   /// M2L Operators (stored in Fourier space for each component of tensor)
   FSmartPointer< FComplexe*,FSmartArrayMemory> FC;
 
+  const FReal CellWidthExtension; //<! extension of cells width
+
   /// Utils
   typedef FUnifTensor<ORDER> TensorType;
   unsigned int node_diff[nnodes*nnodes];
@@ -215,8 +219,9 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 
 	
 public:
-	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: opt_rc(rc/2+1), Dft()
+	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension)
+		:  CellWidthExtension(inCellWidthExtension), 
+       Dft(), opt_rc(rc/2+1)
 	{
     // init DFT
     const int steps[dimfft] = {rc};
@@ -253,8 +258,11 @@ public:
       if (FC[d]) throw std::runtime_error("M2L operator already set");
 
     // Compute matrix of interactions
+    // reference cell width is arbitrarly set to 2. 
+    // but it NEEDS to match the numerator of the scale factor in matrix kernel!
+    // Therefore box width extension is not yet supported for homog kernels
     const FReal ReferenceCellWidth = FReal(2.);
-    Compute<order>(MatrixKernel,ReferenceCellWidth,FC);
+    Compute<order>(MatrixKernel,ReferenceCellWidth, 0., FC);
     
     // Compute memory usage
     unsigned long sizeM2L = 343*ncmp*opt_rc*sizeof(FComplexe);
@@ -361,9 +369,11 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 
   /// M2L Operators (stored in Fourier space for each component and each level)
   FSmartPointer< FComplexe**,FSmartArrayMemory> FC;
+
   /// Homogeneity specific variables
   const unsigned int TreeHeight;
   const FReal RootCellWidth;
+  const FReal CellWidthExtension; //<! extension of cells width
 
   /// Utils
   typedef FUnifTensor<ORDER> TensorType;
@@ -387,10 +397,11 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 
 	
 public:
-	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
+	FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension)
 		: TreeHeight(inTreeHeight),
-      RootCellWidth(inRootCellWidth),
-      opt_rc(rc/2+1), Dft()
+      RootCellWidth(inRootCellWidth), 
+      CellWidthExtension(inCellWidthExtension),
+      Dft(), opt_rc(rc/2+1)
 	{
     // init DFT
     const int steps[dimfft] = {rc};
@@ -434,7 +445,7 @@ public:
       // check if already set
       for (unsigned int d=0; d<ncmp; ++d)
         if (FC[l][d]) throw std::runtime_error("M2L operator already set");
-      Compute<order>(MatrixKernel,CellWidth,FC[l]);
+      Compute<order>(MatrixKernel,CellWidth,CellWidthExtension,FC[l]);
 			CellWidth /= FReal(2.);                    // at level l+1 
 		}
 

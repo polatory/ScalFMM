@@ -87,11 +87,13 @@ public:
   FUnifTensorialKernel(const int inTreeHeight,
                        const FReal inBoxWidth,
                        const FPoint& inBoxCenter,
+                       const FReal inBoxWidthExtension, 
                        const double inMatParam = 0.0)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inMatParam),
+    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension,inMatParam),
       M2LHandler(AbstractBaseClass::MatrixKernel.getPtr(),
                  inTreeHeight,
-                 inBoxWidth) 
+                 inBoxWidth,
+                 inBoxWidthExtension) 
   { }
 
 
@@ -99,11 +101,13 @@ public:
            const ContainerClass* const SourceParticles)
   {
     const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate())); 
+    const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
+                                      + AbstractBaseClass::BoxWidthExtension);
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
 
       // 1) apply Sy
-      AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+      AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, ExtendedLeafCellWidth,
                                                 LeafCell->getMultipole(idxV*nRhs), SourceParticles);
 
       for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
@@ -121,7 +125,7 @@ public:
 
   void M2M(CellClass* const FRestrict ParentCell,
            const CellClass*const FRestrict *const FRestrict ChildCells,
-           const int /*TreeLevel*/)
+           const int TreeLevel)
   {
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
@@ -132,8 +136,10 @@ public:
         FBlas::scal(AbstractBaseClass::nnodes, FReal(0.), ParentCell->getMultipole(idxMul));
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
           if (ChildCells[ChildIndex]){
-            AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxMul),
-                                                      ParentCell->getMultipole(idxMul));
+            AbstractBaseClass::Interpolator->applyM2M(ChildIndex, 
+                                                      ChildCells[ChildIndex]->getMultipole(idxMul),
+                                                      ParentCell->getMultipole(idxMul), 
+                                                      TreeLevel/*Cell width extension specific*/);
           }
         }
         // 2) Apply Discete Fourier Transform
@@ -150,7 +156,8 @@ public:
            const int TreeLevel)
   {
     const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(CellWidth));
+    const FReal ExtendedCellWidth(CellWidth + AbstractBaseClass::BoxWidthExtension);
+    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(ExtendedCellWidth));
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
@@ -187,7 +194,7 @@ public:
 
   void L2L(const CellClass* const FRestrict ParentCell,
            CellClass* FRestrict *const FRestrict ChildCells,
-           const int /*TreeLevel*/)
+           const int TreeLevel)
   {
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
@@ -198,7 +205,10 @@ public:
         // 2) apply Sx
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
           if (ChildCells[ChildIndex]){
-            AbstractBaseClass::Interpolator->applyL2L(ChildIndex, ParentCell->getLocal(idxLoc), ChildCells[ChildIndex]->getLocal(idxLoc));
+            AbstractBaseClass::Interpolator->applyL2L(ChildIndex, 
+                                                      ParentCell->getLocal(idxLoc), 
+                                                      ChildCells[ChildIndex]->getLocal(idxLoc),
+                                                      TreeLevel/*Cell width extension specific*/);
           }
         }
       }
@@ -209,6 +219,8 @@ public:
            ContainerClass* const TargetParticles)
   {
     const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+    const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
+                                      + AbstractBaseClass::BoxWidthExtension);
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
@@ -220,11 +232,11 @@ public:
       }
 
       // 2.a) apply Sx
-      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, ExtendedLeafCellWidth,
                                                 LeafCell->getLocal(idxV*nLhs), TargetParticles);
 
       // 2.b) apply Px (grad Sx)
-      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, ExtendedLeafCellWidth,
                                                         LeafCell->getLocal(idxV*nLhs), TargetParticles);
 
     }// NVALS
