@@ -73,8 +73,8 @@ class TestBlock : public FUTester<TestBlock> {
             alloc.deleteObject(dl2);
         }
 
-        for(int idx = 0 ; idx < 2 ; ++idx){
-            for(int idxval = 0 ; idxval < 17 ; ++idxval){
+        for(int idx = 0 ; idx < NbAlloc ; ++idx){
+            for(int idxval = 0 ; idxval < SizeArray ; ++idxval){
                 ptr[idx]->array[idxval] += (idxval * idx);
             }
         }
