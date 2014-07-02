@@ -13,6 +13,9 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+// ==== CMAKE =====
+// @FUSE_BLAS
+// ================
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
