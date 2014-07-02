@@ -89,19 +89,15 @@ endif()
 SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
 #
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-#
-#                                         INTEL
-SET(AVXFLAGS  "-mavx")
-SET(SSEFLAGS  "-axSSE4.2")
-#-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
+    # INTEL
+    SET(AVX_FLAGS  "-mavx")
+    SET(SSE_FLAGS  "-axSSE4.2")
+    #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 else()
-#
-#                                    NOT      INTEL
-SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
-#
-SET(AVXFLAGS "-mtune=native -march=native")
-SET(SSEFLAGS  "-mtune=native -march=native -mno-avx")   # -mtune=native -march=native
-#
+    # NOT      INTEL
+    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
+    SET(AVX_FLAGS "-mtune=native -march=native")
+    SET(SSE_FLAGS  "-mtune=native -march=native")   # -mtune=native -march=native
 endif()
 ##############################################################################
 #                                                      Debug
@@ -243,14 +239,14 @@ if( ScalFMM_USE_SSE )
 	if(NOT EXISTS ${CMAKE_MODULE_PATH}/compileTestSse.cpp)
 		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestSse.cpp)" )
 	endif()
-	MESSAGE( STATUS "SSEFLAGS ${SSEFLAGS}  -- ${CMAKE_CXX_FLAGS}  ")
-	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestSse.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSEFLAGS}")	
+	MESSAGE( STATUS "SSE_FLAGS ${SSE_FLAGS}  -- ${CMAKE_CXX_FLAGS}  ")
+	TRY_COMPILE(COMPILE_SSE  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestSse.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSE_FLAGS}")	
 	
    	IF(${COMPILE_SSE})		
-   	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SSEFLAGS}")
+   	    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SSE_FLAGS}")
    		     
 		TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR} 
- 						     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSEFLAGS}")
+ 						     ${CMAKE_MODULE_PATH}/checkSSEpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSE_FLAGS}")
   		IF( NOT ${COMPILE_RESULT_VAR})
     	 		 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__SSEPE_INTEL_COMPILER")
   		ENDIF()
@@ -268,10 +264,10 @@ if(ScalFMM_USE_AVX)
 		message(FATAL_ERROR "The CompileTestSseFile does not exist (${CMAKE_MODULE_PATH}/compileTestAvx.cpp)" )
 	endif()
 	
-	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}  ${AVXFLAGS}")
+	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}  ${AVX_FLAGS}")
 		
    	IF(${COMPILE_AVX})
-   	          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVXFLAGS}")
+   	          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVX_FLAGS}")
    	      
    	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
  						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ")
@@ -281,7 +277,7 @@ if(ScalFMM_USE_AVX)
  
 		MESSAGE(STATUS ${CMAKE_CXX_FLAGS} )
   	ELSE(${COMPILE_AVX})
-  		 MESSAGE(FATAL_ERROR "AVS NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF")
+  		 MESSAGE(FATAL_ERROR "AVX NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF")
   	ENDIF(${COMPILE_AVX})
 endif(ScalFMM_USE_AVX)
 ##################################################################
