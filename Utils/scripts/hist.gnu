@@ -1,4 +1,4 @@
-clear
+    clear
 reset
 set key off
 set border 3
@@ -21,4 +21,4 @@ set ylabel "Number of Particles"
 set terminal postscript enhanced color  'Helvetica' 20
 set output 'plummerHistogramme.eps'
 
-plot 'output.txt' using (rounded($1)):(1) smooth frequency with boxes
+plot 'output.txt' using (rounded($1)):($2) smooth frequency with boxes
