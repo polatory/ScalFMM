@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
     const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma.double");
 
-    FFmaGenericLoader loader(filename,true);
+    FFmaGenericLoader loader(filename);
     FAssertLF(loader.isOpen());
 
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
