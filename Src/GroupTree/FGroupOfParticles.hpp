@@ -4,6 +4,7 @@
 
 #include "../Utils/FAssert.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
+#include "../Utils/FAlignedMemory.hpp"
 
 #include <list>
 #include <functional>
@@ -29,6 +30,22 @@ class FGroupOfParticles {
     };
 
 protected:
+    static const int MemoryAlignementBytes     = 32;
+    static const int MemoryAlignementParticles = MemoryAlignementBytes/sizeof(FReal);
+
+    /** This function return the correct number of particles that should be used to have a correct pack.
+     * If alignement is 32 and use double (so 4 particles in pack), then this function returns:
+     * RoundToUpperParticles(1) = 1 + 3 = 4
+     * RoundToUpperParticles(63) = 63 + 1 = 64
+     */
+    template <class NumClass>
+    static NumClass RoundToUpperParticles(const NumClass& nbParticles){
+        return nbParticles + (MemoryAlignementParticles - (nbParticles%MemoryAlignementParticles)%MemoryAlignementParticles);
+    }
+
+    //< This value is for not used leaves
+    static const int LeafIsEmptyFlag = -1;
+
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
@@ -40,6 +57,8 @@ protected:
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
     const int nbParticlesInGroup;
+    //< The real number of particles allocated
+    int nbParticlesAllocatedInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
@@ -51,9 +70,6 @@ protected:
     //< Bytes difference/offset between attributes
     size_t attributeOffset;
 
-    //< This value is for not used leaves
-    static const int LeafIsEmptyFlag = -1;
-
 public:
     /**
  * @brief FGroupOfParticles
@@ -63,20 +79,24 @@ public:
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const int inNbParticles)
         : memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
-          positionOffset(0), attributeOffset(0) {
+          nbParticlesAllocatedInGroup(0), positionOffset(0), attributeOffset(0) {
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
+
+        nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfLeaves <= blockIndexesTableSize);
         // Total number of bytes in the block
         const size_t sizeOfOneParticle = (3*sizeof(FReal) + NbAttributesPerParticle*sizeof(AttributeClass));
-        const size_t memoryToAlloc = sizeof(BlockHeader) + (blockIndexesTableSize*sizeof(int)) + (inNumberOfLeaves*sizeof(LeafHeader))
-                + inNbParticles*sizeOfOneParticle;
+        const size_t memoryToAlloc = sizeof(BlockHeader)
+                                    + (blockIndexesTableSize*sizeof(int))
+                                    + (inNumberOfLeaves*sizeof(LeafHeader))
+                                    + nbParticlesAllocatedInGroup*sizeOfOneParticle;
 
         // Allocate
-        memoryBuffer = new unsigned char[memoryToAlloc];
+        memoryBuffer = (unsigned char*)FAlignedMemory::Allocate32BAligned(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -92,17 +112,18 @@ public:
         blockHeader->blockIndexesTableSize = blockIndexesTableSize;
 
         // Init particle pointers
-        positionOffset = (sizeof(FReal) * inNbParticles);
-        particlePosition[0] = reinterpret_cast<FReal*>(leafHeader + inNumberOfLeaves);
-        particlePosition[1] = (particlePosition[0] + inNbParticles);
-        particlePosition[2] = (particlePosition[1] + inNbParticles);
+        positionOffset = (sizeof(FReal) * nbParticlesAllocatedInGroup);
+        particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + inNumberOfLeaves)
+                                                       +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
+        particlePosition[1] = (particlePosition[0] + nbParticlesAllocatedInGroup);
+        particlePosition[2] = (particlePosition[1] + nbParticlesAllocatedInGroup);
 
         // Redirect pointer to data
-        attributeOffset = (sizeof(AttributeClass) * inNbParticles);
-        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + inNbParticles);
+        attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
+        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + nbParticlesAllocatedInGroup);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
-            previousPointer += sizeof(AttributeClass)*inNbParticles;
+            previousPointer += sizeof(AttributeClass)*nbParticlesAllocatedInGroup;
         }
 
         // Set all index to not used
@@ -113,7 +134,7 @@ public:
 
     /** Call the destructor of leaves and dealloc block memory */
     ~FGroupOfParticles(){
-        delete[] memoryBuffer;
+        FAlignedMemory::Dealloc32BAligned(memoryBuffer);
     }
 
     /** The index of the fist leaf (set from the constructor) */
@@ -152,13 +173,17 @@ public:
     }
 
     /** Allocate a new leaf by calling its constructor */
-    void newLeaf(const MortonIndex inIndex, const int id, const int nbParticles, const size_t offsetInGroup){
+    size_t newLeaf(const MortonIndex inIndex, const int id, const int nbParticles, const size_t offsetInGroup){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);
         blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
         leafHeader[id].nbParticles = nbParticles;
         leafHeader[id].offSet = offsetInGroup;
+
+        const size_t nextLeafOffsetInGroup = RoundToUpperParticles(offsetInGroup+nbParticles);
+        FAssertLF(nextLeafOffsetInGroup <= size_t(nbParticlesAllocatedInGroup));
+        return nextLeafOffsetInGroup;
     }
 
     /** Iterate on each allocated leaves */

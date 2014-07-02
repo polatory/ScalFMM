@@ -105,7 +105,7 @@ public:
 
                 // Initialize each cell of the block
                 int cellIdInBlock = 0;
-                int nbParticlesBeforeLeaf = 0;
+                size_t nbParticlesOffsetBeforeLeaf = 0;
                 while(cellIdInBlock != sizeOfBlock){
                     // Add cell
                     const CellClass*const oldNode = blockIteratorInOctree.getCurrentCell();
@@ -116,14 +116,13 @@ public:
                     newNode->setCoordinate(oldNode->getCoordinate());
 
                     // Add leaf
-                    newParticleBlock->newLeaf(oldNode->getMortonIndex(), cellIdInBlock,
+                    nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(oldNode->getMortonIndex(), cellIdInBlock,
                                               blockIteratorInOctree.getCurrentLeaf()->getSrc()->getNbParticles(),
-                                              nbParticlesBeforeLeaf);
+                                              nbParticlesOffsetBeforeLeaf);
 
                     BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(oldNode->getMortonIndex());
                     attachedLeaf.copyFromContainer(blockIteratorInOctree.getCurrentLeaf()->getSrc(), 0);
 
-                    nbParticlesBeforeLeaf += blockIteratorInOctree.getCurrentLeaf()->getSrc()->getNbParticles();
                     cellIdInBlock += 1;
                     blockIteratorInOctree.moveRight();
                 }
@@ -260,7 +259,7 @@ public:
                         sizeOfBlock, lastParticle-firstParticle);
 
                 // Init cells
-                int nbParticlesBeforeLeaf = 0;
+                size_t nbParticlesOffsetBeforeLeaf = 0;
                 for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                     newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
 
@@ -271,16 +270,14 @@ public:
                     newNode->setCoordinate(coord);
 
                     // Add leaf
-                    newParticleBlock->newLeaf(currentBlockIndexes[cellIdInBlock], cellIdInBlock,
-                                              nbParticlesPerLeaf[cellIdInBlock], nbParticlesBeforeLeaf);
+                    nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(currentBlockIndexes[cellIdInBlock], cellIdInBlock,
+                                              nbParticlesPerLeaf[cellIdInBlock], nbParticlesOffsetBeforeLeaf);
 
                     BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
                     // Copy each particle from the original position
                     for(int idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
                         attachedLeaf.setParticle(idxPart, particlesToSort[idxPart + firstParticle].originalIndex, inParticlesContainer);
                     }
-
-                    nbParticlesBeforeLeaf += nbParticlesPerLeaf[cellIdInBlock];
                 }
 
                 // Keep the block
