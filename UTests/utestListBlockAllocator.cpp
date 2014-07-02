@@ -14,9 +14,9 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#include "../FUTester.hpp"
+#include "FUTester.hpp"
 
-#include "Containers/FBlockAllocator.hpp"
+#include "../Src/Containers/FBlockAllocator.hpp"
 
 #include <cstring>
 
