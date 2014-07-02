@@ -66,15 +66,9 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
  * size \f$\ell^3\times r\f$, and \f$316\f$ \f$C_t\f$, each of size \f$r\times
  * r\f$.
  *
- * PB: FChebM2LHandler does not seem to support non_homogeneous kernels!
- * In fact nothing appears to handle this here (i.e. adapt scaling and storage 
- * to MatrixKernelClass::Type). Given the relatively important cost of the 
- * Chebyshev variant, it is probably a choice not to have implemented this 
- * feature here but instead in the ChebyshevSym variant. But what if the 
- * kernel is non homogeneous and non symmetric (e.g. Dislocations)... 
- * 
- * TODO Specialize class (see UnifM2LHandler) OR prevent from using this 
- * class with non homogeneous kernels ?!
+ * PB: BEWARE! Homogeneous matrix kernels do not support cell width extension
+ * yet. Is it possible to find a reference width and a scale factor such that
+ * only 1 set of M2L ops can be used for all levels?? 
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
@@ -94,6 +88,8 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	FReal *U, *B;
 	FReal** C;
 
+  const FReal CellWidthExtension; //<! extension of cells width
+
 	const FReal epsilon; //<! accuracy which determines trucation of SVD
 	unsigned int rank;   //<! truncation rank, satisfies @p epsilon
 
@@ -109,12 +105,13 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 
 	
 public:
-	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal _epsilon)
-		: U(nullptr), B(nullptr), epsilon(_epsilon), rank(0)
+	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension, const FReal _epsilon)
+		: U(nullptr), B(nullptr), CellWidthExtension(inCellWidthExtension), 
+      epsilon(_epsilon), rank(0)
 	{
 		// measure time
 		FTic time; time.tic();
-		// check if aready set
+		// check if already set
 		if (U||B) throw std::runtime_error("U or B operator already set");
 
     // allocate C
@@ -126,8 +123,11 @@ public:
       if (C[d]) throw std::runtime_error("Compressed M2L operator already set");
 
     // Compute matrix of interactions
+    // reference cell width is arbitrarly set to 2. 
+    // but it NEEDS to match the numerator of the scale factor in matrix kernel!
+    // Therefore box width extension is not yet supported for homog kernels
     const FReal ReferenceCellWidth = FReal(2.);
-		rank = ComputeAndCompress<order>(MatrixKernel, ReferenceCellWidth, epsilon, U, C, B);
+		rank = ComputeAndCompress<order>(MatrixKernel, ReferenceCellWidth, 0., epsilon, U, C, B);
 
     unsigned long sizeM2L = 343*ncmp*rank*rank*sizeof(FReal);
 
@@ -210,8 +210,9 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 	FReal **U, **B;
 	FReal*** C;
 
-  const unsigned int TreeHeight;
-  const FReal RootCellWidth;
+  const unsigned int TreeHeight; //<! number of levels
+  const FReal RootCellWidth; //<! width of root cell
+  const FReal CellWidthExtension; //<! extension of cells width
 
 	const FReal epsilon; //<! accuracy which determines trucation of SVD
 	unsigned int *rank;   //<! truncation rank, satisfies @p epsilon
@@ -228,9 +229,10 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 
 	
 public:
-	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal _epsilon)
+	FChebTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension, const FReal _epsilon)
 		: TreeHeight(inTreeHeight),
       RootCellWidth(inRootCellWidth),
+      CellWidthExtension(inCellWidthExtension),
       epsilon(_epsilon)
 	{
 		// measure time
@@ -265,7 +267,9 @@ public:
 		CellWidth /= FReal(2.);                      // at level 2
     rank[0]=rank[1]=0;
 		for (unsigned int l=2; l<TreeHeight; ++l) {
-      rank[l] = ComputeAndCompress<order>(MatrixKernel, CellWidth, epsilon, U[l], C[l], B[l]);
+      // compute m2l operator on extended cell
+      rank[l] = ComputeAndCompress<order>(MatrixKernel, CellWidth, CellWidthExtension, epsilon, U[l], C[l], B[l]);
+      // update cell width
 			CellWidth /= FReal(2.);                    // at level l+1 
     }
     unsigned long sizeM2L = (TreeHeight-2)*343*ncmp*rank[2]*rank[2]*sizeof(FReal);
@@ -354,6 +358,7 @@ public:
 template <int ORDER, class MatrixKernelClass>
 unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
                                 const FReal CellWidth, 
+                                const FReal CellWidthExtension, 
                                 const FReal epsilon,
                                 FReal* &U,
                                 FReal** &C,
@@ -372,7 +377,8 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 	// interpolation points of source (Y) and target (X) cell
 	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
+  const FReal ExtendedCellWidth(CellWidth+CellWidthExtension);
+	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), ExtendedCellWidth, X);
 
 	// allocate memory and compute 316 m2l operators
   FReal** _C; 
@@ -387,14 +393,13 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					// set roots of source cell (Y)
 					const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-					FChebTensor<order>::setRoots(cy, CellWidth, Y);
+					FChebTensor<order>::setRoots(cy, ExtendedCellWidth, Y);
+
 					// evaluate m2l operator
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m){
-//							_C[counter*nnodes*nnodes + n*nnodes + m]
-//								= MatrixKernel.evaluate(X[m], Y[n]);
-              // Compute current M2L interaction (block matrix)
 
+              // Compute current M2L interaction (block matrix)
               FReal* block; 
               block = new FReal[ncmp]; 
               MatrixKernel->evaluateBlock(X[m], Y[n], block);

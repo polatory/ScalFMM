@@ -56,8 +56,20 @@ protected: // PB for OptiDis
 
   FReal T_of_roots[ORDER][ORDER];
   FReal T[ORDER * (ORDER-1)];
-    unsigned int node_ids[nnodes][3];
-    FReal* ChildParentInterpolator[8];
+  unsigned int node_ids[nnodes][3];
+
+  // 8 Non-leaf (i.e. M2M/L2L) interpolators 
+  // 1 per level if box is extended
+  // TODO only 1 is required for all levels if extension is 0
+  FReal*** ChildParentInterpolator;
+
+  // Tree height (needed by M2M/L2L if cell width is extended)
+  const int TreeHeight;
+  // Root cell width (only used by M2M/L2L)
+  const FReal RootCellWidth;
+  // Cell width extension (only used by M2M/L2L, kernel handles extension for P2M/L2P)
+  const FReal CellWidthExtension;
+
 
     // permutations (only needed in the tensor product interpolation case)
     unsigned int perm[3][nnodes];
@@ -259,76 +271,84 @@ protected: // PB for OptiDis
      * Initialize the child - parent - interpolator, it is basically the matrix
      * S which is precomputed and reused for all M2M and L2L operations, ie for
      * all non leaf inter/anterpolations.
+     * This is a sub-optimal version : complexity p^6.
+     * This function handles extended cells.
      */
-    void initM2MandL2L()
-    {
-        FPoint ParentRoots[nnodes], ChildRoots[nnodes];
-        const FReal ParentWidth(2.);
-        const FPoint ParentCenter(0., 0., 0.);
-        FChebTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
+  void initM2MandL2L(const int TreeLevel, const FReal ParentWidth)
+  {
+    FPoint ChildRoots[nnodes];
 
-        FPoint ChildCenter;
-        const FReal ChildWidth(1.);
+    // Ratio of extended cell widths (definition: child ext / parent ext)
+    const FReal ExtendedCellRatio = 
+      FReal(FReal(ParentWidth)/FReal(2.) + CellWidthExtension) / FReal(ParentWidth + CellWidthExtension);
 
-        // loop: child cells
-        for (unsigned int child=0; child<8; ++child) {
+    // Child cell center and width
+    FPoint ChildCenter;
+    const FReal ChildWidth(2.*ExtendedCellRatio);
 
-            // allocate memory
-            ChildParentInterpolator[child] = new FReal [nnodes * nnodes];
+    // loop: child cells
+    for (unsigned int child=0; child<8; ++child) {
 
-            // set child info
-            FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter);
-            FChebTensor<ORDER>::setRoots(ChildCenter, ChildWidth, ChildRoots);
+      // allocate memory
+      ChildParentInterpolator[TreeLevel][child] = new FReal [nnodes * nnodes];
 
-            // assemble child - parent - interpolator
-            assembleInterpolator(nnodes, ChildRoots, ChildParentInterpolator[child]);
-        }
+      // set child info
+      FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter, ExtendedCellRatio);
+      FChebTensor<ORDER>::setRoots(ChildCenter, ChildWidth, ChildRoots);
+
+      // assemble child - parent - interpolator
+      assembleInterpolator(nnodes, ChildRoots, ChildParentInterpolator[TreeLevel][child]);
+    }
+  }
+
+  
+  /**
+   * Initialize the child - parent - interpolator, it is basically the matrix
+   * S which is precomputed and reused for all M2M and L2L operations, ie for
+   * all non leaf inter/anterpolations.
+   * This is a more optimal version : complexity p^4.
+   * This function handles extended cells.
+   *
+   */
+  void initTensorM2MandL2L(const int TreeLevel, const FReal ParentWidth)
+  {
+    FReal ChildCoords[3][ORDER]; 
+    FPoint ChildCenter;
+       
+    // Ratio of extended cell widths (definition: child ext / parent ext)
+    const FReal ExtendedCellRatio = 
+      FReal(FReal(ParentWidth)/FReal(2.) + CellWidthExtension) / FReal(ParentWidth + CellWidthExtension);
+
+    // Child cell width
+    const FReal ChildWidth(2.*ExtendedCellRatio);
+
+    // loop: child cells
+    for (unsigned int child=0; child<8; ++child) {
+
+      // set child info 
+      FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter, ExtendedCellRatio);
+      FChebTensor<ORDER>::setPolynomialsRoots(ChildCenter, ChildWidth, ChildCoords);
+      // allocate memory
+      ChildParentInterpolator[TreeLevel][child] = new FReal [3 * ORDER*ORDER];
+      assembleInterpolator(ORDER, ChildCoords[0], ChildParentInterpolator[TreeLevel][child]);
+      assembleInterpolator(ORDER, ChildCoords[1], ChildParentInterpolator[TreeLevel][child] + 1 * ORDER*ORDER);
+      assembleInterpolator(ORDER, ChildCoords[2], ChildParentInterpolator[TreeLevel][child] + 2 * ORDER*ORDER);
     }
 
-    /**
-     * Initialize the child - parent - interpolator, it is basically the matrix
-     * S which is precomputed and reused for all M2M and L2L operations, ie for
-     * all non leaf inter/anterpolations.
-     */
-    void initTensorM2MandL2L()
-    {
-        FPoint ParentRoots[nnodes];
-        FReal ChildCoords[3][ORDER];
-        const FReal ParentWidth(2.);
-        const FPoint ParentCenter(0., 0., 0.);
-        FChebTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
 
-        FPoint ChildCenter;
-        const FReal ChildWidth(1.);
-
-        // loop: child cells
-        for (unsigned int child=0; child<8; ++child) {
-
-            // set child info
-            FChebTensor<ORDER>::setRelativeChildCenter(child, ChildCenter);
-            FChebTensor<ORDER>::setPolynomialsRoots(ChildCenter, ChildWidth, ChildCoords);
-
-            // allocate memory
-            ChildParentInterpolator[child] = new FReal [3 * ORDER*ORDER];
-            assembleInterpolator(ORDER, ChildCoords[0], ChildParentInterpolator[child]);
-            assembleInterpolator(ORDER, ChildCoords[1], ChildParentInterpolator[child] + 1 * ORDER*ORDER);
-            assembleInterpolator(ORDER, ChildCoords[2], ChildParentInterpolator[child] + 2 * ORDER*ORDER);
+    // init permutations
+    for (unsigned int i=0; i<ORDER; ++i) {
+      for (unsigned int j=0; j<ORDER; ++j) {
+        for (unsigned int k=0; k<ORDER; ++k) {
+          const unsigned int index = k*ORDER*ORDER + j*ORDER + i;
+          perm[0][index] = k*ORDER*ORDER + j*ORDER + i;
+          perm[1][index] = i*ORDER*ORDER + k*ORDER + j;
+          perm[2][index] = j*ORDER*ORDER + i*ORDER + k;
         }
-
-
-        // init permutations
-        for (unsigned int i=0; i<ORDER; ++i) {
-            for (unsigned int j=0; j<ORDER; ++j) {
-                for (unsigned int k=0; k<ORDER; ++k) {
-                    const unsigned int index = k*ORDER*ORDER + j*ORDER + i;
-                    perm[0][index] = k*ORDER*ORDER + j*ORDER + i;
-                    perm[1][index] = i*ORDER*ORDER + k*ORDER + j;
-                    perm[2][index] = j*ORDER*ORDER + i*ORDER + k;
-                }
-            }
-        }
-
+      }
     }
+
+  }
 
 
 
@@ -336,8 +356,18 @@ public:
     /**
      * Constructor: Initialize the Chebyshev polynomials at the Chebyshev
      * roots/interpolation point
+     *
+     * PB: Input parameters ONLY affect the computation of the M2M/L2L ops.
+     * These parameters are ONLY required in the context of extended bbox.
+     * If no M2M/L2L is required then the interpolator can be built with 
+     * the default ctor.
      */
-    explicit FChebInterpolator()
+  explicit FChebInterpolator(const int inTreeHeight=3,
+                             const FReal inRootCellWidth=FReal(1.), 
+                             const FReal inCellWidthExtension=FReal(0.)) 
+  : TreeHeight(inTreeHeight), 
+    RootCellWidth(inRootCellWidth),
+    CellWidthExtension(inCellWidthExtension)
     {
         // initialize chebyshev polynomials of root nodes: T_o(x_j)
     for (unsigned int o=1; o<ORDER; ++o)
@@ -353,10 +383,35 @@ public:
         // initialize root node ids
         TensorType::setNodeIds(node_ids);
 
-        // initialize interpolation operator for non M2M and L2L (non leaf
-        // operations)
-        //this -> initM2MandL2L();     // non tensor-product interpolation
-        this -> initTensorM2MandL2L(); // tensor-product interpolation
+        // initialize interpolation operator for M2M/L2L (non leaf operations)
+
+        // allocate 8 arrays per level
+        ChildParentInterpolator = new FReal**[TreeHeight];
+        for (unsigned int l=0; l<TreeHeight; ++l){
+          ChildParentInterpolator[l] = new FReal*[8];
+          for (unsigned int c=0; c<8; ++c)
+            ChildParentInterpolator[l][c]=nullptr;        
+        }
+
+        // Set number of non-leaf ios that actually need to be computed
+        unsigned int reducedTreeHeight; // = 2 + nb of computed nl ios
+        if(CellWidthExtension==0.) // if no cell extension, then ...
+          reducedTreeHeight = 3; // cmp only 1 non-leaf io
+        else 
+          reducedTreeHeight = TreeHeight; // cmp 1 non-leaf io per level
+
+        // Init non-leaf interpolators
+        FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
+        CellWidth /= FReal(2.);                      // at level 2
+        
+        for (unsigned int l=2; l<reducedTreeHeight; ++l) {
+          
+          //this -> initM2MandL2L(l,CellWidth);     // non tensor-product interpolation
+          this -> initTensorM2MandL2L(l,CellWidth); // tensor-product interpolation
+
+          // update cell width
+          CellWidth /= FReal(2.);                    // at level l+1 
+        }
     }
 
 
@@ -365,8 +420,10 @@ public:
      */
     ~FChebInterpolator()
     {
+      for (unsigned int l=0; l<TreeHeight; ++l) 
         for (unsigned int child=0; child<8; ++child)
-            delete [] ChildParentInterpolator[child];
+          if(ChildParentInterpolator[l][child] != nullptr)
+            delete [] ChildParentInterpolator[l][child];
     }
 
 
@@ -437,8 +494,6 @@ public:
 
 
 
-    const FReal *const * getChildParentInterpolator() const
-    { return ChildParentInterpolator; }
     const unsigned int * getPermutationsM2ML2L(unsigned int i) const
     { return perm[i]; }
 
@@ -510,27 +565,27 @@ public:
     */
 
 
-
     void applyM2M(const unsigned int ChildIndex,
-                                const FReal *const ChildExpansion,
-                                FReal *const ParentExpansion) const
+                  const FReal *const ChildExpansion,
+                  FReal *const ParentExpansion,
+                  const unsigned int TreeLevel = 2) const
     {
         FReal Exp[nnodes], PermExp[nnodes];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                 ChildParentInterpolator[ChildIndex], ORDER,
+                                 ChildParentInterpolator[TreeLevel][ChildIndex], ORDER,
                                  const_cast<FReal*>(ChildExpansion), ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                 ChildParentInterpolator[ChildIndex] + 2 * ORDER*ORDER, ORDER,
+                                 ChildParentInterpolator[TreeLevel][ChildIndex] + 2 * ORDER*ORDER, ORDER,
                                  Exp, ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                 ChildParentInterpolator[ChildIndex] + 1 * ORDER*ORDER, ORDER,
+                                 ChildParentInterpolator[TreeLevel][ChildIndex] + 1 * ORDER*ORDER, ORDER,
                                  Exp, ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	ParentExpansion[perm[2][n]] += PermExp[n];
@@ -538,25 +593,26 @@ public:
 
 
     void applyL2L(const unsigned int ChildIndex,
-                                const FReal *const ParentExpansion,
-                                FReal *const ChildExpansion) const
+                  const FReal *const ParentExpansion,
+                  FReal *const ChildExpansion,
+                  const unsigned int TreeLevel = 2) const
     {
         FReal Exp[nnodes], PermExp[nnodes];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                ChildParentInterpolator[ChildIndex], ORDER,
+                                ChildParentInterpolator[TreeLevel][ChildIndex], ORDER,
                                 const_cast<FReal*>(ParentExpansion), ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                ChildParentInterpolator[ChildIndex] + 2 * ORDER*ORDER, ORDER,
+                                ChildParentInterpolator[TreeLevel][ChildIndex] + 2 * ORDER*ORDER, ORDER,
                                 Exp, ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
         // ORDER*ORDER*ORDER * (2*ORDER-1)
         FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                                ChildParentInterpolator[ChildIndex] + 1 * ORDER*ORDER, ORDER,
+                                ChildParentInterpolator[TreeLevel][ChildIndex] + 1 * ORDER*ORDER, ORDER,
                                 Exp, ORDER, PermExp, ORDER);
 
         for (unsigned int n=0; n<nnodes; ++n)	ChildExpansion[perm[2][n]] += PermExp[n];
