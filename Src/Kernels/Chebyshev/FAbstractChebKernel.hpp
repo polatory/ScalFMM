@@ -59,6 +59,9 @@ protected:
   const FReal BoxWidth;    
   /// Width of a leaf cell box 
   const FReal BoxWidthLeaf;
+  /// Extension of the box width ( same for all level! )
+  const FReal BoxWidthExtension;
+   
   /// Parameter to pass to matrix kernel (material specific or anything)
   const double MatParam;
 
@@ -83,13 +86,17 @@ public:
   FAbstractChebKernel(const int inTreeHeight,
                       const FReal inBoxWidth,
                       const FPoint& inBoxCenter,
+                      const FReal inBoxWidthExtension = 0.0,
                       const double inMatParam = 0.0)
-    : Interpolator(new InterpolatorClass()),
+    : Interpolator(new InterpolatorClass(inTreeHeight,
+                                         inBoxWidth,
+                                         inBoxWidthExtension)),
       MatrixKernel(new MatrixKernelClass(inMatParam)),
       TreeHeight(inTreeHeight),
       BoxCorner(inBoxCenter - inBoxWidth / FReal(2.)),
       BoxWidth(inBoxWidth),
       BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1))),
+      BoxWidthExtension(inBoxWidthExtension),
       MatParam(inMatParam)
   {
     /* empty */

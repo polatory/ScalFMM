@@ -52,6 +52,10 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  * The table applyTab provides the indices in the reduced storage table 
  * corresponding to the application scheme depicted ealier.
  *
+ * PB: BEWARE! Homogeneous matrix kernels do not support cell width extension
+ * yet. Is it possible to find a reference width and a scale factor such that
+ * only 1 set of M2L ops can be used for all levels?? 
+ *
  */
 struct FInterpAbstractMatrixKernel : FNoCopyable
 { 

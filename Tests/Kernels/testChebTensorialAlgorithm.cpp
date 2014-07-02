@@ -181,6 +181,20 @@ int main(int argc, char* argv[])
     // accuracy
     const unsigned int ORDER = 5 ;
     const FReal epsilon = FReal(1e-5);
+    // set box width extension
+    // ... either deduce from element size
+  const FReal LeafCellWidth = FReal(loader.getBoxWidth()) / FReal(FMath::pow(2.,TreeHeight-1));
+  const FReal ElementSize = LeafCellWidth / FReal(3.);  
+  const FReal BoxWidthExtension = ElementSize; // depends on type of element
+    // ... or set to arbitrary value (0. means no extension)
+//    const FReal BoxWidthExtension = FReal(0.); 
+
+    std::cout << "LeafCellWidth=" << LeafCellWidth 
+              << ", BoxWidthExtension=" << BoxWidthExtension <<std::endl;
+
+    // stop execution if interactions are homog and box extension is required 
+    if(MatrixKernelClass::Type==HOMOGENEOUS && BoxWidthExtension>0.)
+      throw std::runtime_error("Extension of box width is not yet supported for homogeneous kernels! Work-around: artificially set Type to NON_HOMOGENEOUS.");
 
     typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
 
@@ -226,7 +240,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon,CoreWidth);
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), BoxWidthExtension, epsilon, CoreWidth);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();
