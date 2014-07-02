@@ -63,7 +63,7 @@ class TestBuilder : public FUTester<TestBuilder> {
         {
             FAlgorithmBuilder::SimulationProperties properties = FAlgorithmBuilder::BuildKernelSimulationProperties(height,center,dim,true);
             uassert(properties.dimOfBox != dim);
-            uassert(properties.height != height);
+            uassert(properties.height      != height);
 
             FAbstractAlgorithm*const algo = FAlgorithmBuilder::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, true);
 #ifndef ScalFMM_USE_MPI
