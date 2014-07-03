@@ -177,7 +177,7 @@ int main(int argc, char ** argv){
 				memset(hist,0,(size)*sizeof(int));
 				octreeIterator.gotoBottomLeft();
 				do{
-					nbPart  = octreeIterator.getCurrentListTargets()->getNbParticles() ;
+					nbPart  = octreeIterator.getCurrentSrcTargets()->getNbParticles() ;
 					++hist[nbPart] ;
 				} while(octreeIterator.moveRight());
 				//
