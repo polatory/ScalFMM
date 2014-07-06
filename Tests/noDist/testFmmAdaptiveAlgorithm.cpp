@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -14,6 +14,7 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+//
 #include <iostream>
 #include <cstdio>
 
@@ -40,12 +41,12 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
-#include "../../Src/Adaptative/FAdaptativeCell.hpp"
-#include "../../Src/Adaptative/FAdaptativeKernelWrapper.hpp"
-#include "../../Src/Adaptative/FAbstractAdaptativeKernel.hpp"
+#include "Adaptative/FAdaptiveCell.hpp"
+#include "Adaptative/FAdaptiveKernelWrapper.hpp"
+#include "Adaptative/FAbstractAdaptiveKernel.hpp"
 
 template< class CellClass, class ContainerClass>
-class FAdaptiveTestKernel : public FTestKernels<CellClass, ContainerClass>, public FAbstractAdaptativeKernel<CellClass, ContainerClass> {
+class FAdaptiveTestKernel : public FTestKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 public:
     using FTestKernels<CellClass, ContainerClass>::P2M;
     using FTestKernels<CellClass, ContainerClass>::M2M;
@@ -119,8 +120,8 @@ int main(int argc, char ** argv){
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FAdaptiveTestKernel< CellClass, ContainerClass >         KernelClass;
-    typedef FAdaptativeCell< CellClass, ContainerClass >         CellWrapperClass;
-    typedef FAdaptativeKernelWrapper< KernelClass, CellClass, ContainerClass >         KernelWrapperClass;
+    typedef FAdaptiveCell< CellClass, ContainerClass >         CellWrapperClass;
+    typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >         KernelWrapperClass;
     typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread

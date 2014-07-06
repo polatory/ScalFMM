@@ -90,107 +90,107 @@ void usage() {
 int main(int argc, char ** argv){
 	//
 
-	// accuracy
-	const unsigned int P =8;
-	//
-	typedef FP2PParticleContainerIndexed<>                             ContainerClass;
-	typedef FSimpleIndexedLeaf<ContainerClass>                     		        LeafClass;
-    typedef FChebCell<P>                                                          KernelCellClass;
-
-	//
-	typedef FAdaptCell<KernelCellClass,LeafClass>                                                CellClass;
-	typedef FOctree<CellClass, ContainerClass, LeafClass >                                    OctreeClass;
-    typedef FInterpMatrixKernelR                                                                            MatrixKernelClass;
-    typedef FAdaptChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
-	//
-	typedef FAdaptSeqAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-	//
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
-		usage() ;
-		exit(-1);
-	}
-	//
-	//   Octree parameters
-	//
-	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 5);
-	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 3);
-	const int sminM            = FParameters::getValue(argc,argv,"-sM", 0);
-	const int sminL             = FParameters::getValue(argc,argv,"-sL", 0);
-	//
-	//  input and output  Files parameters
-	//
-	const char* const filename = FParameters::getStr(argc,argv,"-infile", "../Data/test20k.fma");
-	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
-	//
-	std::cout << "Opening : " << filename << "\n";
-	bool binaryMode = false;
-	if(FParameters::existParameter(argc, argv, "-bin")){
-		binaryMode = true;
-	}
-	FFmaGenericLoader loader(filename,binaryMode);
-	if(!loader.isOpen()){
-		std::cout << "Loader Error, " << filename << " is missing\n";
-		return 1;
-	}
-	//
-	// -----------------------------------------------------
-	OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
-	//
-	// -----------------------------------------------------
-	//     Creating and Inserting particles in the tree
-	// -----------------------------------------------------
-	//
-	std::cout << "Tree box is cubic "<<std::endl
-			<< "         Centre:   "<< loader.getCenterOfBox() <<std::endl
-			<< "         Length:  "<< loader.getBoxWidth()       <<std::endl <<std::endl;
-	std::cout 		<< "         criteria SM:  "<< sminM     <<std::endl
-	 		<< "         criteria SL:  "<< sminL     <<std::endl <<std::endl;
-	//
-	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
-	FPoint particlePosition, minPos, maxPos;
-	FReal physicalValue;
-	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-		loader.fillParticle(&particlePosition,&physicalValue);
-		//
-		minPos.setX(FMath::Min(minPos.getX(),particlePosition.getX())) ;
-		minPos.setY(FMath::Min(minPos.getY(),particlePosition.getY())) ;
-		minPos.setZ(FMath::Min(minPos.getZ(),particlePosition.getZ())) ;
-		maxPos.setX(FMath::Max(maxPos.getX(),particlePosition.getX())) ;
-		maxPos.setX(FMath::Max(maxPos.getY(),particlePosition.getY())) ;
-		maxPos.setX(FMath::Max(maxPos.getZ(),particlePosition.getZ())) ;
-		//
-		tree.insert(particlePosition, idxPart, physicalValue );
-	}
-	std::cout << "Data are inside the box delimited by "<<std::endl
-			<< "         Min corner:  "<< minPos<<std::endl
-			<< "         Max corner:  "<< maxPos<<std::endl <<std::endl;
-	//
-	OctreeClass::Iterator octreeIterator(&tree);
+//	// accuracy
+//	const unsigned int P =8;
+//	//
+//	typedef FP2PParticleContainerIndexed<>                             ContainerClass;
+//	typedef FSimpleIndexedLeaf<ContainerClass>                     		        LeafClass;
+//    typedef FChebCell<P>                                                          KernelCellClass;
+//
+//	//
+//	typedef FAdaptCell<KernelCellClass,LeafClass>                                                CellClass;
+//	typedef FOctree<CellClass, ContainerClass, LeafClass >                                    OctreeClass;
+//    typedef FInterpMatrixKernelR                                                                            MatrixKernelClass;
+//    typedef FAdaptChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+//	//
+//	typedef FAdaptSeqAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+//	//
+//	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
+//		usage() ;
+//		exit(-1);
+//	}
+//	//
+//	//   Octree parameters
+//	//
+//	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 5);
+//	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 3);
+//	const int sminM            = FParameters::getValue(argc,argv,"-sM", 0);
+//	const int sminL             = FParameters::getValue(argc,argv,"-sL", 0);
+//	//
+//	//  input and output  Files parameters
+//	//
+//	const char* const filename = FParameters::getStr(argc,argv,"-infile", "../Data/test20k.fma");
+//	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
+//	//
+//	std::cout << "Opening : " << filename << "\n";
+//	bool binaryMode = false;
+//	if(FParameters::existParameter(argc, argv, "-bin")){
+//		binaryMode = true;
+//	}
+//	FFmaGenericLoader loader(filename,binaryMode);
+//	if(!loader.isOpen()){
+//		std::cout << "Loader Error, " << filename << " is missing\n";
+//		return 1;
+//	}
+//	//
+//	// -----------------------------------------------------
+//	OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
+//	//
+//	// -----------------------------------------------------
+//	//     Creating and Inserting particles in the tree
+//	// -----------------------------------------------------
+//	//
+//	std::cout << "Tree box is cubic "<<std::endl
+//			<< "         Centre:   "<< loader.getCenterOfBox() <<std::endl
+//			<< "         Length:  "<< loader.getBoxWidth()       <<std::endl <<std::endl;
+//	std::cout 		<< "         criteria SM:  "<< sminM     <<std::endl
+//	 		<< "         criteria SL:  "<< sminL     <<std::endl <<std::endl;
+//	//
+//	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+//	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
+//	FPoint particlePosition, minPos, maxPos;
+//	FReal physicalValue;
+//	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+//		loader.fillParticle(&particlePosition,&physicalValue);
+//		//
+//		minPos.setX(FMath::Min(minPos.getX(),particlePosition.getX())) ;
+//		minPos.setY(FMath::Min(minPos.getY(),particlePosition.getY())) ;
+//		minPos.setZ(FMath::Min(minPos.getZ(),particlePosition.getZ())) ;
+//		maxPos.setX(FMath::Max(maxPos.getX(),particlePosition.getX())) ;
+//		maxPos.setX(FMath::Max(maxPos.getY(),particlePosition.getY())) ;
+//		maxPos.setX(FMath::Max(maxPos.getZ(),particlePosition.getZ())) ;
+//		//
+//		tree.insert(particlePosition, idxPart, physicalValue );
+//	}
+//	std::cout << "Data are inside the box delimited by "<<std::endl
+//			<< "         Min corner:  "<< minPos<<std::endl
+//			<< "         Max corner:  "<< maxPos<<std::endl <<std::endl;
+//	//
+//	OctreeClass::Iterator octreeIterator(&tree);
 
 	//
 	// -----------------------------------------------------
 	//     Build information for adaptive tree
 	// -----------------------------------------------------
 	//
-	{
-		// Set global If for debug purpose
-		long int idCell  = setGlobalID(tree);
-
-		std::cout << " start build smin criteria " <<std::endl;
-		//
-		adaptiveTreeBuilSminC(tree,sminM,sminL) ;
-		//
-		//  Set Global id
-		//
-		//		long int idCell  = setGlobalID(tree);
-		//
-		//  Build CA and FA  lists
-		std::cout << " start building CA and FA lists " <<std::endl;
-		//
-		adaptiveTreeBuildLists(tree) ;
-		//
-	}
+//	{
+//		// Set global If for debug purpose
+//		long int idCell  = setGlobalID(tree);
+//
+//		std::cout << " start build smin criteria " <<std::endl;
+//		//
+//		adaptiveTreeBuilSminC(tree,sminM,sminL) ;
+//		//
+//		//  Set Global id
+//		//
+//		//		long int idCell  = setGlobalID(tree);
+//		//
+//		//  Build CA and FA  lists
+//		std::cout << " start building CA and FA lists " <<std::endl;
+//		//
+//		adaptiveTreeBuildLists(tree) ;
+//		//
+//	}
 	//
 	////////////////////////////////////////////////////////////////////
 	//             Execute adaptive algorithm
@@ -198,10 +198,10 @@ int main(int argc, char ** argv){
 	//
 	// -----------------------------------------------------
 	//
-	KernelClass *kernels = new KernelClass(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-	//
-	FmmClass algorithm(&tree, kernels);
-	algorithm.execute();
+//	KernelClass *kernels = new KernelClass(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+//	//
+//	FmmClass algorithm(&tree, kernels);
+//	algorithm.execute();
 	//
 	////////////////////////////////////////////////////////////////////
 	//              Export adaptive tree in tulip format
