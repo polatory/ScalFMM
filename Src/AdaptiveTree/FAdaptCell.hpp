@@ -253,7 +253,7 @@ public:
 	 */
 	template <class StreamClass>
 	friend StreamClass& operator<<(StreamClass& output, const FAdaptCell<CellClass,LeafClass>&  cell){
-		output << "(  Cell Id " << cell.getGlobalId()  << " Adpatative  " << std::boolalpha << cell.isadaptive()
+		output << "(  Cell Id " << cell.getGlobalId()  << " Adaptive  " << std::boolalpha << cell.isadaptive()
 						<< "  sminM " << cell.isSminMCriteria()<< " "<< cell.getnbPart()  ;
 		if(cell.getLeavesSize() >0){
 			output << " LF={" ;
