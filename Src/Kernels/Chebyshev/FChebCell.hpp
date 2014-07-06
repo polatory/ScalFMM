@@ -15,6 +15,7 @@
 // ===================================================================================
 #ifndef FCHEBCELL_HPP
 #define FCHEBCELL_HPP
+#include <iostream>
 
 #include "../../Components/FBasicCell.hpp"
 #include "../../Extensions/FExtendMortonIndex.hpp"
@@ -36,110 +37,128 @@ class FChebCell : public FBasicCell
 {
 	// nnodes = ORDER^3
 	// we multiply by 2 because we store the  Multipole expansion end the compressed one.
-  static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
+	static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
 
-  FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
-  FReal         local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
+	FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
+	FReal         local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
 
 public:
-  FChebCell(){
-    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
-  }
+	FChebCell(){
+		memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+		memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
+	}
 
-  ~FChebCell() {}
-	
-  /** Get Multipole */
-  const FReal* getMultipole(const int inRhs) const
-  {	return this->multipole_exp + inRhs*VectorSize;
-  }
-  /** Get Local */
-  const FReal* getLocal(const int inRhs) const{
-    return this->local_exp + inRhs*VectorSize;
-  }
-	
-  /** Get Multipole */
-  FReal* getMultipole(const int inRhs){
-    return this->multipole_exp + inRhs*VectorSize;
-  }
-  /** Get Local */
-  FReal* getLocal(const int inRhs){
-    return this->local_exp + inRhs*VectorSize;
-  }
+	~FChebCell() {}
 
-  /** To get the leading dim of a vec */
-  int getVectorSize() const{
-    return VectorSize;
-  }
+	/** Get Multipole */
+	const FReal* getMultipole(const int inRhs) const
+	{	return this->multipole_exp + inRhs*VectorSize;
+	}
+	/** Get Local */
+	const FReal* getLocal(const int inRhs) const{
+		return this->local_exp + inRhs*VectorSize;
+	}
 
-  /** Make it like the begining */
-  void resetToInitialState(){
-    memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
-    memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
-  }
-  
-  ///////////////////////////////////////////////////////
-  // to extend FAbstractSendable
-  ///////////////////////////////////////////////////////
-  template <class BufferWriterClass>
-  void serializeUp(BufferWriterClass& buffer) const{
-    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
-  }
-  template <class BufferReaderClass>
-  void deserializeUp(BufferReaderClass& buffer){
-    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
-  }
-  
-  template <class BufferWriterClass>
-  void serializeDown(BufferWriterClass& buffer) const{
-    buffer.write(local_exp, VectorSize*NVALS*NLHS);
-  }
-  template <class BufferReaderClass>
-  void deserializeDown(BufferReaderClass& buffer){
-    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
-  }
-  
-  ///////////////////////////////////////////////////////
-  // to extend Serializable
-  ///////////////////////////////////////////////////////
-  template <class BufferWriterClass>
-  void save(BufferWriterClass& buffer) const{
-    FBasicCell::save(buffer);
-    buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
-    buffer.write(local_exp, VectorSize*NVALS*NLHS);
-  }
-  template <class BufferReaderClass>
-  void restore(BufferReaderClass& buffer){
-    FBasicCell::restore(buffer);
-    buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
-    buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
-  }
-  
-  static constexpr int GetSize(){
-    return int(sizeof(FReal)) * VectorSize*(NRHS+NLHS)*NVALS;
-  }
+	/** Get Multipole */
+	FReal* getMultipole(const int inRhs){
+		return this->multipole_exp + inRhs*VectorSize;
+	}
+	/** Get Local */
+	FReal* getLocal(const int inRhs){
+		return this->local_exp + inRhs*VectorSize;
+	}
+
+	/** To get the leading dim of a vec */
+	int getVectorSize() const{
+		return VectorSize;
+	}
+
+	/** Make it like the begining */
+	void resetToInitialState(){
+		memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
+		memset(local_exp,         0, sizeof(FReal) * NLHS * NVALS * VectorSize);
+	}
+
+	///////////////////////////////////////////////////////
+	// to extend FAbstractSendable
+	///////////////////////////////////////////////////////
+	template <class BufferWriterClass>
+	void serializeUp(BufferWriterClass& buffer) const{
+		buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
+	}
+	template <class BufferReaderClass>
+	void deserializeUp(BufferReaderClass& buffer){
+		buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
+	}
+
+	template <class BufferWriterClass>
+	void serializeDown(BufferWriterClass& buffer) const{
+		buffer.write(local_exp, VectorSize*NVALS*NLHS);
+	}
+	template <class BufferReaderClass>
+	void deserializeDown(BufferReaderClass& buffer){
+		buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
+	}
+
+	///////////////////////////////////////////////////////
+	// to extend Serializable
+	///////////////////////////////////////////////////////
+	template <class BufferWriterClass>
+	void save(BufferWriterClass& buffer) const{
+		FBasicCell::save(buffer);
+		buffer.write(multipole_exp, VectorSize*NVALS*NRHS);
+		buffer.write(local_exp, VectorSize*NVALS*NLHS);
+	}
+	template <class BufferReaderClass>
+	void restore(BufferReaderClass& buffer){
+		FBasicCell::restore(buffer);
+		buffer.fillArray(multipole_exp, VectorSize*NVALS*NRHS);
+		buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
+	}
+
+	static constexpr int GetSize(){
+		return int(sizeof(FReal)) * VectorSize*(NRHS+NLHS)*NVALS;
+	}
+//	template <class StreamClass>
+//	const void print(StreamClass& output) const{
+ template <class StreamClass>
+	friend StreamClass& operator<<(StreamClass& output, const FChebCell<ORDER, NRHS, NLHS, NVALS>&  cell){
+//	const void print() const{
+		output <<"  Multipole exp NRHS " <<NRHS <<" NVALS "  <<NVALS << " VectorSize/2 "  << cell.getVectorSize() *0.5<< std::endl;
+		for (int rhs= 0 ; rhs < NRHS ; ++rhs) {
+			const FReal* pole = cell.getMultipole(rhs);
+			for (int val= 0 ; val < NVALS ; ++val) {
+				output<< "      val : " << val << " exp: " ;
+				for (int i= 0 ; i < cell.getVectorSize()/2  ; ++i) {
+					output<< pole[i] << " ";
+				}
+				output << std::endl;
+			}
+		}
+		return output;
+	}
 
 };
 
 template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FTypedChebCell : public FChebCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
-  template <class BufferWriterClass>
-  void save(BufferWriterClass& buffer) const{
-    FChebCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
-    FExtendCellType::save(buffer);
-  }
-  template <class BufferReaderClass>
-  void restore(BufferReaderClass& buffer){
-    FChebCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
-    FExtendCellType::restore(buffer);
-  }
-  void resetToInitialState(){
-    FChebCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
-    FExtendCellType::resetToInitialState();
-  }
-};
+	template <class BufferWriterClass>
+	void save(BufferWriterClass& buffer) const{
+		FChebCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
+		FExtendCellType::save(buffer);
+	}
+	template <class BufferReaderClass>
+	void restore(BufferReaderClass& buffer){
+		FChebCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
+		FExtendCellType::restore(buffer);
+	}
+	void resetToInitialState(){
+		FChebCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
+		FExtendCellType::resetToInitialState();
+	}
 
+};
 #endif //FCHEBCELL_HPP
 
 
