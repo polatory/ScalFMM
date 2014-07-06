@@ -387,7 +387,7 @@ public:
 
         // allocate 8 arrays per level
         ChildParentInterpolator = new FReal**[TreeHeight];
-        for (unsigned int l=0; l<TreeHeight; ++l){
+        for (unsigned int l=0; l<static_cast<unsigned int>(TreeHeight); ++l){
           ChildParentInterpolator[l] = new FReal*[8];
           for (unsigned int c=0; c<8; ++c)
             ChildParentInterpolator[l][c]=nullptr;        
@@ -420,7 +420,7 @@ public:
      */
     ~FChebInterpolator()
     {
-      for (unsigned int l=0; l<TreeHeight; ++l) 
+      for (unsigned int l=0; l<static_cast<unsigned int>(TreeHeight); ++l)
         for (unsigned int child=0; child<8; ++child)
           if(ChildParentInterpolator[l][child] != nullptr)
             delete [] ChildParentInterpolator[l][child];
