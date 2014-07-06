@@ -7,9 +7,9 @@
  * should return the cretiria to know when the P2M should be performed.
  */
 template <class CellClass, class ContainerClass>
-class FAbstractAdaptativeKernel {
+class FAbstractAdaptiveKernel {
 public:
-    virtual ~FAbstractAdaptativeKernel(){
+    virtual ~FAbstractAdaptiveKernel(){
     }
 
     virtual void P2M(CellClass* const pole, const int cellLevel, const ContainerClass* const particles) = 0;
