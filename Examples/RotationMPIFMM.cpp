@@ -58,8 +58,7 @@
 //!     \param   -subdepth     Specifies the size of the sub octree
 //!     \param   -t                   The number of threads
 //!
-//!     \param   -f name          Name of the particles file. The file have to be in our FMA format
-//!     \param   -bin                 if the file is in binary mode
+//!     \param   -f name          Name of the particles file with extension (.fma or .bfma). The data in  file have to be in our FMA format
 //!
 //
 

@@ -57,8 +57,7 @@
 //!     \param   -subdepth     Specifies the size of the sub octree
 //!     \param   -t                   The number of threads
 //!
-//!     \param   -f name          Name of the particles file. The file have to be in our FMA format
-//!     \param   -bin                 if the file is in binary mode
+//!     \param   -f name          Name of the particles file with extension (.fma or .bfma). The data in  file have to be in our FMA format
 //!
 //
 
@@ -68,8 +67,7 @@ void usage() {
 			<<     "      -help         to see the parameters    " << std::endl
 			<<	  "      -depth       the depth of the octree   "<< std::endl
 			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
-			<<     "      -f   name    name specifies the name of the particle distribution" << std::endl
-			<<     "      -bin   if the file is in binary mode" << std::endl
+			<<     "      -f   name    name specifies the name of the particle distribution. If extension is . bfma th file is -in binary mode" << std::endl
 			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
 }
 
