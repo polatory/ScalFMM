@@ -42,89 +42,92 @@
 //!
 template<int READ, int WRITE>
 class FmaRWParticle {
-    //Data stored
-    FReal data[WRITE];
+	//Data stored
+	FReal data[WRITE];
 public:
-    FmaRWParticle(){
-	if(WRITE<4){
-	    std::cout << "Cannot create FmaRWParticle with less than 4 as value for WRITE" << std::endl;
-	    exit(0);
+	FmaRWParticle(){
+		if(WRITE<4){
+			std::cout << "Cannot create FmaRWParticle with less than 4 as value for WRITE" << std::endl;
+			exit(0);
+		}
 	}
-    }
-    
-    //Get a FPoint from the position
-    FPoint getPosition() const{
-	return FPoint(data[0],data[1],data[2]);
-    }
-    
-    //Set the position from a FPoint
-    void setPosition(FPoint & inPoint){
-	data[0] = inPoint.getX();
-	data[1] = inPoint.getY();
-	data[2] = inPoint.getZ();
-    }
 
-    //Get a FReal from the physicalValue
-    FReal getPhysicalValue() const{
-	return data[3];
-    }
-    
-    //Get a ptr to be able to set the physicalValue
-    FReal* setPhysicalValue() {
-	return &data[3];
-    }
+	//Get a FPoint from the position
+	FPoint getPosition() const{
+		return FPoint(data[0],data[1],data[2]);
+	}
+/*	//Get a FPoint from the position
+	FPoint*  getPosition() {
+		return static_cast<FPoint* >(&data);
+	}*/
+	//Set the position from a FPoint
+	void setPosition(FPoint & inPoint){
+		data[0] = inPoint.getX();
+		data[1] = inPoint.getY();
+		data[2] = inPoint.getZ();
+	}
 
-    //Get a FReal from the potential
-    FReal getPotential() const{
-	FAssertLF(WRITE>4,"Cannot access to Potential with READ<=4");
-	return data[4];
-    }
-    
-    //Get a ptr to be able to set the potential
-    FReal* setPotential() {
-	FAssertLF(WRITE>4,"Cannot set Potential with WRITE<=4");
-	return &data[4];
-    }
-    
-    //Get a ptr to read the forces
-    FReal* getForces() {
-	FAssertLF(WRITE>7,"Cannot access to forces[] with READ<=8");
-	return &data[5];
-    }
-    
-    //Get a ptr to write the forces
-    FReal* setForces() {
-	FAssertLF(WRITE>7,"Cannot set Forces[] with WRITE<=7");
-	return &data[5];
-    }
+	//Get a FReal from the physicalValue
+	FReal getPhysicalValue() const{
+		return data[3];
+	}
 
-    //Get directly a ptr to the data
-    FReal  * getPtrFirstData(){
-	return data;
-    }
-    //Same as above with const qualifier
-    const  FReal * getPtrFirstData() const{
-	return data;
-    }
-    
-    //Get READ
-    unsigned int getReadDataNumber() const{
-	return (unsigned int) (READ);
-    }
-    
-    //Get WRITE
-    unsigned int getWriteDataNumber() const{
-	return WRITE;
-    }
+	//Get a ptr to be able to set the physicalValue
+	FReal* setPhysicalValue() {
+		return &data[3];
+	}
 
-    //Get size of Class Particle
-    unsigned int getWriteDataSize() const { 
-	return sizeof(FmaRWParticle<READ,WRITE>);
-    }
-    //Get Size of array (should be same as above...)
-    long unsigned int getClassSize() const {
-	return WRITE*sizeof(FReal);
-    }
+	//Get a FReal from the potential
+	FReal getPotential() const{
+		FAssertLF(WRITE>4,"Cannot access to Potential with READ<=4");
+		return data[4];
+	}
+
+	//Get a ptr to be able to set the potential
+	FReal* setPotential() {
+		FAssertLF(WRITE>4,"Cannot set Potential with WRITE<=4");
+		return &data[4];
+	}
+
+	//Get a ptr to read the forces
+	FReal* getForces() {
+		FAssertLF(WRITE>7,"Cannot access to forces[] with READ<=8");
+		return &data[5];
+	}
+
+	//Get a ptr to write the forces
+	FReal* setForces() {
+		FAssertLF(WRITE>7,"Cannot set Forces[] with WRITE<=7");
+		return &data[5];
+	}
+
+	//Get directly a ptr to the data
+	FReal  * getPtrFirstData(){
+		return data;
+	}
+	//Same as above with const qualifier
+	const  FReal * getPtrFirstData() const{
+		return data;
+	}
+
+	//Get READ
+	unsigned int getReadDataNumber() const{
+		return (unsigned int) (READ);
+	}
+
+	//Get WRITE
+	unsigned int getWriteDataNumber() const{
+		return WRITE;
+	}
+
+	//Get size of Class Particle
+	unsigned int getWriteDataSize() const {
+		return sizeof(FmaRWParticle<READ,WRITE>);
+	}
+	//Get Size of array (should be same as above...)
+	long unsigned int getClassSize() const {
+		return WRITE*sizeof(FReal);
+	}
 };
 
 
@@ -275,7 +278,7 @@ protected:
 	unsigned int typeData[2];      ///< {Size of the data to read, number of data on 1 line}
 private:
 	FReal   *tmpVal ;                         ///  Temporary array to read data
-	 int  otherDataToRead  ;       ///< <<number of other data (>4)to read in a particle record
+	int  otherDataToRead  ;       ///< <<number of other data (>4)to read in a particle record
 public:
 	/**
 	 * The constructor need the file name
@@ -299,6 +302,7 @@ public:
 			std::cerr << "File "<< filename<<" not opened! " <<std::endl;
 			std::exit( EXIT_FAILURE);
 		}
+		std::cout << "Open file "<< filename << std::endl;
 		this->readHeader();
 	}
 	/**
@@ -329,6 +333,7 @@ public:
 			std::cerr << "File "<< filename<<" not opened! " <<std::endl;
 			std::exit( EXIT_FAILURE);
 		}
+		std::cout << "Open file "<< filename << std::endl;
 		this->readHeader();
 	}
 	/**
@@ -391,7 +396,7 @@ public:
 	 *
 	 */
 	void fillParticle(FPoint*const outParticlePositions, FReal*const outPhysicalValue){
-	    if(binaryFile){
+		if(binaryFile){
 			file->read((char*)(outParticlePositions), sizeof(FReal)*3);
 			file->read((char*)(outPhysicalValue), sizeof(FReal));
 			if(otherDataToRead> 0){
@@ -403,7 +408,7 @@ public:
 			//			(*this->file)  >> &outParticlePositions>> &outPhysicalValue;
 			(*this->file)  >> x >> y >> z >> (*outPhysicalValue);
 			outParticlePositions->setPosition(x,y,z);
-			
+
 			if(otherDataToRead> 0){
 				for (int 	i = 0 ; i <otherDataToRead; ++i){
 					(*this->file) >> x ;
@@ -418,7 +423,7 @@ public:
 	 * @param dataToRead is an array of type FReal. It contains all the values of a particles (for instance X,Y,Z,Q, ..
 	 * @param nbDataToRead number of value to read (I.e. size of the array)
 	 */
-    void fillParticle(FReal* dataToRead, const unsigned int nbDataToRead){
+	void fillParticle(FReal* dataToRead, const unsigned int nbDataToRead){
 		if(binaryFile){
 			file->read((char*)(dataToRead), sizeof(FReal)*nbDataToRead);
 			if(nbDataToRead< typeData[1]){
@@ -446,7 +451,7 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart &dataToRead){
-	    int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
+		int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
 		if(binaryFile){
 			file->read((char*)(dataToRead.getPtrFirstData()), sizeof(FReal)*(dataToRead.getReadDataNumber()));
 			if( otherDataRead > 0){
@@ -475,9 +480,9 @@ public:
 	 */
 	template <class dataPart>
 	void fillParticle(dataPart *dataToRead, const int N){
-	    int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
+		int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
 		if(binaryFile && otherDataRead == 0 ){
-		    file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
+			file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
 		}
 		else {
 			for (int i = 0 ; i <N; ++i){
@@ -739,7 +744,7 @@ public:
 		}
 		else{ // ASCII part
 			const int ndata = dataToWrite[0].getWriteDataNumber();
-//			std::cout << "typeData "<< sizeof(FReal) << " "<<ndata << std::endl;
+			//			std::cout << "typeData "<< sizeof(FReal) << " "<<ndata << std::endl;
 			this->file->precision(10);
 
 			for (int i = 0 ; i <N ; ++i){
