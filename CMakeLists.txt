@@ -97,7 +97,11 @@ else()
     # NOT      INTEL
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
     SET(AVX_FLAGS "-mtune=native -march=native")
+IF (APPLE)
+    SET(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
+ELSE(APPLE)
     SET(SSE_FLAGS  "-mtune=native -march=native")   # -mtune=native -march=native
+ ENDIF(APPLE)
 endif()
 ##############################################################################
 #                                                      Debug
@@ -267,7 +271,8 @@ if(ScalFMM_USE_AVX)
 	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}  ${AVX_FLAGS}")
 		
    	IF(${COMPILE_AVX})
-   	          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVX_FLAGS}")
+   	      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVX_FLAGS}")
+   	      SET( ScalFMM_USE_SSE   OFF  )
    	      
    	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
  						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ")
