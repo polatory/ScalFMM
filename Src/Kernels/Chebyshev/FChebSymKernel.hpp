@@ -113,7 +113,6 @@ public:
 			Loc(nullptr), Mul(nullptr), countExp(nullptr)
 	{
 		this->allocateMemoryForPermutedExpansions();
-
 #ifdef LOG_TIMINGS
 		t_m2l_1 = FReal(0.);
 		t_m2l_2 = FReal(0.);
@@ -128,7 +127,7 @@ public:
 	 */
 	FChebSymKernel(const int inTreeHeight,
 		       const FReal inBoxWidth,
-		       const FPoint& inBoxCenter) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter, FReal(1.0/FMath::pow(10,ORDER)))
+		       const FPoint& inBoxCenter) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
 		       {}
 
 	

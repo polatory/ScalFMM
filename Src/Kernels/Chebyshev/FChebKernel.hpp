@@ -73,7 +73,7 @@ public:
 	}
 
 	FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
-		: 	FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,FReal(1.0/FMath::pow(10,ORDER)))
+		: 	FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
 	{
 
 	}
