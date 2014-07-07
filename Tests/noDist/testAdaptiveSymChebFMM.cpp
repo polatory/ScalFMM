@@ -186,7 +186,7 @@ int main(int argc, char ** argv){
 	//////////////////////////////////////////////////////////////////////////////////
 
 	tree.forEachCellLeaf([&](CellWrapperClass* cell, LeafClass* leaf){
-		std::cout << cell->getGlobalId( ) << " Nb particles "<<  leaf->getSrc()->getNbParticles()<<std::endl;
+		file << "Cell Id " << cell->getGlobalId( ) << " Nb particles "<<  leaf->getSrc()->getNbParticles()<<std::endl;
 	});
 
 	octreeIterator.gotoTop() ;  // here we are at level 1 (first child)
@@ -201,7 +201,7 @@ int main(int argc, char ** argv){
 		file << "  Level " << idxLevel <<"  Level  "<<  octreeIterator.level()<<  "  -- leave level " <<   std::boolalpha <<  octreeIterator.isAtLeafLevel() << std::endl;
 		do{
 			if(octreeIterator.getCurrentCell()->hasDevelopment()){
-				file <<*(octreeIterator.getCurrentCell())<< std::endl ;
+				file <<"Cell id  "<< octreeIterator.getCurrentCell()->getGlobalId( ) << "   "<<*(octreeIterator.getCurrentCell())<< std::endl ;
 			}
 		} while(octreeIterator.moveRight());
 		octreeIterator.moveDown() ;
