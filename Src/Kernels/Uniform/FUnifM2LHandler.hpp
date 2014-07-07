@@ -211,6 +211,20 @@ public:
 
   }
 
+  /*
+   * Copy constructor
+   */
+  FUnifM2LHandler(const FUnifM2LHandler& other)
+    : FC(other.FC), Dft(), opt_rc(other.opt_rc)
+  {    
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft.buildDFT(steps);
+ 
+    // copy node_diff
+    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
+  }
+
 	~FUnifM2LHandler()
 	{ }
 
@@ -350,8 +364,8 @@ public:
 	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
 		: TreeHeight(inTreeHeight),
       RootCellWidth(inRootCellWidth),
-      opt_rc(rc/2+1),
-      Dft()
+      Dft(), opt_rc(rc/2+1)
+      
 	{
     // init DFT
     const int steps[dimfft] = {rc};
@@ -369,6 +383,25 @@ public:
     ComputeAndSet(MatrixKernel);
 
   }
+
+  /*
+   * Copy constructor
+   */
+  FUnifM2LHandler(const FUnifM2LHandler& other)
+    : FC(other.FC),
+      TreeHeight(other.TreeHeight),
+      RootCellWidth(other.RootCellWidth),
+      Dft(), opt_rc(other.opt_rc)
+  {    
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft.buildDFT(steps); 
+
+    // copy node_diff
+    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
+  }
+
+
 
 	~FUnifM2LHandler()
 	{
