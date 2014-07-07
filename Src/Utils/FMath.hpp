@@ -250,7 +250,7 @@ struct FMath{
 	    l2Dot +=  inAcc.getl2Dot();
 	    max = Max(max,inAcc.getmax());
 	    maxDiff = Max(maxDiff,inAcc.getInfNorm());
-	    nbElements += inAcc.getnbElements();
+	    nbElements += inAcc.getNbElements();
 	  }
 
 	  FReal getl2Diff() const{
@@ -262,8 +262,11 @@ struct FMath{
 	  FReal getmax() const{
 	    return max;
 	  }
-	  FReal getnbElements() const{
+	  FReal getNbElements() const{
 	    return nbElements;
+	  }
+	  void  setNbElements(const int & n) {
+	     nbElements = n;
 	  }
 
 		/** Get the root mean squared error*/
