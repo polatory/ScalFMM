@@ -18,10 +18,10 @@
 
 #include <stdexcept>
 
-#include "../../Utils/FPoint.hpp"
-#include "../../Utils/FNoCopyable.hpp"
-#include "../../Utils/FMath.hpp"
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FPoint.hpp"
+#include "Utils/FNoCopyable.hpp"
+#include "Utils/FMath.hpp"
+#include "Utils/FBlas.hpp"
 
 // extendable
 enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
@@ -79,7 +79,7 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelR(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelR(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -111,6 +111,22 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 
 };
 
+/// One over r when the box size is rescaled to 1
+struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
+	FReal LX,LY,LZ ;
+	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : FInterpMatrixKernelR(),
+			LX(1.0),LY(1.0),LZ(1.0)
+	{}
+	  FReal evaluate(const FPoint& x, const FPoint& y) const
+	  {
+	    const FPoint xy(x-y);
+	    return FReal(1.) / FMath::Sqrt(LX*xy.getX()*xy.getX() +
+	    		LY*xy.getY()*xy.getY() +
+	    		LZ*xy.getZ()*xy.getZ());
+	  }
+	  	 void setCoeff(const FReal& a,  const FReal& b, const FReal& c)
+	  	 {LX= a ; LY = b ; LZ = c ;}
+};
 
 
 /// One over r^2
@@ -124,7 +140,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelRR(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelRR(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -168,7 +184,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelLJ(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelLJ(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -257,9 +273,9 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   const unsigned int _i,_j;
 
   // Material Parameters
-  const double _CoreWidth2; // if >0 then kernel is NON homogeneous
+  const FReal _CoreWidth2; // if >0 then kernel is NON homogeneous
 
-  FInterpMatrixKernel_R_IJ(const double CoreWidth = 0.0, const unsigned int d = 0) 
+  FInterpMatrixKernel_R_IJ(const FReal CoreWidth = 0.0, const unsigned int d = 0)
     : _i(indexTab[d]), _j(indexTab[d+NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
@@ -268,7 +284,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   {return applyTab[n];} 
 
   // returns Core Width squared
-  double getCoreWidth2() const
+  FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -278,7 +294,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
                                             xy.getY()*xy.getY() + 
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
-    double ri,rj;
+    FReal ri,rj;
     
     if(_i==0) ri=xy.getX();
     else if(_i==1) ri=xy.getY();
@@ -304,7 +320,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
                                             xy.getY()*xy.getY() + 
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
-    const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
+    const FReal r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
     for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
@@ -354,9 +370,9 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   const unsigned int _i,_j,_k;
 
   // Material Parameters
-  const double _CoreWidth2; // if >0 then kernel is NON homogeneous
+  const FReal _CoreWidth2; // if >0 then kernel is NON homogeneous
 
-  FInterpMatrixKernel_R_IJK(const double CoreWidth = 0.0, const unsigned int d = 0) 
+  FInterpMatrixKernel_R_IJK(const FReal CoreWidth = 0.0, const unsigned int d = 0)
   : _i(indexTab[d]), _j(indexTab[d+NCMP]), _k(indexTab[d+2*NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
@@ -365,7 +381,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   {return applyTab[n];} 
 
   // returns Core Width squared
-  double getCoreWidth2() const
+  FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -378,7 +394,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r2 = one_over_r*one_over_r;
     const FReal one_over_r3 = one_over_r2*one_over_r;
-    double ri,rj,rk;
+    FReal ri,rj,rk;
 
     if(_i==0) ri=xy.getX();
     else if(_i==1) ri=xy.getY();
@@ -425,7 +441,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
     const FReal one_over_r2 = one_over_r*one_over_r;
     const FReal one_over_r3 = one_over_r2*one_over_r;
 
-    const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
+    const FReal r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
     for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
@@ -484,7 +500,7 @@ public:
                          const unsigned int _ny, const FPoint *const _py,
                          const FReal *const _weights = NULL,
                          const unsigned int idxK = 0,
-                         const double matparam = 0.0)
+                         const FReal matparam = 0.0)
     : Kernel(matparam,idxK),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
 
   void operator()(const unsigned int xbeg, const unsigned int xend,
