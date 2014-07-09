@@ -184,7 +184,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 template <int ORDER, class MatrixKernelClass, KERNEL_FUNCTION_TYPE TYPE> class FUnifTensorialM2LHandler;
 
 template <int ORDER, class MatrixKernelClass>
-class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyable
+class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS>
 {
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
@@ -237,6 +237,22 @@ public:
 
     // Compute and Set M2L Operators
     ComputeAndSet(MatrixKernel);
+  }
+
+  /*
+   * Copy constructor
+   */
+  FUnifTensorialM2LHandler(const FUnifTensorialM2LHandler& other)
+    : FC(other.FC),
+      CellWidthExtension(other.CellWidthExtension),
+      Dft(), opt_rc(other.opt_rc)
+  {    
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft.buildDFT(steps); 
+ 
+    // copy node_diff
+    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
   }
 
 	~FUnifTensorialM2LHandler()
@@ -358,7 +374,7 @@ public:
 
 
 template <int ORDER, class MatrixKernelClass>
-class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCopyable
+class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
 {
 	enum {order = ORDER,
 				nnodes = TensorTraits<ORDER>::nnodes,
@@ -421,6 +437,25 @@ public:
     // Compute and Set M2L Operators
     ComputeAndSet(MatrixKernel);
   }
+
+  /*
+   * Copy constructor
+   */
+  FUnifTensorialM2LHandler(const FUnifTensorialM2LHandler& other)
+    : FC(other.FC),
+      TreeHeight(other.TreeHeight),
+      RootCellWidth(other.RootCellWidth), 
+      CellWidthExtension(other.CellWidthExtension),
+      Dft(), opt_rc(other.opt_rc)
+  {    
+    // init DFT
+    const int steps[dimfft] = {rc};
+    Dft.buildDFT(steps); 
+ 
+    // copy node_diff
+    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
+  }
+
 
 	~FUnifTensorialM2LHandler()
 	{

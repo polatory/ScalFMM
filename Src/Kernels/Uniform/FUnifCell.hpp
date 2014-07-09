@@ -170,6 +170,21 @@ public:
     return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplexe);
   }
 
+ template <class StreamClass>
+	friend StreamClass& operator<<(StreamClass& output, const FUnifCell<ORDER, NRHS, NLHS, NVALS>&  cell){
+		output <<"  Multipole exp NRHS " << NRHS <<" NVALS "  <<NVALS << " VectorSize "  << cell.getVectorSize() << std::endl;
+		for (int rhs= 0 ; rhs < NRHS ; ++rhs) {
+			const FReal* pole = cell.getMultipole(rhs);
+			for (int val= 0 ; val < NVALS ; ++val) {
+				output<< "      val : " << val << " exp: " ;
+				for (int i= 0 ; i < cell.getVectorSize()  ; ++i) {
+					output<< pole[i] << " ";
+				}
+				output << std::endl;
+			}
+		}
+		return output;
+	}
 
 };
 

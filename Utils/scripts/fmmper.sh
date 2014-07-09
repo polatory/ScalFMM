@@ -33,15 +33,13 @@ dd=$1
 # RUN 1 influence de la taille de la boite sur la precision des calculs
 #    Regarde size, Nx ny nz energie total, dipole et le temps de calcul
 #
-PER_SIZE="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18"
-#
 pwd
 
 FMMPER_EXE=${FMMPER_GEN_EXE}
 rm -f FMM_PER_${DEGRE}.out
 echo  "# PerSize DOMAIN_SIZE  ENERGY"> FMM_PER_${dd}.out
 
-for l in $PER_SIZE
+for l in {0..18}
 do
     OUTPUT=OUTPUT-${dd}-${l}.out
     echo "Running  per = " ${l}
