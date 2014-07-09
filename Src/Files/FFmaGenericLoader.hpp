@@ -56,7 +56,7 @@ public:
 	FPoint getPosition() const{
 		return FPoint(data[0],data[1],data[2]);
 	}
-/*	//Get a FPoint from the position
+	/*	//Get a FPoint from the position
 	FPoint*  getPosition() {
 		return static_cast<FPoint* >(&data);
 	}*/
@@ -481,6 +481,13 @@ public:
 	template <class dataPart>
 	void fillParticle(dataPart *dataToRead, const int N){
 		int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
+		if (otherDataRead < 0){
+			std::cerr << " Error in fFFmaGenericLoader::illParticle(dataPart *dataToRead, const int N)" <<std::endl
+					<< " Wrong number of value to read, Expected (in file) " <<  typeData[1]
+					                                                                      <<  "  asked in structure "	<<(*dataToRead).getReadDataNumber()  <<std::endl;
+			std::exit(EXIT_FAILURE);
+		}
+		std::cout << " typeData[1]  "<< typeData[1]  << "   "<<(*dataToRead).getReadDataNumber() <<" otherDataRead "<<otherDataRead <<std::endl;
 		if(binaryFile && otherDataRead == 0 ){
 			file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
 		}
