@@ -83,8 +83,8 @@ void genDistusage() {
 			<<     "    Distributions   " << std::endl
 			<<     "        Uniform on    " << std::endl
 			<<     "             -unitCube  uniform distribution on unit cube" <<std::endl
-			<<     "             -cuboid  uniform distribution on rectangular cuboid of size  a:a:c" <<std::endl
-			<<     "                     -lengths   a:a:c - default value for R is 1.0:1.0:2.0" <<std::endl
+			<<     "             -cuboid  uniform distribution on rectangular cuboid of size  a:b:c" <<std::endl
+			<<     "                     -lengths   a:b:c - default values are 1.0:1.0:2.0" <<std::endl
 			<<     "             -unitSphere  uniform distribution on unit sphere" <<std::endl
 			<<     "             -sphere  uniform distribution on  sphere of radius given by" <<std::endl
 			<<     "                     -radius  R - default value for R is 2.0" <<std::endl
@@ -163,7 +163,7 @@ int main(int argc, char ** argv){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-lengths",  "1:1:2");
 		FReal A,B,C ;
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
-		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
+		pos = aspectRatio.find(":");		         aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
 		unifRandonPointsOnCube(NbPoints, A,B,C,particles) ;
 		BoxWith = FMath::Max(A,FMath::Max(B,C) );
@@ -232,7 +232,8 @@ int main(int argc, char ** argv){
 	else {
 		name += ".fma";
 	}
-	FFmaGenericWriter  writer(name,binaryMode) ;
+	std::cout << "Write "<< NbPoints <<" Particles in file " << name <<std::endl;
+	FFmaGenericWriter  writer(name) ;
 	writer.writeHeader(Centre,BoxWith, NbPoints, *ppart) ;
 	writer.writeArrayOfParticles(ppart, NbPoints);
 	//

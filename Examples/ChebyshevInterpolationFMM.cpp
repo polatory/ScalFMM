@@ -42,7 +42,7 @@
 #ifdef _OPENMP
 #include "Core/FFmmAlgorithmThread.hpp"
 #else
-#include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 #endif
 
 /**

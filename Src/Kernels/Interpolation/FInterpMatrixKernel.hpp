@@ -18,18 +18,19 @@
 
 #include <stdexcept>
 
-#include "../../Utils/FPoint.hpp"
-#include "../../Utils/FNoCopyable.hpp"
-#include "../../Utils/FMath.hpp"
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FPoint.hpp"
+#include "Utils/FNoCopyable.hpp"
+#include "Utils/FMath.hpp"
+#include "Utils/FBlas.hpp"
 
 // extendable
 enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
                                  ONE_OVER_R_SQUARED,
                                  LENNARD_JONES_POTENTIAL,
                                  R_IJ,
-                                 R_IJK};
-
+                                 R_IJK,
+                                 ONE_OVER_RH
+};
 // probably not extendable :)
 enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
 
@@ -50,7 +51,7 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  * Let there be a kernel \f$K\f$ such that \f$X_i=K_{ij}Y_j\f$
  * with \f$X\f$ the lhs of size NLHS and \f$Y\f$ the rhs of size NRHS. 
  * The table applyTab provides the indices in the reduced storage table 
- * corresponding to the application scheme depicted ealier.
+ * corresponding to the application scheme depicted earlier.
  *
  * PB: BEWARE! Homogeneous matrix kernels do not support cell width extension
  * yet. Is it possible to find a reference width and a scale factor such that
@@ -79,7 +80,7 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelR(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelR(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -111,6 +112,50 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 
 };
 
+/// One over r when the box size is rescaled to 1
+struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
+	  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+	  static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_RH;
+	  static const unsigned int NCMP = 1; //< number of components
+	  static const unsigned int NPV  = 1; //< dim of physical values
+	  static const unsigned int NPOT = 1; //< dim of potentials
+	  static const unsigned int NRHS = 1; //< dim of mult exp
+	  static const unsigned int NLHS = 1; //< dim of loc exp
+
+	FReal LX,LY,LZ ;
+	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : LX(1.0),LY(1.0),LZ(1.0)
+	{	 }
+
+	  FReal evaluate(const FPoint& x, const FPoint& y) const
+	  {
+	    const FPoint xy(x-y);
+	    return FReal(1.) / FMath::Sqrt(LX*xy.getX()*xy.getX() +
+	    		LY*xy.getY()*xy.getY() +
+	    		LZ*xy.getZ()*xy.getZ());
+	  }
+	  	 void setCoeff(const FReal& a,  const FReal& b, const FReal& c)
+	  	 {LX= a ; LY = b ; LZ = c ;}
+	  	  // returns position in reduced storage
+	  	  int getPosition(const unsigned int) const
+	  	  {return 0;}
+
+	  	  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
+	  	  {
+	  	    block[0]=this->evaluate(x,y);
+	  	  }
+
+	  	  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
+	  	  {
+	  	    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
+	  	    return getScaleFactor(CellWidth);
+	  	  }
+
+	  	  FReal getScaleFactor(const FReal CellWidth) const
+	  	  {
+	  	    return FReal(2.) / CellWidth;
+	  	  }
+
+};
 
 
 /// One over r^2
@@ -124,7 +169,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelRR(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelRR(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -168,7 +213,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelLJ(const double = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelLJ(const FReal = 0.0, const unsigned int = 0) {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -257,9 +302,9 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   const unsigned int _i,_j;
 
   // Material Parameters
-  const double _CoreWidth2; // if >0 then kernel is NON homogeneous
+  const FReal _CoreWidth2; // if >0 then kernel is NON homogeneous
 
-  FInterpMatrixKernel_R_IJ(const double CoreWidth = 0.0, const unsigned int d = 0) 
+  FInterpMatrixKernel_R_IJ(const FReal CoreWidth = 0.0, const unsigned int d = 0)
     : _i(indexTab[d]), _j(indexTab[d+NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
@@ -268,7 +313,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   {return applyTab[n];} 
 
   // returns Core Width squared
-  double getCoreWidth2() const
+  FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -278,7 +323,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
                                             xy.getY()*xy.getY() + 
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
-    double ri,rj;
+    FReal ri,rj;
     
     if(_i==0) ri=xy.getX();
     else if(_i==1) ri=xy.getY();
@@ -304,7 +349,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
                                             xy.getY()*xy.getY() + 
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
-    const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
+    const FReal r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
     for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
@@ -354,9 +399,9 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   const unsigned int _i,_j,_k;
 
   // Material Parameters
-  const double _CoreWidth2; // if >0 then kernel is NON homogeneous
+  const FReal _CoreWidth2; // if >0 then kernel is NON homogeneous
 
-  FInterpMatrixKernel_R_IJK(const double CoreWidth = 0.0, const unsigned int d = 0) 
+  FInterpMatrixKernel_R_IJK(const FReal CoreWidth = 0.0, const unsigned int d = 0)
   : _i(indexTab[d]), _j(indexTab[d+NCMP]), _k(indexTab[d+2*NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
@@ -365,7 +410,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   {return applyTab[n];} 
 
   // returns Core Width squared
-  double getCoreWidth2() const
+  FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
   FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -378,7 +423,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
                                             xy.getZ()*xy.getZ() + _CoreWidth2);
     const FReal one_over_r2 = one_over_r*one_over_r;
     const FReal one_over_r3 = one_over_r2*one_over_r;
-    double ri,rj,rk;
+    FReal ri,rj,rk;
 
     if(_i==0) ri=xy.getX();
     else if(_i==1) ri=xy.getY();
@@ -425,7 +470,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
     const FReal one_over_r2 = one_over_r*one_over_r;
     const FReal one_over_r3 = one_over_r2*one_over_r;
 
-    const double r[3] = {xy.getX(),xy.getY(),xy.getZ()};
+    const FReal r[3] = {xy.getX(),xy.getY(),xy.getZ()};
 
     for(unsigned int d=0;d<NCMP;++d){
       unsigned int i = indexTab[d];
@@ -484,7 +529,7 @@ public:
                          const unsigned int _ny, const FPoint *const _py,
                          const FReal *const _weights = NULL,
                          const unsigned int idxK = 0,
-                         const double matparam = 0.0)
+                         const FReal matparam = 0.0)
     : Kernel(matparam,idxK),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
 
   void operator()(const unsigned int xbeg, const unsigned int xend,

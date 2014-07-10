@@ -50,7 +50,7 @@ protected:
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
   /// Needed for P2P operator
-  const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
+  /*const*/ FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
   /// Height of the entire oct-tree
   const unsigned int TreeHeight;
   /// Corner of oct-tree box
@@ -63,7 +63,7 @@ protected:
   const FReal BoxWidthExtension;
    
   /// Parameter to pass to matrix kernel (material specific or anything)
-  const double MatParam;
+  const FReal MatParam;
 
   /**
    * Compute center of leaf cell from its tree coordinate.
@@ -87,7 +87,7 @@ public:
                       const FReal inBoxWidth,
                       const FPoint& inBoxCenter,
                       const FReal inBoxWidthExtension = 0.0,
-                      const double inMatParam = 0.0)
+                      const FReal inMatParam = 0.0)
     : Interpolator(new InterpolatorClass(inTreeHeight,
                                          inBoxWidth,
                                          inBoxWidthExtension)),
@@ -108,6 +108,10 @@ public:
 
   const InterpolatorClass * getPtrToInterpolator() const
   { return Interpolator.getPtr(); }
+
+   MatrixKernelClass  *  getPtrMatrixKernel()
+  {return   MatrixKernel; }
+
 
 
   virtual void P2M(CellClass* const LeafCell,

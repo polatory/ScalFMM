@@ -1,7 +1,22 @@
+// ===================================================================================
+// Copyright ScalFmm 2014 INRIA
+//
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
+// ===================================================================================
 #ifndef FGENERATEDISTRIBUTION_HPP
 #define FGENERATEDISTRIBUTION_HPP
 
-
+// @author O. Coulaud
 
 #include <cstdlib>
 #include <ctime>
@@ -54,7 +69,7 @@ void unifRandonPointsOnUnitCube(const int N , FReal * points) {
 //! \param Lz the the Z-length of the  cube
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //! \example  generateDistributions.cpp
-void unifRandonPointsOnCube(const int N , const FReal Lx,  const FReal Ly,  const FReal Lz, FReal * points) {
+void unifRandonPointsOnCube(const int& N , const FReal& Lx,  const FReal &Ly,  const FReal& Lz, FReal * points) {
 	//
 	unifRandonPointsOnUnitCube(N , points) ;
 	int j =0 ;

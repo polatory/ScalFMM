@@ -29,6 +29,25 @@ struct DirectInteractionComputer<ONE_OVER_R, 1>
   }
 };
 
+//! Specialization for Laplace potential on Non uniform domain
+template <>
+struct DirectInteractionComputer<ONE_OVER_RH, 1>
+{
+  template <typename ContainerClass>
+  static void P2P( ContainerClass* const FRestrict TargetParticles,
+                   ContainerClass* const NeighborSourceParticles[27]){
+    FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
+  }
+//
+  template <typename ContainerClass>
+  static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                         ContainerClass* const inNeighbors[27],
+                         const int inSize){
+    FP2P::FullRemote(inTargets,inNeighbors,inSize);
+  }
+};
+
+
 
 /*! Specialization for Lennard-Jones potential */
 template <>
