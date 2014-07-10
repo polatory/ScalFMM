@@ -28,8 +28,9 @@ enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
                                  ONE_OVER_R_SQUARED,
                                  LENNARD_JONES_POTENTIAL,
                                  R_IJ,
-                                 R_IJK};
-
+                                 R_IJK,
+                                 ONE_OVER_RH
+};
 // probably not extendable :)
 enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
 
@@ -50,7 +51,7 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  * Let there be a kernel \f$K\f$ such that \f$X_i=K_{ij}Y_j\f$
  * with \f$X\f$ the lhs of size NLHS and \f$Y\f$ the rhs of size NRHS. 
  * The table applyTab provides the indices in the reduced storage table 
- * corresponding to the application scheme depicted ealier.
+ * corresponding to the application scheme depicted earlier.
  *
  * PB: BEWARE! Homogeneous matrix kernels do not support cell width extension
  * yet. Is it possible to find a reference width and a scale factor such that
@@ -113,10 +114,18 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 
 /// One over r when the box size is rescaled to 1
 struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
+	  static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
+	  static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_RH;
+	  static const unsigned int NCMP = 1; //< number of components
+	  static const unsigned int NPV  = 1; //< dim of physical values
+	  static const unsigned int NPOT = 1; //< dim of potentials
+	  static const unsigned int NRHS = 1; //< dim of mult exp
+	  static const unsigned int NLHS = 1; //< dim of loc exp
+
 	FReal LX,LY,LZ ;
-	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : FInterpMatrixKernelR(),
-			LX(1.0),LY(1.0),LZ(1.0)
-	{}
+	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : LX(1.0),LY(1.0),LZ(1.0)
+	{	 }
+
 	  FReal evaluate(const FPoint& x, const FPoint& y) const
 	  {
 	    const FPoint xy(x-y);
@@ -126,6 +135,26 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	  }
 	  	 void setCoeff(const FReal& a,  const FReal& b, const FReal& c)
 	  	 {LX= a ; LY = b ; LZ = c ;}
+	  	  // returns position in reduced storage
+	  	  int getPosition(const unsigned int) const
+	  	  {return 0;}
+
+	  	  void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
+	  	  {
+	  	    block[0]=this->evaluate(x,y);
+	  	  }
+
+	  	  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
+	  	  {
+	  	    const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
+	  	    return getScaleFactor(CellWidth);
+	  	  }
+
+	  	  FReal getScaleFactor(const FReal CellWidth) const
+	  	  {
+	  	    return FReal(2.) / CellWidth;
+	  	  }
+
 };
 
 

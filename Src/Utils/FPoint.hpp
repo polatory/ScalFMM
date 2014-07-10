@@ -41,7 +41,7 @@ private:
 public:	
 	/** Default constructor (sets position to 0/0/0) */
 	FPoint(){
-		data[0] = data[1] = data[2] = FReal(0);
+		data[0] = data[1] = data[2] = FReal(0.0);
 	}
 
 	/** Constructor from an array */
@@ -243,7 +243,7 @@ public:
 
 	/**
 	 * Affect to all dim the other position
-	 * @param other the value to afect
+	 * @param other the value to affect
 	 * @return the current object after being affected
 	 */
 	FPoint& operator+=(const FPoint& other){
@@ -252,10 +252,20 @@ public:
 		this->data[2] += other.data[2];
 		return *this;
 	}
-
+	/**
+	 * Divide to all dim the other position
+	 * @param other the value to affect
+	 * @return the current object after being affected
+	 */
+	FPoint& operator/=(const FPoint& other){
+		this->data[0] /= other.data[0];
+		this->data[1] /= other.data[1];
+		this->data[2] /= other.data[2];
+		return *this;
+	}
 	/**
 	 * Affect to all dim the other position
-	 * @param other the value to afect
+	 * @param other the value to affect
 	 * @return the current object after being affected
 	 */
 	FPoint& operator*=(const FReal value){
@@ -289,7 +299,7 @@ public:
 
 	/**
 	 * Operator F3Position minus F3Position
-	 * This substract one from anther
+	 * This subtract one from anther
 	 * @param inPosition the position to reduce
 	 * @param inOther the position to decrease/substract inPosition
 	 * @return the resulting position
@@ -300,7 +310,7 @@ public:
 
 	/**
 	 * Operator F3Position plus F3Position
-	 * This substract one from anther
+	 * This subtract one from anther
 	 * @param inPosition the position to reduce
 	 * @param inOther the position to increase inPosition
 	 * @return the resulting position
@@ -308,6 +318,7 @@ public:
 	friend inline FPoint operator+(const FPoint& inPosition, const FPoint& inOther){
 		return FPoint(inPosition.data[0] + inOther.data[0], inPosition.data[1] + inOther.data[1], inPosition.data[2] + inOther.data[2]);
 	}
+
 
 	/**
 	 * Operator stream FPoint to std::ostream
