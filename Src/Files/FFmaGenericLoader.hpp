@@ -56,16 +56,20 @@ public:
 	FPoint getPosition() const{
 		return FPoint(data[0],data[1],data[2]);
 	}
-	/*	//Get a FPoint from the position
-	FPoint*  getPosition() {
-		return static_cast<FPoint* >(&data);
-	}*/
-	//Set the position from a FPoint
+	/// Set the position from a FPoint
 	void setPosition(FPoint & inPoint){
 		data[0] = inPoint.getX();
 		data[1] = inPoint.getY();
 		data[2] = inPoint.getZ();
 	}
+
+	//Set the position from a three FReal values
+	void setPosition(const FReal& inX, const  FReal& inY, const  FReal &inZ){
+		data[0] = inX;
+		data[1] = inY;
+		data[2] = inZ;
+	}
+
 
 	//Get a FReal from the physicalValue
 	FReal getPhysicalValue() const{
@@ -75,6 +79,10 @@ public:
 	//Get a ptr to be able to set the physicalValue
 	FReal* setPhysicalValue() {
 		return &data[3];
+	}
+	//Set the physicalValue
+	void  setPhysicalValue(const  FReal& Q) {
+		data[3] = Q;
 	}
 
 	//Get a FReal from the potential
@@ -88,7 +96,11 @@ public:
 		FAssertLF(WRITE>4,"Cannot set Potential with WRITE<=4");
 		return &data[4];
 	}
-
+	// Set the potential
+	void  setPotential(const FReal& P) {
+		FAssertLF(WRITE>4,"Cannot set Potential with WRITE<=4");
+		data[4] = P;
+	}
 	//Get a ptr to read the forces
 	FReal* getForces() {
 		FAssertLF(WRITE>7,"Cannot access to forces[] with READ<=8");
@@ -100,6 +112,14 @@ public:
 		FAssertLF(WRITE>7,"Cannot set Forces[] with WRITE<=7");
 		return &data[5];
 	}
+	//Set the forces from three values
+	void setForces(const FReal& inFX, const FReal& inFY, const FReal &inFZ){
+		FAssertLF(WRITE>7,"Cannot set Forces[] with WRITE<=7");
+		data[5] = inFX;
+		data[6] = inFY;
+		data[7] = inFZ;
+	}
+
 
 	//Get directly a ptr to the data
 	FReal  * getPtrFirstData(){
