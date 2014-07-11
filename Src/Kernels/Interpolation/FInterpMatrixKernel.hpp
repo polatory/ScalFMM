@@ -121,20 +121,21 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	  static const unsigned int NPOT = 1; //< dim of potentials
 	  static const unsigned int NRHS = 1; //< dim of mult exp
 	  static const unsigned int NLHS = 1; //< dim of loc exp
+	  FReal LX,LY,LZ ;
 
-	FReal LX,LY,LZ ;
 	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : LX(1.0),LY(1.0),LZ(1.0)
 	{	 }
 
 	  FReal evaluate(const FPoint& x, const FPoint& y) const
 	  {
 	    const FPoint xy(x-y);
+	    std::cout << "Lx " <<LX <<std::endl ;
 	    return FReal(1.) / FMath::Sqrt(LX*xy.getX()*xy.getX() +
 	    		LY*xy.getY()*xy.getY() +
 	    		LZ*xy.getZ()*xy.getZ());
 	  }
 	  	 void setCoeff(const FReal& a,  const FReal& b, const FReal& c)
-	  	 {LX= a ; LY = b ; LZ = c ;}
+	  	 {LX= a*a ; LY = b*b ; LZ = c *c;}
 	  	  // returns position in reduced storage
 	  	  int getPosition(const unsigned int) const
 	  	  {return 0;}
