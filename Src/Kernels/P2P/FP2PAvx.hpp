@@ -24,73 +24,74 @@ namespace FP2P{
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-    //    std::cout << "   OK AVX " << std::endl;
-    const __m256d mOne = _mm256_set1_pd(1.0);
 
+    const __m256d mOne = _mm256_set1_pd(1.0);
+    //P2P between target cells and others ones
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
       if( inNeighbors[idxNeighbors] ){
-    	const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+3)/4;
-    	const __m256d*const sourcesPhysicalValues = (const __m256d*)inNeighbors[idxNeighbors]->getPhysicalValues();
-    	const __m256d*const sourcesX = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[0];
-    	const __m256d*const sourcesY = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[1];
-    	const __m256d*const sourcesZ = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[2];
-    	__m256d*const sourcesForcesX = (__m256d*)inNeighbors[idxNeighbors]->getForcesX();
-    	__m256d*const sourcesForcesY = (__m256d*)inNeighbors[idxNeighbors]->getForcesY();
-    	__m256d*const sourcesForcesZ = (__m256d*)inNeighbors[idxNeighbors]->getForcesZ();
-    	__m256d*const sourcesPotentials = (__m256d*)inNeighbors[idxNeighbors]->getPotentials();
+	const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+3)/4;
+	const __m256d*const sourcesPhysicalValues = (const __m256d*)inNeighbors[idxNeighbors]->getPhysicalValues();
+	const __m256d*const sourcesX = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[0];
+	const __m256d*const sourcesY = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[1];
+	const __m256d*const sourcesZ = (const __m256d*)inNeighbors[idxNeighbors]->getPositions()[2];
+	__m256d*const sourcesForcesX = (__m256d*)inNeighbors[idxNeighbors]->getForcesX();
+	__m256d*const sourcesForcesY = (__m256d*)inNeighbors[idxNeighbors]->getForcesY();
+	__m256d*const sourcesForcesZ = (__m256d*)inNeighbors[idxNeighbors]->getForcesZ();
+	__m256d*const sourcesPotentials = (__m256d*)inNeighbors[idxNeighbors]->getPotentials();
 
-    	for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-    	  const __m256d tx = _mm256_broadcast_sd(&targetsX[idxTarget]);
-    	  const __m256d ty = _mm256_broadcast_sd(&targetsY[idxTarget]);
-    	  const __m256d tz = _mm256_broadcast_sd(&targetsZ[idxTarget]);
-    	  const __m256d tv = _mm256_broadcast_sd(&targetsPhysicalValues[idxTarget]);
-    	  __m256d  tfx = _mm256_setzero_pd();
-    	  __m256d  tfy = _mm256_setzero_pd();
-    	  __m256d  tfz = _mm256_setzero_pd();
-    	  __m256d  tpo = _mm256_setzero_pd();
+	for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+	  const __m256d tx = _mm256_broadcast_sd(&targetsX[idxTarget]);
+	  const __m256d ty = _mm256_broadcast_sd(&targetsY[idxTarget]);
+	  const __m256d tz = _mm256_broadcast_sd(&targetsZ[idxTarget]);
+	  const __m256d tv = _mm256_broadcast_sd(&targetsPhysicalValues[idxTarget]);
+	  __m256d  tfx = _mm256_setzero_pd();
+	  __m256d  tfy = _mm256_setzero_pd();
+	  __m256d  tfz = _mm256_setzero_pd();
+	  __m256d  tpo = _mm256_setzero_pd();
 
-    	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-    	    __m256d dx = sourcesX[idxSource] - tx;
-    	    __m256d dy = sourcesY[idxSource] - ty;
-    	    __m256d dz = sourcesZ[idxSource] - tz;
+	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+	    __m256d dx = sourcesX[idxSource] - tx;
+	    __m256d dy = sourcesY[idxSource] - ty;
+	    __m256d dz = sourcesZ[idxSource] - tz;
 
-    	    __m256d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
-    	    const __m256d inv_distance = _mm256_sqrt_pd(inv_square_distance);
+	    __m256d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
+	    const __m256d inv_distance = _mm256_sqrt_pd(inv_square_distance);
 
-    	    inv_square_distance *= inv_distance;
-    	    inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
+	    inv_square_distance *= inv_distance;
+	    inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
-    	    dx *= inv_square_distance;
-    	    dy *= inv_square_distance;
-    	    dz *= inv_square_distance;
+	    dx *= inv_square_distance;
+	    dy *= inv_square_distance;
+	    dz *= inv_square_distance;
 
-    	    tfx += dx;
-    	    tfy += dy;
-    	    tfz += dz;
-    	    tpo += inv_distance * sourcesPhysicalValues[idxSource];
+	    tfx += dx;
+	    tfy += dy;
+	    tfz += dz;
+	    tpo += inv_distance * sourcesPhysicalValues[idxSource];
 
-    	    sourcesForcesX[idxSource] -= dx;
-    	    sourcesForcesY[idxSource] -= dy;
-    	    sourcesForcesZ[idxSource] -= dz;
-    	    sourcesPotentials[idxSource] += inv_distance * tv;
-    	  }
+	    sourcesForcesX[idxSource] -= dx;
+	    sourcesForcesY[idxSource] -= dy;
+	    sourcesForcesZ[idxSource] -= dz;
+	    sourcesPotentials[idxSource] += inv_distance * tv;
+	  }
 
-    	  __attribute__((aligned(32))) double buffer[4];
+	  __attribute__((aligned(32))) double buffer[4];
 
-    	  _mm256_store_pd(buffer, tfx);
-    	  targetsForcesX[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
+	  _mm256_store_pd(buffer, tfx);
+	  targetsForcesX[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
 
-    	  _mm256_store_pd(buffer, tfy);
-    	  targetsForcesY[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
+	  _mm256_store_pd(buffer, tfy);
+	  targetsForcesY[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
 
-    	  _mm256_store_pd(buffer, tfz);
-    	  targetsForcesZ[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
+	  _mm256_store_pd(buffer, tfz);
+	  targetsForcesZ[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
 
-    	  _mm256_store_pd(buffer, tpo);
-    	  targetsPotentials[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
-    	}
+	  _mm256_store_pd(buffer, tpo);
+	  targetsPotentials[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
+	}
       }
     }
+    //P2P mutual (between targets cells and its own parts 4 by 4)
 
     {
       const int nbParticlesSources = (nbParticlesTargets+3)/4;
@@ -104,83 +105,87 @@ namespace FP2P{
       __m256d*const sourcesPotentials = (__m256d*)targetsPotentials;
 
       for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-    	const __m256d tx = _mm256_broadcast_sd(&targetsX[idxTarget]);
-    	const __m256d ty = _mm256_broadcast_sd(&targetsY[idxTarget]);
-    	const __m256d tz = _mm256_broadcast_sd(&targetsZ[idxTarget]);
-    	const __m256d tv = _mm256_broadcast_sd(&targetsPhysicalValues[idxTarget]);
-    	__m256d  tfx = _mm256_setzero_pd();
-    	__m256d  tfy = _mm256_setzero_pd();
-    	__m256d  tfz = _mm256_setzero_pd();
-    	__m256d  tpo = _mm256_setzero_pd();
+	const __m256d tx = _mm256_broadcast_sd(&targetsX[idxTarget]);
+	const __m256d ty = _mm256_broadcast_sd(&targetsY[idxTarget]);
+	const __m256d tz = _mm256_broadcast_sd(&targetsZ[idxTarget]);
+	const __m256d tv = _mm256_broadcast_sd(&targetsPhysicalValues[idxTarget]);
+	__m256d  tfx = _mm256_setzero_pd();
+	__m256d  tfy = _mm256_setzero_pd();
+	__m256d  tfz = _mm256_setzero_pd();
+	__m256d  tpo = _mm256_setzero_pd();
 
-    	for(int idxSource = (idxTarget+2)/2 ; idxSource < nbParticlesSources ; ++idxSource){
-    	  __m256d dx = sourcesX[idxSource] - tx;
-    	  __m256d dy = sourcesY[idxSource] - ty;
-    	  __m256d dz = sourcesZ[idxSource] - tz;
+	for(int idxSource = (idxTarget+4)/4 ; idxSource < nbParticlesSources ; ++idxSource){
+	  __m256d dx = sourcesX[idxSource] - tx;
+	  __m256d dy = sourcesY[idxSource] - ty;
+	  __m256d dz = sourcesZ[idxSource] - tz;
 
-    	  __m256d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
-    	  const __m256d inv_distance = _mm256_sqrt_pd(inv_square_distance);
+	  __m256d inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
+	  const __m256d inv_distance = _mm256_sqrt_pd(inv_square_distance);
 
-    	  inv_square_distance *= inv_distance;
-    	  inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
+	  inv_square_distance *= inv_distance;
+	  inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
-    	  dx *= inv_square_distance;
-    	  dy *= inv_square_distance;
-    	  dz *= inv_square_distance;
+	  dx *= inv_square_distance;
+	  dy *= inv_square_distance;
+	  dz *= inv_square_distance;
 
-    	  tfx += dx;
-    	  tfy += dy;
-    	  tfz += dz;
-    	  tpo += inv_distance * sourcesPhysicalValues[idxSource];
+	  tfx += dx;
+	  tfy += dy;
+	  tfz += dz;
+	  tpo += inv_distance * sourcesPhysicalValues[idxSource];
 
-    	  sourcesForcesX[idxSource] -= dx;
-    	  sourcesForcesY[idxSource] -= dy;
-    	  sourcesForcesZ[idxSource] -= dz;
-    	  sourcesPotentials[idxSource] += inv_distance * tv;
-    	}
+	  sourcesForcesX[idxSource] -= dx;
+	  sourcesForcesY[idxSource] -= dy;
+	  sourcesForcesZ[idxSource] -= dz;
+	  sourcesPotentials[idxSource] += inv_distance * tv;
+	}
 
 	__attribute__((aligned(32))) double buffer[4];
-	
+
 	_mm256_store_pd(buffer, tfx);
 	targetsForcesX[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
-	
+
 	_mm256_store_pd(buffer, tfy);
 	targetsForcesY[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
-	
+
 	_mm256_store_pd(buffer, tfz);
 	targetsForcesZ[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
-	
+
 	_mm256_store_pd(buffer, tpo);
 	targetsPotentials[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3];
-	
+
       }
     }
 
-    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; idxTarget += 2){
-      const int idxSource = idxTarget + 1;
-      FReal dx = targetsX[idxSource] - targetsX[idxTarget];
-      FReal dy = targetsY[idxSource] - targetsY[idxTarget];
-      FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-      FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-      const FReal inv_distance = FMath::Sqrt(inv_square_distance);
+    //P2P with the last ones
+    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; /*idxTarget += 4*/idxTarget++){
+	for(int idxS = 1 ; idxS < 4-(idxTarget%4) ; ++idxS){
+	    int idxSource = idxTarget + idxS;
+	    FReal dx = targetsX[idxSource] - targetsX[idxTarget];
+	    FReal dy = targetsY[idxSource] - targetsY[idxTarget];
+	    FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-      inv_square_distance *= inv_distance;
-      inv_square_distance *= targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource];
+	    FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
+	    const FReal inv_distance = FMath::Sqrt(inv_square_distance);
 
-      dx *= inv_square_distance;
-      dy *= inv_square_distance;
-      dz *= inv_square_distance;
+	    inv_square_distance *= inv_distance;
+	    inv_square_distance *= targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource];
 
-      targetsForcesX[idxTarget] += dx;
-      targetsForcesY[idxTarget] += dy;
-      targetsForcesZ[idxTarget] += dz;
-      targetsPotentials[idxTarget] += inv_distance * targetsPhysicalValues[idxSource];
+	    dx *= inv_square_distance;
+	    dy *= inv_square_distance;
+	    dz *= inv_square_distance;
 
-      targetsForcesX[idxSource] -= dx;
-      targetsForcesY[idxSource] -= dy;
-      targetsForcesZ[idxSource] -= dz;
-      targetsPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
+	    targetsForcesX[idxTarget] += dx;
+	    targetsForcesY[idxTarget] += dy;
+	    targetsForcesZ[idxTarget] += dz;
+	    targetsPotentials[idxTarget] += inv_distance * targetsPhysicalValues[idxSource];
+
+	    targetsForcesX[idxSource] -= dx;
+	    targetsForcesY[idxSource] -= dy;
+	    targetsForcesZ[idxSource] -= dz;
+	    targetsPotentials[idxSource] += inv_distance * targetsPhysicalValues[idxTarget];
+	}
     }
   }
 
@@ -261,7 +266,7 @@ namespace FP2P{
 template <class ContainerClass>
   static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
 			 const int limiteNeighbors){
-    
+
     const int nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
     const FReal*const targetsX = inTargets->getPositions()[0];
@@ -367,7 +372,7 @@ template <class ContainerClass>
 
 	  __m256 inv_square_distance = mOne/(dx*dx + dy*dy + dz*dz);
 	  const __m256 inv_distance  = _mm256_rsqrt_ps(inv_square_distance);
-	  
+
 	  inv_square_distance *= inv_distance;
 	  inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
@@ -432,7 +437,7 @@ template <class ContainerClass>
     }
 
   }
-  
+
   template <class ContainerClass>
   static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
 			 const int limiteNeighbors){
@@ -486,18 +491,18 @@ template <class ContainerClass>
 	    tfz += dz;
 	    tpo += inv_distance * sourcesPhysicalValues[idxSource];
 	  }
-	  
+
 	  __attribute__((aligned(32))) float buffer[8];
-	  
+
 	  _mm256_store_ps(buffer, tfx);
 	  targetsForcesX[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7];
-	  
+
 	  _mm256_store_ps(buffer, tfy);
 	  targetsForcesY[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7];
-	  
+
 	  _mm256_store_ps(buffer, tfz);
 	  targetsForcesZ[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7];
-	  
+
 	  _mm256_store_ps(buffer, tpo);
 	  targetsPotentials[idxTarget] += buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7];
 	}
