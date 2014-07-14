@@ -29,6 +29,7 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 #include "Kernels/P2P/FP2P.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 
 //
@@ -118,6 +119,9 @@ int main(int argc, char ** argv){
 	// ----------------------------------------------------------------------------------------------------------
 	//                                   COMPUTATION
 	// ----------------------------------------------------------------------------------------------------------
+  // interaction kernel evaluator
+  typedef FInterpMatrixKernelR MatrixKernelClass;
+  const MatrixKernelClass MatrixKernel;
 	FReal denergy = 0.0;
 	//
 	//  computation
@@ -142,7 +146,7 @@ int main(int argc, char ** argv){
 								particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
 								particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
 								&particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
-								&particles[idxTarget].setForces()[2],particles[idxTarget].setPotential());
+								&particles[idxTarget].setForces()[2],particles[idxTarget].setPotential(),&MatrixKernel);
 					}
 				}
 			} // end for

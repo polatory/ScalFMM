@@ -279,6 +279,8 @@ int main(int argc, char ** argv){
 
 		particlesDirect = new EwalParticle[loader->getNumberOfParticles()];
 
+    const FInterpMatrixKernelR MatrixKernel;
+
 		FReal denergy = 0.0;
 		FMath::FAccurater dfx, dfy, dfz ;
 		//
@@ -305,7 +307,7 @@ int main(int argc, char ** argv){
 							part.position.getX(), part.position.getY(),
 							part.position.getZ(),part.physicalValue,
 							&part.forces[0],&part.forces[1],
-							&part.forces[2],&part.potential);
+							&part.forces[2],&part.potential,&MatrixKernel);
 				}
 			}
 			//
@@ -333,7 +335,7 @@ int main(int argc, char ** argv){
 								FP2P::NonMutualParticles(
 										source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
 										part.position.getX(), part.position.getY(),part.position.getZ(),part.physicalValue,
-										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential
+										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential,&MatrixKernel
 								);
 							}
 							//						std::cout <<std::endl<<std::endl<<std::endl;

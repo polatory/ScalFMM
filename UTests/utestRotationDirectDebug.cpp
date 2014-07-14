@@ -14,19 +14,20 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Rotation/FRotationOriginalKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/Rotation/FRotationOriginalKernel.hpp"
 
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 
@@ -108,6 +109,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
                 // Run direct computation
    //             Print("Direct...");
+                const FInterpMatrixKernelR MatrixKernel;
                 for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
                     for(int idxOther = idxTarget + 1 ; idxOther < nbParticles ; ++idxOther){
                         FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -117,7 +119,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
                                         particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                         particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                         &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                        &particles[idxOther].forces[2],&particles[idxOther].potential);
+                                              &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
                     }
                 }
 

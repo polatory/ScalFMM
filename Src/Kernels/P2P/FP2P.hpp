@@ -10,84 +10,105 @@
  */
 namespace FP2P {
 
-  /** P2P mutual interaction,
+  /**
+   * @brief MutualParticles (generic version) 
+   * P2P mutual interaction,
    * this function computes the interaction for 2 particles.
    *
    * Formulas are:
    * \f[
-   * F = q_1 * q_2 / r^2
-   * P_1 = q_2 / r ; P_2 = q_1 / r
+   * F = - q_1 * q_2 * grad K{12}
+   * P_1 = q_2 * K{12} ; P_2 = q_1 * K_{12}
    * \f]
-   * In details :
-   * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
+   * In details for \f$K(x,y)=1/|x-y|=1/r\f$ :
+   * \f$ P_1 = \frac{ q_2 }{ r } \f$
+   * \f$ P_2 = \frac{ q_1 }{ r } \f$
+   * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } \f$
+   *
+   * @param sourceX
+   * @param sourceY
+   * @param sourceZ
+   * @param sourcePhysicalValue
+   * @param targetX
+   * @param targetY
+   * @param targetZ
+   * @param targetPhysicalValue
+   * @param targetForceX
+   * @param targetForceY
+   * @param targetForceZ
+   * @param targetPotential
+   * @param MatrixKernel pointer to an interaction kernel evaluator
    */
+  template <typename MatrixKernelClass>
   inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-			      FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-			      const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-			      FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential
-			      ){
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
+                              FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                              const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                              FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential, 
+                              const MatrixKernelClass *const MatrixKernel){
 
-    FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-    FReal inv_distance = FMath::Sqrt(inv_square_distance);
+    // Compute kernel of interaction...
+    const FPoint sourcePoint(sourceX,sourceY,sourceZ);
+    const FPoint targetPoint(targetX,targetY,targetZ);
+    FReal Kxy[1];
+    FReal dKxy[1][3];
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+    FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
-    inv_square_distance *= inv_distance;
-    inv_square_distance *= targetPhysicalValue * sourcePhysicalValue;
+    (*targetForceX) += dKxy[0][0] * coef;
+    (*targetForceY) += dKxy[0][1] * coef;
+    (*targetForceZ) += dKxy[0][2] * coef;
+    (*targetPotential) += ( Kxy[0] * sourcePhysicalValue );
 
-    dx *= inv_square_distance;
-    dy *= inv_square_distance;
-    dz *= inv_square_distance;
-
-    *targetForceX += dx;
-    *targetForceY += dy;
-    *targetForceZ += dz;
-    *targetPotential += ( inv_distance * sourcePhysicalValue );
-
-    *sourceForceX -= dx;
-    *sourceForceY -= dy;
-    *sourceForceZ -= dz;
-    *sourcePotential += ( inv_distance * targetPhysicalValue );
+    (*sourceForceX) -= dKxy[0][0] * coef;
+    (*sourceForceY) -= dKxy[0][1] * coef;
+    (*sourceForceZ) -= dKxy[0][2] * coef;
+    (*sourcePotential) += ( Kxy[0] * targetPhysicalValue );
   }
 
-  /** P2P mutual interaction,
+  /**
+   * @brief NonMutualParticles (generic version) 
+   * P2P mutual interaction,
    * this function computes the interaction for 2 particles.
    *
    * Formulas are:
    * \f[
-   * F = q_1 * q_2 / r^2
-   * P_1 = q_2 / r ; P_2 = q_1 / r
+   * F = - q_1 * q_2 * grad K{12}
+   * P_1 = q_2 * K{12} ; P_2 = q_1 * K_{12}
    * \f]
-   * In details :
-   * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } = \Delta_x * F \f$
+   * In details for \f$K(x,y)=1/|x-y|=1/r\f$ :
+   * \f$ P_1 = \frac{ q_2 }{ r } \f$
+   * \f$ P_2 = \frac{ q_1 }{ r } \f$
+   * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } \f$
    */
+  template <typename MatrixKernelClass>
   inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-				 const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-				 FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential){
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
+                                 const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                                 FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential, 
+                                 const MatrixKernelClass *const MatrixKernel){
+ 
+    // Compute kernel of interaction...
+    const FPoint sourcePoint(sourceX,sourceY,sourceZ);
+    const FPoint targetPoint(targetX,targetY,targetZ);
+    FReal Kxy[1];
+    FReal dKxy[1][3];
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+    FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
-    FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-    FReal inv_distance = FMath::Sqrt(inv_square_distance);
-
-    inv_square_distance *= inv_distance;
-    inv_square_distance *= targetPhysicalValue * sourcePhysicalValue;
-
-    dx *= inv_square_distance;
-    dy *= inv_square_distance;
-    dz *= inv_square_distance;
-
-    *targetForceX += dx;
-    *targetForceY += dy;
-    *targetForceZ += dz;
-    *targetPotential += ( inv_distance * sourcePhysicalValue );
+    (*targetForceX) += dKxy[0][0] * coef;
+    (*targetForceY) += dKxy[0][1] * coef;
+    (*targetForceZ) += dKxy[0][2] * coef;
+    (*targetPotential) += ( Kxy[0] * sourcePhysicalValue );
   }
 
-  template <class ContainerClass>
-  inline void FullMutualLJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			   const int limiteNeighbors){
+
+
+  /*
+   * FullMutual (generic version)
+   */
+  template <class ContainerClass, typename MatrixKernelClass>
+  inline void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                         const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+
 
     const int nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
@@ -101,89 +122,72 @@ namespace FP2P {
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
       for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-	if( inNeighbors[idxNeighbors] ){
-	  const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-	  const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-	  const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-	  const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-	  const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-	  FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
-	  FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
-	  FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
-	  FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
+        if( inNeighbors[idxNeighbors] ){
+          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+          const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
+          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+          FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
+          FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
+          FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
+          FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
 
-	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-	    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-	    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-	    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
-	    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-	    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
-	    FReal inv_distance_pow6 = inv_distance_pow3 * inv_distance_pow3;
-	    FReal inv_distance_pow8 = inv_distance_pow6 * inv_distance_pow2;
+            // Compute kernel of interaction and its derivative
+            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+            FReal Kxy[1];
+            FReal dKxy[1][3];
+            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+            FReal coef = (targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-	    FReal coef = ((targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource])
-			  * (FReal(12.0)*inv_distance_pow6*inv_distance_pow8 - FReal(6.0)*inv_distance_pow8));
-	    FReal potentialCoef = (inv_distance_pow6*inv_distance_pow6-inv_distance_pow6);
+            targetsForcesX[idxTarget] += dKxy[0][0] * coef;
+            targetsForcesY[idxTarget] += dKxy[0][1] * coef;
+            targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
+            targetsPotentials[idxTarget] += ( Kxy[0] * sourcesPhysicalValues[idxSource] );
 
-	    dx *= coef;
-	    dy *= coef;
-	    dz *= coef;
-
-	    targetsForcesX[idxTarget] += dx;
-	    targetsForcesY[idxTarget] += dy;
-	    targetsForcesZ[idxTarget] += dz;
-	    targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
-
-	    sourcesForcesX[idxSource] -= dx;
-	    sourcesForcesY[idxSource] -= dy;
-	    sourcesForcesZ[idxSource] -= dz;
-	    sourcesPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
-	  }
-	}
+            sourcesForcesX[idxSource] -= dKxy[0][0] * coef;
+            sourcesForcesY[idxSource] -= dKxy[0][1] * coef;
+            sourcesForcesZ[idxSource] -= dKxy[0][2] * coef;
+            sourcesPotentials[idxSource] += ( Kxy[0] * targetsPhysicalValues[idxTarget] );
+          }
+        }
       }
     }
 
     for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
       for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
-	FReal dx = targetsX[idxSource] - targetsX[idxTarget];
-	FReal dy = targetsY[idxSource] - targetsY[idxTarget];
-	FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-	FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-	FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
-	FReal inv_distance_pow6 = inv_distance_pow3 * inv_distance_pow3;
-	FReal inv_distance_pow8 = inv_distance_pow6 * inv_distance_pow2;
+        // Compute kernel of interaction...
+        const FPoint sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
+        const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+        FReal Kxy[1];
+        FReal dKxy[1][3];
+        MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+        FReal coef = (targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
 
-	FReal coef = ((targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource])
-		      * (FReal(12.0)*inv_distance_pow6*inv_distance_pow8 - FReal(6.0)*inv_distance_pow8));
-	FReal potentialCoef = (inv_distance_pow6*inv_distance_pow6-inv_distance_pow6);
+        targetsForcesX[idxTarget] += dKxy[0][0] * coef;
+        targetsForcesY[idxTarget] += dKxy[0][1] * coef;
+        targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
+        targetsPotentials[idxTarget] += ( Kxy[0] * targetsPhysicalValues[idxSource] );
 
-	dx *= coef;
-	dy *= coef;
-	dz *= coef;
-
-	targetsForcesX[idxTarget] += dx;
-	targetsForcesY[idxTarget] += dy;
-	targetsForcesZ[idxTarget] += dz;
-	targetsPotentials[idxTarget] += ( potentialCoef * targetsPhysicalValues[idxSource] );
-
-	targetsForcesX[idxSource] -= dx;
-	targetsForcesY[idxSource] -= dy;
-	targetsForcesZ[idxSource] -= dz;
-	targetsPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
+        targetsForcesX[idxSource] -= dKxy[0][0] * coef;
+        targetsForcesY[idxSource] -= dKxy[0][1] * coef;
+        targetsForcesZ[idxSource] -= dKxy[0][2] * coef;
+        targetsPotentials[idxSource] += ( Kxy[0] * targetsPhysicalValues[idxTarget] );
       }
     }
   }
 
+
   /**
-   *
+   * FullRemote (generic version)
    */
-  template <class ContainerClass>
-  inline void FullRemoteLJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			   const int limiteNeighbors){
+  template <class ContainerClass, typename MatrixKernelClass>
+  inline void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                         const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
     const int nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
     const FReal*const targetsX = inTargets->getPositions()[0];
@@ -196,146 +200,40 @@ namespace FP2P {
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
       for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-	if( inNeighbors[idxNeighbors] ){
-	  const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-	  const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-	  const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-	  const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-	  const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        if( inNeighbors[idxNeighbors] ){
+          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+          const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
+          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-	    // lenard-jones potential
-	    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-	    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-	    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+            
+            // Compute kernel of interaction...
+            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+            FReal Kxy[1];
+            FReal dKxy[1][3];
+            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+            FReal coef = (targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-	    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-	    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
-	    FReal inv_distance_pow6 = inv_distance_pow3 * inv_distance_pow3;
-	    FReal inv_distance_pow8 = inv_distance_pow6 * inv_distance_pow2;
-
-	    FReal coef = ((targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource])
-			  * (FReal(12.0)*inv_distance_pow6*inv_distance_pow8 - FReal(6.0)*inv_distance_pow8));
-
-	    dx *= coef;
-	    dy *= coef;
-	    dz *= coef;
-
-	    targetsForcesX[idxTarget] += dx;
-	    targetsForcesY[idxTarget] += dy;
-	    targetsForcesZ[idxTarget] += dz;
-	    targetsPotentials[idxTarget] += ( (inv_distance_pow6*inv_distance_pow6-inv_distance_pow6) * sourcesPhysicalValues[idxSource] );
-	  }
-	}
+            targetsForcesX[idxTarget] += dKxy[0][0] * coef;
+            targetsForcesY[idxTarget] += dKxy[0][1] * coef;
+            targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
+            targetsPotentials[idxTarget] += ( Kxy[0] * sourcesPhysicalValues[idxSource] );
+          }
+        }
       }
     }
   }
 
 
-  /**
-   * @brief NonMutualParticlesLJ
-   * @param sourceX
-   * @param sourceY
-   * @param sourceZ
-   * @param sourcePhysicalValue
-   * @param targetX
-   * @param targetY
-   * @param targetZ
-   * @param targetPhysicalValue
-   * @param targetForceX
-   * @param targetForceY
-   * @param targetForceZ
-   * @param targetPotential
-   */
-  inline void NonMutualParticlesLJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-				   const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-				   FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential){
-    // lenard-jones potential
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
-
-    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
-    FReal inv_distance_pow6 = inv_distance_pow3 * inv_distance_pow3;
-    FReal inv_distance_pow8 = inv_distance_pow6 * inv_distance_pow2;
-
-    FReal coef = ((targetPhysicalValue * sourcePhysicalValue) * (FReal(12.0)*inv_distance_pow6*inv_distance_pow8
-								 - FReal(6.0)*inv_distance_pow8));
-
-    dx *= coef;
-    dy *= coef;
-    dz *= coef;
-
-    (*targetForceX) += dx;
-    (*targetForceY) += dy;
-    (*targetForceZ) += dz;
-    (*targetPotential) += ( (inv_distance_pow6*inv_distance_pow6-inv_distance_pow6) * sourcePhysicalValue );
-  }
-
-  /**
-   * @brief MutualParticlesLJ
-   * @param sourceX
-   * @param sourceY
-   * @param sourceZ
-   * @param sourcePhysicalValue
-   * @param sourceForceX
-   * @param sourceForceY
-   * @param sourceForceZ
-   * @param sourcePotential
-   * @param targetX
-   * @param targetY
-   * @param targetZ
-   * @param targetPhysicalValue
-   * @param targetForceX
-   * @param targetForceY
-   * @param targetForceZ
-   * @param targetPotential
-   */
-  inline void MutualParticlesLJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-				FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-				const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-				FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential
-				){
-    // lenard-jones potential
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
-
-    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
-    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
-    FReal inv_distance_pow6 = inv_distance_pow3 * inv_distance_pow3;
-    FReal inv_distance_pow8 = inv_distance_pow6 * inv_distance_pow2;
-
-    FReal coef = ((targetPhysicalValue * sourcePhysicalValue) * (FReal(12.0)*inv_distance_pow6*inv_distance_pow8
-								 - FReal(6.0)*inv_distance_pow8));
-    FReal potentialCoef = (inv_distance_pow6*inv_distance_pow6-inv_distance_pow6);
-
-    dx *= coef;
-    dy *= coef;
-    dz *= coef;
-
-    (*targetForceX) += dx;
-    (*targetForceY) += dy;
-    (*targetForceZ) += dz;
-    (*targetPotential) += ( potentialCoef * sourcePhysicalValue );
-
-    (*sourceForceX) -= dx;
-    (*sourceForceY) -= dy;
-    (*sourceForceZ) -= dz;
-    (*sourcePotential) += ( potentialCoef * targetPhysicalValue );
-  }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   // R_IJ
-  // PB: The following functions take the MatrixKernel as input arguments for more generic implementation 
-  // Besides this MatrixKernel is already updated with any extra parameter (e.g. core width).
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////

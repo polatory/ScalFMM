@@ -4,8 +4,25 @@
 
 #include "../P2P/FP2P.hpp"
 
+
 template <KERNEL_FUNCTION_IDENTIFIER Identifier, int NVALS>
-struct DirectInteractionComputer;
+struct DirectInteractionComputer
+{
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2P( ContainerClass* const FRestrict TargetParticles,
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+  }
+
+  template <typename ContainerClass, typename MatrixKernelClass>
+  static void P2PRemote( ContainerClass* const FRestrict inTargets,
+                         ContainerClass* const inNeighbors[27],
+                         const int inSize,
+                         const MatrixKernelClass *const MatrixKernel){
+    FP2P::FullRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+  }
+};
 
 ///////////////////////////////////////////////////////
 // P2P Wrappers
@@ -15,57 +32,22 @@ struct DirectInteractionComputer;
 template <>
 struct DirectInteractionComputer<ONE_OVER_R, 1>
 {
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
+                   ContainerClass* const NeighborSourceParticles[27],
+                   const MatrixKernelClass *const /*MatrixKernel*/){
     FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
   }
 
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
                          ContainerClass* const inNeighbors[27],
-                         const int inSize){
+                         const int inSize,
+                         const MatrixKernelClass *const /*MatrixKernel*/){
     FP2P::FullRemote(inTargets,inNeighbors,inSize);
   }
 };
 
-//! Specialization for Laplace potential on Non uniform domain
-template <>
-struct DirectInteractionComputer<ONE_OVER_RH, 1>
-{
-  template <typename ContainerClass>
-  static void P2P( ContainerClass* const FRestrict TargetParticles,
-                   ContainerClass* const NeighborSourceParticles[27]){
-    FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
-  }
-//
-  template <typename ContainerClass>
-  static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[27],
-                         const int inSize){
-    FP2P::FullRemote(inTargets,inNeighbors,inSize);
-  }
-};
-
-
-
-/*! Specialization for Lennard-Jones potential */
-template <>
-struct DirectInteractionComputer<LENNARD_JONES_POTENTIAL, 1>
-{
-  template <typename ContainerClass>
-  static void P2P(ContainerClass* const FRestrict TargetParticles,
-                  ContainerClass* const NeighborSourceParticles[27]){
-    FP2P::FullMutualLJ(TargetParticles,NeighborSourceParticles,14);
-  }
-
-  template <typename ContainerClass>
-  static void P2PRemote(ContainerClass* const FRestrict inTargets,
-                        ContainerClass* const inNeighbors[27],
-                        const int inSize){
-    FP2P::FullRemoteLJ(inTargets,inNeighbors,inSize);
-  }
-};
 
 /*! Specialization for GradGradR potential */
 template <>
@@ -116,43 +98,22 @@ struct DirectInteractionComputer<R_IJK, 1>
 template <int NVALS>
 struct DirectInteractionComputer<ONE_OVER_R, NVALS>
 {
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P(ContainerClass* const FRestrict TargetParticles,
-                  ContainerClass* const NeighborSourceParticles[27]){
+                  ContainerClass* const NeighborSourceParticles[27],
+                  const MatrixKernelClass *const /*MatrixKernel*/){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
     }
   }
 
-  template <typename ContainerClass>
+  template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote(ContainerClass* const FRestrict inTargets,
                         ContainerClass* const inNeighbors[27],
-                        const int inSize){
+                        const int inSize,
+                        const MatrixKernelClass *const /*MatrixKernel*/){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       FP2P::FullRemote(inTargets,inNeighbors,inSize);
-    }
-  }
-};
-
-
-/*! Specialization for Lennard-Jones potential */
-template <int NVALS>
-struct DirectInteractionComputer<LENNARD_JONES_POTENTIAL, NVALS>
-{
-  template <typename ContainerClass>
-  static void P2P(ContainerClass* const FRestrict TargetParticles,
-                  ContainerClass* const NeighborSourceParticles[27]){
-    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-      FP2P::FullMutualLJ(TargetParticles,NeighborSourceParticles,14);
-    }
-  }
-
-  template <typename ContainerClass>
-  static void P2PRemote(ContainerClass* const FRestrict inTargets,
-                        ContainerClass* const inNeighbors[27],
-                        const int inSize){
-    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-      FP2P::FullRemoteLJ(inTargets,inNeighbors,inSize);
     }
   }
 };

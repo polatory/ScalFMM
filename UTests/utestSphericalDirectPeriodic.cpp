@@ -19,6 +19,7 @@
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
@@ -91,7 +92,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         Print("Run direct...");
         FTreeCoordinate min, max;
         algo.repetitionsIntervals(&min, &max);
-
+        const FInterpMatrixKernelR MatrixKernel;
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                 FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -101,7 +102,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                                 particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                 particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                &particles[idxOther].forces[2],&particles[idxOther].potential);
+                                      &particles[idxOther].forces[2],&particles[idxOther].potential, &MatrixKernel);
             }
             for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
                 for(int idxY = min.getY() ; idxY <= max.getY() ; ++idxY){
@@ -123,7 +124,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                                         particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                          &particles[idxTarget].forces[2],&particles[idxTarget].potential);
+                                        &particles[idxTarget].forces[2],&particles[idxTarget].potential,&MatrixKernel);
                         }
                     }
                 }

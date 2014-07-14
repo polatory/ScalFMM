@@ -69,6 +69,12 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
+  // interaction kernel evaluator
+//  typedef FInterpMatrixKernelLJ MatrixKernelClass;
+  typedef FInterpMatrixKernelR MatrixKernelClass;
+//  typedef FInterpMatrixKernelRR MatrixKernelClass;
+  const MatrixKernelClass MatrixKernel;
+
   // init particles position and physical value
   struct TestParticle{
     FPoint position;
@@ -110,7 +116,8 @@ int main(int argc, char* argv[])
                                 particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                 particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
                                 &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                                &particles[idxOther].forces[2], &particles[idxOther].potential);
+                                &particles[idxOther].forces[2], &particles[idxOther].potential,
+                                &MatrixKernel);
         }
       }
     }
@@ -130,8 +137,6 @@ int main(int argc, char* argv[])
     // typedefs
     typedef FP2PParticleContainerIndexed<> ContainerClass;
     typedef FSimpleLeaf< ContainerClass >  LeafClass;
-//    typedef FInterpMatrixKernelLJ MatrixKernelClass;
-    typedef FInterpMatrixKernelR MatrixKernelClass;
     typedef FUnifCell<ORDER> CellClass;
     typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
     typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
