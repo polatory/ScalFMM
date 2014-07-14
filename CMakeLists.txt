@@ -81,7 +81,7 @@ else()
   SET(FLAGS_64bits "")
 endif()
 ##############################################################################
-#                                              Compile option
+#                                                       Compile options                                                                        #
 ##############################################################################
 #  -xHost -mfpmath=sse
 # -Wall Wnosign-conversion 
@@ -104,7 +104,7 @@ ELSE(APPLE)
  ENDIF(APPLE)
 endif()
 ##############################################################################
-#                                                      Debug
+#                                                        Debug      flags                                                                        #
 ##############################################################################
 #
 if( ScalFMM_BUILD_DEBUG )
@@ -122,7 +122,7 @@ if( ScalFMM_BUILD_DEBUG )
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
 else()
 ##############################################################################
-#                                                Compile Release flags
+#                                                            Release flags                                                                        #
 ##############################################################################
   SET(CMAKE_BUILD_TYPE Release)
   # force -O3 in release
@@ -148,7 +148,7 @@ else()
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
 endif()
 ##############################################################################
-#                                           Attach source code to exec
+#                                           Attach source code to exec                                                                   #
 ##############################################################################
 MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
 if( ScalFMM_ATTACHE_SOURCE )
@@ -157,7 +157,7 @@ if( ScalFMM_ATTACHE_SOURCE )
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
 endif(ScalFMM_ATTACHE_SOURCE)
 ##############################################################################
-#                                                   Trace
+#                                                         Trace                                                                                       #  
 ##############################################################################
 MESSAGE( STATUS "ScalFMM_USE_TRACE            = ${ScalFMM_USE_TRACE}" )
 if( ScalFMM_USE_TRACE )
@@ -167,8 +167,9 @@ if( ScalFMM_USE_TRACE )
   endif()
 endif()
 ##############################################################################
-
-# Blas option
+#                                               Blas option                                                                                       #  
+##############################################################################
+# 
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
@@ -222,20 +223,11 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     endif()
   endif()
 endif()
+##############################################################################
+##############################################################################
 
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
-		${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
-
 ##################################################################
-#                     Use  native MIC compilation                #
-##################################################################
-if( ScalFMM_USE_MIC_NATIVE ) 
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
-else()
- # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
-ENDIF()
-##################################################################
-#                             Use SSE                            #
+#                                               Use SSE                                                                     #
 ##################################################################
 
 MESSAGE( STATUS "ScalFMM_USE_SSE              = ${ScalFMM_USE_SSE}" )
@@ -254,12 +246,13 @@ if( ScalFMM_USE_SSE )
   		IF( NOT ${COMPILE_RESULT_VAR})
     	 		 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__SSEPE_INTEL_COMPILER")
   		ENDIF()
+  #		SET(ScalFMM_USE_AVX OFF)
   	ELSE(${COMPILE_SSE})
   		 MESSAGE(FATAL_ERROR "SSE NOT SUPPORTED ; Set ScalFMM_USE_SSE  to OFF")	
   	ENDIF(${COMPILE_SSE})
 endif()
 ##################################################################
-#                             Use AVX                            
+#                                                Use AVX                                                                   #
 ##################################################################
 
 MESSAGE(STATUS "ScalFMM_USE_AVX               = ${ScalFMM_USE_AVX}")
@@ -269,27 +262,33 @@ if(ScalFMM_USE_AVX)
 	endif()
 	
 	TRY_COMPILE(COMPILE_AVX  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestAvx.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}  ${AVX_FLAGS}")
-		
    	IF(${COMPILE_AVX})
    	      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   ${AVX_FLAGS}")
-   	      SET( ScalFMM_USE_SSE   OFF  )
-   	      
-   	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
+#  	      SET( ScalFMM_USE_SSE   OFF   FORCE) # ne marche pas
+ 	 		TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR} 
  						     ${CMAKE_MODULE_PATH}/checkAVXpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ")
 	  		IF( NOT ${COMPILE_RESULT_AVSPE})
  		   		  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVXPE_INTEL_COMPILER")
   			ENDIF()
  
 		MESSAGE(STATUS ${CMAKE_CXX_FLAGS} )
-  	ELSE(${COMPILE_AVX})
+ELSE(${COMPILE_AVX})
   		 MESSAGE(FATAL_ERROR "AVX NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF")
-  	ENDIF(${COMPILE_AVX})
+ENDIF(${COMPILE_AVX})
 endif(ScalFMM_USE_AVX)
+#
+# Error if both ScalFMM_USE_AVX AND ScalFMM_USE_SSE are set
+#
+IF( ScalFMM_USE_AVX AND ScalFMM_USE_SSE)
+    MESSAGE(FATAL_ERROR "Check ScalFMM_USE_SSE or ScalFMM_USE_AVX BUT NOT BOTH. ")
+ENDIF(ScalFMM_USE_AVX AND ScalFMM_USE_SSE)
 ##################################################################
-#                                          ScalFMM_USE_MIC_NATIVE
+#                                           Use  native MIC compilation                                          #
 ##################################################################
 if( ScalFMM_USE_MIC_NATIVE ) 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
+else()
+ # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
 ENDIF()
 ##################################################################
 #                                
@@ -299,29 +298,45 @@ ENDIF()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
 
 ##################################################################
+#                                                                                                                                #                                          
+#                                            END SETTING VARIABLES                                              # 
+#                                                                                                                                #                                          
+##################################################################
 #
-#                     END SETTING VARIABLES
+# Generate  ScalFmmConfig.h 
+#
+CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
+        ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 #
 ##################################################################
-
-# Build - lib
+#                                        Build - lib                                                                         #                                          
+##################################################################
+#
 add_subdirectory(Src)
-
 # Link with scalfmm lib
 set(scalfmm_lib scalfmm)
-
+#
+##################################################################
+#                                        Remove compilation  of the drivers                                #                                          
+##################################################################
 if( NOT ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
 endif()
 
+##################################################################
+#                                        Build -Tests to see examples                                           #                                          
+##################################################################
 # Build - Tests
 MESSAGE( STATUS "ScalFMM_BUILD_TESTS          = ${ScalFMM_BUILD_TESTS}" )
 if( ScalFMM_BUILD_TESTS )
 	add_subdirectory(Tests)
 endif()
 
-# Build - UTests
+##################################################################
+#                                        Build - Unitary and numerical Tests                                 #                                          
+##################################################################
+# 
 MESSAGE( STATUS "ScalFMM_BUILD_UTESTS         = ${ScalFMM_BUILD_UTESTS}" )
 if( ScalFMM_BUILD_UTESTS )
 	INCLUDE(CTest)
@@ -329,10 +344,15 @@ if( ScalFMM_BUILD_UTESTS )
 	add_subdirectory(UTests)
 endif()
 
-# Build - doc
+##################################################################
+#                                           Add - doc                                                                     #
+##################################################################
+#
 add_subdirectory(Doc)
-
-# Build - Addons
+##################################################################
+#                                           Build - Addons                                                              #
+##################################################################
+#
 if( ScalFMM_USE_ADDONS )
 	file(GLOB all_addons ./Addons/*)
 
@@ -352,9 +372,9 @@ if("${CMAKE_GENERATOR}" MATCHES "Make")
 endif()
 #
 ##################################################################
-#
-#                                   Build and export cmake files 
-#
+#                                                                                                                                #                                          
+#                                   Build and export cmake files                                                 #  
+#                                                                                                                                #                                          
 ##################################################################
 
 MESSAGE(STATUS "ScalFMM_BINARY_DIR:          " ${ScalFMM_BINARY_DIR})
@@ -371,10 +391,10 @@ INSTALL(FILES
 	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
   DESTINATION Data/
   )	
- ##################################################################
-#
-#                               build a CPack driven installer package
-#
+ #################################################################
+#                                                                                                                                #                                          
+#                               build a CPack driven installer package                                       # 
+#                                                                                                                                #                                          
 ##################################################################
 INCLUDE(CPack)
 #
@@ -397,13 +417,14 @@ SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME  "ScalFMM-${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}") 
 SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;/*.ind;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
 LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*,noDist" )
+ ##################################################################
+#                                                                                                                                 #                                          
+#                                               PRINT MESSAGES                                                        # 
+#                                                                                                                                 #                                          
+ ##################################################################
 message(STATUS "CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
 message(STATUS "CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
- ##################################################################
 #
-#                                   PRINT MESSAGES
-#
- ##################################################################
  #                    Use Mem stats
 MESSAGE( STATUS "ScalFMM_USE_MEM_STATS        = ${ScalFMM_USE_MEM_STATS}" )
 #                    Use Log
@@ -416,6 +437,6 @@ MESSAGE(STATUS "ScaLFMM_CXX_FLAGS   =  ${ScaLFMM_CXX_FLAGS}")
 MESSAGE(STATUS "SCALFMM_LIBRARIES   =  ${SCALFMM_LIBRARIES}")
 MESSAGE(STATUS "SCALFMM_INCLUDES   =  ${SCALFMM_INCLUDES}")
  ##################################################################
-#                                   END
+#                                                        END                                                                  # 
  ##################################################################
  
