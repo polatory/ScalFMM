@@ -739,8 +739,8 @@ public:
 	//!    ...
 	//!    FmaBasicParticle *ppart = (FmaBasicParticle*)(&particles[0]);
 	//! 	FFmaGenericWriter writer(filenameOut) ;
-	//! 	Fwriter.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
-	//! 	Fwriter.writeArrayOfParticles(particles, nbParticles);
+	//! 	writer.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
+	//! 	writer.writeArrayOfParticles(particles, nbParticles);
 	//! \endcode
 
 	template <class dataPart>
