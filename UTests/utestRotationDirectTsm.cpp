@@ -22,6 +22,7 @@
 
 #include "../Src/Kernels/Rotation/FRotationCell.hpp"
 #include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../Src/Components/FTypedLeaf.hpp"
 #include "../Src/Extensions/FExtendCellType.hpp"
@@ -100,6 +101,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
 		// Run direct computation
 		Print("Direct...");
+    const FInterpMatrixKernelR MatrixKernel;
 		for(int idxTarget = 0 ; idxTarget < nbTargets ; ++idxTarget){
 			for(int idxOther = 0 ; idxOther < nbSources ; ++idxOther){
 				FP2P::NonMutualParticles(
@@ -108,7 +110,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 						particlesTargets[idxTarget].getPosition().getX(), particlesTargets[idxTarget].getPosition().getY(),
 						particlesTargets[idxTarget].getPosition().getZ(),particlesTargets[idxTarget].getPhysicalValue(),
 						&particlesTargets[idxTarget].setForces()[0],&particlesTargets[idxTarget].setForces()[1],
-						&particlesTargets[idxTarget].setForces()[2],particlesTargets[idxTarget].setPotential());
+						&particlesTargets[idxTarget].setForces()[2],particlesTargets[idxTarget].setPotential(),&MatrixKernel);
 			}
 		}
 

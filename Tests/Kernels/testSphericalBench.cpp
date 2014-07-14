@@ -91,6 +91,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
         if(computeDirectAndDiff){
             printf("Compute direct!\n");
             counter.tic();
+            const FInterpMatrixKernelR MatrixKernel;
             for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
                 for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -100,7 +101,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
                                     particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                     particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                     &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                    &particles[idxOther].forces[2],&particles[idxOther].potential);
+                                          &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
                 }
             }
             if(timeForDirect) *timeForDirect = counter.tacAndElapsed();
@@ -299,6 +300,7 @@ int main(int argc, char ** argv){
                 FmmClass algo(&tree,&kernels);
                 algo.execute();
 
+                const FInterpMatrixKernelR MatrixKernel;
                 FP2P::MutualParticles(centeredParticle.position.getX(), centeredParticle.position.getY(),
                                       centeredParticle.position.getZ(),centeredParticle.physicalValue,
                                       &centeredParticle.forces[0],&centeredParticle.forces[1],
@@ -306,7 +308,7 @@ int main(int argc, char ** argv){
                                 otherParticle.position.getX(), otherParticle.position.getY(),
                                 otherParticle.position.getZ(),otherParticle.physicalValue,
                                 &otherParticle.forces[0],&otherParticle.forces[1],
-                                &otherParticle.forces[2],&otherParticle.potential);
+                                      &otherParticle.forces[2],&otherParticle.potential,&MatrixKernel);
 
                 { // Check that each particle has been summed with all other
 

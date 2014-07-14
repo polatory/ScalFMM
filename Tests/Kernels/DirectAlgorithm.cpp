@@ -78,6 +78,7 @@ int main(int argc, char ** argv){
 	const unsigned int ORDER = 12;
 	// typedefs
 	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
+  const MatrixKernelClass MatrixKernel;
 	typedef FChebCell<ORDER>                                                  CellClass;
 	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
 	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
@@ -236,7 +237,7 @@ int main(int argc, char ** argv){
 								particlesDirect[idxTarget].position.getX(), particlesDirect[idxTarget].position.getY(),
 								particlesDirect[idxTarget].position.getZ(),particlesDirect[idxTarget].physicalValue,
 								&particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],
-								&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential);
+								&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential, &MatrixKernel);
 					}
 				}
 				//
@@ -258,7 +259,7 @@ int main(int argc, char ** argv){
 									FP2P::NonMutualParticles(
 											source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
 											particlesDirect[idxTarget].position.getX(), particlesDirect[idxTarget].position.getY(),particlesDirect[idxTarget].position.getZ(),particlesDirect[idxTarget].physicalValue,
-											&particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential
+											&particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential, &MatrixKernel
 									);
 								}
 							}

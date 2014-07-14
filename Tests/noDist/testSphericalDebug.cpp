@@ -127,6 +127,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
                     // Run direct computation
                     //Print("Direct...");
+                    const FInterpMatrixKernelR MatrixKernel;
                     for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
                         for(int idxOther = idxTarget + 1 ; idxOther < nbParticles ; ++idxOther){
                             FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -136,7 +137,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                                             particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                             particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                             &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                            &particles[idxOther].forces[2],&particles[idxOther].potential);
+                                                  &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
                         }
                     }
 

@@ -211,7 +211,10 @@ int main(int argc, char* argv[])
 
       for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         // put in tree
-        if(NPV==3) // R_IJ or IOR
+        if(NPV==1) // scalar kernels like ONE_OVER_R
+          tree.insert(particles[idxPart].position, idxPart, 
+                      particles[idxPart].physicalValue[0]);
+        else if(NPV==3) // R_IJ or IOR
           tree.insert(particles[idxPart].position, idxPart, 
                       particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
         else if(NPV==9) // R_IJK

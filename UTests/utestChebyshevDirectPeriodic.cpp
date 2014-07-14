@@ -18,26 +18,26 @@
 // @FUSE_BLAS
 // ================
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Files/FRandomLoader.hpp"
-#include "../Src/Files/FTreeIO.hpp"
+#include "Files/FRandomLoader.hpp"
+#include "Files/FTreeIO.hpp"
 
-#include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
+#include "Core/FFmmAlgorithmPeriodic.hpp"
 
 #include "FUTester.hpp"
 
 
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /*
   In this test we compare the Chebyshev fmm results and the direct results.
@@ -71,6 +71,9 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 		// Create octree
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+
+    // interaction kernel evaluator
+    const MatrixKernelClass MatrixKernel;
 
 		struct TestParticle{
 			FPoint position;
@@ -122,7 +125,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 						particles[idxOther].position.getX(), particles[idxOther].position.getY(),
 						particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
 						&particles[idxOther].forces[0],&particles[idxOther].forces[1],
-						&particles[idxOther].forces[2],&particles[idxOther].potential);
+                              &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
 
 			}
 			for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
@@ -145,7 +148,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 									particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
 									particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
 									&particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-									&particles[idxTarget].forces[2],&particles[idxTarget].potential);
+									&particles[idxTarget].forces[2],&particles[idxTarget].potential,&MatrixKernel);
 						}
 					}
 				}

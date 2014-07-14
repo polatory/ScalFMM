@@ -86,6 +86,7 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   int getPosition(const unsigned int) const
   {return 0;} 
 
+  // evaluate interaction
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
     const FPoint xy(x-y);
@@ -94,9 +95,27 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
                                    xy.getZ()*xy.getZ());
   }
 
+  // evaluate interaction (blockwise)
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
     block[0]=this->evaluate(x,y);
+  }
+
+  // evaluate interaction and derivative (blockwise)
+  void evaluateBlockAndDerivative(const FPoint& x, const FPoint& y, FReal block[1], FReal blockDerivative[1][3]) const
+  {
+    const FPoint xy(x-y);
+    const FReal one_over_r = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
+                                                     xy.getY()*xy.getY() +
+                                                     xy.getZ()*xy.getZ());
+    const FReal one_over_r3 = one_over_r*one_over_r*one_over_r;
+
+    block[0] = one_over_r;
+
+    blockDerivative[0][0] = one_over_r3 * xy.getX();
+    blockDerivative[0][1] = one_over_r3 * xy.getY();
+    blockDerivative[0][2] = one_over_r3 * xy.getZ();
+
   }
 
   FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
@@ -126,6 +145,7 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : LX(1.0),LY(1.0),LZ(1.0)
 	{	 }
 
+  // evaluate interaction
 	  FReal evaluate(const FPoint& x, const FPoint& y) const
 	  {
 	    const FPoint xy(x-y);
@@ -144,6 +164,23 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	  	  {
 	  	    block[0]=this->evaluate(x,y);
 	  	  }
+
+  // evaluate interaction and derivative (blockwise)
+  void evaluateBlockAndDerivative(const FPoint& x, const FPoint& y, FReal block[1], FReal blockDerivative[1][3]) const
+  {
+    const FPoint xy(x-y);
+    const FReal one_over_rL = FReal(1.) / FMath::Sqrt(LX*xy.getX()*xy.getX() +
+                                                      LY*xy.getY()*xy.getY() +
+                                                      LZ*xy.getZ()*xy.getZ());
+    const FReal one_over_rL3 = one_over_rL*one_over_rL*one_over_rL;
+
+    block[0] = one_over_rL;
+
+    blockDerivative[0][0] = FMath::Sqrt(LX) * one_over_rL3 * xy.getX();
+    blockDerivative[0][1] = FMath::Sqrt(LY) * one_over_rL3 * xy.getY();
+    blockDerivative[0][2] = FMath::Sqrt(LZ) * one_over_rL3 * xy.getZ();
+
+  }
 
 	  	  FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
 	  	  {
@@ -176,6 +213,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   int getPosition(const unsigned int) const
   {return 0;} 
 
+  // evaluate interaction
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
     const FPoint xy(x-y);
@@ -184,9 +222,29 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
                              xy.getZ()*xy.getZ());
   }
 
+  // evaluate interaction (blockwise)
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
     block[0]=this->evaluate(x,y);
+  }
+
+  // evaluate interaction and derivative (blockwise)
+  void evaluateBlockAndDerivative(const FPoint& x, const FPoint& y, FReal block[1], FReal blockDerivative[1][3]) const
+  {
+    const FPoint xy(x-y);
+    const FReal r2 = FReal(xy.getX()*xy.getX() +
+                           xy.getY()*xy.getY() +
+                           xy.getZ()*xy.getZ());
+    const FReal one_over_r2 = FReal(1.) / (r2);
+    const FReal one_over_r4 = one_over_r2*one_over_r2;
+
+    block[0] = one_over_r2;
+
+    const FReal coef = FReal(-2.) * one_over_r4;
+    blockDerivative[0][0] = coef * xy.getX();
+    blockDerivative[0][1] = coef * xy.getY();
+    blockDerivative[0][2] = coef * xy.getZ();
+
   }
 
   FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
@@ -220,6 +278,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
   int getPosition(const unsigned int) const
   {return 0;} 
 
+  // evaluate interaction
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
     const FPoint xy(x-y);
@@ -231,9 +290,29 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
     return one_over_r6 * one_over_r6 - one_over_r6;
   }
 
+  // evaluate interaction (blockwise)
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
     block[0]=this->evaluate(x,y);
+  }
+
+  // evaluate interaction and derivative (blockwise)
+  void evaluateBlockAndDerivative(const FPoint& x, const FPoint& y, FReal block[1], FReal blockDerivative[1][3]) const
+  {
+    const FPoint xy(x-y);
+    const FReal r = xy.norm();
+    const FReal r2 = r*r;
+    const FReal r3 = r2*r;
+    const FReal one_over_r6 = FReal(1.) / (r3*r3);
+    const FReal one_over_r8 = one_over_r6 / (r2);
+
+    block[0] = one_over_r6 * one_over_r6 - one_over_r6;
+
+    const FReal coef = FReal(12.0)*one_over_r6*one_over_r8 - FReal(6.0)*one_over_r8;
+    blockDerivative[0][0]= coef * xy.getX();
+    blockDerivative[0][1]= coef * xy.getY();
+    blockDerivative[0][2]= coef * xy.getZ();
+
   }
 
   FReal getScaleFactor(const FReal, const int) const
@@ -317,6 +396,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
+  // evaluate interaction
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
     const FPoint xy(x-y);
@@ -343,6 +423,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
 
   }
 
+  // evaluate interaction (blockwise)
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
     const FPoint xy(x-y);
@@ -414,6 +495,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   FReal getCoreWidth2() const
   {return _CoreWidth2;}
 
+  // evaluate interaction
   FReal evaluate(const FPoint& x, const FPoint& y) const
   {
     // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
@@ -460,6 +542,7 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 
   }
 
+  // evaluate interaction (blockwise)
   void evaluateBlock(const FPoint& x, const FPoint& y, FReal* block) const
   {
     // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
