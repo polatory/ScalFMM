@@ -80,7 +80,11 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelR(const FReal = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelR() {}
+
+  // copy ctor
+  FInterpMatrixKernelR(const FInterpMatrixKernelR& other) 
+  {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -142,8 +146,13 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	  static const unsigned int NLHS = 1; //< dim of loc exp
 	  FReal LX,LY,LZ ;
 
-	FInterpMatrixKernelRH(const FReal = 0.0, const unsigned int = 0) : LX(1.0),LY(1.0),LZ(1.0)
+	FInterpMatrixKernelRH() : LX(1.0),LY(1.0),LZ(1.0)
 	{	 }
+
+  // copy ctor
+  FInterpMatrixKernelRH(const FInterpMatrixKernelRH& other) 
+  : LX(other.LX), LY(other.LY), LZ(other.LZ) 
+  {}
 
   // evaluate interaction
 	  FReal evaluate(const FPoint& x, const FPoint& y) const
@@ -207,7 +216,11 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelRR(const FReal = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelRR() {}
+
+  // copy ctor
+  FInterpMatrixKernelRR(const FInterpMatrixKernelRR& other) 
+  {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -272,7 +285,11 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
   static const unsigned int NRHS = 1; //< dim of mult exp
   static const unsigned int NLHS = 1; //< dim of loc exp
 
-  FInterpMatrixKernelLJ(const FReal = 0.0, const unsigned int = 0) {}
+  FInterpMatrixKernelLJ() {}
+
+  // copy ctor
+  FInterpMatrixKernelLJ(const FInterpMatrixKernelLJ& other) 
+  {}
 
   // returns position in reduced storage
   int getPosition(const unsigned int) const
@@ -388,6 +405,11 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
     : _i(indexTab[d]), _j(indexTab[d+NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
   {}
 
+  // copy ctor
+  FInterpMatrixKernel_R_IJ(const FInterpMatrixKernel_R_IJ& other) 
+  : _i(other._i), _j(other._j), _CoreWidth2(other._CoreWidth2) 
+  {}
+
   // returns position in reduced storage from position in full 3x3 matrix
  unsigned  int getPosition(const unsigned int n) const
   {return applyTab[n];} 
@@ -485,6 +507,11 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
 
   FInterpMatrixKernel_R_IJK(const FReal CoreWidth = 0.0, const unsigned int d = 0)
   : _i(indexTab[d]), _j(indexTab[d+NCMP]), _k(indexTab[d+2*NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
+  {}
+
+  // copy ctor
+  FInterpMatrixKernel_R_IJK(const FInterpMatrixKernel_R_IJK& other) 
+  : _i(other._i), _j(other._j), _k(other._k), _CoreWidth2(other._CoreWidth2) 
   {}
 
   // returns position in reduced storage from position in full 3x3x3 matrix
@@ -598,10 +625,10 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
   number of rows and cols and on the coordinates x and y and the type of the
   generating matrix-kernel function.
 */
-template <typename MatrixKernel>
+template <typename MatrixKernelClass>
 class EntryComputer
 {
-  const MatrixKernel Kernel;
+  const MatrixKernelClass *const MatrixKernel;
 
   const unsigned int nx, ny;
   const FPoint *const px, *const py;
@@ -609,12 +636,11 @@ class EntryComputer
   const FReal *const weights;
 
 public:
-  explicit EntryComputer(const unsigned int _nx, const FPoint *const _px,
+  explicit EntryComputer(const MatrixKernelClass *const inMatrixKernel,
+                         const unsigned int _nx, const FPoint *const _px,
                          const unsigned int _ny, const FPoint *const _py,
-                         const FReal *const _weights = NULL,
-                         const unsigned int idxK = 0,
-                         const FReal matparam = 0.0)
-    : Kernel(matparam,idxK),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
+                         const FReal *const _weights = NULL)
+    : MatrixKernel(inMatrixKernel),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
 
   void operator()(const unsigned int xbeg, const unsigned int xend,
                   const unsigned int ybeg, const unsigned int yend,
@@ -624,11 +650,11 @@ public:
     if (weights) {
       for (unsigned int j=ybeg; j<yend; ++j)
         for (unsigned int i=xbeg; i<xend; ++i)
-          data[idx++] = weights[i] * weights[j] * Kernel.evaluate(px[i], py[j]);
+          data[idx++] = weights[i] * weights[j] * MatrixKernel->evaluate(px[i], py[j]);
     } else {
       for (unsigned int j=ybeg; j<yend; ++j)
         for (unsigned int i=xbeg; i<xend; ++i)
-          data[idx++] = Kernel.evaluate(px[i], py[j]);
+          data[idx++] = MatrixKernel->evaluate(px[i], py[j]);
     }
 
     /*

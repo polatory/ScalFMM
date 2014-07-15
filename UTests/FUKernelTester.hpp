@@ -48,9 +48,9 @@ public:
     using FUTester<TestClass>::uassert;
 
     // The run function is performing the test for the given configuration
-    template <class CellClass, class ContainerClass, class KernelClass,
+    template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
               class LeafClass, class OctreeClass, class FmmClass>
-    void RunTest(std::function<std::unique_ptr<KernelClass>(int NbLevels, FReal boxWidth, FPoint centerOfBox)> GetKernelFunc)	{
+    void RunTest(std::function<std::unique_ptr<KernelClass>(int NbLevels, FReal boxWidth, FPoint centerOfBox, const MatrixKernelClass *const MatrixKernel)> GetKernelFunc)	{
         //
         // Load particles
         //
@@ -85,11 +85,14 @@ public:
             tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
         }
         //
+        // Create Matrix Kernel
+        const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
+        //
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // Run FMM computation
         /////////////////////////////////////////////////////////////////////////////////////////////////
         Print("Fmm...");
-        std::unique_ptr<KernelClass> kernels(GetKernelFunc(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox()));
+        std::unique_ptr<KernelClass> kernels(GetKernelFunc(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel));
         FmmClass algo(&tree,kernels.get());
         algo.execute();
         //

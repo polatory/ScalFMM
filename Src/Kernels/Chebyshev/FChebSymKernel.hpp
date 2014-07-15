@@ -56,6 +56,9 @@ class FChebSymKernel
 	typedef SymmetryHandler<ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
   enum {nnodes = AbstractBaseClass::nnodes};
 
+  /// Needed for P2P and M2L operators
+  const MatrixKernelClass *const MatrixKernel;
+
 	/// Needed for handling all symmetries
 	const FSmartPointer<SymmetryHandlerClass,FSmartPointerMemory> SymHandler;
 
@@ -105,11 +108,13 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebSymKernel(const int inTreeHeight,
-		       const FReal inBoxWidth,
-		       const FPoint& inBoxCenter,
-		       const FReal Epsilon)
+                 const FReal inBoxWidth,
+                 const FPoint& inBoxCenter,
+                 const MatrixKernelClass *const inMatrixKernel,
+                 const FReal Epsilon)
 	  : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
-			SymHandler(new SymmetryHandlerClass(AbstractBaseClass::MatrixKernel.getPtr(), Epsilon, inBoxWidth, inTreeHeight)),
+      MatrixKernel(inMatrixKernel),
+			SymHandler(new SymmetryHandlerClass(MatrixKernel, Epsilon, inBoxWidth, inTreeHeight)),
 			Loc(nullptr), Mul(nullptr), countExp(nullptr)
 	{
 		this->allocateMemoryForPermutedExpansions();
@@ -126,8 +131,9 @@ public:
 	 * runtime_error is thrown if the required file is not valid).
 	 */
 	FChebSymKernel(const int inTreeHeight,
-		       const FReal inBoxWidth,
-		       const FPoint& inBoxCenter) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
+                 const FReal inBoxWidth,
+                 const FPoint& inBoxCenter,
+                 const MatrixKernelClass *const inMatrixKernel) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
 		       {}
 
 	
@@ -135,6 +141,7 @@ public:
 	/** Copy constructor */
 	FChebSymKernel(const FChebSymKernel& other)
 		: AbstractBaseClass(other),
+      MatrixKernel(other.MatrixKernel),
 			SymHandler(other.SymHandler),
 			Loc(nullptr), Mul(nullptr), countExp(nullptr)
 	{
@@ -264,7 +271,7 @@ public:
 
             // multiply (mat-mat-mul)
             FReal Compressed [nnodes * 24];
-            const FReal scale = AbstractBaseClass::MatrixKernel->getScaleFactor(AbstractBaseClass::BoxWidth, TreeLevel);
+            const FReal scale = MatrixKernel->getScaleFactor(AbstractBaseClass::BoxWidth, TreeLevel);
             for (unsigned int pidx=0; pidx<343; ++pidx) {
                 const unsigned int count = countExp[pidx];
                 if (count) {
@@ -462,14 +469,14 @@ public:
                      ContainerClass* const NeighborSourceParticles[27],
                      const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

@@ -87,9 +87,12 @@ int main(int argc, char* argv[])
 #endif
     
   std::cout << "Opening : " <<filename << "\n" << std::endl;
-    // init timer
-    FTic time;
+  // init timer
+  FTic time;
   
+  // Create Matrix Kernel
+  const MatrixKernelClass MatrixKernel;
+
   // init particles position and physical value
   struct TestParticle{
     FPoint position;
@@ -141,7 +144,7 @@ int main(int argc, char* argv[])
   { // -----------------------------------------------------
     std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ",EPS="<< epsilon <<") ... " << std::endl;
     time.tic();
-    KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
+    KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel, epsilon);
     FmmClass algorithm(app.global(),&tree, &kernels);
     algorithm.execute();
     time.tac();

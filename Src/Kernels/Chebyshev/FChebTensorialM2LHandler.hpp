@@ -82,8 +82,6 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 				ninteractions = 316,// 7^3 - 3^3 (max num cells in far-field)
         ncmp = MatrixKernelClass::NCMP};
 
-//	const MatrixKernelClass MatrixKernel;
-
 //	FReal *U, *C, *B;
 	FReal *U, *B;
 	FReal** C;

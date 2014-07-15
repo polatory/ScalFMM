@@ -122,6 +122,7 @@ int main(int argc, char* argv[])
 	typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
 	//
 	typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
+  const MatrixKernelClass MatrixKernel;
 	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 	//
 #ifdef _OPENMP
@@ -161,7 +162,7 @@ int main(int argc, char* argv[])
 
 		time.tic();
 		//
-		KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+		KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 		//
 		FmmClass algorithm(&tree, &kernels);
 		//

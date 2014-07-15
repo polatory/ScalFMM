@@ -26,7 +26,7 @@
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FParameters.hpp"
 
-#include "../../Src/Files/FFmaScanfLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
         FReal potential;
     };
     // open particle file
-    FFmaScanfLoader loader(filename);
+    FFmaGenericLoader loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
         { // -----------------------------------------------------
             std::cout << "\nChebyshev FMM ... " << std::endl;
             time.tic();
-            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), epsilon);
+            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel, epsilon);
             FmmClass algorithm(&tree, &kernels);
             algorithm.execute();
             time.tac();

@@ -51,6 +51,9 @@ class FChebKernel
     typedef FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 	AbstractBaseClass;
 
+  /// Needed for P2P and M2L operators
+  const MatrixKernelClass *const MatrixKernel;
+
 	/// Needed for M2L operator
 	FSmartPointer<  M2LHandlerClass,FSmartPointerMemory> M2LHandler;
 
@@ -60,20 +63,21 @@ public:
 	 * precomputed and compressed M2L operators from a binary file (an
 	 * runtime_error is thrown if the required file is not valid).
 	 */
-	FChebKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint& inBoxCenter,
-		    const FReal Epsilon)
-        : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
-											   inBoxWidth,
-											   inBoxCenter),
-	  M2LHandler(new M2LHandlerClass(Epsilon))
+	FChebKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel,
+              const FReal Epsilon)
+    : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,
+                                                                                       inBoxWidth,
+                                                                                       inBoxCenter),
+      MatrixKernel(inMatrixKernel),
+      M2LHandler(new M2LHandlerClass(MatrixKernel,Epsilon))
 	{
 		// read precomputed compressed m2l operators from binary file
 		//M2LHandler->ReadFromBinaryFileAndSet();
 		M2LHandler->ComputeAndCompressAndSet();
 	}
 
-	FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
-		: 	FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
+	FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel)
+		: 	FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
 	{
 
 	}
@@ -212,14 +216,14 @@ public:
                      ContainerClass* const NeighborSourceParticles[27],
                      const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
+        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

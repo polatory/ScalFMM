@@ -49,8 +49,6 @@ protected:
 
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
-  /// Needed for P2P operator
-  const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
   /// Height of the entire oct-tree
   const unsigned int TreeHeight;
   /// Corner of oct-tree box
@@ -61,9 +59,6 @@ protected:
   const FReal BoxWidthLeaf;
   /// Extension of the box width ( same for all level! )
   const FReal BoxWidthExtension;
-
-  /// Parameter to pass to matrix kernel (material specific or anything)
-  const double MatParam;
 
   /**
    * Compute center of leaf cell from its tree coordinate.
@@ -86,18 +81,15 @@ public:
   FAbstractUnifKernel(const int inTreeHeight,
                       const FReal inBoxWidth,
                       const FPoint& inBoxCenter,
-                      const FReal inBoxWidthExtension = 0.0,
-                      const double inMatParam = 0.0)
+                      const FReal inBoxWidthExtension = 0.0)
     : Interpolator(new InterpolatorClass(inTreeHeight,
                                          inBoxWidth,
                                          inBoxWidthExtension)),
-      MatrixKernel(new MatrixKernelClass(inMatParam)),
       TreeHeight(inTreeHeight),
       BoxCorner(inBoxCenter - inBoxWidth / FReal(2.)),
       BoxWidth(inBoxWidth),
       BoxWidthLeaf(BoxWidth / FReal(FMath::pow(2, inTreeHeight - 1))),
-      BoxWidthExtension(inBoxWidthExtension),
-      MatParam(inMatParam)
+      BoxWidthExtension(inBoxWidthExtension)
   {
     /* empty */
   }

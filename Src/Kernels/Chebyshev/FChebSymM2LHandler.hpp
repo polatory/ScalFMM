@@ -303,7 +303,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				FChebTensor<ORDER>::setRootOfWeights(weights);
 
 				// now the entry-computer is responsible for weighting the matrix entries
-				EntryComputer<MatrixKernelClass> Computer(nnodes, X, nnodes, Y, weights);
+				EntryComputer<MatrixKernelClass> Computer(MatrixKernel, nnodes, X, nnodes, Y, weights);
 
 				// start timer
 				time.tic();

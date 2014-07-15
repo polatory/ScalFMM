@@ -104,7 +104,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Fmm...");
 		FmmClass algo(&tree,PeriodicDeep );
-		KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
+		KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter(),&MatrixKernel);
 		algo.setKernel(&kernels);
 		algo.execute();
 		/////////////////////////////////////////////////////////////////////////////////////////////////

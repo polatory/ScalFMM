@@ -70,7 +70,7 @@ class FChebM2LHandler : FNoCopyable
 				nnodes = TensorTraits<ORDER>::nnodes,
 				ninteractions = 316}; // 7^3 - 3^3 (max num cells in far-field)
 
-	const MatrixKernelClass MatrixKernel;
+	const MatrixKernelClass *const MatrixKernel;
 
 	FReal *U, *C, *B;
 	const FReal epsilon; //<! accuracy which determines trucation of SVD
@@ -88,8 +88,8 @@ class FChebM2LHandler : FNoCopyable
 
 	
 public:
-	FChebM2LHandler(const FReal _epsilon)
-		: MatrixKernel(), U(nullptr), C(nullptr), B(nullptr), epsilon(_epsilon), rank(0)
+	FChebM2LHandler(const MatrixKernelClass *const inMatrixKernel, const FReal _epsilon)
+		: MatrixKernel(inMatrixKernel), U(nullptr), C(nullptr), B(nullptr), epsilon(_epsilon), rank(0)
 	{}
 
 	~FChebM2LHandler()
@@ -108,7 +108,7 @@ public:
 		FTic time; time.tic();
 		// check if aready set
 		if (U||C||B) throw std::runtime_error("Compressed M2L operator already set");
-		rank = ComputeAndCompress(epsilon, U, C, B);
+		rank = ComputeAndCompress(MatrixKernel, epsilon, U, C, B);
 
     unsigned long sizeM2L = 343*rank*rank*sizeof(FReal);
 
@@ -135,13 +135,13 @@ public:
 	 * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
 	 * @param[out] B matrix of size \f$\ell^3\times r\f$
 	 */
-	static unsigned int ComputeAndCompress(const FReal epsilon, FReal* &U, FReal* &C, FReal* &B);
+	static unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, const FReal epsilon, FReal* &U, FReal* &C, FReal* &B);
 
 	/**
 	 * Computes, compresses and stores the matrices \f$Y, C_t, B\f$ in a binary
 	 * file
 	 */
-	static void ComputeAndCompressAndStoreInBinaryFile(const FReal epsilon);
+	static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal epsilon);
 
 	/**
 	 * Reads the matrices \f$Y, C_t, B\f$ from the respective binary file
@@ -182,19 +182,19 @@ public:
   {
 		const unsigned int idx
 			= (transfer[0]+3)*7*7 + (transfer[1]+3)*7 + (transfer[2]+3);
-		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+		const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
     FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
   }
   void applyC(const unsigned int idx, FReal CellWidth,
 							const FReal *const Y, FReal *const X) const
   {
-		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+		const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
     FBlas::gemva(rank, rank, scale, C + idx*rank*rank, const_cast<FReal*>(Y), X);
   }
   void applyC(FReal CellWidth,
 							const FReal *const Y, FReal *const X) const
   {
-		const FReal scale(MatrixKernel.getScaleFactor(CellWidth));
+		const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
     FBlas::gemva(rank, rank * 343, scale, C, const_cast<FReal*>(Y), X);
   }
 
@@ -229,7 +229,8 @@ public:
 
 template <int ORDER, class MatrixKernelClass>
 unsigned int
-FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilon,
+FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
+                                                              const FReal epsilon,
 																															FReal* &U,
 																															FReal* &C,
 																															FReal* &B)
@@ -241,8 +242,6 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 	FPoint X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
 	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
-	// init matrix kernel
-	const MatrixKernelClass MatrixKernel;
 
 	// allocate memory and compute 316 m2l operators
 	FReal *_U, *_C, *_B;
@@ -260,7 +259,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)
 							_C[counter*nnodes*nnodes + n*nnodes + m]
-								= MatrixKernel.evaluate(X[m], Y[n]);
+								= MatrixKernel->evaluate(X[m], Y[n]);
 					// increment interaction counter
 					counter++;
 				}
@@ -330,14 +329,14 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const FReal epsilo
 
 template <int ORDER, class MatrixKernelClass>
 void
-FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(const FReal epsilon)
+FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal epsilon)
 {
 	// measure time
 	FTic time; time.tic();
 	// start computing process
 	FReal *U, *C, *B;
 	U = C = B = nullptr;
-	const unsigned int rank = ComputeAndCompress(epsilon, U, C, B);
+	const unsigned int rank = ComputeAndCompress(MatrixKernel, epsilon, U, C, B);
 	// store into binary file
 	const std::string filename(getFileName(epsilon));
 	std::ofstream stream(filename.c_str(),

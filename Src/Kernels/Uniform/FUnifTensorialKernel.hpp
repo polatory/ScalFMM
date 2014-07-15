@@ -75,6 +75,9 @@ protected://PB: for OptiDis
   typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
   AbstractBaseClass;
 
+  /// Needed for P2P and M2L operators
+  const MatrixKernelClass *const MatrixKernel;
+
   /// Needed for M2L operator
   const M2LHandlerClass M2LHandler;
 
@@ -87,10 +90,11 @@ public:
   FUnifTensorialKernel(const int inTreeHeight,
                        const FReal inBoxWidth,
                        const FPoint& inBoxCenter,
-                       const FReal inBoxWidthExtension, 
-                       const double inMatParam = 0.0)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension,inMatParam),
-      M2LHandler(AbstractBaseClass::MatrixKernel.getPtr(),
+                       const MatrixKernelClass *const inMatrixKernel,
+                       const FReal inBoxWidthExtension)
+    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
+      MatrixKernel(inMatrixKernel),
+      M2LHandler(MatrixKernel,
                  inTreeHeight,
                  inBoxWidth,
                  inBoxWidthExtension) 
@@ -157,7 +161,7 @@ public:
   {
     const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
     const FReal ExtendedCellWidth(CellWidth + AbstractBaseClass::BoxWidthExtension);
-    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(ExtendedCellWidth));
+    const FReal scale(MatrixKernel->getScaleFactor(ExtendedCellWidth));
 
     for(int idxV = 0 ; idxV < NVALS ; ++idxV){
       for (int idxLhs=0; idxLhs < nLhs; ++idxLhs){
@@ -175,8 +179,7 @@ public:
           const int idxMul = idxV*nRhs + idxRhs;
 
           // get index in matrix kernel
-          const unsigned int d 
-            = AbstractBaseClass::MatrixKernel.getPtr()->getPosition(idxLhs);
+          const unsigned int d = MatrixKernel->getPosition(idxLhs);
 
           for (int idx=0; idx<343; ++idx){
             if (SourceCells[idx]){
@@ -248,14 +251,14 @@ public:
            ContainerClass* const NeighborSourceParticles[27],
            const int /* size */)
   {
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
   }
 
 
   void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                  ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                  ContainerClass* const inNeighbors[27], const int /*inSize*/){
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
   }
 
 };

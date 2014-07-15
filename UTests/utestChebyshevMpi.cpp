@@ -67,6 +67,9 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
     const int nbLevels = 4; 
     const int sizeOfSubLevel = 2;
 
+   // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
+
     // Create octree
     
     struct TestParticle : public FmaRWParticle<8,8>{
@@ -107,7 +110,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
     }
     
     
-    KernelClass* kernels= new KernelClass(nbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    KernelClass* kernels= new KernelClass(nbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
     FmmClassProc algorithm(app.global(),&tree, kernels);
     algorithm.execute();
     

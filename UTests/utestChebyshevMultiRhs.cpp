@@ -83,6 +83,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         const int NbLevels        = 4;
         const int SizeSubLevels = 2;
 
+        // Create Matrix Kernel
+        const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
         //
 		FSize nbParticles = loader.getNumberOfParticles() ;
 		FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
@@ -116,7 +118,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
         // Run FMM
         Print("Fmm...");
-        KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+        KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
         FmmClass algo(&tree,&kernels);
         algo.execute();
 //

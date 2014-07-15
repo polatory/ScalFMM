@@ -51,6 +51,9 @@ class FUnifKernel
   typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
   AbstractBaseClass;
 
+  /// Needed for P2P and M2L operators
+  const MatrixKernelClass *const MatrixKernel;
+
   /// Needed for M2L operator
   const M2LHandlerClass M2LHandler;
 
@@ -63,9 +66,11 @@ public:
    */
   FUnifKernel(const int inTreeHeight,
               const FReal inBoxWidth,
-              const FPoint& inBoxCenter)
+              const FPoint& inBoxCenter,
+              const MatrixKernelClass *const inMatrixKernel)
     : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
-      M2LHandler(AbstractBaseClass::MatrixKernel.getPtr(),
+      MatrixKernel(inMatrixKernel),
+      M2LHandler(MatrixKernel,
                  inTreeHeight,
                  inBoxWidth) 
   { }
@@ -131,7 +136,7 @@ public:
            const int TreeLevel)
   {
     const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-    const FReal scale(AbstractBaseClass::MatrixKernel.getPtr()->getScaleFactor(CellWidth));
+    const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxRhs);
@@ -208,7 +213,7 @@ public:
            ContainerClass* const NeighborSourceParticles[27],
            const int /* size */)
   {
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,AbstractBaseClass::MatrixKernel.getPtr());
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
   }
 
 
@@ -216,7 +221,7 @@ public:
                  ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                  ContainerClass* const inNeighbors[27], const int /*inSize*/)
   {
-    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,AbstractBaseClass::MatrixKernel.getPtr());
+    DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
   }
 
 };

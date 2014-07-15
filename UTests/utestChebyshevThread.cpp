@@ -81,16 +81,20 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		const int NbLevels        = 4;
 		const int SizeSubLevels = 2;
 
-		// Create octree
+    // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
 
+    // Load particles
 		FSize nbParticles = loader.getNumberOfParticles() ;
 		FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
-         //
+
+		// Create octree
+		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    //
 		//   Insert particle in the tree
 		//
-		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 		    tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
 		}
@@ -99,7 +103,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		// Run FMM computation
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Fmm...");
-		KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+		KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 		FmmClass algo(&tree,&kernels);
 		algo.execute();
 		//0

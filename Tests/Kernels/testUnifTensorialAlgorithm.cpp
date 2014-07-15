@@ -78,8 +78,8 @@ int main(int argc, char* argv[])
   const unsigned int NRHS = MatrixKernelClass::NRHS;
   const unsigned int NLHS = MatrixKernelClass::NLHS;
 
-  const double CoreWidth = 0.1;
-  const MatrixKernelClass DirectMatrixKernel(CoreWidth);
+  const FReal CoreWidth = 0.1;
+  const MatrixKernelClass MatrixKernel(CoreWidth);
   std::cout<< "Interaction kernel: ";
   if(MK_ID == ONE_OVER_R) std::cout<< "1/R";
   else if(MK_ID == R_IJ)
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
                                      particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
                                      particles[idxOther].forces[2], particles[idxOther].potential,
-                                     &DirectMatrixKernel);
+                                     &MatrixKernel);
           else if(MK_ID == R_IJK)
             FP2P::MutualParticlesRIJK(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                       particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
                                       particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
                                       particles[idxOther].forces[0], particles[idxOther].forces[1],
                                       particles[idxOther].forces[2], particles[idxOther].potential,
-                                      &DirectMatrixKernel);
+                                      &MatrixKernel);
           else 
             std::runtime_error("Provide a valid matrix kernel!");
         }
@@ -234,7 +234,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),BoxWidthExtension,CoreWidth);
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel,BoxWidthExtension);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();
