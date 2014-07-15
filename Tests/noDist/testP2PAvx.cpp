@@ -55,7 +55,7 @@
 int main(int argc, char ** argv){
 	//
 	///////////////////////What we do/////////////////////////////
-	if( FParameters::existParameter(argc, argv, "-help" ) || argc < 4){
+	if( FParameters::existParameter(argc, argv, "-help" )){
 		std::cout << ">> This executable has to be used to compute  interaction either for periodic or non periodic system.\n";
 		std::cout << ">> Example -fin filenameIN.{fma or bfma)     -fout filenameOUT{fma or bfma) \n";
 		std::cout << ">> Default input file : ../Data/unitCubeXYZQ20k.fma\n";
@@ -103,11 +103,6 @@ int main(int argc, char ** argv){
 	for(int idx = 0 ; idx<nbParticles ; ++idx){
 		//
 	    loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
-		//	loader.fillParticle(particles[idx].getPtrFirstData(), nbDataToRead);    // OK
-		//  loader.fillParticle(particles[idx]); // OK
-	//    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
-	//			<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
-		//
 	    totalCharge += particles[idx].getPhysicalValue() ;
 	}
 
@@ -127,12 +122,12 @@ int main(int argc, char ** argv){
 
 	OctreeClass tree(2, 1, loader.getBoxWidth(), loader.getCenterOfBox());
 	for(int idxP=0 ; idxP<nbParticles ; ++idxP){
-	    tree.insert(particles[idxP].getPosition());
+	    tree.insert(particles[idxP].getPosition(),particles[idxP].getPhysicalValue());
 	}
-	int i=0;
-	tree.forEachLeaf([&](LeafClass * leaf){
-		printf("leaf : %d\n",i++ );
-	    });
+	int k=0;
+	// tree.forEachLeaf([&](LeafClass * leaf){
+	//	printf("leaf : %d\n",k++ );
+	//     });
 	//
 	// ----------------------------------------------------------------------------------------------------------
 	//                                   COMPUTATION
@@ -141,6 +136,25 @@ int main(int argc, char ** argv){
 	//
 	//  computation
 	//
+#ifdef ScalFMM_USE_DOUBLE_PRECISION
+	printf("Double precision \n");
+#else
+	printf("Simple precision \n");
+#endif
+#ifdef ScalFMM_USE_AVX
+	printf("AVX incomming .......\n\n");
+#endif
+
+#ifdef ScalFMM_USE_SSE
+	printf("SSE incomming .......\n\n");
+#endif
+
+#ifndef ScalFMM_USE_SSE
+#ifndef ScalFMM_USE_AVX
+	printf("Classic incomming ...\n\n");
+#endif
+#endif
+	counter.tic();
 	{
 	    typename OctreeClass::Iterator iterator(&tree);
 	    iterator.gotoBottomLeft();
@@ -153,6 +167,19 @@ int main(int argc, char ** argv){
 
 	    }while(iterator.moveRight());
 	}
+	counter.tac();
+	std::cout << "Done  " << "(@ Computation  " << counter.elapsed() << " s)." << std::endl;
+	FReal cumulPot = 0.0;
+	k=0;
+	tree.forEachLeaf([&](LeafClass * leaf){
+		int maxParts = leaf->getSrc()->getNbParticles();
+		FReal* datas = leaf->getSrc()->getPotentials();
+		for(int i=0 ; i<maxParts ; ++i){
+		    cumulPot += datas[i];
+		}
+		printf("leaf : %d --> cumul pot %e : \n",k++, cumulPot);
+	    });
+
 
 	delete[] particles;
 	return 0;
