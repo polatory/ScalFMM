@@ -43,6 +43,7 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -50,7 +51,6 @@
 #ifdef ScalFMM_USE_BLAS
 // chebyshev kernel
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #endif
@@ -71,14 +71,14 @@ int main(int argc, char ** argv){
 	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
 
 	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
+  const MatrixKernelClass MatrixKernel;
 
 #ifdef  ScalFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
 	const unsigned int ORDER = 12;
 	// typedefs
-	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
-  const MatrixKernelClass MatrixKernel;
 	typedef FChebCell<ORDER>                                                  CellClass;
 	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
 	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
