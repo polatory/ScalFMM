@@ -34,6 +34,7 @@
 #include "../../Src/Files/FRandomLoader.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 /** This program show an example of use of
   * the fmm basic algo

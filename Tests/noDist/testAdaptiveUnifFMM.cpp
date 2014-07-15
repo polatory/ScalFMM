@@ -156,8 +156,8 @@ int main(int argc, char ** argv){
 
 	std::cout << "Working on particles ..." << std::endl;
 	counter.tic();
-
-	KernelWrapperClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());;            // FTestKernels FBasicKernels
+  const MatrixKernelClass MatrixKernel;
+	KernelWrapperClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);            // FTestKernels FBasicKernels
 	FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
 	algo.execute();
 

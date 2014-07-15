@@ -22,6 +22,7 @@
 
 #include "../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../Src/Components/FSimpleLeaf.hpp"
 #include "../Src/Kernels/Spherical/FSphericalKernel.hpp"

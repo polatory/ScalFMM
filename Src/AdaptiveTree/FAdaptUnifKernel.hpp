@@ -79,7 +79,7 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveUnifKernel(const int inTreeHeight, const FReal inBoxWidth,
-			const FPoint& inBoxCenter) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter), M2LHandler(KernelBaseClass::MatrixKernel.getPtr(), inTreeHeight, inBoxWidth) 
+                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth) 
 	{}
 	//	/** Copy constructor */
 	FAdaptiveUnifKernel(const FAdaptiveUnifKernel& other)

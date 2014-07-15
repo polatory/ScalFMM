@@ -42,6 +42,7 @@
 //
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with

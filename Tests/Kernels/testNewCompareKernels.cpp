@@ -168,6 +168,9 @@ int main(int argc, char* argv[])
 		// init oct-tree
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
+    // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel;
+
 		{ // -----------------------------------------------------
 			time.tic();
 			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
@@ -180,7 +183,7 @@ int main(int argc, char* argv[])
 
 		{ // -----------------------------------------------------
 			time.tic();
-			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 			FmmClass algorithm(&tree, &kernels);
 			algorithm.execute();
 			time.tac();
@@ -239,6 +242,9 @@ int main(int argc, char* argv[])
 		// init oct-tree
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
+    // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel;
+
 		{ // -----------------------------------------------------
 			time.tic();
 
@@ -253,7 +259,7 @@ int main(int argc, char* argv[])
 
 		{ // -----------------------------------------------------
 			time.tic();
-			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 			FmmClass algorithm(&tree, &kernels);
 			algorithm.execute();
 			time.tac();
@@ -459,6 +465,9 @@ int main(int argc, char* argv[])
 		// init oct-tree
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
+    // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel;
+
 		{ // -----------------------------------------------------
 				time.tic();
 
@@ -473,7 +482,7 @@ int main(int argc, char* argv[])
 
 		{ // -----------------------------------------------------
 			time.tic();
-			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+			KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 			FmmClass algorithm(&tree, &kernels);
 			algorithm.execute();
 			time.tac();

@@ -38,6 +38,7 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
@@ -229,13 +230,15 @@ int main(int argc, char ** argv){
 	std::cout << "Create kernel & run simu ..." << std::endl;
 	counter.tic();
 
+  const FInterpMatrixKernelR MatrixKernel;
+
 	FTreeCoordinate min, max;
 
 	if( FParameters::existParameter(argc, argv, "-noper") ){
 #ifndef  ScalFMM_USE_BLAS
 		KernelClass kernels( DevP, NbLevels, loader->getBoxWidth(), loader->getCenterOfBox());
 #else
-		KernelClass kernels( NbLevels, loader->getBoxWidth(), loader->getCenterOfBox());
+		KernelClass kernels( NbLevels, loader->getBoxWidth(), loader->getCenterOfBox(),&MatrixKernel);
 #endif
 		FmmClassNoPer algo(&tree,&kernels);
 		algo.execute();
@@ -248,7 +251,7 @@ int main(int argc, char ** argv){
 #ifndef  ScalFMM_USE_BLAS
 		KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
 #else
-		KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
+		KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter(),&MatrixKernel);
 #endif
 		algo.setKernel(&kernels);
 		algo.execute();
@@ -278,8 +281,6 @@ int main(int argc, char ** argv){
 				max.getY(), min.getZ(), max.getZ());
 
 		particlesDirect = new EwalParticle[loader->getNumberOfParticles()];
-
-    const FInterpMatrixKernelR MatrixKernel;
 
 		FReal denergy = 0.0;
 		FMath::FAccurater dfx, dfy, dfz ;

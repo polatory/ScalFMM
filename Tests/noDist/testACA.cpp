@@ -49,6 +49,9 @@ int main(int argc, char* argv[])
 	const FReal epsilon = 1e-9;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 
+	// initialize timer
+	FTic time;
+
 	/*	
 	//// width of cell X and Y
 	//FReal wx = FReal(2.);
@@ -76,8 +79,6 @@ int main(int argc, char* argv[])
 	FChebTensor<ORDER>::setRoots(cy, wy, rootsY);
 
 	
-	// initialize timer
-	FTic time;
 
 
 	// fully pivoted ACA ///////////////////////////
@@ -185,7 +186,7 @@ int main(int argc, char* argv[])
 								// exclude near-field 
 								if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
 									FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
-									EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+									EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 									pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 									//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 									
@@ -209,7 +210,7 @@ int main(int argc, char* argv[])
 									// exclude near-field 
 									if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
 										FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
-										EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+										EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 										pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 										//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 										
@@ -225,7 +226,7 @@ int main(int argc, char* argv[])
 					// remaining far-field: source cells whose multipole expansion is taken from parent level
 					else {
 						FChebTensor<ORDER>::setRoots(cpy, pw, rootsY);
-						EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+						EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 						pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 						//std::cout << "- Compress " << cpy << "\tof width " << pw << " to rank " << rank << std::endl;
 

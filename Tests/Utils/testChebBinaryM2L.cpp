@@ -74,32 +74,32 @@ int main(int argc, char* argv[])
 
 	// order 2
 	time.tic();
-	FChebM2LHandler<2,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-1));
-	FChebM2LHandler<2,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-2));
+	FChebM2LHandler<2,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-1));
+	FChebM2LHandler<2,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-2));
 	// order 3
-	FChebM2LHandler<3,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-2));
-	FChebM2LHandler<3,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-3));
+	FChebM2LHandler<3,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-2));
+	FChebM2LHandler<3,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-3));
 	// order 4
-	FChebM2LHandler<4,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-3));
-	FChebM2LHandler<4,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-4));
+	FChebM2LHandler<4,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-3));
+	FChebM2LHandler<4,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-4));
 	// order 5
-	FChebM2LHandler<5,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-4));
-	FChebM2LHandler<5,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-5));
+	FChebM2LHandler<5,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-4));
+	FChebM2LHandler<5,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-5));
 	// order 6
-	FChebM2LHandler<6,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-5));
-	FChebM2LHandler<6,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-6));
+	FChebM2LHandler<6,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-5));
+	FChebM2LHandler<6,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-6));
 	// order 7
-	FChebM2LHandler<7,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-6));
-	FChebM2LHandler<7,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-7));
+	FChebM2LHandler<7,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-6));
+	FChebM2LHandler<7,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-7));
 	// order 8
-	FChebM2LHandler<8,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-7));
-	FChebM2LHandler<8,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-8));
+	FChebM2LHandler<8,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-7));
+	FChebM2LHandler<8,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-8));
 	// order 9
-	FChebM2LHandler<9,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-8));
-	FChebM2LHandler<9,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-9));
+	FChebM2LHandler<9,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-8));
+	FChebM2LHandler<9,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-9));
 	// order 10
-	FChebM2LHandler<10,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-9));
-	FChebM2LHandler<10,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(FReal(1e-10));
+	FChebM2LHandler<10,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-9));
+	FChebM2LHandler<10,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(&MatrixKernel,FReal(1e-10));
 
 
 	return 0;

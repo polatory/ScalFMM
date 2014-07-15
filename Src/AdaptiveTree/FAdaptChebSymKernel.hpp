@@ -74,11 +74,11 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveChebSymKernel(const int inTreeHeight, const FReal inBoxWidth,
-			const FPoint& inBoxCenter) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter)
+                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveChebSymKernel(const FAdaptiveChebSymKernel& other)
-		: KernelBaseClass(other)
+  : KernelBaseClass(other)
 		{	}
 
 	//

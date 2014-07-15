@@ -57,6 +57,7 @@ void applyl2l(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const
 
 int main(int argc, char* argv[])
 {
+  FTic time;
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	FPoint X[nnodes];
