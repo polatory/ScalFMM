@@ -158,7 +158,6 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 	  FReal evaluate(const FPoint& x, const FPoint& y) const
 	  {
 	    const FPoint xy(x-y);
-	    std::cout << "Lx " <<LX <<std::endl ;
 	    return FReal(1.) / FMath::Sqrt(LX*xy.getX()*xy.getX() +
 	    		LY*xy.getY()*xy.getY() +
 	    		LZ*xy.getZ()*xy.getZ());
@@ -185,9 +184,9 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
     block[0] = one_over_rL;
 
-    blockDerivative[0][0] = FMath::Sqrt(LX) * one_over_rL3 * xy.getX();
-    blockDerivative[0][1] = FMath::Sqrt(LY) * one_over_rL3 * xy.getY();
-    blockDerivative[0][2] = FMath::Sqrt(LZ) * one_over_rL3 * xy.getZ();
+    blockDerivative[0][0] = LX * one_over_rL3 * xy.getX();
+    blockDerivative[0][1] = LY * one_over_rL3 * xy.getY();
+    blockDerivative[0][2] = LZ * one_over_rL3 * xy.getZ();
 
   }
 
