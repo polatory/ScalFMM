@@ -72,6 +72,8 @@ int main(int argc, char ** argv){
     "../Data/test20k.bin.fma.single":
     "../Data/test20k.bin.fma.double";
   const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
+  const int nbThreads = FParameters::getValue(argc,argv,"-t",8);
+  omp_set_num_threads(nbThreads);
 
   std::cout << "Opening : " << filename << "\n";
 
@@ -81,7 +83,7 @@ int main(int argc, char ** argv){
     return 1;
   }
 
-  CellClass::Init(DevP);
+  CellClass::Init(DevP,true);
   
   
   OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
