@@ -22,7 +22,8 @@
 #include "Adaptative/FAdaptiveCell.hpp"
 #include "Adaptative/FAdaptiveKernelWrapper.hpp"
 #include "Adaptative/FAbstractAdaptiveKernel.hpp"
-#include "Kernels/Uniform/FUnifKernel.hpp"
+//#include "Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifDenseKernel.hpp"
 #include "Kernels/Uniform/FUnifM2LHandler.hpp"
 
 class FTreeCoordinate;
@@ -54,10 +55,10 @@ class FTreeCoordinate;
  */
 
 template< class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveUnifKernel : FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveUnifKernel : FUnifDenseKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 	//
-	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+	typedef FUnifDenseKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
 	enum {order = ORDER,
         nnodes = KernelBaseClass::nnodes};
   /// Needed for M2L operator
@@ -97,7 +98,7 @@ public:
 	void P2M(CellClass* const pole, const int cellLevel, const ContainerClass* const particles) override {
 		//pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
 		//
-		const FPoint CellCenter(KernelBaseClass::getLeafCellCenter(pole->getCoordinate()));
+		const FPoint CellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),cellLevel));
 		const FReal BoxWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-cellLevel);
 		//
 
@@ -115,63 +116,94 @@ public:
 
 	void M2M(CellClass* const pole, const int poleLevel, const CellClass* const subCell, const int subCellLevel) override {
 	//	pole->setDataUp(pole->getDataUp() + subCell->getDataUp());
-
-    const FPoint subCellCenter(KernelBaseClass::getLeafCellCenter(subCell->getCoordinate()));
+    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
 		const FReal subCellWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-subCellLevel);
-    const FPoint poleCellCenter(KernelBaseClass::getLeafCellCenter(pole->getCoordinate()));
+    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
 		const FReal poleCellWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-poleLevel);
 
-    // Set sub-child coords
-    FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    ////////////////////////////////////////////////////////////////////////////
+    /// p^6 version
+    // allocate memory
+    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
 
-    // Map global position of sub-child nodes to [-1,1]
-    FReal localChildCoords[3][ORDER];
+    // set child info
+    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+
+    // map global position of roots to local position in parent cell
     const map_glob_loc map(poleCellCenter, poleCellWidth);
-    FPoint localChildPoints;
-    for (unsigned int n=0; n<ORDER; ++n) {
-      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
-      localChildCoords[0][n] = localChildPoints.getX();
-      localChildCoords[1][n] = localChildPoints.getY();
-      localChildCoords[2][n] = localChildPoints.getZ();
-    }
+    for (unsigned int n=0; n<nnodes; ++n)
+      map(ChildRoots[n], localChildRoots[n]);
 
-    // assemble interpolator
-    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+    // assemble child - parent - interpolator
+    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
 
-    // get permutation operators
-    unsigned int perm[3][nnodes];
-    for (unsigned int i=0;i<3; ++i) 
-      for (unsigned int n=0; n<nnodes; ++n)
-        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
 
+//    ////////////////////////////////////////////////////////////////////////////
+//    /// p^4 version
+//
+//    // Set sub-child coords
+//    FReal globalChildCoords[3][ORDER];
+//    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+//
+//    // Map global position of sub-child nodes to [-1,1]
+//    FReal localChildCoords[3][ORDER];
+//    const map_glob_loc map(poleCellCenter, poleCellWidth);
+//    FPoint localChildPoints;
+//    for (unsigned int n=0; n<ORDER; ++n) {
+//      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+//      localChildCoords[0][n] = localChildPoints.getX();
+//      localChildCoords[1][n] = localChildPoints.getY();
+//      localChildCoords[2][n] = localChildPoints.getZ();
+//    }
+//
+//    // assemble interpolator
+//    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+//
+//    // get permutation operators
+//    unsigned int perm[3][nnodes];
+//    for (unsigned int i=0;i<3; ++i) 
+//      for (unsigned int n=0; n<nnodes; ++n)
+//        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
+//
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
       // 1) apply Sy (using tensor product M2M with an interpolator computed on the fly)
+
+      // Do we need to reset multipole expansion? Same question for non adap?
       FBlas::scal(nnodes, FReal(0.), pole->getMultipole(idxRhs));
 
-      FReal Exp[nnodes], PermExp[nnodes];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                   subChildParentInterpolator, ORDER,
-                   const_cast<FReal*>(subCell->getMultipole(idxRhs)), ORDER, PermExp, ORDER);
+      /// p^6 version
+      FBlas::gemtva(nnodes, nnodes, FReal(1.),
+                    subChildParentInterpolator,
+                    const_cast<FReal*>(subCell->getMultipole(idxRhs)), pole->getMultipole(idxRhs));
 
-      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                   subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
-                   Exp, ORDER, PermExp, ORDER);
+//      /// p^4 version
+//
+//      FReal Exp[nnodes], PermExp[nnodes];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                   subChildParentInterpolator, ORDER,
+//                   const_cast<FReal*>(subCell->getMultipole(idxRhs)), ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                   subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
+//                   Exp, ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                   subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
+//                   Exp, ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	pole->getMultipole(idxRhs)[perm[2][n]] += PermExp[n];
+//
 
-      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                   subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
-                   Exp, ORDER, PermExp, ORDER);
-
-      for (unsigned int n=0; n<nnodes; ++n)	pole->getMultipole(idxRhs)[perm[2][n]] += PermExp[n];
 
 //      // 2) Apply Discete Fourier Transform
 //      M2LHandler.applyZeroPaddingAndDFT(ParentCell->getMultipole(idxRhs), 
@@ -184,28 +216,31 @@ public:
 	}
 
 	void M2L(CellClass* const local, const int localLevel, const CellClass* const pole, const int poleLevel) override {
-	//	local->setDataDown(local->getDataDown() + pole->getDataUp());
+		//local->setDataDown(local->getDataDown() + pole->getDataUp());
     // Source cell: pole
     const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2, poleLevel))); 
-    const FPoint poleCellCenter(KernelBaseClass::getLeafCellCenter(pole->getCoordinate()));
+    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+
     // Target cell: local
     const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2, localLevel))); 
-    const FPoint localCellCenter(KernelBaseClass::getLeafCellCenter(local->getCoordinate()));
+    const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
 
     // interpolation points of source (Y) and target (X) cell
     FPoint X[nnodes], Y[nnodes];
     FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
     FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
 
+
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
       // Dense M2L
       const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
-
+    
       for (unsigned int m=0; m<nnodes; ++m)
-        for (unsigned int n=0; n<nnodes; ++n)
-          local->getLocal(idxRhs)[m]=MatrixKernel->evaluate(X[m], Y[n]) * MultipoleExpansion[n];
-
+        for (unsigned int n=0; n<nnodes; ++n){
+          local->getLocal(idxRhs)[m]+=MatrixKernel->evaluate(X[m], Y[n]) * MultipoleExpansion[n];
+          
+        }
     }
 	}
 
@@ -218,64 +253,90 @@ public:
 
 	void L2L(const CellClass* const local, const int localLevel, CellClass* const subCell, const int subCellLevel) override {
 	//	subCell->setDataDown(local->getDataDown() + subCell->getDataDown());
-
-    const FPoint subCellCenter(KernelBaseClass::getLeafCellCenter(subCell->getCoordinate()));
+    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
 		const FReal subCellWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-subCellLevel);
-    const FPoint localCenter(KernelBaseClass::getLeafCellCenter(local->getCoordinate()));
+    const FPoint localCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
 		const FReal localWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-localLevel);
 
-    // Set sub-child coords
-    FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    ////////////////////////////////////////////////////////////////////////////
+    /// p^6 version
+    // allocate memory
+    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
 
-    // Map global position of sub-child nodes to [-1,1]
-    FReal localChildCoords[3][ORDER];
+    // set child info
+    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+
+    // map global position of roots to local position in parent cell
     const map_glob_loc map(localCenter, localWidth);
-    FPoint localChildPoints;
-    for (unsigned int n=0; n<ORDER; ++n) {
-      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
-      localChildCoords[0][n] = localChildPoints.getX();
-      localChildCoords[1][n] = localChildPoints.getY();
-      localChildCoords[2][n] = localChildPoints.getZ();
-    }
+    for (unsigned int n=0; n<nnodes; ++n)
+      map(ChildRoots[n], localChildRoots[n]);
 
-    // assemble interpolator
-    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
-    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+    // assemble child - parent - interpolator
+    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
 
-    // get permutation operators
-    unsigned int perm[3][nnodes];
-    for (unsigned int i=0;i<3; ++i) 
-      for (unsigned int n=0; n<nnodes; ++n)
-        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
+//    ////////////////////////////////////////////////////////////////////////////
+//    /// p^4 version
+//    // Set sub-child coords
+//    FReal globalChildCoords[3][ORDER];
+//    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+//
+//    // Map global position of sub-child nodes to [-1,1]
+//    FReal localChildCoords[3][ORDER];
+//    const map_glob_loc map(localCenter, localWidth);
+//    FPoint localChildPoints;
+//    for (unsigned int n=0; n<ORDER; ++n) {
+//      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+//      localChildCoords[0][n] = localChildPoints.getX();
+//      localChildCoords[1][n] = localChildPoints.getY();
+//      localChildCoords[2][n] = localChildPoints.getZ();
+//    }
+//
+//    // assemble interpolator
+//    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
+//    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+//
+//    // get permutation operators
+//    unsigned int perm[3][nnodes];
+//    for (unsigned int i=0;i<3; ++i) 
+//      for (unsigned int n=0; n<nnodes; ++n)
+//        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 //      // 1) Apply Inverse Discete Fourier Transform
 //      M2LHandler.unapplyZeroPaddingAndDFT(local->getTransformedLocal(idxRhs),
 //                                           const_cast<CellClass*>(local)->getLocal(idxRhs));
-      // 2) apply Sx
-      FReal Exp[nnodes], PermExp[nnodes];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                  subChildParentInterpolator, ORDER,
-                  const_cast<FReal*>(local->getLocal(idxRhs)), ORDER, PermExp, ORDER);
 
-      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                  subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
-                  Exp, ORDER, PermExp, ORDER);
+      /// p^6 version
+      FBlas::gemva(nnodes, nnodes, FReal(1.),
+                   subChildParentInterpolator,
+                   const_cast<FReal*>(local->getLocal(idxRhs)), subCell->getLocal(idxRhs));
 
-      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
-      // ORDER*ORDER*ORDER * (2*ORDER-1)
-      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
-                  subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
-                  Exp, ORDER, PermExp, ORDER);
-
-      for (unsigned int n=0; n<nnodes; ++n)	subCell->getLocal(idxRhs)[perm[2][n]] += PermExp[n];
-      // total flops count: 3 * ORDER*ORDER*ORDER * (2*ORDER-1)
+//      /// p^4 version
+//
+//      // 2) apply Sx
+//      FReal Exp[nnodes], PermExp[nnodes];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                  subChildParentInterpolator, ORDER,
+//                  const_cast<FReal*>(local->getLocal(idxRhs)), ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                  subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
+//                  Exp, ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+//      // ORDER*ORDER*ORDER * (2*ORDER-1)
+//      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+//                  subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
+//                  Exp, ORDER, PermExp, ORDER);
+//
+//      for (unsigned int n=0; n<nnodes; ++n)	subCell->getLocal(idxRhs)[perm[2][n]] += PermExp[n];
+//      // total flops count: 3 * ORDER*ORDER*ORDER * (2*ORDER-1)
 
     }
 
@@ -286,7 +347,8 @@ public:
 //		for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
 //			particlesAttributes[idxPart] += local->getDataDown();
 //		}
-    const FPoint CellCenter(KernelBaseClass::getLeafCellCenter(local->getCoordinate()));
+
+    const FPoint CellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),cellLevel));
 		const FReal BoxWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-cellLevel);
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){

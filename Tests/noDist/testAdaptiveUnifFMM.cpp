@@ -93,8 +93,8 @@ int main(int argc, char ** argv){
 	std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
 	//////////////////////////////////////////////////////////////
 	//
-	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 7);
-	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 3);
+	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 3);
+	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 2);
 	const int sminM            = FParameters::getValue(argc,argv,"-sM", P*P*P);
 	const int sminL             = FParameters::getValue(argc,argv,"-sL", P*P*P);
 	//
@@ -105,7 +105,7 @@ int main(int argc, char ** argv){
 	//////////////////////////////////////////////////////////////////////////////////
 	// Not Random Loader
 	//////////////////////////////////////////////////////////////////////////////////
-	const std::string fileName(FParameters::getStr(argc,argv,"-fin",   "../Data/prolate50.fma"));
+	const std::string fileName(FParameters::getStr(argc,argv,"-fin",   "../Data/prolate50.out.fma"));
 	FFmaGenericLoader loader(fileName);
 	const long int NbPart  = loader.getNumberOfParticles() ;
 	// Random Loader
@@ -123,26 +123,28 @@ int main(int argc, char ** argv){
 	std::cout 		<< "         criteria SM:  "<< sminM     <<std::endl
 			<< "         criteria SL:  "<< sminL     <<std::endl <<std::endl;
 	//
-	{
-		counter.tic();
-		FReal L= loader.getBoxWidth();
-		FmaRParticle* particles=  new FmaRParticle[NbPart];
-		FPoint minPos(L,L,L), maxPos(-L,-L,-L);
-		//
-		loader.fillParticle(particles,NbPart);
+	
+  counter.tic();
+  FReal L= loader.getBoxWidth();
+  //FmaRParticle* particles=  new FmaRParticle[NbPart];
+  FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[NbPart];
 
-		for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
-			const FPoint PP(particles[idxPart].getPosition() ) ;
-			//
-			minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
-			minPos.setY(FMath::Min(minPos.getY(),PP.getY())) ;
-			minPos.setZ(FMath::Min(minPos.getZ(),PP.getZ())) ;
-			maxPos.setX(FMath::Max(maxPos.getX(),PP.getX())) ;
-			maxPos.setY(FMath::Max(maxPos.getY(),PP.getY())) ;
-			maxPos.setZ(FMath::Max(maxPos.getZ(),PP.getZ())) ;
-			//
-			tree.insert(PP, idxPart, particles[idxPart].getPhysicalValue());
-		}
+  FPoint minPos(L,L,L), maxPos(-L,-L,-L);
+  //
+  loader.fillParticle(particles,NbPart);
+
+  for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
+    const FPoint PP(particles[idxPart].getPosition() ) ;
+    //
+    minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
+    minPos.setY(FMath::Min(minPos.getY(),PP.getY())) ;
+    minPos.setZ(FMath::Min(minPos.getZ(),PP.getZ())) ;
+    maxPos.setX(FMath::Max(maxPos.getX(),PP.getX())) ;
+    maxPos.setY(FMath::Max(maxPos.getY(),PP.getY())) ;
+    maxPos.setZ(FMath::Max(maxPos.getZ(),PP.getZ())) ;
+    //
+    tree.insert(PP, idxPart, particles[idxPart].getPhysicalValue());
+		
 
 
 		counter.tac();
@@ -163,6 +165,58 @@ int main(int argc, char ** argv){
 
 	counter.tac();
 	std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << " s)." << std::endl;
+  //
+  FReal energy= 0.0 , energyD = 0.0 ;
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute direct energy
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+    energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
+  }
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  // Compare
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  FMath::FAccurater potentialDiff;
+  FMath::FAccurater fx, fy, fz;
+  { // Check that each particle has been summed with all other
+
+//    std::cout << "indexPartOrig || DIRECT V fx || FMM V fx" << std::endl;
+
+    tree.forEachLeaf([&](LeafClass* leaf){
+        const FReal*const potentials        = leaf->getTargets()->getPotentials();
+        const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+        const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+        const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+        const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+        const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+        const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
+
+        for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+          const int indexPartOrig = indexes[idxPart];
+          potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+          fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+          fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+          fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
+          energy   += potentials[idxPart]*physicalValues[idxPart];
+
+//          std::cout << indexPartOrig 
+//                    << " " << particles[indexPartOrig].getPotential() << " " << particles[indexPartOrig].getForces()[0] 
+//                    << " " << potentials[idxPart] << " " << forcesX[idxPart]
+//                    << std::endl;
+
+        }
+      });
+  }
+
+  delete[] particles;
+
+  // Print for information
+  std::cout << "Potential " << potentialDiff << std::endl;
+  std::cout << "Fx " << fx << std::endl;
+  std::cout << "Fy " << fy << std::endl;
+  std::cout << "Fz " << fz << std::endl;
+
 
 	OctreeClass::Iterator octreeIterator(&tree);
 	std::ofstream file("aa.tree", std::ofstream::out );
