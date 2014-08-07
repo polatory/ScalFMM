@@ -229,6 +229,13 @@ public:
         return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
     }
 
+    /*
+     * Indicate if tree is empty or not.
+     */
+    bool isEmpty(){
+        return root->getRightLeafIndex() < 0;
+    }
+
     /**
      * The class works on suboctree. Most of the resources needed
      * are avaiblable by using FAbstractSubOctree. But when accessing
