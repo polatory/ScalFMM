@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
 	typedef FChebCell<ORDER>                                    CellClass;
 	typedef FOctree<CellClass,ContainerClass,LeafClass>         OctreeClass;
 	typedef FInterpMatrixKernelR                                MatrixKernelClass;
-
+	const MatrixKernelClass MatrixKernel;
 	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 	//
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	  //
 	  // Here we use a pointer due to the limited size of the stack
 	  //
-	  KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+	  KernelClass *kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
 	  //
 	  FmmClassProc algorithm(app.global(),&tree, kernels);
 	  //
