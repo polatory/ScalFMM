@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_FFT
 // ================
 
 #include <iostream>
