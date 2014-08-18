@@ -177,6 +177,7 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
         }
         // Wait to complete
         FMpi::Assert( MPI_Waitall(whatToRecvFromWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        ////FLOG( FLog::Controller << currentComm.processId() << "] Recv Done \n"; )
         // Copy to ouput variables
         (*inPartRecv) = recvBuffer;
         (*inNbElementsRecv) = totalToRecv;
@@ -200,6 +201,7 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
         }
         // Wait to complete
         FMpi::Assert( MPI_Waitall(whatToSendToWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        ////FLOG( FLog::Controller << currentComm.processId() << "] Send Done \n"; )
     }
 
     static CompareType SelectPivot(const SortType workingArray[], const IndexType currentSize, const FMpi::FComm& currentComm, bool* shouldStop){
@@ -208,12 +210,16 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
             NO_VALUES,
             AVERAGE_2
         };
+        // We need to know the max value to ensure that the pivot will be different
+        CompareType maxFoundValue = CompareType(workingArray[0]);
         // Check if all the same
         bool allTheSame = true;
         for(int idx = 1 ; idx < currentSize && allTheSame; ++idx){
             if(workingArray[0] != workingArray[idx]){
                 allTheSame = false;
             }
+            // Keep the max
+            maxFoundValue = FMath::Max(maxFoundValue , CompareType(workingArray[idx]));
         }
         // Check if empty
         const bool noValues = (currentSize == 0);
@@ -221,6 +227,10 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
         CompareType localPivot = CompareType(0);
         if(!noValues){
             localPivot = (CompareType(workingArray[currentSize/3])+CompareType(workingArray[(2*currentSize)/3]))/2;
+            // The pivot must be different (to ensure that the partition will return two parts)
+            if( localPivot == maxFoundValue){
+                localPivot -= 1;
+            }
         }
 
         ////FLOG( FLog::Controller << currentComm.processId() << "] localPivot = " << localPivot << "\n" );
@@ -350,7 +360,9 @@ public:
                 workingArray = fullLowerPart;
                 currentSize = fullNbLowerElementsRecv;
                 // Reduce working group
+                ////FLOG( FLog::Controller << currentComm.processId() << "] Reduce group to " << 0 << " / " << procInTheMiddle << "\n"; )
                 currentComm.groupReduce( 0, procInTheMiddle);
+                ////FLOG( FLog::Controller << currentComm.processId() << "] Done\n" );
             }
             else {
                 // I am in the group of the greater elements
@@ -370,10 +382,13 @@ public:
                 workingArray = fullGreaterPart;
                 currentSize = fullNbGreaterElementsRecv;
                 // Reduce working group
+                ////FLOG( FLog::Controller << currentComm.processId() << "] Reduce group to " << procInTheMiddle + 1 << " / " << currentNbProcs - 1 << "\n"; )
                 currentComm.groupReduce( procInTheMiddle + 1, currentNbProcs - 1);
+                ////FLOG( FLog::Controller << currentComm.processId() << "] Done\n"; )
             }
         }
 
+        ////FLOG( FLog::Controller << currentComm.processId() << "] Sequential sort\n"; )
         // Finish by a local sort
         FQuickSort< SortType, CompareType, IndexType>::QsOmp(workingArray, currentSize);
         (*outputSize)  = currentSize;
