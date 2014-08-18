@@ -12,7 +12,6 @@
 #include "../../Src/Containers/FVector.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Components/FBasicParticle.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
 
 #include "../../Src/Utils/FPoint.hpp"
@@ -23,26 +22,13 @@
 
 #include "../../Src/Components/FBasicKernels.hpp"
 
+#include "../../Src/Components/FBasicParticleContainer.hpp"
+
 #ifdef ScalFMM_USE_MPI
 #include "../../Src/Utils/FMpi.hpp"
 #endif
 
 #include "FmmApi.h"
-
-
-template <class ParticleClass>
-class CoreParticle : public ParticleClass {
-    int index;
-public:
-    CoreParticle() : index(0) {
-    }
-    void setIndex(const int inIndex){
-        index = inIndex;
-    }
-    int getIndex() const {
-        return index;
-    }
-};
 
 template <class ContainerClass>
 class CoreCell : public FBasicCell {
@@ -53,7 +39,7 @@ class CoreCell : public FBasicCell {
     mutable ContainerClass* container;
 
 public:
-    CoreCell() : multipole(0), local(0), level(0), container(0) {
+    CoreCell() : multipole(nullptr), local(nullptr), level(0), container(nullptr) {
     }
     void createArrays(const int multipoleSize, const int localSize){
         multipole = new char[multipoleSize];
@@ -112,8 +98,8 @@ public:
 
 
 
-template< class ParticleClass, class CellClass, class ContainerClass>
-class CoreKernel : public FAbstractKernels<ParticleClass,CellClass,ContainerClass> {
+template< class CellClass, class ContainerClass>
+class CoreKernel : public FAbstractKernels<CellClass,ContainerClass> {
     void* fmmCore;
 
 public:
@@ -169,7 +155,7 @@ public:
                      ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
                      ContainerClass* const neighbors[27], const int ){
         CellClass* cell = (CellClass*)targets->getParentCell();
-        FmmKernel_P2P(fmmCore, cell, cell);
+        FmmKernel_P2P_inner(fmmCore, cell);
 
         for(int idx = 0 ; idx < 27 ; ++idx){
             if( neighbors[idx] ){
@@ -188,7 +174,6 @@ public:
 };
 
 
-template <class ObjectClass>
 class CoreVector {
     mutable void* parentCell;
     void* fields;
@@ -198,8 +183,8 @@ class CoreVector {
     FVector<FReal> positions;
     FVector<int> indexes;
 public:
-    CoreVector() : parentCell(0), fields(0), sizeOfField(0),
-        potentials(0), sizeOfPential(0){
+    CoreVector() : parentCell(nullptr), fields(nullptr), sizeOfField(0),
+        potentials(nullptr), sizeOfPential(0){
     }
 
     ~CoreVector(){
@@ -257,24 +242,24 @@ public:
         return indexes.getSize();
     }
 
-    void push(const ObjectClass& particle){
-        positions.push(particle.getPosition().getX());
-        positions.push(particle.getPosition().getY());
-        positions.push(particle.getPosition().getZ());
-        indexes.push(particle.getIndex());
+    void push(const FPoint& partPosition, const int partIndex){
+        positions.push(partPosition.getX());
+        positions.push(partPosition.getY());
+        positions.push(partPosition.getZ());
+        indexes.push(partIndex);
     }
 };
 
-typedef CoreParticle<FBasicParticle>      CoreParticleClass;
-typedef CoreVector<CoreParticleClass>     CoreContainerClass;
+
+typedef CoreVector          CoreContainerClass;
 
 typedef CoreCell<CoreContainerClass>      CoreCellClass;
-typedef FSimpleLeaf<CoreParticleClass, CoreContainerClass >                        LeafClass;
-typedef FOctree<CoreParticleClass, CoreCellClass, CoreContainerClass , LeafClass >     OctreeClass;
-typedef CoreKernel<CoreParticleClass, CoreCellClass, CoreContainerClass>         CoreKernelClass;
+typedef FSimpleLeaf<CoreContainerClass >                        LeafClass;
+typedef FOctree<CoreCellClass, CoreContainerClass , LeafClass >     OctreeClass;
+typedef CoreKernel<CoreCellClass, CoreContainerClass>         CoreKernelClass;
 
-typedef FFmmAlgorithm<OctreeClass, CoreParticleClass, CoreCellClass, CoreContainerClass, CoreKernelClass, LeafClass >     FmmClass;
-typedef FFmmAlgorithmThread<OctreeClass, CoreParticleClass, CoreCellClass, CoreContainerClass, CoreKernelClass, LeafClass >     FmmClassThread;
+typedef FFmmAlgorithm<OctreeClass, CoreCellClass, CoreContainerClass, CoreKernelClass, LeafClass >     FmmClass;
+typedef FFmmAlgorithmThread<OctreeClass, CoreCellClass, CoreContainerClass, CoreKernelClass, LeafClass >     FmmClassThread;
 
 
 struct ScalFmmCoreHandle {
@@ -554,12 +539,9 @@ int FmmCore_setPositions(void *fmmCore, int *nb, FReal *position)  {
         omp_set_num_threads(corehandle->config.nbThreads);
     }
 
-    CoreParticleClass part;
     for(int idxPart = 0 ; idxPart < (*nb) ; ++idxPart){
-        FReal* pos = &position[idxPart * 3];
-        part.setPosition(pos[0], pos[1], pos[2]);
-        part.setIndex(idxPart);
-        corehandle->octree->insert(part);
+        const FReal* pos = &position[idxPart * 3];
+        corehandle->octree->insert(FPoint(pos[0], pos[1], pos[2]),idxPart);
     }
 
     return FMMAPI_NO_ERROR;
@@ -606,7 +588,7 @@ int FmmCore_doComputation(void *fmmCore)  {
 
         typename OctreeClass::Iterator octreeIterator(corehandle->octree);
         octreeIterator.gotoBottomLeft();
-        for(int idxLevel = corehandle->config.treeHeight - 1 ; idxLevel > 1 ; --idxLevel ){
+        for(int idxLevel = corehandle->config.treeHeight - 1 ; idxLevel >= 1 ; --idxLevel ){
             int multipoleSize;
             int localSize;
 

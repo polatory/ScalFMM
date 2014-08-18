@@ -5,6 +5,7 @@ if(insource)
 endif(insource)
 
 project(Addons_fmmapi_scalfmm CXX)
+ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS})
 
 # Active language
 # -----------------------
@@ -29,7 +30,11 @@ if(SCALFMM_ADDON_FMMAPI)
 	target_link_libraries( scalfmmapi scalfmm)
 
 	# Adding the entire project dir as an include dir
-	INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR}/Src )
+	INCLUDE_DIRECTORIES(
+         ${CMAKE_BINARY_DIR}/Src 
+         ${CMAKE_SOURCE_DIR}/Src   
+         ${SCALFMM_INCLUDES}
+    )
 
 	# Install lib
 	install( TARGETS scalfmmapi ARCHIVE DESTINATION lib )
@@ -80,6 +85,7 @@ if(SCALFMM_ADDON_FMMAPI)
 				scalfmmapi
 				${BLAS_LIBRARIES}
 				${LAPACK_LIBRARIES}
+			    ${SCALFMM_LIBRARIES}
 				)
 		endif()
 	endforeach(exec)

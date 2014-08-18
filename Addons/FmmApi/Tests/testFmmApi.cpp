@@ -18,8 +18,6 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
-#include "../../Src/Components/FBasicParticle.hpp"
-
 #include "../Src/FmmApi.h"
 
 /** This program show an example of use of the fmm api
@@ -39,7 +37,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader<FBasicParticle> loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
 
     void* FmmCoreHandle;
     FmmCore_init(&FmmCoreHandle);
@@ -66,16 +64,16 @@ int main(int argc, char ** argv){
     FReal* positions = new FReal[nbPart*3];
 
     {
-        FBasicParticle part;
+        FPoint part;
         const FReal physicalValue = 0.1;
 
         for(int idx = 0 ; idx < nbPart ; ++idx){
-            loader.fillParticle(part);
+            loader.fillParticle(&part);
 
             potentials[idx] = physicalValue;
-            positions[3*idx] = part.getPosition().getX();
-            positions[3*idx+1] = part.getPosition().getY();
-            positions[3*idx+2] = part.getPosition().getZ();
+            positions[3*idx] = part.getX();
+            positions[3*idx+1] = part.getY();
+            positions[3*idx+2] = part.getZ();
         }
 
         FmmCore_setPositions(FmmCoreHandle, &nbPart, positions);
@@ -135,15 +133,16 @@ int main(int argc, char ** argv){
             dy *= inv_square_distance;
             dz *= inv_square_distance;
 
-            fieldsdirect[4*idxTarget] += dx;
-            fieldsdirect[4*idxTarget+1] += dy;
-            fieldsdirect[4*idxTarget+2] += dz;
-            fieldsdirect[4*idxTarget+3] += inv_distance * potentials[idxSource];
+            fieldsdirect[4*idxTarget+1] += dx;
+            fieldsdirect[4*idxTarget+2] += dy;
+            fieldsdirect[4*idxTarget+3] += dz;
+            fieldsdirect[4*idxTarget+0] += inv_distance * potentials[idxSource];
 
-            fieldsdirect[4*idxSource] += -dx;
-            fieldsdirect[4*idxSource+1] += -dy;
-            fieldsdirect[4*idxSource+2] += -dz;
-            fieldsdirect[4*idxSource+3] += inv_distance * potentials[idxTarget];
+            fieldsdirect[4*idxSource+1] += -dx;
+            fieldsdirect[4*idxSource+2] += -dy;
+            fieldsdirect[4*idxSource+3] += -dz;
+            fieldsdirect[4*idxSource+0] += inv_distance * potentials[idxTarget];
+
         }
     }
 
