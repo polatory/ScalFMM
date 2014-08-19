@@ -243,6 +243,32 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
     }
 
 
+
+    void TestPivotSort(){
+        const int myRank = app.global().processId();
+        const int nbProcess = app.global().processCount();
+
+        const int nbElements = 500;
+        std::unique_ptr<long[]> elements(new long[nbElements]);
+
+        for(int idx = 0 ; idx < nbElements ; ++idx){
+            elements[idx] = 10000;
+        }
+        elements[0] = 9999;
+
+        const int nbElementsInTest = app.global().reduceSum(nbElements);
+
+        int outSize;
+        long* outElements = nullptr;
+        FQuickSortMpi<long, long, int>::QsMpi(elements.get(), nbElements, &outElements, &outSize, app.global());
+
+        CheckIfSorted(outElements, outSize);
+        CheckBorder(outElements, outSize);
+
+        uassert(nbElementsInTest == app.global().reduceSum(outSize));
+        delete[] outElements;
+    }
+
     ////////////////////////////////////////////////////////////
     /// Starter functions
     ////////////////////////////////////////////////////////////
@@ -254,6 +280,7 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
         AddTest(&TestMpiQs::TestSameSort,"Test with all the same value");
         AddTest(&TestMpiQs::TestUniqueSort,"Test with unique value");
         AddTest(&TestMpiQs::TestBigSort,"Test with random values");
+        AddTest(&TestMpiQs::TestPivotSort,"Test with big pivot");
     }
 public:
     TestMpiQs(int argc,char ** argv) : FUTesterMpi(argc,argv){

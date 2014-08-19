@@ -228,7 +228,8 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
         if(!noValues){
             localPivot = (CompareType(workingArray[currentSize/3])+CompareType(workingArray[(2*currentSize)/3]))/2;
             // The pivot must be different (to ensure that the partition will return two parts)
-            if( localPivot == maxFoundValue){
+            if( localPivot == maxFoundValue && !allTheSame){
+                ////FLOG( FLog::Controller << currentComm.processId() << "] Pivot " << localPivot << " is equal max and allTheSame equal " << allTheSame << "\n"; )
                 localPivot -= 1;
             }
         }
