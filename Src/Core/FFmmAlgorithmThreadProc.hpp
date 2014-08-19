@@ -155,42 +155,52 @@ public:
         {
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
-            Interval myLastInterval;
-            {//Building the leaf interval
+            Interval myFullInterval;
+            {//Building the interval with the first and last leaves (and count the number of leaves)
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.gotoBottomLeft();
-                myLastInterval.leftIndex = octreeIterator.getCurrentGlobalIndex();
+                myFullInterval.leftIndex = octreeIterator.getCurrentGlobalIndex();
                 do{
                     ++this->numberOfLeafs;
                 } while(octreeIterator.moveRight());
-                myLastInterval.rightIndex = octreeIterator.getCurrentGlobalIndex();
+                myFullInterval.rightIndex = octreeIterator.getCurrentGlobalIndex();
             }
-            iterArray           = new typename OctreeClass::Iterator[numberOfLeafs];
+            // Allocate a number to store the pointer of the cells at a level
+            iterArray     = new typename OctreeClass::Iterator[numberOfLeafs];
             iterArrayComm = new typename OctreeClass::Iterator[numberOfLeafs];
             FAssertLF(iterArray,     "iterArray     bad alloc");
             FAssertLF(iterArrayComm, "iterArrayComm bad alloc");
 
             // We get the leftIndex/rightIndex indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
+            FMpi::MpiAssert( MPI_Allgather( &myFullInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
 
-            Interval*const myIntervals = new Interval[OctreeHeight];
-            myIntervals[OctreeHeight - 1] = myLastInterval;
-            //Building the intervals for all the cells for at each level using bitshifting
+            // Build my intervals for all levels
+            std::unique_ptr<Interval[]> myIntervals(new Interval[OctreeHeight]);
+            // At leaf level we know it is the full interval
+            myIntervals[OctreeHeight - 1] = myFullInterval;
+
+            // We can estimate the interval for each level by using the parent/child relation
             for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
                 myIntervals[idxLevel].leftIndex = myIntervals[idxLevel+1].leftIndex >> 3;
                 myIntervals[idxLevel].rightIndex = myIntervals[idxLevel+1].rightIndex >> 3;
             }
+
+            // Process 0 uses the estimates as real intervals, but other processes
+            // should remove cells that belong to others
             if(idProcess != 0){
                 //We test for each level if process on left (idProcess-1) own cell I thought I owned
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.gotoBottomLeft();
                 octreeIterator.moveUp();
 
-                MortonIndex currentLimit = intervals[idProcess-1].rightIndex >> 3;
+                // At h-1 the working limit is the parent of the right cell of the proc on the left
+                MortonIndex workingLimitAtLevel = intervals[idProcess-1].rightIndex >> 3;
 
+                // We check if we have no more work to do
                 int nullIntervalFromLevel = 0;
+
                 for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 && nullIntervalFromLevel == 0 ; --idxLevel){
-                    while(octreeIterator.getCurrentGlobalIndex() <= currentLimit){
+                    while(octreeIterator.getCurrentGlobalIndex() <= workingLimitAtLevel){
                         if( !octreeIterator.moveRight() ){
                             // We cannot move right we are not owner of any more cell
                             nullIntervalFromLevel = idxLevel;
@@ -201,7 +211,7 @@ public:
                     if(nullIntervalFromLevel == 0){
                         myIntervals[idxLevel].leftIndex = octreeIterator.getCurrentGlobalIndex();
                         octreeIterator.moveUp();
-                        currentLimit >>= 3;
+                        workingLimitAtLevel >>= 3;
                     }
                 }
                 // In case we are not responsible for any cells we put the leftIndex = rightIndex+1
@@ -211,14 +221,8 @@ public:
             }
 
             // We get the leftIndex/rightIndex indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
+            FMpi::MpiAssert( MPI_Allgather( myIntervals.get(), int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
-            //Print for each proc the working interval at each level
-            // for(int idL = 0 ; idL < OctreeHeight ; ++idL){
-            //	printf("Proc::%d From cell %lld to cell %lld\n",
-            //	       idProcess,getWorkingInterval(idL).leftIndex,getWorkingInterval(idL).rightIndex);
-            // }
-            delete[] myIntervals;
         }
 
         // run;
@@ -236,7 +240,7 @@ public:
         // delete array
         delete []     iterArray;
         delete [] iterArrayComm;
-        iterArray           = nullptr;
+        iterArray     = nullptr;
         iterArrayComm = nullptr;
     }
 
