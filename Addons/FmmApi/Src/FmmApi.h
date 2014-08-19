@@ -107,6 +107,7 @@ int FmmKernel_L2P(void *fmmCore, void* boxId);
 int FmmKernel_M2M(void *fmmCore, void *boxIdFather, void *boxIdSon);
 int FmmKernel_L2L(void *fmmCore, void *boxIdFather, void *boxIdSon);
 int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest);
+int FmmKernel_P2P_inner(void *fmmCore, void *boxIdSrcDest);
 int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest); /* pas mutuel, i.e. on fait seulement dans 1 sens. */
 
 

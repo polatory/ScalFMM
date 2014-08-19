@@ -72,6 +72,27 @@ protected:
 		  BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
   }
 
+  /** 
+   * @brief Return the position of the center of a cell from its tree
+   *  coordinate 
+   * @param FTreeCoordinate
+   * @param inLevel the current level of Cell
+   */
+  FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
+  {
+
+    //Set the boxes width needed
+    FReal widthAtCurrentLevel = BoxWidthLeaf*FReal(1 << (TreeHeight-(inLevel+1)));   
+    FReal widthAtCurrentLevelDiv2 = widthAtCurrentLevel/FReal(2.);
+
+    //Set the center real coordinates from box corner and widths.
+    FReal X = BoxCorner.getX() + FReal(coordinate.getX())*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    FReal Y = BoxCorner.getY() + FReal(coordinate.getY())*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    FReal Z = BoxCorner.getZ() + FReal(coordinate.getZ())*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
+    
+    return FPoint(X,Y,Z);
+  }
+
 public:
   /**
    * The constructor initializes all constant attributes and it reads the

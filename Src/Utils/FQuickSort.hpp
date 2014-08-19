@@ -27,8 +27,6 @@
 #include "FMemUtils.hpp"
 #include "FTrace.hpp"
 
-#include "FOmpBarrier.hpp"
-
 /** This class is parallel quick sort
   * It hold a mpi version
   * + 2 openmp versions (one on tasks and the other like mpi)

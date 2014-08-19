@@ -653,6 +653,7 @@ class FRotationKernel : public FAbstractKernels<CellClass,ContainerClass> {
       */
     // theta should be between [0;pi] as the inclinaison angle
     void DlmkBuild(FReal dlmk[P+1][P2+1][P2+1], const FReal inTheta) const {
+        FAssertLF(0 <= inTheta && inTheta < FMath::FTwoPi);
         // To have constants for very used values
         const FReal F0 = FReal(0.0);
         const FReal F1 = FReal(1.0);

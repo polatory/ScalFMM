@@ -22,8 +22,7 @@
 #include "Adaptative/FAdaptiveCell.hpp"
 #include "Adaptative/FAdaptiveKernelWrapper.hpp"
 #include "Adaptative/FAbstractAdaptiveKernel.hpp"
-//#include "Kernels/Uniform/FUnifKernel.hpp"
-#include "Kernels/Uniform/FUnifDenseKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
 #include "Kernels/Uniform/FUnifM2LHandler.hpp"
 
 class FTreeCoordinate;
@@ -55,15 +54,21 @@ class FTreeCoordinate;
  */
 
 template< class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveUnifKernel : FUnifDenseKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveUnifKernel : FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 	//
-	typedef FUnifDenseKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+
 	enum {order = ORDER,
-        nnodes = KernelBaseClass::nnodes};
+        nnodes = TensorTraits<ORDER>::nnodes};
+
   /// Needed for M2L operator
-  typedef FUnifM2LHandler<ORDER,MatrixKernelClass::Type> M2LHandlerClass;
-  const M2LHandlerClass M2LHandler;
+//  // If we choose to  pre-assemble adaptive M2L operators 
+//  // then we need to provide an adaptive M2L handler 
+//  // and the transfer in Fourier space is straightforward.
+//  typedef FUnifM2LHandler<ORDER,MatrixKernelClass::Type> M2LHandlerClass;
+//  const M2LHandlerClass M2LHandler;
+
   const MatrixKernelClass *const MatrixKernel;
 
 public:
@@ -82,11 +87,11 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveUnifKernel(const int inTreeHeight, const FReal inBoxWidth,
-                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth), MatrixKernel(inMatrixKernel)
+                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveUnifKernel(const FAdaptiveUnifKernel& other)
-  : KernelBaseClass(other), M2LHandler(other.M2LHandler), MatrixKernel(other.MatrixKernel)
+  : KernelBaseClass(other)/*, M2LHandler(other.M2LHandler)*/, MatrixKernel(other.MatrixKernel)
 		{	}
 
 	//
@@ -435,7 +440,6 @@ public:
 //		for(int idxPart = 0 ; idxPart < target->getNbParticles() ; ++idxPart){
 //			particlesAttributes[idxPart] += sources->getNbParticles();
 //		}
-    std::cout << "AdapP2P" << std::endl;
 	}
 
 	bool preferP2M(const ContainerClass* const particles) override {

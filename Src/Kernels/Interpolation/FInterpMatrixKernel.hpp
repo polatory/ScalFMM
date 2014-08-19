@@ -83,7 +83,7 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
   FInterpMatrixKernelR() {}
 
   // copy ctor
-  FInterpMatrixKernelR(const FInterpMatrixKernelR& other) 
+  FInterpMatrixKernelR(const FInterpMatrixKernelR& /*other*/) 
   {}
 
   // returns position in reduced storage
@@ -151,7 +151,7 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
   // copy ctor
   FInterpMatrixKernelRH(const FInterpMatrixKernelRH& other) 
-  : LX(other.LX), LY(other.LY), LZ(other.LZ) 
+  :FInterpMatrixKernelR(other), LX(other.LX), LY(other.LY), LZ(other.LZ) 
   {}
 
   // evaluate interaction
@@ -218,7 +218,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
   FInterpMatrixKernelRR() {}
 
   // copy ctor
-  FInterpMatrixKernelRR(const FInterpMatrixKernelRR& other) 
+  FInterpMatrixKernelRR(const FInterpMatrixKernelRR& /*other*/) 
   {}
 
   // returns position in reduced storage
@@ -287,7 +287,7 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
   FInterpMatrixKernelLJ() {}
 
   // copy ctor
-  FInterpMatrixKernelLJ(const FInterpMatrixKernelLJ& other) 
+  FInterpMatrixKernelLJ(const FInterpMatrixKernelLJ& /*other*/) 
   {}
 
   // returns position in reduced storage

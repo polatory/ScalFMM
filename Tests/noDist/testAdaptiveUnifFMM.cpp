@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_FFT
 // ================
 
 #include <iostream>
@@ -94,7 +95,7 @@ int main(int argc, char ** argv){
 	//////////////////////////////////////////////////////////////
 	//
 	const int NbLevels        = FParameters::getValue(argc,argv,"-depth", 3);
-	const int SizeSubLevels = FParameters::getValue(argc,argv,"subdepth", 2);
+	const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 2);
 	const int sminM            = FParameters::getValue(argc,argv,"-sM", P*P*P);
 	const int sminL             = FParameters::getValue(argc,argv,"-sL", P*P*P);
 	//

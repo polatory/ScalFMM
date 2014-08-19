@@ -41,9 +41,9 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
-#include "Adaptative/FAdaptiveCell.hpp"
-#include "Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "Adaptative/FAbstractAdaptiveKernel.hpp"
+#include "../../Src/Adaptative/FAdaptiveCell.hpp"
+#include "../../Src/Adaptative/FAdaptiveKernelWrapper.hpp"
+#include "../../Src/Adaptative/FAbstractAdaptiveKernel.hpp"
 
 template< class CellClass, class ContainerClass>
 class FAdaptiveTestKernel : public FTestKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
@@ -133,19 +133,18 @@ int main(int argc, char ** argv){
 
     const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
     const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(FParameters::getValue(argc,argv,"-nb", 2000000), 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Creating & Inserting " << NbPart << " particles ..." << std::endl;
+    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
@@ -179,8 +178,8 @@ int main(int argc, char ** argv){
     tree.forEachCellLeaf([&](CellWrapperClass*, LeafClass* leaf){
         long long int*const particlesAttributes = leaf->getTargets()->getDataDown();
         for(int idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
-            if(particlesAttributes[idxPart] != (NbPart-1)){
-                printf("Incorrect %lld instead of %d\n", particlesAttributes[idxPart], (NbPart-1));
+            if(particlesAttributes[idxPart] != (loader.getNumberOfParticles()-1)){
+                printf("Incorrect %lld instead of %d\n", particlesAttributes[idxPart], (loader.getNumberOfParticles()-1));
             }
         }
     });

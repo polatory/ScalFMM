@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -57,7 +57,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	}
 	return index;
     }
-    
+
     struct TestParticle{
 	MortonIndex index;
 	FSize indexInFile;
@@ -78,30 +78,32 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	    else{
 		if(rhs.index > this->index){return true;}
 		else{
-		    if(rhs.getPosition().getX() < this->getPosition().getX()){return false;}
-		    else{
-			if(rhs.getPosition().getX() > this->getPosition().getX()){return true;}
-			else{
-			    if(rhs.getPosition().getY() < this->getPosition().getY()){return false;}
-			    else{
-				if(rhs.getPosition().getY() > this->getPosition().getY()){return true;}
-				else{
-				    if(rhs.getPosition().getZ() < this->getPosition().getZ()){return false;}
-				    else{
-					if(rhs.getPosition().getZ() > this->getPosition().getZ()){return true;}
-					else{
-					    return false;
-					}
-				    }
-				}
-			    }
-			}
-		    }
+		    return this->indexInFile < rhs.indexInFile;
+	//	    if(rhs.getPosition().getX() < this->getPosition().getX()){return false;}
+	//	    else{
+	//		if(rhs.getPosition().getX() > this->getPosition().getX()){return true;}
+	//		else{
+	//		    if(rhs.getPosition().getY() < this->getPosition().getY()){return false;}
+	//		    else{
+	//			if(rhs.getPosition().getY() > this->getPosition().getY()){return true;}
+	//			else{
+	//			    if(rhs.getPosition().getZ() < this->getPosition().getZ()){return false;}
+	//			    else{
+	//				if(rhs.getPosition().getZ() > this->getPosition().getZ()){return true;}
+	//				else{
+	//				    return false;
+	//				}
+	//			    }
+	//			}
+	//		    }
+	//		}
+	//	    }
 		}
 	    }
 	}
+
     };
-    
+
     void RunTest(){
 	//
 	// Load particles
@@ -113,47 +115,47 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	const std::string parFile( (sizeof(FReal) == sizeof(float))?
 				   "Test/DirectFloatbfma":
 				   "UTest/DirectDouble.bfma");
-	//Let the choice there to test 
-	//std::string filename(SCALFMMDataPath+parFile);
-	std::string filename("../Data/unitCubeXYZQ100.bfma");
-	
-	int TreeHeight =4;
-    
-    
+	//Let the choice there to test
+	std::string filename(SCALFMMDataPath+parFile);
+	//std::string filename("../Data/unitCubeXYZQ100.bfma");
+
+	int TreeHeight =3;
+
+
 	//First part is Sequential
 	//Since there is no MPI  Loader with ascii datas, the file need to be in binary format.
 	FFmaGenericLoader loaderSeq(filename,true);
 	if(!loaderSeq.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
-    
+
 	//Get the needed informations
 	FReal boxWidth = loaderSeq.getBoxWidth();
 	FReal boxWidthAtLeafLevel = boxWidth/FReal(1 << (TreeHeight - 1));
-    
+
 	FPoint centerOfBox = loaderSeq.getCenterOfBox();
 	FPoint boxCorner   = centerOfBox - boxWidth/2;
-    
+
 	FTreeCoordinate host;
-    
+
 	//Copy from the file to the array that will be sorted
 	FSize nbOfParticles = loaderSeq.getNumberOfParticles();
 	printf("nbOfParticles : %lld \n",nbOfParticles);
 	struct TestParticle* arrayOfParticles = new TestParticle[nbOfParticles];
-    
+
 	memset(arrayOfParticles,0,sizeof(struct TestParticle)*nbOfParticles);
-    
+
 	for(FSize idxParts=0 ; idxParts<nbOfParticles ; ++idxParts){
-      
+
 	    //Fill automatically position AND physicalValue attributes
 	    loaderSeq.fillParticle(&(arrayOfParticles[idxParts].position),&(arrayOfParticles[idxParts].physicalValue));
-      
+
 	    //We store the index in the file
 	    arrayOfParticles[idxParts].indexInFile = idxParts;
-      
+
 	    //Build temporary TreeCoordinate
 	    host.setX( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
 	    host.setY( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
 	    host.setZ( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
-      
+
 	    //Set Morton index from Tree Coordinate
 	    arrayOfParticles[idxParts].index = host.getMortonIndex(TreeHeight - 1);
 	}
@@ -161,21 +163,32 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	struct TestParticle * originalArray   =  new TestParticle[nbOfParticles];
 	memcpy(originalArray,arrayOfParticles,sizeof(struct TestParticle)*nbOfParticles);
 	//Sort the array
-    
+
 	std::sort(arrayOfParticles,arrayOfParticles+nbOfParticles);
 	// for(int k=0 ; k< nbOfParticles ; ++k){
 	//   printf("arrayOfParticles[].index %lld \n",arrayOfParticles[k].index);
 	// }
-	//Start of the parallel part : 
-    
+	//Start of the parallel part :
+	MortonIndex ref = -1;
+	int numMort = 0;
+	if(app.global().processId()==0){
+	    for(int i=0 ; i<5000 ; ++i){
+		if (arrayOfParticles[i].index !=ref){
+		    numMort++;
+		    ref = arrayOfParticles[i].index;
+		}
+	    }
+	    printf("Total leaf : %d Last : %lld \n",numMort,ref);
+	}
+
 	FSize outputSize;
-    
+
 	//Refer to ChebyshevInterpolationAlgorithmProc to know how to FMpiFmaLoader + index
 	FMpiFmaGenericLoader loader(filename,app.global());
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
-	//Now, we sort again the particles with MPI QuickSort 
+	//Now, we sort again the particles with MPI QuickSort
 	int idxStart = loader.getStart();
-    
+
 	FMpiTreeBuilder<TestParticle>::IndexedParticle * arrayToBeSorted = new FMpiTreeBuilder<TestParticle>::IndexedParticle[loader.getMyNumberOfParticles()];
 	//Copy the TestParticles into an array of indexedParticle
 	for(int i=0 ; i<loader.getMyNumberOfParticles() ; ++i){
@@ -184,62 +197,74 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	}
 	FMpiTreeBuilder<TestParticle>::IndexedParticle* outputArray = nullptr;
 	FQuickSortMpi<FMpiTreeBuilder<TestParticle>::IndexedParticle,MortonIndex,FSize>::QsMpi(arrayToBeSorted,loader.getMyNumberOfParticles(),&outputArray,&outputSize,app.global());
-	//FBitonicSort<FMpiTreeBuilder<TestParticle>::IndexedParticle,MortonIndex, FSize>::Sort(arrayToBeSorted,loader.getNumberOfParticles(),app.global());
+
+	//FBitonicSort<FMpiTreeBuilder<TestParticle>::IndexedParticle,MortonIndex, FSize>::Sort(arrayToBeSorted,loader.getMyNumberOfParticles(),app.global());
 	//Sum the outputSize of every body for knowing where to start inside the sorted array
-	FSize starter = 0; 
+	FSize starter = 0;
 	//We use a prefix sum
-	
-	
+
+
 	MPI_Exscan(&outputSize,&starter,1,MPI_LONG_LONG_INT,MPI_SUM,app.global().getComm());
-    
+
 	//We sort the output array relatvely to position inside leafs
 	FSize inc = 0;
 	FMpiTreeBuilder<TestParticle>::IndexedParticle * saveForSort = outputArray;
 	int nbOfPartsInLeaf = 0;
 	while(inc < outputSize){
-	    while(outputArray[inc].index == saveForSort->index){
+	    while(outputArray[inc].index == saveForSort->index && inc < outputSize){
 		inc++;
 		nbOfPartsInLeaf++;
 	    }
 	    std::sort(saveForSort,saveForSort+nbOfPartsInLeaf,
 		      [&](FMpiTreeBuilder<TestParticle>::IndexedParticle a,FMpiTreeBuilder<TestParticle>::IndexedParticle b) -> bool {
-			  return (a.particle)<(b.particle);
+			  return (a.particle.indexInFile)<(b.particle.indexInFile);
 		      });
 	    nbOfPartsInLeaf = 0;
 	    saveForSort = &outputArray[inc];
 	}
-  
+
 	bool resultQsMpi = true; //passed..
 	//Test
+	// printf("Fin tri : %d hold %d my first [%lld,%lld] last [%lld,%lld]\n",app.global().processId(),outputSize,
+	//        outputArray[0].index,outputArray[0].particle.indexInFile,
+	//        outputArray[outputSize-1].index,outputArray[outputSize-1].particle.indexInFile);
+	int tot = 0;
+	MPI_Reduce((int*)&outputSize,&tot,1,MPI_INT,MPI_SUM,0,app.global().getComm());
+	if(app.global().processId() == 0){
+	    printf("Total Particule après tri = %d \n",tot);
+	}
 	for(int i=0 ; i<outputSize ; ++i){
 	    if(outputArray[i].particle.indexInFile != arrayOfParticles[i+starter].indexInFile){
+		resultQsMpi = false;
 		printf("%d i= %d + %lld Particles file  [%lld,%lld] : output [%lld,%lld] \n",app.global().processId(),i,starter,
 		       arrayOfParticles[i+starter].indexInFile,arrayOfParticles[i+starter].index,
 		       outputArray[i].particle.indexInFile,
 		       outputArray[i].index);
 	    }
 	}
+
+
 	Print("Test 1 : is QsMpi really sorting the array");
 	uassert(resultQsMpi);
-    
+
 
 	//Test MergeLeaves
 	bool resultMergeLeaves= true;
-    
+
 	//inputs needed
 	TestParticle * leavesArray = nullptr;
 	FSize * leavesIndices = nullptr;
 	FSize leaveSize = 0;
-    
+
 	FMpiTreeBuilder<TestParticle>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
-    
+
 	//Compare again the results with the output of std::qsort
-    
+
 	//we need to know how many parts still remains
-	FSize CounterStart = 0; 
+	FSize CounterStart = 0;
 	//We use a prefix sum
 	MPI_Exscan(&outputSize,&CounterStart,1,MPI_LONG_LONG_INT,MPI_SUM,app.global().getComm());
-    
+
 	//Test if no problems
 	for(FSize k=0 ; k<outputSize ; ++k){
 	    if(leavesArray[k].indexInFile != arrayOfParticles[k+CounterStart].indexInFile){
@@ -255,14 +280,14 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	//Test the Equalize and Fill tree
 	FLeafBalance balancer;
 	FVector<TestParticle> finalParticles;
-    
+
 	bool resultEqualize = true;
 
 	FMpiTreeBuilder<TestParticle>::EqualizeAndFillContainer(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
 	//Ok now count the Particles at the end of the Equalize
 	int finalNbPart = finalParticles.getSize();
 	int finalStart = 0;
-    
+
 	MPI_Exscan(&finalNbPart,&finalStart,1,MPI_INT,MPI_SUM,app.global().getComm());
 	for (int k=0; k<finalNbPart ; k++){
 	    if(finalParticles[k].indexInFile != arrayOfParticles[k+finalStart].indexInFile){
@@ -273,7 +298,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 		resultEqualize = false;
 	    }
 	}
-    
+
 	Print("Test 3 : Output of Equalize Tree is tested");
 	uassert(resultEqualize);
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -298,7 +323,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
     void SetTests(){
 	AddTest(&TestMpiTreeBuilder::RunTest,"Load a File, sort it, merge it, and Equalize it (4 steps)");
     }
-  
+
 public:
     TestMpiTreeBuilder(int argc,char ** argv) : FUTesterMpi(argc,argv){
     }

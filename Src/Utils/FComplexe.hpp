@@ -179,6 +179,13 @@ public:
         return *this;
     }
 
+    /** Mul a complexe by another "c*=c2" */
+    FComplexe& operator/=(const FReal& real){
+        this->complex[0] /= real;
+        this->complex[1] /= real;
+        return *this;
+    }
+
     /** Test if a complex is not a number */
     bool isNan() const {
         return FMath::IsNan(complex[1]) || FMath::IsNan(complex[0]);

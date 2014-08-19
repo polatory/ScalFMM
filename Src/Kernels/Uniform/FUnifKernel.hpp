@@ -98,7 +98,7 @@ public:
   {
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       // 1) apply Sy
-      FBlas::scal(AbstractBaseClass::nnodes, FReal(0.), ParentCell->getMultipole(idxRhs));
+      //FBlas::scal(AbstractBaseClass::nnodes, FReal(0.), ParentCell->getMultipole(idxRhs));
       for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
         if (ChildCells[ChildIndex]){
           AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs),

@@ -58,6 +58,11 @@ class FAdaptiveChebSymKernel : FChebSymKernel<CellClass, ContainerClass, MatrixK
 , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 	//
 	typedef FChebSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+	enum {order = ORDER,
+        nnodes = TensorTraits<ORDER>::nnodes};
+
+  const MatrixKernelClass *const MatrixKernel;
+
 public:
 
 	using KernelBaseClass::P2M;
@@ -74,11 +79,11 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveChebSymKernel(const int inTreeHeight, const FReal inBoxWidth,
-                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)
+                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), MatrixKernel(inMatrixKernel)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveChebSymKernel(const FAdaptiveChebSymKernel& other)
-  : KernelBaseClass(other)
+  : KernelBaseClass(other), MatrixKernel(other.MatrixKernel)
 		{	}
 
 	//
@@ -88,47 +93,222 @@ public:
 			//this->~KernelBaseClass() ;
 		}
 	void P2M(CellClass* const pole, const int cellLevel, const ContainerClass* const particles) override {
-		//pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
-		//
-		const FPoint LeafCellCenter(KernelBaseClass::getLeafCellCenter(pole->getCoordinate()));
-		const FReal BoxWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-cellLevel);
-		//
+
+		const FPoint CellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),cellLevel));
+		const FReal BoxWidth = KernelBaseClass::BoxWidth / FMath::pow(2.0,cellLevel);
 
 		for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-			KernelBaseClass::Interpolator->applyP2M(LeafCellCenter, BoxWidth,
-					pole->getMultipole(idxRhs), particles);
+      // 1) apply Sy
+			KernelBaseClass::Interpolator->applyP2M(CellCenter, BoxWidth,
+                                              pole->getMultipole(idxRhs), particles);
 		}
 
 	}
 
-	void M2M(CellClass* const pole, const int /*poleLevel*/, const CellClass* const subCell, const int /*subCellLevel*/) override {
-	//	pole->setDataUp(pole->getDataUp() + subCell->getDataUp());
+	void M2M(CellClass* const pole, const int poleLevel, const CellClass* const subCell, const int subCellLevel) override {
+
+    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
+    const FReal subCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,subCellLevel))); 
+
+    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+    const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// p^6 version
+    // allocate memory
+    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+
+    // set child info
+    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+    FChebTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+
+    // map global position of roots to local position in parent cell
+    const map_glob_loc map(poleCellCenter, poleCellWidth);
+    for (unsigned int n=0; n<nnodes; ++n)
+      map(ChildRoots[n], localChildRoots[n]);
+
+    // assemble child - parent - interpolator
+    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      // 1) apply Sy (using tensor product M2M with an interpolator computed on the fly)
+
+      // Do NOT reset multipole expansion !
+      //FBlas::scal(nnodes, FReal(0.), pole->getMultipole(idxRhs));
+
+      /// p^6 version
+      FBlas::gemtva(nnodes, nnodes, FReal(1.),
+                    subChildParentInterpolator,
+                    const_cast<FReal*>(subCell->getMultipole(idxRhs)), pole->getMultipole(idxRhs));
+
+
+    }// NVALS
+
 	}
 
-	void P2L(CellClass* const local, const int /*localLevel*/, const ContainerClass* const particles) override {
-	//	local->setDataDown(local->getDataDown() + particles->getNbParticles());
+	void P2L(CellClass* const local, const int localLevel, const ContainerClass* const particles) override {
+
+    // Target cell: local
+    const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
+    const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+
+    // interpolation points of target (X) cell
+    FPoint X[nnodes];
+    FChebTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+
+    // read positions
+    const FReal*const positionsX = particles->getPositions()[0];
+    const FReal*const positionsY = particles->getPositions()[1];
+    const FReal*const positionsZ = particles->getPositions()[2];
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      // read physicalValue
+      const FReal*const physicalValues = particles->getPhysicalValues();
+
+      // apply P2L
+      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+
+        const FPoint y = FPoint(positionsX[idxPart],
+                                positionsY[idxPart],
+                                positionsZ[idxPart]);
+
+        for (unsigned int m=0; m<nnodes; ++m)
+          local->getLocal(idxRhs)[m]+=MatrixKernel->evaluate(X[m], y) * physicalValues[idxPart];
+
+      }
+
+    }// NVALS
+
 	}
 
-	void M2L(CellClass* const local, const int /*localLevel*/, const CellClass* const aNeighbor, const int /*neighborLevel*/) override {
-	//	local->setDataDown(local->getDataDown() + aNeighbor->getDataUp());
+	void M2L(CellClass* const local, const int localLevel, const CellClass* const pole, const int poleLevel) override {
+
+    // Source cell: pole
+    const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
+    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+
+    // Target cell: local
+    const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
+    const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+
+    // interpolation points of source (Y) and target (X) cell
+    FPoint X[nnodes], Y[nnodes];
+    FChebTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FChebTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      // Dense M2L
+      const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
+    
+      for (unsigned int m=0; m<nnodes; ++m)
+        for (unsigned int n=0; n<nnodes; ++n){
+          local->getLocal(idxRhs)[m]+=MatrixKernel->evaluate(X[m], Y[n]) * MultipoleExpansion[n];
+          
+        }
+    }
 	}
 
-	void M2P(const CellClass* const pole, const int /*poleLevel*/, ContainerClass* const particles) override {
-//		long long int*const particlesAttributes = particles->getDataDown();
-//		for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-//			particlesAttributes[idxPart] += pole->getDataUp();
-//		}
+	void M2P(const CellClass* const pole, const int poleLevel, ContainerClass* const particles) override {
+
+    // Source cell: pole
+    const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
+    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+
+    // interpolation points of source (Y) cell
+    FPoint Y[nnodes];
+    FChebTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+
+    // read positions
+    const FReal*const positionsX = particles->getPositions()[0];
+    const FReal*const positionsY = particles->getPositions()[1];
+    const FReal*const positionsZ = particles->getPositions()[2];
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
+    
+      // apply M2P
+      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+
+        const FPoint x = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+
+        FReal targetValue=0.;
+        {
+          for (unsigned int n=0; n<nnodes; ++n)
+            targetValue +=
+              MatrixKernel->evaluate(x, Y[n]) * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+        }
+
+        // get potential
+        FReal*const potentials = particles->getPotentials(/*idxPot*/);
+        // add contribution to potential
+        potentials[idxPart] += (targetValue);
+
+      }// Particles
+
+    }// NVALS
+
 	}
 
-	void L2L(const CellClass* const local, const int /*localLevel*/, CellClass* const subCell, const int /*subCellLevel*/) override {
-	//	subCell->setDataDown(local->getDataDown() + subCell->getDataDown());
+	void L2L(const CellClass* const local, const int localLevel, CellClass* const subCell, const int subCellLevel) override {
+
+    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
+    const FReal subCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,subCellLevel))); 
+
+    const FPoint localCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+    const FReal localWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,localLevel))); 
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// p^6 version
+    // allocate memory
+    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+
+    // set child info
+    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+    FChebTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+
+    // map global position of roots to local position in parent cell
+    const map_glob_loc map(localCenter, localWidth);
+    for (unsigned int n=0; n<nnodes; ++n)
+      map(ChildRoots[n], localChildRoots[n]);
+
+    // assemble child - parent - interpolator
+    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      // 2) apply Sx
+
+      /// p^6 version
+      FBlas::gemva(nnodes, nnodes, FReal(1.),
+                   subChildParentInterpolator,
+                   const_cast<FReal*>(local->getLocal(idxRhs)), subCell->getLocal(idxRhs));
+
+    }// NVALS
+
 	}
 
-	void L2P(const CellClass* const local, const int /*cellLevel*/, ContainerClass* const particles)  override {
-//		long long int*const particlesAttributes = particles->getDataDown();
-//		for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-//			particlesAttributes[idxPart] += local->getDataDown();
-//		}
+	void L2P(const CellClass* const local, const int cellLevel, ContainerClass* const particles)  override {
+
+    const FPoint CellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),cellLevel));
+		const FReal BoxWidth = KernelBaseClass::BoxWidth / FMath::pow(2.0,cellLevel);
+
+    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+      // 2.a) apply Sx
+      KernelBaseClass::Interpolator->applyL2P(CellCenter, BoxWidth,
+                                              local->getLocal(idxRhs), particles);
+
+      // 2.b) apply Px (grad Sx)
+      KernelBaseClass::Interpolator->applyL2PGradient(CellCenter, BoxWidth,
+                                                      local->getLocal(idxRhs), particles);
+
+    }
+
 	}
 
 	void P2P(ContainerClass* target, const ContainerClass* sources)  override {
