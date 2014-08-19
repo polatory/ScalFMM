@@ -137,7 +137,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 	octreeIteratorValide.moveRight();
       }
 
-      while(octreeIteratorValide.getCurrentGlobalIndex() != fmm->getWorkingInterval(level).min){
+      while(octreeIteratorValide.getCurrentGlobalIndex() != fmm->getWorkingInterval(level).leftIndex){
 	octreeIteratorValide.moveRight();
 	octreeIterator.moveRight();
       }

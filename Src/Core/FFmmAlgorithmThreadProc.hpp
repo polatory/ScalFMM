@@ -86,8 +86,8 @@ class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
      * that a proc use (it holds data in this interval)
      */
     struct Interval{
-        MortonIndex min;
-        MortonIndex max;
+        MortonIndex leftIndex;
+        MortonIndex rightIndex;
     };
     /** My interval */
     Interval*const intervals;
@@ -107,7 +107,7 @@ public:
 
     /** Does the current proc has some work at this level */
     bool hasWorkAtLevel( int level){
-        return idProcess == 0 || (getWorkingInterval(level, idProcess - 1).max) < (getWorkingInterval(level, idProcess).max);
+        return idProcess == 0 || (getWorkingInterval(level, idProcess - 1).rightIndex) < (getWorkingInterval(level, idProcess).rightIndex);
     }
 
     /** The constructor need the octree and the kernels used for computation
@@ -159,26 +159,26 @@ public:
             {//Building the leaf interval
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.gotoBottomLeft();
-                myLastInterval.min = octreeIterator.getCurrentGlobalIndex();
+                myLastInterval.leftIndex = octreeIterator.getCurrentGlobalIndex();
                 do{
                     ++this->numberOfLeafs;
                 } while(octreeIterator.moveRight());
-                myLastInterval.max = octreeIterator.getCurrentGlobalIndex();
+                myLastInterval.rightIndex = octreeIterator.getCurrentGlobalIndex();
             }
             iterArray           = new typename OctreeClass::Iterator[numberOfLeafs];
             iterArrayComm = new typename OctreeClass::Iterator[numberOfLeafs];
             FAssertLF(iterArray,     "iterArray     bad alloc");
             FAssertLF(iterArrayComm, "iterArrayComm bad alloc");
 
-            // We get the min/max indexes from each procs
+            // We get the leftIndex/rightIndex indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( &myLastInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
 
             Interval*const myIntervals = new Interval[OctreeHeight];
             myIntervals[OctreeHeight - 1] = myLastInterval;
             //Building the intervals for all the cells for at each level using bitshifting
             for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
-                myIntervals[idxLevel].min = myIntervals[idxLevel+1].min >> 3;
-                myIntervals[idxLevel].max = myIntervals[idxLevel+1].max >> 3;
+                myIntervals[idxLevel].leftIndex = myIntervals[idxLevel+1].leftIndex >> 3;
+                myIntervals[idxLevel].rightIndex = myIntervals[idxLevel+1].rightIndex >> 3;
             }
             if(idProcess != 0){
                 //We test for each level if process on left (idProcess-1) own cell I thought I owned
@@ -186,7 +186,7 @@ public:
                 octreeIterator.gotoBottomLeft();
                 octreeIterator.moveUp();
 
-                MortonIndex currentLimit = intervals[idProcess-1].max >> 3;
+                MortonIndex currentLimit = intervals[idProcess-1].rightIndex >> 3;
 
                 int nullIntervalFromLevel = 0;
                 for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 && nullIntervalFromLevel == 0 ; --idxLevel){
@@ -199,24 +199,24 @@ public:
                     }
                     // If we are responsible for some cells at this level keep the first index
                     if(nullIntervalFromLevel == 0){
-                        myIntervals[idxLevel].min = octreeIterator.getCurrentGlobalIndex();
+                        myIntervals[idxLevel].leftIndex = octreeIterator.getCurrentGlobalIndex();
                         octreeIterator.moveUp();
                         currentLimit >>= 3;
                     }
                 }
-                // In case we are not responsible for any cells we put the min = max+1
+                // In case we are not responsible for any cells we put the leftIndex = rightIndex+1
                 for(int idxLevel = nullIntervalFromLevel ; idxLevel >= 1 ; --idxLevel){
-                    myIntervals[idxLevel].min = myIntervals[idxLevel].max + 1;
+                    myIntervals[idxLevel].leftIndex = myIntervals[idxLevel].rightIndex + 1;
                 }
             }
 
-            // We get the min/max indexes from each procs
+            // We get the leftIndex/rightIndex indexes from each procs
             FMpi::MpiAssert( MPI_Allgather( myIntervals, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
             //Print for each proc the working interval at each level
             // for(int idL = 0 ; idL < OctreeHeight ; ++idL){
             //	printf("Proc::%d From cell %lld to cell %lld\n",
-            //	       idProcess,getWorkingInterval(idL).min,getWorkingInterval(idL).max);
+            //	       idProcess,getWorkingInterval(idL).leftIndex,getWorkingInterval(idL).rightIndex);
             // }
             delete[] myIntervals;
         }
@@ -315,7 +315,7 @@ private:
         // for each levels
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             // No more work for me
-            if(idProcess != 0 && getWorkingInterval((idxLevel+1), idProcess).max <= getWorkingInterval((idxLevel+1), idProcess - 1).max){
+            if(idProcess != 0 && getWorkingInterval((idxLevel+1), idProcess).rightIndex <= getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex){
                 break;
             }
 
@@ -332,20 +332,20 @@ private:
             int iterRequests = 0;
             int cellsToSend = -1;
 
-            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).min){
+            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
                 ++cellsToSend;
             }
 
             FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
 
             FLOG(prepareCounter.tic());
-            if(idProcess != 0 && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
+            if(idProcess != 0 && (getWorkingInterval((idxLevel+1), idProcess).leftIndex >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex >>3)){
                 char state = 0;
                 sendBuffer.write(state);
 
                 const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
+                    if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).leftIndex <= child[idxChild]->getMortonIndex() ){
                         child[idxChild]->serializeUp(sendBuffer);
                         state = char(state | (0x1 << idxChild));
 
@@ -353,7 +353,7 @@ private:
                 }
                 sendBuffer.writeAt(0,state);
 
-                while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , sendToProc - 1).max){
+                while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , sendToProc - 1).rightIndex){
                     --sendToProc;
                 }
 
@@ -366,18 +366,18 @@ private:
 
             if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
                 while(firstProcThatSend < nbProcess
-                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) <= (getWorkingInterval((idxLevel+1), idProcess).max)){
-                    // Second condition :: while firstProcThatSend max morton index is < to myself max interval
+                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
+                    // Second condition :: while firstProcThatSend rightIndex morton index is < to myself rightIndex interval
                     ++firstProcThatSend;
                 }
 
                 if(firstProcThatSend < nbProcess &&
-                        (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+                        (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
 
                     endProcThatSend = firstProcThatSend;
 
                     while( endProcThatSend < nbProcess &&
-                           (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+                           (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
                         ++endProcThatSend;
                     }
 
@@ -508,7 +508,7 @@ private:
         //Loop for work
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             if(idProcess != 0
-                    && getWorkingInterval((idxLevel+1), idProcess).max <= getWorkingInterval((idxLevel+1), idProcess - 1).max){
+                    && getWorkingInterval((idxLevel+1), idProcess).rightIndex <= getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex){
                 break;
             }
 
@@ -527,15 +527,15 @@ private:
             int endIndex = numberOfCells;
             //Test if i'm not the last, and I need st to compute my last M2M
             if((idProcess != nbProcess-1) &&
-                    ((getWorkingInterval(idxLevel+1,idProcess+1)).min >>3) <= ((getWorkingInterval(idxLevel+1,idProcess)).max)>>3){
+                    ((getWorkingInterval(idxLevel+1,idProcess+1)).leftIndex >>3) <= ((getWorkingInterval(idxLevel+1,idProcess)).rightIndex)>>3){
                 endIndex--;
             }
 
-            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).min){
+            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
                 ++cellsToSend;
             }
 
-            if((iterArray[0].getCurrentGlobalIndex() == getWorkingInterval(idxLevel, idProcess-1).max) && numberOfCells==1){
+            if((iterArray[0].getCurrentGlobalIndex() == getWorkingInterval(idxLevel, idProcess-1).rightIndex) && numberOfCells==1){
                 cellsToSend++;
             }
 
@@ -554,19 +554,19 @@ private:
 
                     //Post Send
                     if(idProcess != 0
-                            && (getWorkingInterval((idxLevel+1), idProcess).min >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).max >>3)){
+                            && (getWorkingInterval((idxLevel+1), idProcess).leftIndex >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex >>3)){
 
                         // if(cellsToSend == -1){
                         //     fprintf(stderr,"You found One : %d, nbofCells %d Intervals : %d{%lld,%lld} %d{%lld,%lld} Left : %d{%lld,%lld} %d{%lld,%lld} %lld\n",
                         //	   idProcess,numberOfCells,
-                        //	   idxLevel, getWorkingInterval(idxLevel).min,
-                        //	   getWorkingInterval(idxLevel).max,
-                        //	   idxLevel+1, getWorkingInterval(idxLevel+1).min,
-                        //	   getWorkingInterval(idxLevel+1).max,
-                        //	   idxLevel, getWorkingInterval(idxLevel,idProcess-1).min,
-                        //	   getWorkingInterval(idxLevel,idProcess-1).max,
-                        //	   idxLevel+1,getWorkingInterval(idxLevel+1,idProcess-1).min,
-                        //	   getWorkingInterval(idxLevel+1,idProcess-1).max,iterArray[0].getCurrentGlobalIndex());
+                        //	   idxLevel, getWorkingInterval(idxLevel).leftIndex,
+                        //	   getWorkingInterval(idxLevel).rightIndex,
+                        //	   idxLevel+1, getWorkingInterval(idxLevel+1).leftIndex,
+                        //	   getWorkingInterval(idxLevel+1).rightIndex,
+                        //	   idxLevel, getWorkingInterval(idxLevel,idProcess-1).leftIndex,
+                        //	   getWorkingInterval(idxLevel,idProcess-1).rightIndex,
+                        //	   idxLevel+1,getWorkingInterval(idxLevel+1,idProcess-1).leftIndex,
+                        //	   getWorkingInterval(idxLevel+1,idProcess-1).rightIndex,iterArray[0].getCurrentGlobalIndex());
                         //     //cellsToSend +=1;
                         // }
                         char state = 0;
@@ -574,7 +574,7 @@ private:
 
                         const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
                         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                            if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).min <= child[idxChild]->getMortonIndex() ){
+                            if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).leftIndex <= child[idxChild]->getMortonIndex() ){
                                 child[idxChild]->serializeUp(sendBuffer);
                                 state = char(state | (0x1 << idxChild));
 
@@ -582,7 +582,7 @@ private:
                         }
                         sendBuffer.writeAt(0,state);
 
-                        while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , sendToProc - 1).max){
+                        while( sendToProc && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , sendToProc - 1).rightIndex){
                             --sendToProc;
                         }
 
@@ -598,18 +598,18 @@ private:
 
                         if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
                             while(firstProcThatSend < nbProcess
-                                  && (getWorkingInterval((idxLevel+1), firstProcThatSend).max) <= (getWorkingInterval((idxLevel+1), idProcess).max)){
-                                // Second condition :: while firstProcThatSend max morton index is < to myself max interval
+                                  && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
+                                // Second condition :: while firstProcThatSend rightIndex morton index is < to myself rightIndex interval
                                 ++firstProcThatSend;
                             }
 
                             if(firstProcThatSend < nbProcess &&
-                                    (getWorkingInterval((idxLevel+1), firstProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3) ){
+                                    (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
                                 //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
                                 endProcThatSend = firstProcThatSend;
 
                                 while( endProcThatSend < nbProcess &&
-                                       (getWorkingInterval((idxLevel+1) ,endProcThatSend).min >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).max>>3)){
+                                       (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
                                     ++endProcThatSend;
                                 }
 
@@ -739,7 +739,7 @@ private:
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
 
@@ -748,7 +748,7 @@ private:
 
                 int numberOfCells = 0;
 
-                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                     octreeIterator.moveRight();
                 }
 
@@ -774,19 +774,19 @@ private:
                     bool needOther = false;
                     // Test each negibors to know which one do not belong to us
                     for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-                        if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
-                                || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndexes[idxNeigh]){
+                        if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).leftIndex
+                                || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndexes[idxNeigh]){
                             int procToReceive = idProcess;
-                            while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
+                            while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).leftIndex ){
                                 --procToReceive;
                             }
-                            while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).max) < neighborsIndexes[idxNeigh]){
+                            while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).rightIndex) < neighborsIndexes[idxNeigh]){
                                 ++procToReceive;
                             }
                             // Maybe already sent to that proc?
                             if( !alreadySent[procToReceive]
-                                    && getWorkingInterval(idxLevel , procToReceive).min <= neighborsIndexes[idxNeigh]
-                                    && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).max){
+                                    && getWorkingInterval(idxLevel , procToReceive).leftIndex <= neighborsIndexes[idxNeigh]
+                                    && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).rightIndex){
 
                                 alreadySent[procToReceive] = true;
 
@@ -884,7 +884,7 @@ private:
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
 
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -893,7 +893,7 @@ private:
                 }
 
                 int numberOfCells = 0;
-                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                     octreeIterator.moveRight();
                 }
                 // for each cells
@@ -939,7 +939,7 @@ private:
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
 
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -969,7 +969,7 @@ private:
                 int numberOfCells = 0;
                 int realCellId = 0;
 
-                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                     octreeIterator.moveRight();
                 }
                 // for each cells
@@ -1003,8 +1003,8 @@ private:
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                            if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).min)
-                                    || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndex[idxNeig]){
+                            if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).leftIndex)
+                                    || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndex[idxNeig]){
 
                                 CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
 
@@ -1117,9 +1117,9 @@ private:
 
                 // for each levels
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    //If I'm not the process 0 AND my max idx is lesser than left one's
+                    //If I'm not the process 0 AND my rightIndex idx is lesser than left one's
                     if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                            && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
                         avoidGotoLeftIteratorComm.moveDown();
                         octreeIteratorComm = avoidGotoLeftIteratorComm;
                         continue;
@@ -1127,7 +1127,7 @@ private:
 
                     int numberOfCells = 0;
 
-                    while(octreeIteratorComm.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                    while(octreeIteratorComm.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                         octreeIteratorComm.moveRight();
                     }
 
@@ -1153,19 +1153,19 @@ private:
                         bool needOther = false;
                         // Test each negibors to know which one do not belong to us
                         for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-                            if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).min
-                                    || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndexes[idxNeigh]){
+                            if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).leftIndex
+                                    || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndexes[idxNeigh]){
                                 int procToReceive = idProcess;
-                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).min ){
+                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).leftIndex ){
                                     --procToReceive;
                                 }
-                                while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).max) < neighborsIndexes[idxNeigh]){
+                                while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).rightIndex) < neighborsIndexes[idxNeigh]){
                                     ++procToReceive;
                                 }
                                 // Maybe already sent to that proc?
                                 if( !alreadySent[procToReceive]
-                                        && getWorkingInterval(idxLevel , procToReceive).min <= neighborsIndexes[idxNeigh]
-                                        && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).max){
+                                        && getWorkingInterval(idxLevel , procToReceive).leftIndex <= neighborsIndexes[idxNeigh]
+                                        && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).rightIndex){
 
                                     alreadySent[procToReceive] = true;
 
@@ -1277,7 +1277,7 @@ private:
                 // for each levels
                 for(int idxLevel = OctreeHeight-1 ; idxLevel > 1 ; --idxLevel ){
                     if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                            && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
 
                         avoidGotoLeftIterator.moveUp();
                         octreeIterator = avoidGotoLeftIterator;
@@ -1290,7 +1290,7 @@ private:
                     //TODO see if it can be moved somewhere else
 #pragma omp single copyprivate(numberOfCells,octreeIterator,avoidGotoLeftIterator)
                     {
-                        while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+                        while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                             octreeIterator.moveRight();
                         }
                         do{
@@ -1335,7 +1335,7 @@ private:
         // for each levels
         for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
             if(idProcess != 0
-                    && getWorkingInterval(idxLevel, idProcess).max <= getWorkingInterval(idxLevel, idProcess - 1).max){
+                    && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
 
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
@@ -1364,7 +1364,7 @@ private:
             int numberOfCells = 0;
             int realCellId = 0;
 
-            while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).min){
+            while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
                 octreeIterator.moveRight();
             }
             // for each cells
@@ -1404,8 +1404,8 @@ private:
                     int counter = 0;
                     // does we receive this index from someone?
                     for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                        if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).min)
-                                || (getWorkingInterval(idxLevel , idProcess).max) < neighborsIndex[idxNeig]){
+                        if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).leftIndex)
+                                || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndex[idxNeig]){
 
                             CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
 
@@ -1485,7 +1485,7 @@ private:
         // for each levels exepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
             if(idProcess != 0
-                    && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
+                    && getWorkingInterval((idxLevel+1) , idProcess).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex){
 
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
@@ -1503,7 +1503,7 @@ private:
             octreeIterator = avoidGotoLeftIterator;
 
             int firstCellWork = -1;
-            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).min){
+            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
                 ++firstCellWork;
             }
 
@@ -1514,7 +1514,7 @@ private:
 
             // do we need to receive one or zeros cell
             if(idProcess != 0
-                    && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
+                    && (getWorkingInterval((idxLevel + 1) , idProcess).leftIndex >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex >> 3 ) ){
                 needToRecv = true;
 
 
@@ -1526,13 +1526,13 @@ private:
             if(idProcess != nbProcess - 1){
                 int firstProcThatRecv = idProcess + 1;
                 while( firstProcThatRecv < nbProcess &&
-                       getWorkingInterval((idxLevel + 1) , firstProcThatRecv).max <= getWorkingInterval((idxLevel+1) , idProcess).max){
+                       getWorkingInterval((idxLevel + 1) , firstProcThatRecv).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess).rightIndex){
                     ++firstProcThatRecv;
                 }
 
                 int endProcThatRecv = firstProcThatRecv;
                 while( endProcThatRecv < nbProcess &&
-                       (getWorkingInterval((idxLevel + 1) , endProcThatRecv).min >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).max >> 3) ){
+                       (getWorkingInterval((idxLevel + 1) , endProcThatRecv).leftIndex >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex >> 3) ){
                     ++endProcThatRecv;
                 }
 
@@ -1617,7 +1617,7 @@ private:
         // for each levels exepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
             if(idProcess != 0
-                    && getWorkingInterval((idxLevel+1) , idProcess).max <= getWorkingInterval((idxLevel+1) , idProcess - 1).max){
+                    && getWorkingInterval((idxLevel+1) , idProcess).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex){
 
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
@@ -1635,10 +1635,10 @@ private:
             octreeIterator = avoidGotoLeftIterator;
 
             int firstCellWork = -1;
-            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).min){
+            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
                 ++firstCellWork;
             }
-            if(iterArray[firstCellWork+1].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , idProcess).min && numberOfCells==1){
+            if(iterArray[firstCellWork+1].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , idProcess).leftIndex && numberOfCells==1){
                 printf("You Mouchard\n");
                 firstCellWork++;
             }
@@ -1656,7 +1656,7 @@ private:
 
                     // do we need to receive one or zeros cell
                     if(idProcess != 0
-                            && (getWorkingInterval((idxLevel + 1) , idProcess).min >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).max >> 3 ) ){
+                            && (getWorkingInterval((idxLevel + 1) , idProcess).leftIndex >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex >> 3 ) ){
                         needToRecv = true;
 
 
@@ -1668,13 +1668,13 @@ private:
                     if(idProcess != nbProcess - 1){
                         int firstProcThatRecv = idProcess + 1;
                         while( firstProcThatRecv < nbProcess &&
-                               getWorkingInterval((idxLevel + 1) , firstProcThatRecv).max <= getWorkingInterval((idxLevel+1) , idProcess).max){
+                               getWorkingInterval((idxLevel + 1) , firstProcThatRecv).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess).rightIndex){
                             ++firstProcThatRecv;
                         }
 
                         int endProcThatRecv = firstProcThatRecv;
                         while( endProcThatRecv < nbProcess &&
-                               (getWorkingInterval((idxLevel + 1) , endProcThatRecv).min >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).max >> 3) ){
+                               (getWorkingInterval((idxLevel + 1) , endProcThatRecv).leftIndex >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex >> 3) ){
                             ++endProcThatRecv;
                         }
 
@@ -1702,14 +1702,14 @@ private:
                             // if(idProcess == 53){
                             //	fprintf(stderr,"You found One : %d, nbofCells %d Intervals : %d{%lld,%lld} %d{%lld,%lld} Left : %d{%lld,%lld} %d{%lld,%lld} %lld\n",
                             //	   idProcess,numberOfCells,
-                            //	   idxLevel, getWorkingInterval(idxLevel).min,
-                            //	   getWorkingInterval(idxLevel).max,
-                            //	   idxLevel+1, getWorkingInterval(idxLevel+1).min,
-                            //	   getWorkingInterval(idxLevel+1).max,
-                            //	   idxLevel, getWorkingInterval(idxLevel,idProcess-1).min,
-                            //	   getWorkingInterval(idxLevel,idProcess-1).max,
-                            //	   idxLevel+1,getWorkingInterval(idxLevel+1,idProcess-1).min,
-                            //	   getWorkingInterval(idxLevel+1,idProcess-1).max,iterArray[0].getCurrentGlobalIndex());
+                            //	   idxLevel, getWorkingInterval(idxLevel).leftIndex,
+                            //	   getWorkingInterval(idxLevel).rightIndex,
+                            //	   idxLevel+1, getWorkingInterval(idxLevel+1).leftIndex,
+                            //	   getWorkingInterval(idxLevel+1).rightIndex,
+                            //	   idxLevel, getWorkingInterval(idxLevel,idProcess-1).leftIndex,
+                            //	   getWorkingInterval(idxLevel,idProcess-1).rightIndex,
+                            //	   idxLevel+1,getWorkingInterval(idxLevel+1,idProcess-1).leftIndex,
+                            //	   getWorkingInterval(idxLevel+1,idProcess-1).rightIndex,iterArray[0].getCurrentGlobalIndex());
                             // }
                             // Need to compute
                             FLOG(computationCounter.tic());
@@ -1831,20 +1831,20 @@ private:
                 //Loop over the neighbor leafs
                 for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
                     //Test if leaf belongs to someone else (false if it's mine)
-                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
+                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                         needOther = true;
 
                         // find the proc that will need current leaf
                         int procToReceive = idProcess;
-                        while( procToReceive != 0 && indexesNeighbors[idxNeigh] < intervals[procToReceive].min){
+                        while( procToReceive != 0 && indexesNeighbors[idxNeigh] < intervals[procToReceive].leftIndex){
                             --procToReceive; //scroll process "before" current process
                         }
 
-                        while( procToReceive != nbProcess - 1 && (intervals[procToReceive].max) < indexesNeighbors[idxNeigh]){
+                        while( procToReceive != nbProcess - 1 && (intervals[procToReceive].rightIndex) < indexesNeighbors[idxNeigh]){
                             ++procToReceive;//scroll process "after" current process
                         }
                         //  Test : Not Already Send && USELESS TEST ?
-                        if( !alreadySent[procToReceive] && intervals[procToReceive].min <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].max){
+                        if( !alreadySent[procToReceive] && intervals[procToReceive].leftIndex <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].rightIndex){
 
                             alreadySent[procToReceive] = 1;
                             toSend[procToReceive].push( iterArray[idxLeaf] );
@@ -2083,7 +2083,7 @@ private:
                 const int nbNeigh = currentIter.coord.getNeighborsIndexes(OctreeHeight, indexesNeighbors, indexArray);
 
                 for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
-                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
+                    if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                         ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                         if(hypotheticNeighbor){
                             neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
@@ -2267,20 +2267,20 @@ private:
                     //Loop over the neighbor leafs
                     for(int idxNeigh = 0 ; idxNeigh < neighCount ; ++idxNeigh){
                         //Test if leaf belongs to someone else (false if it's mine)
-                        if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
+                        if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                             needOther = true;
 
                             // find the proc that will need current leaf
                             int procToReceive = idProcess;
-                            while( procToReceive != 0 && indexesNeighbors[idxNeigh] < intervals[procToReceive].min){
+                            while( procToReceive != 0 && indexesNeighbors[idxNeigh] < intervals[procToReceive].leftIndex){
                                 --procToReceive; //scroll process "before" current process
                             }
 
-                            while( procToReceive != nbProcess - 1 && (intervals[procToReceive].max) < indexesNeighbors[idxNeigh]){
+                            while( procToReceive != nbProcess - 1 && (intervals[procToReceive].rightIndex) < indexesNeighbors[idxNeigh]){
                                 ++procToReceive;//scroll process "after" current process
                             }
                             //  Test : Not Already Send && USELESS TEST ?
-                            if( !alreadySent[procToReceive] && intervals[procToReceive].min <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].max){
+                            if( !alreadySent[procToReceive] && intervals[procToReceive].leftIndex <= indexesNeighbors[idxNeigh] && indexesNeighbors[idxNeigh] <= intervals[procToReceive].rightIndex){
 
                                 alreadySent[procToReceive] = 1;
                                 toSend[procToReceive].push( iterArray[idxLeaf] );
@@ -2466,7 +2466,7 @@ private:
                     const int nbNeigh = currentIter.coord.getNeighborsIndexes(OctreeHeight, indexesNeighbors, indexArray);
 
                     for(int idxNeigh = 0 ; idxNeigh < nbNeigh ; ++idxNeigh){
-                        if(indexesNeighbors[idxNeigh] < (intervals[idProcess].min) || (intervals[idProcess].max) < indexesNeighbors[idxNeigh]){
+                        if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                             ContainerClass*const hypotheticNeighbor = otherP2Ptree->getLeafSrc(indexesNeighbors[idxNeigh]);
                             if(hypotheticNeighbor){
                                 neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
