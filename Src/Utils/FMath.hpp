@@ -262,7 +262,7 @@ struct FMath{
 	  FReal getmax() const{
 	    return max;
 	  }
-	  FReal getNbElements() const{
+	  int getNbElements() const{
 	    return nbElements;
 	  }
 	  void  setNbElements(const int & n) {

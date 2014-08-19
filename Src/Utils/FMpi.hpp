@@ -263,31 +263,31 @@ public:
     // Mpi Types meta function
     ////////////////////////////////////////////////////////////
 
-    static const MPI_Datatype GetType(const long long&){
+    static  MPI_Datatype GetType(const long long&){
         return MPI_LONG_LONG;
     }
 
-    static const MPI_Datatype GetType(const long int&){
+    static  MPI_Datatype GetType(const long int&){
         return MPI_LONG;
     }
 
-    static const MPI_Datatype GetType(const double&){
+    static  MPI_Datatype GetType(const double&){
         return MPI_DOUBLE;
     }
 
-    static const MPI_Datatype GetType(const float&){
+    static  MPI_Datatype GetType(const float&){
         return MPI_FLOAT;
     }
 
-    static const MPI_Datatype GetType(const int&){
+    static  MPI_Datatype GetType(const int&){
         return MPI_INT;
     }
 
-    static const MPI_Datatype GetType(const char&){
+    static  MPI_Datatype GetType(const char&){
         return MPI_CHAR;
     }
 
-    static const MPI_Datatype GetType(const FComplexe& a){
+    static  MPI_Datatype GetType(const FComplexe& a){
         MPI_Datatype FMpiComplexe;
         MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
         return FMpiComplexe;

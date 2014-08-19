@@ -357,7 +357,7 @@ template <int ORDER, class MatrixKernelClass>
 unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
                                 const FReal CellWidth, 
                                 const FReal CellWidthExtension, 
-                                const FReal epsilon,
+                                const FReal /*epsilon*/,
                                 FReal* &U,
                                 FReal** &C,
                                 FReal* &B)

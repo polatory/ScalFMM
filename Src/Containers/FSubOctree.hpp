@@ -135,6 +135,7 @@ protected:
 
         // Manage border limits
         if(arrayIndex == this->leftLeafIndex && arrayIndex == this->rightLeafIndex){
+	    this->rightLeafIndex = -1;
             // only one cells, return true
             return true;
         }
