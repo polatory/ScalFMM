@@ -516,7 +516,6 @@ private:
                 FAssertLF(getWorkingInterval(idxLevel, idProcess).rightIndex < getWorkingInterval(idxLevel, idProcess).leftIndex);
                 break;
             }
-            FAssertLF(getWorkingInterval(idxLevel, idProcess).leftIndex <= getWorkingInterval(idxLevel, idProcess).rightIndex);
 
             // Copy and count ALL the cells (even the ones outside the working interval)
             int totalNbCellsAtLevel = 0;
@@ -526,23 +525,32 @@ private:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
 
-            int nbCellsToSend     = 0; // The number of cells to send
             int iterMpiRequests   = 0; // The iterator for send/recv requests
-            int nbCellsForThreads = totalNbCellsAtLevel; // totalNbCellsAtLevel or totalNbCellsAtLevel-1
 
-            //Test if i'm not the last, and I need st to compute my last M2M
-            if((idProcess != nbProcess-1) &&
-                    ((getWorkingInterval(idxLevel+1,idProcess+1)).leftIndex >>3) <= ((getWorkingInterval(idxLevel+1,idProcess)).rightIndex)>>3){
-                nbCellsForThreads -= 1;
-            }
-
+            int nbCellsToSend     = 0; // The number of cells to send
             // Skip all the cells that are out of my working interval
             while(iterArray[nbCellsToSend].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
                 ++nbCellsToSend;
             }
 
+            int nbCellsForThreads = totalNbCellsAtLevel; // totalNbCellsAtLevel or totalNbCellsAtLevel-1
+            bool hasToReceive = false;
+            if(idProcess != nbProcess-1){
+                // Find the first proc that may send to me
+                while(firstProcThatSend < nbProcess
+                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
+                    firstProcThatSend += 1;
+                }
+                // Do we have to receive?
+                if(firstProcThatSend < nbProcess && (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
+                    hasToReceive = true;
+                    // Threads do not compute the last cell, we will do it once data are received
+                    nbCellsForThreads -= 1;
+                }
+            }
+
             // TODO REMOVE
-            // if((iterArray[0].getCurrentGlobalIndex() == getWorkingInterval(idxLevel, idProcess-1).rightIndex) && numberOfCells==1){
+            //if((iterArray[0].getCurrentGlobalIndex() == getWorkingInterval(idxLevel, idProcess-1).rightIndex) && numberOfCells==1){
             //    nbCellsToSend++;
             //}
             // END REMOVE
@@ -586,37 +594,25 @@ private:
                                   FMpi::TagFmmM2M, comm.getComm(), &requests[iterMpiRequests++]);
                     }
                     //Post receive, Datas needed in several parts of the section
-                    bool hasToReceive   = false;
-                    int endProcThatSend = firstProcThatSend;
+                    int nbProcThatSendToMe = 0;
 
-                    if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
-                        // Find the first proc that send to me
-                        while(firstProcThatSend < nbProcess
-                              && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
-                            // Second condition :: while firstProcThatSend rightIndex morton index is < to myself rightIndex interval
-                            ++firstProcThatSend;
+                    if(hasToReceive){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
+                        //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
+                        int endProcThatSend = firstProcThatSend;
+                        // Find the last proc that should send to me
+                        while( endProcThatSend < nbProcess &&
+                               (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
+                            ++endProcThatSend;
                         }
 
-                        // If there is one and it has to send me data
-                        if(firstProcThatSend < nbProcess &&
-                                (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
-                            //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
-                            endProcThatSend = firstProcThatSend;
-                            // Find the last proc that should send to me
-                            while( endProcThatSend < nbProcess &&
-                                   (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
-                                ++endProcThatSend;
-                            }
-
-                            // If there is at least one proc that send me something
-                            if(firstProcThatSend != endProcThatSend){
-                                FAssertLF(endProcThatSend - firstProcThatSend <= 7);
-                                hasToReceive = true;
-                                // Post a recv for each of them
-                                for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-                                    MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
-                                            idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterMpiRequests++]);
-                                }
+                        // If there is at least one proc that send me something
+                        if(firstProcThatSend != endProcThatSend){
+                            nbProcThatSendToMe = endProcThatSend - firstProcThatSend;
+                            FAssertLF(nbProcThatSendToMe <= 7);
+                            // Post a recv for each of them
+                            for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
+                                MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
+                                        idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterMpiRequests++]);
                             }
                         }
                     }
@@ -632,7 +628,7 @@ private:
                             memcpy(currentChild, iterArray[totalNbCellsAtLevel - 1].getCurrentChild(), 8 * sizeof(CellClass*));
 
                             // Retreive data and merge my child and the child from others
-                            for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
+                            for(int idxProc = firstProcThatSend ; idxProc < firstProcThatSend + nbProcThatSendToMe ; ++idxProc){
                                 recvBuffer.seek(idxProc * recvBufferOffset);
                                 int state = int(recvBuffer.getValue<char>());
 
@@ -654,7 +650,7 @@ private:
 
                             // Finally compute
                             (*kernels[threadNumber]).M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
-                            firstProcThatSend = endProcThatSend - 1;
+                            firstProcThatSend += nbProcThatSendToMe - 1;
                         }
                     }
                     sendBuffer.reset();
