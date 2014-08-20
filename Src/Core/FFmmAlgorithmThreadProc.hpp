@@ -516,6 +516,7 @@ private:
                 FAssertLF(getWorkingInterval(idxLevel, idProcess).rightIndex < getWorkingInterval(idxLevel, idProcess).leftIndex);
                 break;
             }
+            FAssertLF(getWorkingInterval(idxLevel, idProcess).leftIndex <= getWorkingInterval(idxLevel, idProcess).rightIndex);
 
             // Copy and count ALL the cells (even the ones outside the working interval)
             int totalNbCellsAtLevel = 0;
