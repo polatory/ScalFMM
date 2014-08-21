@@ -89,7 +89,7 @@ public:
     /** Get an array of particles sorted from their morton indexes */
     template <class LoaderClass>
     static void GetSortedParticlesFromLoader( const FMpi::FComm& communicator, LoaderClass& loader, const SortingType sortingType,
-                               const int TreeHeight, IndexedParticle**const outputSortedParticles, FSize* const outputNbParticlesSorted){
+                                              const int TreeHeight, IndexedParticle**const outputSortedParticles, FSize* const outputNbParticlesSorted){
         // Allocate the particles array
         IndexedParticle*const originalParticlesUnsorted = new IndexedParticle[loader.getNumberOfParticles()];
         FMemUtils::memset(originalParticlesUnsorted, 0, sizeof(IndexedParticle) * loader.getNumberOfParticles());
@@ -125,8 +125,8 @@ public:
 
     /** Get an array of particles sorted from their morton indexes */
     static void GetSortedParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass inOriginalParticles[], const FSize originalNbParticles, const SortingType sortingType,
-                                        const FPoint& centerOfBox, const FReal boxWidth,
-                                        const int TreeHeight, IndexedParticle**const outputSortedParticles, FSize* const outputNbParticlesSorted){
+                                             const FPoint& centerOfBox, const FReal boxWidth,
+                                             const int TreeHeight, IndexedParticle**const outputSortedParticles, FSize* const outputNbParticlesSorted){
         // Allocate the particles array
         IndexedParticle*const originalParticlesUnsorted = new IndexedParticle[originalNbParticles];
         FMemUtils::memset(originalParticlesUnsorted, 0, sizeof(IndexedParticle) * originalNbParticles);
@@ -166,7 +166,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
 
     static void MergeSplitedLeaves(const FMpi::FComm& communicator, IndexedParticle* workingArray, FSize* workingSize,
-				   FSize ** leavesOffsetInParticles, ParticleClass** particlesArrayInLeafOrder, FSize* const leavesSize){
+                                   FSize ** leavesOffsetInParticles, ParticleClass** particlesArrayInLeafOrder, FSize* const leavesSize){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
@@ -337,45 +337,45 @@ public:
         else{
             // We need to know the number of leaves per procs
             std::unique_ptr<FSize[]> numberOfLeavesPerProc(new FSize[nbProcs]);
-	    MPI_Allgather((FSize*)&currentNbLeaves, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(), 1, MPI_LONG_LONG_INT, communicator.getComm());
-	    
-	    //prefix sum
+            MPI_Allgather((FSize*)&currentNbLeaves, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(), 1, MPI_LONG_LONG_INT, communicator.getComm());
+
+            //prefix sum
             std::unique_ptr<FSize[]> diffNumberOfLeavesPerProc(new FSize[nbProcs+1]);
             diffNumberOfLeavesPerProc[0] = 0;
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc ){
                 diffNumberOfLeavesPerProc[idxProc+1] = diffNumberOfLeavesPerProc[idxProc] + numberOfLeavesPerProc[idxProc];
-	    }
-	    
+            }
+
             const FSize totalNumberOfLeavesInSimulation  = diffNumberOfLeavesPerProc[nbProcs];
-	    // Compute the objective interval
+            // Compute the objective interval
             std::vector< std::pair<size_t,size_t> > allObjectives;
             allObjectives.resize(nbProcs);
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
                 allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
                 allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
             }
-	    
+
             // Ask for the pack to send
             std::pair<size_t, size_t> myCurrentInter = {diffNumberOfLeavesPerProc[myRank], diffNumberOfLeavesPerProc[myRank+1]};
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
-	    std::unique_ptr<FSize[]> nbPartsPerPackToSend(new FSize[packsToSend.size()]);
+            std::unique_ptr<FSize[]> nbPartsPerPackToSend(new FSize[packsToSend.size()]);
             // Store the requests
             std::vector<MPI_Request> requestsParts;
-	    std::vector<MPI_Request> requestsNbParts;
+            std::vector<MPI_Request> requestsNbParts;
             // Send every thing except for me or if size == 0
-	    for(int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
-		const FEqualize::Package& pack = packsToSend[idxPack];
+            for(int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
+                const FEqualize::Package& pack = packsToSend[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
 
-		    //First, we need to send the size of the leaves we will send
-		    nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
-		    requestsNbParts.emplace_back();
-		    MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
-			      FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
-		    requestsParts.emplace_back();
-		    MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]], 
-			      sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack],
-			      MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
+                    //First, we need to send the size of the leaves we will send
+                    nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+                    requestsNbParts.emplace_back();
+                    MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
+                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
+                    requestsParts.emplace_back();
+                    MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
+                            sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack],
+                            MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
                 }
             }
             // Compute the current intervals
@@ -388,52 +388,52 @@ public:
             // Ask the packs to receive to fill my objective
             std::pair<size_t, size_t> myObjective = allObjectives[myRank];
             const std::vector<FEqualize::Package> packsToRecv = FEqualize::GetPackToRecv(myObjective, allCurrentIntervals);
-	    
-	    // Count the number of parts to receive
-	    std::unique_ptr<FSize[]> nbPartsPerPackToRecv(new FSize[packsToRecv.size()]);
-	    for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
-		const FEqualize::Package& pack = packsToRecv[idxPack];
-		if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
-		    requestsNbParts.emplace_back();
-		    MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
-			      FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
-		}
-		else{
-		    if(pack.idProc == myRank){
-			const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
-			const FSize nbLeavesToCopy = pack.elementTo-pack.elementFrom;
-			nbPartsPerPackToRecv[idxPack] = leavesOffsetInParticles[sourcePosition+nbLeavesToCopy] - leavesOffsetInParticles[sourcePosition];
-		    }
-		}
-	    }
-	    
-	    MPI_Waitall(requestsNbParts.size(), requestsNbParts.data(), MPI_STATUSES_IGNORE);
+
+            // Count the number of parts to receive
+            std::unique_ptr<FSize[]> nbPartsPerPackToRecv(new FSize[packsToRecv.size()]);
+            for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
+                const FEqualize::Package& pack = packsToRecv[idxPack];
+                if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
+                    requestsNbParts.emplace_back();
+                    MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
+                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
+                }
+                else{
+                    if(pack.idProc == myRank){
+                        const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
+                        const FSize nbLeavesToCopy = pack.elementTo-pack.elementFrom;
+                        nbPartsPerPackToRecv[idxPack] = leavesOffsetInParticles[sourcePosition+nbLeavesToCopy] - leavesOffsetInParticles[sourcePosition];
+                    }
+                }
+            }
+
+            MPI_Waitall(requestsNbParts.size(), requestsNbParts.data(), MPI_STATUSES_IGNORE);
 
             // Count the number of leaf to receive
             FSize totalPartsToReceive = 0;
-	    for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
-		totalPartsToReceive += nbPartsPerPackToRecv[idxPack];
-	    }
+            for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
+                totalPartsToReceive += nbPartsPerPackToRecv[idxPack];
+            }
 
             std::vector<ParticleClass> particlesRecvBuffer;
             // Post all the receive and copy mine
             if(totalPartsToReceive){
                 particlesRecvBuffer.resize(totalPartsToReceive);
-		FSize offsetToRecv = 0;
-		for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
-		    const FEqualize::Package& pack = packsToRecv[idxPack];
+                FSize offsetToRecv = 0;
+                for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
+                    const FEqualize::Package& pack = packsToRecv[idxPack];
                     if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                         requestsParts.emplace_back();
-			MPI_Irecv(&particlesRecvBuffer[offsetToRecv], sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack], MPI_BYTE, pack.idProc,
-				  FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
-		    }
+                        MPI_Irecv(&particlesRecvBuffer[offsetToRecv], sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack], MPI_BYTE, pack.idProc,
+                                  FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
+                    }
                     else if(pack.idProc == myRank){
                         // Copy my particles
-			const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
+                        const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
                         memcpy(&particlesRecvBuffer[offsetToRecv], &particlesArrayInLeafOrder[leavesOffsetInParticles[sourcePosition]],
                                 nbPartsPerPackToRecv[idxPack]*sizeof(ParticleClass));
                     }
-		    offsetToRecv += nbPartsPerPackToRecv[idxPack];
+                    offsetToRecv += nbPartsPerPackToRecv[idxPack];
                 }
             }
 
@@ -453,14 +453,14 @@ public:
 
     template <class ContainerClass>
     static void DistributeArrayToContainer(const FMpi::FComm& communicator, const ParticleClass originalParticlesArray[], const FSize originalNbParticles,
-                            const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
-                            ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
+                                           const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
+                                           ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
 
         IndexedParticle* sortedParticlesArray = nullptr;
         FSize nbParticlesInArray = 0;
         // From ParticleClass get array of IndexedParticle sorted
         GetSortedParticlesFromArray(communicator, originalParticlesArray, originalNbParticles, sortingType, boxCenter, boxWidth, treeHeight,
-                               &sortedParticlesArray, &nbParticlesInArray);
+                                    &sortedParticlesArray, &nbParticlesInArray);
 
         ParticleClass* particlesArrayInLeafOrder = nullptr;
         FSize * leavesOffsetInParticles = nullptr;
