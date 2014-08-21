@@ -118,7 +118,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                          FmmClassProc* const fmm){
     std::cout << "The working interval is from " << fmm->getWorkingInterval(badTree->getHeight()-1).leftIndex << "\n";
     std::cout << "The working interval is to " << fmm->getWorkingInterval(badTree->getHeight()-1).rightIndex << "\n";
-
+    std::cout << "\tValidate L2L M2M...\n";
     const int OctreeHeight = badTree->getHeight();
     {
         typename OctreeClass::Iterator octreeIterator(badTree);
@@ -165,7 +165,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             octreeIteratorValide.gotoLeft();
         }
     }
-
+    std::cout << "\tValidate L2P P2P...\n";
     {
         FSize NbPart = 0;
         FSize NbLeafs = 0;
@@ -200,6 +200,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             } while( octreeIterator.moveRight());
         }
     }
+    std::cout << "\tValidate P2M...\n";
     {
         {
             // Check that each particle has been summed with all other
@@ -214,7 +215,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             } while( octreeIterator.moveRight() );
         }
     }
-
+    std::cout << "\tValidate Particles...\n";
     {
         // Check that each particle has been summed with all other
         typename OctreeClass::Iterator octreeIterator(badTree);
@@ -262,7 +263,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
         }while( octreeIterator.moveRight() && valideOctreeIterator.moveRight());
     }
-
+    std::cout << "\tDone!\n";
 }
 
 
@@ -457,6 +458,5 @@ FMpiFmaGenericLoader loader(filename,app.global());
 
   return 0;
 }
-
 
 
