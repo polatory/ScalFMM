@@ -61,57 +61,50 @@
 // Check if tree is built correctly
 template<class OctreeClass>
 void ValidateTree(OctreeClass& realTree,
-		  OctreeClass& treeValide, const FMpi::FComm& comm){
-  FSize totalNbLeafs = 0;
-  {
+                  OctreeClass& treeValide){
 
-    typename OctreeClass::Iterator octreeIterator(&treeValide);
+    typename OctreeClass::Iterator octreeIteratorValide(&treeValide);
+    octreeIteratorValide.gotoBottomLeft();
+
+    typename OctreeClass::Iterator octreeIterator(&realTree);
     octreeIterator.gotoBottomLeft();
-    do {
-      ++totalNbLeafs;
-    } while(octreeIterator.moveRight());
-  }
 
-  const FSize myLeftLeaf = comm.getLeft(totalNbLeafs);
-  const FSize myRightLeaf = comm.getRight(totalNbLeafs);
-
-  //printf("%d should go from %d to %d leaf (on %d total leafs)\n", comm.processId(), myLeftLeaf, myRightLeaf, totalNbLeafs);
-
-  typename OctreeClass::Iterator octreeIteratorValide(&treeValide);
-  octreeIteratorValide.gotoBottomLeft();
-  for(FSize idxLeaf = 0 ; idxLeaf < myLeftLeaf ; ++idxLeaf){
-    if(!octreeIteratorValide.moveRight()){
-      printf("Error cannot access to the left leaf %lld in the valide tree\n", myLeftLeaf);
-    }
-  }
-
-  typename OctreeClass::Iterator octreeIterator(&realTree);
-  octreeIterator.gotoBottomLeft();
-
-  for(FSize idxLeaf = myLeftLeaf ; idxLeaf < myRightLeaf ; ++idxLeaf){
-    if(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
-      printf("Error index are different, valide %lld invalid %lld\n",octreeIteratorValide.getCurrentGlobalIndex(),
-	     octreeIterator.getCurrentGlobalIndex());
-      break;
-    }
-    if(octreeIteratorValide.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentListSrc()->getNbParticles()){
-      printf("Error leafs do not have the same number of particles, valide %d, invalide %d\n",
-	     octreeIteratorValide.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentListSrc()->getNbParticles() );
+    while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+        if(octreeIteratorValide.moveRight() == false){
+            std::cout << "Error the real tree smaller than the parallel one\n";
+            std::cout << "Valide tree stop at " << octreeIteratorValide.getCurrentGlobalIndex() << "\n";
+            std::cout << "Other at " << octreeIterator.getCurrentGlobalIndex() << "\n";
+            return;
+        }
     }
 
-    //printf("index %lld with %d particles\n", octreeIteratorValide.getCurrentGlobalIndex(), octreeIteratorValide.getCurrentListSrc()->getSize());
+    std::cout << "The tree starts at " << octreeIteratorValide.getCurrentGlobalIndex() << "\n";
 
-    if(!octreeIteratorValide.moveRight() && idxLeaf != myRightLeaf - 1){
-      printf("Error cannot valide tree end to early, idxLeaf %lld myRightLeaf %lld\n", idxLeaf, myRightLeaf);
-      break;
+    while(true){
+        if(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+            std::cout << "Error the trees do not have the same idx.\n";
+            std::cout << "Correct one is " << octreeIteratorValide.getCurrentGlobalIndex() << "\n";
+            std::cout << "Incorrect one is " << octreeIterator.getCurrentGlobalIndex() << "\n";
+            return;
+        }
+
+        if(octreeIteratorValide.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentListSrc()->getNbParticles()){
+            std::cout << "Error the trees do not have the same number of particles at idx " << octreeIteratorValide.getCurrentGlobalIndex() << ".\n";
+            std::cout << "Correct one is " << octreeIteratorValide.getCurrentListSrc()->getNbParticles() << "\n";
+            std::cout << "Incorrect one is " << octreeIterator.getCurrentListSrc()->getNbParticles() << "\n";
+            return;
+        }
+
+        if(octreeIterator.moveRight() == false){
+            break;
+        }
+
+        if(octreeIteratorValide.moveRight() == false){
+            std::cout << "Error the real tree smaller than the parallel one\n";
+        }
     }
 
-    if(!octreeIterator.moveRight() && idxLeaf != myRightLeaf - 1){
-      printf("Error cannot test tree end to early, idxLeaf %lld myRightLeaf %lld\n", idxLeaf, myRightLeaf);
-      break;
-    }
-  }
-
+    std::cout << "The tree stops at " << octreeIteratorValide.getCurrentGlobalIndex() << "\n";
 }
 
 
@@ -121,151 +114,154 @@ void ValidateTree(OctreeClass& realTree,
  */
 template<class OctreeClass, class ContainerClass, class FmmClassProc>
 void ValidateFMMAlgoProc(OctreeClass* const badTree,
-			 OctreeClass* const valideTree,
-			 FmmClassProc* const fmm){
-  const int OctreeHeight = badTree->getHeight();
-  {
-    typename OctreeClass::Iterator octreeIterator(badTree);
-    octreeIterator.gotoBottomLeft();
+                         OctreeClass* const valideTree,
+                         FmmClassProc* const fmm){
+    std::cout << "The working interval is from " << fmm->getWorkingInterval(badTree->getHeight()-1).leftIndex << "\n";
+    std::cout << "The working interval is to " << fmm->getWorkingInterval(badTree->getHeight()-1).rightIndex << "\n";
 
-    typename OctreeClass::Iterator octreeIteratorValide(valideTree);
-    octreeIteratorValide.gotoBottomLeft();
+    const int OctreeHeight = badTree->getHeight();
+    {
+        typename OctreeClass::Iterator octreeIterator(badTree);
+        octreeIterator.gotoBottomLeft();
 
-    for(int level = OctreeHeight - 1 ; level > 0 && fmm->hasWorkAtLevel(level) ; --level){
+        typename OctreeClass::Iterator octreeIteratorValide(valideTree);
+        octreeIteratorValide.gotoBottomLeft();
 
-      while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()) {
-	octreeIteratorValide.moveRight();
-      }
+        for(int level = OctreeHeight - 1 ; level > 0 && fmm->hasWorkAtLevel(level) ; --level){
 
-      while(octreeIteratorValide.getCurrentGlobalIndex() != fmm->getWorkingInterval(level).leftIndex){
-	octreeIteratorValide.moveRight();
-	octreeIterator.moveRight();
-      }
+            while(octreeIteratorValide.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()) {
+                octreeIteratorValide.moveRight();
+            }
 
-      FSize countCheck = 0;
-      do{
-	if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
-	  std::cout << "Error index are not equal!" << std::endl;
-	}
-	else{
-	  if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
-	    std::cout << "M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
-		      << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
-	  }
-	  if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
-	    std::cout << "L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
-		      << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
-	  }
-	}
-	++countCheck;
-      } while(octreeIteratorValide.moveRight() && octreeIterator.moveRight());
-      
-      // Check that each particle has been summed with all other
-      
-      octreeIterator.moveUp();
-      octreeIterator.gotoLeft();
-      
-      octreeIteratorValide.moveUp();
-      octreeIteratorValide.gotoLeft();
+            while(octreeIteratorValide.getCurrentGlobalIndex() != fmm->getWorkingInterval(level).leftIndex){
+                octreeIteratorValide.moveRight();
+                octreeIterator.moveRight();
+            }
+
+            FSize countCheck = 0;
+            do{
+                if(octreeIterator.getCurrentGlobalIndex() != octreeIteratorValide.getCurrentGlobalIndex()){
+                    std::cout << "Problem Error index are not equal! " << octreeIterator.getCurrentGlobalIndex() << " " << octreeIteratorValide.getCurrentGlobalIndex() << std::endl;
+                }
+                else{
+                    if(octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorValide.getCurrentCell()->getDataUp()){
+                        std::cout << "Problem M2M error at level " << level << " up bad " << octreeIterator.getCurrentCell()->getDataUp()
+                                  << " good " << octreeIteratorValide.getCurrentCell()->getDataUp() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
+                    }
+                    if(octreeIterator.getCurrentCell()->getDataDown() != octreeIteratorValide.getCurrentCell()->getDataDown()){
+                        std::cout << "Problem L2L error at level " << level << " down bad " << octreeIterator.getCurrentCell()->getDataDown()
+                                  << " good " << octreeIteratorValide.getCurrentCell()->getDataDown() << " index " << octreeIterator.getCurrentGlobalIndex() << std::endl;
+                    }
+                }
+                ++countCheck;
+            } while(octreeIteratorValide.moveRight() && octreeIterator.moveRight());
+
+            // Check that each particle has been summed with all other
+
+            octreeIterator.moveUp();
+            octreeIterator.gotoLeft();
+
+            octreeIteratorValide.moveUp();
+            octreeIteratorValide.gotoLeft();
+        }
     }
-  }
 
-  {
-    FSize NbPart = 0;
-    FSize NbLeafs = 0;
-    { // Check that each particle has been summed with all other
-      typename OctreeClass::Iterator octreeIterator(valideTree);
-      octreeIterator.gotoBottomLeft();
-      do{
-	NbPart += octreeIterator.getCurrentListSrc()->getNbParticles();
-	++NbLeafs;
-      } while(octreeIterator.moveRight());
+    {
+        FSize NbPart = 0;
+        FSize NbLeafs = 0;
+        { // Check that each particle has been summed with all other
+            typename OctreeClass::Iterator octreeIterator(valideTree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                NbPart += octreeIterator.getCurrentListSrc()->getNbParticles();
+                ++NbLeafs;
+            } while(octreeIterator.moveRight());
+        }
+        {
+            // Check that each particle has been summed with all other
+            typename OctreeClass::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
+
+            do {
+                const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
+
+                ContainerClass* container = (octreeIterator.getCurrentListTargets());
+                const long long int*const dataDown = container->getDataDown();
+
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                    // there is a problem
+                    if( (!isUsingTsm && dataDown[idxPart] != NbPart - 1) ||
+                            (isUsingTsm && dataDown[idxPart] != NbPart) ){
+                        std::cout << "Problem L2P + P2P, value on particle is : " << dataDown[idxPart] <<
+                                     " at pos " << idxPart << " index is " << octreeIterator.getCurrentGlobalIndex() << "\n";
+                    }
+                }
+            } while( octreeIterator.moveRight());
+        }
     }
     {
-      // Check that each particle has been summed with all other
-      typename OctreeClass::Iterator octreeIterator(badTree);
-      octreeIterator.gotoBottomLeft();
+        {
+            // Check that each particle has been summed with all other
+            typename OctreeClass::Iterator octreeIterator(badTree);
+            octreeIterator.gotoBottomLeft();
 
-      do {
-	const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
-
-	ContainerClass* container = (octreeIterator.getCurrentListTargets());
-	const long long int*const dataDown = container->getDataDown();
-
-	for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
-	  // If a particles has been impacted by less than NbPart - 1 (the current particle)
-	  // there is a problem
-	  if( (!isUsingTsm && dataDown[idxPart] != NbPart - 1) ||
-	      (isUsingTsm && dataDown[idxPart] != NbPart) ){
-	    std::cout << "Problem L2P + P2P, value on particle is : " << dataDown[idxPart] <<
-	      " at pos " << idxPart << " index is " << octreeIterator.getCurrentGlobalIndex() << "\n";
-	  }
-	}
-      } while( octreeIterator.moveRight());
+            do {
+                if(octreeIterator.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentCell()->getDataUp()){
+                    printf("P2M Problem nb part %d data up %lld \n",
+                           octreeIterator.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentCell()->getDataUp());
+                }
+            } while( octreeIterator.moveRight() );
+        }
     }
-  }
-  {
+
     {
-      // Check that each particle has been summed with all other
-      typename OctreeClass::Iterator octreeIterator(badTree);
-      octreeIterator.gotoBottomLeft();
+        // Check that each particle has been summed with all other
+        typename OctreeClass::Iterator octreeIterator(badTree);
+        octreeIterator.gotoBottomLeft();
 
-      do {
-	if(octreeIterator.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentCell()->getDataUp()){
-	  printf("P2M problem nb part %d data up %lld \n",
-		 octreeIterator.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentCell()->getDataUp());
-	}
-      } while( octreeIterator.moveRight() );
+        typename OctreeClass::Iterator valideOctreeIterator(valideTree);
+        valideOctreeIterator.gotoBottomLeft();
+        while(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+            valideOctreeIterator.moveRight();
+        }
+
+        do {
+            if(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
+                printf("Problem Do not have the same index valide %lld invalide %lld \n",
+                       valideOctreeIterator.getCurrentGlobalIndex(), octreeIterator.getCurrentGlobalIndex());
+                break;
+            }
+
+            if(octreeIterator.getCurrentListTargets()->getNbParticles() != valideOctreeIterator.getCurrentListTargets()->getNbParticles()){
+                printf("Problem Do not have the same number of particle at leaf id %lld, valide %d invalide %d \n",
+                       octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getNbParticles(),
+                       octreeIterator.getCurrentListTargets()->getNbParticles());
+            }
+            else {
+                ContainerClass* container = (octreeIterator.getCurrentListTargets());
+                const long long int*const dataDown = container->getDataDown();
+
+                ContainerClass* containerValide = (valideOctreeIterator.getCurrentListTargets());
+                const long long int*const dataDownValide = containerValide->getDataDown();
+
+                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    // If a particles has been impacted by less than NbPart - 1 (the current particle)
+                    // there is a problem
+                    if( dataDown[idxPart] != dataDownValide[idxPart]){
+                        std::cout << "Problem on leaf " << octreeIterator.getCurrentGlobalIndex() <<
+                                     " part " << idxPart << " valide data down " << dataDownValide[idxPart] <<
+                                     " invalide " << dataDown[idxPart] << "\n";
+                        std::cout << "Data down for leaf is: valide " << valideOctreeIterator.getCurrentCell()->getDataDown()
+                                  << " invalide " << octreeIterator.getCurrentCell()->getDataDown()
+                                  << " size is: valide " <<  valideOctreeIterator.getCurrentListTargets()->getNbParticles()
+                                  << " invalide " << octreeIterator.getCurrentListTargets()->getNbParticles() << std::endl;
+                    }
+                }
+            }
+
+        }while( octreeIterator.moveRight() && valideOctreeIterator.moveRight());
     }
-  }
-
-  {
-    // Check that each particle has been summed with all other
-    typename OctreeClass::Iterator octreeIterator(badTree);
-    octreeIterator.gotoBottomLeft();
-
-    typename OctreeClass::Iterator valideOctreeIterator(valideTree);
-    valideOctreeIterator.gotoBottomLeft();
-    while(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
-      valideOctreeIterator.moveRight();
-    }
-
-    do {
-      if(valideOctreeIterator.getCurrentGlobalIndex() != octreeIterator.getCurrentGlobalIndex()){
-	printf("Do not have the same index valide %lld invalide %lld \n",
-	       valideOctreeIterator.getCurrentGlobalIndex(), octreeIterator.getCurrentGlobalIndex());
-	break;
-      }
-
-      if(octreeIterator.getCurrentListTargets()->getNbParticles() != valideOctreeIterator.getCurrentListTargets()->getNbParticles()){
-	printf("Do not have the same number of particle at leaf id %lld, valide %d invalide %d \n",
-	       octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getNbParticles(),
-	       octreeIterator.getCurrentListTargets()->getNbParticles());
-      }
-      else {
-	ContainerClass* container = (octreeIterator.getCurrentListTargets());
-	const long long int*const dataDown = container->getDataDown();
-
-	ContainerClass* containerValide = (valideOctreeIterator.getCurrentListTargets());
-	const long long int*const dataDownValide = containerValide->getDataDown();
-
-	for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
-	  // If a particles has been impacted by less than NbPart - 1 (the current particle)
-	  // there is a problem
-	  if( dataDown[idxPart] != dataDownValide[idxPart]){
-	    std::cout << "Problem on leaf " << octreeIterator.getCurrentGlobalIndex() <<
-	      " part " << idxPart << " valide data down " << dataDownValide[idxPart] <<
-	      " invalide " << dataDown[idxPart] << "\n";
-	    std::cout << "Data down for leaf is: valide " << valideOctreeIterator.getCurrentCell()->getDataDown()
-		      << " invalide " << octreeIterator.getCurrentCell()->getDataDown()
-		      << " size is: valide " <<  valideOctreeIterator.getCurrentListTargets()->getNbParticles()
-		      << " invalide " << octreeIterator.getCurrentListTargets()->getNbParticles() << std::endl;
-	  }
-	}
-      }
-
-    }while( octreeIterator.moveRight() && valideOctreeIterator.moveRight());
-  }
 
 }
 
@@ -275,15 +271,15 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
  */
 template<class OctreeClass>
 void print(OctreeClass* const valideTree){
-  typename OctreeClass::Iterator octreeIterator(valideTree);
-  for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
-    do{
-      std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
-    } while(octreeIterator.moveRight());
-    std::cout << "\n";
-    octreeIterator.gotoLeft();
-    octreeIterator.moveDown();
-  }
+    typename OctreeClass::Iterator octreeIterator(valideTree);
+    for(int idxLevel = valideTree->getHeight() - 1 ; idxLevel > 1 ; --idxLevel ){
+        do{
+            std::cout << "[" << octreeIterator.getCurrentGlobalIndex() << "] up:" << octreeIterator.getCurrentCell()->getDataUp() << " down:" << octreeIterator.getCurrentCell()->getDataDown() << "\t";
+        } while(octreeIterator.moveRight());
+        std::cout << "\n";
+        octreeIterator.gotoLeft();
+        octreeIterator.moveDown();
+    }
 }
 
 
@@ -346,7 +342,7 @@ FMpiFmaGenericLoader loader(filename,app.global());
     struct TestParticle{
       FPoint position;
       const FPoint& getPosition(){
-	return position;
+    return position;
       }
     };
 
@@ -363,11 +359,11 @@ FMpiFmaGenericLoader loader(filename,app.global());
     // 						 realTree.getBoxCenter(),
     // 						 realTree.getBoxWidth(),
     // 						 realTree.getHeight(), &finalParticles,&balancer);
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
-								loader.getMyNumberOfParticles(),
-								realTree.getBoxCenter(),
-								realTree.getBoxWidth(),realTree.getHeight(),
-								&finalParticles, &balancer);
+    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+                                loader.getMyNumberOfParticles(),
+                                realTree.getBoxCenter(),
+                                realTree.getBoxWidth(),realTree.getHeight(),
+                                &finalParticles, &balancer);
     for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
       realTree.insert(finalParticles[idx].position);
     }
@@ -378,7 +374,7 @@ FMpiFmaGenericLoader loader(filename,app.global());
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
-  }    
+  }
   else{
     FPoint position;
     FReal physicalValue;
@@ -416,7 +412,7 @@ FMpiFmaGenericLoader loader(filename,app.global());
   std::cout << "Validate tree ..." << std::endl;
   counter.tic();
 
-  ValidateTree(realTree, treeValide, app.global());
+  ValidateTree(realTree, treeValide);
 
   counter.tac();
   std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
