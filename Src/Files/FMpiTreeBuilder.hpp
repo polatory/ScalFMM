@@ -49,13 +49,13 @@ private:
      * This method has been taken from the octree class,
      * it computes a tree coordinate (x or y or z) from real cartesian position
      */
-    static int GetTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
-        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-        const int index = int(FMath::dfloor(indexFReal));
-        if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * FReal(index) ) ){
-            return index - 1;
+    static int GetTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel, const FReal boxWidth, const int height) {
+        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
+        if(inRelativePosition == boxWidth){
+            return FMath::pow2(height-1)-1;
         }
-        return index;
+        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
+        return static_cast<int>(indexFReal);
     }
 
 public:
@@ -101,9 +101,12 @@ public:
         // Fill the array and compute the morton index
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(originalParticlesUnsorted[idxPart].particle);
-            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
-            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
-            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel,
+                                          loader.getBoxWidth(), TreeHeight ));
+            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel,
+                                          loader.getBoxWidth(), TreeHeight ));
+            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel,
+                                          loader.getBoxWidth(), TreeHeight ));
 
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }
@@ -135,9 +138,12 @@ public:
         // Fill the array and compute the morton index
         for(int idxPart = 0 ; idxPart < originalNbParticles ; ++idxPart){
             originalParticlesUnsorted[idxPart].particle = inOriginalParticles[idxPart];
-            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
-            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
-            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel,
+                                          boxWidth, TreeHeight ));
+            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel,
+                                          boxWidth, TreeHeight ));
+            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel,
+                                          boxWidth, TreeHeight ));
 
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }
@@ -488,7 +494,7 @@ public:
 
                 for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
                     maxNbParticles = FMath::Max(maxNbParticles, nbPartsPerProc[idxProc]);
-                    minNbParticles = FMath::Max(minNbParticles, nbPartsPerProc[idxProc]);
+                    minNbParticles = FMath::Min(minNbParticles, nbPartsPerProc[idxProc]);
                     averageNbParticles += FReal(nbPartsPerProc[idxProc]);
                 }
                 averageNbParticles /= float(nbProcs);
