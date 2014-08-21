@@ -268,7 +268,11 @@ private:
     // P2M
     /////////////////////////////////////////////////////////////////////////////
 
-    /** P2M Bottom Pass */
+    /**
+     * P2M Bottom Pass
+     * No communication are involved in the P2M.
+     * It is similar to multi threaded version.
+     */
     void bottomPass(){
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
@@ -276,7 +280,7 @@ private:
         FLOG(FTic computationCounter);
         typename OctreeClass::Iterator octreeIterator(tree);
 
-        // Iterate on leafs
+        // Copy the ptr to leaves in array
         octreeIterator.gotoBottomLeft();
         int leafs = 0;
         do{
@@ -286,7 +290,9 @@ private:
         FLOG(computationCounter.tic());
         #pragma omp parallel
         {
+            // Each thread get its own kernel
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
+            // Parallel iteration on the leaves
             #pragma omp for nowait
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
@@ -311,13 +317,14 @@ private:
         FLOG(FTic singleCounter);
         FLOG(FTic parallelCounter);
 
-        // Start from leal level - 1
+        // Start from leal level (height-1)
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        // The proc to send the shared cells to (will move to left)
+        // The proc to send the shared cells to
+        // Starting to the proc on the left this variable will go to 0
         int currentProcIdToSendTo = (idProcess - 1);
 
         // There are a maximum of 1 sends and 8-1 receptions
@@ -331,11 +338,13 @@ private:
         CellClass recvBufferCells[8];
 
         // The first proc that send to me a cell
+        // This variable will go to nbProcess
         int firstProcThatSend = idProcess + 1;
         FLOG(computationCounter.tic());
 
+        // We work from height-1 to 1
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
-            // Does my cells are covered by my neighbors working interval
+            // Does my cells are covered by my neighbors working interval and so I have no more work?
             const bool noMoreWorkForMe = (idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess));
             if(noMoreWorkForMe){
                 FAssertLF(procHasWorkAtLevel(idxLevel, idProcess) == false);
@@ -358,6 +367,7 @@ private:
                 ++nbCellsToSkip;
             }
 
+            // We need to know if we will recv something in order to know if threads skip the last cell
             int nbCellsForThreads = totalNbCellsAtLevel; // totalNbCellsAtLevel or totalNbCellsAtLevel-1
             bool hasToReceive = false;
             if(idProcess != nbProcess-1 && procHasWorkAtLevel(idxLevel , idProcess)){
@@ -378,15 +388,17 @@ private:
             {
                 const int threadNumber = omp_get_thread_num();
                 KernelClass* myThreadkernels = (kernels[threadNumber]);
-                //This single section is supposed post and receive the comms, and then do the M2M associated with its.
+                //This single section post and receive the comms, and then do the M2M associated with it.
                 #pragma omp single nowait
                 {
                     FLOG(singleCounter.tic());
+                    // Master proc never send
                     if(idProcess != 0){
+                        // Skip process that have no work at that level
                         while( currentProcIdToSendTo && !procHasWorkAtLevel(idxLevel, currentProcIdToSendTo)  ){
                             --currentProcIdToSendTo;
                         }
-
+                        // Does the next proc that has work is sharing the parent of my left cell
                         if(procHasWorkAtLevel(idxLevel, currentProcIdToSendTo) && procCoversMyLeftBorderCell(idxLevel, currentProcIdToSendTo)){
                             FAssertLF(nbCellsToSkip != 0);
 
@@ -415,7 +427,7 @@ private:
                     //Post receive, Datas needed in several parts of the section
                     int nbProcThatSendToMe = 0;
 
-                    if(hasToReceive){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
+                    if(hasToReceive){
                         //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
                         int idProcSource = firstProcThatSend;
                         // Find the last proc that should send to me
@@ -437,6 +449,7 @@ private:
                         FAssertLF(iterMpiRequests <= 8);
                         MPI_Waitall( iterMpiRequests, requests, status);
                     }
+                    // We had received something so we need to proceed the last M2M
                     if( hasToReceive ){
                         FAssertLF(iterMpiRequests != 0);
                         CellClass* currentChild[8];
@@ -445,24 +458,22 @@ private:
                         // Retreive data and merge my child and the child from others
                         for(int idxProc = 0 ; idxProc < nbProcThatSendToMe ; ++idxProc){
                             recvBuffer.seek(idxProc * recvBufferOffset);
-                            int state = int(recvBuffer.getValue<char>());
+                            int packageFlags = int(recvBuffer.getValue<char>());
 
                             int position = 0;
-                            while( state && position < 8){
-                                while(!(state & 0x1)){
-                                    state >>= 1;
+                            while( packageFlags && position < 8){
+                                while(!(packageFlags & 0x1)){
+                                    packageFlags >>= 1;
                                     ++position;
                                 }
-
                                 FAssertLF(!currentChild[position], "Already has a cell here");
                                 recvBufferCells[position].deserializeUp(recvBuffer);
                                 currentChild[position] = (CellClass*) &recvBufferCells[position];
 
-                                state >>= 1;
+                                packageFlags >>= 1;
                                 ++position;
                             }
                         }
-
                         // Finally compute
                         (*kernels[threadNumber]).M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
                         firstProcThatSend += nbProcThatSendToMe - 1;
@@ -874,6 +885,7 @@ private:
                 continue;
             }
 
+            // Copy all the cells in an array even the one that are out of my working interval
             int totalNbCellsAtLevel = 0;
             do{
                 iterArray[totalNbCellsAtLevel++] = octreeIterator;
@@ -881,17 +893,21 @@ private:
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
 
+            // Count the number of cells that are out of my working interval
             int nbCellsToSkip = 0;
             while(nbCellsToSkip < totalNbCellsAtLevel && iterArray[nbCellsToSkip].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
                 nbCellsToSkip += 1;
             }
 
+            // Check if someone will send a cell to me
             bool hasToReceive = false;
             int idxProcToReceive = idProcess - 1;
             if(idProcess != 0 && nbCellsToSkip){
+                // Starting from my left neighbor stop at the first proc that has work to do (not null interval)
                 while(idxProcToReceive && !procHasWorkAtLevel(idxLevel, idxProcToReceive) ){
                     idxProcToReceive -= 1;
                 }
+                // Check if we find such a proc and that it share a cell with us on the border
                 if(procHasWorkAtLevel(idxLevel, idxProcToReceive) && procCoversMyLeftBorderCell(idxLevel, idxProcToReceive)){
                     hasToReceive = true;
                 }
@@ -905,38 +921,49 @@ private:
                 {
                     FLOG(prepareCounter.tic());
                     int iterRequests = 0;
+                    // Post the receive
                     if(hasToReceive){
-                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive/*MPI_ANY_SOURCE*/,
+                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive,
                                    FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
                     if(idProcess != nbProcess - 1 && idProcess < righestProcToSendTo){
                         int idxProcSend = idProcess + 1;
                         int nbMessageSent = 0;
+                        // From the proc on the right to righestProcToSendTo, check if we have to send something
                         while(idxProcSend <= righestProcToSendTo && ( !procHasWorkAtLevel(idxLevel+1, idxProcSend) || procCoversMyRightBorderCell(idxLevel, idxProcSend)) ){
+                            // We know that if the proc has work at the next level it share a cell with us due to the while condition
                             if(procHasWorkAtLevel(idxLevel+1, idxProcSend)){
+                                FAssertLF(procCoversMyRightBorderCell(idxLevel, idxProcSend));
+                                // If first message then serialize the cell to send
                                 if( nbMessageSent == 0 ){
+                                    // We send our last cell
                                     iterArray[totalNbCellsAtLevel - 1].getCurrentCell()->serializeDown(sendBuffer);
                                 }
+                                // Post the send message
                                 FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProcSend,
                                           FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
+                                // Inc and check the counter
                                 nbMessageSent += 1;
                                 FAssertLF(nbMessageSent <= 7);
                             }
                             idxProcSend += 1;
                         }
+                        // Next time we will not need to go further than idxProcSend
                         righestProcToSendTo = idxProcSend;
                     }
-
+                    // Finalize the communication
                     if(iterRequests){
                         FLOG(waitCounter.tic());
                         FAssertLF(iterRequests <= 8);
                         FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, status), __LINE__);
                         FLOG(waitCounter.tac());
                     }
-
+                    // If we receive something proceed the L2L
                     if(hasToReceive){
-                        FAssertLF(iterRequests != 0);                       
+                        FAssertLF(iterRequests != 0);
+                        // In this case we know that we have to perform the L2L with the last cell that are
+                        // exclude from our working interval nbCellsToSkip-1
                         iterArray[nbCellsToSkip-1].getCurrentCell()->deserializeDown(recvBuffer);
                         kernels[threadNumber]->L2L( iterArray[nbCellsToSkip-1].getCurrentCell() , iterArray[nbCellsToSkip-1].getCurrentChild(), idxLevel);
                     }
@@ -947,7 +974,7 @@ private:
                 {
                     FLOG(computationCounter.tic());
                 }
-
+                // Threads are working on all the cell of our working interval at that level
                 #pragma omp for nowait
                 for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
