@@ -58,27 +58,27 @@ public:
     ////////////////////////////////////////////////////////
     enum FMpiTag {
         // FMpiTreeBuilder
-        TagExchangeIndexs,
-        TagSplittedLeaf,
-        TagExchangeNbLeafs,
-        TagSandSettling,
+        TagExchangeIndexs = 100,
+        TagSplittedLeaf = 200,
+        TagExchangeNbLeafs = 300,
+        TagSandSettling = 400,
 
         // FQuickSort
-        TagQuickSort,
+        TagQuickSort = 500,
 
         // FMM
-        TagFmmM2M,
-        TagFmmL2L,
-        TagFmmP2P,
+        TagFmmM2M = 1000,
+        TagFmmL2L = 2000,
+        TagFmmP2P = 3000,
 
         // Bitonic,
-        TagBitonicMin,
-        TagBitonicMax,
-        TagBitonicMinMess,
-        TagBitonicMaxMess,
+        TagBitonicMin = 4000,
+        TagBitonicMax = 5000,
+        TagBitonicMinMess = 6000,
+        TagBitonicMaxMess = 7000,
 
         // Last defined tag
-        TagLast,
+        TagLast = 8000,
     };
 
     ////////////////////////////////////////////////////////

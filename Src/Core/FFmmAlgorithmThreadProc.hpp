@@ -99,6 +99,25 @@ class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
 
+    const Interval& getWorkingInterval( int level,  int proc) const {
+        return workingIntervalsPerLevel[OctreeHeight * proc + level];
+    }
+
+    /** To know if a proc has work at a given level (if it hold cells and was responsible of them) */
+    bool procHasWorkAtLevel(const int idxLevel , const int idxProc) const {
+        return getWorkingInterval(idxLevel, idxProc).leftIndex <= getWorkingInterval(idxLevel, idxProc).rightIndex;
+    }
+
+    /** Return true if the idxProc left cell at idxLevel+1 has the same parent as us for our right cell */
+    bool procCoversMyRightBorderCell(const int idxLevel , const int idxProc) const {
+        return (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) == (getWorkingInterval((idxLevel+1) ,idxProc).leftIndex >>3);
+    }
+
+    /** Return true if the idxProc right cell at idxLevel+1 has the same parent as us for our left cell */
+    bool procCoversMyLeftBorderCell(const int idxLevel , const int idxProc) const {
+        return (getWorkingInterval((idxLevel+1) , idxProc).rightIndex >>3) == (getWorkingInterval((idxLevel+1) , idProcess).leftIndex>>3);
+    }
+
 public:
     /** Get current proc interval at level */
     Interval& getWorkingInterval( int level){
@@ -135,7 +154,6 @@ public:
     /** Default destructor */
     virtual ~FFmmAlgorithmThreadProc(){
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            printf("Delete %d\n",idxThread);
             delete this->kernels[idxThread];
         }
         delete [] this->kernels;
@@ -230,7 +248,7 @@ public:
 
         if(operationsToProceed & FFmmM2M) upwardPass();
 
-        if(operationsToProceed & FFmmM2L) transferPassOld();
+        if(operationsToProceed & FFmmM2L) transferPass();
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
@@ -266,10 +284,10 @@ private:
         } while(octreeIterator.moveRight());
 
         FLOG(computationCounter.tic());
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for nowait
+            #pragma omp for nowait
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
             }
@@ -282,199 +300,6 @@ private:
     /////////////////////////////////////////////////////////////////////////////
     // Upward
     /////////////////////////////////////////////////////////////////////////////
-
-
-    /** M2M */
-    void upwardPassOld(){
-        const int MaxSizePerCell = CellClass::GetSize();
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-        FLOG(FTic prepareCounter);
-        FLOG(FTic waitCounter);
-
-        // Start from leal level - 1
-        typename OctreeClass::Iterator octreeIterator(tree);
-        octreeIterator.gotoBottomLeft();
-        octreeIterator.moveUp();
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-        // This variable is the proc responsible
-        // of the shared cells
-        int currentProcIdToSendTo = idProcess;
-
-        // There are a maximum of 8-1 sends and 8-1 receptions
-        MPI_Request requests[14];
-        MPI_Status status[14];
-
-        // Maximum data per message is:
-        FMpiBufferWriter sendBuffer(comm.getComm(),7*MaxSizePerCell);
-        const int recvBufferOffset = (8 * MaxSizePerCell + 1);
-        FMpiBufferReader recvBuffer(comm.getComm(), nbProcess*recvBufferOffset);
-        CellClass recvBufferCells[8];
-
-        int firstProcThatSend = idProcess + 1;
-
-        // for each levels
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
-            // No more work for me
-            if(idProcess != 0 && getWorkingInterval((idxLevel+1), idProcess).rightIndex <= getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex){
-                break;
-            }
-
-            // copy cells to work with
-            int numberOfCells = 0;
-            // for each cells
-            do{
-                iterArray[numberOfCells++] = octreeIterator;
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveUp();
-            octreeIterator = avoidGotoLeftIterator;
-
-            // We may need to send something
-            int iterRequests = 0;
-            int cellsToSend = -1;
-
-            while(iterArray[cellsToSend+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
-                ++cellsToSend;
-            }
-
-            FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-
-            FLOG(prepareCounter.tic());
-            if(idProcess != 0 && (getWorkingInterval((idxLevel+1), idProcess).leftIndex >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex >>3)){
-                char state = 0;
-                sendBuffer.write(state);
-
-                const CellClass* const* const child = iterArray[cellsToSend].getCurrentChild();
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).leftIndex <= child[idxChild]->getMortonIndex() ){
-                        child[idxChild]->serializeUp(sendBuffer);
-                        state = char(state | (0x1 << idxChild));
-
-                    }
-                }
-                sendBuffer.writeAt(0,state);
-
-                while( currentProcIdToSendTo && iterArray[cellsToSend].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , currentProcIdToSendTo - 1).rightIndex){
-                    --currentProcIdToSendTo;
-                }
-
-                MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, currentProcIdToSendTo,
-                          FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
-            }
-            // We may need to receive something
-            bool hasToReceive = false;
-            int endProcThatSend = firstProcThatSend;
-
-            if(idProcess != nbProcess - 1){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
-                while(firstProcThatSend < nbProcess
-                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
-                    // Second condition :: while firstProcThatSend rightIndex morton index is < to myself rightIndex interval
-                    ++firstProcThatSend;
-                }
-
-                if(firstProcThatSend < nbProcess &&
-                        (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
-
-                    endProcThatSend = firstProcThatSend;
-
-                    while( endProcThatSend < nbProcess &&
-                           (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
-                        ++endProcThatSend;
-                    }
-
-
-                    if(firstProcThatSend != endProcThatSend){
-                        hasToReceive = true;
-
-                        for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-                            MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
-                                    idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
-                        }
-                    }
-                }
-            }
-
-            FLOG(prepareCounter.tac());
-            FTRACE( regionTrace.end() );
-
-            // Compute
-            const int endIndex = (hasToReceive?numberOfCells-1:numberOfCells);
-            FLOG(computationCounter.tic());
-#pragma omp parallel
-            {
-                KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-#pragma omp for nowait
-                for( int idxCell = cellsToSend + 1 ; idxCell < endIndex ; ++idxCell){
-                    myThreadkernels.M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
-                    // for(int k=0 ; k< 8 ; ++k){
-                    //   if(iterArray[idxCell].getCurrentChild()[k]){
-                    //     FILE * fd = fopen("ResM2MNearOld","a+");
-                    //     fprintf(fd,"%lld\t% lld\t %d\n",iterArray[idxCell].getCurrentCell()->getMortonIndex(),iterArray[idxCell].getCurrentChild()[k]->getMortonIndex(),idxLevel);
-                    //     fclose(fd);
-                    // }
-                    //}
-
-                }
-            }
-            FLOG(computationCounter.tac());
-
-            // Are we sending or waiting anything?
-            if(iterRequests){
-                FLOG(waitCounter.tic());
-                MPI_Waitall( iterRequests, requests, status);
-                FLOG(waitCounter.tac());
-
-                // we were receiving data
-                if( hasToReceive ){
-                    CellClass* currentChild[8];
-                    memcpy(currentChild, iterArray[numberOfCells - 1].getCurrentChild(), 8 * sizeof(CellClass*));
-
-                    // retreive data and merge my child and the child from others
-                    for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc){
-                        recvBuffer.seek(idxProc * recvBufferOffset);
-                        int state = int(recvBuffer.getValue<char>());
-
-                        int position = 0;
-                        while( state && position < 8){
-                            while(!(state & 0x1)){
-                                state >>= 1;
-                                ++position;
-                            }
-
-                            FAssertLF(!currentChild[position], "Already has a cell here");
-
-                            recvBufferCells[position].deserializeUp(recvBuffer);
-                            currentChild[position] = (CellClass*) &recvBufferCells[position];
-
-                            state >>= 1;
-                            ++position;
-                        }
-                    }
-
-                    // Finally compute
-                    FLOG(computationCounter.tic());
-                    (*kernels[0]).M2M( iterArray[numberOfCells - 1].getCurrentCell() , currentChild, idxLevel);
-
-                    FLOG(computationCounter.tac());
-
-                    firstProcThatSend = endProcThatSend - 1;
-                }
-            }
-            sendBuffer.reset();
-            recvBuffer.seek(0);
-        }
-
-
-        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation :                          " << computationCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Prepare :                                  " << prepareCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Wait :                                       " << waitCounter.cumulated() << " s\n" );
-    }
-
-
 
     /** M2M */
     void upwardPass(){
@@ -493,16 +318,16 @@ private:
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // The proc to send the shared cells to (will move to left)
-        int currentProcIdToSendTo = idProcess;
+        int currentProcIdToSendTo = (idProcess - 1);
 
-        // There are a maximum of 8-1 sends and 8-1 receptions
-        MPI_Request requests[14];
-        MPI_Status status[14];
+        // There are a maximum of 1 sends and 8-1 receptions
+        MPI_Request requests[8];
+        MPI_Status status[8];
 
         // Maximum data per message is:
-        FMpiBufferWriter sendBuffer(comm.getComm(),7*MaxSizePerCell);
-        const int recvBufferOffset = (8 * MaxSizePerCell + 1);
-        FMpiBufferReader recvBuffer(comm.getComm(), nbProcess*recvBufferOffset);
+        FMpiBufferWriter sendBuffer(comm.getComm(), 7*MaxSizePerCell + 1);
+        const int recvBufferOffset = (7 * MaxSizePerCell + 1);
+        FMpiBufferReader recvBuffer(comm.getComm(), 7*recvBufferOffset);
         CellClass recvBufferCells[8];
 
         // The first proc that send to me a cell
@@ -511,9 +336,9 @@ private:
 
         for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
             // Does my cells are covered by my neighbors working interval
-            const bool noMoreWorkForMe = (idProcess != 0 && getWorkingInterval((idxLevel+1), idProcess).rightIndex <= getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex);
+            const bool noMoreWorkForMe = (idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess));
             if(noMoreWorkForMe){
-                FAssertLF(getWorkingInterval(idxLevel, idProcess).rightIndex < getWorkingInterval(idxLevel, idProcess).leftIndex);
+                FAssertLF(procHasWorkAtLevel(idxLevel, idProcess) == false);
                 break;
             }
 
@@ -527,33 +352,26 @@ private:
 
             int iterMpiRequests   = 0; // The iterator for send/recv requests
 
-            int nbCellsToSend     = 0; // The number of cells to send
+            int nbCellsToSkip     = 0; // The number of cells to send
             // Skip all the cells that are out of my working interval
-            while(iterArray[nbCellsToSend].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
-                ++nbCellsToSend;
+            while(nbCellsToSkip < totalNbCellsAtLevel && iterArray[nbCellsToSkip].getCurrentGlobalIndex() < getWorkingInterval(idxLevel, idProcess).leftIndex){
+                ++nbCellsToSkip;
             }
 
             int nbCellsForThreads = totalNbCellsAtLevel; // totalNbCellsAtLevel or totalNbCellsAtLevel-1
             bool hasToReceive = false;
-            if(idProcess != nbProcess-1){
+            if(idProcess != nbProcess-1 && procHasWorkAtLevel(idxLevel , idProcess)){
                 // Find the first proc that may send to me
-                while(firstProcThatSend < nbProcess
-                      && (getWorkingInterval((idxLevel+1), firstProcThatSend).rightIndex) <= (getWorkingInterval((idxLevel+1), idProcess).rightIndex)){
+                while(firstProcThatSend < nbProcess && !procHasWorkAtLevel(idxLevel+1, firstProcThatSend) ){
                     firstProcThatSend += 1;
                 }
                 // Do we have to receive?
-                if(firstProcThatSend < nbProcess && (getWorkingInterval((idxLevel+1), firstProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) ){
+                if(firstProcThatSend < nbProcess && procHasWorkAtLevel(idxLevel+1, firstProcThatSend) && procCoversMyRightBorderCell(idxLevel, firstProcThatSend) ){
                     hasToReceive = true;
                     // Threads do not compute the last cell, we will do it once data are received
                     nbCellsForThreads -= 1;
                 }
             }
-
-            // TODO REMOVE
-            //if((iterArray[0].getCurrentGlobalIndex() == getWorkingInterval(idxLevel, idProcess-1).rightIndex) && numberOfCells==1){
-            //    nbCellsToSend++;
-            //}
-            // END REMOVE
 
             FLOG(parallelCounter.tic());
             #pragma omp parallel
@@ -564,95 +382,92 @@ private:
                 #pragma omp single nowait
                 {
                     FLOG(singleCounter.tic());
-                    const bool firstCellAreOutOfMyInterval = idProcess != 0 && (getWorkingInterval((idxLevel+1), idProcess).leftIndex >>3) <= (getWorkingInterval((idxLevel+1), idProcess - 1).rightIndex >>3);
-                    //Post Send
-                    if(firstCellAreOutOfMyInterval){
-                        FAssertLF(nbCellsToSend != 0);
-                        char packageFlags = 0;
-                        sendBuffer.write(packageFlags);
-
-                        // Only the cell the most on the right out of my working interval should be taken in
-                        // consideration (at pos nbCellsToSend-1) other (x < nbCellsToSend-1) have already been sent
-                        const CellClass* const* const child = iterArray[nbCellsToSend-1].getCurrentChild();
-                        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                            // Check if child exists and it was part of my working interval
-                            if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).leftIndex <= child[idxChild]->getMortonIndex() ){
-                                // Add the cell to the buffer
-                                child[idxChild]->serializeUp(sendBuffer);
-                                packageFlags = char(packageFlags | (0x1 << idxChild));
-                            }
-                        }
-                        // Add the flag as first value
-                        sendBuffer.writeAt(0,packageFlags);
-
-                        // Find the proc to send to
-                        while( currentProcIdToSendTo && iterArray[nbCellsToSend-1].getCurrentGlobalIndex() <= getWorkingInterval(idxLevel , currentProcIdToSendTo - 1).rightIndex){
+                    if(idProcess != 0){
+                        while( currentProcIdToSendTo && !procHasWorkAtLevel(idxLevel, currentProcIdToSendTo)  ){
                             --currentProcIdToSendTo;
                         }
-                        // Post the message
-                        MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, currentProcIdToSendTo,
-                                  FMpi::TagFmmM2M, comm.getComm(), &requests[iterMpiRequests++]);
+
+                        if(procHasWorkAtLevel(idxLevel, currentProcIdToSendTo) && procCoversMyLeftBorderCell(idxLevel, currentProcIdToSendTo)){
+                            FAssertLF(nbCellsToSkip != 0);
+
+                            char packageFlags = 0;
+                            sendBuffer.write(packageFlags);
+
+                            // Only the cell the most on the right out of my working interval should be taken in
+                            // consideration (at pos nbCellsToSkip-1) other (x < nbCellsToSkip-1) have already been sent
+                            const CellClass* const* const child = iterArray[nbCellsToSkip-1].getCurrentChild();
+                            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                                // Check if child exists and it was part of my working interval
+                                if( child[idxChild] && getWorkingInterval((idxLevel+1), idProcess).leftIndex <= child[idxChild]->getMortonIndex() ){
+                                    // Add the cell to the buffer
+                                    child[idxChild]->serializeUp(sendBuffer);
+                                    packageFlags = char(packageFlags | (0x1 << idxChild));
+                                }
+                            }
+                            // Add the flag as first value
+                            sendBuffer.writeAt(0,packageFlags);
+                            // Post the message
+                            MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, currentProcIdToSendTo,
+                                      FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
+                        }
                     }
+
                     //Post receive, Datas needed in several parts of the section
                     int nbProcThatSendToMe = 0;
 
                     if(hasToReceive){ // if I'm the last one (idProcess == nbProcess-1), I shall not receive anything in a M2M
                         //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
-                        int endProcThatSend = firstProcThatSend;
+                        int idProcSource = firstProcThatSend;
                         // Find the last proc that should send to me
-                        while( endProcThatSend < nbProcess &&
-                               (getWorkingInterval((idxLevel+1) ,endProcThatSend).leftIndex >>3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3)){
-                            ++endProcThatSend;
-                        }
-
-                        // If there is at least one proc that send me something
-                        if(firstProcThatSend != endProcThatSend){
-                            nbProcThatSendToMe = endProcThatSend - firstProcThatSend;
-                            FAssertLF(nbProcThatSendToMe <= 7);
-                            // Post a recv for each of them
-                            for(int idxProc = firstProcThatSend ; idxProc < endProcThatSend ; ++idxProc ){
-                                MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_PACKED,
-                                        idxProc, FMpi::TagFmmM2M, comm.getComm(), &requests[iterMpiRequests++]);
+                        while( idProcSource < nbProcess
+                               && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
+                            if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
+                                MPI_Irecv(&recvBuffer.data()[nbProcThatSendToMe * recvBufferOffset], recvBufferOffset, MPI_PACKED,
+                                        idProcSource, FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
+                                nbProcThatSendToMe += 1;
+                                FAssertLF(nbProcThatSendToMe <= 7);
                             }
+                            ++idProcSource;
                         }
                     }
 
                     //Wait For the comms, and do the work
                     // Are we sending or waiting anything?
                     if(iterMpiRequests){
+                        FAssertLF(iterMpiRequests <= 8);
                         MPI_Waitall( iterMpiRequests, requests, status);
-                        // we were receiving data
+                    }
+                    if( hasToReceive ){
+                        FAssertLF(iterMpiRequests != 0);
+                        CellClass* currentChild[8];
+                        memcpy(currentChild, iterArray[totalNbCellsAtLevel - 1].getCurrentChild(), 8 * sizeof(CellClass*));
 
-                        if( hasToReceive ){
-                            CellClass* currentChild[8];
-                            memcpy(currentChild, iterArray[totalNbCellsAtLevel - 1].getCurrentChild(), 8 * sizeof(CellClass*));
+                        // Retreive data and merge my child and the child from others
+                        for(int idxProc = 0 ; idxProc < nbProcThatSendToMe ; ++idxProc){
+                            recvBuffer.seek(idxProc * recvBufferOffset);
+                            int state = int(recvBuffer.getValue<char>());
 
-                            // Retreive data and merge my child and the child from others
-                            for(int idxProc = firstProcThatSend ; idxProc < firstProcThatSend + nbProcThatSendToMe ; ++idxProc){
-                                recvBuffer.seek(idxProc * recvBufferOffset);
-                                int state = int(recvBuffer.getValue<char>());
-
-                                int position = 0;
-                                while( state && position < 8){
-                                    while(!(state & 0x1)){
-                                        state >>= 1;
-                                        ++position;
-                                    }
-
-                                    FAssertLF(!currentChild[position], "Already has a cell here");
-                                    recvBufferCells[position].deserializeUp(recvBuffer);
-                                    currentChild[position] = (CellClass*) &recvBufferCells[position];
-
+                            int position = 0;
+                            while( state && position < 8){
+                                while(!(state & 0x1)){
                                     state >>= 1;
                                     ++position;
                                 }
-                            }
 
-                            // Finally compute
-                            (*kernels[threadNumber]).M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
-                            firstProcThatSend += nbProcThatSendToMe - 1;
+                                FAssertLF(!currentChild[position], "Already has a cell here");
+                                recvBufferCells[position].deserializeUp(recvBuffer);
+                                currentChild[position] = (CellClass*) &recvBufferCells[position];
+
+                                state >>= 1;
+                                ++position;
+                            }
                         }
+
+                        // Finally compute
+                        (*kernels[threadNumber]).M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
+                        firstProcThatSend += nbProcThatSendToMe - 1;
                     }
+                    // Reset buffer
                     sendBuffer.reset();
                     recvBuffer.seek(0);
                     FLOG(singleCounter.tac());
@@ -660,7 +475,7 @@ private:
 
                 // All threads proceed the M2M
                 #pragma omp for nowait
-                for( int idxCell = nbCellsToSend ; idxCell < nbCellsForThreads ; ++idxCell){
+                for( int idxCell = nbCellsToSkip ; idxCell < nbCellsForThreads ; ++idxCell){
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
             }//End of parallel section
@@ -680,7 +495,7 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
 
-    void transferPassOld(){
+    void transferPass(){
         const int MaxSizePerCell = CellClass::GetSize();
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
@@ -718,11 +533,9 @@ private:
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
+                if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
-
                     continue;
                 }
 
@@ -741,7 +554,6 @@ private:
                 octreeIterator = avoidGotoLeftIterator;
 
                 leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
-
 
                 // Which cell potentialy needs other data and in the same time
                 // are potentialy needed by other
@@ -780,9 +592,7 @@ private:
                     if(needOther){
                         leafsNeedOther[idxLevel]->set(idxCell,true);
                     }
-
                 }
-
             }
             FLOG(prepareCounter.tac());
 
@@ -800,7 +610,6 @@ private:
         memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
         FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
         FLOG(gatherCounter.tac());
-
 
         //////////////////////////////////////////////////////////////////
         // Send and receive for real
@@ -863,12 +672,9 @@ private:
             // Now we can compute all the data
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
-
+                if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
-
                     continue;
                 }
 
@@ -918,12 +724,9 @@ private:
             // compute the second time
             // for each levels
             for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                if(idProcess != 0
-                        && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
-
+                if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
-
                     continue;
                 }
 
@@ -995,10 +798,6 @@ private:
                                 }
                             }
                         }
-                        // FILE * fd = fopen("res0","a+");
-                        // fprintf(fd,"Q %d\t %d\t %d\t %d\n",
-                        //        idProcess,idxLevel,idxCell,counter);
-                        // fclose(fd);
                         // need to compute
                         if(counter){
                             myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
@@ -1037,542 +836,11 @@ private:
 
     }
 
-
-
-    /** M2L  */
-    void transferPass(){
-
-        const int MaxSizePerCell = CellClass::GetSize();
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-
-        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-        FLOG(FTic singleCounter);
-        FLOG(FTic gatherCounter);
-        FLOG(FTic m2lSelf);
-        FLOG(FTic m2lFar);
-        FLOG(FTic sendCounter);
-
-        //////////////////////////////////////////////////////////////////
-        // First know what to send to who
-        //////////////////////////////////////////////////////////////////
-
-        // pointer to send
-        FVector<typename OctreeClass::Iterator> toSend[nbProcess * OctreeHeight];
-        // index
-        int*const indexToSend = new int[nbProcess * OctreeHeight];
-        memset(indexToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
-        // To know which one has need someone
-        FBoolArray** const leafsNeedOther = new FBoolArray*[OctreeHeight];
-        memset(leafsNeedOther, 0, sizeof(FBoolArray*) * OctreeHeight);
-
-        //Variables needed in multiple omp sections
-        int iterRequest;
-        MPI_Request * requests;
-        MPI_Status * status;
-        int* globalReceiveMap;
-        FMpiBufferWriter** sendBuffer;
-        FMpiBufferReader** recvBuffer;
-
-        // #pragma omp parallel /*default(none)*/ shared(m2lSelf,globalReceiveMap,requests,sendBuffer,recvBuffer,iterRequest,status,singleCounter,toSend,gatherCounter,sendCounter)
-#pragma omp parallel /*default(none)*/ shared(globalReceiveMap,requests,sendBuffer,recvBuffer,iterRequest,status,toSend) FLOG(shared(m2lSelf,singleCounter,gatherCounter,sendCounter))
-        {
-            int threadIdx = omp_get_thread_num();
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-#pragma omp single //nowait
-            {
-                FTRACE( FTrace::FRegion regionTrace( "Preprocess" , __FUNCTION__ , __FILE__ , __LINE__) );
-                FLOG(singleCounter.tic());
-                typename OctreeClass::Iterator octreeIteratorComm(tree);
-                octreeIteratorComm.moveDown();
-                typename OctreeClass::Iterator avoidGotoLeftIteratorComm(octreeIteratorComm);
-
-                // To know if a leaf has been already sent to a proc
-                bool*const alreadySent = new bool[nbProcess];
-                memset(alreadySent, 0, sizeof(bool) * nbProcess);
-
-                // for each levels
-                for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    //If I'm not the process 0 AND my rightIndex idx is lesser than left one's
-                    if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
-                        avoidGotoLeftIteratorComm.moveDown();
-                        octreeIteratorComm = avoidGotoLeftIteratorComm;
-                        continue;
-                    }
-
-                    int numberOfCells = 0;
-
-                    while(octreeIteratorComm.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
-                        octreeIteratorComm.moveRight();
-                    }
-
-                    // for each cells
-                    do{
-                        iterArrayComm[numberOfCells] = octreeIteratorComm;
-                        ++numberOfCells;
-                    } while(octreeIteratorComm.moveRight());
-                    avoidGotoLeftIteratorComm.moveDown();
-                    octreeIteratorComm = avoidGotoLeftIteratorComm;
-                    //printf("Single :: I'm %d, numberOfCells : %d my iterArrayComm %p \n",omp_get_thread_num(),numberOfCells,iterArrayComm);
-                    leafsNeedOther[idxLevel] = new FBoolArray(numberOfCells);
-
-
-                    // Which cell potentialy needs other data and in the same time
-                    // are potentialy needed by other
-                    MortonIndex neighborsIndexes[189];
-                    for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        // Find the M2L neigbors of a cell
-                        const int counter = iterArrayComm[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndexes);
-
-                        memset(alreadySent, false, sizeof(bool) * nbProcess);
-                        bool needOther = false;
-                        // Test each negibors to know which one do not belong to us
-                        for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-                            if(neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , idProcess).leftIndex
-                                    || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndexes[idxNeigh]){
-                                int procToReceive = idProcess;
-                                while( 0 != procToReceive && neighborsIndexes[idxNeigh] < getWorkingInterval(idxLevel , procToReceive).leftIndex ){
-                                    --procToReceive;
-                                }
-                                while( procToReceive != nbProcess -1 && (getWorkingInterval(idxLevel , procToReceive).rightIndex) < neighborsIndexes[idxNeigh]){
-                                    ++procToReceive;
-                                }
-                                // Maybe already sent to that proc?
-                                if( !alreadySent[procToReceive]
-                                        && getWorkingInterval(idxLevel , procToReceive).leftIndex <= neighborsIndexes[idxNeigh]
-                                        && neighborsIndexes[idxNeigh] <= getWorkingInterval(idxLevel , procToReceive).rightIndex){
-
-                                    alreadySent[procToReceive] = true;
-
-                                    needOther = true;
-
-                                    toSend[idxLevel * nbProcess + procToReceive].push(iterArray[idxCell]);
-                                    ++indexToSend[idxLevel * nbProcess + procToReceive];
-                                }
-                            }
-                        }
-                        if(needOther){
-                            leafsNeedOther[idxLevel]->set(idxCell,true);
-                        }
-
-                    }
-
-                }
-
-                delete[] alreadySent;
-
-
-                //////////////////////////////////////////////////////////////////
-                // Gather this information
-                //////////////////////////////////////////////////////////////////
-
-                FLOG(gatherCounter.tic());
-                // All process say to each others
-                // what the will send to who
-                globalReceiveMap = new int[nbProcess * nbProcess * OctreeHeight];
-                memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
-                FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
-                FLOG(gatherCounter.tac());
-
-                // if(idProcess == 0)
-                //   {
-                //     FILE * fd = fopen("M2LMap","a+");
-                //     for(int k =0; k < nbProcess*nbProcess*OctreeHeight ; ++k){
-                //       fprintf(fd,"%d\n",globalReceiveMap[k]);
-                //     }
-                //     fclose(fd);
-                //   }
-
-                //////////////////////////////////////////////////////////////////
-                // Send and receive for real
-                //////////////////////////////////////////////////////////////////
-
-                FLOG(sendCounter.tic());
-                // Then they can send and receive (because they know what they will receive)
-                // To send in asynchrone way
-                requests = new MPI_Request[2 * nbProcess * OctreeHeight];
-                status = new MPI_Status[2 * nbProcess * OctreeHeight];
-                iterRequest = 0;
-
-                const int SizeOfCellToSend = int(sizeof(MortonIndex) + sizeof(int) + MaxSizePerCell);
-
-                sendBuffer = new FMpiBufferWriter*[nbProcess * OctreeHeight];
-                memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess * OctreeHeight);
-
-                recvBuffer = new FMpiBufferReader*[nbProcess * OctreeHeight];
-                memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess * OctreeHeight);
-
-
-                for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-                    for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                        const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
-                        if(toSendAtProcAtLevel != 0){
-                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),toSendAtProcAtLevel * SizeOfCellToSend);
-
-                            for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
-                                const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
-                                sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
-                                toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
-                            }
-                            FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             sendBuffer[idxLevel * nbProcess + idxProc]->getSize(),MPI_PACKED, idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
-                        }
-
-                        const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-                        if(toReceiveFromProcAtLevel){
-                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),toReceiveFromProcAtLevel * SizeOfCellToSend);
-                            FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), MPI_PACKED,idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
-                        }
-                    }
-                }
-                FLOG(sendCounter.tac());
-                {
-                    //////////////////////////////////////////////////////////////////
-                    // Wait received data and compute
-                    //////////////////////////////////////////////////////////////////
-
-                    // Wait to receive every things (and send every things)
-                    MPI_Waitall(iterRequest, requests, status);
-                }
-                FLOG(singleCounter.tac());
-            }
-            //End of Single section
-
-            //////////////////////////////////////////////////////////////////
-            // Do M2L SELF
-            //////////////////////////////////////////////////////////////////
-            FLOG(m2lSelf.tic());
-            {
-                FTRACE( FTrace::FRegion regionTrace("Compute", __FUNCTION__ , __FILE__ , __LINE__) );
-
-                // Now we can compute all the data
-                // for each levels
-                for(int idxLevel = OctreeHeight-1 ; idxLevel > 1 ; --idxLevel ){
-                    if(idProcess != 0
-                            && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
-
-                        avoidGotoLeftIterator.moveUp();
-                        octreeIterator = avoidGotoLeftIterator;
-
-                        continue;
-                    }
-
-                    int numberOfCells = 0;
-                    // for each cells
-                    //TODO see if it can be moved somewhere else
-#pragma omp single copyprivate(numberOfCells,octreeIterator,avoidGotoLeftIterator)
-                    {
-                        while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
-                            octreeIterator.moveRight();
-                        }
-                        do{
-                            iterArray[numberOfCells] = octreeIterator;
-                            ++numberOfCells;
-                        } while(octreeIterator.moveRight());
-                        avoidGotoLeftIterator.moveUp();
-                        octreeIterator = avoidGotoLeftIterator;
-                    }//End of single section
-
-                    FLOG(computationCounter.tic());
-
-                    {
-
-                        KernelClass * const myThreadkernels = kernels[threadIdx];
-                        const CellClass* neighbors[343];
-                        //Change kind
-#pragma omp for schedule(static,1) //nowait
-                        for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-
-                            const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel);
-                            if(counter){
-                                myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
-                            }
-
-                        }
-                        myThreadkernels->finishedLevelM2L(idxLevel);
-                    }
-                    FLOG(computationCounter.tac());
-                }
-            }
-            FLOG(m2lSelf.tac());
-        }//End of parallel section
-        //Synch between threads at implict barrier
-
-        FTRACE( FTrace::FRegion regionTrace("Compute Received data", __FUNCTION__ , __FILE__ , __LINE__) );
-
-        typename OctreeClass::Iterator octreeIterator(tree);
-        octreeIterator.moveDown();
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-        // compute the second time
-        // for each levels
-        for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
-            if(idProcess != 0
-                    && getWorkingInterval(idxLevel, idProcess).rightIndex <= getWorkingInterval(idxLevel, idProcess - 1).rightIndex){
-
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-
-                continue;
-            }
-
-            // put the received data into a temporary tree
-            FLightOctree<CellClass> tempTree;
-            for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
-
-                for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                    const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<MortonIndex>();
-
-                    CellClass* const newCell = new CellClass;
-                    newCell->setMortonIndex(cellIndex);
-                    newCell->deserializeUp(*recvBuffer[idxLevel * nbProcess + idxProc]);
-
-                    tempTree.insertCell(cellIndex, idxLevel, newCell);
-                }
-            }
-
-            // take cells from our octree only if they are
-            // linked to received data
-            int numberOfCells = 0;
-            int realCellId = 0;
-
-            while(octreeIterator.getCurrentGlobalIndex() <  getWorkingInterval(idxLevel , idProcess).leftIndex){
-                octreeIterator.moveRight();
-            }
-            // for each cells
-            do{
-                // copy cells that need data from others
-                if(leafsNeedOther[idxLevel]->get(realCellId++)){
-                    iterArray[numberOfCells++] = octreeIterator;
-                }
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveDown();
-            octreeIterator = avoidGotoLeftIterator;
-            printf("Proc :: %d Lvl %d, numberOfCells : %d that need other datas \n",idProcess,idxLevel,numberOfCells);
-            delete leafsNeedOther[idxLevel];
-            leafsNeedOther[idxLevel] = nullptr;
-
-            // Compute this cells
-            FLOG(computationCounter.tic());
-            FLOG(m2lFar.tic());
-#pragma omp parallel
-            {
-                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                MortonIndex neighborsIndex[189];
-                int neighborsPosition[189];
-                const CellClass* neighbors[343];
-
-
-                printf("Proc %d, idThread %d, idxLevel %d, number : %d \n",
-                       idProcess,omp_get_thread_num(),idxLevel,numberOfCells);
-#pragma omp for schedule(dynamic) //nowait
-                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                    // compute indexes
-                    memset(neighbors, 0, 343 * sizeof(CellClass*));
-                    memset(neighborsPosition, 0, 189 * sizeof(int));
-                    memset(neighborsIndex, 0, 189 * sizeof(MortonIndex));
-                    const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
-
-                    int counter = 0;
-                    // does we receive this index from someone?
-                    for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
-                        if(neighborsIndex[idxNeig] < (getWorkingInterval(idxLevel , idProcess).leftIndex)
-                                || (getWorkingInterval(idxLevel , idProcess).rightIndex) < neighborsIndex[idxNeig]){
-
-                            CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
-
-                            if(otherCell){
-                                //otherCell->setMortonIndex(neighborsIndex[idxNeig]);
-                                neighbors[ neighborsPosition[idxNeig] ] = otherCell;
-                                ++counter;
-                            }
-                        }
-                    }
-                    // FILE * fd = fopen("res1","a+");
-                    // fprintf(fd,"Q %d\t %d\t %d\t %d\n",
-                    //	   idProcess,idxLevel,idxCell,counter);
-                    // fclose(fd);
-                    // need to compute
-                    if(counter){
-                        myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
-                    }
-                }
-
-                myThreadkernels->finishedLevelM2L(idxLevel);
-            }//End of parallel section
-            FLOG(computationCounter.tac());
-            FLOG(m2lFar.tac());
-        }
-
-        for(int idxComm = 0 ; idxComm < nbProcess * OctreeHeight; ++idxComm){
-            delete sendBuffer[idxComm];
-            delete recvBuffer[idxComm];
-        }
-        for(int idxComm = 0 ; idxComm < OctreeHeight; ++idxComm){
-            delete leafsNeedOther[idxComm];
-        }
-        delete[] sendBuffer;
-        delete[] recvBuffer;
-        delete[] indexToSend;
-        delete[] leafsNeedOther;
-        delete[] globalReceiveMap;
-        delete[] requests;
-        delete[] status;
-
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Single : " << singleCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t M2L Self : " << m2lSelf.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t M2L Far : " << m2lFar.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t M2L Gather : " << gatherCounter.elapsed() << " s\n" );
-        FLOG( FLog::Controller << "\t\t M2L Send : " << sendCounter.elapsed() << " s\n" );
-    }
-
     //////////////////////////////////////////////////////////////////
     // ---------------- L2L ---------------
     //////////////////////////////////////////////////////////////////
 
-    void downardPassOld(){ // second L2L
-        const int MaxSizePerCell = CellClass::GetSize();
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
-        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-        FLOG(FTic prepareCounter);
-        FLOG(FTic waitCounter);
-
-        // Start from leal level - 1
-        typename OctreeClass::Iterator octreeIterator(tree);
-        octreeIterator.moveDown();
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-        MPI_Request*const requests = new MPI_Request[nbProcess];
-        MPI_Status*const status = new MPI_Status[nbProcess];
-
-        const int heightMinusOne = OctreeHeight - 1;
-
-        FMpiBufferWriter sendBuffer(comm.getComm(),MaxSizePerCell);
-        FMpiBufferReader recvBuffer(comm.getComm(),MaxSizePerCell);
-
-        // for each levels exepted leaf level
-        for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-            if(idProcess != 0
-                    && getWorkingInterval((idxLevel+1) , idProcess).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex){
-
-                avoidGotoLeftIterator.moveDown();
-                octreeIterator = avoidGotoLeftIterator;
-
-                continue;
-            }
-
-            // copy cells to work with
-            int numberOfCells = 0;
-            // for each cells
-            do{
-                iterArray[numberOfCells++] = octreeIterator;
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveDown();
-            octreeIterator = avoidGotoLeftIterator;
-
-            int firstCellWork = -1;
-            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
-                ++firstCellWork;
-            }
-
-            bool needToRecv = false;
-            int iterRequests = 0;
-
-            FLOG(prepareCounter.tic());
-
-            // do we need to receive one or zeros cell
-            if(idProcess != 0
-                    && (getWorkingInterval((idxLevel + 1) , idProcess).leftIndex >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex >> 3 ) ){
-                needToRecv = true;
-
-
-                MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, MPI_ANY_SOURCE,
-                           FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
-            }
-
-
-            if(idProcess != nbProcess - 1){
-                int firstProcThatRecv = idProcess + 1;
-                while( firstProcThatRecv < nbProcess &&
-                       getWorkingInterval((idxLevel + 1) , firstProcThatRecv).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess).rightIndex){
-                    ++firstProcThatRecv;
-                }
-
-                int endProcThatRecv = firstProcThatRecv;
-                while( endProcThatRecv < nbProcess &&
-                       (getWorkingInterval((idxLevel + 1) , endProcThatRecv).leftIndex >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex >> 3) ){
-                    ++endProcThatRecv;
-                }
-
-                if(firstProcThatRecv != endProcThatRecv){
-                    iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
-
-                    for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-
-                        MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProc,
-                                  FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
-                    }
-
-                }
-            }
-            FLOG(prepareCounter.tac());
-
-            FLOG(computationCounter.tic());
-#pragma omp parallel
-            {
-                KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-#pragma omp for nowait
-                for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
-                    myThreadkernels.L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
-                }
-            }
-            FLOG(computationCounter.tac());
-
-            // are we sending or receiving?
-            if(iterRequests){
-
-                // process
-                FLOG(waitCounter.tic());
-                MPI_Waitall( iterRequests, requests, status);
-                FLOG(waitCounter.tac());
-
-                if(needToRecv){
-                    // Need to compute
-                    FLOG(computationCounter.tic());
-                    iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
-
-                    kernels[0]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
-                    FLOG(computationCounter.tac());
-                }
-            }
-
-            sendBuffer.reset();
-            recvBuffer.seek(0);
-        }
-
-        delete[] requests;
-        delete[] status;
-
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
-        FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
-    }
-
     void downardPass(){ // second L2L
-
         const int MaxSizePerCell = CellClass::GetSize();
         FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
@@ -1586,131 +854,105 @@ private:
         octreeIterator.moveDown();
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        MPI_Request*const requests = new MPI_Request[nbProcess];
-        MPI_Status*const status = new MPI_Status[nbProcess];
+        // Max 1 receive and 7 send (but 7 times the same data)
+        MPI_Request*const requests = new MPI_Request[8];
+        MPI_Status*const status = new MPI_Status[8];
 
         const int heightMinusOne = OctreeHeight - 1;
 
         FMpiBufferWriter sendBuffer(comm.getComm(),MaxSizePerCell);
         FMpiBufferReader recvBuffer(comm.getComm(),MaxSizePerCell);
 
+        int righestProcToSendTo   = nbProcess - 1;
+
         // for each levels exepted leaf level
         for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
-            if(idProcess != 0
-                    && getWorkingInterval((idxLevel+1) , idProcess).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex){
-
+            // If nothing to do in the next level skip the current one
+            if(idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess) ){
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
-
                 continue;
             }
 
-            // copy cells to work with
-            int numberOfCells = 0;
-            // for each cells
+            int totalNbCellsAtLevel = 0;
             do{
-                iterArray[numberOfCells++] = octreeIterator;
+                iterArray[totalNbCellsAtLevel++] = octreeIterator;
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
 
-            int firstCellWork = -1;
-            while(iterArray[firstCellWork+1].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
-                ++firstCellWork;
-            }
-            if(iterArray[firstCellWork+1].getCurrentGlobalIndex() == getWorkingInterval(idxLevel , idProcess).leftIndex && numberOfCells==1){
-                printf("You Mouchard\n");
-                firstCellWork++;
+            int nbCellsToSkip = 0;
+            while(nbCellsToSkip < totalNbCellsAtLevel && iterArray[nbCellsToSkip].getCurrentGlobalIndex() < getWorkingInterval(idxLevel , idProcess).leftIndex){
+                nbCellsToSkip += 1;
             }
 
-#pragma omp parallel
+            bool hasToReceive = false;
+            int idxProcToReceive = idProcess - 1;
+            if(idProcess != 0 && nbCellsToSkip){
+                while(idxProcToReceive && !procHasWorkAtLevel(idxLevel, idxProcToReceive) ){
+                    idxProcToReceive -= 1;
+                }
+                if(procHasWorkAtLevel(idxLevel, idxProcToReceive) && procCoversMyLeftBorderCell(idxLevel, idxProcToReceive)){
+                    hasToReceive = true;
+                }
+            }
+
+            #pragma omp parallel
             {
                 int threadNumber = omp_get_thread_num();
                 KernelClass* myThreadkernels = (kernels[threadNumber]);
-#pragma omp single
+                #pragma omp single
                 {
-                    bool needToRecv = false;
-                    int iterRequests = 0;
-
                     FLOG(prepareCounter.tic());
-
-                    // do we need to receive one or zeros cell
-                    if(idProcess != 0
-                            && (getWorkingInterval((idxLevel + 1) , idProcess).leftIndex >> 3 ) <= (getWorkingInterval((idxLevel+1) , idProcess - 1).rightIndex >> 3 ) ){
-                        needToRecv = true;
-
-
-                        MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, MPI_ANY_SOURCE,
-                                   FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
+                    int iterRequests = 0;
+                    if(hasToReceive){
+                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive/*MPI_ANY_SOURCE*/,
+                                   FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
-
-                    if(idProcess != nbProcess - 1){
-                        int firstProcThatRecv = idProcess + 1;
-                        while( firstProcThatRecv < nbProcess &&
-                               getWorkingInterval((idxLevel + 1) , firstProcThatRecv).rightIndex <= getWorkingInterval((idxLevel+1) , idProcess).rightIndex){
-                            ++firstProcThatRecv;
-                        }
-
-                        int endProcThatRecv = firstProcThatRecv;
-                        while( endProcThatRecv < nbProcess &&
-                               (getWorkingInterval((idxLevel + 1) , endProcThatRecv).leftIndex >> 3) <= (getWorkingInterval((idxLevel+1) , idProcess).rightIndex >> 3) ){
-                            ++endProcThatRecv;
-                        }
-
-                        if(firstProcThatRecv != endProcThatRecv){
-                            iterArray[numberOfCells - 1].getCurrentCell()->serializeDown(sendBuffer);
-
-                            for(int idxProc = firstProcThatRecv ; idxProc < endProcThatRecv ; ++idxProc ){
-
-                                MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProc,
-                                          FMpi::TagFmmL2L, comm.getComm(), &requests[iterRequests++]);
+                    if(idProcess != nbProcess - 1 && idProcess < righestProcToSendTo){
+                        int idxProcSend = idProcess + 1;
+                        int nbMessageSent = 0;
+                        while(idxProcSend <= righestProcToSendTo && ( !procHasWorkAtLevel(idxLevel+1, idxProcSend) || procCoversMyRightBorderCell(idxLevel, idxProcSend)) ){
+                            if(procHasWorkAtLevel(idxLevel+1, idxProcSend)){
+                                if( nbMessageSent == 0 ){
+                                    iterArray[totalNbCellsAtLevel - 1].getCurrentCell()->serializeDown(sendBuffer);
+                                }
+                                FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProcSend,
+                                          FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
+                                nbMessageSent += 1;
+                                FAssertLF(nbMessageSent <= 7);
                             }
-
+                            idxProcSend += 1;
                         }
+                        righestProcToSendTo = idxProcSend;
                     }
 
-                    // are we sending or receiving?
                     if(iterRequests){
-
-                        // process
                         FLOG(waitCounter.tic());
-                        MPI_Waitall( iterRequests, requests, status);
+                        FAssertLF(iterRequests <= 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, status), __LINE__);
                         FLOG(waitCounter.tac());
-
-                        if(needToRecv){
-                            // if(idProcess == 53){
-                            //	fprintf(stderr,"You found One : %d, nbofCells %d Intervals : %d{%lld,%lld} %d{%lld,%lld} Left : %d{%lld,%lld} %d{%lld,%lld} %lld\n",
-                            //	   idProcess,numberOfCells,
-                            //	   idxLevel, getWorkingInterval(idxLevel).leftIndex,
-                            //	   getWorkingInterval(idxLevel).rightIndex,
-                            //	   idxLevel+1, getWorkingInterval(idxLevel+1).leftIndex,
-                            //	   getWorkingInterval(idxLevel+1).rightIndex,
-                            //	   idxLevel, getWorkingInterval(idxLevel,idProcess-1).leftIndex,
-                            //	   getWorkingInterval(idxLevel,idProcess-1).rightIndex,
-                            //	   idxLevel+1,getWorkingInterval(idxLevel+1,idProcess-1).leftIndex,
-                            //	   getWorkingInterval(idxLevel+1,idProcess-1).rightIndex,iterArray[0].getCurrentGlobalIndex());
-                            // }
-                            // Need to compute
-                            FLOG(computationCounter.tic());
-                            iterArray[firstCellWork].getCurrentCell()->deserializeDown(recvBuffer);
-
-                            kernels[threadNumber]->L2L( iterArray[firstCellWork].getCurrentCell() , iterArray[firstCellWork].getCurrentChild(), idxLevel);
-                            FLOG(computationCounter.tac());
-                        }
                     }
 
-                }//End Of Single Section
-                FLOG(prepareCounter.tac());
+                    if(hasToReceive){
+                        FAssertLF(iterRequests != 0);                       
+                        iterArray[nbCellsToSkip-1].getCurrentCell()->deserializeDown(recvBuffer);
+                        kernels[threadNumber]->L2L( iterArray[nbCellsToSkip-1].getCurrentCell() , iterArray[nbCellsToSkip-1].getCurrentChild(), idxLevel);
+                    }
+                    FLOG(prepareCounter.tac());
+                }
 
-                FLOG(computationCounter.tic());
-                //#pragma omp parallel
+                #pragma omp single nowait
+                {
+                    FLOG(computationCounter.tic());
+                }
 
-#pragma omp for nowait
-                for(int idxCell = firstCellWork + 1 ; idxCell < numberOfCells ; ++idxCell){
+                #pragma omp for nowait
+                for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
-            }//End of parallel section
+            }
             FLOG(computationCounter.tac());
 
             sendBuffer.reset();
@@ -1851,21 +1093,6 @@ private:
             FLOG(gatherCounter.tic());
             FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
             FLOG(gatherCounter.tac());
-
-            {//TODO : remove
-                //Print the globalReceiveMap for Process 0
-                // if(idProcess == 0)
-                //   {
-                //     printf("\n Proc 0 :: \n");
-                //     for(int u = 0 ; u < nbProcess ; ++u){
-                //       for(int v = 0 ; v < nbProcess ; ++v){
-                //	printf("\t %d",globalReceiveMap[u*nbProcess+v]);
-                //       }
-                //       printf("\n");
-                //     }
-                //   }
-            }
-
 
             //Prepare receive
             for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
@@ -2288,23 +1515,6 @@ private:
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
-                {//TODO : remove
-                    //Print the globalReceiveMap for Process 0
-
-                    if(idProcess == 0)
-                    {
-                        printf("\n Proc 0 :: \n");
-                        for(int u = 0 ; u < nbProcess ; ++u){
-                            for(int v = 0 ; v < nbProcess ; ++v){
-                                printf("\t %d",globalReceiveMap[u*nbProcess+v]);
-                            }
-                            printf("\n");
-                        }
-                    }
-
-                }
-
-
                 //Prepare receive
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
@@ -2391,14 +1601,7 @@ private:
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = shapeLeaf[idxShape] + previous;
-                // //#pragma omp single
-                //	{
-                //	  char file[5];
-                //	  sprintf(file,"re%d",idProcess);
-                //	  FILE * fd = fopen(file,"a+");
-                //	  fprintf(fd,"Proc %d \t, Color : %d, from %d to %d, total %d \n",idProcess,idxShape,previous,endAtThisShape,endAtThisShape-previous);
-                //	  fclose(fd);
-                //	}
+
 #pragma omp for schedule(auto)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
