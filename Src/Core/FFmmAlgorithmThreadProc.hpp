@@ -927,7 +927,8 @@ private:
                                    FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
-                    if(idProcess != nbProcess - 1 && idProcess < righestProcToSendTo){
+                    // We have to be sure that we are not sending if we have no work in the current level
+                    if(idProcess != nbProcess - 1 && idProcess < righestProcToSendTo && procHasWorkAtLevel(idxLevel, idProcess)){
                         int idxProcSend = idProcess + 1;
                         int nbMessageSent = 0;
                         // From the proc on the right to righestProcToSendTo, check if we have to send something
