@@ -198,8 +198,8 @@ public:
             }
 
             std::unique_ptr<LeafInfo[]> allProcFirstLeafStates(new LeafInfo[nbProcs*2]);
-            MPI_Allgather(&borderLeavesState, sizeof(LeafInfo)*2, MPI_BYTE,
-                          allProcFirstLeafStates.get(), sizeof(LeafInfo)*2, MPI_BYTE, communicator.getComm());
+            FMpi::MpiAssert(MPI_Allgather(&borderLeavesState, sizeof(LeafInfo)*2, MPI_BYTE,
+                          allProcFirstLeafStates.get(), sizeof(LeafInfo)*2, MPI_BYTE, communicator.getComm()),__LINE__);
 
             FVector<MPI_Request> requests;
 
@@ -217,8 +217,8 @@ public:
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
                     requests.push(nullptr);
-                    MPI_Isend(&workingArray[0], borderLeavesState[0].nbParts, MPI_BYTE, idProcToSendTo,
-                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
+                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], borderLeavesState[0].nbParts, MPI_BYTE, idProcToSendTo,
+                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
                     hasSentFirstLeaf = true;
                 }
             }
@@ -246,8 +246,8 @@ public:
                         // If there are some on this proc
                         if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
                             requests.push(nullptr);
-                            MPI_Irecv(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, MPI_BYTE, postRecvIdx,
-                                    FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]);
+                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, MPI_BYTE, postRecvIdx,
+                                    FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
                             // Inc the write position
                             postPositionRecv += allProcFirstLeafStates[(postRecvIdx)*2].nbParts;
                         }
@@ -257,7 +257,7 @@ public:
             }
 
             // Finalize communication
-            MPI_Waitall(requests.getSize(), requests.data(), MPI_STATUSES_IGNORE);
+            FMpi::MpiAssert(MPI_Waitall(requests.getSize(), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
 
             // IF we sent we need to remove the first leaf
             if(hasSentFirstLeaf){
@@ -337,7 +337,8 @@ public:
         else{
             // We need to know the number of leaves per procs
             std::unique_ptr<FSize[]> numberOfLeavesPerProc(new FSize[nbProcs]);
-            MPI_Allgather((FSize*)&currentNbLeaves, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(), 1, MPI_LONG_LONG_INT, communicator.getComm());
+            FMpi::MpiAssert(MPI_Allgather((FSize*)&currentNbLeaves, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(),
+                                          1, MPI_LONG_LONG_INT, communicator.getComm()), __LINE__);
 
             //prefix sum
             std::unique_ptr<FSize[]> diffNumberOfLeavesPerProc(new FSize[nbProcs+1]);
@@ -370,12 +371,12 @@ public:
                     //First, we need to send the size of the leaves we will send
                     nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
                     requestsNbParts.emplace_back();
-                    MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
-                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
+                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
+                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()),__LINE__);
                     requestsParts.emplace_back();
-                    MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
+                    FMpi::MpiAssert(MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
                             sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack],
-                            MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
+                            MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back()), __LINE__);
                 }
             }
             // Compute the current intervals
@@ -395,8 +396,8 @@ public:
                 const FEqualize::Package& pack = packsToRecv[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                     requestsNbParts.emplace_back();
-                    MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
-                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back());
+                    FMpi::MpiAssert(MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
+                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()), __LINE__);
                 }
                 else{
                     if(pack.idProc == myRank){
@@ -407,7 +408,7 @@ public:
                 }
             }
 
-            MPI_Waitall(requestsNbParts.size(), requestsNbParts.data(), MPI_STATUSES_IGNORE);
+            FMpi::MpiAssert(MPI_Waitall(requestsNbParts.size(), requestsNbParts.data(), MPI_STATUSES_IGNORE), __LINE__);
 
             // Count the number of leaf to receive
             FSize totalPartsToReceive = 0;
@@ -424,8 +425,8 @@ public:
                     const FEqualize::Package& pack = packsToRecv[idxPack];
                     if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                         requestsParts.emplace_back();
-                        MPI_Irecv(&particlesRecvBuffer[offsetToRecv], sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack], MPI_BYTE, pack.idProc,
-                                  FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back());
+                        FMpi::MpiAssert( MPI_Irecv(&particlesRecvBuffer[offsetToRecv], sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack], MPI_BYTE, pack.idProc,
+                                  FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back()), __LINE__);
                     }
                     else if(pack.idProc == myRank){
                         // Copy my particles
@@ -438,7 +439,7 @@ public:
             }
 
             // Finalize communication
-            MPI_Waitall(requestsParts.size(), requestsParts.data(), MPI_STATUSES_IGNORE);
+            FMpi::MpiAssert(MPI_Waitall(requestsParts.size(), requestsParts.data(), MPI_STATUSES_IGNORE), __LINE__);
 
             // Insert in the particle saver
             for(FSize idPartsToStore = 0 ; idPartsToStore < particlesRecvBuffer.size() ; ++idPartsToStore){
@@ -480,13 +481,13 @@ public:
             const int finalNbParticles = particleSaver->getSize();
 
             if(communicator.processId() != 0){
-                MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm());
+                FMpi::MpiAssert(MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm()), __LINE__);
             }
             else{
                 const int nbProcs = communicator.processCount();
                 std::unique_ptr<int[]> nbPartsPerProc(new int[nbProcs]);
 
-                MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nbPartsPerProc.get(),1,MPI_INT,0,communicator.getComm());
+                FMpi::MpiAssert(MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nbPartsPerProc.get(),1,MPI_INT,0,communicator.getComm()), __LINE__);
 
                 FReal averageNbParticles = 0;
                 int minNbParticles = finalNbParticles;
