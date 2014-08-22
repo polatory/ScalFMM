@@ -113,13 +113,10 @@ foreach(exec ${source_tests_files})
 			${TESTS_GCOV_LINKER_FLAGS}
 		)
 
-		add_test(
-			${execname}
-			${CMAKE_CURRENT_BINARY_DIR}/${execname}
-		)
-#			add_test(
-#			${execname}
-#			${CMAKE_CURRENT_BINARY_DIR}/${execname}
-#		)
+        if(lines_mpi)
+            add_test(${execname} mpirun -np 4 ${EXECUTABLE_OUTPUT_PATH}/${execname})
+        else()
+		    add_test(${execname} ${CMAKE_CURRENT_BINARY_DIR}/${execname})
+        endif()
 	endif()
 endforeach(exec)
