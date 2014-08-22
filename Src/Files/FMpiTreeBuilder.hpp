@@ -376,7 +376,7 @@ public:
                     requestsParts.emplace_back();
                     FMpi::MpiAssert(MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
                             sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack],
-                            MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back()), __LINE__);
+                            MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs + 2, communicator.getComm(), &requestsParts.back()), __LINE__);
                 }
             }
             // Compute the current intervals
@@ -426,7 +426,7 @@ public:
                     if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                         requestsParts.emplace_back();
                         FMpi::MpiAssert( MPI_Irecv(&particlesRecvBuffer[offsetToRecv], sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack], MPI_BYTE, pack.idProc,
-                                  FMpi::TagExchangeIndexs, communicator.getComm(), &requestsParts.back()), __LINE__);
+                                  FMpi::TagExchangeIndexs + 2, communicator.getComm(), &requestsParts.back()), __LINE__);
                     }
                     else if(pack.idProc == myRank){
                         // Copy my particles
