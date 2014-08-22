@@ -142,8 +142,9 @@ public:
 
                 // work with a local variable
                 FComplexe L_j_k = local_exp[index_j_k];
-                // n from 0 to P
-                for (int n = 0 ; n <= /*devP or*/ Parent::devP-j ; ++n){
+                // n from 0 to P or do P-j
+    //            for (int n = 0 ; n <= Parent::devP /*or*/ /*Parent::devP-j*/ ; ++n){
+                    for (int n = 0 ; n <= Parent::devP-j ; ++n){  // faster than double height Parent::devP
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
                     const int index_n = Parent::harmonic.getPreExpRedirJ(n);
 

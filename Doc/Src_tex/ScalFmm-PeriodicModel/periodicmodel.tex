@@ -422,6 +422,35 @@ F_{Ewald}(x_k) = -\nabla_k E_{Ewald} = F_{FMM}(x_k)  + \frac{4\pi}{3V} q_k \math
 \end{equation}
 
 
+\subsection{Units}
+Consider the following dimensional units 
+\begin{center}
+\begin{tabular}{|l|c|}
+\hline
+type & Expression  \\
+\hline
+time &$t_0$ \\
+length & $l_0$ \\
+mass &  $m_0$ \\
+charge &  $q_0$ \\
+energy & $E_0 = m_0(l_0/t_0)^2$\\
+\hline
+\end{tabular}
+\end{center}
+
+ In adimensional variables the energy writes 
+$$
+U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}  \;\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
+$$
+and the forces write 
+$$
+f(x_i) = -\frac{q_0^2}{4 \pi\epsilon_0 l_0^2} q_i \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+ = C_{force} \; q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
+$$
+
+The Energy conversion factor is $\displaystyle \gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 $. 
+
+
 \subsubsection{DL\_Poly comparisons}
 DL\_POLY\_2 uses the following internal molecular units \\
 
@@ -435,19 +464,7 @@ charge &  $q_0$ & $1.60217733 \; 10^{−19} Coulombs$& unit of proton charge\\
 energy & $E_0 = m_0(l_0/t_0)^2$&$1.6605402 \;  10^{−23}\; Joules $ & $10\; J\, mol^{-1}$\\
 \hline
 \end{tabular}
-
- In internal variables the energy writes 
-$$
-U = \frac{q_0^2}{4 \pi\epsilon_0 l_0}\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}  = C_{energy}  \;\sum_{i=0}^{N}{\sum_{j<i}{\frac{q_i q_j}{\|x_i-x_j\|}}}
-$$
-and the forces write 
-$$
-f(x_i) = -\frac{q_0^2}{4 \pi\epsilon_0 l_0^2} q_i \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
- = C_{force} \; q_i  \sum_{j=0,i\neq j}^{N}{q_j\frac{x_i-x_j}{\|x_i-x_j\|^3}}
-$$
-
 The Energy conversion factor is $\displaystyle \gamma_0 = \frac{q_0^2}{4 \pi\epsilon_0 l_0}/E_0 = 138935.4835$. The energy unit is in Joules and if you want $kcal\, mol^{-1}$ unit the the factor becomes $\gamma_0/418.400$.
-
 
 To compare with the molecular dynamics code, the forces and the energy is multiplied by $C_{force}$ ($C_{energy}$ respectively). 
 \begin{center}
@@ -476,6 +493,46 @@ test2   & 40 &$10x10x10$  & 2000 & $-3.666255 \,10^{5} $ &$183.312729$\\
 \hline
 \end{tabular}
 \end{center}
+
+\subsubsection{Stamp comparisons}
+Stamp uses the International unit system  as internal molecular units \\
+
+\begin{tabular}{|l|c|c|l|}
+\hline
+type & Expression & Numerical value & \\
+time &$t_0$ & $\;s$& second \\
+length & $l_0$ &$\; m $& $\AA$ meter \\
+mass &  $m_0$ & $ kg $& atomic mass unit\\
+charge &  $q_0$ & $C$& Coulombs\\
+
+energy & $E_0 = m_0(l_0/t_0)^2$& $\frac{kg m^2}{s^2}= J$ & $ Joules $\\
+\hline
+\end{tabular}
+\begin{center}
+\begin{tabular}{|l|c|c|l|}
+\hline
+Constant &  Numerical value  \\
+$\epsilon_0$ & $8.854187\; 10^{-12}$\\
+$\displaystyle\frac{1}{4\pi\epsilon_0}$& $8.98755179\; 10^{9}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+To compare with the molecular dynamics code, the forces and the energy is multiplied by $C_{force}$ ($C_{energy}$ respectively). 
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+   & Constant & Value &  Unit \\
+\hline
+Energy & $C_{energy}$& $8.98755179\; 10^{9}$ &  $J$ \\
+Force &$C_{force}$& -$C_{energy}$
+ &  $J  m^{-1}$\\
+\hline
+\end{tabular}
+\end{center}
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 A new approach has been proposed to compute a periodic FMM.

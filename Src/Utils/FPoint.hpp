@@ -318,7 +318,16 @@ public:
 	friend inline FPoint operator+(const FPoint& inPosition, const FPoint& inOther){
 		return FPoint(inPosition.data[0] + inOther.data[0], inPosition.data[1] + inOther.data[1], inPosition.data[2] + inOther.data[2]);
 	}
+	/**
+	 *   Compare two points
+	 */
+	inline bool operator==(const FPoint& pp){
+		/* do actual comparison */
+		return this->data[0]==pp.data[0] &&   this->data[1]==pp.data[1]&&  this->data[2]==pp.data[2];
 
+	}
+	inline bool operator!=( const FPoint& rhs)
+			{return !(*this == rhs);}
 
 	/**
 	 * Operator stream FPoint to std::ostream

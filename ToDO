@@ -1,4 +1,4 @@
-Improvemnents
+Improvements
 1) Periodic boundary conditions for cubic box
 2) 
 
@@ -7,7 +7,7 @@ Improvemnents
 Bugs
 1) Spherical -- check the values of multipole and local coefficients.
    use :  utestSphericalDirectDebug.cpp 
-2) 
+2) Intel compiler : need -fp-model precise -fp-model source -fimf-precision=low for Spherical (?????)
 
 
 ToDO

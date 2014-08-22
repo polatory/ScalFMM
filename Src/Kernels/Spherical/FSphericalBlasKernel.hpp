@@ -223,7 +223,19 @@ public:
         preExpNExp(temporaryMultiSource);
 
         const FReal one[2] = {1.0 , 0.0};
+#ifdef DEBUG_SPHERICAL_M2L
+        //
+        std::cout << "\n ====== MultipolToLocal MatrixTransfer ====== \n"<<std::endl;
+        for(int idxRow =0 ;idxRow< FF_MATRIX_ROW_DIM ; ++idxRow ){ // Row
+        	std::cout << "Row="<<idxRow<<" : " ;
+            for(int idxCol =0 ;idxCol< FF_MATRIX_COLUMN_DIM ; ++idxCol ){ // Col
+            		std::cout << M2L_Outer_transfer[idxCol * FF_MATRIX_ROW_DIM + idxRow] <<" ";
+            }
+        	std::cout << std::endl ;
+        }
+        std::cout << "============================ \n"<<std::endl;
 
+#endif
         FBlas::c_gemva(
                     FF_MATRIX_ROW_DIM,
                     FF_MATRIX_COLUMN_DIM,
