@@ -367,16 +367,21 @@ public:
             for(int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
                 const FEqualize::Package& pack = packsToSend[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
-
-                    //First, we need to send the size of the leaves we will send
+                    // If not to me and if there is something to send
                     nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+                    // Send the size of the data
                     requestsNbParts.emplace_back();
                     FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
                               FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()),__LINE__);
+                    // Send the data
                     requestsParts.emplace_back();
                     FMpi::MpiAssert(MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
                             sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack],
                             MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs + 2, communicator.getComm(), &requestsParts.back()), __LINE__);
+                }
+                else {
+                    // Nothing to send
+                    nbPartsPerPackToSend[idxPack] = 0;
                 }
             }
             // Compute the current intervals
@@ -395,15 +400,21 @@ public:
             for(int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
                 const FEqualize::Package& pack = packsToRecv[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
+                    // We need to know how much particles to receive
                     requestsNbParts.emplace_back();
                     FMpi::MpiAssert(MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
                               FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()), __LINE__);
                 }
                 else{
                     if(pack.idProc == myRank){
+                        // Take my own data
                         const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
                         const FSize nbLeavesToCopy = pack.elementTo-pack.elementFrom;
                         nbPartsPerPackToRecv[idxPack] = leavesOffsetInParticles[sourcePosition+nbLeavesToCopy] - leavesOffsetInParticles[sourcePosition];
+                    }
+                    else{
+                        // Nothing to receive from this so avoid communication
+                        nbPartsPerPackToRecv[idxPack] = 0;
                     }
                 }
             }
