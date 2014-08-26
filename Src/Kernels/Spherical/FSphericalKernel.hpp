@@ -129,6 +129,12 @@ public:
                           const FComplexe* const FRestrict M2L_Outer_transfer){
         int index_j_k = 0;
 
+        	std::cout << "$$$$$$$$$$$$$$$$$ multipole To Local $$$$$$$$$$$$$$$" << std::endl
+        				<<     " devM2lP " << this->devM2lP << std::endl ;
+        	for (int i = 0 ; i <  this->devM2lP  ; ++i ) {
+        		std::cout << "  " << M2L_Outer_transfer[i] ;
+        	}
+        	std::cout <<  	std::endl;
         // L_j^k
         // HPMSTART(51, "M2L computation (loops)");
         // j from 0 to P
@@ -139,9 +145,11 @@ public:
             for (int k = 0 ; k <= j ; ++k, ++index_j_k){
                 // (-1)^n
                 FReal pow_of_minus_1_for_n = 1.0;
+                    std::cout <<  "Begin  j: " << j << "  k: " << k << std::endl;
 
                 // work with a local variable
                 FComplexe L_j_k = local_exp[index_j_k];
+                L_j_k.setRealImag(0.0, 0.0);
                 // n from 0 to P or do P-j
     //            for (int n = 0 ; n <= Parent::devP /*or*/ /*Parent::devP-j*/ ; ++n){
                     for (int n = 0 ; n <= Parent::devP-j ; ++n){  // faster than double height Parent::devP
@@ -151,11 +159,13 @@ public:
                     // Outer_{j+n}^{-k-l} : here points on the M2L transfer function/expansion term of degree j+n and order |-k-l|
                     const int index_n_j = Parent::harmonic.getPreExpRedirJ(n+j);
 
+                    // due to the symmetry
                     FReal pow_of_minus_1_for_l = pow_of_minus_1_for_n; // (-1)^l
-
                     // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
                     int l = n;
-                    for(/* l = n */ ; l > 0 ; --l){ // we have -k-l<0 and l>0
+                    for(/* l = n */ ; l >= 0 ; --l){ // we have -k-l<0 and l>0
+                    		std::cout << " Loop 1    k "<< k << " n+j " << n+j <<"  n " << n <<  "  l " << l  << "  -k-l " << -k-l << " (-1)^(k+l) " << pow_of_minus_1_for_l * pow_of_minus_1_for_k  << " index O " << index_n_j + (k + l)
+                    				<< " index M " << index_n + l << std::endl;
                         const FComplexe M_n_l = multipole_exp_src[index_n + l];
                         const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
 
@@ -165,12 +175,21 @@ public:
                         L_j_k.incImag( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
                                                     ((M_n_l.getImag() * O_n_j__k_l.getReal()) -
                                                      (M_n_l.getReal() * O_n_j__k_l.getImag())));
+                        std::cout <<   "                M_n_l "<< M_n_l <<   "    O_n+j_(-k-l) " << O_n_j__k_l  << std::endl;
 
                         pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
+                    // l= 0
 
-                    for(/* l = 0 */; l >= -n &&  (-k-l) < 0 ; --l){ // we have -k-l<0 and l<=0
-                        const FComplexe M_n_l = multipole_exp_src[index_n - l];
+                    // Now l=-1, we have to conjugate M and O because we store only positive indexes
+
+                    //
+//                    for(l = 0 ;  l <= 1-k; --l){ // we have -k-l<0 and l<=0
+  //                  for(/* l = 0 */; l >= -n &&  (-k< l; --l){ // we have -k-l<0 and l<=0
+                       for(/* l = 0 */; l >= -n &&  (-k-l) < 0 ; --l){ // we have -k-l<0 and l<=0
+                   		std::cout << " Loop 2     k "<< k << " n+j " << n+j <<"  n " << n <<  " l " << l  << "  -k-l " << -k-l << " (-1)^(k) " <<  pow_of_minus_1_for_k  << " index O " << index_n_j + (k + l)
+                            				<< " index M " << index_n - l << std::endl;
+                       const FComplexe M_n_l        = multipole_exp_src[index_n - l];
                         const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
 
                         L_j_k.incReal( pow_of_minus_1_for_k *
@@ -179,11 +198,14 @@ public:
                         L_j_k.decImag(  pow_of_minus_1_for_k *
                                                      ((M_n_l.getImag() * O_n_j__k_l.getReal()) +
                                                       (M_n_l.getReal() * O_n_j__k_l.getImag())));
-
+                        std::cout <<   "                M_n_l "<< M_n_l <<   "    O_n+j_(-k-) " << O_n_j__k_l  << std::endl;
                         pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
-
-                    for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
+  //                  pow_of_minus_1_for_l = pow_of_minus_1_for_n ;
+//                    for(l=-k; l <= -n ; --l){ // we have -k-l>=0 and l<=0
+                     for(/*l = -n-1 or l = -k */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
+                 		std::cout << " Loop 3     k "<< k <<"  n+j " << n+j <<"  n " << n <<  " l " << l  << "  -k-l " << -k-l << " (-1)^(l) " << pow_of_minus_1_for_l  << " index O " << index_n_j - (k + l)
+                            				<< " index M " << index_n - l << std::endl;
                         const FComplexe M_n_l = multipole_exp_src[index_n - l];
                         const FComplexe O_n_j__k_l = M2L_Outer_transfer[index_n_j - (k + l)];
 
@@ -193,6 +215,7 @@ public:
                         L_j_k.incImag( pow_of_minus_1_for_l *
                                                     ((M_n_l.getReal() * O_n_j__k_l.getImag()) -
                                                      (M_n_l.getImag() * O_n_j__k_l.getReal())));
+                        std::cout <<   "                M_n_l "<< M_n_l <<   "    O_n+j_(-k-l) " << O_n_j__k_l  << std::endl;
 
                         pow_of_minus_1_for_l = -pow_of_minus_1_for_l;
                     }
@@ -202,6 +225,7 @@ public:
 
                 // put in the local vector
                 local_exp[index_j_k] = L_j_k;
+                std::cout <<   "                index_j_k "<<index_j_k<<   "    L_j_k " << L_j_k<< std::endl;
 
                 pow_of_minus_1_for_k = -pow_of_minus_1_for_k;
             }//k
