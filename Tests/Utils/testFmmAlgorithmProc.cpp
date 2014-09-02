@@ -304,159 +304,192 @@ typedef FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelCl
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-  ///////////////////////What we do/////////////////////////////
-  std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
-  //////////////////////////////////////////////////////////////
+    ///////////////////////What we do/////////////////////////////
+    std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
+    //////////////////////////////////////////////////////////////
 
-  FMpi app( argc, argv);
+    FMpi app( argc, argv);
 
-  const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-  const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-  FTic counter;
-  const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
-    "../../Data/test20k.bin.fma.single":
-    "../../Data/test20k.bin.fma.double";
-  const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
-  std::cout << "Opening : " << filename << "\n";
+    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    FTic counter;
+    const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
+                "../../Data/test20k.bin.fma.single":
+                "../../Data/test20k.bin.fma.double";
+    const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
+    std::cout << "Opening : " << filename << "\n";
 
-FMpiFmaGenericLoader loader(filename,app.global());
-  if(!loader.isOpen()){
-    std::cout << "Loader Error, " << filename << " is missing\n";
-    return 1;
-  }
+    std::ifstream loader;
+    loader.open(filename, std::ios::in | std::ios::binary);
 
-  std::cout << "Simulation properties :\n";
-  std::cout << "Nb Particles " << loader.getNumberOfParticles() << "\n";
-  std::cout << "Box Width : " << loader.getBoxWidth() << "\n";
-  std::cout << "Box Center : " << loader.getCenterOfBox() << "\n";
+    int nbParts;
+    loader.read((char*)&nbParts, sizeof(nbParts));
+    FReal boxWidthX, boxWidthY, boxWidthZ;
+    loader.read((char*)&boxWidthX, sizeof(boxWidthX));
+    loader.read((char*)&boxWidthY, sizeof(boxWidthY));
+    loader.read((char*)&boxWidthZ, sizeof(boxWidthZ));
+    FReal boxCenterX, boxCenterY, boxCenterZ;
+    loader.read((char*)&boxCenterX, sizeof(boxCenterX));
+    loader.read((char*)&boxCenterY, sizeof(boxCenterY));
+    loader.read((char*)&boxCenterZ, sizeof(boxCenterZ));
 
-  // The real tree to work on
-  OctreeClass realTree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
-  if( app.global().processCount() != 1){
+    std::cout << "Simulation properties :\n";
+    std::cout << "Nb Particles " << nbParts << "\n";
+    std::cout << "Box Width : " << boxWidthX << "\n";
+    std::cout << "Box Center : " << FPoint(boxCenterX, boxCenterY, boxCenterZ) << "\n";
+
+    // The real tree to work on
+    OctreeClass realTree(NbLevels, SizeSubLevels,boxWidthX,FPoint(boxCenterX, boxCenterY, boxCenterZ));
+
+    if( app.global().processCount() != 1){
+        //////////////////////////////////////////////////////////////////////////////////
+        // Build tree from mpi loader
+        //////////////////////////////////////////////////////////////////////////////////
+        std::cout << "Build Tree ..." << std::endl;
+        counter.tic();
+
+        struct TestParticle{
+            FPoint position;
+            const FPoint& getPosition(){
+                return position;
+            }
+        };
+
+        TestParticle* particles = new TestParticle[nbParts];
+        memset(particles, 0, sizeof(TestParticle) * nbParts);
+        for(int idxPart = 0 ; idxPart < nbParts ; ++idxPart){
+            FReal px, py, pz, pp;
+            loader.read((char*)&px, sizeof(px));
+            loader.read((char*)&py, sizeof(py));
+            loader.read((char*)&pz, sizeof(pz));
+            loader.read((char*)&pp, sizeof(pp));
+            particles[idxPart].position = FPoint(px,py,pz);
+        }
+
+        const int leftPart = app.global().getLeft(nbParts);
+        const int rightPart = app.global().getRight(nbParts);
+
+        std::cout << "Go from " << leftPart << " to " << rightPart << "\n";
+
+        FVector<TestParticle> finalParticles;
+        FLeafBalance balancer;
+        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),&particles[leftPart],
+                                                                    rightPart-leftPart,
+                                                                    realTree.getBoxCenter(),
+                                                                    realTree.getBoxWidth(),realTree.getHeight(),
+                                                                    &finalParticles, &balancer);
+        std::cout << "I have now " << finalParticles.getSize() << " particles\n";
+
+        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+            realTree.insert(finalParticles[idx].position);
+        }
+
+        delete[] particles;
+
+        counter.tac();
+        std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+    else{
+        const FSize nbParticles = nbParts;
+        for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+            FReal px, py, pz, pp;
+            loader.read((char*)&px, sizeof(px));
+            loader.read((char*)&py, sizeof(py));
+            loader.read((char*)&pz, sizeof(pz));
+            loader.read((char*)&pp, sizeof(pp));
+            realTree.insert(FPoint(px,py,pz));
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////////////
-    // Build tree from mpi loader
+    // Create real tree
     //////////////////////////////////////////////////////////////////////////////////
-    std::cout << "Build Tree ..." << std::endl;
+
+    OctreeClass treeValide(NbLevels, SizeSubLevels,boxWidthX,FPoint(boxCenterX, boxCenterY, boxCenterZ));
+    {
+        std::ifstream myfile;
+        myfile.open(filename, std::ios::in | std::ios::binary);
+
+        int nbParts2;
+        myfile.read((char*)&nbParts2, sizeof(nbParts2));
+        FReal boxWidthX2, boxWidthY2, boxWidthZ2;
+        myfile.read((char*)&boxWidthX2, sizeof(boxWidthX2));
+        myfile.read((char*)&boxWidthY2, sizeof(boxWidthY2));
+        myfile.read((char*)&boxWidthZ2, sizeof(boxWidthZ2));
+        FReal boxCenterX2, boxCenterY2, boxCenterZ2;
+        myfile.read((char*)&boxCenterX2, sizeof(boxCenterX2));
+        myfile.read((char*)&boxCenterY2, sizeof(boxCenterY2));
+        myfile.read((char*)&boxCenterZ2, sizeof(boxCenterZ2));
+
+        std::cout << "Simulation properties :\n";
+        std::cout << "Nb Particles " << nbParts2 << "\n";
+        std::cout << "Box Width : " << boxWidthX2 << "\n";
+        std::cout << "Box Center : " << FPoint(boxCenterX2, boxCenterY2, boxCenterZ2) << "\n";
+
+        for(FSize idxPart = 0 ; idxPart < nbParts ; ++idxPart){
+            FReal px, py, pz, pp;
+            myfile.read((char*)&px, sizeof(px));
+            myfile.read((char*)&py, sizeof(py));
+            myfile.read((char*)&pz, sizeof(pz));
+            myfile.read((char*)&pp, sizeof(pp));
+            treeValide.insert(FPoint(px,py,pz));
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////
+    // Check particles in tree
+    //////////////////////////////////////////////////////////////////////////////////
+    std::cout << "Validate tree ..." << std::endl;
     counter.tic();
 
-    struct TestParticle{
-      FPoint position;
-      const FPoint& getPosition(){
-    return position;
-      }
-    };
-
-    TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-    memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
-    FReal physicalValue;
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-      loader.fillParticle(&particles[idxPart].position,&physicalValue);
-    }
-
-    FVector<TestParticle> finalParticles;
-    FLeafBalance balancer;
-    // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-    // 						 realTree.getBoxCenter(),
-    // 						 realTree.getBoxWidth(),
-    // 						 realTree.getHeight(), &finalParticles,&balancer);
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
-                                loader.getMyNumberOfParticles(),
-                                realTree.getBoxCenter(),
-                                realTree.getBoxWidth(),realTree.getHeight(),
-                                &finalParticles, &balancer);
-    for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
-      realTree.insert(finalParticles[idx].position);
-    }
-
-    delete[] particles;
+    ValidateTree(realTree, treeValide);
 
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////
-  }
-  else{
-    FPoint position;
-    FReal physicalValue;
-    const FSize nbParticles = loader.getNumberOfParticles();
-    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-      loader.fillParticle(&position,&physicalValue);
-      realTree.insert(position);
-    }
-  }
 
-  //////////////////////////////////////////////////////////////////////////////////
-  // Create real tree
-  //////////////////////////////////////////////////////////////////////////////////
+    std::cout << "Working parallel particles ..." << std::endl;
+    counter.tic();
 
-  OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
-  {
-    FFmaGenericLoader loaderSeq(filename);
+    KernelClass kernels;
 
-    std::cout << "Simulation properties :\n";
-    std::cout << "Nb Particles " << loaderSeq.getNumberOfParticles() << "\n";
-    std::cout << "Box Width : " << loaderSeq.getBoxWidth() << "\n";
-    std::cout << "Box Center : " << loaderSeq.getCenterOfBox() << "\n";
+    FmmClassProc algo(app.global(),&realTree,&kernels);
+    algo.execute();
 
-    FPoint position;
-    FReal physicalValue;
-    for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
-      loaderSeq.fillParticle(&position,&physicalValue);
-      treeValide.insert(position);
-    }
-  }
+    counter.tac();
+    std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
 
-  //////////////////////////////////////////////////////////////////////////////////
-  // Check particles in tree
-  //////////////////////////////////////////////////////////////////////////////////
-  std::cout << "Validate tree ..." << std::endl;
-  counter.tic();
+    //////////////////////////////////////////////////////////////////////////////////
 
-  ValidateTree(realTree, treeValide);
+    std::cout << "Working sequential particles ..." << std::endl;
+    counter.tic();
 
-  counter.tac();
-  std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
+    FmmClass algoValide(&treeValide,&kernels);
+    algoValide.execute();
 
-  //////////////////////////////////////////////////////////////////////////////////
+    counter.tac();
+    std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
 
-  std::cout << "Working parallel particles ..." << std::endl;
-  counter.tic();
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
 
-  KernelClass kernels;
+    std::cout << "Checking data ..." << std::endl;
+    counter.tic();
 
-  FmmClassProc algo(app.global(),&realTree,&kernels);
-  algo.execute();
+    ValidateFMMAlgoProc<OctreeClass,ContainerClass, FmmClassProc>(&realTree,&treeValide,&algo);
 
-  counter.tac();
-  std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
+    counter.tac();
+    std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
-  //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
 
-  std::cout << "Working sequential particles ..." << std::endl;
-  counter.tic();
-
-  FmmClass algoValide(&treeValide,&kernels);
-  algoValide.execute();
-
-  counter.tac();
-  std::cout << "Done  " << "(@Algorithm Particles = " << counter.elapsed() << "s)." << std::endl;
-
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-
-  std::cout << "Checking data ..." << std::endl;
-  counter.tic();
-
-  ValidateFMMAlgoProc<OctreeClass,ContainerClass, FmmClassProc>(&realTree,&treeValide,&algo);
-
-  counter.tac();
-  std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
-
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-
-  return 0;
+    return 0;
 }
+
 
 

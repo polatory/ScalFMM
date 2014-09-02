@@ -68,7 +68,7 @@ typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafC
 void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
              const FReal physicalValue, const bool neutral ,
              FMath::FAccurater* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
-             const int SizeSubLevels = 3, FReal* timeForDirect = 0){
+             const int SizeSubLevels = 3, FReal* timeForDirect = nullptr){
     FTic counter;
     FRandomLoader loader(NbParticles);
 
@@ -92,17 +92,16 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
         if(computeDirectAndDiff){
             printf("Compute direct!\n");
             counter.tic();
-            const FInterpMatrixKernelR MatrixKernel;
             for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
                 for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                    FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                    FP2PR::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                           &particles[idxTarget].forces[2],&particles[idxTarget].potential,
                                     particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                     particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                     &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                          &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
+                                          &particles[idxOther].forces[2],&particles[idxOther].potential);
                 }
             }
             if(timeForDirect) *timeForDirect = counter.tacAndElapsed();
@@ -230,8 +229,8 @@ int main(int argc, char ** argv){
         printf("Size array %d \n", (NbLevels+1-2)*(DevP+1-2));
 
         doATest(NbParticles,2,DevP,2,NbLevels,
-                physicalValue, neutral, allPotentialDiff, 0,
-                0, SizeSubLevels);
+                physicalValue, neutral, allPotentialDiff, nullptr,
+                nullptr, SizeSubLevels);
 
         {
             FILE* fres = fopen("test-hp.res", "w");
@@ -301,15 +300,14 @@ int main(int argc, char ** argv){
                 FmmClass algo(&tree,&kernels);
                 algo.execute();
 
-                const FInterpMatrixKernelR MatrixKernel;
-                FP2P::MutualParticles(centeredParticle.position.getX(), centeredParticle.position.getY(),
+                FP2PR::MutualParticles(centeredParticle.position.getX(), centeredParticle.position.getY(),
                                       centeredParticle.position.getZ(),centeredParticle.physicalValue,
                                       &centeredParticle.forces[0],&centeredParticle.forces[1],
                                       &centeredParticle.forces[2],&centeredParticle.potential,
                                 otherParticle.position.getX(), otherParticle.position.getY(),
                                 otherParticle.position.getZ(),otherParticle.physicalValue,
                                 &otherParticle.forces[0],&otherParticle.forces[1],
-                                      &otherParticle.forces[2],&otherParticle.potential,&MatrixKernel);
+                                      &otherParticle.forces[2],&otherParticle.potential);
 
                 { // Check that each particle has been summed with all other
 
@@ -375,7 +373,7 @@ int main(int argc, char ** argv){
 
         for(int idxP = 0 ; idxP < 3 ; ++idxP){
             doATest(NbParticles,DevsP[idxP],DevsP[idxP],2,NbLevels,
-                    physicalValue, neutral, 0, 0,
+                    physicalValue, neutral, nullptr, nullptr,
                     timeCounter[idxP], SizeSubLevels, &directTime);
         }
 
@@ -421,7 +419,7 @@ int main(int argc, char ** argv){
         for(int idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
              for(int idxP = 0 ; idxP < 3 ; ++idxP){
                  doATest(ParticlesNumbers[idxPart],DevsP[idxP],DevsP[idxP],AllLevels[idxPart],AllLevels[idxPart],
-                         physicalValue, neutral, 0, 0,
+                         physicalValue, neutral, nullptr, nullptr,
                          timeCounter[idxP]+idxPart, SizeSubLevels);
              }
         }
@@ -469,7 +467,7 @@ int main(int argc, char ** argv){
 
         doATest(NbParticles,1,DevP,NbLevels,NbLevels,
                 physicalValue, neutral, potentialDiff, potentialAbsoluteDiff,
-                0, SizeSubLevels);
+                nullptr, SizeSubLevels);
 
         {
             FILE* fres = fopen("test-p.res", "w");

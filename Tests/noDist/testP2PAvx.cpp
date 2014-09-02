@@ -28,7 +28,7 @@
 #include "Utils/FParameters.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
-#include "Kernels/P2P/FP2P.hpp"
+#include "Kernels/P2P/FP2PR.hpp"
 #include "Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "Components/FBasicCell.hpp"
@@ -163,7 +163,7 @@ int main(int argc, char ** argv){
 		FTreeCoordinate coord = iterator.getCurrentGlobalCoordinate();
 		ContainerClass** neighbors = new ContainerClass*[27];
 		tree.getLeafsNeighbors(neighbors,coord,1);
-		FP2P::FullMutual(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
+        FP2PR::FullMutual(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
 
 	    }while(iterator.moveRight());
 	}

@@ -91,19 +91,16 @@ int main(int argc, char* argv[])
         particles[idxPart].forces[2] = 0.0;
     }
     {
-      // interaction evaluator
-      const FInterpMatrixKernelR MatrixKernel;
-
         for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
             for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                FP2PR::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                       particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                       &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                       &particles[idxTarget].forces[2],&particles[idxTarget].potential,
                                 particles[idxOther].position.getX(), particles[idxOther].position.getY(),
                                 particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                      &particles[idxOther].forces[2],&particles[idxOther].potential, &MatrixKernel);
+                                      &particles[idxOther].forces[2],&particles[idxOther].potential);
             }
         }
     }

@@ -1,17 +1,10 @@
 #ifndef FP2P_HPP
 #define FP2P_HPP
 
-#include "Utils/FGlobal.hpp"
-#include "Utils/FMath.hpp"
-
-
-/**
- * @brief The FP2P namespace
- */
 namespace FP2P {
 
-  /**
-   * @brief MutualParticles (generic version) 
+/**
+   * @brief MutualParticles (generic version)
    * P2P mutual interaction,
    * this function computes the interaction for 2 particles.
    *
@@ -39,34 +32,35 @@ namespace FP2P {
    * @param targetPotential
    * @param MatrixKernel pointer to an interaction kernel evaluator
    */
-  template <typename MatrixKernelClass>
-  inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                              FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-                              const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                              FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential, 
-                              const MatrixKernelClass *const MatrixKernel){
+template <typename MatrixKernelClass>
+inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
+                            FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                            const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                            FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                            const MatrixKernelClass *const MatrixKernel){
 
     // Compute kernel of interaction...
     const FPoint sourcePoint(sourceX,sourceY,sourceZ);
     const FPoint targetPoint(targetX,targetY,targetZ);
     FReal Kxy[1];
-    FReal dKxy[1][3];
-    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+    FReal dKxy[3];
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
+                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
     FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
-    (*targetForceX) += dKxy[0][0] * coef;
-    (*targetForceY) += dKxy[0][1] * coef;
-    (*targetForceZ) += dKxy[0][2] * coef;
+    (*targetForceX) += dKxy[0] * coef;
+    (*targetForceY) += dKxy[1] * coef;
+    (*targetForceZ) += dKxy[2] * coef;
     (*targetPotential) += ( Kxy[0] * sourcePhysicalValue );
 
-    (*sourceForceX) -= dKxy[0][0] * coef;
-    (*sourceForceY) -= dKxy[0][1] * coef;
-    (*sourceForceZ) -= dKxy[0][2] * coef;
+    (*sourceForceX) -= dKxy[0] * coef;
+    (*sourceForceY) -= dKxy[1] * coef;
+    (*sourceForceZ) -= dKxy[2] * coef;
     (*sourcePotential) += ( Kxy[0] * targetPhysicalValue );
-  }
+}
 
-  /**
-   * @brief NonMutualParticles (generic version) 
+/**
+   * @brief NonMutualParticles (generic version)
    * P2P mutual interaction,
    * this function computes the interaction for 2 particles.
    *
@@ -80,171 +74,47 @@ namespace FP2P {
    * \f$ P_2 = \frac{ q_1 }{ r } \f$
    * \f$ F(x) = \frac{ \Delta_x * q_1 * q_2 }{ r^2 } \f$
    */
-  template <typename MatrixKernelClass>
-  inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                                 const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                                 FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential, 
-                                 const MatrixKernelClass *const MatrixKernel){
- 
+template <typename MatrixKernelClass>
+inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
+                               const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                               const MatrixKernelClass *const MatrixKernel){
+
     // Compute kernel of interaction...
     const FPoint sourcePoint(sourceX,sourceY,sourceZ);
     const FPoint targetPoint(targetX,targetY,targetZ);
     FReal Kxy[1];
-    FReal dKxy[1][3];
-    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+    FReal dKxy[3];
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
+                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
     FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
-    (*targetForceX) += dKxy[0][0] * coef;
-    (*targetForceY) += dKxy[0][1] * coef;
-    (*targetForceZ) += dKxy[0][2] * coef;
+    (*targetForceX) += dKxy[0] * coef;
+    (*targetForceY) += dKxy[1] * coef;
+    (*targetForceZ) += dKxy[2] * coef;
     (*targetPotential) += ( Kxy[0] * sourcePhysicalValue );
-  }
+}
 
 
 
-  /*
-   * FullMutual (generic version)
-   */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                         const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
-    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
-    const FReal*const targetsX = inTargets->getPositions()[0];
-    const FReal*const targetsY = inTargets->getPositions()[1];
-    const FReal*const targetsZ = inTargets->getPositions()[2];
-    FReal*const targetsForcesX = inTargets->getForcesX();
-    FReal*const targetsForcesY = inTargets->getForcesY();
-    FReal*const targetsForcesZ = inTargets->getForcesZ();
-    FReal*const targetsPotentials = inTargets->getPotentials();
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// R_IJ
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-          FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX();
-          FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY();
-          FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ();
-          FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials();
-
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-
-            // Compute kernel of interaction and its derivative
-            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-            FReal Kxy[1];
-            FReal dKxy[1][3];
-            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
-            FReal coef = (targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
-
-            targetsForcesX[idxTarget] += dKxy[0][0] * coef;
-            targetsForcesY[idxTarget] += dKxy[0][1] * coef;
-            targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
-            targetsPotentials[idxTarget] += ( Kxy[0] * sourcesPhysicalValues[idxSource] );
-
-            sourcesForcesX[idxSource] -= dKxy[0][0] * coef;
-            sourcesForcesY[idxSource] -= dKxy[0][1] * coef;
-            sourcesForcesZ[idxSource] -= dKxy[0][2] * coef;
-            sourcesPotentials[idxSource] += ( Kxy[0] * targetsPhysicalValues[idxTarget] );
-          }
-        }
-      }
-    }
-
-    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-      for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
-
-        // Compute kernel of interaction...
-        const FPoint sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
-        const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-        FReal Kxy[1];
-        FReal dKxy[1][3];
-        MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
-        FReal coef = (targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
-
-        targetsForcesX[idxTarget] += dKxy[0][0] * coef;
-        targetsForcesY[idxTarget] += dKxy[0][1] * coef;
-        targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
-        targetsPotentials[idxTarget] += ( Kxy[0] * targetsPhysicalValues[idxSource] );
-
-        targetsForcesX[idxSource] -= dKxy[0][0] * coef;
-        targetsForcesY[idxSource] -= dKxy[0][1] * coef;
-        targetsForcesZ[idxSource] -= dKxy[0][2] * coef;
-        targetsPotentials[idxSource] += ( Kxy[0] * targetsPhysicalValues[idxTarget] );
-      }
-    }
-  }
-
-
-  /**
-   * FullRemote (generic version)
-   */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                         const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    const int nbParticlesTargets = inTargets->getNbParticles();
-    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
-    const FReal*const targetsX = inTargets->getPositions()[0];
-    const FReal*const targetsY = inTargets->getPositions()[1];
-    const FReal*const targetsZ = inTargets->getPositions()[2];
-    FReal*const targetsForcesX = inTargets->getForcesX();
-    FReal*const targetsForcesY = inTargets->getForcesY();
-    FReal*const targetsForcesZ = inTargets->getForcesZ();
-    FReal*const targetsPotentials = inTargets->getPotentials();
-
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-            
-            // Compute kernel of interaction...
-            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-            FReal Kxy[1];
-            FReal dKxy[1][3];
-            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
-            FReal coef = (targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
-
-            targetsForcesX[idxTarget] += dKxy[0][0] * coef;
-            targetsForcesY[idxTarget] += dKxy[0][1] * coef;
-            targetsForcesZ[idxTarget] += dKxy[0][2] * coef;
-            targetsPotentials[idxTarget] += ( Kxy[0] * sourcesPhysicalValues[idxSource] );
-          }
-        }
-      }
-    }
-  }
-
-
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // R_IJ
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  /**
+/**
    * @brief FullMutualRIJ
    */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullMutualRIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			    const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullMutualRIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                          const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -254,167 +124,167 @@ namespace FP2P {
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-	if( inNeighbors[idxNeighbors] ){
-	  const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-	  const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-	  const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-	  const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-	    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-	    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-	    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-	    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-	    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+                    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+                    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+                    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-	    FReal r[3]={dx,dy,dz};
+                    FReal r[3]={dx,dy,dz};
 
-	    for(unsigned int i = 0 ; i < 3 ; ++i){
-	      FReal*const targetsPotentials = inTargets->getPotentials(i);
-	      FReal*const targetsForcesX = inTargets->getForcesX(i);
-	      FReal*const targetsForcesY = inTargets->getForcesY(i);
-	      FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-	      FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
-	      FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
-	      FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
-	      FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                        FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
+                        FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
+                        FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
+                        FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
 
-	      FReal ri2=r[i]*r[i];
+                        FReal ri2=r[i]*r[i];
 
-	      for(unsigned int j = 0 ; j < 3 ; ++j){
-		const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
-		const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+                            const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
 
-		// potentials
-		FReal potentialCoef;
-		if(i==j)
-		  potentialCoef = inv_distance - ri2 * inv_distance_pow3;
-		else
-		  potentialCoef = - r[i] * r[j] * inv_distance_pow3;
+                            // potentials
+                            FReal potentialCoef;
+                            if(i==j)
+                                potentialCoef = inv_distance - ri2 * inv_distance_pow3;
+                            else
+                                potentialCoef = - r[i] * r[j] * inv_distance_pow3;
 
-		// forces
-		FReal rj2=r[j]*r[j];
+                            // forces
+                            FReal rj2=r[j]*r[j];
 
-		FReal coef[3]; 
-		for(unsigned int k = 0 ; k < 3 ; ++k)
-		  coef[k]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                            FReal coef[3];
+                            for(unsigned int k = 0 ; k < 3 ; ++k)
+                                coef[k]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-		// Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
-		for(unsigned int k = 0 ; k < 3 ; ++k){
-		  if(i==j){
-		    if(j==k) //i=j=k
-		      coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		    else //i=j!=k
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-		  }
-		  else{ //(i!=j)
-		    if(i==k) //i=k!=j
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-		    else if(j==k) //i!=k=j
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		    else //i!=k!=j
-		      coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-		  }
-		}// k
+                            // Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
+                            for(unsigned int k = 0 ; k < 3 ; ++k){
+                                if(i==j){
+                                    if(j==k) //i=j=k
+                                        coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i=j!=k
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                                }
+                                else{ //(i!=j)
+                                    if(i==k) //i=k!=j
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                                    else if(j==k) //i!=k=j
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i!=k!=j
+                                        coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                                }
+                            }// k
 
-		targetsForcesX[idxTarget] += coef[0];
-		targetsForcesY[idxTarget] += coef[1];
-		targetsForcesZ[idxTarget] += coef[2];
-		targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
+                            targetsForcesX[idxTarget] += coef[0];
+                            targetsForcesY[idxTarget] += coef[1];
+                            targetsForcesZ[idxTarget] += coef[2];
+                            targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
 
-		sourcesForcesX[idxSource] -= coef[0];
-		sourcesForcesY[idxSource] -= coef[1];
-		sourcesForcesZ[idxSource] -= coef[2];
-		sourcesPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
+                            sourcesForcesX[idxSource] -= coef[0];
+                            sourcesForcesY[idxSource] -= coef[1];
+                            sourcesForcesZ[idxSource] -= coef[2];
+                            sourcesPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
 
-                             
-	      }// j
-	    }// i
-	  }
-	}
-      }
+
+                        }// j
+                    }// i
+                }
+            }
+        }
     }
 
     for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-      for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
-	FReal dx = targetsX[idxSource] - targetsX[idxTarget];
-	FReal dy = targetsY[idxSource] - targetsY[idxTarget];
-	FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
+        for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
+            FReal dx = targetsX[idxSource] - targetsX[idxTarget];
+            FReal dy = targetsY[idxSource] - targetsY[idxTarget];
+            FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-	FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-	FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+            FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+            FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+            FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-	FReal r[3]={dx,dy,dz};
+            FReal r[3]={dx,dy,dz};
 
-	for(unsigned int i = 0 ; i < 3 ; ++i){
-	  FReal*const targetsPotentials = inTargets->getPotentials(i);
-	  FReal*const targetsForcesX = inTargets->getForcesX(i);
-	  FReal*const targetsForcesY = inTargets->getForcesY(i);
-	  FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-	  FReal ri2=r[i]*r[i];
+            for(unsigned int i = 0 ; i < 3 ; ++i){
+                FReal*const targetsPotentials = inTargets->getPotentials(i);
+                FReal*const targetsForcesX = inTargets->getForcesX(i);
+                FReal*const targetsForcesY = inTargets->getForcesY(i);
+                FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                FReal ri2=r[i]*r[i];
 
-	  for(unsigned int j = 0 ; j < 3 ; ++j){
-	    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+                for(unsigned int j = 0 ; j < 3 ; ++j){
+                    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
 
-	    // potentials
-	    FReal potentialCoef;
-	    if(i==j)
-	      potentialCoef = inv_distance - ri2 * inv_distance_pow3;
-	    else
-	      potentialCoef = - r[i] * r[j] * inv_distance_pow3;
+                    // potentials
+                    FReal potentialCoef;
+                    if(i==j)
+                        potentialCoef = inv_distance - ri2 * inv_distance_pow3;
+                    else
+                        potentialCoef = - r[i] * r[j] * inv_distance_pow3;
 
-	    // forces
-	    FReal rj2=r[j]*r[j];
+                    // forces
+                    FReal rj2=r[j]*r[j];
 
-	    FReal coef[3]; 
-	    for(unsigned int k = 0 ; k < 3 ; ++k)
-	      coef[k]= -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
+                    FReal coef[3];
+                    for(unsigned int k = 0 ; k < 3 ; ++k)
+                        coef[k]= -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
 
-	    // Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
-	    for(unsigned int k = 0 ; k < 3 ; ++k){
-	      if(i==j){
-		if(j==k) //i=j=k
-		  coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		else //i=j!=k
-		  coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-	      }
-	      else{ //(i!=j)
-		if(i==k) //i=k!=j
-		  coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-		else if(j==k) //i!=k=j
-		  coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		else //i!=k!=j
-		  coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-	      }
-	    }// k
+                    // Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
+                    for(unsigned int k = 0 ; k < 3 ; ++k){
+                        if(i==j){
+                            if(j==k) //i=j=k
+                                coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                            else //i=j!=k
+                                coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                        }
+                        else{ //(i!=j)
+                            if(i==k) //i=k!=j
+                                coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                            else if(j==k) //i!=k=j
+                                coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                            else //i!=k!=j
+                                coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                        }
+                    }// k
 
 
-	    targetsForcesX[idxTarget] += coef[0];
-	    targetsForcesY[idxTarget] += coef[1];
-	    targetsForcesZ[idxTarget] += coef[2];
-	    targetsPotentials[idxTarget] += ( potentialCoef * targetsPhysicalValues[idxSource] );
+                    targetsForcesX[idxTarget] += coef[0];
+                    targetsForcesY[idxTarget] += coef[1];
+                    targetsForcesZ[idxTarget] += coef[2];
+                    targetsPotentials[idxTarget] += ( potentialCoef * targetsPhysicalValues[idxSource] );
 
-	    targetsForcesX[idxSource] -= coef[0];
-	    targetsForcesY[idxSource] -= coef[1];
-	    targetsForcesZ[idxSource] -= coef[2];
-	    targetsPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
-	  }// j
-	}// i
+                    targetsForcesX[idxSource] -= coef[0];
+                    targetsForcesY[idxSource] -= coef[1];
+                    targetsForcesZ[idxSource] -= coef[2];
+                    targetsPotentials[idxSource] += potentialCoef * targetsPhysicalValues[idxTarget];
+                }// j
+            }// i
 
-      }
+        }
     }
-  }
+}
 
-  /**
+/**
    * @brief FullRemoteRIJ
    */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullRemoteRIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			    const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullRemoteRIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                          const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -424,84 +294,84 @@ namespace FP2P {
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-	if( inNeighbors[idxNeighbors] ){
-	  const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-	  const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-	  const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-	  const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-	  for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-	    // potential
-	    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-	    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-	    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    // potential
+                    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-	    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-	    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-	    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+                    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+                    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+                    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-	    FReal r[3]={dx,dy,dz};
+                    FReal r[3]={dx,dy,dz};
 
-	    for(unsigned int i = 0 ; i < 3 ; ++i){
-	      FReal*const targetsPotentials = inTargets->getPotentials(i);
-	      FReal*const targetsForcesX = inTargets->getForcesX(i);
-	      FReal*const targetsForcesY = inTargets->getForcesY(i);
-	      FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-	      FReal ri2=r[i]*r[i];
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                        FReal ri2=r[i]*r[i];
 
-	      for(unsigned int j = 0 ; j < 3 ; ++j){
-		const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
-		const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+                            const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
 
-		// potentials
-		FReal potentialCoef;
-		if(i==j)
-		  potentialCoef = inv_distance - ri2 * inv_distance_pow3;
-		else
-		  potentialCoef = - r[i] * r[j] * inv_distance_pow3;
+                            // potentials
+                            FReal potentialCoef;
+                            if(i==j)
+                                potentialCoef = inv_distance - ri2 * inv_distance_pow3;
+                            else
+                                potentialCoef = - r[i] * r[j] * inv_distance_pow3;
 
-		// forces
-		FReal rj2=r[j]*r[j];
+                            // forces
+                            FReal rj2=r[j]*r[j];
 
-		FReal coef[3]; 
-		for(unsigned int k = 0 ; k < 3 ; ++k)
-		  coef[k]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                            FReal coef[3];
+                            for(unsigned int k = 0 ; k < 3 ; ++k)
+                                coef[k]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-		// Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
-		for(unsigned int k = 0 ; k < 3 ; ++k){
-		  if(i==j){
-		    if(j==k) //i=j=k
-		      coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		    else //i=j!=k
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-		  }
-		  else{ //(i!=j)
-		    if(i==k) //i=k!=j
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-		    else if(j==k) //i!=k=j
-		      coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-		    else //i!=k!=j
-		      coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-		  }
-		}// k
+                            // Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
+                            for(unsigned int k = 0 ; k < 3 ; ++k){
+                                if(i==j){
+                                    if(j==k) //i=j=k
+                                        coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i=j!=k
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                                }
+                                else{ //(i!=j)
+                                    if(i==k) //i=k!=j
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                                    else if(j==k) //i!=k=j
+                                        coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i!=k!=j
+                                        coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                                }
+                            }// k
 
-		targetsForcesX[idxTarget] += coef[0];
-		targetsForcesY[idxTarget] += coef[1];
-		targetsForcesZ[idxTarget] += coef[2];
-		targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
+                            targetsForcesX[idxTarget] += coef[0];
+                            targetsForcesY[idxTarget] += coef[1];
+                            targetsForcesZ[idxTarget] += coef[2];
+                            targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
 
-	      }// j
-	    }// i
+                        }// j
+                    }// i
 
-	  }
-	}
-      }
+                }
+            }
+        }
     }
-  }
+}
 
 
-  /**
+/**
    * @brief MutualParticlesRIJ
    * @param sourceX
    * @param sourceY
@@ -520,12 +390,12 @@ namespace FP2P {
    * @param targetForceZ
    * @param targetPotential
    */
-  template<typename MatrixKernelClass>
-  inline void MutualParticlesRIJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
-				 FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-				 const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
-				 FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
-				 const MatrixKernelClass *const MatrixKernel){
+template<typename MatrixKernelClass>
+inline void MutualParticlesRIJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
+                               FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                               const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
+                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                               const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -541,73 +411,73 @@ namespace FP2P {
     FReal r[3]={dx,dy,dz};
 
     for(unsigned int i = 0 ; i < 3 ; ++i){
-      FReal ri2=r[i]*r[i];
-      for(unsigned int j = 0 ; j < 3 ; ++j){
+        FReal ri2=r[i]*r[i];
+        for(unsigned int j = 0 ; j < 3 ; ++j){
 
-	// potentials
-	FReal potentialCoef;
-	if(i==j)
-	  potentialCoef = inv_distance - ri2 * inv_distance_pow3;
-	else
-	  potentialCoef = - r[i] * r[j] * inv_distance_pow3;
+            // potentials
+            FReal potentialCoef;
+            if(i==j)
+                potentialCoef = inv_distance - ri2 * inv_distance_pow3;
+            else
+                potentialCoef = - r[i] * r[j] * inv_distance_pow3;
 
-	// forces
-	FReal rj2=r[j]*r[j];
+            // forces
+            FReal rj2=r[j]*r[j];
 
-	FReal coef[3]; 
-	for(unsigned int k = 0 ; k < 3 ; ++k)
-	  coef[k]= -(targetPhysicalValue[j] * sourcePhysicalValue[j]);
+            FReal coef[3];
+            for(unsigned int k = 0 ; k < 3 ; ++k)
+                coef[k]= -(targetPhysicalValue[j] * sourcePhysicalValue[j]);
 
-	// Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
-	for(unsigned int k = 0 ; k < 3 ; ++k){
-	  if(i==j){
-	    if(j==k) //i=j=k
-	      coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-	    else //i=j!=k
-	      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-	  }
-	  else{ //(i!=j)
-	    if(i==k) //i=k!=j
-	      coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-	    else if(j==k) //i!=k=j
-	      coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-	    else //i!=k!=j
-	      coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-	  }
-	}// k
+            // Grad of RIJ kernel is RIJK kernel => use same expression as in FInterpMatrixKernel
+            for(unsigned int k = 0 ; k < 3 ; ++k){
+                if(i==j){
+                    if(j==k) //i=j=k
+                        coef[k] *= FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                    else //i=j!=k
+                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                }
+                else{ //(i!=j)
+                    if(i==k) //i=k!=j
+                        coef[k] *= ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                    else if(j==k) //i!=k=j
+                        coef[k] *= ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                    else //i!=k!=j
+                        coef[k] *= FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                }
+            }// k
 
-	targetForceX[i] += coef[0];
-	targetForceY[i] += coef[1];
-	targetForceZ[i] += coef[2];
-	targetPotential[i] += ( potentialCoef * sourcePhysicalValue[j] );
+            targetForceX[i] += coef[0];
+            targetForceY[i] += coef[1];
+            targetForceZ[i] += coef[2];
+            targetPotential[i] += ( potentialCoef * sourcePhysicalValue[j] );
 
-	sourceForceX[i] -= coef[0];
-	sourceForceY[i] -= coef[1];
-	sourceForceZ[i] -= coef[2];
-	sourcePotential[i] += ( potentialCoef * targetPhysicalValue[j] );
+            sourceForceX[i] -= coef[0];
+            sourceForceY[i] -= coef[1];
+            sourceForceZ[i] -= coef[2];
+            sourcePotential[i] += ( potentialCoef * targetPhysicalValue[j] );
 
-      }// j
+        }// j
     }// i
 
-  }
+}
 
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // R_IJK
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// R_IJK
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  /**
+/**
    * @brief FullMutualRIJK
    */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullMutualRIJK(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			     const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullMutualRIJK(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -617,163 +487,163 @@ namespace FP2P {
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-            FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-            FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-            FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-            FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-            FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-            FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+                    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+                    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+                    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-            FReal r[3]={dx,dy,dz};
+                    FReal r[3]={dx,dy,dz};
 
-            for(unsigned int i = 0 ; i < 3 ; ++i){
-              FReal*const targetsPotentials = inTargets->getPotentials(i);
-              FReal*const targetsForcesX = inTargets->getForcesX(i);
-              FReal*const targetsForcesY = inTargets->getForcesY(i);
-              FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-              FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
-              FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
-              FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
-              FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                        FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
+                        FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
+                        FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
+                        FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
 
-              const FReal ri2=r[i]*r[i];
+                        const FReal ri2=r[i]*r[i];
 
-              for(unsigned int j = 0 ; j < 3 ; ++j){
-                FReal rj2=r[j]*r[j];
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            FReal rj2=r[j]*r[j];
 
-                for(unsigned int k = 0 ; k < 3 ; ++k){
-                  const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
-                  const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j*3+k);
+                            for(unsigned int k = 0 ; k < 3 ; ++k){
+                                const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
+                                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j*3+k);
 
-                  // potentials
-                  FReal potentialCoef;
-                  if(i==j){
-                    if(j==k) //i=j=k
-                      potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                    else //i=j!=k
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-                  }
-                  else{ //(i!=j)
-                    if(i==k) //i=k!=j
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-                    else if(j==k) //i!=k=j
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                    else //i!=k!=j
-                      potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-                  }
+                                // potentials
+                                FReal potentialCoef;
+                                if(i==j){
+                                    if(j==k) //i=j=k
+                                        potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i=j!=k
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                                }
+                                else{ //(i!=j)
+                                    if(i==k) //i=k!=j
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                                    else if(j==k) //i!=k=j
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i!=k!=j
+                                        potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                                }
 
-                  // forces
-                  FReal coef[3]; 
-                  for(unsigned int l = 0 ; l < 3 ; ++l){
-                    coef[l]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                                // forces
+                                FReal coef[3];
+                                for(unsigned int l = 0 ; l < 3 ; ++l){
+                                    coef[l]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-		    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
-		    //                    coef[l] *= ;
+                                    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
+                                    //                    coef[l] *= ;
 
-                  }// l
+                                }// l
 
-                  targetsForcesX[idxTarget] += coef[0];
-                  targetsForcesY[idxTarget] += coef[1];
-                  targetsForcesZ[idxTarget] += coef[2];
-                  targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
+                                targetsForcesX[idxTarget] += coef[0];
+                                targetsForcesY[idxTarget] += coef[1];
+                                targetsForcesZ[idxTarget] += coef[2];
+                                targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
 
-                  sourcesForcesX[idxSource] -= coef[0];
-                  sourcesForcesY[idxSource] -= coef[1];
-                  sourcesForcesZ[idxSource] -= coef[2];
-                  sourcesPotentials[idxSource] += -potentialCoef * targetsPhysicalValues[idxTarget];
+                                sourcesForcesX[idxSource] -= coef[0];
+                                sourcesForcesY[idxSource] -= coef[1];
+                                sourcesForcesZ[idxSource] -= coef[2];
+                                sourcesPotentials[idxSource] += -potentialCoef * targetsPhysicalValues[idxTarget];
 
-                }// k
-              }// j
-            }// i
-          }
+                            }// k
+                        }// j
+                    }// i
+                }
+            }
         }
-      }
     }
 
     for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-      for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
-        FReal dx = targetsX[idxSource] - targetsX[idxTarget];
-        FReal dy = targetsY[idxSource] - targetsY[idxTarget];
-        FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
+        for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
+            FReal dx = targetsX[idxSource] - targetsX[idxTarget];
+            FReal dy = targetsY[idxSource] - targetsY[idxTarget];
+            FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
 
-        FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-        FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-        FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+            FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+            FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+            FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-        FReal r[3]={dx,dy,dz};
+            FReal r[3]={dx,dy,dz};
 
-        for(unsigned int i = 0 ; i < 3 ; ++i){
-          FReal*const targetsPotentials = inTargets->getPotentials(i);
-          FReal*const targetsForcesX = inTargets->getForcesX(i);
-          FReal*const targetsForcesY = inTargets->getForcesY(i);
-          FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-          FReal ri2=r[i]*r[i];
+            for(unsigned int i = 0 ; i < 3 ; ++i){
+                FReal*const targetsPotentials = inTargets->getPotentials(i);
+                FReal*const targetsForcesX = inTargets->getForcesX(i);
+                FReal*const targetsForcesY = inTargets->getForcesY(i);
+                FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                FReal ri2=r[i]*r[i];
 
-          for(unsigned int j = 0 ; j < 3 ; ++j){
-            FReal rj2=r[j]*r[j];
+                for(unsigned int j = 0 ; j < 3 ; ++j){
+                    FReal rj2=r[j]*r[j];
 
-            for(unsigned int k = 0 ; k < 3 ; ++k){
-              const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
+                    for(unsigned int k = 0 ; k < 3 ; ++k){
+                        const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
 
-              // potentials
-              FReal potentialCoef;
-              if(i==j){
-                if(j==k) //i=j=k
-                  potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                else //i=j!=k
-                  potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-              }
-              else{ //(i!=j)
-                if(i==k) //i=k!=j
-                  potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-                else if(j==k) //i!=k=j
-                  potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                else //i!=k!=j
-                  potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-              }
+                        // potentials
+                        FReal potentialCoef;
+                        if(i==j){
+                            if(j==k) //i=j=k
+                                potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                            else //i=j!=k
+                                potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                        }
+                        else{ //(i!=j)
+                            if(i==k) //i=k!=j
+                                potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                            else if(j==k) //i!=k=j
+                                potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                            else //i!=k!=j
+                                potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                        }
 
-              // forces
-              FReal coef[3]; 
-              for(unsigned int l = 0 ; l < 3 ; ++l){
-                coef[l]= -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
+                        // forces
+                        FReal coef[3];
+                        for(unsigned int l = 0 ; l < 3 ; ++l){
+                            coef[l]= -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
 
-		//                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
-		//                    coef[l] *= ;
+                            //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
+                            //                    coef[l] *= ;
 
-              }// l
+                        }// l
 
-              targetsForcesX[idxTarget] += coef[0];
-              targetsForcesY[idxTarget] += coef[1];
-              targetsForcesZ[idxTarget] += coef[2];
-              targetsPotentials[idxTarget] += ( potentialCoef * targetsPhysicalValues[idxSource] );
+                        targetsForcesX[idxTarget] += coef[0];
+                        targetsForcesY[idxTarget] += coef[1];
+                        targetsForcesZ[idxTarget] += coef[2];
+                        targetsPotentials[idxTarget] += ( potentialCoef * targetsPhysicalValues[idxSource] );
 
-              targetsForcesX[idxSource] -= coef[0];
-              targetsForcesY[idxSource] -= coef[1];
-              targetsForcesZ[idxSource] -= coef[2];
-              targetsPotentials[idxSource] += -potentialCoef * targetsPhysicalValues[idxTarget];
-            }// k
-          }// j
-        }// i
+                        targetsForcesX[idxSource] -= coef[0];
+                        targetsForcesY[idxSource] -= coef[1];
+                        targetsForcesZ[idxSource] -= coef[2];
+                        targetsPotentials[idxSource] += -potentialCoef * targetsPhysicalValues[idxTarget];
+                    }// k
+                }// j
+            }// i
 
-      }
+        }
     }
-  }
+}
 
-  /**
+/**
    * @brief FullRemoteRIJK
    */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullRemoteRIJK(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-			     const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullRemoteRIJK(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -783,84 +653,84 @@ namespace FP2P {
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-            // potential
-            FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
-            FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
-            FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    // potential
+                    FReal dx = sourcesX[idxSource] - targetsX[idxTarget];
+                    FReal dy = sourcesY[idxSource] - targetsY[idxTarget];
+                    FReal dz = sourcesZ[idxSource] - targetsZ[idxTarget];
 
-            FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
-            FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
-            FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
+                    FReal inv_distance_pow2 = FReal(1.0) / (dx*dx + dy*dy + dz*dz + CoreWidth2);
+                    FReal inv_distance = FMath::Sqrt(inv_distance_pow2);
+                    FReal inv_distance_pow3 = inv_distance_pow2 * inv_distance;
 
-            FReal r[3]={dx,dy,dz};
+                    FReal r[3]={dx,dy,dz};
 
-            for(unsigned int i = 0 ; i < 3 ; ++i){
-              FReal*const targetsPotentials = inTargets->getPotentials(i);
-              FReal*const targetsForcesX = inTargets->getForcesX(i);
-              FReal*const targetsForcesY = inTargets->getForcesY(i);
-              FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-              FReal ri2=r[i]*r[i];
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                        FReal ri2=r[i]*r[i];
 
-              for(unsigned int j = 0 ; j < 3 ; ++j){
-                FReal rj2=r[j]*r[j];
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            FReal rj2=r[j]*r[j];
 
-                for(unsigned int k = 0 ; k < 3 ; ++k){
+                            for(unsigned int k = 0 ; k < 3 ; ++k){
 
-                  const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
-                  const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j*3+k);
+                                const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j*3+k);
+                                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j*3+k);
 
-                  // potentials
-                  FReal potentialCoef;
-                  if(i==j){
-                    if(j==k) //i=j=k
-                      potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                    else //i=j!=k
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-                  }
-                  else{ //(i!=j)
-                    if(i==k) //i=k!=j
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-                    else if(j==k) //i!=k=j
-                      potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-                    else //i!=k!=j
-                      potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-                  }
+                                // potentials
+                                FReal potentialCoef;
+                                if(i==j){
+                                    if(j==k) //i=j=k
+                                        potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i=j!=k
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                                }
+                                else{ //(i!=j)
+                                    if(i==k) //i=k!=j
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                                    else if(j==k) //i!=k=j
+                                        potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                                    else //i!=k!=j
+                                        potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                                }
 
-                  // forces
-                  FReal coef[3]; 
-                  for(unsigned int l = 0 ; l < 3 ; ++l){
-                    coef[l]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                                // forces
+                                FReal coef[3];
+                                for(unsigned int l = 0 ; l < 3 ; ++l){
+                                    coef[l]= -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-                    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
-                    //                    coef[l] *= ;
+                                    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
+                                    //                    coef[l] *= ;
 
-                  }// l
+                                }// l
 
-                  targetsForcesX[idxTarget] += coef[0];
-                  targetsForcesY[idxTarget] += coef[1];
-                  targetsForcesZ[idxTarget] += coef[2];
-                  targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
+                                targetsForcesX[idxTarget] += coef[0];
+                                targetsForcesY[idxTarget] += coef[1];
+                                targetsForcesZ[idxTarget] += coef[2];
+                                targetsPotentials[idxTarget] += ( potentialCoef * sourcesPhysicalValues[idxSource] );
 
-                }// k
-              }// j
-            }// i
+                            }// k
+                        }// j
+                    }// i
 
-          }
+                }
+            }
         }
-      }
     }
-  }
+}
 
 
-  /**
+/**
    * @brief MutualParticlesRIJK
    * @param sourceX
    * @param sourceY
@@ -879,12 +749,12 @@ namespace FP2P {
    * @param targetForceZ
    * @param targetPotential
    */
-  template<typename MatrixKernelClass>
-  inline void MutualParticlesRIJK(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
-                                  FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-                                  const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
-                                  FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
-                                  const MatrixKernelClass *const MatrixKernel){
+template<typename MatrixKernelClass>
+inline void MutualParticlesRIJK(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
+                                FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                                const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
+                                FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                                const MatrixKernelClass *const MatrixKernel){
 
     const double CoreWidth2 = MatrixKernel->getCoreWidth2(); //PB: TODO directly call evaluateBlock
 
@@ -900,53 +770,53 @@ namespace FP2P {
     FReal r[3]={dx,dy,dz};
 
     for(unsigned int i = 0 ; i < 3 ; ++i){
-      FReal ri2=r[i]*r[i];
-      for(unsigned int j = 0 ; j < 3 ; ++j){
-        FReal rj2=r[j]*r[j];
-        for(unsigned int k = 0 ; k < 3 ; ++k){
+        FReal ri2=r[i]*r[i];
+        for(unsigned int j = 0 ; j < 3 ; ++j){
+            FReal rj2=r[j]*r[j];
+            for(unsigned int k = 0 ; k < 3 ; ++k){
 
-          // potentials
-          FReal potentialCoef;
-          if(i==j){
-            if(j==k) //i=j=k
-              potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-            else //i=j!=k
-              potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
-          }
-          else{ //(i!=j)
-            if(i==k) //i=k!=j
-              potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
-            else if(j==k) //i!=k=j
-              potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
-            else //i!=k!=j
-              potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
-          }
+                // potentials
+                FReal potentialCoef;
+                if(i==j){
+                    if(j==k) //i=j=k
+                        potentialCoef = FReal(3.) * ( FReal(-1.) + ri2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                    else //i=j!=k
+                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[k] * inv_distance_pow3;
+                }
+                else{ //(i!=j)
+                    if(i==k) //i=k!=j
+                        potentialCoef = ( FReal(-1.) + FReal(3.) * ri2 * inv_distance_pow2 ) * r[j] * inv_distance_pow3;
+                    else if(j==k) //i!=k=j
+                        potentialCoef = ( FReal(-1.) + FReal(3.) * rj2 * inv_distance_pow2 ) * r[i] * inv_distance_pow3;
+                    else //i!=k!=j
+                        potentialCoef = FReal(3.) * r[i] * r[j] * r[k] * inv_distance_pow2 * inv_distance_pow3;
+                }
 
-          // forces
-          FReal coef[3]; 
-          for(unsigned int l = 0 ; l < 3 ; ++l){
-            coef[l]= -(targetPhysicalValue[j*3+k] * sourcePhysicalValue[j*3+k]);
+                // forces
+                FReal coef[3];
+                for(unsigned int l = 0 ; l < 3 ; ++l){
+                    coef[l]= -(targetPhysicalValue[j*3+k] * sourcePhysicalValue[j*3+k]);
 
-	    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
-	    //                    coef[l] *= ;
+                    //                    // Grad of RIJK kernel is RIJKL kernel => TODO Implement
+                    //                    coef[l] *= ;
 
-          }// l
+                }// l
 
-          targetForceX[i] += coef[0];
-          targetForceY[i] += coef[1];
-          targetForceZ[i] += coef[2];
-          targetPotential[i] += ( potentialCoef * sourcePhysicalValue[j*3+k] );
+                targetForceX[i] += coef[0];
+                targetForceY[i] += coef[1];
+                targetForceZ[i] += coef[2];
+                targetPotential[i] += ( potentialCoef * sourcePhysicalValue[j*3+k] );
 
-          sourceForceX[i] -= coef[0];
-          sourceForceY[i] -= coef[1];
-          sourceForceZ[i] -= coef[2];
-          sourcePotential[i] += ( -potentialCoef * targetPhysicalValue[j*3+k] );
+                sourceForceX[i] -= coef[0];
+                sourceForceY[i] -= coef[1];
+                sourceForceZ[i] -= coef[2];
+                sourcePotential[i] += ( -potentialCoef * targetPhysicalValue[j*3+k] );
 
-        }// k
-      }// j
+            }// k
+        }// j
     }// i
 
-  }
+}
 
 
 }

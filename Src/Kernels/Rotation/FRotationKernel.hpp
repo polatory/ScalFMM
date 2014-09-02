@@ -23,7 +23,7 @@
 #include "Utils/FSpherical.hpp"
 #include "Utils/FMath.hpp"
 
-#include "../P2P/FP2P.hpp"
+#include "../P2P/FP2PR.hpp"
 
 /** This is a recursion to get the minimal size of the matrix dlmk
   */
@@ -1310,7 +1310,7 @@ public:
     void P2P(const FTreeCoordinate& /*inPosition*/,
                      ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                      ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        FP2P::FullMutual(inTargets,inNeighbors,14);
+        FP2PR::FullMutual(inTargets,inNeighbors,14);
     }
 
 
@@ -1318,7 +1318,7 @@ public:
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        FP2P::FullRemote(inTargets,inNeighbors,27);
+        FP2PR::FullRemote(inTargets,inNeighbors,27);
     }
 };
 

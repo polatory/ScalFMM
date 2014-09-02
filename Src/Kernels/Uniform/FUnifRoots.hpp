@@ -73,7 +73,7 @@ struct FUnifRoots : FNoCopyable
     int omn = order-n-1;
     if(omn%2) scale=-1.; // (-1)^(n-1-(k+1)+1)=(-1)^(omn-1)
     else scale=1.;
-    scale/=FMath::pow(2.,order-1)*FMath::factorial(n)*FMath::factorial(omn);
+    scale/=FMath::pow(2.,order-1)*FMath::factorial<FReal>(n)*FMath::factorial<FReal>(omn);
 
     // compute L
     FReal L=FReal(1.);
