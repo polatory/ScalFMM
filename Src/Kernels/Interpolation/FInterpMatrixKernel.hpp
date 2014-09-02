@@ -140,6 +140,16 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
         return FReal(2.) / CellWidth;
     }
 
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const {
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
+    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+                                    FReal block[1], FReal blockDerivative[3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
+    }
 };
 
 /// One over r when the box size is rescaled to 1
@@ -202,9 +212,9 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
         block[0] = one_over_rL;
 
-        blockDerivative[0][0] = LX * one_over_rL3 * diffx;
-        blockDerivative[0][1] = LY * one_over_rL3 * diffy;
-        blockDerivative[0][2] = LZ * one_over_rL3 * diffz;
+        blockDerivative[0] = LX * one_over_rL3 * diffx;
+        blockDerivative[1] = LY * one_over_rL3 * diffy;
+        blockDerivative[2] = LZ * one_over_rL3 * diffz;
 
     }
 
@@ -219,6 +229,16 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
         return FReal(2.) / CellWidth;
     }
 
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
+    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+                                    FReal block[1], FReal blockDerivative[3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
+    }
 };
 
 
@@ -282,9 +302,9 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
         block[0] = one_over_r2;
 
         const ValueClass coef = FMath::ConvertTo<ValueClass,FReal>(-2.) * one_over_r4;
-        blockDerivative[0][0] = coef * diffx;
-        blockDerivative[0][1] = coef * diffy;
-        blockDerivative[0][2] = coef * diffz;
+        blockDerivative[0] = coef * diffx;
+        blockDerivative[1] = coef * diffy;
+        blockDerivative[2] = coef * diffz;
 
     }
 
@@ -297,6 +317,17 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
     FReal getScaleFactor(const FReal CellWidth) const
     {
         return FReal(4.) / (CellWidth*CellWidth);
+    }
+
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
+    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+                                    FReal block[1], FReal blockDerivative[3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
 };
 
@@ -387,6 +418,18 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
         return FReal(1.0);
     }
 
+
+
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
+    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+                                    FReal block[1], FReal blockDerivative[3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -530,6 +573,14 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
         return FReal(2.) / CellWidth;
     }
 
+
+
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
 };
 
 /// R_{,ijk}
@@ -676,6 +727,13 @@ struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
         return FReal(4.) / (CellWidth*CellWidth);
     }
 
+
+    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
 };
 
 

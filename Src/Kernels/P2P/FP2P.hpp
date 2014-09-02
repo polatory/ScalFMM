@@ -44,8 +44,7 @@ inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal 
     const FPoint targetPoint(targetX,targetY,targetZ);
     FReal Kxy[1];
     FReal dKxy[3];
-    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
-                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
     FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
     (*targetForceX) += dKxy[0] * coef;
@@ -85,8 +84,7 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
     const FPoint targetPoint(targetX,targetY,targetZ);
     FReal Kxy[1];
     FReal dKxy[3];
-    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
-                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
+    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
     FReal coef = (targetPhysicalValue * sourcePhysicalValue);
 
     (*targetForceX) += dKxy[0] * coef;

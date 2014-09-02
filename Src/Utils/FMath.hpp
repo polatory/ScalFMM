@@ -258,7 +258,7 @@ struct FMath{
     }
 
     static __m256d Rsqrt(const __m256d inV){
-        return _mm256_rsqrt_pd(inV);
+        return FMath::One<__m256d>() / _mm256_sqrt_pd(inV);
     }
 #endif
 
@@ -453,23 +453,33 @@ struct FMath{
 };
 
 template <>
-inline constexpr float FMath::Zero<float>(){
+inline float FMath::Zero<float>(){
     return float(0.0);
 }
 
 template <>
-inline constexpr double FMath::Zero<double>(){
+inline double FMath::Zero<double>(){
     return double(0.0);
 }
 
 template <>
-inline constexpr float FMath::One<float>(){
+inline float FMath::One<float>(){
     return float(1.0);
 }
 
 template <>
-inline constexpr double FMath::One<double>(){
+inline double FMath::One<double>(){
     return double(1.0);
+}
+
+template <>
+inline float FMath::ConvertTo<float,float>(const float val){
+    return val;
+}
+
+template <>
+inline double FMath::ConvertTo<double,double>(const double val){
+    return val;
 }
 
 #ifdef ScalFMM_USE_SSE
