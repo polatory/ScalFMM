@@ -15,6 +15,8 @@
 // ===================================================================================
 
  #define DEBUG_SPHERICAL_M2L
+#define  BLAS_SPHERICAL_COMPRESS
+#define  BLAS_M2L_P
 #include <iostream>
 
 #include "../Src/Utils/FGlobal.hpp"
@@ -48,7 +50,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
     void RunTest(const bool isBlasKernel){
-        const int DevP = 5;
+        const int DevP = 2;
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         const int nbParticles = 2;
@@ -332,10 +334,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** set test */
     void SetTests(){
-        AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
+   //    AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
         //AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
 #ifdef ScalFMM_USE_BLAS
- //    AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
+   AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
      //        AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
 #endif
     }
