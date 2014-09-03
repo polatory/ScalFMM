@@ -3,6 +3,7 @@
 
 
 #include "../P2P/FP2P.hpp"
+#include "../P2P/FP2PR.hpp"
 
 
 template <KERNEL_FUNCTION_IDENTIFIER Identifier, int NVALS>
@@ -36,7 +37,7 @@ struct DirectInteractionComputer<ONE_OVER_R, 1>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
                    ContainerClass* const NeighborSourceParticles[27],
                    const MatrixKernelClass *const /*MatrixKernel*/){
-    FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
+    FP2PR::FullMutual(TargetParticles,NeighborSourceParticles,14);
   }
 
   template <typename ContainerClass, typename MatrixKernelClass>
@@ -44,7 +45,7 @@ struct DirectInteractionComputer<ONE_OVER_R, 1>
                          ContainerClass* const inNeighbors[27],
                          const int inSize,
                          const MatrixKernelClass *const /*MatrixKernel*/){
-    FP2P::FullRemote(inTargets,inNeighbors,inSize);
+    FP2PR::FullRemote(inTargets,inNeighbors,inSize);
   }
 };
 
@@ -103,7 +104,7 @@ struct DirectInteractionComputer<ONE_OVER_R, NVALS>
                   ContainerClass* const NeighborSourceParticles[27],
                   const MatrixKernelClass *const /*MatrixKernel*/){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-      FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14);
+      FP2PR::FullMutual(TargetParticles,NeighborSourceParticles,14);
     }
   }
 
@@ -113,7 +114,7 @@ struct DirectInteractionComputer<ONE_OVER_R, NVALS>
                         const int inSize,
                         const MatrixKernelClass *const /*MatrixKernel*/){
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-      FP2P::FullRemote(inTargets,inNeighbors,inSize);
+      FP2PR::FullRemote(inTargets,inNeighbors,inSize);
     }
   }
 };

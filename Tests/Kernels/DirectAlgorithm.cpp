@@ -42,6 +42,7 @@
 #include "../../Src/Files/FDlpolyLoader.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
+#include "../../Src/Kernels/P2P/FP2P.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 

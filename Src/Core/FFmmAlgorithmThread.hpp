@@ -254,9 +254,7 @@ private:
                     if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                 }
 
-                FLOG(computationCounter.tic());
                 myThreadkernels->finishedLevelM2L(idxLevel);
-                FLOG(computationCounter.tac());
             }
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );

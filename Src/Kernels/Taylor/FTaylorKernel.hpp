@@ -20,7 +20,7 @@
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FLog.hpp"
 #include "../../Utils/FSmartPointer.hpp"
-#include "../P2P/FP2P.hpp"
+#include "../P2P/FP2PR.hpp"
 
 /**
  * @author Cyrille Piacibello 
@@ -969,7 +969,7 @@ public:
 	   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
 	   ContainerClass* const directNeighborsParticles[27], const int /*size*/)
   {
-    FP2P::FullMutual(targets,directNeighborsParticles,14);
+    FP2PR::FullMutual(targets,directNeighborsParticles,14);
   }
 
 };

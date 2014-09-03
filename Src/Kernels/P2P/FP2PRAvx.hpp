@@ -1,5 +1,5 @@
-#ifndef FP2PAVX_HPP
-#define FP2PAVX_HPP
+#ifndef FP2PRAVX_HPP
+#define FP2PRAVX_HPP
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FMath.hpp"
@@ -7,7 +7,7 @@
 #include "../../Utils/FAvx.hpp"
 
 
-namespace FP2P{
+namespace FP2PR{
 
 #ifdef ScalFMM_USE_DOUBLE_PRECISION
     template <class ContainerClass>
@@ -513,4 +513,4 @@ namespace FP2P{
 
 #endif
 }
-#endif //FP2PAVX_HPP
+#endif //FP2PRAVX_HPP

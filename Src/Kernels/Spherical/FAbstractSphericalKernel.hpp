@@ -28,7 +28,7 @@
 
 #include "../../Containers/FTreeCoordinate.hpp"
 
-#include "../P2P/FP2P.hpp"
+#include "../P2P/FP2PR.hpp"
 
 #include "FHarmonic.hpp"
 
@@ -222,7 +222,7 @@ public:
     void P2P(const FTreeCoordinate& inLeafPosition,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2P::FullMutual(targets,directNeighborsParticles,14);
+        FP2PR::FullMutual(targets,directNeighborsParticles,14);
     }
 
     /** This P2P has to be used when target != sources
@@ -236,7 +236,7 @@ public:
     void P2PRemote(const FTreeCoordinate& ,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
                   ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2P::FullRemote(targets,directNeighborsParticles,27);
+        FP2PR::FullRemote(targets,directNeighborsParticles,27);
     }
 
 private:

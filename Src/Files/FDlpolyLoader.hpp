@@ -300,7 +300,7 @@ public:
     */
     FDlpolyBinLoader(const char* const filename): file(fopen(filename, "rb")) {
         // test if open
-        if(this->file != NULL){
+        if(this->file != nullptr){
             energy = readValue<double>();
             double boxDim[3];
             boxWidth = readArray<double>(boxDim,3)[0];
@@ -325,7 +325,7 @@ public:
       * @return true if loader can work
       */
     bool isOpen() const{
-        return this->file != NULL;
+        return this->file != nullptr;
     }
 
 //    /**
