@@ -241,7 +241,7 @@ struct FMath{
     }
 
     static __m128d Rsqrt(const __m128d inV){
-        return FMath::One<__m128d>() / _mm_sqrt_pd(inV);
+        return _mm_set_pd1(1.0) / _mm_sqrt_pd(inV);
     }
 #endif
 #ifdef ScalFMM_USE_AVX
@@ -258,7 +258,7 @@ struct FMath{
     }
 
     static __m256d Rsqrt(const __m256d inV){
-        return FMath::One<__m256d>() / _mm256_sqrt_pd(inV);
+        return _mm256_set_pd1(1.0) / _mm256_sqrt_pd(inV);
     }
 #endif
 
@@ -488,10 +488,10 @@ inline __m128 FMath::One<__m128>(){
     return _mm_set_ps1(1.0);
 }
 
-//template <>
-//__m128d FMath::One<__m128d>(){
-//    return _mm_set_pd1(1.0);
-//}
+template <>
+inline __m128d FMath::One<__m128d>(){
+    return _mm_set_pd1(1.0);
+}
 
 template <>
 inline __m128 FMath::Zero<__m128>(){

@@ -25,8 +25,6 @@ static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-
-    const __m256d mOne = _mm256_set1_pd(1.0);
     //P2P between target cells and others ones
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
@@ -196,8 +194,6 @@ static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-    const __m256d mOne = _mm256_set1_pd(1.0);
-
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
             const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+3)/4;
@@ -265,8 +261,6 @@ static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass
     FReal*const targetsForcesY = inTargets->getForcesY();
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
-
-    const __m256 mOne = _mm256_set1_ps(1.0);
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
@@ -431,8 +425,6 @@ static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass
     FReal*const targetsForcesY = inTargets->getForcesY();
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
-
-    const __m256 mOne = _mm256_set1_ps(1.0);
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
