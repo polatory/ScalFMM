@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -119,6 +119,10 @@ extern "C"
 	void zgemm_(const char*, const char*, const unsigned*, const unsigned*,
 							const unsigned*, const double*, double*, const unsigned*,
 							double*, const unsigned*, const double*, double*, const unsigned*);
+	void zgesvd_(const char*, const char*, const unsigned*, const unsigned*,
+							 double*, const unsigned*, double*, double*, const unsigned*,
+							 double*, const unsigned*, double*,   int*,  double*,   int*);
+
 	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
   void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
@@ -170,7 +174,7 @@ namespace FMkl{
 
 namespace FBlas{
 
-  // TODO create interface for hadamard product in case an external Blas is used
+  // TODO create interface for Hadamard product in case an external Blas is used
 
 }
 
@@ -423,6 +427,7 @@ namespace FBlas {
 
 
 	// singular value decomposition
+//
 	inline int gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT,
 									 unsigned nwk, double* wk)
 	{
@@ -430,6 +435,18 @@ namespace FBlas {
 		dgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
 		return INF;
 	}
+	//
+	//    A = U * SIGMA * conjugate-transpose(V)
+	// JOB_STR+2 = 'O':  the first min(m,n) columns of U (the left singular vectors) are overwritten on the array A;
+	inline int c_gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT,
+			int& nwk, double* wk,double* rwk)
+	{
+		int INF;
+		zgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
+//		zgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
+		return INF;
+	}
+
 	inline int gesvd(unsigned m, unsigned n, float* A, float* S, float* VT, unsigned ldVT,
 									 unsigned nwk, float* wk)
 	{

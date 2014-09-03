@@ -1,5 +1,4 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -107,11 +106,22 @@ public:
     FComplexe negate() const{
         return FComplexe(-complex[0],-complex[1]);
     }
-
+    /**
+     *  return the square of the  modulus of the complex number
+     */
+    FReal norm2() const{
+    		return complex[0]*complex[0]+complex[1]*complex[1] ;
+    }
+    /**
+     *  return the modulus of the complex number
+     */
+    FReal norm() const{
+    		return FMath::Sqrt(this->norm2() );
+    }
     /**
      * Operator +=
      * in complex[0] with other complex[0], same for complex[1]
-     * @param other the complexe to use data
+     * @param other the complex to use data
      */
     FComplexe& operator+=(const FComplexe& other){
         this->complex[0] += other.complex[0];
