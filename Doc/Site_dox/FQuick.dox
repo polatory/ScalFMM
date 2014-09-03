@@ -3,9 +3,18 @@
  * In this section, we present the data structure organization and the 
  * classes design to understand fully ScalFmm and customized it.
  
- * Remark : There is a big difference between the version 1.0 and 2.0
+ * Remark : There is a big difference between the versions 1.0 and 2.0
  * since we do not store array of particles anymore but rather several arrays.
  * This was needed in order to be able to vectorize the P2P code. 
+ 
+ * We would like to inform users that are not familiar with 'C++' and 
+ * who are familiar with 'C' and would like to create a kernel
+ * (and do not want to work on the parallelization),
+ * that an C API have been made for them.
+ * In order to get access to this API, go in Addons/CKernelApi.
+ * (To compile, enable the addons and then the CKernelApi).
+ * However, to have access to all the features of ScalFmm it is required to use C++
+ * as described in this QuickStart.
  
  * \tableofcontents 
  
