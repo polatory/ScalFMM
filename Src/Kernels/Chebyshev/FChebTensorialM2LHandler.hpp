@@ -96,7 +96,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyabl
 	{
 		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 		std::stringstream stream;
-		stream << "m2l_k"<< MatrixKernelClass::Identifier << "_" << precision_type
+		stream << "m2l_k"<< MatrixKernelClass::getID() << "_" << precision_type
 					 << "_o" << order << "_e" << epsilon << ".bin";
 		return stream.str();
 	}
@@ -220,7 +220,7 @@ class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCop
 	{
 		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 		std::stringstream stream;
-		stream << "m2l_k"<< MatrixKernelClass::Identifier << "_" << precision_type
+		stream << "m2l_k"<< MatrixKernelClass::getID() << "_" << precision_type
 					 << "_o" << order << "_e" << epsilon << ".bin";
 		return stream.str();
 	}

@@ -188,7 +188,7 @@ class FUnifM2LHandler<ORDER,HOMOGENEOUS>
 	{
 		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 		std::stringstream stream;
-		stream << "m2l_k"/*<< MatrixKernelClass::Identifier*/ << "_" << precision_type
+		stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
 					 << "_o" << order << ".bin";
 		return stream.str();
 	}
@@ -353,7 +353,7 @@ class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
 	{
 		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
 		std::stringstream stream;
-		stream << "m2l_k"/*<< MatrixKernelClass::Identifier*/ << "_" << precision_type
+		stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
 					 << "_o" << order << ".bin";
 		return stream.str();
 	}
