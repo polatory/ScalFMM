@@ -20,7 +20,7 @@
 
 #include "Utils/FMemUtils.hpp"
 #include "Utils/FBlas.hpp"
-
+#include "Utils/FComplexe.hpp"
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * This class is a spherical harmonic kernels using blas
@@ -98,6 +98,8 @@ protected:
 									matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] = workMatrix[idxCol + idxRow * FF_MATRIX_COLUMN_DIM];
 								}
 							}
+#ifdef BLAS_M2L_P
+
 							//
 							//   Single Layer
 							//
@@ -124,6 +126,7 @@ protected:
 									++idxRow  ;
 								}
 							}      //
+#endif
 							preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)] = matrix;
 						}
 					}
@@ -243,20 +246,41 @@ public:
 	 */
 	void multipoleToLocal(FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src,
 			const FComplexe* const FRestrict M2L_Outer_transfer){
+		//
 		// Copy original vector and compute exp2nexp
 		FMemUtils::copyall<FComplexe>(temporaryMultiSource, multipole_exp_src, CellClass::GetPoleSize());
 		// Get a computable vector
 		preExpNExp(temporaryMultiSource);
 
+#ifdef BLAS_SPHERICAL_COMPRESS
+		FComplexe * res =  new FComplexe [FF_MATRIX_ROW_DIM] ;
+		this->CompressM2LMatrix(M2L_Outer_transfer,res,local_exp, temporaryMultiSource) ;
+#endif
 		const FReal one[2] = {1.0 , 0.0};
-
+		// Matrix-vector product
 		FBlas::c_gemva(
 				FF_MATRIX_ROW_DIM,
 				FF_MATRIX_COLUMN_DIM,
 				one,
 				FComplexe::ToFReal(M2L_Outer_transfer),
 				FComplexe::ToFReal(temporaryMultiSource),
-				FComplexe::ToFReal(local_exp));
+				FComplexe::ToFReal(local_exp) );
+
+#ifdef BLAS_SPHERICAL_COMPRESS
+		// Compare the two computations
+
+		std::cout << "\n ====== Compare ====== \n"<<std::endl;
+		FComplexe tmp ;
+		for(int idxCol =0 ;idxCol< FF_MATRIX_ROW_DIM ; ++idxCol ){ // Col
+			tmp.setRealImag( local_exp[idxCol].getReal() -  res[idxCol].getReal(), local_exp[idxCol].getImag() -  res[idxCol].getImag()) ;
+			std::cout << idxCol << "   " << local_exp[idxCol] <<" " <<   res[idxCol] << "Error: " << tmp.norm()<<  std::endl;
+		}
+		std::cout << std::endl ;
+
+		std::cout << "============================ \n"<<std::endl;
+
+		delete [] res;
+#endif
 
 #ifdef DEBUG_SPHERICAL_M2L
 
@@ -266,6 +290,7 @@ public:
 			std::cout << temporaryMultiSource[idxCol] <<" ";
 		}
 		std::cout << std::endl ;
+#ifdef PTINT_MATRIX
 
 		std::cout << "\n ====== MultipolToLocal MatrixTransfer ====== \n"<<std::endl;
 		std::cout << "    FF_MATRIX_ROW_DIM:        " << FF_MATRIX_ROW_DIM<<std::endl;
@@ -278,7 +303,7 @@ public:
 			std::cout << std::endl ;
 		}
 		std::cout << std::endl ;
-
+#endif
 		std::cout << "\n ====== Local expansion ====== \n"<<std::endl;
 
 		for(int idxCol =0 ;idxCol< FF_MATRIX_ROW_DIM ; ++idxCol ){ // Col
@@ -290,6 +315,110 @@ public:
 
 #endif
 	}
+	/** M2L
+	 *   Compress by SVD all the M2L transfer matrix
+	 */
+	void CompressM2LMatrix(const FComplexe* const FRestrict M2L_Matrix,FComplexe*const res,
+			FComplexe*const FRestrict local_exp, const FComplexe* const FRestrict multipole_exp_src)
+	{
+		int LWORK = 5*FF_MATRIX_ROW_DIM;
+		FComplexe *const work    = new FComplexe [LWORK];
+		FReal          *const rwork  = new FReal [ LWORK];
+		// singular value decomposition
+		FComplexe *const matrix = new FComplexe [FF_MATRIX_ROW_DIM*FF_MATRIX_COLUMN_DIM];
+		FComplexe *const Q         = new FComplexe [FF_MATRIX_COLUMN_DIM*FF_MATRIX_COLUMN_DIM];
+		FReal *const S                   = new FReal [ FF_MATRIX_ROW_DIM];
+		//
+		// Work on a copy of the M2L matrix
+		FMemUtils::copyall<FComplexe>(matrix, M2L_Matrix,  FF_MATRIX_COLUMN_DIM*FF_MATRIX_COLUMN_DIM);
+		//
+#ifdef PRINT_MATRIX
+		std::cout << "\n ====== matrix copy of MatrixTransfer ====== \n"<<std::endl;
+		std::cout << "    FF_MATRIX_ROW_DIM:        " << FF_MATRIX_ROW_DIM<<std::endl;
+		std::cout << "    FF_MATRIX_COLUMN_DIM: " << FF_MATRIX_COLUMN_DIM<<std::endl;
+		for(int idxRow =0 ;idxRow< FF_MATRIX_ROW_DIM ; ++idxRow ){ // Row
+			for(int idxCol =0 ;idxCol< FF_MATRIX_COLUMN_DIM ; ++idxCol ){ // Col
+				std::cout << idxRow<< "  " << idxCol <<  "  " << matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow]  << std::endl ;
+			}
+		}
+		std::cout << std::endl ;
+#endif
+		// Perform SVD
+		FBlas::c_gesvd(
+				FF_MATRIX_ROW_DIM,
+				FF_MATRIX_COLUMN_DIM,
+				FComplexe::ToFReal(matrix),
+				S,
+				FComplexe::ToFReal(Q),
+				FF_MATRIX_COLUMN_DIM,
+				LWORK,
+				FComplexe::ToFReal(work),
+				rwork );
+		//
+		std::cout << "\n ====== V**H Matrix ====== \n"<<std::endl;
+		std::cout << "    FF_MATRIX_ROW_DIM:        " << FF_MATRIX_ROW_DIM<<std::endl;
+		std::cout << "    FF_MATRIX_COLUMN_DIM: " << FF_MATRIX_COLUMN_DIM<<std::endl;
+		for(int idxRow =0 ;idxRow< FF_MATRIX_ROW_DIM ; ++idxRow ){ // Row
+			std::cout << "Row="<<idxRow<<" : " ;
+			for(int idxCol =0 ;idxCol< FF_MATRIX_COLUMN_DIM ; ++idxCol ){ // Col
+				std::cout << matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] <<" ";
+			}
+			std::cout << std::endl ;
+		}
+		std::cout << std::endl ;
+		int rank = FF_MATRIX_ROW_DIM ;
+		/*
+		double eps= 1.0e-6 ;
+		for( int idxRow =0 ; idxRow< FF_MATRIX_ROW_DIM ; ++idxRow ){
+			if(S[idxRow]/ S[0] < eps) {
+				S[idxRow] = 0.0 ;
+				rank = rank - 1 ;
+			}
+			std::cout << " idxRow=" << idxRow << "    "<< S[idxRow]/ S[0] <<std::endl;
+		}
+		 */
+		std::cout << " New rank " << rank << std::endl ;
+		//
+		// store matrices U,V and sigma.
+		//
+
+		//
+		// Compute the product
+		//   call zgemv ('N',rank, N, ALPHA, VT, N, X, 1, BETA, YC, 1)
+
+		// Matrix-vector product
+		const FReal one[2] = {1.0 , 0.0};
+
+		FComplexe * tempory = new FComplexe[FF_MATRIX_ROW_DIM];
+
+		FBlas::c_gemva(
+				FF_MATRIX_ROW_DIM,
+				FF_MATRIX_COLUMN_DIM,
+				one,
+				FComplexe::ToFReal(matrix),
+				FComplexe::ToFReal(temporaryMultiSource),
+				FComplexe::ToFReal(tempory) );
+		//	Apply S
+		for (int i = 0; i < rank ; ++i){
+			std::cout << i << "  "<< S[i] <<  "    "<< tempory[i]  << std::endl;
+			res[i]        *= 0.0;
+			tempory[i] *= S[i];
+		}
+		// Apply the U matrix
+		FBlas::c_gemva(
+				FF_MATRIX_ROW_DIM,
+				rank,
+				one,
+				FComplexe::ToFReal(Q),
+				FComplexe::ToFReal(tempory),
+				FComplexe::ToFReal(res) );
+		//
+		delete [] matrix ;
+		delete [] work ;
+		delete [] rwork ;
+		std::cout << " \n     End Compress M2L" <<std::endl;
+	}
+
 };
 
 #endif // FSPHERICALBLASKERNEL_HPP

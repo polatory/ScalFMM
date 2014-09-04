@@ -1,13 +1,18 @@
 // ===================================================================================
-// Logiciel initial: ScalFmm Version 0.5
-// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
-// Propriétaires : INRIA.
-// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
-// Initial software: ScalFmm Version 0.5
-// Co-authors: Olivier Coulaud, Bérenger Bramas.
-// Owners: INRIA.
-// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
+// Copyright ScalFmm 2014 I
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
 // ===================================================================================
+//
 #ifndef CKERNELAPI_H
 #define CKERNELAPI_H
 
@@ -31,7 +36,7 @@ typedef void* Scalfmm_Handle;
 //< it gives the level of the cell, its morton index, it position in term of box at that level
 //< and the spatial position of its center
 typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position);
-//< Function to destroy what have bee initalized by the user (should be give in Scalfmm_dealloc_handle)
+//< Function to destroy what have bee initialized by the user (should be give in Scalfmm_dealloc_handle)
 typedef void (*Callback_free_cell)(void*);
 
 //< This function init an handle (and an tree based on the given properties)
@@ -41,7 +46,7 @@ void Scalfmm_dealloc_handle(Scalfmm_Handle handle, Callback_free_cell cellDestro
 
 //< This function should be used to insert an array of particle in the tree
 //< The indexes are the one used on the particles operator
-//< The posision of the particles should be composed of one triple per particle:
+//< The position of the particles should be composed of one triple per particle:
 //< xyzxyzxyz...
 void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, int nbParticles, int* particleIndexes, double* particleXYZ);
 //< To insert one particle only
