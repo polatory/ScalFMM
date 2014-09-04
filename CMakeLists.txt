@@ -95,7 +95,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 else()
     # NOT      INTEL
-    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
+    if(NOT ${ScalFMM_USE_MPI})
+        SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant")
+    endif()
     SET(AVX_FLAGS "-mtune=native -march=native")
 IF (APPLE)
     SET(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
