@@ -222,11 +222,9 @@ int main(int argc, char ** argv){
 		extraRadius  = FParameters::getValue(argc,argv,"-extraLength",  0.0);
 		BoxWith += 2*extraRadius ;
 	}
-	bool binaryMode = false;
 	std::string name(genericFileName);
 
 	if(  FParameters::existParameter(argc, argv, "-bin")){
-		binaryMode = true;
 		name += ".bfma";
 	}
 	else {
