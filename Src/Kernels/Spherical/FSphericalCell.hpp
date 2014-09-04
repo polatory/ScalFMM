@@ -16,7 +16,7 @@
 #ifndef FSPHERICALCELL_HPP
 #define FSPHERICALCELL_HPP
 
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 #include "../../Utils/FMemUtils.hpp"
 
 #include "../../Extensions/FExtendCellType.hpp"
@@ -33,8 +33,8 @@ protected:
     static int PoleSize;
     static bool UseBlas;
 
-    FComplexe* multipole_exp; //< For multipole extenssion
-    FComplexe* local_exp;     //< For local extenssion
+    FComplex* multipole_exp; //< For multipole extenssion
+    FComplex* local_exp;     //< For local extenssion
 
 public:
     static void Init(const int inDevP, const bool inUseBlas = false){
@@ -62,15 +62,15 @@ public:
     /** Default constructor */
     FSphericalCell()
         : multipole_exp(nullptr), local_exp(nullptr){
-        multipole_exp = new FComplexe[PoleSize];
-        local_exp = new FComplexe[LocalSize];
+        multipole_exp = new FComplex[PoleSize];
+        local_exp = new FComplex[LocalSize];
     }
 
     /** Constructor */
     FSphericalCell(const FSphericalCell& other)
         : multipole_exp(nullptr), local_exp(nullptr){
-        multipole_exp = new FComplexe[PoleSize];
-        local_exp = new FComplexe[LocalSize];
+        multipole_exp = new FComplex[PoleSize];
+        local_exp = new FComplex[LocalSize];
         (*this) = other;
     }
 
@@ -88,20 +88,20 @@ public:
     }
 
     /** Get Multipole */
-    const FComplexe* getMultipole() const {
+    const FComplex* getMultipole() const {
         return multipole_exp;
     }
     /** Get Local */
-    const FComplexe* getLocal() const {
+    const FComplex* getLocal() const {
         return local_exp;
     }
 
     /** Get Multipole */
-    FComplexe* getMultipole() {
+    FComplex* getMultipole() {
         return multipole_exp;
     }
     /** Get Local */
-    FComplexe* getLocal() {
+    FComplex* getLocal() {
         return local_exp;
     }
 
@@ -153,7 +153,7 @@ public:
     }
   
   static  int GetSize(){
-    return (int) sizeof(FComplexe) * (PoleSize+LocalSize);
+    return (int) sizeof(FComplex) * (PoleSize+LocalSize);
   }
 };
 

@@ -149,7 +149,7 @@ public:
     FUnifTensor<ORDER>::setRoots(AbstractBaseClass::getCellCenter(TargetCell->getCoordinate(),TreeLevel), CellWidth, X);
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-//      FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxRhs);
+//      FComplex *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxRhs);
 
       for (int idx=0; idx<343; ++idx){
         if (SourceCells[idx]){

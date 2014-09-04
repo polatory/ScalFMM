@@ -27,7 +27,7 @@
 #include "../../Utils/FTic.hpp"
 #include "../../Utils/FDft.hpp"
 
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 
 
 #include "./FUnifTensor.hpp"
@@ -35,7 +35,7 @@
 /*!  Precomputation of the 316 interactions by evaluation of the matrix kernel on the uniform grid and transformation into Fourier space. 
 PB: Compute() does not belong to the M2LHandler like it does in the Chebyshev kernel. This allows much nicer specialization of the M2LHandler class with respect to the homogeneity of the kernel of interaction like in the ChebyshevSym kernel.*/
 template <int ORDER, typename MatrixKernelClass>
-static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth, FComplexe* &FC)
+static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth, FComplex* &FC)
 {
 	// allocate memory and store compressed M2L operators
   if (FC) throw std::runtime_error("M2L operators are already set");
@@ -54,12 +54,12 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
 
 	// allocate memory and compute 316 m2l operators
 	FReal           *_C;
-	FComplexe *_FC;
+	FComplex *_FC;
 
   // reduce storage from nnodes^2=order^6 to (2order-1)^3
   const unsigned int rc = (2*order-1)*(2*order-1)*(2*order-1);
 	_C = new FReal [rc];
-	_FC = new FComplexe [rc * ninteractions];
+	_FC = new FComplex [rc * ninteractions];
 
   // initialize root node ids pairs
   unsigned int node_ids_pairs[rc][2];
@@ -121,7 +121,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
   // reduce storage if real valued kernel
   const unsigned int opt_rc = rc/2+1;
   // allocate M2L
-	FC = new FComplexe[343 * opt_rc];
+	FC = new FComplex[343 * opt_rc];
 
 	for (int i=-3; i<=3; ++i)
 		for (int j=-3; j<=3; ++j)
@@ -171,7 +171,7 @@ class FUnifM2LHandler<ORDER,HOMOGENEOUS>
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
   /// M2L Operators (stored in Fourier space)
-  FSmartPointer< FComplexe,FSmartArrayMemory> FC;
+  FSmartPointer< FComplex,FSmartArrayMemory> FC;
 
   /// Utils
   typedef FUnifTensor<ORDER> TensorType;
@@ -240,12 +240,12 @@ public:
     if (FC) throw std::runtime_error("M2L operator already set");
     // Compute matrix of interactions
 		const FReal ReferenceCellWidth = FReal(2.);
-    FComplexe* pFC = NULL;
+    FComplex* pFC = NULL;
 		Compute<order>(MatrixKernel,ReferenceCellWidth,pFC);
     FC.assign(pFC);
 
     // Compute memory usage
-    unsigned long sizeM2L = 343*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = 343*opt_rc*sizeof(FComplex);
 
 
 		// write info
@@ -261,7 +261,7 @@ public:
 	 * @param[in] X transformed local expansion of size \f$r\f$
 	 * @param[out] x local expansion of size \f$\ell^3\f$
 	 */
-  void unapplyZeroPaddingAndDFT(const FComplexe *const FX, FReal *const x) const
+  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
   { 
     FReal Px[rc];
     FBlas::setzero(rc,Px);
@@ -288,11 +288,11 @@ public:
 	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
 	 */
   void applyFC(const unsigned int idx, const unsigned int, const FReal scale,
-               const FComplexe *const FY, FComplexe *const FX) const
+               const FComplex *const FY, FComplex *const FX) const
   {
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      FX[j].addMul(FComplexe(scale*FC[idx*opt_rc + j].getReal(),
+      FX[j].addMul(FComplex(scale*FC[idx*opt_rc + j].getReal(),
                              scale*FC[idx*opt_rc + j].getImag()),
                    FY[j]);
     }
@@ -306,7 +306,7 @@ public:
 	 * @param[in] y multipole expansion of size \f$\ell^3\f$
 	 * @param[out] Y transformed multipole expansion of size \f$r\f$
 	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplexe *const FY) const
+  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
   {
     FReal Py[rc];
     FBlas::setzero(rc,Py);
@@ -333,7 +333,7 @@ class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
   /// M2L Operators (stored in Fourier space for each level)
-  FSmartPointer< FComplexe*,FSmartArrayMemory> FC;
+  FSmartPointer< FComplex*,FSmartArrayMemory> FC;
   /// Homogeneity specific variables
   const unsigned int TreeHeight;
   const FReal RootCellWidth;
@@ -375,7 +375,7 @@ public:
     TensorType::setNodeIdsDiff(node_diff);
     
     // init M2L operators
-    FC = new FComplexe*[TreeHeight];
+    FC = new FComplex*[TreeHeight];
     FC[0]       = NULL; FC[1]       = NULL;
 		for (unsigned int l=2; l<TreeHeight; ++l) FC[l] = NULL;
 
@@ -430,7 +430,7 @@ public:
 		}
 
     // Compute memory usage
-    unsigned long sizeM2L = (TreeHeight-1)*343*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = (TreeHeight-1)*343*opt_rc*sizeof(FComplex);
 
 
 		// write info
@@ -446,7 +446,7 @@ public:
 	 * @param[in] X transformed local expansion of size \f$r\f$
 	 * @param[out] x local expansion of size \f$\ell^3\f$
 	 */
-  void unapplyZeroPaddingAndDFT(const FComplexe *const FX, FReal *const x) const
+  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
   { 
     FReal Px[rc];
     FBlas::setzero(rc,Px);
@@ -473,7 +473,7 @@ public:
 	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
 	 */
   void applyFC(const unsigned int idx, const unsigned int TreeLevel, const FReal,
-               const FComplexe *const FY, FComplexe *const FX) const
+               const FComplex *const FY, FComplex *const FX) const
   {
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
@@ -489,7 +489,7 @@ public:
 	 * @param[in] y multipole expansion of size \f$\ell^3\f$
 	 * @param[out] Y transformed multipole expansion of size \f$r\f$
 	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplexe *const FY) const
+  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
   {
     FReal Py[rc];
     FBlas::setzero(rc,Py);

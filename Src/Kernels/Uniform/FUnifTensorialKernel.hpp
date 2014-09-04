@@ -170,7 +170,7 @@ public:
           const int idxLoc = idxV*nLhs + idxLhs;
 
           // load transformed local expansion
-          FComplexe *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
+          FComplex *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
 
           // update idxRhs
           const int idxRhs = idxLhs % nPV; 

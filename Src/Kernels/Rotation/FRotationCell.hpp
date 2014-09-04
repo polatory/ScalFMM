@@ -16,7 +16,7 @@
 #ifndef FROTATIONCELL_HPP
 #define FROTATIONCELL_HPP
 
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 #include "../../Utils/FMemUtils.hpp"
 
 #include "../../Extensions/FExtendCellType.hpp"
@@ -43,9 +43,9 @@ protected:
     static const int LocalSize = ((P+2)*(P+1))/2;     // Artimethique suite (n+1)*n/2
 
     //< Multipole vector (static memory)
-    FComplexe multipole_exp[MultipoleSize]; //< For multipole extenssion
+    FComplex multipole_exp[MultipoleSize]; //< For multipole extenssion
     //< Local vector (static memory)
-    FComplexe local_exp[LocalSize];         //< For local extenssion
+    FComplex local_exp[LocalSize];         //< For local extenssion
 
 public:
     /** Default constructor
@@ -75,20 +75,20 @@ public:
     }
 
     /** Get Multipole array */
-    const FComplexe* getMultipole() const {
+    const FComplex* getMultipole() const {
         return multipole_exp;
     }
     /** Get Local array */
-    const FComplexe* getLocal() const {
+    const FComplex* getLocal() const {
         return local_exp;
     }
 
     /** Get Multipole array */
-    FComplexe* getMultipole() {
+    FComplex* getMultipole() {
         return multipole_exp;
     }
     /** Get Local array */
-    FComplexe* getLocal() {
+    FComplex* getLocal() {
         return local_exp;
     }
 
@@ -145,7 +145,7 @@ public:
         buffer.fillArray(local_exp, LocalSize);
     }
   static constexpr int GetSize(){
-    return ((int) sizeof(FComplexe)) * (MultipoleSize + LocalSize);
+    return ((int) sizeof(FComplex)) * (MultipoleSize + LocalSize);
   }
 };
 

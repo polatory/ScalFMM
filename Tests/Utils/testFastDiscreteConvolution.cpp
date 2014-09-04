@@ -31,7 +31,7 @@
 
 // 
 #include "../../Src/Utils/FDft.hpp"
-#include "../../Src/Utils/FComplexe.hpp" 
+#include "../../Src/Utils/FComplex.hpp" 
 
 
 
@@ -99,9 +99,9 @@ int main(int, char **){
   std::cout<<std::endl;
 
   // now compute via DFT and use convolution theorem
-  FComplexe FK[N];
-  FComplexe FY[N];
-  FComplexe FX[N];
+  FComplex FK[N];
+  FComplex FY[N];
+  FComplex FX[N];
   FReal iFX[N];
 
   // Init DFTor
@@ -116,7 +116,7 @@ int main(int, char **){
 
   // Initialize manually
 //  for(unsigned int s=0; s<N; ++s){
-//    FX[s] = FY[s] = FK[s] =FComplexe(0.0,0.0); // init
+//    FX[s] = FY[s] = FK[s] =FComplex(0.0,0.0); // init
 //    iFX[s]=0.0;
 //  }
   // ... or using Blas routines

@@ -27,7 +27,7 @@
 #include "../../Utils/FTic.hpp"
 #include "../../Utils/FDft.hpp"
 
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 
 
 #include "./FUnifTensor.hpp"
@@ -39,7 +39,7 @@ template <int ORDER, class MatrixKernelClass>
 static void Compute(const MatrixKernelClass *const MatrixKernel, 
                     const FReal CellWidth, 
                     const FReal CellWidthExtension, 
-                    FComplexe** &FC)
+                    FComplex** &FC)
 {
   // dimensions of operators
   const unsigned int order = ORDER;
@@ -62,16 +62,16 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 
 	// allocate memory and compute 316 m2l operators
 	FReal** _C;
-	FComplexe** _FC;
+	FComplex** _FC;
 
   // reduce storage from nnodes^2=order^6 to (2order-1)^3
   const unsigned int rc = (2*order-1)*(2*order-1)*(2*order-1);
 	_C  = new FReal* [ncmp];
-	_FC = new FComplexe* [ncmp];
+	_FC = new FComplex* [ncmp];
   for (unsigned int d=0; d<ncmp; ++d) 
     _C[d]  = new FReal[rc];
   for (unsigned int d=0; d<ncmp; ++d) 
-    _FC[d] = new FComplexe[rc * ninteractions];
+    _FC[d] = new FComplex[rc * ninteractions];
 
   // initialize root node ids pairs
   unsigned int node_ids_pairs[rc][2];
@@ -143,7 +143,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
   const unsigned int opt_rc = rc/2+1;
   // allocate M2L
   for (unsigned int d=0; d<ncmp; ++d) 
-    FC[d] = new FComplexe[343 * opt_rc];
+    FC[d] = new FComplex[343 * opt_rc];
 
 	for (int i=-3; i<=3; ++i)
 		for (int j=-3; j<=3; ++j)
@@ -193,7 +193,7 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS>
         ncmp = MatrixKernelClass::NCMP};
 
   /// M2L Operators (stored in Fourier space for each component of tensor)
-  FSmartPointer< FComplexe*,FSmartArrayMemory> FC;
+  FSmartPointer< FComplex*,FSmartArrayMemory> FC;
 
   const FReal CellWidthExtension; //<! extension of cells width
 
@@ -228,7 +228,7 @@ public:
     Dft.buildDFT(steps);
 
     // allocate FC
-    FC = new FComplexe*[ncmp];
+    FC = new FComplex*[ncmp];
     for (unsigned int d=0; d<ncmp; ++d)
       FC[d]=nullptr;
 
@@ -281,7 +281,7 @@ public:
     Compute<order>(MatrixKernel,ReferenceCellWidth, 0., FC);
     
     // Compute memory usage
-    unsigned long sizeM2L = 343*ncmp*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = 343*ncmp*opt_rc*sizeof(FComplex);
 
 		// write info
 		std::cout << "Compute and Set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
@@ -295,7 +295,7 @@ public:
 	 * @param[in] X transformed local expansion of size \f$r\f$
 	 * @param[out] x local expansion of size \f$\ell^3\f$
 	 */
-  void unapplyZeroPaddingAndDFT(const FComplexe *const FX, FReal *const x) const
+  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
   { 
     FReal Px[rc];
     FBlas::setzero(rc,Px);
@@ -323,11 +323,11 @@ public:
 	 */
   void applyFC(const unsigned int idx, const unsigned int , 
                const FReal scale, const unsigned int d,
-               const FComplexe *const FY, FComplexe *const FX) const
+               const FComplex *const FY, FComplex *const FX) const
   {
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
-      FX[j].addMul(FComplexe(scale*FC[d][idx*opt_rc + j].getReal(),
+      FX[j].addMul(FComplex(scale*FC[d][idx*opt_rc + j].getReal(),
                              scale*FC[d][idx*opt_rc + j].getImag()), 
                    FY[j]);
     }
@@ -335,7 +335,7 @@ public:
 
 //    // Perform entrywise product using BLAS and MKL routines
 //    // PB: not necessary faster than the naive version
-//    FComplexe tmpFX[rc]; 
+//    FComplex tmpFX[rc]; 
 //    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
 //    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
 //                reinterpret_cast<const FReal* const>(FY),
@@ -354,7 +354,7 @@ public:
 	 * @param[in] y multipole expansion of size \f$\ell^3\f$
 	 * @param[out] Y transformed multipole expansion of size \f$r\f$
 	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplexe *const FY) const
+  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
   {
     FReal Py[rc];
     FBlas::setzero(rc,Py);
@@ -384,7 +384,7 @@ class FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
 
 
   /// M2L Operators (stored in Fourier space for each component and each level)
-  FSmartPointer< FComplexe**,FSmartArrayMemory> FC;
+  FSmartPointer< FComplex**,FSmartArrayMemory> FC;
 
   /// Homogeneity specific variables
   const unsigned int TreeHeight;
@@ -424,9 +424,9 @@ public:
     Dft.buildDFT(steps);
 
     // allocate FC
-    FC = new FComplexe**[TreeHeight];
+    FC = new FComplex**[TreeHeight];
 		for (unsigned int l=0; l<TreeHeight; ++l){ 
-      FC[l] = new FComplexe*[ncmp];
+      FC[l] = new FComplex*[ncmp];
       for (unsigned int d=0; d<ncmp; ++d)
         FC[l][d]=nullptr;
     }
@@ -485,7 +485,7 @@ public:
 		}
 
     // Compute memory usage
-    unsigned long sizeM2L = (TreeHeight-2)*343*ncmp*opt_rc*sizeof(FComplexe);
+    unsigned long sizeM2L = (TreeHeight-2)*343*ncmp*opt_rc*sizeof(FComplex);
 
 		// write info
 		std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
@@ -499,7 +499,7 @@ public:
 	 * @param[in] X transformed local expansion of size \f$r\f$
 	 * @param[out] x local expansion of size \f$\ell^3\f$
 	 */
-  void unapplyZeroPaddingAndDFT(const FComplexe *const FX, FReal *const x) const
+  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
   { 
     FReal Px[rc];
     FBlas::setzero(rc,Px);
@@ -527,7 +527,7 @@ public:
 	 */
   void applyFC(const unsigned int idx, const unsigned int TreeLevel, 
                const FReal, const unsigned int d,
-               const FComplexe *const FY, FComplexe *const FX) const
+               const FComplex *const FY, FComplex *const FX) const
   {
     // Perform entrywise product manually
     for (unsigned int j=0; j<opt_rc; ++j){
@@ -536,7 +536,7 @@ public:
 
 //    // Perform entrywise product using BLAS and MKL routines
 //    // PB: not necessary faster than the naive version
-//    FComplexe tmpFX[rc]; 
+//    FComplex tmpFX[rc]; 
 //    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
 //    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
 //                reinterpret_cast<const FReal* const>(FY),
@@ -555,7 +555,7 @@ public:
 	 * @param[in] y multipole expansion of size \f$\ell^3\f$
 	 * @param[out] Y transformed multipole expansion of size \f$r\f$
 	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplexe *const FY) const
+  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
   {
     FReal Py[rc];
     FBlas::setzero(rc,Py);

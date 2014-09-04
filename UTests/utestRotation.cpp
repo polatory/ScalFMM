@@ -4,17 +4,18 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
 #include "../Src/Utils/FGlobal.hpp"
+#include "../Src/Utils/FTic.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -38,7 +39,7 @@
 class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** The test method to factorize all the test based on different kernels */
     template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
-              class OctreeClass, class FmmClass>
+	      class OctreeClass, class FmmClass, int ORDER>
     void RunTest(){
 	//
 	// Load particles
@@ -54,16 +55,16 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 	std::string filename(SCALFMMDataPath+parFile);
 	//
 	FFmaGenericLoader loader(filename);
-        if(!loader.isOpen()){
-            Print("Cannot open particles file.");
-            uassert(false);
-            return;
-        }
+	if(!loader.isOpen()){
+	    Print("Cannot open particles file.");
+	    uassert(false);
+	    return;
+	}
 	Print("Number of particles:");
-        Print(loader.getNumberOfParticles());
+	Print(loader.getNumberOfParticles());
 
-        const int NbLevels      = 4;
-        const int SizeSubLevels = 2;
+	const int NbLevels      = 4;
+	const int SizeSubLevels = 2;
 	//
 	FSize nbParticles = loader.getNumberOfParticles() ;
 	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
@@ -79,13 +80,15 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 	}
 
 
-        // Run FMM
-        Print("Fmm...");
-        //KernelClass kernels(NbLevels,loader.getBoxWidth());
-        KernelClass kernels(NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
-        FmmClass algo(&tree,&kernels);
-        algo.execute();
-
+	// Run FMM
+	Print("Fmm...");
+	//KernelClass kernels(NbLevels,loader.getBoxWidth());
+	KernelClass* kernels = new KernelClass(NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
+	FmmClass algo(&tree,kernels);
+	FTic timer;
+	algo.execute();
+	timer.tac();
+	std::cout << "Computation Time : " <<  ORDER <<" ; "<< timer.elapsed() << std::endl;
 	//
 	FReal energy= 0.0 , energyD = 0.0 ;
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +125,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 		    }
 		});
 	}
-
+	delete kernels;
 	delete[] particles;
 
 	// Print for information
@@ -179,32 +182,33 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
     /** If memstas is running print the memory used */
     void PostTest() {
-        if( FMemStats::controler.isUsed() ){
-            std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
-            std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
-            std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
-        }
+	if( FMemStats::controler.isUsed() ){
+	    std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+	    std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+	    std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
+	}
     }
 
     ///////////////////////////////////////////////////////////
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    static const int P = 9;
+    //    static const int P = 9;
 
     /** Rotation */
+    template<int P>
     void TestRotation(){
-        typedef FRotationCell<P>              CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+	typedef FRotationCell<P>              CellClass;
+	typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
-        typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
+	typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	typedef FSimpleLeaf<ContainerClass >                     LeafClass;
+	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+	typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
+	RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass,P>();
     }
 
     ///////////////////////////////////////////////////////////
@@ -213,13 +217,32 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
     /** set test */
     void SetTests(){
-        AddTest(&TestRotationDirect::TestRotation,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<4>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<6>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<8>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<10>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<12>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<14>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<16>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<18>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<20>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<22>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<24>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<26>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<28>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<32>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<35>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<40>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<45>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<50>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<55>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<60>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<65>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<70>,"Test Rotation Kernel");
+	AddTest(&TestRotationDirect::TestRotation<75>,"Test Rotation Kernel");
     }
 };
 
 
 // You must do this
 TestClass(TestRotationDirect)
-
-
-

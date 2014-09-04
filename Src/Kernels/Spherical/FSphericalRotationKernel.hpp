@@ -34,8 +34,8 @@ protected:
         FReal* rotation_a;
         FReal* rotation_b;
 
-        FComplexe* p_rot_multipole_exp;
-        FComplexe* p_rot_local_exp;
+        FComplex* p_rot_multipole_exp;
+        FComplex* p_rot_local_exp;
 
         /** Get z vector size */
         static int ZAxisExpensionSize(const int inDevP){
@@ -60,8 +60,8 @@ protected:
                 }
             }
             const int z_size = ZAxisExpensionSize(inDevP);
-            p_rot_multipole_exp = new FComplexe[z_size];
-            p_rot_local_exp = new FComplexe[z_size];
+            p_rot_multipole_exp = new FComplex[z_size];
+            p_rot_local_exp = new FComplex[z_size];
         }
 
         /** Destructor */
@@ -80,19 +80,19 @@ protected:
     struct RotationM2LTransfer {
         const int devP;
         const int expSize;
-        FComplexe** rcc_outer;
-        FComplexe** rcc_inner;
+        FComplex** rcc_outer;
+        FComplex** rcc_inner;
         FReal* outer_array;
 
         /** Constructor */
         RotationM2LTransfer(const int inDevP, const int inDevM2lP, const int inExpSize)
             : devP(inDevP), expSize(inExpSize){
-            rcc_outer = new FComplexe*[devP + 1];
-            rcc_inner = new FComplexe*[devP + 1];
+            rcc_outer = new FComplex*[devP + 1];
+            rcc_inner = new FComplex*[devP + 1];
             for( int idxP = 0 ; idxP <= devP ; ++idxP){
                 const int rotationSize = ((idxP+1)*(2*idxP+1));
-                rcc_outer[idxP] = new FComplexe[rotationSize];
-                rcc_inner[idxP] = new FComplexe[rotationSize];
+                rcc_outer[idxP] = new FComplex[rotationSize];
+                rcc_inner[idxP] = new FComplex[rotationSize];
             }
             outer_array = new FReal[inDevM2lP + 1];
         }
@@ -193,13 +193,13 @@ protected:
                                                  const FReal cos_gamma, const FReal sin_gamma,
                                                  const FReal chi, const RotationInfo& rotation_Info){
 
-            FComplexe** rcc_tmp_transposed = new FComplexe*[devP + 1];
+            FComplex** rcc_tmp_transposed = new FComplex*[devP + 1];
             for( int idxP = 0 ; idxP <= devP ; ++idxP){
                 const int rotationSize = ((idxP+1)*(2*idxP+1));
-                rcc_tmp_transposed[idxP] = new FComplexe[rotationSize];
+                rcc_tmp_transposed[idxP] = new FComplex[rotationSize];
             }
 
-            FComplexe _pow_of_I_array[7];
+            FComplex _pow_of_I_array[7];
             _pow_of_I_array[0].setRealImag(0 , 1 ) /* I^{-3} */;
             _pow_of_I_array[1].setRealImag(-1, 0 ) /* I^{-2} */;
             _pow_of_I_array[2].setRealImag(0 , -1) /* I^{-1} */;
@@ -208,13 +208,13 @@ protected:
             _pow_of_I_array[5].setRealImag(-1, 0 ) /* I^2 */;
             _pow_of_I_array[6].setRealImag(0 , -1) /* I^3 */;
 
-            const FComplexe* pow_of_I_array = _pow_of_I_array + 3; /* points on I^0 */
+            const FComplex* pow_of_I_array = _pow_of_I_array + 3; /* points on I^0 */
 
-            FComplexe* const _precomputed_exp_I_chi_array = new FComplexe[2*devP + 1];
-            FComplexe* precomputed_exp_I_chi_array = _precomputed_exp_I_chi_array + devP;
+            FComplex* const _precomputed_exp_I_chi_array = new FComplex[2*devP + 1];
+            FComplex* precomputed_exp_I_chi_array = _precomputed_exp_I_chi_array + devP;
 
-            FComplexe* const _precomputed_exp_I_omega_array  = new FComplexe[2*devP + 1];
-            FComplexe* precomputed_exp_I_omega_array = _precomputed_exp_I_omega_array + devP;
+            FComplex* const _precomputed_exp_I_omega_array  = new FComplex[2*devP + 1];
+            FComplex* precomputed_exp_I_omega_array = _precomputed_exp_I_omega_array + devP;
 
 
             // cos(x) = sin(x + Pi/2)
@@ -286,7 +286,7 @@ protected:
                     for(int m = -n; m <= n; ++m){
                         FReal A_terms = A_div_A(n, m, nu); /*  A_n^m / A_n^nu */
                         int abs_m_minus_abs_nu_mod4 = (FMath::Abs(m) - FMath::Abs(nu)) % 4; /* can be negative! */
-                        const FComplexe p_H_tmp = ( m >= 0 ?
+                        const FComplex p_H_tmp = ( m >= 0 ?
                                         rcc_tmp_transposed[n][getTranspRotationCoefP(n, nu, m)] :
                                         rcc_tmp_transposed[n][getTranspRotationCoefP(n, -nu, -m)]) ;
 
@@ -358,7 +358,7 @@ protected:
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
         preM2LTransitions = new RotationM2LTransfer*[Parent::treeHeight];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe*) * (Parent::treeHeight));
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex*) * (Parent::treeHeight));
         // We start from the higher level
         FReal treeWidthAtLevel = Parent::boxWidth;
         for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
@@ -433,11 +433,11 @@ public:
 
     /** M2L With rotation
       */
-    void multipoleToLocal(FComplexe*const FRestrict local_exp_target, const FComplexe* const FRestrict multipole_exp_src,
+    void multipoleToLocal(FComplex*const FRestrict local_exp_target, const FComplex* const FRestrict multipole_exp_src,
                           const RotationM2LTransfer& transfer_M2L_rotation){
 
-        memset(rotation_Info.p_rot_multipole_exp, 0, RotationInfo::ZAxisExpensionSize(Parent::devP) * sizeof(FComplexe));
-        memset(rotation_Info.p_rot_local_exp, 0, RotationInfo::ZAxisExpensionSize(Parent::devP) * sizeof(FComplexe));
+        memset(rotation_Info.p_rot_multipole_exp, 0, RotationInfo::ZAxisExpensionSize(Parent::devP) * sizeof(FComplex));
+        memset(rotation_Info.p_rot_local_exp, 0, RotationInfo::ZAxisExpensionSize(Parent::devP) * sizeof(FComplex));
 
         rotation_Rotate_multipole_expansion_terms(multipole_exp_src, transfer_M2L_rotation.rcc_outer, rotation_Info.p_rot_multipole_exp);
 
@@ -447,16 +447,16 @@ public:
     }
 
     /** Needed when doing the M2L */
-    void rotation_Rotate_multipole_expansion_terms(const FComplexe*const FRestrict multipole_exp,
-                                                   const FComplexe* const FRestrict * const FRestrict rcc_outer,
-                                                   FComplexe*const FRestrict rot_multipole_exp){
+    void rotation_Rotate_multipole_expansion_terms(const FComplex*const FRestrict multipole_exp,
+                                                   const FComplex* const FRestrict * const FRestrict rcc_outer,
+                                                   FComplex*const FRestrict rot_multipole_exp){
 
-        FComplexe* p_rot_multipole_exp = rot_multipole_exp;
+        FComplex* p_rot_multipole_exp = rot_multipole_exp;
 
         for(int nu = 0 ; nu <= (Parent::devP/2) ; ++nu){
             for(int j = nu; j <= (Parent::devP-nu) ; ++j){
-                const FComplexe* p_rcc_outer = &rcc_outer[j][RotationM2LTransfer::getRotationCoefP(j, nu, j)];
-                const FComplexe* p_multipole_exp = &multipole_exp[Parent::harmonic.getPreExpRedirJ(j) + j];
+                const FComplex* p_rcc_outer = &rcc_outer[j][RotationM2LTransfer::getRotationCoefP(j, nu, j)];
+                const FComplex* p_multipole_exp = &multipole_exp[Parent::harmonic.getPreExpRedirJ(j) + j];
                 FReal minus_1_pow_k = FReal(j&1 ? -1 : 1);
 
                 for(int k = -j ; k < 0 ; ++k){ /* k < 0 */
@@ -490,17 +490,17 @@ public:
     }
 
     /** Needed when doing the M2L */
-    void M2L_z_axis(FComplexe* const FRestrict rot_local_exp,
-                    const FComplexe* const FRestrict rot_multipole_exp,
+    void M2L_z_axis(FComplex* const FRestrict rot_local_exp,
+                    const FComplex* const FRestrict rot_multipole_exp,
                     const FReal* const outer_array){
-        FComplexe* p_rot_local_exp = rot_local_exp;
+        FComplex* p_rot_local_exp = rot_local_exp;
 
         for(int j = 0 ; j <= Parent::devP; ++j){
             const FReal* p_outer_array_j = outer_array + j;
             const int stop_for_n = Parent::devP-j;
             const int min_j = FMath::Min(j, stop_for_n);
             for(int k = 0 ; k <= min_j ; ++k){
-                const FComplexe* p_rot_multipole_exp = rot_multipole_exp + k * (Parent::devP + 2 - k);
+                const FComplex* p_rot_multipole_exp = rot_multipole_exp + k * (Parent::devP + 2 - k);
                 for(int n = k ; n <= stop_for_n ; ++n){
                     p_rot_local_exp->incReal(p_rot_multipole_exp->getReal() * p_outer_array_j[n]);
                     p_rot_local_exp->incImag(p_rot_multipole_exp->getImag() * p_outer_array_j[n]);
@@ -512,20 +512,20 @@ public:
     }
 
     /** Needed when doing the M2L */
-    void rotation_Rotate_local_expansion_terms(const FComplexe*const rot_local_exp,
-                                               const FComplexe*const FRestrict *const FRestrict rcc_inner,
-                                               FComplexe*const FRestrict local_exp){
+    void rotation_Rotate_local_expansion_terms(const FComplex*const rot_local_exp,
+                                               const FComplex*const FRestrict *const FRestrict rcc_inner,
+                                               FComplex*const FRestrict local_exp){
         const int Q = Parent::devP/2;
 
-        FComplexe* FRestrict p_local_exp = local_exp;
+        FComplex* FRestrict p_local_exp = local_exp;
 
         for(int j = 0 ; j <= Q ; ++j){
             const int min_j = j;
-            const FComplexe* const FRestrict p_rot_local_exp_j = &rot_local_exp[Parent::harmonic.getPreExpRedirJ(j) + j];
+            const FComplex* const FRestrict p_rot_local_exp_j = &rot_local_exp[Parent::harmonic.getPreExpRedirJ(j) + j];
 
             for (int nu = 0 ; nu <= j; ++nu){
-                const FComplexe* FRestrict p_rcc_inner = &rcc_inner[j][RotationM2LTransfer::getRotationCoefP(j, nu, -min_j)];
-                const FComplexe* FRestrict p_rot_local_exp = p_rot_local_exp_j;
+                const FComplex* FRestrict p_rcc_inner = &rcc_inner[j][RotationM2LTransfer::getRotationCoefP(j, nu, -min_j)];
+                const FComplex* FRestrict p_rot_local_exp = p_rot_local_exp_j;
                 FReal minus_1_pow_k = FReal(min_j&1 ? -1 : 1);
 
                 for(int k = -min_j ; k < 0 ; ++k){  /* k < 0 */
@@ -558,15 +558,15 @@ public:
             } /* for nu */
         } /* for j */
 
-        const FComplexe* FRestrict p_rot_local_exp_j = &rot_local_exp[Parent::harmonic.getPreExpRedirJ(Q) + Q];
+        const FComplex* FRestrict p_rot_local_exp_j = &rot_local_exp[Parent::harmonic.getPreExpRedirJ(Q) + Q];
 
         for(int j = Q + 1; j <= Parent::devP ; ++j){
             p_rot_local_exp_j += Parent::devP - j +1;
             const int min_j = Parent::devP-j;
 
             for(int nu = 0 ; nu <= j; ++nu){
-                const FComplexe* FRestrict p_rcc_inner = &rcc_inner[j][RotationM2LTransfer::getRotationCoefP(j, nu, -min_j)];
-                const FComplexe* FRestrict p_rot_local_exp = p_rot_local_exp_j;
+                const FComplex* FRestrict p_rcc_inner = &rcc_inner[j][RotationM2LTransfer::getRotationCoefP(j, nu, -min_j)];
+                const FComplex* FRestrict p_rot_local_exp = p_rot_local_exp_j;
                 FReal minus_1_pow_k = FReal(min_j&1 ? -1 : 1);
 
                 for(int k = -min_j ; k < 0; ++k){  /* k < 0 */
