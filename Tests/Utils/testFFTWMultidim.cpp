@@ -24,7 +24,7 @@
 #include <fftw3.h>
 
 #include "../../Src/Utils/FGlobal.hpp"
-#include "../../Src/Utils/FComplexe.hpp"
+#include "../../Src/Utils/FComplex.hpp"
 
 #include "../../Src/Utils/FTic.hpp"
 
@@ -54,10 +54,10 @@ int main()
   std::cout<< "Test "<< dim <<"D FFT."<<std::endl;
   // fftw arrays
   FReal* fftR_;
-  FComplexe* fftC_;
+  FComplex* fftC_;
 
   fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_ );
-  fftC_ = (FComplexe*) fftw_malloc(sizeof(FComplexe) * nsteps_ );
+  fftC_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_ );
 
   // fftw plans
   // use routine defined in file:
@@ -113,7 +113,7 @@ int main()
 //  std::cout<<std::endl;
 
 ////  for( int s=0; s<steps_[1]/2+1; ++s){
-////    fftC_[nsteps_-s]=FComplexe(fftC_[s].getReal(),-fftC_[s].getImag());
+////    fftC_[nsteps_-s]=FComplex(fftC_[s].getReal(),-fftC_[s].getImag());
 ////  }
 
 //  std::cout<< "Full Transformed data : "<<std::endl;

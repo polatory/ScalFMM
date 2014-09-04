@@ -17,7 +17,7 @@
 #define FHARMONIC_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 #include "../../Utils/FSpherical.hpp"
 #include "../../Utils/FNoCopyable.hpp"
 
@@ -30,11 +30,11 @@ class FHarmonic : public FNoAssignement {
     const int expSize;  //<  Number of elements in the expansion expSize = (p+1)^2
     const int nExpSize; //<
 
-    FComplexe* harmonic;//< Harmonic Result
-    FComplexe* cosSin;  //< Cos/Sin precomputed values
+    FComplex* harmonic;//< Harmonic Result
+    FComplex* cosSin;  //< Cos/Sin precomputed values
     FReal*     legendre;//< Legendre results
 
-    FComplexe* thetaDerivatedResult; //< the theta derivated result
+    FComplex* thetaDerivatedResult; //< the theta derivated result
     FReal*     sphereHarmoInnerCoef; //< sphere innter pre computed coefficients
     FReal*     sphereHarmoOuterCoef; //< sphere outer pre computed coefficients
     //!
@@ -45,10 +45,10 @@ class FHarmonic : public FNoAssignement {
 
     /** Allocate and init */
     void allocAndInit(){
-        harmonic = new FComplexe[expSize];
-        cosSin   = new FComplexe[devP + 1];
+        harmonic = new FComplex[expSize];
+        cosSin   = new FComplex[devP + 1];
         legendre = new FReal[expSize];
-        thetaDerivatedResult = new FComplexe[expSize];
+        thetaDerivatedResult = new FComplex[expSize];
 
         // Pre compute coef
         sphereHarmoOuterCoef = new FReal[devP + 1];
@@ -176,35 +176,35 @@ public:
         return nExpSize;
     }
 
-    FComplexe* result(){
+    FComplex* result(){
         return harmonic;
     }
 
-    const FComplexe* result() const {
+    const FComplex* result() const {
         return harmonic;
     }
 
-    FComplexe& result(const int index){
+    FComplex& result(const int index){
         return harmonic[index];
     }
 
-    const FComplexe& result(const int index) const{
+    const FComplex& result(const int index) const{
         return harmonic[index];
     }
 
-    FComplexe* resultThetaDerivated(){
+    FComplex* resultThetaDerivated(){
         return thetaDerivatedResult;
     }
 
-    const FComplexe* resultThetaDerivated() const {
+    const FComplex* resultThetaDerivated() const {
         return thetaDerivatedResult;
     }
 
-    FComplexe& resultThetaDerivated(const int index){
+    FComplex& resultThetaDerivated(const int index){
         return thetaDerivatedResult[index];
     }
 
-    const FComplexe& resultThetaDerivated(const int index) const{
+    const FComplex& resultThetaDerivated(const int index) const{
         return thetaDerivatedResult[index];
     }
 

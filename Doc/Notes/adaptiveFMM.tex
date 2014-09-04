@@ -1,0 +1,106 @@
+\documentclass{minimal}
+\usepackage{tikz}
+\usetikzlibrary{trees}
+\begin{document}
+%	grow=down,
+%    every node/.style={draw, circle, thin},
+%    edge from parent/.style={-latex, thick, draw}
+
+\begin{tikzpicture}
+[level distance=4cm,
+level 1/.style={sibling distance=5cm},
+ level 2/.style={sibling distance=1.4cm},
+ level 3/.style={sibling distance=0.4cm},
+ every node/.style={draw, circle, thin}
+ ]
+\node (P) {Root}
+    child {node (C1) {Q}
+        child {node (C1A) {T}
+       		child {node (C1A1) {T}}
+        	child {node (C1A2) {U}}
+        	child {node (C1A2) {T}}
+        	child {node (C1A4) {U}}
+       }
+        child {node (C1B) {U}
+            child {node (C1B1) {T}}
+        	child {node (C1B2) {U}}
+        	child {node (C1B2) {T}}
+        	child {node (C1B4) {U}}
+        }
+        child {node (C1C) {T}}
+        child {node (C1D) {U}}
+    }
+    child {node (C2) {R}
+       child {node (C2A) {T}}
+        child {node (C2B) {U}}
+        child {node (C2C) {T}}
+        child {node (C2D) {U}}
+    }
+    child {node (C3) {S}}
+%    child {node (C4) {$C^1_4$}
+   child {node (C4) {$C^1_4$}
+        child {node (T) {}
+	        child {node (TT) {}
+	        	        child {node (TTT) {}
+}   
+}        
+        }
+        child {node (U) {}}
+    };
+
+\path (P) -- coordinate[midway] (PQ) (C1);
+\path (P) -- coordinate[midway] (PR) (C2);
+
+\draw (PQ) to[bend right=22] (PR);
+\end{tikzpicture}
+%sibling distance=2cm,
+\begin{tikzpicture}[level distance=1.5cm, grow=down,
+    every node/.style={draw, circle, thin},
+    edge from parent/.style={-latex, thick, draw},
+ level 1/.style={sibling distance=5cm},
+ level 2/.style={sibling distance=2cm},
+ level 3/.style={sibling distance=1.cm}
+ ]
+\node (P) {Root}
+    child {node [fill=blue] (C1) {}
+        child {node (T) {}
+ 	        	 child { node (TTT) {}
+                      child {node (TTTT) {}
+                             child {node (TTTTT) {}
+                                   }
+                             }
+                       }
+               }
+        child {node (U) {}
+ 	        	 child { node [fill=blue] (TTT) {}
+                      child {node (TTTT) {}
+                             child {node (TTTTT) {}
+                                   }
+                             }                                   
+                            child {node [fill=blue] (TTTTU) {}
+                                  child {node (TTTTU1) {}}
+                                  child {node (TTTTU2) {}}
+                                   }
+                        }         
+                }
+      }
+%    child {node (C2) {}}
+%    child {node (C3) {}}
+   child {node [fill=blue, text=white] (C4) {$j$}
+        child {node (T) {}
+	        child {node (TT) {}
+	        	 child { node [fill=blue] (TTT) {}
+                      child {node (TTTT) {}}
+                       child {node (TTTU) {}}
+                       }          
+              }                   
+        }
+        child {node (U) {}}
+    };
+
+\path (P) -- coordinate[midway] (PQ) (C1);
+\path (P) -- coordinate[midway] (PR) (C2);
+
+%\draw (PQ) to[bend right=22] (PR);
+\end{tikzpicture}
+\end{document}

@@ -41,7 +41,7 @@
 
 // Check DFT
 #include "Utils/FDft.hpp"
-#include "Utils/FComplexe.hpp"
+#include "Utils/FComplex.hpp"
 
 
 #include "Kernels/P2P/FP2PParticleContainer.hpp"
@@ -317,11 +317,11 @@ int main(int, char **){
 
   /////////////////////////////////////////////////////////////////////////////////////
   // Efficient application of the Toeplitz system in FOURIER SPACE
-  FComplexe FPMultExp[rc];
-  FComplexe FPLocalExp[rc];
+  FComplex FPMultExp[rc];
+  FComplex FPLocalExp[rc];
   FReal PLocalExp[rc];
 
-  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplexe(0.0,0.0);
+  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FPLocalExp));
 
   FBlas::setzero(rc,PLocalExp);
@@ -358,8 +358,8 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
   // Apply DFT to T
-  FComplexe FT[rc];
-  //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplexe(0.0,0.0);
+  FComplex FT[rc];
+  //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FT));
 
   // if first COLUMN (T) of C is used
@@ -383,7 +383,7 @@ int main(int, char **){
 
 
   // Set transformed MultExp to 0
-  //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplexe(0.0,0.0);
+  //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(rc,reinterpret_cast<FReal*>(FPMultExp));
 
   // Transform PaddedMultExp

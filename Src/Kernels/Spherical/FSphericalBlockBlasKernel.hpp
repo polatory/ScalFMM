@@ -33,9 +33,9 @@ protected:
 
     /** A interaction properties */
     struct ComputationPair {
-        const FComplexe* FRestrict pole;
-        FComplexe* FRestrict local;
-        explicit ComputationPair(const FComplexe* const inPole = 0, FComplexe*const inLocal = 0)
+        const FComplex* FRestrict pole;
+        FComplex* FRestrict local;
+        explicit ComputationPair(const FComplex* const inPole = 0, FComplex*const inLocal = 0)
             : pole(inPole), local(inLocal) {}
     };
 
@@ -45,9 +45,9 @@ protected:
 
     const int BlockSize;             //< The size of a block
 
-    FComplexe*const multipoleMatrix;                //< To copy all the multipole vectors
-    FComplexe*const localMatrix;                    //< To save all the local vectors result
-    FSmartPointer<FComplexe**> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FComplex*const multipoleMatrix;                //< To copy all the multipole vectors
+    FComplex*const localMatrix;                    //< To save all the local vectors result
+    FSmartPointer<FComplex**> preM2LTransitions;    //< The pre-computation for the M2L based on the level and the 189 possibilities
 
     FVector<ComputationPair> interactions[343];     //< All the current interaction
 
@@ -63,17 +63,17 @@ protected:
         FHarmonic blasHarmonic(Parent::devP * 2);
 
         // Matrix to fill and then transposed
-        FComplexe*const workMatrix = new FComplexe[FF_MATRIX_SIZE];
+        FComplex*const workMatrix = new FComplex[FF_MATRIX_SIZE];
 
         // M2L transfer, there is a maximum of 3 neighbors in each direction,
         // so 6 in each dimension
         FReal treeWidthAtLevel = Parent::boxWidth;
-        preM2LTransitions = new FComplexe**[Parent::treeHeight];
-        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplexe**) * (Parent::treeHeight));
+        preM2LTransitions = new FComplex**[Parent::treeHeight];
+        memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex**) * (Parent::treeHeight));
 
         for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
-            preM2LTransitions[idxLevel] = new FComplexe*[(7 * 7 * 7)];
-            memset(preM2LTransitions[idxLevel], 0, sizeof(FComplexe*) * (7*7*7));
+            preM2LTransitions[idxLevel] = new FComplex*[(7 * 7 * 7)];
+            memset(preM2LTransitions[idxLevel], 0, sizeof(FComplex*) * (7*7*7));
 
             for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
                 for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
@@ -84,8 +84,8 @@ protected:
                             blasHarmonic.computeOuter(FSpherical(relativePos));
 
                             // Reset Matrix
-                            FMemUtils::setall<FComplexe>(workMatrix, FComplexe(), FF_MATRIX_SIZE);
-                            FComplexe* FRestrict fillTransfer = workMatrix;
+                            FMemUtils::setall<FComplex>(workMatrix, FComplex(), FF_MATRIX_SIZE);
+                            FComplex* FRestrict fillTransfer = workMatrix;
 
                             for(int M = 0 ; M <= Parent::devP ; ++M){
                                 for (int m = 0 ;  m <= M ; ++m){
@@ -107,7 +107,7 @@ protected:
                             }
 
                             // Transpose and copy result
-                            FComplexe*const matrix = new FComplexe[FF_MATRIX_SIZE];
+                            FComplex*const matrix = new FComplex[FF_MATRIX_SIZE];
                             for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
                                 for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
                                     matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] = workMatrix[idxCol + idxRow * FF_MATRIX_COLUMN_DIM];
@@ -138,8 +138,8 @@ public:
           FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
           FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
           BlockSize(inBlockSize),
-          multipoleMatrix(new FComplexe[inBlockSize * FF_MATRIX_COLUMN_DIM]),
-          localMatrix(new FComplexe[inBlockSize * FF_MATRIX_ROW_DIM]),
+          multipoleMatrix(new FComplex[inBlockSize * FF_MATRIX_COLUMN_DIM]),
+          localMatrix(new FComplex[inBlockSize * FF_MATRIX_ROW_DIM]),
           preM2LTransitions(nullptr){
         allocAndInit();
     }
@@ -150,8 +150,8 @@ public:
           FF_MATRIX_ROW_DIM(other.FF_MATRIX_ROW_DIM), FF_MATRIX_COLUMN_DIM(other.FF_MATRIX_COLUMN_DIM),
           FF_MATRIX_SIZE(other.FF_MATRIX_SIZE),
           BlockSize(other.BlockSize),
-          multipoleMatrix(new FComplexe[other.BlockSize * FF_MATRIX_COLUMN_DIM]),
-          localMatrix(new FComplexe[other.BlockSize * FF_MATRIX_ROW_DIM]),
+          multipoleMatrix(new FComplex[other.BlockSize * FF_MATRIX_COLUMN_DIM]),
+          localMatrix(new FComplex[other.BlockSize * FF_MATRIX_ROW_DIM]),
           preM2LTransitions(other.preM2LTransitions) {
 
     }
@@ -201,7 +201,7 @@ public:
     /** preExpNExp
       * @param exp an exponent vector to create an computable vector
       */
-    void preExpNExp(FComplexe* const exp) const {
+    void preExpNExp(FComplex* const exp) const {
         for(int j = Parent::devP; j>= 0 ; --j){
             // Position in 'exp':  (j*(j+1)*0.5) + k
             // Position in 'nexp':  j*(j+1)      + k
@@ -240,10 +240,10 @@ public:
     *
     *Remark: here we have always j+n >= |-k-l|
     *
-    * const FComplexe*const M2LTransfer = preM2LTransitions[inLevel][interactionIndex];
+    * const FComplex*const M2LTransfer = preM2LTransitions[inLevel][interactionIndex];
      *   for(int idxK = 0 ; idxK < interactions[interactionIndex].getSize() ; ++idxK){
      *       for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
-     *           FComplexe compute;
+     *           FComplex compute;
      *           for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
      *               compute.addMul(M2LTransfer[idxCol * FF_MATRIX_ROW_DIM + idxRow], multipoleMatrix[idxCol + idxK * FF_MATRIX_COLUMN_DIM]);
      *           }
@@ -254,7 +254,7 @@ public:
     void multipoleToLocal(const int interactionIndex, const int inLevel){
         for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
             // Copy original vector and compute exp2nexp
-            FMemUtils::copyall<FComplexe>(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM],
+            FMemUtils::copyall<FComplex>(&multipoleMatrix[idxInter * FF_MATRIX_COLUMN_DIM],
                                           interactions[interactionIndex][idxInter].pole, FF_MATRIX_COLUMN_DIM);
 
             // Get a computable vector
@@ -268,15 +268,15 @@ public:
                     FF_MATRIX_COLUMN_DIM,
                     interactions[interactionIndex].getSize(),
                     one,
-                    FComplexe::ToFReal(preM2LTransitions[inLevel][interactionIndex]),
+                    FComplex::ToFReal(preM2LTransitions[inLevel][interactionIndex]),
                     FF_MATRIX_ROW_DIM,
-                    FComplexe::ToFReal(multipoleMatrix),
+                    FComplex::ToFReal(multipoleMatrix),
                     FF_MATRIX_COLUMN_DIM,
-                    FComplexe::ToFReal(localMatrix),
+                    FComplex::ToFReal(localMatrix),
                     FF_MATRIX_ROW_DIM);
 
         for(int idxInter = 0 ; idxInter < interactions[interactionIndex].getSize() ; ++idxInter){
-            FMemUtils::addall<FComplexe>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM],  FF_MATRIX_ROW_DIM);
+            FMemUtils::addall<FComplex>(interactions[interactionIndex][idxInter].local, &localMatrix[idxInter * FF_MATRIX_ROW_DIM],  FF_MATRIX_ROW_DIM);
         }
 
         interactions[interactionIndex].clear();

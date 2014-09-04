@@ -22,7 +22,7 @@
 
 // Originally in M2LHandler but transferred to the kernel for the symmetric version
 #include "../../Utils/FDft.hpp" // PB: for FFT
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 #include "./FUnifTensor.hpp" // PB: for node_diff
 //
 
@@ -73,8 +73,8 @@ class FUnifSymKernel
   unsigned int* countExp;
 
   // transformed expansions
-  FComplexe** TLoc;
-  FComplexe** TMul;
+  FComplex** TLoc;
+  FComplex** TMul;
 
   static const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
   static const unsigned int opt_rc = rc/2+1;
@@ -93,8 +93,8 @@ class FUnifSymKernel
     assert(Loc==NULL && Mul==NULL && countExp==NULL);
     Loc = new FReal* [343];
     Mul = new FReal* [343];
-    TLoc = new FComplexe* [343];
-    TMul = new FComplexe* [343];
+    TLoc = new FComplex* [343];
+    TMul = new FComplex* [343];
     countExp = new unsigned int [343];
 
     // set all 343 to NULL
@@ -111,8 +111,8 @@ class FUnifSymKernel
           assert(Mul[idx]==NULL || Loc[idx]==NULL);
           Mul[idx] = new FReal [24 * nnodes];
           Loc[idx] = new FReal [24 * nnodes];
-          TMul[idx] = new FComplexe [24 * rc];
-          TLoc[idx] = new FComplexe [24 * rc];
+          TMul[idx] = new FComplex [24 * rc];
+          TLoc[idx] = new FComplex [24 * rc];
         }
   }
 
@@ -260,7 +260,7 @@ public:
           }
 
           // transform permuted expansion
-          FComplexe *const tmul = TMul[pidx] + count*rc;
+          FComplex *const tmul = TMul[pidx] + count*rc;
 
           ///////////////////////////////////////////
           FReal pmul[rc];
@@ -305,18 +305,18 @@ public:
       // multiply (mat-mat-mul)
       const FReal scale = AbstractBaseClass::MatrixKernel->getScaleFactor(AbstractBaseClass::BoxWidth, TreeLevel);
 
-      FComplexe tmpTLoc; 
+      FComplex tmpTLoc; 
 
       for (unsigned int pidx=0; pidx<343; ++pidx) {
         const unsigned int count = countExp[pidx];
         if (count) {
 
-          FComplexe *const tmpK=const_cast<FComplexe*>(SymM2LHandler->getK(TreeLevel, pidx));
+          FComplex *const tmpK=const_cast<FComplex*>(SymM2LHandler->getK(TreeLevel, pidx));
 
           for (unsigned int i=0; i<count; ++i){
           //unsigned int i=count;
-            FComplexe *const ttmul = TMul[pidx] + i*rc;
-            FComplexe *const ttloc = TLoc[pidx] + i*rc;
+            FComplex *const ttmul = TMul[pidx] + i*rc;
+            FComplex *const ttloc = TLoc[pidx] + i*rc;
 
             // Perform entrywise product manually
             for (unsigned int j=0; j<opt_rc; ++j){
@@ -357,7 +357,7 @@ public:
           const unsigned int count = (countExp[pidx])++;
 
           FReal *const loc = Loc[pidx] + count*nnodes;
-          const FComplexe *const tloc = TLoc[pidx] + count*rc;
+          const FComplex *const tloc = TLoc[pidx] + count*rc;
 
           ///////////////////////////////////////////
           FReal ploc[rc];

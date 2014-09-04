@@ -4,17 +4,19 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+
 #include "Utils/FGlobal.hpp"
+#include "Utils/FTic.hpp"
 
 #include "Containers/FOctree.hpp"
 #include "Containers/FVector.hpp"
@@ -44,10 +46,11 @@
 class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 	/** The test method to factorize all the test based on different kernels */
 	template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
-	class OctreeClass, class FmmClass>
+		   class OctreeClass, class FmmClass, int ORDER>
 	void RunTest( const bool isBlasKernel){
 		//
-		const int DevP = 9;
+		const int DevP = ORDER;
+		printf("---------------------------------------- \n ------------------ %d ------------------ \n ---------------------------------------- ",ORDER);
 		//
 		// Load particles
 		//
@@ -95,7 +98,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		//KernelClass kernels(NbLevels,loader.getBoxWidth());
 		KernelClass kernels(DevP,NbLevels,loader.getBoxWidth(), loader.getCenterOfBox());
 		FmmClass algo(&tree,&kernels);
+		FTic timer;
 		algo.execute();
+		timer.tac();
+		std::cout << "Computation Time : " << ORDER <<" ; "<< timer.elapsed() << std::endl;
 		//
 		FReal energy= 0.0 , energyD = 0.0 ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,8 +217,37 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+		printf("Spherical\n \n");
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 4>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 6>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 8>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 10>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 12>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 14>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 16>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 18>(false);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 20>(true);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 22>(true);
+		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+		//	 OctreeClass, FmmClass, 24>(true);
 		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(false);
+			 OctreeClass, FmmClass, 50>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 55>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 60>(true);
+
+
 	}
 
 
@@ -230,8 +265,29 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+		printf("Spherical BLAS\n \n");
 		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(true);
+			 OctreeClass, FmmClass, 4>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 6>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 8>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 10>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 12>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 14>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 16>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 18>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 20>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 22>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 24>(true);
 	}
 
 	/** Block blas */
@@ -246,10 +302,42 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+
+		printf("Spherical BLOCK BLAS\n \n");
 		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-		OctreeClass, FmmClass>(true);
+			 OctreeClass, FmmClass, 4>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 6>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 8>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 10>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 12>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 14>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 16>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 18>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 20>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 22>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 24>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 26>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 28>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 30>(true);
+		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+			 OctreeClass, FmmClass, 32>(true);
+
 	}
 #endif
+
 
 	///////////////////////////////////////////////////////////
 	// Set the tests!
@@ -257,10 +345,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 	/** set test */
 	void SetTests(){
-		AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
+	    //AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
 #ifdef ScalFMM_USE_BLAS
-		AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
-		AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
+	    //AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
+	    AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
 #endif
 	}
 };
@@ -268,6 +356,3 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 // You must do this
 TestClass(TestSphericalDirect)
-
-
-

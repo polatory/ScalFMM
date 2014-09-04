@@ -24,7 +24,7 @@
 #include "FMath.hpp"
 
 //Need that for converting datas
-#include "FComplexe.hpp"
+#include "FComplex.hpp"
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -287,7 +287,7 @@ public:
         return MPI_CHAR;
     }
 
-    static  MPI_Datatype GetType(const FComplexe& a){
+    static  MPI_Datatype GetType(const FComplex& a){
         MPI_Datatype FMpiComplexe;
         MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
         return FMpiComplexe;

@@ -41,7 +41,7 @@
 
 // Check DFT
 #include "Utils/FDft.hpp"
-#include "Utils/FComplexe.hpp"
+#include "Utils/FComplex.hpp"
 
 
 #include "Kernels/P2P/FP2PParticleContainer.hpp"
@@ -389,8 +389,8 @@ int main(int, char **){
 //  std::cout<<std::endl;
 
   // Apply DFT to T
-  FComplexe FT[ncmp*rc];
-  //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplexe(0.0,0.0);
+  FComplex FT[ncmp*rc];
+  //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(ncmp*rc,reinterpret_cast<FReal*>(FT));
 
   // if first COLUMN (T) of C is used
@@ -399,11 +399,11 @@ int main(int, char **){
 //  // if first ROW of C is used
 //  Dft.applyDFT(C,FT);
 
-  FComplexe FPMultExp[nrhs*rc];
-  FComplexe FPLocalExp[nlhs*rc];
+  FComplex FPMultExp[nrhs*rc];
+  FComplex FPLocalExp[nlhs*rc];
   FReal PLocalExp[nlhs*rc];
 
-  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplexe(0.0,0.0);
+  //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(nlhs*rc,reinterpret_cast<FReal*>(FPLocalExp));
 
   FBlas::setzero(nlhs*rc,PLocalExp);
@@ -425,7 +425,7 @@ int main(int, char **){
 
 
   // Set transformed MultExp to 0
-  //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplexe(0.0,0.0);
+  //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplex(0.0,0.0);
   FBlas::c_setzero(nrhs*rc,reinterpret_cast<FReal*>(FPMultExp));
 
   // Transform PaddedMultExp
@@ -442,7 +442,7 @@ int main(int, char **){
 //            reinterpret_cast<FReal*>(FPMultExp),
 //            reinterpret_cast<FReal*>(FPLocalExp));
   // > or perform entrywise product manually
-  FComplexe tmpFX;
+  FComplex tmpFX;
   for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
     unsigned int idxRhs = idxLhs % npot;
     unsigned int d = MatrixKernel.getPosition(idxLhs);

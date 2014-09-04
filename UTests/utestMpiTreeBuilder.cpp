@@ -172,7 +172,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	MortonIndex ref = -1;
 	int numMort = 0;
 	if(app.global().processId()==0){
-	    for(int i=0 ; i<5000 ; ++i){
+	    for(int i=0 ; i<loaderSeq.getNumberOfParticles() ; ++i){
 		if (arrayOfParticles[i].index !=ref){
 		    numMort++;
 		    ref = arrayOfParticles[i].index;
@@ -206,7 +206,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
 	MPI_Exscan(&outputSize,&starter,1,MPI_LONG_LONG_INT,MPI_SUM,app.global().getComm());
 
-	//We sort the output array relatvely to position inside leafs
+	//We sort the output array relatvely to line number in origin file
 	FSize inc = 0;
 	FMpiTreeBuilder<TestParticle>::IndexedParticle * saveForSort = outputArray;
 	int nbOfPartsInLeaf = 0;
@@ -225,23 +225,27 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
 	bool resultQsMpi = true; //passed..
 	//Test
+
+	int * ownerOfEachParts = new int[outputSize];
+	for(int idP = 0)
+
+	//Test
 	// printf("Fin tri : %d hold %d my first [%lld,%lld] last [%lld,%lld]\n",app.global().processId(),outputSize,
 	//        outputArray[0].index,outputArray[0].particle.indexInFile,
 	//        outputArray[outputSize-1].index,outputArray[outputSize-1].particle.indexInFile);
-	int tot = 0;
-	MPI_Reduce((int*)&outputSize,&tot,1,MPI_INT,MPI_SUM,0,app.global().getComm());
-	if(app.global().processId() == 0){
-	    printf("Total Particule après tri = %d \n",tot);
-	}
-	for(int i=0 ; i<outputSize ; ++i){
-	    if(outputArray[i].particle.indexInFile != arrayOfParticles[i+starter].indexInFile){
-		resultQsMpi = false;
-		printf("%d i= %d + %lld Particles file  [%lld,%lld] : output [%lld,%lld] \n",app.global().processId(),i,starter,
-		       arrayOfParticles[i+starter].indexInFile,arrayOfParticles[i+starter].index,
-		       outputArray[i].particle.indexInFile,
-		       outputArray[i].index);
-	    }
-	}
+	// int tot = 0;
+	// MPI_Reduce((int*)&outputSize,&tot,1,MPI_INT,MPI_SUM,0,app.global().getComm());
+	// if(app.global().processId() == 0){
+	//     printf("Total Particule après tri = %d \n",tot);
+	// }
+	// for(int i=0 ; i<outputSize ; ++i){
+	//     if(outputArray[i].particle.indexInFile != arrayOfParticles[i+starter].indexInFile){
+	//	resultQsMpi = false;
+	//	printf("QsMpi :: %d finalParticle  [%lld,%lld] : sortedArray [%lld,%lld] \n",app.global().processId(),
+	//	       outputArray[i].particle.indexInFile, outputArray[i].index,
+	//	       arrayOfParticles[i+starter].indexInFile,arrayOfParticles[i+starter].index);
+	//     }
+	// }
 
 
 	Print("Test 1 : is QsMpi really sorting the array");
@@ -277,6 +281,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	}
 	Print("Test 2 : Output of merging leaves is tested");
 	uassert(resultMergeLeaves);
+
 	//Test the Equalize and Fill tree
 	FLeafBalance balancer;
 	FVector<TestParticle> finalParticles;
@@ -300,8 +305,9 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	}
 
 	Print("Test 3 : Output of Equalize Tree is tested");
-	uassert(resultEqualize);
 	MPI_Barrier(MPI_COMM_WORLD);
+	uassert(resultEqualize);
+
 	delete [] originalArray;
 	delete [] arrayOfParticles;
 	delete [] arrayToBeSorted;

@@ -18,7 +18,7 @@
 
 #include "../../Components/FAbstractKernels.hpp"
 #include "../../Utils/FSmartPointer.hpp"
-#include "../../Utils/FComplexe.hpp"
+#include "../../Utils/FComplex.hpp"
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FSpherical.hpp"
 
@@ -192,12 +192,12 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * The computation is simply a multiplication per a complex number \f$ e^{-i \phi m} \f$
       * Phi should be in [0,2pi]
       */
-    void rotateMultipoleAroundZ(FComplexe vec[], const FReal phi){
-        FComplexe cell_rotate[SizeArray];
+    void rotateMultipoleAroundZ(FComplex vec[], const FReal phi){
+        FComplex cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
-                const FComplexe exp_minus_imphi(FMath::Cos(-phi * FReal(m)), FMath::Sin(-phi * FReal(m)));
+                const FComplex exp_minus_imphi(FMath::Cos(-phi * FReal(m)), FMath::Sin(-phi * FReal(m)));
                 cell_rotate[atLm(l,m)].equalMul(exp_minus_imphi , vec[atLm(l,m)]);
             }
         }
@@ -214,12 +214,12 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * The computation is simply a multiplication per a complex number \f$ e^{i \phi m} \f$
       * Phi should be in [0,2pi]
       */
-    void rotateTaylorAroundZ(FComplexe vec[], const FReal phi){
-        FComplexe cell_rotate[SizeArray];
+    void rotateTaylorAroundZ(FComplex vec[], const FReal phi){
+        FComplex cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
-                const FComplexe exp_imphi(FMath::Cos(phi * FReal(m)), FMath::Sin(phi * FReal(m)));
+                const FComplex exp_imphi(FMath::Cos(phi * FReal(m)), FMath::Sin(phi * FReal(m)));
                 cell_rotate[atLm(l,m)].equalMul(exp_imphi , vec[atLm(l,m)]);
             }
         }
@@ -238,8 +238,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
       * Theta should be in [0,pi]
       */
-    void rotateMultipoleAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
+    void rotateMultipoleAroundY(FComplex vec[], const FReal theta){
+        FComplex cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 FReal w_lkm_real = 0.0;
@@ -278,8 +278,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
       * Theta should be in [0,pi]
       */
-    void rotateTaylorAroundY(FComplexe vec[], const FReal theta){
-        FComplexe cell_rotate[SizeArray];
+    void rotateTaylorAroundY(FComplex vec[], const FReal theta){
+        FComplex cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 FReal w_lkm_real = 0.0;
@@ -313,7 +313,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void rotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
+    void rotateMultipole(FComplex vec[], const FReal azimuth, const FReal inclination){
         rotateMultipoleAroundZ(vec,(FMath::FPiDiv2 + azimuth));
         rotateMultipoleAroundY(vec,inclination);
     }
@@ -324,7 +324,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void deRotateMultipole(FComplexe vec[], const FReal azimuth, const FReal inclination){
+    void deRotateMultipole(FComplex vec[], const FReal azimuth, const FReal inclination){
         rotateMultipoleAroundY(vec,-inclination);
         rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
     }
@@ -336,7 +336,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void rotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
+    void rotateTaylor(FComplex vec[], const FReal azimuth, const FReal inclination){
         rotateTaylorAroundZ(vec,(FMath::FPiDiv2 + azimuth));
         rotateTaylorAroundY(vec,inclination);
     }
@@ -347,7 +347,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void deRotateTaylor(FComplexe vec[], const FReal azimuth, const FReal inclination){
+    void deRotateTaylor(FComplex vec[], const FReal azimuth, const FReal inclination){
         rotateTaylorAroundY(vec,-inclination);
         rotateTaylorAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
     }
@@ -446,7 +446,7 @@ public:
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles ) {
         const FReal i_pow_m[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
         // w is the multipole moment
-        FComplexe* FRestrict const w = inPole->getMultipole();
+        FComplex* FRestrict const w = inPole->getMultipole();
 
         // Copying the position is faster than using cell position
         const FPoint cellPosition = getLeafCenter(inPole->getCoordinate());
@@ -498,7 +498,7 @@ public:
       */
     void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel) {
         // A buffer to copy the source w allocated once
-        FComplexe source_w[SizeArray];
+        FComplex source_w[SizeArray];
         // For all children
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if child exists
@@ -512,7 +512,7 @@ public:
 
                 const FReal b = -sph.getR();
                 // Translate it
-                FComplexe target_w[SizeArray];
+                FComplex target_w[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // w{l,m}(a+b) = sum(j=m:l, b^(l-j)/(l-j)! w{j,m}(a)
@@ -549,7 +549,7 @@ public:
       */
     void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[], const int /*inSize*/, const int inLevel) {
         // To copy the multipole data allocated once
-        FComplexe source_w[SizeArray];
+        FComplex source_w[SizeArray];
         // For all children
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             // if interaction exits
@@ -563,7 +563,7 @@ public:
 
                 const FReal b = sph.getR();
                 // Transfer to u
-                FComplexe target_u[SizeArray];
+                FComplex target_u[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // u{l,m}(a-b) = sum(j=|m|:P-l, (j+l)!/b^(j+l+1) w{j,-m}(a)
@@ -601,7 +601,7 @@ public:
       */
     void L2L(const CellClass* const FRestrict inLocal, CellClass* FRestrict *const FRestrict  inChildren, const int inLevel) {
         // To copy the source local allocated once
-        FComplexe source_u[SizeArray];
+        FComplex source_u[SizeArray];
         // For all children
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if child exists
@@ -615,7 +615,7 @@ public:
 
                 const FReal b = sph.getR();
                 // Translate
-                FComplexe target_u[SizeArray];
+                FComplex target_u[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // u{l,m}(r-b) = sum(j=0:P, b^(j-l)/(j-l)! u{j,m}(r);
@@ -660,7 +660,7 @@ public:
     void L2P(const CellClass* const inLocal, ContainerClass* const inParticles){
         const FReal i_pow_m[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
         // Take the local value from the cell
-        const FComplexe* FRestrict const u = inLocal->getLocal();
+        const FComplex* FRestrict const u = inLocal->getLocal();
 
         // Copying the position is faster than using cell position
         const FPoint cellPosition = getLeafCenter(inLocal->getCoordinate());
