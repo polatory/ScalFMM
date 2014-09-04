@@ -44,7 +44,6 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 # Options
 OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
 OPTION( ScalFMM_USE_FFT  		"Set to ON to build ScaFMM with FFTW" OFF )
-OPTION( ScalFMM_USE_TRACE 		"Set to ON to print trace or use itac trace" OFF )
 OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build functionalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
@@ -95,7 +94,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 else()
     # NOT      INTEL
-    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant") 
+    if(NOT ${ScalFMM_USE_MPI})
+        SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}   -Wzero-as-null-pointer-constant")
+    endif()
     SET(AVX_FLAGS "-mtune=native -march=native")
 IF (APPLE)
     SET(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
@@ -160,16 +161,7 @@ if( ScalFMM_ATTACHE_SOURCE )
 #  ADD_DEFINITIONS(-g)
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
 endif(ScalFMM_ATTACHE_SOURCE)
-##############################################################################
-#                                                         Trace                                                                                       #  
-##############################################################################
-MESSAGE( STATUS "ScalFMM_USE_TRACE            = ${ScalFMM_USE_TRACE}" )
-if( ScalFMM_USE_TRACE )
-  OPTION( ScalFMM_USE_ITAC "Set to ON to use itac trace" OFF )
-  if( ScaLFMM_USE_ITAC )
-    ADD_DEFINITIONS(-I$VT_ROOT/include -trace)
-  endif()
-endif()
+
 ##############################################################################
 #                                               Blas option                                                                                       #  
 ##############################################################################
