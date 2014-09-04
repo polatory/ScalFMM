@@ -25,7 +25,7 @@
 
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
-#include "FTrace.hpp"
+
 
 /** This class is parallel quick sort
   * It hold a mpi version

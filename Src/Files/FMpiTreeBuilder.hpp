@@ -21,7 +21,7 @@
 #include "../Utils/FBitonicSort.hpp"
 
 #include "../Utils/FMemUtils.hpp"
-#include "../Utils/FTrace.hpp"
+
 #include "../Containers/FVector.hpp"
 
 #include "../BalanceTree/FLeafBalance.hpp"
@@ -167,7 +167,6 @@ public:
 
     static void MergeSplitedLeaves(const FMpi::FComm& communicator, IndexedParticle* workingArray, FSize* workingSize,
                                    FSize ** leavesOffsetInParticles, ParticleClass** particlesArrayInLeafOrder, FSize* const leavesSize){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
 
@@ -324,7 +323,6 @@ public:
                                          const FSize leavesOffsetInParticles[], const ParticleClass particlesArrayInLeafOrder[],
                                          const FSize currentNbLeaves,
                                          const FSize currentNbParts, FAbstractBalanceAlgorithm * balancer){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Loader to Tree" , __FILE__ , __LINE__) );
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
 

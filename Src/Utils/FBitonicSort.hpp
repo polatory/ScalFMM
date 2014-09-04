@@ -19,7 +19,7 @@
 #include <cstdlib>
 #include <cmath>
 
-#include "FTrace.hpp"
+
 #include "FMpi.hpp"
 #include "FQuickSort.hpp"
 #include "FAssert.hpp"
@@ -144,7 +144,6 @@ public:
     endfor
       */
     static void Sort(SortType array[], const IndexType size, const FMpi::FComm& comm){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Bitonic" , __FILE__ , __LINE__) );
         const int np = comm.processCount();
         const int rank = comm.processId();
 

@@ -16,7 +16,7 @@
 // ===================================================================================
 
 #include "Utils/FGlobal.hpp"
-#include "Utils/FTrace.hpp"
+
 #include "Utils/FSmartPointer.hpp"
 
 #include "FAbstractChebKernel.hpp"

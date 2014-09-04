@@ -17,7 +17,7 @@
 #define FUNIFKERNEL_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Utils/FTrace.hpp"
+
 #include "../../Utils/FSmartPointer.hpp"
 
 #include "./FAbstractUnifKernel.hpp"

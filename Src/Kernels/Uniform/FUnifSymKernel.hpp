@@ -17,7 +17,7 @@
 #define FUNIFSYMKERNEL_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Utils/FTrace.hpp"
+
 #include "../../Utils/FSmartPointer.hpp"
 
 // Originally in M2LHandler but transferred to the kernel for the symmetric version

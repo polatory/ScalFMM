@@ -16,7 +16,7 @@
 // ===================================================================================
 
 #include "Utils/FGlobal.hpp"
-#include "Utils/FTrace.hpp"
+
 #include "Utils/FPoint.hpp"
 
 #include "Adaptative/FAdaptiveCell.hpp"
