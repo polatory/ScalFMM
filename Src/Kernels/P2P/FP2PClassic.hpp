@@ -131,7 +131,6 @@ inline void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass
     }
 }
 
-
 }
 
 #endif // FP2PCLASSIC_HPP

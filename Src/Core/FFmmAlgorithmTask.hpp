@@ -20,7 +20,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
-#include "../Utils/FTrace.hpp"
+
 #include "../Utils/FTic.hpp"
 
 #include "../Containers/FOctree.hpp"
@@ -84,7 +84,6 @@ public:
       * Call this function to run the complete algorithm
       */
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -104,7 +103,6 @@ private:
 
     /** P2M */
     void bottomPass(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG(FTic counterTime);
 
@@ -138,7 +136,6 @@ private:
 
     /** M2M */
     void upwardPass(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
@@ -185,7 +182,6 @@ private:
 
     /** M2L L2L */
     void transferPass(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
 
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -241,7 +237,6 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
     void downardPass(){ // second L2L
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
@@ -286,7 +281,6 @@ private:
 
     /** P2P */
     void directPass(){
-        FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Fmm" , __FILE__ , __LINE__) );
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);

@@ -22,15 +22,9 @@
 #include "Utils/FNoCopyable.hpp"
 #include "Utils/FMath.hpp"
 #include "Utils/FBlas.hpp"
+#include "Utils/FGlobal.hpp"
 
-// extendable
-enum KERNEL_FUNCTION_IDENTIFIER {ONE_OVER_R,
-                                 ONE_OVER_R_SQUARED,
-                                 LENNARD_JONES_POTENTIAL,
-                                 R_IJ,
-                                 R_IJK,
-                                 ONE_OVER_RH
-                                };
+
 // probably not extendable :)
 enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
 
@@ -73,7 +67,6 @@ struct FInterpAbstractMatrixKernel : FNoCopyable
 struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 {
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R;
     static const unsigned int NCMP = 1; //< number of components
     static const unsigned int NPV  = 1; //< dim of physical values
     static const unsigned int NPOT = 1; //< dim of potentials
@@ -85,6 +78,8 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
     // copy ctor
     FInterpMatrixKernelR(const FInterpMatrixKernelR& /*other*/)
     {}
+
+  static const char* getID() { return "ONE_OVER_R"; }
 
     // returns position in reduced storage
     int getPosition(const unsigned int) const
@@ -155,7 +150,6 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
 /// One over r when the box size is rescaled to 1
 struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_RH;
     static const unsigned int NCMP = 1; //< number of components
     static const unsigned int NPV  = 1; //< dim of physical values
     static const unsigned int NPOT = 1; //< dim of potentials
@@ -170,6 +164,8 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
     FInterpMatrixKernelRH(const FInterpMatrixKernelRH& other)
         :FInterpMatrixKernelR(other), LX(other.LX), LY(other.LY), LZ(other.LZ)
     {}
+
+  static const char* getID() { return "ONE_OVER_RH"; }
 
     // evaluate interaction
     template <class ValueClass>
@@ -246,7 +242,6 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 {
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = ONE_OVER_R_SQUARED;
     static const unsigned int NCMP = 1; //< number of components
     static const unsigned int NPV  = 1; //< dim of physical values
     static const unsigned int NPOT = 1; //< dim of potentials
@@ -258,6 +253,8 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
     // copy ctor
     FInterpMatrixKernelRR(const FInterpMatrixKernelRR& /*other*/)
     {}
+
+  static const char* getID() { return "ONE_OVER_R_SQUARED"; }
 
     // returns position in reduced storage
     int getPosition(const unsigned int) const
@@ -337,7 +334,6 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 {
     static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = LENNARD_JONES_POTENTIAL;
     static const unsigned int NCMP = 1; //< number of components
     static const unsigned int NPV  = 1; //< dim of physical values
     static const unsigned int NPOT = 1; //< dim of potentials
@@ -349,6 +345,8 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
     // copy ctor
     FInterpMatrixKernelLJ(const FInterpMatrixKernelLJ& /*other*/)
     {}
+
+  static const char* getID() { return "LENNARD_JONES_POTENTIAL"; }
 
     // returns position in reduced storage
     int getPosition(const unsigned int) const
@@ -467,7 +465,6 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
 {
     static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJ;
     static const unsigned int NK   = 3*3; //< total number of components
     static const unsigned int NCMP = 6;   //< number of components
     static const unsigned int NPV  = 3;   //< dim of physical values
@@ -495,6 +492,8 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
     FInterpMatrixKernel_R_IJ(const FInterpMatrixKernel_R_IJ& other)
         : _i(other._i), _j(other._j), _CoreWidth2(other._CoreWidth2)
     {}
+
+  static const char* getID() { return "R_IJ"; }
 
     // returns position in reduced storage from position in full 3x3 matrix
     unsigned  int getPosition(const unsigned int n) const
@@ -543,7 +542,7 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
         const ValueClass diffx = (x1-x2);
         const ValueClass diffy = (y1-y2);
         const ValueClass diffz = (z1-z2);
-        const ValueClass one_over_r = FMath::One<ValueClass>()/sqrt(diffx*diffx +
+        const ValueClass one_over_r = FMath::One<ValueClass>()/FMath::Sqrt(diffx*diffx +
                                                 diffy*diffy +
                                                 diffz*diffz + FMath::ConvertTo<ValueClass,FReal>(_CoreWidth2));
         const ValueClass one_over_r3 = one_over_r*one_over_r*one_over_r;
@@ -558,6 +557,56 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
             else
                 block[d] = - r[i] * r[j] * one_over_r3;
         }
+    }
+
+    // evaluate interaction and derivative (blockwise)
+    template <class ValueClass>
+    void evaluateBlockAndDerivative(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
+                                    const ValueClass& x2, const ValueClass& y2, const ValueClass& z2,
+                                    ValueClass block[NCMP], ValueClass blockDerivative[NCMP][3]) const
+    {
+        const ValueClass diffx = (x1-x2);
+        const ValueClass diffy = (y1-y2);
+        const ValueClass diffz = (z1-z2);
+        const ValueClass r2[3] = {diffx*diffx,diffy*diffy,diffz*diffz};
+        const ValueClass one_over_r2 = FMath::One<ValueClass>() / (r2[0] + r2[1] + r2[2]);
+        const ValueClass one_over_r = FMath::Sqrt(one_over_r2);
+        const ValueClass one_over_r3 = one_over_r2*one_over_r;
+
+        const ValueClass r[3] = {diffx,diffy,diffz};
+
+        const ValueClass Three = FMath::ConvertTo<ValueClass,FReal>(3.);
+        const ValueClass MinusOne = -FMath::One<ValueClass>();
+
+        for(unsigned int d=0;d<NCMP;++d){
+            unsigned int i = indexTab[d];
+            unsigned int j = indexTab[d+NCMP];
+
+            // evaluate kernel
+            if(i==j)
+                block[d] = one_over_r - r2[i] * one_over_r3;
+            else
+                block[d] = - r[i] * r[j] * one_over_r3;
+
+            // evaluate derivative
+            for(unsigned int k = 0 ; k < 3 ; ++k){
+              if(i==j){
+                if(j==k) //i=j=k
+                  blockDerivative[d][k] = Three * ( MinusOne + r2[i] * one_over_r2 ) * r[i] * one_over_r3;
+                else //i=j!=k
+                  blockDerivative[d][k] = ( MinusOne + Three * r2[i] * one_over_r2 ) * r[k] * one_over_r3;
+              }
+              else{ //(i!=j)
+                if(i==k) //i=k!=j
+                  blockDerivative[d][k] = ( MinusOne + Three * r2[i] * one_over_r2 ) * r[j] * one_over_r3;
+                else if(j==k) //i!=k=j
+                  blockDerivative[d][k] = ( MinusOne + Three * r2[j] * one_over_r2 ) * r[i] * one_over_r3;
+                else //i!=k!=j
+                  blockDerivative[d][k] = Three * r[i] * r[j] * r[k] * one_over_r2 * one_over_r3;
+              }
+            }// k
+
+        }// NCMP
     }
 
     FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
@@ -581,158 +630,9 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
     void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-};
-
-/// R_{,ijk}
-struct FInterpMatrixKernel_R_IJK : FInterpAbstractMatrixKernel
-{
-    static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
-    static const KERNEL_FUNCTION_IDENTIFIER Identifier = R_IJK;
-    static const unsigned int NK = 3*3*3; //< total number of components
-    static const unsigned int NCMP = 10;  //< number of components after symmetry
-    static const unsigned int NPOT = 3;   //< dim of potentials
-    static const unsigned int NPV  = 3*3; //< dim of physical values
-    static const unsigned int NRHS = NPV; //< dim of mult exp
-    static const unsigned int NLHS = NPOT*NRHS; //< dim of loc exp
-
-    // store indices (i,j,k) corresponding to sym idx
-    static const unsigned int indexTab[/*3*NCMP=30*/];
-
-    // store positions in sym tensor wr to full
-    static const unsigned int applyTab[/*NK=27*/];
-
-    // indices to be set at construction if component-wise evaluation is performed
-    const unsigned int _i,_j,_k;
-
-    // Material Parameters
-    const FReal _CoreWidth2; // if >0 then kernel is NON homogeneous
-
-    FInterpMatrixKernel_R_IJK(const FReal CoreWidth = 0.0, const unsigned int d = 0)
-        : _i(indexTab[d]), _j(indexTab[d+NCMP]), _k(indexTab[d+2*NCMP]), _CoreWidth2(CoreWidth*CoreWidth)
-    {}
-
-    // copy ctor
-    FInterpMatrixKernel_R_IJK(const FInterpMatrixKernel_R_IJK& other)
-        : _i(other._i), _j(other._j), _k(other._k), _CoreWidth2(other._CoreWidth2)
-    {}
-
-    // returns position in reduced storage from position in full 3x3x3 matrix
-    unsigned int getPosition(const unsigned int n) const
-    {return applyTab[n];}
-
-    // returns Core Width squared
-    FReal getCoreWidth2() const
-    {return _CoreWidth2;}
-
-    // evaluate interaction
-    template <class ValueClass>
-    FReal evaluate(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
-                   const ValueClass& x2, const ValueClass& y2, const ValueClass& z2) const
-    {
-        // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
-        // This makes the P2P mutual interactions implementation more explicit
-        const ValueClass diffx = (x1-x2);
-        const ValueClass diffy = (y1-y2);
-        const ValueClass diffz = (z1-z2);
-        const FReal one_over_r = FMath::One<ValueClass>()/sqrt(diffx*diffx +
-                                                diffy*diffy +
-                                                diffz*diffz + FMath::ConvertTo<ValueClass,FReal>(_CoreWidth2));
-        const FReal one_over_r2 = one_over_r*one_over_r;
-        const FReal one_over_r3 = one_over_r2*one_over_r;
-        FReal ri,rj,rk;
-
-        if(_i==0) ri=diffx;
-        else if(_i==1) ri=diffy;
-        else if(_i==2) ri=diffz;
-        else throw std::runtime_error("Update i!");
-
-        if(_j==0) rj=diffx;
-        else if(_j==1) rj=diffy;
-        else if(_j==2) rj=diffz;
-        else throw std::runtime_error("Update j!");
-
-        if(_k==0) rk=diffx;
-        else if(_k==1) rk=diffy;
-        else if(_k==2) rk=diffz;
-        else throw std::runtime_error("Update k!");
-
-        const FReal ri2=ri*ri;
-        const FReal rj2=rj*rj;
-
-        if(_i==_j){
-            if(_j==_k) //i=j=k
-                return FReal(3.) * ( FReal(-1.) + ri2 * one_over_r2 ) * ri * one_over_r3;
-            else //i=j!=k
-                return ( FReal(-1.) + FReal(3.) * ri2 * one_over_r2 ) * rk * one_over_r3;
-        }
-        else //(_i!=j)
-            if(_i==_k) //i=k!=j
-                return ( FReal(-1.) + FReal(3.) * ri2 * one_over_r2 ) * rj * one_over_r3;
-            else if(_j==_k) //i!=k=j
-                return ( FReal(-1.) + FReal(3.) * rj2 * one_over_r2 ) * ri * one_over_r3;
-            else //i!=k!=j
-                return FReal(3.) * ri * rj * rk * one_over_r2 * one_over_r3;
-
-    }
-
-    // evaluate interaction (blockwise)
-    template <class ValueClass>
-    void evaluateBlock(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
-                       const ValueClass& x2, const ValueClass& y2, const ValueClass& z2, ValueClass* block) const
-    {
-        // Convention for anti-symmetric kernels xy=y-x instead of xy=x-y
-        // This makes the P2P mutual interactions implementation more explicit
-        const ValueClass diffx = (x1-x2);
-        const ValueClass diffy = (y1-y2);
-        const ValueClass diffz = (z1-z2);
-        const ValueClass one_over_r = FMath::One<ValueClass>()/FMath::Sqrt(diffx*diffx +
-                                                diffy*diffy +
-                                                diffz*diffz + FMath::ConvertTo<ValueClass,FReal>(_CoreWidth2));
-        const ValueClass one_over_r2 = one_over_r*one_over_r;
-        const ValueClass one_over_r3 = one_over_r2*one_over_r;
-
-        const ValueClass r[3] = {diffx,diffy,diffz};
-
-        for(unsigned int d=0;d<NCMP;++d){
-            unsigned int i = indexTab[d];
-            unsigned int j = indexTab[d+NCMP];
-            unsigned int k = indexTab[d+2*NCMP];
-
-            if(i==j){
-                if(j==k) //i=j=k
-                    block[d] = FReal(3.) * ( FReal(-1.) + r[i]*r[i] * one_over_r2 ) * r[i] * one_over_r3;
-                else //i=j!=k
-                    block[d] =  ( FReal(-1.) + FReal(3.) * r[i]*r[i] * one_over_r2 ) * r[k] * one_over_r3;
-            }
-            else //(i!=j)
-                if(i==k) //i=k!=j
-                    block[d] =  ( FReal(-1.) + FReal(3.) * r[i]*r[i] * one_over_r2 ) * r[j] * one_over_r3;
-                else if(j==k) //i!=k=j
-                    block[d] =  ( FReal(-1.) + FReal(3.) * r[j]*r[j] * one_over_r2 ) * r[i] * one_over_r3;
-                else //i!=k!=j
-                    block[d] =  FReal(3.) * r[i]*r[j]*r[k] * one_over_r2 * one_over_r3;
-        }
-    }
-
-    FReal getScaleFactor(const FReal RootCellWidth, const int TreeLevel) const
-    {
-        const FReal CellWidth(RootCellWidth / FReal(FMath::pow(2, TreeLevel)));
-        return getScaleFactor(CellWidth);
-    }
-
-    // R_{,ijk} is homogeneous to [L]/[L]^{-3}=[L]^{-2}
-    // => scales like ONE_OVER_RR
-    FReal getScaleFactor(const FReal CellWidth) const
-    {
-        return FReal(4.) / (CellWidth*CellWidth);
-    }
-
-
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
-        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
-    }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
-        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+                                    FReal block[NCMP], FReal blockDerivative[NCMP][3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
 };
 

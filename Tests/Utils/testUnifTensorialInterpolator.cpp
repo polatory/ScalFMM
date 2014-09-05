@@ -59,7 +59,6 @@
 int main(int, char **){
 
   typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-  typedef FInterpMatrixKernel_R_IJK RIJKMatrixKernelClass; // PB: force computation
   const double a = 0.0; // core width (Beware! if diff from 0. then Kernel should be NON HOMOGENEOUS !!!)
 
   const unsigned int ncmp = MatrixKernelClass::NCMP;
@@ -128,7 +127,6 @@ int main(int, char **){
   typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
   InterpolatorClass S;
   MatrixKernelClass MatrixKernel;
-  RIJKMatrixKernelClass RIJKMatrixKernel;
 
   std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
 
@@ -559,19 +557,21 @@ int main(int, char **){
 //        f[counter*3 + 1] += force.getY() * wx * wy;
 //        f[counter*3 + 2] += force.getZ() * wx * wy;
 
+        FReal rij[ncmp];
+        FReal rijk[ncmp][3];
+        MatrixKernel.evaluateBlockAndDerivative(x,y,rij,rijk);
+
         // R,ij and (R,ij),k
         for (unsigned int i=0; i<npot; ++i) // sum all compo
           for (unsigned int j=0; j<nrhs; ++j){
             unsigned int d = MatrixKernel.getPosition(i*nrhs+j);
-            const FReal rij = MatrixKernelClass(a,d).evaluate(x, y);
             // potential
-            p[i][counter] += rij * wy[j];
+            p[i][counter] += rij[d] * wy[j];
             // force
             FReal force_k;
             for (unsigned int k=0; k<3; ++k){
-              unsigned int dk = RIJKMatrixKernel.getPosition((i*nrhs+j)*3+k);
               // Convention in matrix kernel: R_ij(x-y), while R_ijk(y-x)
-              force_k = FReal(-1.) * RIJKMatrixKernelClass(a,dk).evaluate(x, y);
+              force_k = FReal(1.) * rijk[d][k];
               f[i][counter*3 + k] += force_k * wx[j] * wy[j];
             }
           }

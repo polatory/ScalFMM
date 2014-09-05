@@ -16,7 +16,7 @@
 // ===================================================================================
 
 #include "Utils/FGlobal.hpp"
-#include "Utils/FTrace.hpp"
+
 #include "Utils/FSmartPointer.hpp"
 
 #include "FAbstractChebKernel.hpp"
@@ -469,14 +469,14 @@ public:
                      ContainerClass* const NeighborSourceParticles[27],
                      const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteractionComputer<MatrixKernelClass::Identifier, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

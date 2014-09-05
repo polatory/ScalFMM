@@ -68,10 +68,7 @@ int main(int argc, char* argv[])
 
   // typedefs
   typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
-//  typedef FInterpMatrixKernelR MatrixKernelClass;
-//  typedef FInterpMatrixKernel_R_IJK MatrixKernelClass;
 
-  const KERNEL_FUNCTION_IDENTIFIER MK_ID = MatrixKernelClass::Identifier;
   const unsigned int NPV  = MatrixKernelClass::NPV;
   const unsigned int NPOT = MatrixKernelClass::NPOT;
   const unsigned int NRHS = MatrixKernelClass::NRHS;
@@ -79,15 +76,6 @@ int main(int argc, char* argv[])
 
   const double CoreWidth = 0.1;
   const MatrixKernelClass MatrixKernel(CoreWidth);
-  std::cout<< "Interaction kernel: ";
-  if(MK_ID == ONE_OVER_R) std::cout<< "1/R";
-  else if(MK_ID == R_IJ)
-    std::cout<< "Ra_{,ij}" 
-             << " with core width a=" << CoreWidth <<std::endl;
-  else if(MK_ID == R_IJK)
-    std::cout<< "Ra_{,ijk} (BEWARE! Forces NOT YET IMPLEMENTED)"
-             << " with core width a=" << CoreWidth <<std::endl;
-  else std::runtime_error("Provide a valid matrix kernel!");
 
   // init particles position and physical value
   struct TestParticle{
@@ -134,37 +122,15 @@ int main(int argc, char* argv[])
     {
       for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
         for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-          if(MK_ID == R_IJ)
-            FP2P::MutualParticlesRIJ(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                     particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                     particles[idxTarget].forces[0], particles[idxTarget].forces[1],
-                                     particles[idxTarget].forces[2], particles[idxTarget].potential,
-                                     particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                     particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                     particles[idxOther].forces[0], particles[idxOther].forces[1],
-                                     particles[idxOther].forces[2], particles[idxOther].potential,
-                                     &MatrixKernel);
-//          else if(MK_ID == ONE_OVER_R)
-//            FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-//                                  particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue[0],
-//                                  particles[idxTarget].forces[0], particles[idxTarget].forces[1],
-//                                  particles[idxTarget].forces[2], particles[idxTarget].potential,
-//                                  particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-//                                  particles[idxOther].position.getZ(), particles[idxOther].physicalValue[0],
-//                                  particles[idxOther].forces[0], particles[idxOther].forces[1],
-//                                  particles[idxOther].forces[2], particles[idxOther].potential,&MatrixKernel);
-          else if(MK_ID == R_IJK)
-            FP2P::MutualParticlesRIJK(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                      particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
-                                      particles[idxTarget].forces[0], particles[idxTarget].forces[1],
-                                      particles[idxTarget].forces[2], particles[idxTarget].potential,
-                                      particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                      particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                                      particles[idxOther].forces[0], particles[idxOther].forces[1],
-                                      particles[idxOther].forces[2], particles[idxOther].potential,
-                                      &MatrixKernel);
-          else 
-            std::runtime_error("Provide a valid matrix kernel!");
+          FP2P::MutualParticlesKIJ(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
+                                   particles[idxTarget].forces[0], particles[idxTarget].forces[1],
+                                   particles[idxTarget].forces[2], particles[idxTarget].potential,
+                                   particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                   particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                   particles[idxOther].forces[0], particles[idxOther].forces[1],
+                                   particles[idxOther].forces[2], particles[idxOther].potential,
+                                   &MatrixKernel);
         }
       }
     }
@@ -185,7 +151,7 @@ int main(int argc, char* argv[])
     // ... either deduce from element size
   const FReal LeafCellWidth = FReal(loader.getBoxWidth()) / FReal(FMath::pow(2.,TreeHeight-1));
   const FReal ElementSize = LeafCellWidth / FReal(3.);  
-  const FReal BoxWidthExtension = ElementSize; // depends on type of element
+  const FReal BoxWidthExtension = 0.*ElementSize; // depends on type of element
     // ... or set to arbitrary value (0. means no extension)
 //    const FReal BoxWidthExtension = FReal(0.); 
 
@@ -222,11 +188,6 @@ int main(int argc, char* argv[])
           tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue[0]);
         else if(NPV==3)
           tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
-        else if(NPV==9) // R_IJK
-          tree.insert(particles[idxPart].position, idxPart, 
-                      particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2],
-                      particles[idxPart].physicalValue[3], particles[idxPart].physicalValue[4], particles[idxPart].physicalValue[5],
-                      particles[idxPart].physicalValue[6], particles[idxPart].physicalValue[7], particles[idxPart].physicalValue[8]);
         else 
           std::runtime_error("Insert correct number of physical values!");
 

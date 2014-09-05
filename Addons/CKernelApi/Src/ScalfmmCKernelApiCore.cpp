@@ -1,13 +1,18 @@
 // ===================================================================================
-// Logiciel initial: ScalFmm Version 0.5
-// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
-// Propriétaires : INRIA.
-// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
-// Initial software: ScalFmm Version 0.5
-// Co-authors: Olivier Coulaud, Bérenger Bramas.
-// Owners: INRIA.
-// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
+// Copyright ScalFmm 2014 I
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
 // ===================================================================================
+//
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
@@ -156,10 +161,10 @@ typedef FFmmAlgorithmThread<OctreeClass, CoreCell, CoreContainerClass, CoreKerne
 // Our scalfmm handle
 struct ScalFmmCoreHandle {
     struct ScalFmmCoreConfig {
-        //paramètres en lecture/écriture :
-        int treeHeight;     // hombre de niveaux de l'arbre (int)
-        FReal boxWidth;    // taille de la boîte racine (FReal)
-        FPoint boxCenter; // position du centre de la boîte racine (FReal[3])
+        // Read/Write parameter
+        int treeHeight;     //  Number of level in the octree
+        FReal boxWidth;    // Simulation box size (root level)
+        FPoint boxCenter; // Center position of the box simulation(FReal[3])
     };
 
     ScalFmmCoreConfig config;
