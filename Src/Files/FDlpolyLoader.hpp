@@ -232,7 +232,7 @@ public:
     	file >> index;
 
     	std::getline(file, line); // needed to skip the end of the line in non periodic case
-    	std::cout << "line: " << line << std::endl;
+  //  	std::cout << "line: " << line << std::endl;
     	if ( levcfg == 0) {
     		file >> x >> y >> z;
     	}else if ( levcfg == 1) {
