@@ -1,0 +1,12 @@
+
+ Periodic Data
+    1)  DLPOLY DATA  
+    To check the periodic Algorithm, we consider a crystal of NaCL. The computation are done by 
+    DL_POLY molecular dynamic code with the Ewald method. We only have the energy and the forces.  
+    To compare with our approach we  removed the Electric moment and the new data are in the file
+     called forceNacl_2000.bfma. The potential is wrong
+     The new energy is Energy  7.4014682651e+01
+Tests/Release/removeMoment  -Ewald2FMM -fin ../Data/forceNacl_2000_dlpolyPer.bin -dlpoly -fout ../Data/forceNacl_2000.fma
+ 
+ Energy EWALD  = -3.6662545891e+05
+Energy New       =   7.4014682651e+01
