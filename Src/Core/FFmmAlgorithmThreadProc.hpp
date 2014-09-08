@@ -685,10 +685,7 @@ private:
             // Do M2L
             //////////////////////////////////////////////////////////////////
 
-            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-            const CellClass* neighbors[343];
-
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -718,8 +715,11 @@ private:
                     {
                         const int chunckSize = FMath::Max(1, numberOfCells/(omp_get_num_threads()*omp_get_num_threads()));
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
-#pragma omp task
+                            #pragma omp task
                             {
+                                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
+                                const CellClass* neighbors[343];
+
                                 const int nbCellToCompute = FMath::Min(chunckSize, numberOfCells-idxCell);
                                 for(int idxCellToCompute = idxCell ; idxCellToCompute < idxCell+nbCellToCompute ; ++idxCellToCompute){
                                     const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCellToCompute].getCurrentGlobalCoordinate(), idxLevel);
@@ -729,10 +729,10 @@ private:
                         }
                     }
 
-#pragma omp taskwait
+                    #pragma omp taskwait
 
                     for(int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
-#pragma omp task
+                        #pragma omp task
                         {
                             kernels[idxThread]->finishedLevelM2L(idxLevel);
                         }
@@ -1271,8 +1271,6 @@ private:
             //////////////////////////////////////////////////////////
 
             {
-                KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
-
                 #pragma omp single nowait
                 {
                     FLOG(computationCounter.tic());
@@ -1286,6 +1284,7 @@ private:
                             const int nbLeavesInTask = FMath::Min(endAtThisShape-idxLeafs, chunckSize);
                             #pragma omp task
                             {
+                                KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                                 // There is a maximum of 26 neighbors
                                 ContainerClass* neighbors[27];
 
