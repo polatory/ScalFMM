@@ -42,30 +42,35 @@
 /** DLpoly particle is used in the gadget program
  * here we try to make the same simulation
  */
-struct MDParticle {
-	FPoint position;
-	FReal  forces[3];
-	FReal  physicalValue;
-	FReal  potential;
-	int      index;
-};
 
+void genDistusage() {
+	std::cout << ">> Remove or Add First moment This executable has to be used to compute direct interaction either for periodic or non periodic system.\n";
+	std::cout << " Options " << std::endl
+			<< "      -fin  fileIn.{bin, txt) input file name "<< std::endl
+			<< "      -fout fileout.{bfma, fma)  output file name "<< std::endl
+			<< "      -Ewald2FMM to add the Electric Moment in the potential and the force " << std::endl
+			<< "      -FMM2Ewald  to remove the  Electric Moment in the potential and the force " << std::endl ;
+	std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
+	exit(-1);
+}
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
 	//
 	FReal scaleEnergy, scaleForce  ;
 	const FReal r4pie0 = FReal(138935.4835);
+	const double q0  = 1.6021892e-19;
+	const double e0  = 8.854187e-12;
+	const double  ang = 1.0e-10;
+	const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi*e0); //8.98755179e+9 ;
 
+	std::cout << "Unsur4pie0: " <<   Unsur4pie0 << " 8.98755179e+9  Diff " << Unsur4pie0-8.98755179e+9 <<std::endl;
+
+	if( argc == 1 ){
+		genDistusage() ;
+	}
 	///////////////////////What we do/////////////////////////////
 	if( FParameters::existParameter(argc, argv, "-help") || FParameters::existParameter(argc, argv, "-h") ){
-		std::cout << ">> Remove or Add First moment This executable has to be used to compute direct interaction either for periodic or non periodic system.\n";
-		std::cout << " Options " << std::endl
-				<< "      -fin  fileIn.{bin, txt) input file name "<< std::endl
-				<< "      -fout fileout.{bfma, fma)  output file name "<< std::endl
-				<< "      -Ewald2FMM to add the Electric Moment in the potential and the force " << std::endl
-				<< "      -FMM2Ewald  to remove the  Electric Moment in the potential and the force " << std::endl ;
-		std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
-		exit(-1);
+		genDistusage() ;
 	}
 	if( FParameters::existParameter(argc, argv, "-Ewald2FMM") &&FParameters::existParameter(argc, argv, "-FMM2Ewald") ){
 		std::cerr << " Only -Ewald2FMM or FDMM2Ewald have to be set " <<std::endl;
@@ -83,6 +88,10 @@ int main(int argc, char ** argv){
 		scaleEnergy =  r4pie0 / 418.4 ;   // kcal mol^{-1}
 		scaleForce  = -r4pie0 ;           // 10 J mol^{-1} A^{-1}
 	}
+	else 	if(FParameters::existParameter(argc, argv, "-stamp")){
+		scaleEnergy =  q0*q0*Unsur4pie0/ang ;
+		scaleForce  = -scaleEnergy/ang;
+	}
 	std::cout <<"Scaling factor " <<std::endl
 			<<      "Energy factor " << scaleEnergy<<std::endl
 			<<      "  Force factor " << scaleForce<<std::endl ;
@@ -94,59 +103,115 @@ int main(int argc, char ** argv){
 
 	FTic counter;
 
-	// -----------------------------------------------------
-	//  LOADER EWALD PARTICLES FROM DLPOLY
-	//  -----------------------------------------------------
 	std::cout << "Opening : " << filenameIn << "\n";
-	FDlpolyLoader  *loader = nullptr ;
+	FDlpolyLoader          *loaderDlpoly = nullptr ;
+	FFmaGenericLoader  *loaderFMA = nullptr ;
+	bool useDLPOLY=false,useFMA=false;
 	std::string ext(".bin");
+	std::string ext1(".fma"),ext2(".bfma");
+
 	// open particle file
 	if(filenameIn.find(ext) != std::string::npos) {
-		loader  = new FDlpolyBinLoader(filenameIn.c_str());
-
+		loaderDlpoly  = new FDlpolyBinLoader(filenameIn.c_str());
+		useDLPOLY = true ;
 	}
 	else if(filenameIn.find(".txt")!=std::string::npos ) {
-		loader  = new FDlpolyAsciiLoader(filenameIn.c_str());
+		loaderDlpoly  = new FDlpolyAsciiLoader(filenameIn.c_str());
+		useDLPOLY = true ;
 	}
-	else  {
+	else if(filenameIn.find(ext1)!=std::string::npos ) {
+		loaderFMA  = new FFmaGenericLoader(filenameIn.c_str());
+		useFMA = true ;
+	}  else if(filenameIn.find(ext2)!=std::string::npos ) {
+		loaderFMA  = new FFmaGenericLoader(filenameIn.c_str());
+		useFMA    = true ;
+	}  else
+	{
 		std::cout << "Input file not allowed only .bin or .txt extensions" <<std::endl;
 		std::exit ( EXIT_FAILURE) ;
 	}
+	double boxsize[3] ;
+	FPoint centre ;
+	FSize numberofParticles ;
+	FmaRWParticle<8,8>*  particlesIn  ; //= new FmaRWParticle<8,8>[numberofParticles];
 
-	if(! loader->isOpen()){
-		std::cout << "Loader Error, " << filenameIn << " is missing\n";
-		exit(EXIT_FAILURE);
+	if (useDLPOLY) {
+		// -----------------------------------------------------
+		//  LOADER EWALD PARTICLES FROM DLPOLY
+		//  -----------------------------------------------------
+		if(! loaderDlpoly->isOpen()){
+			std::cout << "Loader Error, " << filenameIn << " is missing\n";
+			exit(EXIT_FAILURE);
+		}
+		boxsize[0] = boxsize[1]= boxsize[2]=loaderDlpoly->getBoxWidth() ;
+		centre = 	loaderDlpoly->getCenterOfBox();
+		numberofParticles = loaderDlpoly->getNumberOfParticles() ;
+		particlesIn  = new FmaRWParticle<8,8>[numberofParticles];
+		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
+
+		for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
+			//
+			FPoint position;
+			FReal  forces[3];
+			FReal  physicalValue;
+			FReal  potential=0.0;
+			int index ;
+			loaderDlpoly->fillParticle(&position, forces,
+					&physicalValue,&index);
+			particlesIn[index].setPosition(position) ;
+			particlesIn[index].setPhysicalValue(physicalValue) ;
+			particlesIn[index].setPotential(potential) ;
+			particlesIn[index].setForces(forces[0],forces[1],forces[2]) ;
+		}
 	}
+	else if (useFMA) {
+		// -----------------------------------------------------
+		//  LOADER EWALD PARTICLES FROM STAMP
+		//  -----------------------------------------------------
+		if(! loaderFMA->isOpen()){
+			std::cout << "Loader Error, " << filenameIn << " is missing\n";
+			exit(EXIT_FAILURE);
+		}
+		boxsize[0] = boxsize[1]= boxsize[2] = loaderFMA->getBoxWidth()/ang ;
+		centre = loaderFMA->getCenterOfBox();
+		centre *= boxsize[0];
+		numberofParticles                    = loaderFMA->getNumberOfParticles() ;
+		particlesIn  = new FmaRWParticle<8,8>[numberofParticles];
+		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
+
+		loaderFMA->fillParticle(particlesIn,numberofParticles);
+		for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
+			//
+			FPoint PP = particlesIn[idxPart].getPosition() ;
+			PP *=  boxsize[0];
+			particlesIn[idxPart].setPosition(PP) ;
+			//
+		}
+	}
+
 	// ---------------------------------------------------------------------------------
 	//  Read particles
 	// ---------------------------------------------------------------------------------
-	double boxsize[3] ;
-	boxsize[0] = boxsize[1]= boxsize[2]=loader->getBoxWidth() ;
 
-	FSize numberofParticles = loader->getNumberOfParticles() ;
-	std::cout << "Creating & Inserting " << numberofParticles<< " particles ..." << std::endl;
-	std::cout << "\tWidth : " << loader->getBoxWidth() << " \t center x : " << loader->getCenterOfBox().getX()
-	    											<< " y : " << loader->getCenterOfBox().getY() << " z : " << loader->getCenterOfBox().getZ() << std::endl;
 
+	//	std::cout << "Creating & Inserting "q << numberofParticles<< " particles ..." << std::endl;
+	//	std::cout << "\tWidth : " << loader->getBoxWidth() << " \t center x : " << loader->getCenterOfBox().getX()
+	//	    													<< " y : " << loader->getCenterOfBox().getY() << " z : " << loader->getCenterOfBox().getZ() << std::endl;
+	//
 
 	counter.tic();
 	FPoint electricMoment(0.0,0.0,0.0) ;
 	// const --> then shared
-	MDParticle * const particles = new MDParticle[numberofParticles];
-	memset(particles, 0, sizeof(MDParticle) * numberofParticles) ;
 	//
 	double totalCharge = 0.0;
 	//
 	for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 		//
-		loader->fillParticle(&particles[idxPart].position, particles[idxPart].forces,
-				&particles[idxPart].physicalValue,&particles[idxPart].index);
+		totalCharge += particlesIn[idxPart].getPhysicalValue() ;
 		//
-		totalCharge += particles[idxPart].physicalValue ;
-		//
-		electricMoment.incX(particles[idxPart].physicalValue*particles[idxPart].position.getX() );
-		electricMoment.incY(particles[idxPart].physicalValue*particles[idxPart].position.getY() );
-		electricMoment.incZ(particles[idxPart].physicalValue*particles[idxPart].position.getZ() );
+		electricMoment.incX(particlesIn[idxPart].getPhysicalValue()*particlesIn[idxPart].getPosition().getX() );
+		electricMoment.incY(particlesIn[idxPart].getPhysicalValue()*particlesIn[idxPart].getPosition().getY() );
+		electricMoment.incZ(particlesIn[idxPart].getPhysicalValue()*particlesIn[idxPart].getPosition().getZ() );
 	}
 	counter.tac();
 
@@ -196,47 +261,56 @@ int main(int argc, char ** argv){
 		//		std::cout << " Pos " << particles[idx].position.getX()<< "  "<< particles[idx].position.getY()<< "  "<< particles[idx].position.getZ()<< std::endl
 		//				      << " F  ori " << particles[idx].forces[0]<< "  "<< particles[idx].forces[1]<< "  "<< particles[idx].forces[2]<< std::endl;
 
-		tmp = particles[idx].position.getX()*electricMoment.getX()  + particles[idx].position.getY()*electricMoment.getY()
-								+ particles[idx].position.getZ()*electricMoment.getZ()  ;
+		tmp = particlesIn[idx].getPosition().getX()*electricMoment.getX()  + particlesIn[idx].getPosition().getY()*electricMoment.getY()
+																														+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
 		//
-		particles[idx].potential += 2.0*tmp*coeffCorrection;
+		double P = particlesIn[idx].getPotential();
+		particlesIn[idx].setPotential(  P + 2.0*tmp*coeffCorrection);
 		//
-		particles[idx].forces[0] = preScaleForce*particles[idx].forces[0] + 2.0*particles[idx].physicalValue*coeffCorrection*electricMoment.getX() ;
-		particles[idx].forces[1] = preScaleForce*particles[idx].forces[1] + 2.0*particles[idx].physicalValue*coeffCorrection*electricMoment.getY() ;
-		particles[idx].forces[2] = preScaleForce*particles[idx].forces[2] + 2.0*particles[idx].physicalValue*coeffCorrection*electricMoment.getZ() ;
+		double * forces ;
+		forces  = particlesIn[idx].getForces() ;
+		forces[0] = preScaleForce*forces[0] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getX() ;
+		forces[1] = preScaleForce*forces[1] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getY() ;
+		forces[2] = preScaleForce*forces[2] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getZ() ;
 		//
-		particles[idx].forces[0] *= postScaleForce;
-		particles[idx].forces[1] *= postScaleForce;
-		particles[idx].forces[2] *= postScaleForce;
+		forces[0] *= postScaleForce;
+		forces[1] *= postScaleForce;
+		forces[2] *= postScaleForce;
+		particlesIn[idx].setForces(forces[0],forces[1],forces[2]) ;
+
 		//	      std::cout <<  " F  new " << particles[idx].forces[0]<< "  "<< particles[idx].forces[1]<< "  "<< particles[idx].forces[2]<< std::endl<< std::endl;
 
 		//
 	}
+	std::cout.precision(10) ;
+
 	std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
 	std::cout << std::scientific;
 	std::cout.precision(10) ;
-	std::cout << " " <<  coeffCorrection*electricMoment.norm2()  <<std::endl;
-	std::cout << " " <<  preScaleEnergy*loader->getEnergy()  <<std::endl;
-	newEnergy = preScaleEnergy*loader->getEnergy() + coeffCorrection*electricMoment.norm2() ;
-	newEnergy     *= postScaleEnergy ;
+	if (useDLPOLY){
+		std::cout << " " <<  coeffCorrection*electricMoment.norm2()  <<std::endl;
+		std::cout << " " <<  preScaleEnergy*loaderDlpoly->getEnergy()  <<std::endl;
+		newEnergy = preScaleEnergy*loaderDlpoly->getEnergy() + coeffCorrection*electricMoment.norm2() ;
+		newEnergy     *= postScaleEnergy ;
 
-	//
-	std::cout.precision(10) ;
-	std::cout << "Energy EWALD  = "<< loader->getEnergy() <<std::endl ;
+
+		//
+		std::cout << "Energy EWALD  = "<< loaderDlpoly->getEnergy() <<std::endl ;
+	}
 	std::cout << "Energy New      = "<<newEnergy<<std::endl ;
 	//
 	// Save data in FMAFormat
 	//FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaRWParticle<8,8>* const particlesOut = new FmaRWParticle<8,8>[numberofParticles];
-	// remove index
-	memset(particlesOut, 0, sizeof(FmaRWParticle<8,8>) * numberofParticles) ;
-	for(int idx = 0 ; idx < numberofParticles ; ++idx){
-		particlesOut[idx].setPosition(particles[idx].position) ;
-		particlesOut[idx].setPhysicalValue(particles[idx].physicalValue) ;
-		particlesOut[idx].setPotential (particles[idx].potential) ;
-		particlesOut[idx].setForces(particles[idx].forces[0],particles[idx].forces[0],particles[idx].forces[2]) ;
-	}
-	//
+	//	FmaRWParticle<8,8>* const particlesOut = new FmaRWParticle<8,8>[numberofParticles];
+	//	// remove index
+	//	memset(particlesOut, 0, sizeof(FmaRWParticle<8,8>) * numberofParticles) ;
+	//	for(int idx = 0 ; idx < numberofParticles ; ++idx){
+	//		particlesOut[idx].setPosition(particles[idx].position) ;
+	//		particlesOut[idx].setPhysicalValue(particles[idx].physicalValue) ;
+	//		particlesOut[idx].setPotential (particles[idx].potential) ;
+	//		particlesOut[idx].setForces(particles[idx].forces[0],particles[idx].forces[0],particles[idx].forces[2]) ;
+	//	}
+	//	//
 	// ----------------------------------------------------------------
 	//  Save  computation in binary format
 	//
@@ -244,17 +318,16 @@ int main(int argc, char ** argv){
 
 	std::cout << "Generate " << filenameOut <<"  for output file" << std::endl;
 	//
-//	std::cout << " numberofParticles: " << nbParticles <<"  " << sizeof(numberofParticles) <<std::endl;
-//	std::cout << " denergy: " << newEnergy <<"  " << sizeof(newEnergy) <<std::endl;
-//	std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
+	//	std::cout << " numberofParticles: " << nbParticles <<"  " << sizeof(numberofParticles) <<std::endl;
+	//	std::cout << " denergy: " << newEnergy <<"  " << sizeof(newEnergy) <<std::endl;
+	//	std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
 	//
 	FFmaGenericWriter writer(filenameOut) ;
-	writer.writeHeader(loader->getCenterOfBox(), loader->getBoxWidth() , numberofParticles,*particlesOut) ;
-	writer.writeArrayOfParticles(particlesOut, numberofParticles);
+	writer.writeHeader(centre, boxsize[0] , numberofParticles,*particlesIn) ;
+	writer.writeArrayOfParticles(particlesIn, numberofParticles);
 
 	//
-	delete[] particles;
-
+	delete[] particlesIn;
 	return 0;
 }
 
