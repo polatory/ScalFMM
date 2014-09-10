@@ -507,7 +507,7 @@ public:
 					                                                                      <<  "  asked in structure "	<<(*dataToRead).getReadDataNumber()  <<std::endl;
 			std::exit(EXIT_FAILURE);
 		}
-		std::cout << " typeData[1]  "<< typeData[1]  << "   "<<(*dataToRead).getReadDataNumber() <<" otherDataRead "<<otherDataRead <<std::endl;
+//		std::cout << " typeData[1]  "<< typeData[1]  << "   "<<(*dataToRead).getReadDataNumber() <<" otherDataRead "<<otherDataRead <<std::endl;
 		if(binaryFile && otherDataRead == 0 ){
 			file->read((char*)((*dataToRead).getPtrFirstData()), sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
 		}
