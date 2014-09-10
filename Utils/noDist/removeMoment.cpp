@@ -89,12 +89,12 @@ int main(int argc, char ** argv){
 		scaleForce  = -r4pie0 ;           // 10 J mol^{-1} A^{-1}
 	}
 	else 	if(FParameters::existParameter(argc, argv, "-stamp")){
-		scaleEnergy =  q0*q0*Unsur4pie0/ang ;
+		scaleEnergy =  q0*q0*Unsur4pie0 /ang;
 		scaleForce  = -scaleEnergy/ang;
 	}
 	std::cout <<"Scaling factor " <<std::endl
-			<<      "Energy factor " << scaleEnergy<<std::endl
-			<<      "  Force factor " << scaleForce<<std::endl ;
+			<<      "         Energy factor " << scaleEnergy<<std::endl
+			<<      "         Force factor   " << scaleForce<<std::endl ;
 	//////////////////////////////////////////////////////////////
 	//
 	const std::string    filenameIn (FParameters::getStr(argc,argv,"-fin", "../Data/forceNacl_128_dlpolyPer.bin"));
@@ -105,7 +105,7 @@ int main(int argc, char ** argv){
 
 	std::cout << "Opening : " << filenameIn << "\n";
 	FDlpolyLoader          *loaderDlpoly = nullptr ;
-	FFmaGenericLoader  *loaderFMA = nullptr ;
+	FFmaGenericLoader  *loaderFMA    = nullptr ;
 	bool useDLPOLY=false,useFMA=false;
 	std::string ext(".bin");
 	std::string ext1(".fma"),ext2(".bfma");
@@ -156,8 +156,7 @@ int main(int argc, char ** argv){
 			FReal  physicalValue;
 			FReal  potential=0.0;
 			int index ;
-			loaderDlpoly->fillParticle(&position, forces,
-					&physicalValue,&index);
+			loaderDlpoly->fillParticle(&position, forces,&physicalValue,&index);
 			particlesIn[index].setPosition(position) ;
 			particlesIn[index].setPhysicalValue(physicalValue) ;
 			particlesIn[index].setPotential(potential) ;
@@ -172,14 +171,20 @@ int main(int argc, char ** argv){
 			std::cout << "Loader Error, " << filenameIn << " is missing\n";
 			exit(EXIT_FAILURE);
 		}
-		boxsize[0] = boxsize[1]= boxsize[2] = loaderFMA->getBoxWidth()/ang ;
-		centre = loaderFMA->getCenterOfBox();
-		centre *= boxsize[0];
+		boxsize[0] = boxsize[1]= boxsize[2] = loaderFMA->getBoxWidth()/ang;
+
+		//		scaleEnergy /=    boxsize[0]  ;
+		//		scaleForce     = -scaleEnergy/boxsize[0] ;
+		//		boxsize[0] = boxsize[1]= boxsize[2] = 1.0 ;
+
+
 		numberofParticles                    = loaderFMA->getNumberOfParticles() ;
 		particlesIn  = new FmaRWParticle<8,8>[numberofParticles];
 		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
 
 		loaderFMA->fillParticle(particlesIn,numberofParticles);
+		centre = loaderFMA->getCenterOfBox();
+		centre *= boxsize[0];
 		for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 			//
 			FPoint PP = particlesIn[idxPart].getPosition() ;
@@ -189,15 +194,6 @@ int main(int argc, char ** argv){
 		}
 	}
 
-	// ---------------------------------------------------------------------------------
-	//  Read particles
-	// ---------------------------------------------------------------------------------
-
-
-	//	std::cout << "Creating & Inserting "q << numberofParticles<< " particles ..." << std::endl;
-	//	std::cout << "\tWidth : " << loader->getBoxWidth() << " \t center x : " << loader->getCenterOfBox().getX()
-	//	    													<< " y : " << loader->getCenterOfBox().getY() << " z : " << loader->getCenterOfBox().getZ() << std::endl;
-	//
 
 	counter.tic();
 	FPoint electricMoment(0.0,0.0,0.0) ;
@@ -224,20 +220,13 @@ int main(int argc, char ** argv){
 
 	std::cout << "Done  " << "(@Reading Ewald file  = " << counter.elapsed() << " s)." << std::endl;
 	//
-	//
-	// ---------------------------------------------------------------------------------
-	//   READ DIRECT COMPUTATION
-	// ----------------------------------------------------------------
-	//  Save direct computation in binary format
-	// write binary output file
-	//
 	// ----------------------------------------------------------------------------
 	//	 Remove or Add Electric Moment
 	//-----------------------------------------------------------------------------
 	//  remove polarization component
 	//
 	double volume               =  boxsize[0] *boxsize[1]*boxsize[2] ;
-	double coeffCorrection  = 2.0*FMath::FPi/volume/3.0 ;
+	double coeffCorrection   = 4.0*FMath::FPi/volume/3.0 ;
 	double preScaleEnergy = 1.0,  postScaleEnergy = 1.0, preScaleForce = 1.0,  postScaleForce = 1.0 ;
 	if( FParameters::existParameter(argc, argv, "-Ewald2FMM") ){
 		preScaleEnergy = 1.0/scaleEnergy ;  postScaleEnergy = 1.0 ; preScaleForce = 1.0/scaleForce;  postScaleForce = 1.0 ;
@@ -258,28 +247,22 @@ int main(int argc, char ** argv){
 	//
 	double tmp, newEnergy =0.0;
 	for(int idx = 0 ; idx < numberofParticles ; ++idx){
-		//		std::cout << " Pos " << particles[idx].position.getX()<< "  "<< particles[idx].position.getY()<< "  "<< particles[idx].position.getZ()<< std::endl
-		//				      << " F  ori " << particles[idx].forces[0]<< "  "<< particles[idx].forces[1]<< "  "<< particles[idx].forces[2]<< std::endl;
-
-		tmp = particlesIn[idx].getPosition().getX()*electricMoment.getX()  + particlesIn[idx].getPosition().getY()*electricMoment.getY()
-																														+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
+			tmp = particlesIn[idx].getPosition().getX()*electricMoment.getX()  + particlesIn[idx].getPosition().getY()*electricMoment.getY()
+					+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
 		//
 		double P = particlesIn[idx].getPotential();
 		particlesIn[idx].setPotential(  P + 2.0*tmp*coeffCorrection);
 		//
 		double * forces ;
 		forces  = particlesIn[idx].getForces() ;
-		forces[0] = preScaleForce*forces[0] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getX() ;
-		forces[1] = preScaleForce*forces[1] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getY() ;
-		forces[2] = preScaleForce*forces[2] + 2.0*particlesIn[idx].getPhysicalValue()*coeffCorrection*electricMoment.getZ() ;
+		forces[0] = preScaleForce*forces[0] - coeffCorrection*particlesIn[idx].getPhysicalValue()*electricMoment.getX() ;
+		forces[1] = preScaleForce*forces[1] - coeffCorrection*particlesIn[idx].getPhysicalValue()*electricMoment.getY() ;
+		forces[2] = preScaleForce*forces[2] - coeffCorrection*particlesIn[idx].getPhysicalValue()*electricMoment.getZ() ;
 		//
 		forces[0] *= postScaleForce;
 		forces[1] *= postScaleForce;
 		forces[2] *= postScaleForce;
 		particlesIn[idx].setForces(forces[0],forces[1],forces[2]) ;
-
-		//	      std::cout <<  " F  new " << particles[idx].forces[0]<< "  "<< particles[idx].forces[1]<< "  "<< particles[idx].forces[2]<< std::endl<< std::endl;
-
 		//
 	}
 	std::cout.precision(10) ;
@@ -300,27 +283,13 @@ int main(int argc, char ** argv){
 	std::cout << "Energy New      = "<<newEnergy<<std::endl ;
 	//
 	// Save data in FMAFormat
-	//FSize nbParticles = loader.getNumberOfParticles() ;
-	//	FmaRWParticle<8,8>* const particlesOut = new FmaRWParticle<8,8>[numberofParticles];
-	//	// remove index
-	//	memset(particlesOut, 0, sizeof(FmaRWParticle<8,8>) * numberofParticles) ;
-	//	for(int idx = 0 ; idx < numberofParticles ; ++idx){
-	//		particlesOut[idx].setPosition(particles[idx].position) ;
-	//		particlesOut[idx].setPhysicalValue(particles[idx].physicalValue) ;
-	//		particlesOut[idx].setPotential (particles[idx].potential) ;
-	//		particlesOut[idx].setForces(particles[idx].forces[0],particles[idx].forces[0],particles[idx].forces[2]) ;
-	//	}
-	//	//
+	//
 	// ----------------------------------------------------------------
 	//  Save  computation in binary format
 	//
 	//
 
 	std::cout << "Generate " << filenameOut <<"  for output file" << std::endl;
-	//
-	//	std::cout << " numberofParticles: " << nbParticles <<"  " << sizeof(numberofParticles) <<std::endl;
-	//	std::cout << " denergy: " << newEnergy <<"  " << sizeof(newEnergy) <<std::endl;
-	//	std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
 	//
 	FFmaGenericWriter writer(filenameOut) ;
 	writer.writeHeader(centre, boxsize[0] , numberofParticles,*particlesIn) ;
