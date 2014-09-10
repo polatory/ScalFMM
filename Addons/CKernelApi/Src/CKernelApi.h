@@ -94,17 +94,17 @@ void Scalfmm_execute_kernel(Scalfmm_Handle handle, struct Scalfmm_Kernel_Descrip
 //< This function fill the childFullPosition[3] with [0;1] to know the position of a child relatively to
 //< its position from its parent
 inline void Scalfmm_utils_parentChildPosition(int childPosition, int* childFullPosition){
-    childFullPosition[0] = childPosition%2;
-    childFullPosition[1] = (childPosition/2)%2;
-    childFullPosition[2] = (childPosition/4)%2;
+    childFullPosition[2] = (childPosition%2 ? 1 : -1);
+    childFullPosition[1] = ((childPosition/2)%2 ? 1 : -1);
+    childFullPosition[0] = ((childPosition/4)%2 ? 1 : -1);
 }
 
 //< This function fill the childFullPosition[3] with [-3;3] to know the position of a interaction
 //< cell relatively to its position from the target
 inline void Scalfmm_utils_interactionPosition(int interactionPosition, int* srcPosition){
-    srcPosition[0] = interactionPosition%7 - 3;
+    srcPosition[2] = interactionPosition%7 - 3;
     srcPosition[1] = (interactionPosition/7)%7 - 3;
-    srcPosition[2] = (interactionPosition/49)%7 - 3;
+    srcPosition[0] = (interactionPosition/49)%7 - 3;
 }
 
 #endif // CKERNELAPI_H
