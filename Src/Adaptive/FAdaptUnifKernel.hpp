@@ -1,5 +1,5 @@
-#ifndef FADAPTCHEBSYMKERNEL_HPP
-#define FADAPTCHEBSYMKERNEL_HPP
+#ifndef FADAPTUNIFKERNEL_HPP
+#define FADAPTUNIFKERNEL_HPP
 // ===================================================================================
 // Copyright ScalFmm 2011 INRIA,
 // This software is a computer program whose purpose is to compute the FMM.
@@ -19,10 +19,11 @@
 
 #include "Utils/FPoint.hpp"
 
-#include "Adaptative/FAdaptiveCell.hpp"
-#include "Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "Adaptative/FAbstractAdaptiveKernel.hpp"
-#include "Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Adaptive/FAdaptiveCell.hpp"
+#include "Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "Adaptive/FAbstractAdaptiveKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifM2LHandler.hpp"
 
 class FTreeCoordinate;
 
@@ -38,14 +39,13 @@ class FTreeCoordinate;
 
 /**
  * @author O. Coulaud
- * @class FAdaptChebSymKernel
+ * @class FAdaptUnifKernel
  * @brief
  * Please read the license
  *
- * This kernels implement the Chebyshev interpolation based FMM operators
- * exploiting the symmetries in the far-field. It implements all interfaces
- * (P2P, P2M, M2M, M2L, L2L, L2P) which are required by the FFmmAlgorithm and
- * FFmmAlgorithmThread.
+ * This kernels implement the Lagrange interpolation based FMM operators.
+ * It implements all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are 
+ * required by the FFmmAlgorithm and FFmmAlgorithmThread.
  *
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
@@ -54,12 +54,20 @@ class FTreeCoordinate;
  */
 
 template< class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveChebSymKernel : FChebSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveUnifKernel : FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 	//
-	typedef FChebSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+
 	enum {order = ORDER,
         nnodes = TensorTraits<ORDER>::nnodes};
+
+  /// Needed for M2L operator
+//  // If we choose to  pre-assemble adaptive M2L operators 
+//  // then we need to provide an adaptive M2L handler 
+//  // and the transfer in Fourier space is straightforward.
+//  typedef FUnifM2LHandler<ORDER,MatrixKernelClass::Type> M2LHandlerClass;
+//  const M2LHandlerClass M2LHandler;
 
   const MatrixKernelClass *const MatrixKernel;
 
@@ -78,17 +86,17 @@ public:
 	//	 * precomputed and compressed M2L operators from a binary file (an
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
-	FAdaptiveChebSymKernel(const int inTreeHeight, const FReal inBoxWidth,
-                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), MatrixKernel(inMatrixKernel)
+	FAdaptiveUnifKernel(const int inTreeHeight, const FReal inBoxWidth,
+                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel)
 	{}
 	//	/** Copy constructor */
-	FAdaptiveChebSymKernel(const FAdaptiveChebSymKernel& other)
-  : KernelBaseClass(other), MatrixKernel(other.MatrixKernel)
+	FAdaptiveUnifKernel(const FAdaptiveUnifKernel& other)
+  : KernelBaseClass(other)/*, M2LHandler(other.M2LHandler)*/, MatrixKernel(other.MatrixKernel)
 		{	}
 
 	//
 	//	/** Destructor */
-		~FAdaptiveChebSymKernel()
+		~FAdaptiveUnifKernel()
 		{
 			//this->~KernelBaseClass() ;
 		}
@@ -101,6 +109,10 @@ public:
       // 1) apply Sy
 			KernelBaseClass::Interpolator->applyP2M(CellCenter, BoxWidth,
                                               pole->getMultipole(idxRhs), particles);
+//      // 2) apply Discrete Fourier Transform
+//      M2LHandler.applyZeroPaddingAndDFT(pole->getMultipole(idxRhs), 
+//                                        pole->getTransformedMultipole(idxRhs));
+
 		}
 
 	}
@@ -113,22 +125,53 @@ public:
     const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
     const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
 
+//    ////////////////////////////////////////////////////////////////////////////
+//    /// p^6 version
+//    // allocate memory
+//    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+//
+//    // set child info
+//    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//
+//    // map global position of roots to local position in parent cell
+//    const map_glob_loc map(poleCellCenter, poleCellWidth);
+//    for (unsigned int n=0; n<nnodes; ++n)
+//      map(ChildRoots[n], localChildRoots[n]);
+//
+//    // assemble child - parent - interpolator
+//    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+
+
     ////////////////////////////////////////////////////////////////////////////
-    /// p^6 version
-    // allocate memory
-    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+    /// p^4 version
 
-    // set child info
-    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
-    FChebTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+    // Set sub-child coords
+    FReal globalChildCoords[3][ORDER];
+    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
-    // map global position of roots to local position in parent cell
+    // Map global position of sub-child nodes to [-1,1]
+    FReal localChildCoords[3][ORDER];
     const map_glob_loc map(poleCellCenter, poleCellWidth);
-    for (unsigned int n=0; n<nnodes; ++n)
-      map(ChildRoots[n], localChildRoots[n]);
+    FPoint localChildPoints;
+    for (unsigned int n=0; n<ORDER; ++n) {
+      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+      localChildCoords[0][n] = localChildPoints.getX();
+      localChildCoords[1][n] = localChildPoints.getY();
+      localChildCoords[2][n] = localChildPoints.getZ();
+    }
 
-    // assemble child - parent - interpolator
-    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+    // assemble interpolator
+    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+
+    // get permutation operators
+    unsigned int perm[3][nnodes];
+    for (unsigned int i=0;i<3; ++i) 
+      for (unsigned int n=0; n<nnodes; ++n)
+        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
@@ -137,14 +180,38 @@ public:
       // Do NOT reset multipole expansion !
       //FBlas::scal(nnodes, FReal(0.), pole->getMultipole(idxRhs));
 
-      /// p^6 version
-      FBlas::gemtva(nnodes, nnodes, FReal(1.),
-                    subChildParentInterpolator,
-                    const_cast<FReal*>(subCell->getMultipole(idxRhs)), pole->getMultipole(idxRhs));
+//      /// p^6 version
+//      FBlas::gemtva(nnodes, nnodes, FReal(1.),
+//                    subChildParentInterpolator,
+//                    const_cast<FReal*>(subCell->getMultipole(idxRhs)), pole->getMultipole(idxRhs));
+
+      /// p^4 version
+      FReal Exp[nnodes], PermExp[nnodes];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                   subChildParentInterpolator, ORDER,
+                   const_cast<FReal*>(subCell->getMultipole(idxRhs)), ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                   subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
+                   Exp, ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemtm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                   subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
+                   Exp, ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	pole->getMultipole(idxRhs)[perm[2][n]] += PermExp[n];
 
 
-    }// NVALS
 
+//      // 2) Apply Discete Fourier Transform
+//      M2LHandler.applyZeroPaddingAndDFT(ParentCell->getMultipole(idxRhs), 
+//                                         ParentCell->getTransformedMultipole(idxRhs));
+    }
 	}
 
 	void P2L(CellClass* const local, const int localLevel, const ContainerClass* const particles) override {
@@ -155,7 +222,7 @@ public:
 
     // interpolation points of target (X) cell
     FPoint X[nnodes];
-    FChebTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -195,8 +262,8 @@ public:
 
     // interpolation points of source (Y) and target (X) cell
     FPoint X[nnodes], Y[nnodes];
-    FChebTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
-    FChebTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
 
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -220,7 +287,7 @@ public:
 
     // interpolation points of source (Y) cell
     FPoint Y[nnodes];
-    FChebTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -262,33 +329,87 @@ public:
     const FPoint localCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
     const FReal localWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,localLevel))); 
 
+//    ////////////////////////////////////////////////////////////////////////////
+//    /// p^6 version
+//    // allocate memory
+//    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+//
+//    // set child info
+//    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//
+//    // map global position of roots to local position in parent cell
+//    const map_glob_loc map(localCenter, localWidth);
+//    for (unsigned int n=0; n<nnodes; ++n)
+//      map(ChildRoots[n], localChildRoots[n]);
+//
+//    // assemble child - parent - interpolator
+//    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+
     ////////////////////////////////////////////////////////////////////////////
-    /// p^6 version
-    // allocate memory
-    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
+    /// p^4 version
+    // Set sub-child coords
+    FReal globalChildCoords[3][ORDER];
+    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
-    // set child info
-    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
-    FChebTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
-
-    // map global position of roots to local position in parent cell
+    // Map global position of sub-child nodes to [-1,1]
+    FReal localChildCoords[3][ORDER];
     const map_glob_loc map(localCenter, localWidth);
-    for (unsigned int n=0; n<nnodes; ++n)
-      map(ChildRoots[n], localChildRoots[n]);
+    FPoint localChildPoints;
+    for (unsigned int n=0; n<ORDER; ++n) {
+      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+      localChildCoords[0][n] = localChildPoints.getX();
+      localChildCoords[1][n] = localChildPoints.getY();
+      localChildCoords[2][n] = localChildPoints.getZ();
+    }
 
-    // assemble child - parent - interpolator
-    KernelBaseClass::Interpolator->assembleInterpolator(nnodes, localChildRoots, subChildParentInterpolator);
+    // assemble interpolator
+    FReal* subChildParentInterpolator = new FReal [3 * ORDER*ORDER];
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[0], subChildParentInterpolator);
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[1], subChildParentInterpolator + 1 * ORDER*ORDER);
+    KernelBaseClass::Interpolator->assembleInterpolator(ORDER, localChildCoords[2], subChildParentInterpolator + 2 * ORDER*ORDER);
+
+    // get permutation operators
+    unsigned int perm[3][nnodes];
+    for (unsigned int i=0;i<3; ++i) 
+      for (unsigned int n=0; n<nnodes; ++n)
+        perm[i][n] = KernelBaseClass::Interpolator->getPermutationsM2ML2L(i)[n];
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+//      // 1) Apply Inverse Discete Fourier Transform
+//      M2LHandler.unapplyZeroPaddingAndDFT(local->getTransformedLocal(idxRhs),
+//                                           const_cast<CellClass*>(local)->getLocal(idxRhs));
 
       // 2) apply Sx
 
-      /// p^6 version
-      FBlas::gemva(nnodes, nnodes, FReal(1.),
-                   subChildParentInterpolator,
-                   const_cast<FReal*>(local->getLocal(idxRhs)), subCell->getLocal(idxRhs));
+//      /// p^6 version
+//      FBlas::gemva(nnodes, nnodes, FReal(1.),
+//                   subChildParentInterpolator,
+//                   const_cast<FReal*>(local->getLocal(idxRhs)), subCell->getLocal(idxRhs));
 
-    }// NVALS
+      /// p^4 version
+      FReal Exp[nnodes], PermExp[nnodes];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                  subChildParentInterpolator, ORDER,
+                  const_cast<FReal*>(local->getLocal(idxRhs)), ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	Exp[n] = PermExp[perm[1][n]];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                  subChildParentInterpolator + 2 * ORDER*ORDER, ORDER,
+                  Exp, ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	Exp[perm[1][n]] = PermExp[perm[2][n]];
+      // ORDER*ORDER*ORDER * (2*ORDER-1)
+      FBlas::gemm(ORDER, ORDER, ORDER*ORDER, FReal(1.),
+                  subChildParentInterpolator + 1 * ORDER*ORDER, ORDER,
+                  Exp, ORDER, PermExp, ORDER);
+
+      for (unsigned int n=0; n<nnodes; ++n)	subCell->getLocal(idxRhs)[perm[2][n]] += PermExp[n];
+      // total flops count: 3 * ORDER*ORDER*ORDER * (2*ORDER-1)
+
+    }
 
 	}
 
@@ -299,6 +420,10 @@ public:
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
+//      // 1)  Apply Inverse Discete Fourier Transform
+//      M2LHandler.unapplyZeroPaddingAndDFT(local->getTransformedLocal(idxRhs), 
+//                                          const_cast<CellClass*>(local)->getLocal(idxRhs));
+
       // 2.a) apply Sx
       KernelBaseClass::Interpolator->applyL2P(CellCenter, BoxWidth,
                                               local->getLocal(idxRhs), particles);
@@ -308,7 +433,6 @@ public:
                                                       local->getLocal(idxRhs), particles);
 
     }
-
 	}
 
 	void P2P(ContainerClass* target, const ContainerClass* sources)  override {
@@ -332,10 +456,10 @@ public:
 
 //
 //template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
-//class FAdaptChebSymKernel
-//		: public FChebSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+//class FAdaptUnifKernel
+//		: public FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 //{
-//	typedef FChebSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+//	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
 //
 //#ifdef LOG_TIMINGS
 //	FTic time;
@@ -348,7 +472,7 @@ public:
 //	 * precomputed and compressed M2L operators from a binary file (an
 //	 * runtime_error is thrown if the required file is not valid).
 //	 */
-//	FAdaptChebSymKernel(const int inTreeHeight,
+//	FAdaptUnifKernel(const int inTreeHeight,
 //			const FReal inBoxWidth,
 //			const FPoint& inBoxCenter)
 //: KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter)
@@ -363,14 +487,14 @@ public:
 //
 //
 //	/** Copy constructor */
-//	FAdaptChebSymKernel(const FAdaptChebSymKernel& other)
+//	FAdaptUnifKernel(const FAdaptUnifKernel& other)
 //	: KernelBaseClass(other)
 //	{	}
 //
 //
 //
 //	/** Destructor */
-//	~FAdaptChebSymKernel()
+//	~FAdaptUnifKernel()
 //	{
 //		this->~KernelBaseClass() ;
 //#ifdef LOG_TIMINGS
@@ -464,6 +588,6 @@ public:
 
 
 
-#endif //FADAPTCHEBSYMKERNELS_HPP
+#endif //FADAPTUNIFKERNELS_HPP
 
 // [--END--]

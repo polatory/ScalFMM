@@ -1,8 +1,8 @@
-#ifndef FABSTRACTADAPTATIVEKERNEL
-#define FABSTRACTADAPTATIVEKERNEL
+#ifndef FABSTRACTADAPTIVEKERNEL
+#define FABSTRACTADAPTIVEKERNEL
 
 /**
- * This class represent the method that an adaptative kernel must implement.
+ * This class represent the method that an adaptive kernel must implement.
  * There are two kinds of operators, the first one represent computation and the others
  * should return the cretiria to know when the P2M should be performed.
  */
