@@ -101,14 +101,14 @@ int main(int argc, char ** argv){
         }
 
         FVector<TestParticle> finalParticles;
-	FLeafBalance balancer;
+        FLeafBalance balancer;
         // FMpiTreeBuilder<TestParticle>::ArrayToTree(app.global(), particles, NbParticles, loader.getCenterOfBox(),
-	// 					   loader.getBoxWidth(), tree.getHeight(), &finalParticles, &balancer);
-	FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
-								    NbParticles,
-								    loader.getCenterOfBox(),
-								    loader.getBoxWidth(),tree.getHeight(),
-								    &finalParticles, &balancer);
+        // 					   loader.getBoxWidth(), tree.getHeight(), &finalParticles, &balancer);
+        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+                                                                    NbParticles,
+                                                                    loader.getCenterOfBox(),
+                                                                    loader.getBoxWidth(),tree.getHeight(),
+                                                                    &finalParticles, &balancer);
 
         for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position);
@@ -138,6 +138,7 @@ int main(int argc, char ** argv){
 
     {
         long long totalRepeatedBox = algo.theoricalRepetition();
+        std::cout << "totalRepeatedBox in each dim is = " << totalRepeatedBox << "\n";
         totalRepeatedBox = (totalRepeatedBox*totalRepeatedBox*totalRepeatedBox);
         const long long NbParticlesEntireSystem = (NbParticles * app.global().processCount()) * totalRepeatedBox;
         std::cout << "The total number of particles is "  << NbParticlesEntireSystem << "\n";
@@ -197,7 +198,7 @@ int main(int argc, char ** argv){
                         std::cout << "Index problem !!!!!" << std::endl;
                     }
 
-                    if( algo.getWorkingInterval(idxLevel).min <= octreeIteratorSeq.getCurrentGlobalIndex()){
+                    if( algo.getWorkingInterval(idxLevel).leftIndex <= octreeIteratorSeq.getCurrentGlobalIndex()){
                         if( octreeIterator.getCurrentCell()->getDataUp() != octreeIteratorSeq.getCurrentCell()->getDataUp() ){
                             std::cout << "Up problem at " << octreeIterator.getCurrentGlobalIndex() <<
                                          " Good is " << octreeIteratorSeq.getCurrentCell()->getDataUp() <<
@@ -237,6 +238,16 @@ int main(int argc, char ** argv){
                 ContainerClass* containerValide = (octreeIteratorSeq.getCurrentListTargets());
                 const long long int*const dataDownValide = containerValide->getDataDown();
 
+                if( octreeIterator.getCurrentGlobalIndex() != octreeIteratorSeq.getCurrentGlobalIndex()){
+                    std::cout << "Index problem !!!!!" << std::endl;
+                }
+
+                if(container->getNbParticles() != containerValide->getNbParticles()){
+                    std::cout << "Not the same number of particles on the leaf " << octreeIterator.getCurrentGlobalIndex() << "\n";
+                    std::cout << "\t Correct is " << containerValide->getNbParticles() << "\n";
+                    std::cout << "\t Not Correct is " << container->getNbParticles() << "\n";
+                }
+
                 for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
@@ -250,7 +261,7 @@ int main(int argc, char ** argv){
                                   << " invalide " << octreeIterator.getCurrentListTargets()->getNbParticles() << std::endl;
                     }
                 }
-            } while(octreeIterator.moveRight());
+            } while(octreeIterator.moveRight() && octreeIteratorSeq.moveRight());
         }
     }
     std::cout << "Test is over...\n";
