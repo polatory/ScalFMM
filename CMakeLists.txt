@@ -169,32 +169,49 @@ endif(ScalFMM_ATTACHE_SOURCE)
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
-     SET(BLAS_LIBRARIES
-  "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
-     SET(LAPACK_LIBRARIES "")
+         MESSAGE(STATUS "FFFFFFFFFFFFFFFFF " ${CMAKE_CXX_COMPILER_ID} )
+        IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
+              SET(BLAS_LIBRARIES  "-mkl=sequential" CACHE STRING "Set your MKL flags")
+        else()
+              SET(BLAS_LIBRARIES
+                       "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
+         ENDIF()
+         UNSET(LAPACK_LIBRARIES)
+         SET(BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
   elseif(ScalFMM_USE_EXTERNAL_BLAS) 
          MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
   else()
 	INCLUDE(FindBLAS)
 	INCLUDE(FindLAPACK)
+	SET(BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES};${LAPACK_LIBRARIES}")
   endif()
-  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLAS_LIBRARIES};${LAPACK_LIBRARIES}")
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
 endif(ScalFMM_USE_BLAS)
-
+#
 # FFT option
+#
 if( ScalFMM_USE_FFT )
   OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" OFF )
   if( ScalFMM_USE_MKL_AS_FFTW )
-    SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
-    SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+      if( ScalFMM_USE_MKL_AS_BLAS )
+               UNSET(FFT_LIBRARIES CACHE)
+       #        UNSET(FFT_INCLUDES CACHE)
+                SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+        ELSE()
+             SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
+             SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+            SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+        ENDIF()        
   else()
     SET(FFT_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
+    SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
   endif()
-  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+  
   SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
+  
 endif(ScalFMM_USE_FFT)
 
 # Compile option
@@ -313,11 +330,18 @@ add_subdirectory(Src)
 set(scalfmm_lib scalfmm)
 #
 ##################################################################
-#                                        Remove compilation  of the drivers                                #                                          
+#                                        Remove compilation  of the drivers                                 #                                          
 ##################################################################
 if( NOT ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
+endif()
+##################################################################
+#                                        Build tools (Internal use)                                                  #                                          
+##################################################################
+# Build - Tests
+if( NOT ScalFMM_BUILD_ONLY_LIB ) 
+    add_subdirectory(Utils)
 endif()
 
 ##################################################################

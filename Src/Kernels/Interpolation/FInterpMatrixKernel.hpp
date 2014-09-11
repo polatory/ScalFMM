@@ -208,9 +208,9 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
         block[0] = one_over_rL;
 
-        blockDerivative[0] = LX * one_over_rL3 * diffx;
-        blockDerivative[1] = LY * one_over_rL3 * diffy;
-        blockDerivative[2] = LZ * one_over_rL3 * diffz;
+        blockDerivative[0] = FMath::ConvertTo<ValueClass,FReal>(LX) * one_over_rL3 * diffx;
+        blockDerivative[1] = FMath::ConvertTo<ValueClass,FReal>(LY)* one_over_rL3 * diffy;
+        blockDerivative[2] = FMath::ConvertTo<ValueClass,FReal>(LZ)* one_over_rL3 * diffz;
 
     }
 

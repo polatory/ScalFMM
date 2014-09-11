@@ -35,6 +35,8 @@ target_link_libraries(
 INCLUDE_DIRECTORIES(
      ${CMAKE_SOURCE_DIR}/Src 
      ${CMAKE_BINARY_DIR}/Src 
+     ${SCALFMM_INCLUDES}
+     
 )
 
 
