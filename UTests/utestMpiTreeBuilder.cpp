@@ -79,25 +79,6 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 		if(rhs.index > this->index){return true;}
 		else{
 		    return this->indexInFile < rhs.indexInFile;
-	//	    if(rhs.getPosition().getX() < this->getPosition().getX()){return false;}
-	//	    else{
-	//		if(rhs.getPosition().getX() > this->getPosition().getX()){return true;}
-	//		else{
-	//		    if(rhs.getPosition().getY() < this->getPosition().getY()){return false;}
-	//		    else{
-	//			if(rhs.getPosition().getY() > this->getPosition().getY()){return true;}
-	//			else{
-	//			    if(rhs.getPosition().getZ() < this->getPosition().getZ()){return false;}
-	//			    else{
-	//				if(rhs.getPosition().getZ() > this->getPosition().getZ()){return true;}
-	//				else{
-	//				    return false;
-	//				}
-	//			    }
-	//			}
-	//		    }
-	//		}
-	//	    }
 		}
 	    }
 	}
@@ -226,8 +207,51 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	bool resultQsMpi = true; //passed..
 	//Test
 
-	int * ownerOfEachParts = new int[outputSize];
-	for(int idP = 0)
+	//Gather size of output
+	int * nbPartPerProcess = new int[app.global().processCount()];
+	nbPartPerProcess[app.global().processId()] = outputSize;
+	MPI_Gather(&nbPartPerProcess[app.global().processId()],1,MPI_INT,nbPartPerProcess,1,MPI_INT,0,app.global().getComm());
+
+	int * toSend = new int[outputSize];
+	int * displ = nullptr;
+	int * recvParts = nullptr;
+
+	//Prepare the indexInFile to send
+	for(int idPart=0 ; idPart<outputSize ; ++idPart){
+	    toSend[idPart] = int(outputArray[idPart].particle.indexInFile);
+	}
+
+
+	if(app.global().processId() == 0){
+	    //There, we build the array of displacement
+	    displ = new int[app.global().processCount()];
+	    displ[0] = 0;
+	    for(int idProc = 1 ; idProc < app.global().processCount() ; ++idProc){
+		displ[idProc] = nbPartPerProcess[idProc-1] + displ[idProc-1];
+	    }
+	    //Buffer to recv into
+	    recvParts = new int[loader.getNumberOfParticles()];
+	    MPI_Gatherv(toSend,outputSize,MPI_INT,recvParts,nbPartPerProcess,displ,MPI_INT,0,app.global().getComm());
+
+	    //Buffer to put result into
+	    int * myPart = new int[loader.getNumberOfParticles()];
+	    memset(myPart,0,sizeof(int)*loader.getNumberOfParticles());
+	    for(int idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
+		myPart[recvParts[idP]] += 1;
+	    }
+	    //Check if everything is set to 1
+	    for(int idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
+		if(myPart[idP] != 1){
+		    std::cout << "Part number "<< idP << " in file is lost or duplicated : "<< myPart[idP]<< std::endl;
+		    resultQsMpi = false;
+		}
+	    }
+	}
+	else{
+	    MPI_Gatherv(toSend,outputSize,MPI_INT,recvParts,nbPartPerProcess,displ,MPI_INT,0,app.global().getComm());
+	}
+
+
 
 	//Test
 	// printf("Fin tri : %d hold %d my first [%lld,%lld] last [%lld,%lld]\n",app.global().processId(),outputSize,
