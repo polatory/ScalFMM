@@ -8,7 +8,7 @@ STRING(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
-SET(CMAKE_MODULE_PATH  ${CMAKE_SOURCE_DIR}/Modules)
+SET(CMAKE_MODULE_PATH  ${CMAKE_SOURCE_DIR}/CMakeModules)
 
 #
 # MPI option has to be set before project, cannot be changed in the cache!
