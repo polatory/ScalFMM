@@ -41,7 +41,7 @@
 #include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /*
-  In this test we compare the Chebyshev fmm results and the direct results.
+  In this test we compare the Chebyshev FMM results and the direct results.
  */
 
 
@@ -310,7 +310,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 	/** set test */
 	void SetTests(){
-		AddTest(&TestChebyshevDirect::TestChebKernel,"Test Chebyshev Kernel with one big SVD") ;
+//		AddTest(&TestChebyshevDirect::TestChebKernel,"Test Chebyshev Kernel with one big SVD") ;
 		AddTest(&TestChebyshevDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
 	}
 };
