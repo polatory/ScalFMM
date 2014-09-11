@@ -478,7 +478,7 @@ private:
             memcpy(currentChild, octreeIterator.getCurrentBox(), 8 * sizeof(CellClass*));
 
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc ){
-                if( procHasWorkAtLevel(2,idxProc) ){
+                if( procHasWorkAtLevel(1,idxProc) ){
                     MPI_Irecv(&recvBuffer.data()[idxProc * recvBufferOffset], recvBufferOffset, MPI_BYTE, idxProc,
                             FMpi::TagFmmM2M, comm.getComm(), &requests[iterRequests++]);
                 }
@@ -488,7 +488,7 @@ private:
 
             // retreive data and merge my child and the child from others
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc){
-                if( procHasWorkAtLevel(2,idxProc) ){
+                if( procHasWorkAtLevel(1,idxProc) ){
                     recvBuffer.seek(idxProc * recvBufferOffset);
                     int state = int(recvBuffer.getValue<char>());
 
@@ -515,9 +515,9 @@ private:
             processPeriodicLevels();
         }
         else {
-            if( hasWorkAtLevel(2) ){
-                const int firstChild = getWorkingInterval(2, idProcess).leftIndex & 7;
-                const int lastChild  = getWorkingInterval(2, idProcess).rightIndex & 7;
+            if( hasWorkAtLevel(1) ){
+                const int firstChild = getWorkingInterval(1, idProcess).leftIndex & 7;
+                const int lastChild  = getWorkingInterval(1, idProcess).rightIndex & 7;
 
                 CellClass** child = octreeIterator.getCurrentBox();
 
@@ -528,7 +528,6 @@ private:
                     if( child[idxChild] ){
                         child[idxChild]->serializeUp(sendBuffer);
                         state = char( state | (0x1 << idxChild));
-
                     }
                 }
                 sendBuffer.writeAt(0,state);
@@ -862,7 +861,8 @@ private:
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
-                        const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
+                        const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition, AllDirs);
+                        //const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
 
                         int counter = 0;
                         // does we receive this index from someone?
@@ -957,7 +957,6 @@ private:
             rootCellFromProc.deserializeDown(recvBuffer);
             recvBuffer.seek(0);
         }
-
         kernels[0]->L2L(&rootCellFromProc, octreeIterator.getCurrentBox(), offsetRealTree);
 
 
@@ -1777,14 +1776,20 @@ public:
             // we will use offsetRealTree-1 cells but for simplicity allocate offsetRealTree
             // upperCells[offsetRealTree-1] is root cell
             CellClass*const upperCells = new CellClass[offsetRealTree];
+//            {
+//                typename OctreeClass::Iterator octreeIterator(tree);
+//                octreeIterator.gotoLeft();
+//                kernels[0]->M2M( &upperCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
+//            }
             {
-                typename OctreeClass::Iterator octreeIterator(tree);
-                octreeIterator.gotoLeft();
-                kernels[0]->M2M( &upperCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
+                CellClass* virtualChild[8];
+                const int idxLevel = offsetRealTree-1;
+                FMemUtils::setall(virtualChild,&rootCellFromProc,8);
+                kernels[0]->M2M( &upperCells[idxLevel-1], virtualChild, idxLevel);
             }
             {
                 CellClass* virtualChild[8];
-                for(int idxLevel = offsetRealTree-1 ; idxLevel > 1  ; --idxLevel){
+                for(int idxLevel = offsetRealTree-1-1 ; idxLevel > 1  ; --idxLevel){
                     FMemUtils::setall(virtualChild,&upperCells[idxLevel],8);
                     kernels[0]->M2M( &upperCells[idxLevel-1], virtualChild, idxLevel);
                 }
@@ -1811,7 +1816,7 @@ public:
                 kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
             }
 
-            for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree ; ++idxUpperLevel){
+            for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree-1 ; ++idxUpperLevel){
                 const CellClass* neighbors[343];
                 memset(neighbors, 0, sizeof(CellClass*) * 343);
                 int counter = 0;
@@ -1829,22 +1834,48 @@ public:
                 // compute M2L
                 kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
             }
+            {
+                const int idxUpperLevel = offsetRealTree;
+                const CellClass* neighbors[343];
+                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                int counter = 0;
+                for(int idxX = -2 ; idxX <= 3 ; ++idxX){
+                    for(int idxY = -2 ; idxY <= 3 ; ++idxY){
+                        for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
+                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
+                                neighbors[neighIndex(idxX,idxY,idxZ)] = &rootCellFromProc;
+                                ++counter;
+                            }
+                        }
+                    }
+                }
+
+                // compute M2L
+                kernels[0]->M2L( &rootCellFromProc , neighbors, counter, idxUpperLevel);
+            }
 
             {
                 CellClass* virtualChild[8];
                 memset(virtualChild, 0, sizeof(CellClass*) * 8);
-                for(int idxLevel = 2 ; idxLevel <= offsetRealTree-1  ; ++idxLevel){
+                for(int idxLevel = 2 ; idxLevel <= offsetRealTree-1-1  ; ++idxLevel){
                     virtualChild[0] = &downerCells[idxLevel];
                     kernels[0]->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
                 }
             }
+            {
+                CellClass* virtualChild[8];
+                memset(virtualChild, 0, sizeof(CellClass*) * 8);
+                const int idxLevel = offsetRealTree-1;
+                virtualChild[0] = &rootCellFromProc;
+                kernels[0]->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
+            }
 
             // L2L from 0 to level 1
-            {
-                typename OctreeClass::Iterator octreeIterator(tree);
-                octreeIterator.gotoLeft();
-                kernels[0]->L2L( &downerCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
-            }
+//            {
+//                typename OctreeClass::Iterator octreeIterator(tree);
+//                octreeIterator.gotoLeft();
+//                kernels[0]->L2L( &downerCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
+//            }
 
             delete[] upperCells;
             delete[] downerCells;
