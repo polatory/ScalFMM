@@ -40,14 +40,14 @@
 #include "Components/FSimpleIndexedLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "Adaptative/FAdaptiveCell.hpp"
-#include "Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "Adaptative/FAbstractAdaptiveKernel.hpp"
+#include "Adaptive/FAdaptiveCell.hpp"
+#include "Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "Adaptive/FAbstractAdaptiveKernel.hpp"
 //
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Uniform/FUnifCell.hpp"
-#include "AdaptiveTree/FAdaptUnifKernel.hpp"
-#include "AdaptiveTree/FAdaptTools.hpp"
+#include "Adaptive/FAdaptUnifKernel.hpp"
+#include "Adaptive/FAdaptTools.hpp"
 //
 //
 #include "Core/FFmmAlgorithm.hpp"

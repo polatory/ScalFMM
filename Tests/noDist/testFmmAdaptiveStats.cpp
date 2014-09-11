@@ -42,9 +42,9 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
-#include "../../Src/Adaptative/FAdaptiveCell.hpp"
-#include "../../Src/Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "../../Src/Adaptative/FAbstractAdaptiveKernel.hpp"
+#include "../../Src/Adaptive/FAdaptiveCell.hpp"
+#include "../../Src/Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "../../Src/Adaptive/FAbstractAdaptiveKernel.hpp"
 
 template< class CellClass, class ContainerClass>
 class FAdaptiveStatsKernel : public FAbstractKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
