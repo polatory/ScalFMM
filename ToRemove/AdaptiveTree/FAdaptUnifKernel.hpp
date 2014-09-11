@@ -19,9 +19,9 @@
 
 #include "Utils/FPoint.hpp"
 
-#include "Adaptative/FAdaptiveCell.hpp"
-#include "Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "Adaptative/FAbstractAdaptiveKernel.hpp"
+#include "Adaptive/FAdaptiveCell.hpp"
+#include "Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "Adaptive/FAbstractAdaptiveKernel.hpp"
 #include "Kernels/Uniform/FUnifKernel.hpp"
 #include "Kernels/Uniform/FUnifM2LHandler.hpp"
 

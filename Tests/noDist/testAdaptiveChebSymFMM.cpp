@@ -43,9 +43,9 @@
 #include "Kernels/Chebyshev/FChebCell.hpp"
 
 #include "AdaptiveTree/FAdaptChebSymKernel.hpp"
-#include "Adaptative/FAdaptiveCell.hpp"
-#include "Adaptative/FAdaptiveKernelWrapper.hpp"
-#include "Adaptative/FAbstractAdaptiveKernel.hpp"
+#include "Adaptive/FAdaptiveCell.hpp"
+#include "Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "Adaptive/FAbstractAdaptiveKernel.hpp"
 //
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebCell.hpp"
