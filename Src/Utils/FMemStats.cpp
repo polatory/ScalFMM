@@ -21,7 +21,7 @@ FMemStats FMemStats::controler;
 
 #ifdef ScalFMM_USE_MEM_STATS
     // Regular scalar new
-    void* operator new(std::size_t n) throw(std::bad_alloc)
+    void* operator new(std::size_t n)
     {
         using namespace std;
 
@@ -44,7 +44,7 @@ FMemStats FMemStats::controler;
     }
 
     // Nothrow scalar new
-    void* operator new(size_t n, std::nothrow_t const&) throw()
+    void* operator new(size_t n,const std::nothrow_t& nothrow_value)
     {
         //if (n == 0) n = 1;
         void* const allocated = malloc(n + 8);
@@ -57,19 +57,19 @@ FMemStats FMemStats::controler;
     }
 
     // Regular array new
-    void* operator new[](size_t n) throw(std::bad_alloc)
+    void* operator new[](size_t n)
     {
         return ::operator new(n);
     }
 
     // Nothrow array new
-    void* operator new[](size_t n, std::nothrow_t const&) throw()
+    void* operator new[](size_t n,const std::nothrow_t& nothrow_value)
     {
         return ::operator new(n, std::nothrow);
     }
 
     // Regular scalar delete
-    void operator delete(void* p) throw(){
+    void operator delete(void* p) noexcept {
         if(p){
             FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
             free(static_cast<unsigned char*>(p) - 8);
@@ -77,18 +77,18 @@ FMemStats FMemStats::controler;
     }
 
     // Nothrow scalar delete
-    void operator delete(void* p, std::nothrow_t const&) throw(){
+    void operator delete(void* p,const std::nothrow_t& nothrow_value) noexcept {
         ::operator delete(p);
     }
 
     // Regular array delete
-    void operator delete[](void* p) throw()
+    void operator delete[](void* p) noexcept
     {
         ::operator delete(p);
     }
 
     // Nothrow array delete
-    void operator delete[](void* p, std::nothrow_t const&) throw()
+    void operator delete[](void* p,const std::nothrow_t& nothrow_value) noexcept
     {
         ::operator delete(p);
     }

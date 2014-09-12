@@ -566,6 +566,9 @@ int main(int argc, char* argv[])
 	    typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
 		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
+#ifndef  ScalFMM_USE_BLAS
+		CellClass::Init(DevP, true);
+#endif
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 		std::cout << "\nFFmaSpherical FMM ... P: " << DevP<< std::endl;
 

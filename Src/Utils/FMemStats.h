@@ -31,14 +31,14 @@
 #include <new>
 #include <stdexcept>
 #warning You are using meme stats
-    void* operator new(std::size_t n) throw(std::bad_alloc);
-    void* operator new(size_t n, std::nothrow_t const&) throw();
-    void* operator new[](size_t n) throw(std::bad_alloc);
-    void* operator new[](size_t n, std::nothrow_t const&) throw();
-    void operator delete(void* p) throw();
-    void operator delete(void* p, std::nothrow_t const&) throw();
-    void operator delete[](void* p) throw();
-    void operator delete[](void* p, std::nothrow_t const&) throw();
+void* operator new(std::size_t n);
+void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) ;
+void* operator new[](std::size_t n);
+void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) ;
+void operator delete(void* p) noexcept;
+void operator delete (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
+void operator delete[](void* p) noexcept;
+void operator delete[] (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
 #endif
 
 /** Give the memory allocation details
@@ -68,14 +68,14 @@ private:
     }
 
 #ifdef ScalFMM_USE_MEM_STATS
-    friend void* operator new(std::size_t n) throw(std::bad_alloc);
-    friend void* operator new(size_t n, std::nothrow_t const&) throw();
-    friend void* operator new[](size_t n) throw(std::bad_alloc);
-    friend void* operator new[](size_t n, std::nothrow_t const&) throw();
-    friend void operator delete(void* p) throw();
-    friend void operator delete(void* p, std::nothrow_t const&) throw();
-    friend void operator delete[](void* p) throw();
-    friend void operator delete[](void* p, std::nothrow_t const&) throw();
+    friend void* operator new(std::size_t n);
+    friend void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) ;
+    friend void* operator new[](std::size_t n);
+    friend void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) ;
+    friend void operator delete(void* p) noexcept;
+    friend void operator delete (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
+    friend void operator delete[](void* p) noexcept;
+    friend void operator delete[] (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
 #endif
 
 public:
