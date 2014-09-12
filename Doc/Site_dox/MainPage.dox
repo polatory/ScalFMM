@@ -57,7 +57,7 @@
     DOI : <a href="http://epubs.siam.org/doi/abs/10.1137/130915662"> 10.1137/130915662</a></li> 
    *  <li>Optimized M2L Kernels for the Chebyshev Interpolation based Fast Multipole Method, Matthias Messner; Berenger Bramas; Olivier Coulaud ;  Eric Darve
  <a href="http://hal.inria.fr/docs/00/75/39/34/PDF/main.pdf">Research Report</a>, 2012</li>
-  *  <li>Pipelining the Fast Multipole Method over a Runtime System, Emmanuel Agullo; Berenger Bramas; Olivier Coulaud  url; Eric Darve ; Matthias Messner; Toru Takahashi, 2012, pp. 24. <a href="http://hal.inria.fr/hal-00703130/PDF/RR-7981.pdf">RR-7981</a>
+  *  <li>Pipelining the Fast Multipole Method over a Runtime System, Emmanuel Agullo; Berenger Bramas; Olivier Coulaud ; Eric Darve ; Matthias Messner; Toru Takahashi, 2012, pp. 24. <a href="http://hal.inria.fr/hal-00703130/PDF/RR-7981.pdf">RR-7981</a>
   *  
   * </ul>
  *
