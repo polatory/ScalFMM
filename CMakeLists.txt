@@ -137,7 +137,6 @@ else()
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
   ENDIF()
-
   # Compile optimization
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
@@ -339,8 +338,9 @@ endif()
 ##################################################################
 #                                        Build tools (Internal use)                                                  #                                          
 ##################################################################
-# Build - Tests
-if( NOT ScalFMM_BUILD_ONLY_LIB ) 
+# Build - UTIL
+if( ScalFMM_ONLY_DEVEL ) 
+#if( NOT ScalFMM_BUILD_ONLY_LIB ) 
     add_subdirectory(Utils)
 endif()
 
