@@ -47,7 +47,7 @@
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Adaptive/FAdaptUnifKernel.hpp"
-#include "Adaptive/FAdaptTools.hpp"
+//#include "Adaptive/FAdaptTools.hpp"
 //
 //
 #include "Core/FFmmAlgorithm.hpp"

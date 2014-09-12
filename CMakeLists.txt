@@ -57,6 +57,7 @@ OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"    
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile only the lib (examples are not compiled) " OFF  )
+OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
@@ -168,7 +169,6 @@ endif(ScalFMM_ATTACHE_SOURCE)
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
-         MESSAGE(STATUS "FFFFFFFFFFFFFFFFF " ${CMAKE_CXX_COMPILER_ID} )
         IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
               SET(BLAS_LIBRARIES  "-mkl=sequential" CACHE STRING "Set your MKL flags")
         else()
@@ -338,7 +338,7 @@ endif()
 ##################################################################
 #                                        Build tools (Internal use)                                                  #                                          
 ##################################################################
-# Build - UTIL
+# Build - UTILs
 if( ScalFMM_ONLY_DEVEL ) 
 #if( NOT ScalFMM_BUILD_ONLY_LIB ) 
     add_subdirectory(Utils)
@@ -416,7 +416,6 @@ INSTALL(FILES
 #                               build a CPack driven installer package                                       # 
 #                                                                                                                                #                                          
 ##################################################################
-INCLUDE(CPack)
 #
 # Use git commit number as   CPACK_PACKAGE_VERSION_PATCH
 set(CPACK_PACKAGE_VERSION_PATCH 0)
@@ -425,18 +424,24 @@ execute_process(
         OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH
         RESULT_VARIABLE RET
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
- #  STRING_TRIM(PATCH1 PATCH)
+ )
+ #STRING_TRIM(PATCH1 PATCH)
 SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY "ON")
 #
 set (CPACK_RESOURCE_FILE_LICENSE  "${CMAKE_CURRENT_SOURCE_DIR}/Licence.txt")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${ScalFMM_MAJOR_VERSION}")
-SET(CPACK_PACKAGE_VERSION_NINOR "${ScalFMM_MINOR_VERSION}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${ScalFMM_MINOR_VERSION}")
 #
+SET(PACK_PACKAGE_VERSION "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME  "ScalFMM-${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}") 
 SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;/*.ind;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*,noDist" )
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*;noDist;Bench;ToRemove;Olivier;tages;Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
+#LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
+#
+INCLUDE(CPack)
+#
+#
  ##################################################################
 #                                                                                                                                 #                                          
 #                                               PRINT MESSAGES                                                        # 
