@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -90,7 +90,7 @@ bool isEqualLocal(const FRotationCell<7>& me, const FRotationCell<7>& other, FRe
 
 template<class OctreeClass, class ContainerClass>
 void ValidateFMMAlgoProc(OctreeClass* const badTree,
-                         OctreeClass* const valideTree,
+			 OctreeClass* const valideTree,
 			 FMpi * const app){
   std::cout << "Check Result\n";
   {
@@ -219,7 +219,7 @@ int main(int argc, char ** argv){
   // For Rotation test ::
   typedef FRotationCell<7>         CellClass;
   typedef FP2PParticleContainer<>         ContainerClass;
-  
+
   typedef FSimpleLeaf< ContainerClass >                     LeafClass;
   typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
   typedef FRotationKernel< CellClass, ContainerClass,7 >     KernelClass;
@@ -251,7 +251,7 @@ int main(int argc, char ** argv){
   }
 
   // ----Modified For Rotation----------------------------
-  
+
   OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
   // -----------------------------------------------------
@@ -285,10 +285,10 @@ int main(int argc, char ** argv){
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
     // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-    // 						 tree.getBoxCenter(),
-    // 						 tree.getBoxWidth(),
-    // 						 tree.getHeight(), &finalParticles,&balancer);
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+    //						 tree.getBoxCenter(),
+    //						 tree.getBoxWidth(),
+    //						 tree.getHeight(), &finalParticles,&balancer);
+    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
 								loader.getMyNumberOfParticles(),
 								tree.getBoxCenter(),
 								tree.getBoxWidth(),tree.getHeight(),
@@ -337,7 +337,6 @@ int main(int argc, char ** argv){
   std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
   { // get sum forces&potential
-    FTRACE( FTrace::FFunction functionTrace(__FUNCTION__, "Sum Result" , __FILE__ , __LINE__) );
 
     FReal potential = 0;
     FReal fx = 0.0, fy = 0.0, fz = 0.0;
@@ -383,17 +382,17 @@ int main(int argc, char ** argv){
 	treeValide.insert(position,physicalValue);
       }
     }
-      
+
     std::cout << "Working on particles ..." << std::endl;
     FmmClassNoProc algoValide(&treeValide,&kernels);
     counter.tic();
     algoValide.execute();
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
-      
+
     FReal potential = 0;
     FReal fx = 0.0, fy = 0.0, fz = 0.0;
-	
+
     tree.forEachLeaf([&](LeafClass* leaf){
 	const FReal*const potentials = leaf->getTargets()->getPotentials();
 	const FReal*const forcesX = leaf->getTargets()->getForcesX();
@@ -422,6 +421,3 @@ int main(int argc, char ** argv){
 
   return 0;
 }
-
-
-
