@@ -15,3 +15,4 @@ ToDO
 2) Non cubic box.
 3) Compute the virial for MD simulations
 4) Hybrid parallelism for the tree build
+5) Use the same parameters for all tests (-f -file -h -depth ...)
