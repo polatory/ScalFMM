@@ -26,24 +26,24 @@
 
 
 #include "ScalFmmConfig.h"
-#include "../../Src/Containers/FOctree.hpp"
-#include "../../Src/Utils/FMpi.hpp"
-#include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
+#include "../Src/Containers/FOctree.hpp"
+#include "../Src/Utils/FMpi.hpp"
+#include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
-#include "../../Src/Files/FFmaGenericLoader.hpp"
-#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
-#include "../../Src/Files/FMpiTreeBuilder.hpp"
+#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "../Src/Files/FMpiFmaGenericLoader.hpp"
+#include "../Src/Files/FMpiTreeBuilder.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../Src/BalanceTree/FLeafBalance.hpp"
 
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "../Src/Components/FSimpleLeaf.hpp"
+#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../../Src/Utils/FParameters.hpp"
+#include "../Src/Utils/FParameters.hpp"
 
 
 /// \file ChebyshevInterpolationMPIFMM
