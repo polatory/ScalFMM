@@ -26,29 +26,29 @@
 ////////////////////// Opérateurs FMM Kernel : //////////////////////////
 
 class KernelCell : public FBasicCell {
-    FComplexe* multipole;
-    FComplexe* local;
+    FComplex* multipole;
+    FComplex* local;
 public:
     KernelCell() : multipole(nullptr), local(nullptr){
     }
-    void attachArrays(FComplexe inMultipole[], FComplexe inLocal[]){
+    void attachArrays(FComplex inMultipole[], FComplex inLocal[]){
         multipole = inMultipole;
         local = inLocal;
     }
 
-    const FComplexe* getMultipole() const{
+    const FComplex* getMultipole() const{
         return multipole;
     }
 
-    const FComplexe* getLocal() const{
+    const FComplex* getLocal() const{
         return local;
     }
 
-    FComplexe* getMultipole(){
+    FComplex* getMultipole(){
         return multipole;
     }
 
-    FComplexe* getLocal(){
+    FComplex* getLocal(){
         return local;
     }
 };
@@ -184,12 +184,12 @@ int FmmKernel_getParameter(void *fmmKernel, int name, void*value){
 
 /****** Données FMM : *****/
 int FmmKernel_getMultipoleArraySize(void */*fmmCore*/, int *size) {
-    *size = ((P+2)*(P+1))/2 * sizeof(FComplexe);
+    *size = ((P+2)*(P+1))/2 * sizeof(FComplex);
     return FMMAPI_NO_ERROR;
 } /* Renvoie dans size la taille (en octets) de l'expansion multipôle associée à la boîte boxId */
 
 int FmmKernel_getLocalArraySize(void */*fmmCore*/, int *size){
-    *size = ((P+2)*(P+1))/2 * sizeof(FComplexe);
+    *size = ((P+2)*(P+1))/2 * sizeof(FComplex);
     return FMMAPI_NO_ERROR;
 } /* Renvoie dans size la taille (en octets) de l'expansion locale associée à la boîte boxId*/
 
@@ -201,7 +201,7 @@ int FmmKernel_P2M(void *fmmCore, void* boxId){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplexe* multipole;
+    FComplex* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxId, (void**)&multipole);
 
     KernelCellClass cell;
@@ -233,7 +233,7 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplexe* local;
+    FComplex* local;
     FmmCore_getLocalArray(fmmCore, boxId, (void**)&local);
 
     KernelCellClass cell;
@@ -286,7 +286,7 @@ int FmmKernel_M2M(void *fmmCore, void *boxIdFather, void *boxIdSon){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplexe* multipole;
+    FComplex* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxIdFather, (void**)&multipole);
 
     KernelCellClass cellFather;
@@ -322,7 +322,7 @@ int FmmKernel_L2L(void *fmmCore, void *boxIdFather, void *boxIdSon){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplexe* local;
+    FComplex* local;
     FmmCore_getLocalArray(fmmCore, boxIdFather, (void**)&local);
 
     KernelCellClass cellFather;
@@ -358,7 +358,7 @@ int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplexe* multipole;
+    FComplex* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxIdSrc, (void**)&multipole);
     KernelCellClass cellSrc;
     cellSrc.attachArrays(multipole,nullptr);
@@ -366,7 +366,7 @@ int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
     FmmCore_getCoord(fmmCore, boxIdSrc, coord);
     cellSrc.setCoordinate(coord[0], coord[1], coord[2]);
 
-    FComplexe* local;
+    FComplex* local;
     FmmCore_getLocalArray(fmmCore, boxIdDest, (void**)&local);
     KernelCellClass cellDst;
     cellDst.attachArrays(nullptr, local);
