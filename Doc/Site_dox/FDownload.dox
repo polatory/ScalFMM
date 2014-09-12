@@ -50,7 +50,7 @@
   * <li> ScalFMM_ATTACHE_SOURCE : to build with -g </li>
   * <li> SScalFMM_BUILD_TESTS : to build the text and the examples </li>
   * <li> ScalFMM_BUILD_UTESTS : to build the unit tests </li>
-  * <li> SScalFMM_USE_ADDONS : to activate add ons </li>
+  * <li> ScalFMM_USE_ADDONS : to activate add ons </li>
   * <ul>
     * <li> SCALFMM_ADDON_FMMAPI : to build Fmm Api </li>
     * </ul>

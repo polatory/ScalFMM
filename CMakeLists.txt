@@ -43,7 +43,11 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 #
 # Options
 OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
+if( ScalFMM_ONLY_DEVEL ) 
 OPTION( ScalFMM_USE_FFT  		"Set to ON to build ScaFMM with FFTW" OFF )
+ELSE()
+SET(ScalFMM_USE_FFT OFF)
+endif()
 OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build functionalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
@@ -57,6 +61,7 @@ OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"    
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile only the lib (examples are not compiled) " OFF  )
+OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
@@ -139,7 +144,6 @@ else()
   IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
   ENDIF()
-
   # Compile optimization
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
@@ -171,9 +175,14 @@ endif(ScalFMM_ATTACHE_SOURCE)
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
   if( ScalFMM_USE_MKL_AS_BLAS )
-     SET(BLAS_LIBRARIES
-  "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
-     SET(LAPACK_LIBRARIES "")
+        IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
+              SET(BLAS_LIBRARIES  "-mkl=sequential" CACHE STRING "Set your MKL flags")
+        else()
+              SET(BLAS_LIBRARIES
+                       "-L$ENV{MKLROOT}/lib;-lmkl_intel_lp64;-lmkl_sequential;-lmkl_core" CACHE STRING "Set your MKL flags")
+         ENDIF()
+         UNSET(LAPACK_LIBRARIES)
+         SET(BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
   elseif(ScalFMM_USE_EXTERNAL_BLAS) 
          MESSAGE(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
   else()
@@ -182,24 +191,35 @@ if( ScalFMM_USE_BLAS )
 	   MESSAGE(FATAL_ERROR : "NO BLAS LIBRARY FOUND")
 	endif()
 	INCLUDE(FindLAPACK)
+	SET(BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES};${LAPACK_LIBRARIES}")
   endif()
-  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLAS_LIBRARIES};${LAPACK_LIBRARIES}")
+  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
 endif(ScalFMM_USE_BLAS)
-
+#
 # FFT option
+#
 if( ScalFMM_USE_FFT )
   OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" OFF )
   if( ScalFMM_USE_MKL_AS_FFTW )
-    SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
-    SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+      if( ScalFMM_USE_MKL_AS_BLAS )
+               UNSET(FFT_LIBRARIES CACHE)
+       #        UNSET(FFT_INCLUDES CACHE)
+                SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+        ELSE()
+             SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
+             SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+            SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+        ENDIF()        
   else()
     SET(FFT_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
+    SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
   endif()
-  SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+  
   SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
+  
 endif(ScalFMM_USE_FFT)
 
 # Compile option
@@ -318,11 +338,19 @@ add_subdirectory(Src)
 set(scalfmm_lib scalfmm)
 #
 ##################################################################
-#                                        Remove compilation  of the drivers                                #                                          
+#                                        Remove compilation  of the drivers                                 #                                          
 ##################################################################
 if( NOT ScalFMM_BUILD_ONLY_LIB ) 
 # Build - Examples and drivers
 add_subdirectory(Examples)
+endif()
+##################################################################
+#                                        Build tools (Internal use)                                                  #                                          
+##################################################################
+# Build - UTILs
+if( ScalFMM_ONLY_DEVEL ) 
+#if( NOT ScalFMM_BUILD_ONLY_LIB ) 
+    add_subdirectory(Utils)
 endif()
 
 ##################################################################
@@ -397,7 +425,6 @@ INSTALL(FILES
 #                               build a CPack driven installer package                                       # 
 #                                                                                                                                #                                          
 ##################################################################
-INCLUDE(CPack)
 #
 # Use git commit number as   CPACK_PACKAGE_VERSION_PATCH
 set(CPACK_PACKAGE_VERSION_PATCH 0)
@@ -406,18 +433,24 @@ execute_process(
         OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH
         RESULT_VARIABLE RET
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
- #  STRING_TRIM(PATCH1 PATCH)
+ )
+ #STRING_TRIM(PATCH1 PATCH)
 SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY "ON")
 #
 set (CPACK_RESOURCE_FILE_LICENSE  "${CMAKE_CURRENT_SOURCE_DIR}/Licence.txt")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${ScalFMM_MAJOR_VERSION}")
-SET(CPACK_PACKAGE_VERSION_NINOR "${ScalFMM_MINOR_VERSION}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${ScalFMM_MINOR_VERSION}")
 #
+SET(PACK_PACKAGE_VERSION "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME  "ScalFMM-${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}") 
 SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;/*.ind;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*,noDist" )
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;Build*;noDist;Bench;ToRemove;Olivier;tages;Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
+#LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
+#
+INCLUDE(CPack)
+#
+#
  ##################################################################
 #                                                                                                                                 #                                          
 #                                               PRINT MESSAGES                                                        # 

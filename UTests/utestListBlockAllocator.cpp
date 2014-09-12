@@ -73,8 +73,12 @@ class TestBlock : public FUTester<TestBlock> {
             alloc.deleteObject(dl2);
         }
 
-        for(int idx = 0 ; idx < NbAlloc ; ++idx){
-            for(int idxval = 0 ; idxval < SizeArray ; ++idxval){
+        // Just put on volatile to avoid loop unrolling (which leads to a bug with my gcc!)
+        volatile int volSizeArray = SizeArray;
+        volatile int volNbAlloc = NbAlloc;
+
+        for(int idx = 0 ; idx < volNbAlloc ; ++idx){
+            for(int idxval = 0 ; idxval < volSizeArray ; ++idxval){
                 ptr[idx]->array[idxval] += (idxval * idx);
             }
         }
