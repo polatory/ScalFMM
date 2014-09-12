@@ -94,8 +94,12 @@ SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ")
 #
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     # INTEL
-    SET(AVX_FLAGS  "-mavx")
-    SET(SSE_FLAGS  "-axSSE4.2")
+    IF (APPLE)
+        SET(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
+    ELSE(APPLE)
+        SET(AVX_FLAGS  "-mavx")
+        SET(SSE_FLAGS  "-axSSE4.2")
+    ENDIF(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
 else()
     # NOT      INTEL
