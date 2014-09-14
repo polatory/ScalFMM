@@ -75,6 +75,7 @@
 #include "Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
+#include "../Src/Utils/FParameterNames.hpp"
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with
@@ -94,46 +95,24 @@
 //!	          - Chebychev and symetric Chebychev interpolation
 //!      - if FFT is activated:  interpolation on uniform grid
 //!<br>
-//!  <b> General arguments:</b>
-//!     \param   -depth          The depth of the octree
-//!     \param   -subdepth     Specifies the size of the sub octree
-//!     \param   -t                   The number of threads
-//!
-//!     \param   -f name          Name of the particles file with extension (.fma or .bfma). The data in  file have to be in our FMA format
-//!
-//!
-//! \b examples
-//!
-//!  Transform an ascii file in a binary file
-//!
-//!   changeFormat -fin unitCubeXYZQ100.fma  -fout unitCubeXYZQ100 -bin
 
-void usage() {
-	std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
-	std::cout <<	 "Options  "<< std::endl
-			<<     "      -help         to see the parameters    " << std::endl
-			<<	  "      -depth       the depth of the octree   "<< std::endl
-			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
-			<<     "      -f   name    name specifies the name of the particle distribution" << std::endl
-			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
-}
 
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
-		usage() ;
-		std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver for testing different approximations  for the  1/r kernel.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+                         FParameterDefinitions::NbThreads, FParameterDefinitions::SHDevelopment);
 
-		exit(EXIT_SUCCESS);
-	}
 
 	// get info from commande line
-	const std::string  filename(FParameters::getStr(argc,argv,"-f", "../Data/UTest/unitCubeRef20kDouble.bfma"));
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-	const unsigned int NbThreads      = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
-	const int DevP                                = FParameters::getValue(argc, argv, "-p", 11);
+    const std::string  filename(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/UTest/unitCubeRef20kDouble.bfma"));
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, omp_get_max_threads());
+    const int DevP                   = FParameters::getValue(argc, argv, FParameterDefinitions::SHDevelopment.options, 11);
 
 	//
 #ifdef _OPENMP

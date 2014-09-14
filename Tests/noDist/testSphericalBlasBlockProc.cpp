@@ -44,9 +44,17 @@
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test Spherical HArmonic kernel with blas.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
+                         FParameterDefinitions::NbThreads);
+
   typedef FSphericalCell         CellClass;
   typedef FP2PParticleContainer<>         ContainerClass;
 
@@ -64,15 +72,15 @@ int main(int argc, char ** argv){
 
   FMpi app( argc, argv);
 
-  const int DevP = FParameters::getValue(argc,argv,"-p", 8);
-  const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
-  const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
+  const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 8);
+  const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+  const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
   FTic counter;
   const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
     "../Data/test20k.bin.fma.single":
     "../Data/test20k.bin.fma.double";
-  const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
-  const int nbThreads = FParameters::getValue(argc,argv,"-t",8);
+  const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFilename);
+  const int nbThreads = FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options,8);
   omp_set_num_threads(nbThreads);
 
   std::cout << "Opening : " << filename << "\n";

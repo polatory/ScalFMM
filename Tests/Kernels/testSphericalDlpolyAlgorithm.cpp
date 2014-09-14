@@ -52,6 +52,8 @@
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #endif
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** Ewal particle is used in the gadget program
  * here we try to make the same simulation
  */
@@ -66,6 +68,7 @@ struct EwalParticle {
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Please read the code to know more, sorry");
 
 	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
 	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
@@ -103,10 +106,10 @@ int main(int argc, char ** argv){
 
 	}	//////////////////////////////////////////////////////////////
 
-	const int NbLevels         = FParameters::getValue(argc,argv,"-depth",   4);
-	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-subdepth",  2);
+    const int NbLevels         = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options,   4);
+    const int SizeSubLevels    = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options,  2);
 	const int PeriodicDeep     = FParameters::getValue(argc,argv,"-per", 3);
-	const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/EwalTest_Periodic.run");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/EwalTest_Periodic.run");
 	//  file for -saveError option
 	std::ofstream errorfile("outputEwaldError.txt",std::ios::out);
 
@@ -359,7 +362,7 @@ int main(int argc, char ** argv){
 				part.forces[1] *= scaleForce ;
 				part.forces[2] *= scaleForce ;
 			}
-			if(FParameters::existParameter(argc, argv, "-verbose")){
+            if(FParameters::existParameter(argc, argv, FParameterDefinitions::EnabledVerbose.options)){
 				std::cout << ">> index " << particles[idxTarget].index << std::endl;
 				std::cout << "Good    x " << particles[idxTarget].position.getX() << " y " << particles[idxTarget].position.getY() << " z " << particles[idxTarget].position.getZ() << std::endl;
 				std::cout << "Good    fx " <<particles[idxTarget].forces[0] << " fy " << particles[idxTarget].forces[1] << " fz " << particles[idxTarget].forces[2] << std::endl;
@@ -464,7 +467,7 @@ int main(int argc, char ** argv){
 				}
 				energy +=  potentials[idxPart]*physicalValues[idxPart];
 				//
-				if(FParameters::existParameter(argc, argv, "-verbose")){
+                if(FParameters::existParameter(argc, argv, FParameterDefinitions::EnabledVerbose.options)){
 					std::cout << ">> index " << particles[indexPartOrig].index << std::endl;
 					std::cout << "Good x " << particles[indexPartOrig].position.getX() << " y " << particles[indexPartOrig].position.getY() << " z " << particles[indexPartOrig].position.getZ() << std::endl;
 					 std::cout << std::fixed  << std::setprecision(5) ;

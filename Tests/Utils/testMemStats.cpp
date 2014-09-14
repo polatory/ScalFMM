@@ -40,6 +40,8 @@
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
@@ -48,6 +50,10 @@
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     {
+        FHelpDescribeAndExit(argc, argv, "Show the memory usage (if mem stats is turned on at the compilation)",
+                             FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                             FParameterDefinitions::NbParticles, FParameterDefinitions::SHDevelopment);
+
         typedef FSphericalCell                 CellClass;
 
         typedef FP2PParticleContainer<>      ContainerClass;
@@ -62,10 +68,10 @@ int main(int argc, char ** argv){
         std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
         //////////////////////////////////////////////////////////////
 
-        const int NbLevels      = FParameters::getValue(argc,argv,"-h", 5);
-        const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-        const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
-        const int DevP         = FParameters::getValue(argc,argv,"-p", 5);
+        const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+        const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+        const int NbPart       = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
+        const int DevP         = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 5);
         const FPoint centerOfBox = FPoint(0.5,0.5,0.5);
         FTic counter;
 

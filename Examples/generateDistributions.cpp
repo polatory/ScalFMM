@@ -17,6 +17,8 @@
 #include "Utils/FGenerateDistribution.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
+#include "../Src/Utils/FParameterNames.hpp"
+
 //
 /// \file  generateDistributions.cpp
 //!
@@ -68,52 +70,45 @@
 //!
 //!   generateDistributions  -cuboid 2:2:4 -filename cuboid  -visufmt vtp -charge  -zeromean
 //!
-//
 
-//
-//
-void genDistusage() {
-	std::cout << "Driver to generate N points (non)uniformly distributed on a given geometry"
-			<< std::endl;
-	std::cout <<	 "Options  "<< std::endl
-			<<     "   -help       to see the parameters    " << std::endl
-			<<     "   -N       The number of points in the distribution    " << std::endl
-			<<     "   -extraLength   value    extra length to add to the boxWidth"<< std::endl
-			<<    std::endl
-			<<     "    Distributions   " << std::endl
-			<<     "        Uniform on    " << std::endl
-			<<     "             -unitCube  uniform distribution on unit cube" <<std::endl
-			<<     "             -cuboid  uniform distribution on rectangular cuboid of size  a:b:c" <<std::endl
-			<<     "                     -lengths   a:b:c - default values are 1.0:1.0:2.0" <<std::endl
-			<<     "             -unitSphere  uniform distribution on unit sphere" <<std::endl
-			<<     "             -sphere  uniform distribution on  sphere of radius given by" <<std::endl
-			<<     "                     -radius  R - default value for R is 2.0" <<std::endl
-			<<     "             -prolate ellipsoid with aspect ratio a:a:c" <<std::endl
-			<<     "                     -ar a:a:c   with  c > a > 0" <<std::endl<<std::endl
-			<<     "        Non Uniform on    " << std::endl
-			<<     "             -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by" <<std::endl
-			<<     "                     -ar a:b:c   with a, b and c > 0" <<std::endl
-			<<     "             -plummer (Highly non unuiform) plummer distrinution (astrophysics)"<<std::endl
-			<<     "                     -radius  R - default value 10.0" <<std::endl
-			<<     "    Physical values" <<std::endl
-			<<     "             -charge generate physical values between -1 and 1 otherwise generate between 0 and 1		" <<std::endl<<std::endl
-			<<     "             -zeromean  the average of the physical values is zero		" <<std::endl<<std::endl
-			<<     "     Output " << std::endl
-			<<     "             -filename name: generic name for files (without extension) and save data" <<std::endl
-			<<     "                     with following format in name.fma or name.bfma in -bin is set" <<std::endl
-			<<     "             -visufmt  vtk, vtp, cosmo or cvs format " <<std::endl;
-}
 
 
 int main(int argc, char ** argv){
-	//
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
-		genDistusage() ;
-		exit(-1);
-	}
+    FHelpDescribeAndExit(argc, argv,
+                         ">> Driver to generate N points (non)uniformly distributed on a given geometry.\n"
+                         "Options  \n"
+                         "   -help       to see the parameters    \n"
+                         "   -N       The number of points in the distribution    \n"
+                         "   -extraLength   value    extra length to add to the boxWidth\n"
+                         "    Distributions   \n"
+                         "        Uniform on    \n"
+                         "             -unitCube  uniform distribution on unit cube\n"
+                         "             -cuboid  uniform distribution on rectangular cuboid of size  a:b:c\n"
+                         "                     -lengths   a:b:c - default values are 1.0:1.0:2.0\n"
+                         "             -unitSphere  uniform distribution on unit sphere\n"
+                         "             -sphere  uniform distribution on  sphere of radius given by\n"
+                         "                     -radius  R - default value for R is 2.0\n"
+                         "             -prolate ellipsoid with aspect ratio a:a:c\n"
+                         "                     -ar a:a:c   with  c > a > 0\n"
+                         "        Non Uniform on    \n"
+                         "             -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by\n"
+                         "                     -ar a:b:c   with a, b and c > 0\n"
+                         "             -plummer (Highly non unuiform) plummer distrinution (astrophysics)\n"
+                         "                     -radius  R - default value 10.0\n"
+                         "    Physical values\n"
+                         "             -charge generate physical values between -1 and 1 otherwise generate between 0 and 1		\n"
+                         "             -zeromean  the average of the physical values is zero		\n"
+                         "     Output \n"
+                         "             -filename name: generic name for files (without extension) and save data\n"
+                         "                     with following format in name.fma or name.bfma in -bin is set\n"
+                         "             -visufmt  vtk, vtp, cosmo or cvs format.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::NbParticles);
+
+
+
 	 FReal       extraRadius = 0.000 ;
-	const int NbPoints  = FParameters::getValue(argc,argv,"-N",   20000);
-	const std::string genericFileName(FParameters::getStr(argc,argv,"-filename",   "unifPointDist"));
+    const int NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   20000);
+    const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "unifPointDist"));
 	FReal BoxWith = 0.0;
 	FPoint Centre(0.0, 0.0,0.0);
 	//
@@ -224,7 +219,7 @@ int main(int argc, char ** argv){
 	}
 	std::string name(genericFileName);
 
-	if(  FParameters::existParameter(argc, argv, "-bin")){
+    if(  FParameters::existParameter(argc, argv, FParameterDefinitions::OutputBinFormat.options)){
 		name += ".bfma";
 	}
 	else {
@@ -237,8 +232,8 @@ int main(int argc, char ** argv){
 	//
 	//  Generate  file for visualization
 	//
-	if(FParameters::existParameter(argc, argv, "-visufmt")){
-		std::string visufile(""), fmt(FParameters::getStr(argc,argv,"-visufmt",   "vtp"));
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
+        std::string visufile(""), fmt(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "vtp"));
 		if( fmt == "vtp" ){
 			visufile = genericFileName + ".vtp" ;
 		}

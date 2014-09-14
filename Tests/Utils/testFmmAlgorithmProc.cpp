@@ -45,6 +45,8 @@
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -304,19 +306,23 @@ typedef FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelCl
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test FMM distributed algorithm by counting the nb of interactions each particle receive.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::InputFile);
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
     FMpi app( argc, argv);
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;
     const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
                 "../../Data/test20k.bin.fma.single":
                 "../../Data/test20k.bin.fma.double";
-    const char* const filename = FParameters::getStr(argc,argv,"-f", defaultFilename);
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFilename);
     std::cout << "Opening : " << filename << "\n";
 
     std::ifstream loader;

@@ -40,6 +40,7 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 /** This program show an example of use of the fmm basic algo
   * it also check that each particles is impacted each other particles
@@ -47,6 +48,11 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test FMM algorithm by counting the nb of interactions each particle receive.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::NbParticles);
+
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
 
@@ -61,9 +67,9 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
+    const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int NbPart       = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////

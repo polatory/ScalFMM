@@ -32,6 +32,7 @@
 
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
@@ -46,11 +47,11 @@ void usage() {
 }
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Load and store a tree (only the code is interesting).",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::OutputFile);
 
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
-		usage() ;
-		exit(EXIT_SUCCESS);
-	}
 	typedef FSphericalCell                 CellClass;
 	typedef FP2PParticleContainer<>         ContainerClass;
 
@@ -60,12 +61,12 @@ int main(int argc, char ** argv){
 	///////////////////////What we do/////////////////////////////
 	std::cout << ">> This executable has to be used to load or retrieve an entier tree.\n";
 	//////////////////////////////////////////////////////////////
-	const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
+    const unsigned int TreeHeight       = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 
 	FTic counter;
-	const std::string filenameIN     = FParameters::getStr(argc,argv,"-fin", "../Data/test20k.fma");
-	const std::string filenameOUT = FParameters::getStr(argc,argv,"-fout", "tmp_tree.data");
+    const std::string filenameIN     = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const std::string filenameOUT = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "tmp_tree.data");
 	std::cout << "Opening : " << filenameIN << "\n";
 
 	FFmaGenericLoader loader(filenameIN);

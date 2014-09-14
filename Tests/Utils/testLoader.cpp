@@ -37,6 +37,8 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
   * In this file we show an example of FBasicLoader use
 * Inserting 2000000 particles ...
@@ -46,6 +48,9 @@
   */
 
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Load a file and put the particles in a tree",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
+
     typedef FBasicParticleContainer<0>      ContainerClass;
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -58,7 +63,7 @@ int main(int argc, char ** argv){
     // Use testLoaderCreate.exe to create this file
     FTic counter;
 
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.basic");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.basic");
     std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
@@ -70,7 +75,7 @@ int main(int argc, char ** argv){
 
     {
         // otree
-        OctreeClass tree(FParameters::getValue(argc,argv,"-h", 5), FParameters::getValue(argc,argv,"-sh", 3),
+        OctreeClass tree(FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5), FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3),
                          loader.getBoxWidth(), loader.getCenterOfBox());
 
         // -----------------------------------------------------

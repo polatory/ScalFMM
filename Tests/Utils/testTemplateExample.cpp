@@ -21,6 +21,8 @@
 
 #include "../../Src/Utils/FTemplate.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 #include <iostream>
 
 struct RunContainer{
@@ -42,7 +44,10 @@ struct RunContainer{
 
 
 // Compile with g++ -std=c++11 main.cpp -o test.exe
-int main(){
+int main(int argc, char** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Only the code is interesting in order to understand the multi-template compilation.");
+
     // This will call the For method (maybe several times)
     FForAll::For<int, 0, 20, 1, RunContainer>(45.4, 55);
 

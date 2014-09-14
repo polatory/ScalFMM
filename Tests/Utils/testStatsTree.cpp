@@ -39,6 +39,8 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 
 /** This program show an example of use of
   * the fmm basic algo
@@ -49,6 +51,11 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Print a lot of information about the tree build from a given file.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
     typedef FBasicParticleContainer<0>      ContainerClass;
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -56,11 +63,11 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;
 
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
     FFmaGenericLoader loader(filename);

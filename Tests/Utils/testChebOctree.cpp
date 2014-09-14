@@ -38,11 +38,14 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
 * In this file we show how to use octree
 */
 
-int main(int, char **){    
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Test the octree with the Chebyshev kernel.");
 
 	const int ORDER = 5;
 

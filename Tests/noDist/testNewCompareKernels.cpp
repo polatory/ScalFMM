@@ -75,6 +75,8 @@
 #include "Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with

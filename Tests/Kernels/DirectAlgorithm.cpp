@@ -30,6 +30,7 @@
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 #include "../../Src/Utils/FIOVtk.hpp"
 
 #include "../../Src/Containers/FOctree.hpp"
@@ -69,8 +70,16 @@ struct MDParticle {
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
+    FHelpDescribeAndExit(argc, argv,
+                         ">> This executable has to be used to compute direct interaction either for periodic or non periodic system.\n"
+                         ">> options are -depth H -subdepth SH  [-per perdeep,  -noper] -fin filenameIN (-bin)  -fout filenameOUT \n"
+                         ">> Recommended files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run.",
+                         FParameterDefinitions::OutputFile, FParameterDefinitions::EnabledVerbose,
+                         FParameterDefinitions::PeriodicityDisabled, FParameterDefinitions::PeriodicityNbLevels,
+                         FParameterDefinitions::OutputFile, FParameterDefinitions::InputFile,
+                         FParameterDefinitions::InputBinFormat);
 
+	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
 	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
 	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
   const MatrixKernelClass MatrixKernel;
@@ -93,32 +102,13 @@ int main(int argc, char ** argv){
 
 	typedef FFmmAlgorithmPeriodic<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 	//	typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass >         FmmClassNoPer;
-	///////////////////////What we do/////////////////////////////
-	if( FParameters::existParameter(argc, argv, "-help")){
-		std::cout << ">> This executable has to be used to compute direct interaction either for periodic or non periodic system.\n";
-		std::cout << ">> options are -depth H -subdepth SH  [-per perdeep,  -noper] -fin filenameIN (-bin)  -fout filenameOUT \n";
-		std::cout << ">> Recommended files : ../Data/EwalTest_Periodic.run ../Data/EwalTest_NoPeriodic.run\n";
-		std::cout << " Options " << std::endl;
-		std::cout <<"      -bin if input file is in binary mode "<< std::endl;
-		std::cout << "     -per perDeep    " << std::endl;
-		std::cout << "     -noper no periodic boundary conditions   " << std::endl;
-		std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
-		std::cout << "     -fout filenameOUT  binary output file " << std::endl;
-		std::exit( EXIT_FAILURE);
-
-	}
-	if(FParameters::existParameter(argc, argv, "-per") &&FParameters::existParameter(argc, argv, "-noper")  ){
-		std::cerr <<" Error -per X and -noper are forbidden together " << std::endl;
-		std::exit( EXIT_FAILURE);
-	}
-
 	//////////////////////////////////////////////////////////////
 
-	const int NbLevels         = FParameters::getValue(argc,argv,"-depth",   4);
-	const int SizeSubLevels    = FParameters::getValue(argc,argv,"-subdepth",  2);
-	const int PeriodicDeep     = FParameters::getValue(argc,argv,"-per", 3);
-	const std::string filenameIn(FParameters::getStr(argc,argv,"-fin", "../Data/forceNacl_128_dlpolyPer.bin"));
-	const char* const filenameOut = FParameters::getStr(argc,argv,"-fout", "periodicDirect.out");
+    const int NbLevels         = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options,   4);
+    const int SizeSubLevels    = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options,  2);
+    const int PeriodicDeep     = FParameters::getValue(argc,argv,FParameterDefinitions::PeriodicityNbLevels.options, 3);
+    const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/forceNacl_128_dlpolyPer.bin"));
+    const char* const filenameOut = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "periodicDirect.out");
 	//  file for -saveError option
 	std::ofstream errorfile("outputEwaldError.txt",std::ios::out);
 
@@ -129,7 +119,7 @@ int main(int argc, char ** argv){
 	//  -----------------------------------------------------
 	std::cout << "Opening : " << filenameIn << "\n";
 	FDlpolyLoader  *loader = nullptr ;
-	if(FParameters::existParameter(argc, argv, "-bin")){
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::InputBinFormat.options)){
 		loader  = new FDlpolyBinLoader(filenameIn.c_str());
 	}
 	else {
@@ -193,7 +183,7 @@ int main(int argc, char ** argv){
 	//
 	// ---------------------------------------------------------------------------------
 	FTreeCoordinate min, max;
-	if( FParameters::existParameter(argc, argv, "-per") ){
+    if( FParameters::existParameter(argc, argv, FParameterDefinitions::PeriodicityNbLevels.options) ){
 		FmmClass algo(&tree,PeriodicDeep);
 		algo.repetitionsIntervals(&min, &max);
 		std::cout << "Simulated box: " << algo.extendedBoxWidth()<<std::endl;
@@ -305,7 +295,7 @@ int main(int argc, char ** argv){
 	std::cout << " Box size: " << loader->getBoxWidth() << "  " << sizeof(loader->getBoxWidth())<<std::endl;
 	double boxsize[3] ; boxsize[0] = boxsize[1]= boxsize[2]=loader->getBoxWidth();
 	int PER[4] ;
-	if( FParameters::existParameter(argc, argv, "-noper") ){
+    if( FParameters::existParameter(argc, argv, FParameterDefinitions::PeriodicityDisabled.options) ){
 		PER[0] = 0 ;
 		PER[1] = PER[2] = PER[3] = 0 ;
 	}
@@ -324,7 +314,7 @@ int main(int argc, char ** argv){
 	// end generate
 	// -----------------------------------------------------
 	//
-	if(FParameters::existParameter(argc, argv, "-verbose")){
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::EnabledVerbose.options)){
 		denergy = 0 ;
 		for(int idx = 0 ; idx < nbParticles ; ++idx){
 			std::cout << ">> index " << particlesDirect[idx].index << std::endl;

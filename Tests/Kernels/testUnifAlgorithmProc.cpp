@@ -48,6 +48,9 @@
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
+
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
  * This program runs the FMM Algorithm Distributed with the Uniform kernel
  */
@@ -55,6 +58,10 @@
 // Simply create particles and try the kernel
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv,
+                         "Test Uniform kernel with MPI and compare it with the direct computation.",
+                         FParameterDefinitions::OctreeHeight,FParameterDefinitions::NbThreads,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile);
   
   const unsigned int ORDER = 7;
   const FReal epsilon = FReal(1e-7);
@@ -71,10 +78,10 @@ int main(int argc, char* argv[])
   
   FMpi app(argc,argv);
   
-  const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-  const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
+  const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+  const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 
   std::cout << ">> This executable has to be used to test Proc Uniform Algorithm. \n";
   

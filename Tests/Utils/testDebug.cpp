@@ -15,12 +15,15 @@
 // ===================================================================================
 #include "../../Src/Utils/FLog.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
 * In this file we show how to use the debug module.
 * Warning, in FGlobal.hpp (included in FLog.hpp) ScalFMM_USE_DEBUG might be undefined.
 */
 
-int main(void){
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Just show how the debug and log stuff should be used.");
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";

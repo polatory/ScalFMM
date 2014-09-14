@@ -45,6 +45,8 @@
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
@@ -53,6 +55,12 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test FMM periodic distributed algorithm by counting the nb of interactions each particle receive.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::NbParticles);
+
+
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
 
@@ -66,9 +74,9 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbParticles      = FParameters::getValue(argc,argv,"-nb", 5);
+    const int NbLevels          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels     = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const long NbParticles      = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 5);
     const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
 
 

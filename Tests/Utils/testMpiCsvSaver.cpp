@@ -37,9 +37,11 @@
 #include "../../Src/Components/FBasicCell.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 
 class VelocityContainer : public FP2PParticleContainer<> {
-  typedef FP2PParticleContainer<> Parent;
+    typedef FP2PParticleContainer<> Parent;
 
     FVector<FPoint> velocities;
 
@@ -85,9 +87,9 @@ struct TestParticle{
     FPoint position;
     FReal physicalValue;
     FReal potential;
-     FReal forces[3];
-     FPoint velocity;
-   const FPoint& getPosition(){
+    FReal forces[3];
+    FPoint velocity;
+    const FPoint& getPosition(){
         return position;
     }
 };
@@ -128,6 +130,12 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Convert the data from a file into a csv file to load into Paraview for example.\n"
+                         "It puts the file into the /tmp dir and the code is an example of using FTreeMpiCsvSaver.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::InputFile);
+
     typedef FBasicCell              CellClass;
     typedef VelocityContainer  ContainerClass;
 
@@ -138,10 +146,10 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
     FMpi app( argc, argv);
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 6);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
 
-    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma"));
+    GalaxyLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma"));
 
     // -----------------------------------------------------
 
@@ -165,14 +173,14 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     {
-        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("./out/test%d.csv", app.global() , false);
+        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("/tmp/test%d.csv", app.global() , false);
         saver.exportTree(&tree);
     }
 
     // -----------------------------------------------------
 
     {
-        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("./out/htest%d.csv", app.global() , true);
+        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("/tmp/htest%d.csv", app.global() , true);
         saver.exportTree(&tree);
     }
 

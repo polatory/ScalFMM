@@ -39,6 +39,8 @@
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that eachh particles is little or longer
@@ -52,10 +54,10 @@ template <class CellClass, class ContainerClass, class LeafClass, class OctreeCl
 int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     FTic counter;
     // Retrieve parameters
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     // Get working file
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.tsm.fma");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.tsm.fma");
     std::cout << "Opening : " << filename << "\n";
     // Create particles loader
     FFmaTsmLoader loader(filename);
@@ -138,10 +140,16 @@ int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
 
 // This is the real main!
 int main(int argc, char ** argv){
-    std::cout << "[PARAM] Use Parameters -spherical -rotation -chebyshev\n";
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the TSM (target source model) using the Rotation or the Spherical Harmonic Old implementations.",
+                         FParameterDefinitions::OctreeHeight,FParameterDefinitions::SHDevelopment,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+                         FParameterDefinitions::SphericalKernel, FParameterDefinitions::RotationKernel);
 
-    if( FParameters::existParameter(argc,argv,"-spherical") ){
+    std::cout << "[PARAM] Use Parameters -spherical -rotation -chebyshev\n";
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+
+    if( FParameters::existParameter(argc,argv,FParameterDefinitions::SphericalKernel.options) ){
         std::cout << "[INFO] -spherical is used\n";
         // Create template
         typedef FTypedSphericalCell            CellClass;
@@ -153,14 +161,14 @@ int main(int argc, char ** argv){
 
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        const int DevP = FParameters::getValue(argc,argv,"-p", 8);
+        const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 8);
         CellClass::Init(DevP);
 
         // Call Main function
         testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP,NbLevels);
     }
 
-    if( FParameters::existParameter(argc,argv,"-rotation") ){
+    if( FParameters::existParameter(argc,argv,FParameterDefinitions::RotationKernel.options) ){
         std::cout << "[INFO] -rotation is used\n";
         // Create template
         static const int P = 9;

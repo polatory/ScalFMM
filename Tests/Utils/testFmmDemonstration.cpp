@@ -42,6 +42,8 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 // My cell is actually a basic cell => minimum of data
 class MyCell : public FBasicCell {
 };
@@ -131,6 +133,11 @@ public:
 
 
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Explains how to use ScalFMM (only the code is interesting).",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::NbParticles);
+
     // Custom data structure here
     typedef MyCell            CellClass;
     typedef MyContainer       ContainerClass;
@@ -149,9 +156,9 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart = FParameters::getValue(argc,argv,"-pn", 20);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////

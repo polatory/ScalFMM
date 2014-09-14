@@ -36,6 +36,8 @@
 #include "../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../Src/Core/FFmmAlgorithm.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 #include "../UTests/FUTester.hpp"
 
 /*

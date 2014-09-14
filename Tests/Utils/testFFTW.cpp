@@ -28,112 +28,115 @@
 
 #include "../../Src/Utils/FTic.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 //#include "../../Src/Utils/FDft.hpp"
 
 
-int main()
+int main(int argc, char** argv)
 {
-  const FReal FRandMax = FReal(RAND_MAX);
+    FHelpDescribeAndExit(argc, argv, "Test the FFTw (only the code is interesting).");
 
-  FTic time;
+    const FReal FRandMax = FReal(RAND_MAX);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // INITIALIZATION
+    FTic time;
 
-  // size (pick a power of 2 for better performance of the FFT algorithm)
-  unsigned int nsteps_ = 500; 
+    //////////////////////////////////////////////////////////////////////////////
+    // INITIALIZATION
 
-  // fftw arrays
-  FReal* fftR_;
-  FComplex* fftC_;
+    // size (pick a power of 2 for better performance of the FFT algorithm)
+    unsigned int nsteps_ = 500;
 
-  fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-  fftC_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_);
+    // fftw arrays
+    FReal* fftR_;
+    FComplex* fftC_;
 
-  // fftw plans
-  // use routine defined in file:
-  // /PATH/TO/mkl/interfaces/fftw3xf/wrappers/fftw_plan_dft_c2r_1d.c
-  fftw_plan plan_c2r_; // backward FFT plan
-  fftw_plan plan_r2c_; // forward FFT plan
+    fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
+    fftC_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_);
 
-  std::cout<< "Init FFTW plans: ";
-  time.tic();
+    // fftw plans
+    // use routine defined in file:
+    // /PATH/TO/mkl/interfaces/fftw3xf/wrappers/fftw_plan_dft_c2r_1d.c
+    fftw_plan plan_c2r_; // backward FFT plan
+    fftw_plan plan_r2c_; // forward FFT plan
 
-  plan_c2r_ =
-    fftw_plan_dft_c2r_1d(nsteps_, 
-                         reinterpret_cast<fftw_complex*>(fftC_),
-                         fftR_, 
-                         FFTW_MEASURE);
-  plan_r2c_ =
-    fftw_plan_dft_r2c_1d(nsteps_, 
-                         fftR_, 
-                         reinterpret_cast<fftw_complex*>(fftC_), 
-                         FFTW_MEASURE);
+    std::cout<< "Init FFTW plans: ";
+    time.tic();
 
-  std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
+    plan_c2r_ =
+            fftw_plan_dft_c2r_1d(nsteps_,
+                                 reinterpret_cast<fftw_complex*>(fftC_),
+                                 fftR_,
+                                 FFTW_MEASURE);
+    plan_r2c_ =
+            fftw_plan_dft_r2c_1d(nsteps_,
+                                 fftR_,
+                                 reinterpret_cast<fftw_complex*>(fftC_),
+                                 FFTW_MEASURE);
 
-  // alternative choice of plan type
-//  plan_c2r_ =
-//    fftw_plan_dft_1d(nsteps_, fftC_, fftR_, FFTW_BACKWARD, FFTW_MEASURE);
-//  plan_r2c_ =
-//    fftw_plan_dft_1d(nsteps_, fftR_, fftC_, FFTW_FORWARD, FFTW_MEASURE);
+    std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
-  //////////////////////////////////////////////////////////////////////////////
-  // EXECUTION
-  // generate random physical data
-  for(unsigned int s=0; s<nsteps_; ++s)
-    fftR_[s] = FReal(rand())/FRandMax; 
+    // alternative choice of plan type
+    //  plan_c2r_ =
+    //    fftw_plan_dft_1d(nsteps_, fftC_, fftR_, FFTW_BACKWARD, FFTW_MEASURE);
+    //  plan_r2c_ =
+    //    fftw_plan_dft_1d(nsteps_, fftR_, fftC_, FFTW_FORWARD, FFTW_MEASURE);
 
-//  // display data in  physical space
-//  std::cout<< "Physical data: "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftR_[s] << ", ";
-//  std::cout<<std::endl;
+    //////////////////////////////////////////////////////////////////////////////
+    // EXECUTION
+    // generate random physical data
+    for(unsigned int s=0; s<nsteps_; ++s)
+        fftR_[s] = FReal(rand())/FRandMax;
 
-  // perform fft
-  std::cout<< "Perform Forward FFT: ";
-  time.tic();
-  fftw_execute( plan_r2c_ );
-  std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
+    //  // display data in  physical space
+    //  std::cout<< "Physical data: "<<std::endl;
+    //  for(unsigned int s=0; s<nsteps_; ++s)
+    //    std::cout<< fftR_[s] << ", ";
+    //  std::cout<<std::endl;
 
-//  // display transform in Fourier space
-//  // beware the real data FFT stores only N/2+1 complex output values
-//  std::cout<< "Transformed data : "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftC_[s] << ", ";
-//  std::cout<<std::endl;
+    // perform fft
+    std::cout<< "Perform Forward FFT: ";
+    time.tic();
+    fftw_execute( plan_r2c_ );
+    std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
-//  for(unsigned int s=0; s<nsteps_/2+1; ++s){
-//    fftC_[nsteps_-s]=FComplex(fftC_[s].getReal(),-fftC_[s].getImag());
-//  }
-//
-//  std::cout<< "Full Transformed data : "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftC_[s] << ", ";
-//  std::cout<<std::endl;
+    //  // display transform in Fourier space
+    //  // beware the real data FFT stores only N/2+1 complex output values
+    //  std::cout<< "Transformed data : "<<std::endl;
+    //  for(unsigned int s=0; s<nsteps_; ++s)
+    //    std::cout<< fftC_[s] << ", ";
+    //  std::cout<<std::endl;
 
-  // perform ifft of tranformed data (in order to get physical values back)
-  std::cout<< "Perform Backward FFT: ";
-  time.tic();
-  fftw_execute( plan_c2r_ );
-  std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
+    //  for(unsigned int s=0; s<nsteps_/2+1; ++s){
+    //    fftC_[nsteps_-s]=FComplex(fftC_[s].getReal(),-fftC_[s].getImag());
+    //  }
+    //
+    //  std::cout<< "Full Transformed data : "<<std::endl;
+    //  for(unsigned int s=0; s<nsteps_; ++s)
+    //    std::cout<< fftC_[s] << ", ";
+    //  std::cout<<std::endl;
 
-//  // display data in physical space
-//  std::cout<< "Physical data (from 1/N*IFFT(FFT(Physical data))): "<<std::endl;
-//  for(unsigned int s=0; s<nsteps_; ++s)
-//    std::cout<< fftR_[s]/nsteps_ << ", ";
-//  std::cout<<std::endl;
+    // perform ifft of tranformed data (in order to get physical values back)
+    std::cout<< "Perform Backward FFT: ";
+    time.tic();
+    fftw_execute( plan_c2r_ );
+    std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
-  //////////////////////////////////////////////////////////////////////////////
-  // VALIDATION
-  // TODO
+    //  // display data in physical space
+    //  std::cout<< "Physical data (from 1/N*IFFT(FFT(Physical data))): "<<std::endl;
+    //  for(unsigned int s=0; s<nsteps_; ++s)
+    //    std::cout<< fftR_[s]/nsteps_ << ", ";
+    //  std::cout<<std::endl;
 
-  //free memory
-  fftw_destroy_plan(plan_r2c_);
-  fftw_destroy_plan(plan_c2r_);
-  fftw_free(fftR_);
-  fftw_free(fftC_);
+    //////////////////////////////////////////////////////////////////////////////
+    // VALIDATION
+    // TODO
+
+    //free memory
+    fftw_destroy_plan(plan_r2c_);
+    fftw_destroy_plan(plan_c2r_);
+    fftw_free(fftR_);
+    fftw_free(fftC_);
 
 
 }// end test

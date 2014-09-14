@@ -35,12 +35,19 @@
 
 #include "../../Src/Utils/FTic.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
 * In this file we show how to use octree with iteration
 * This is a good example to understand FOctree::Iterator.
 */
 
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Show how to iterate on an octree (only the code is interesting)",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
     typedef FBasicParticleContainer<0>     ContainerClass;
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -50,9 +57,9 @@ int main(int argc, char ** argv){
     std::cout << ">> how to use octree iterator.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-h", 9);
-    const int NbSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 9);
+    const int NbSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
 
     FTic counterTime;
 

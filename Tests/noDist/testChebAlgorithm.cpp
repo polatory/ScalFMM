@@ -42,6 +42,8 @@
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmThread.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
  * This program runs the FMM Algorithm with the Chebyshev kernel and compares the results with a direct computation.
  */
@@ -49,10 +51,15 @@
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-  const char* const filename             = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
-  const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
-  const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the chebyshev FMM and compare it to the direct computation for debugging purpose.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
+
+  const char* const filename             = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+  const unsigned int TreeHeight       = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+  const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+  const unsigned int NbThreads        = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 
 #ifdef _OPENMP
   omp_set_num_threads(NbThreads);

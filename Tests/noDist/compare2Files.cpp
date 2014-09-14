@@ -16,7 +16,7 @@
 #include "Files/FFmaGenericLoader.hpp"
 #include "Utils/FParameters.hpp"
 #include "Utils/FCompareResults.hpp"
-
+#include "../../Src/Utils/FParameterNames.hpp"
 //
 /// \file  compare2files.cpp
 //!
@@ -39,32 +39,20 @@
 //!   compare2files -file1 unitCubeXYZQ100.fma  -file2 unitCubeXYZQ100
 
 
-//
-//
-void genDistusage() {
-	std::cout << "Driver to change the format of the input file"
-			<< std::endl;
-	std::cout <<	 "Options  "<< std::endl
-			<<     "   -help       to see the parameters    " << std::endl
-			<<     "   -fmmfile1 name1  first file name to compare (with extension .fma (ascii) or bfma (binary) " <<std::endl
-			<<     "   -fmmfile2 name2 second file name to compare (with extension .fma (ascii) or bfma (binary)" <<std::endl
-			<<     "   -ewaldfile2 name2 if name2 contains the result done by the ewald method for 1/r kernel "<<std::endl
-			<<std::endl;
-}
+
+static const FParameterNames LocalParameterEwald{
+    {"-ewaldfile2"},
+    "-ewaldfile2 name2 if name2 contains the result done by the ewald method for 1/r kernel"
+};
 
 int main(int argc, char ** argv){
-	//
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
-		genDistusage() ;
-		exit(-1);
-	}
-	if(FParameters::existParameter(argc, argv, "-ewaldfile2")&&FParameters::existParameter(argc, argv, "-fmmfile2")){
-		std::cout << "Either -file2 or -ewald have to be set"<<std::endl;
-		exit(-1);
-	}
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver to change the format of the input file.",
+                         FParameterDefinitions::InputFileOne, FParameterDefinitions::InputFileTwow,
+                         LocalParameterEwald);
 
-	const std::string filename1(FParameters::getStr(argc,argv,"-fmmfile1",   "data.fma"));
-	const std::string filename2(FParameters::getStr(argc,argv,"-fmmfile2",   "data.fma"));
+    const std::string filename1(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options,   "data.fma"));
+    const std::string filename2(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileTwow.options,   "data.fma"));
 
 	FFmaGenericLoader loader1(filename1);
 	FFmaGenericLoader loader2(filename2);
@@ -88,19 +76,18 @@ int main(int argc, char ** argv){
 	//
 	loader1.fillParticle(particles1,nbParticles);
 	loader2.fillParticle(particles2,nbParticles);
-	if(FParameters::existParameter(argc, argv, "-ewaldfile2") ) {
+    if(FParameters::existParameter(argc, argv, LocalParameterEwald.options) ) {
 		FReal volume =1.0 ;
 //		double volume               =  boxsize[0] *boxsize[1]*boxsize[2] ;
 		 removeFirstMoment( "DLPOLY", nbParticles, particles2,  volume) ;
 			FPoint FirstMoment ;
 	}
 	//
-	int error = 0 ;
-	error = compareTwoArrays("TAG", nbParticles, particles1, particles2);
+    const int error = compareTwoArrays("TAG", nbParticles, particles1, particles2);
 
 	//
-	delete particles1 ;
-	delete particles2 ;
+    delete[] particles1 ;
+    delete[] particles2 ;
 
 	//
 	return error;

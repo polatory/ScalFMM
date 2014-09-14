@@ -45,6 +45,8 @@
 #include "../../Src/Adaptive/FAdaptiveKernelWrapper.hpp"
 #include "../../Src/Adaptive/FAbstractAdaptiveKernel.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 template< class CellClass, class ContainerClass>
 class FAdaptiveTestKernel : public FTestKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 public:
@@ -115,6 +117,11 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the adaptive FMM.",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight,);
+
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
 
@@ -131,14 +138,14 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(FParameters::getValue(argc,argv,"-nb", 2000000), 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +186,7 @@ int main(int argc, char ** argv){
         long long int*const particlesAttributes = leaf->getTargets()->getDataDown();
         for(int idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
             if(particlesAttributes[idxPart] != (loader.getNumberOfParticles()-1)){
-                printf("Incorrect %lld instead of %d\n", particlesAttributes[idxPart], (loader.getNumberOfParticles()-1));
+                std::cout << "Incorrect " << particlesAttributes[idxPart] << " instead of " << (loader.getNumberOfParticles()-1) << "\n";
             }
         }
     });

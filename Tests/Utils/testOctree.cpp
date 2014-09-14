@@ -35,11 +35,17 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
 * In this file we show how to use octree
 */
 
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Show how to use an octree (only the code is interesting)",
+                         FParameterDefinitions::NbParticles);
+
     typedef FBasicParticleContainer<0>      ContainerClass;
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -48,7 +54,7 @@ int main(int argc, char ** argv){
     std::cout << ">> It is only interesting to wath the code to understand\n";
     std::cout << ">> how to use the Octree\n";
     //////////////////////////////////////////////////////////////
-    const int NbPart = FParameters::getValue(argc,argv,"-nb", 2000000);
+    const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
     FTic counter;
 
     FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
