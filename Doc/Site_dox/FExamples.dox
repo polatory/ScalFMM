@@ -166,4 +166,11 @@ html/files.html
  <li> utestOctree.cpp : this tests the octree validation.	 </li>
  </ul>
 
+ * \section makeyourown Create your own application using ScalFMM
+ * In you compile ScalFMM and enabled the Tests (by passing a parameter to CMake or by using ccmake)
+ * any cpp file that will put into the Tests/ directories will be compiled and linked to ScalFMM.
+ * Therefore it can be a quick way to create and test with scalfmm without creating your own project and
+ * thinking about the compilation and link stages.
+ * Put your file in the test directories, enable the Tests in the cmake, be sure that the CMake is generated (type cmake.. again
+ * in the build dir), and then make your_cpp_file_without_extension
 */
