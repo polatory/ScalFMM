@@ -234,6 +234,8 @@ int main(int argc, char ** argv){
 	FFmaGenericWriter  writer(name) ;
 	writer.writeHeader(Centre,BoxWith, NbPoints, *ppart) ;
 	writer.writeArrayOfParticles(ppart, NbPoints);
+	std::cout << "    End of writing "<<std::endl;
+
 	//
 	//  Generate  file for visualization
 	//
@@ -277,7 +279,7 @@ int main(int argc, char ** argv){
 		}
 	}
 	//
-	delete particles ;
+	delete [] particles ;
 
 	//
 	return 1;
