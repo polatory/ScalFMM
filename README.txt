@@ -44,7 +44,7 @@ browser scalfmm/Build/Doc/html/index.html
 Getting help and having news from us:
 ====================================
 
-You can subscribe to the scalfmm users mailing list ( scalfmm-public-users@lists.gforge.inria.fr,  http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/scalfmm-public-users ). Very low trafic (~ 2 mails per year) just to know when a news version or an improvement is available.
+You can subscribe to the scalfmm users mailing list ( scalfmm-public-users@lists.gforge.inria.fr,  http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/scalfmm-public-users ). Very low trafic (~ 2 mails per year) just to know when a new version or an improvement is available.
 
 Contact the developers at : scalfmm-public-support@lists.gforge.inria.fr
 
