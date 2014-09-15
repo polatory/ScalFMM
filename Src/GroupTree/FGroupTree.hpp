@@ -419,10 +419,9 @@ public:
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CellClass* aCell){
-                ParticlesAttachedClass aLeaf = (*iterLeaves)->getLeaf(aCell->getMortonIndex());
+                ParticlesAttachedClass aLeaf = (*iterLeaves)->template getLeaf <ParticlesAttachedClass>(aCell->getMortonIndex());
                 FAssertLF(aLeaf.isAttachedToSomething());
-                function(aCell, aLeaf);
-                delete aLeaf;
+                function(aCell, &aLeaf);
             });
 
             ++iterCells;

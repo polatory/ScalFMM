@@ -284,7 +284,7 @@ protected:
                         if(cell){
                             ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                             FAssertLF(particles.isAttachedToSomething());
-                            kernels->P2M(cell, &particles);
+                            kernels->L2P(cell, &particles);
                         }
                     }
                 }
