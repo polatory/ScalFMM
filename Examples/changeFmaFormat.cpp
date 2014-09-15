@@ -73,37 +73,10 @@ int main(int argc, char ** argv){
     // Read Data
     int j = 0 ;
     for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
-        //		//
         loader->fillParticle(&particles[j],nbData);
-        //		std::cout << "idxPart "<< idxPart << "  ";
-        //		for (int jj= 0 ; jj<nbData ; ++jj, ++k){
-        //			std::cout << particles[k] << "    ";
-        //		}
-        //		std::cout << std::endl;
     }
-    //		if(FParameters::existParameter(argc, argv, "-fdlpoly")){
-    //			FDlpolyLoader  *loader = nullptr ;
-    //			//			if(FParameters::existParameter(argc, argv, "-bin")){
-    // //				loader  = new FDlpolyBinLoader(filenameEwaldIn.c_str());
-    // //			}
-    // //			else {
-    // //				loader  = new FDlpolyAsciiLoader(filenameEwaldIn.c_str());
-    // //			}
-    //			//				NbPoints = loader->getNumberOfParticles()  ;
-    //			//				particles = new FReal[arraySize] ;
-    //			//				std::memset(particles,0,arraySize*sizeof(FReal));
-    //			//				for(int idxPart = 0 ; idxPart < NbPoints ; ++idxPart){
-    //				//
-    //			//					int index ;
-    //			//				FPoint P ; FReal t[3];
-    // ///	/				loader->fillParticle(&P, t, &physicalValue,&index);
-    //			//				particles[(index-1)*]
-    //				//
-    // //				totalCharge += physicalValue ;
-    //				}
 
 
-    //
     /////////////////////////////////////////////////////////////////////////
     //                                           Save data
     /////////////////////////////////////////////////////////////////////////
