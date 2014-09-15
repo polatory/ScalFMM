@@ -105,7 +105,7 @@ protected:
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                                while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() < ((mindex<<3)+idxChild) ){
+                                while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() <= ((mindex<<3)+idxChild) ){
                                     ++iterChildCells;
                                 }
                                 if( iterChildCells == endChildCells ){
@@ -245,7 +245,7 @@ protected:
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                                while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() < ((mindex<<3)+idxChild) ){
+                                while(iterChildCells != endChildCells && (*iterChildCells)->getEndingIndex() <= ((mindex<<3)+idxChild) ){
                                     ++iterChildCells;
                                 }
                                 if( iterChildCells == endChildCells ){
