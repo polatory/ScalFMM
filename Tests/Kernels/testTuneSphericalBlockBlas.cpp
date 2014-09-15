@@ -47,13 +47,14 @@
 /** This program find the best block blas size
   */
 
-static const FParameterNames LocalOptionMaxBlockSize {
-    {"-mbs"},
-    "The maximum size of blocks."
-};
+
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    const FParameterNames LocalOptionMaxBlockSize {
+        {"-mbs"},
+        "The maximum size of blocks."
+    };
     FHelpDescribeAndExit(argc, argv,
                          "Test the TSM (target source model) using the Rotation or the Spherical Harmonic Old implementations.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::SHDevelopment,

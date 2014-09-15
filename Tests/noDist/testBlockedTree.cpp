@@ -28,12 +28,11 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
-static const FParameterNames LocalOptionBlocSize {
-    {"-bs"},
-    "The size of the block of the blocked tree"
-};
-
 int main(int argc, char* argv[]){
+    const FParameterNames LocalOptionBlocSize {
+        {"-bs"},
+        "The size of the block of the blocked tree"
+    };
     FHelpDescribeAndExit(argc, argv,
                          "Test the blocked tree.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,

@@ -54,12 +54,13 @@
 // Simply create particles and try the kernels
 //
 
-static const FParameterNames LocalOptitionHist = {
-    {"-histP", "--histogram-stat"} ,
-     "Build the histogram of the particle number per leaf."
-};
+
 
 int main(int argc, char ** argv){
+    const FParameterNames LocalOptitionHist = {
+        {"-histP", "--histogram-stat"} ,
+         "Build the histogram of the particle number per leaf."
+    };
     FHelpDescribeAndExit(argc, argv,
                          "Driver to obtain statistics on the octree.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,

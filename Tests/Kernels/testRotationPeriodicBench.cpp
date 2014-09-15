@@ -33,23 +33,23 @@
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FParameterNames.hpp"
 
-static const FParameterNames LocalOptionMinPer {
-    {"-min"},
-    "The starting periodicity"
-};
-
-static const FParameterNames LocalOptionMaxPer {
-    {"-max"},
-    "The ending periodicity"
-};
-
-static const FParameterNames LocalOptionNbPrint {
-    {"-nbprint"},
-    "Number of result to print"
-};
 
 
 int main(int argc, char** argv){
+    const FParameterNames LocalOptionMinPer {
+        {"-min"},
+        "The starting periodicity"
+    };
+
+    const FParameterNames LocalOptionMaxPer {
+        {"-max"},
+        "The ending periodicity"
+    };
+
+    const FParameterNames LocalOptionNbPrint {
+        {"-nbprint"},
+        "Number of result to print"
+    };
     FHelpDescribeAndExit(argc, argv,
                          "Run a Spherical Harmonic (Rotation) FMM kernel in periodic.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,

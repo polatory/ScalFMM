@@ -40,12 +40,11 @@
 
 
 
-static const FParameterNames LocalParameterEwald{
-    {"-ewaldfile2"},
-    "-ewaldfile2 name2 if name2 contains the result done by the ewald method for 1/r kernel"
-};
-
 int main(int argc, char ** argv){
+    const FParameterNames LocalParameterEwald{
+        {"-ewaldfile2"},
+        "-ewaldfile2 name2 if name2 contains the result done by the ewald method for 1/r kernel"
+    };
     FHelpDescribeAndExit(argc, argv,
                          "Driver to change the format of the input file.",
                          FParameterDefinitions::InputFileOne, FParameterDefinitions::InputFileTwow,
