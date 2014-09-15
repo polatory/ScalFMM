@@ -391,12 +391,12 @@ protected:
 
     int getOppositeNeighIndex(const int index) const {
         // ((idxX+1)*3 + (idxY+1)) * 3 + (idxZ+1)
-        return 27-index;
+        return 27-index-1;
     }
 
     int getOppositeInterIndex(const int index) const {
         // ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3
-        return 343-index;
+        return 343-index-1;
     }
 };
 
