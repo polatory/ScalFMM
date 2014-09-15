@@ -122,6 +122,8 @@ protected:
                 ++iterCells;
             }
 
+            FAssertLF(iterCells == endCells);
+            FAssertLF((iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
         FLOG( FLog::Controller << "\t\t upwardPass in " << timer.tacAndElapsed() << "s\n" );
