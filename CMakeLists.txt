@@ -43,11 +43,7 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 #
 # Options
 OPTION( ScalFMM_USE_BLAS 		"Set to ON to build ScaFMM with BLAS" OFF )
-if( ScalFMM_ONLY_DEVEL ) 
 OPTION( ScalFMM_USE_FFT  		"Set to ON to build ScaFMM with FFTW" OFF )
-ELSE()
-SET(ScalFMM_USE_FFT OFF)
-endif()
 OPTION( ScalFMM_BUILD_TESTS 		"Set to ON to build functionalities Tests" OFF )
 OPTION( ScalFMM_BUILD_UTESTS 		"Set to ON to build UTests" OFF )
 OPTION( ScalFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
