@@ -323,6 +323,7 @@ protected:
                                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
                                     interactionsObjects[counterExistingCell] = (*iterParticles)->template getLeaf<ParticleContainerClass>(interactionsIndexes[idxInter]);
                                     if(interactionsObjects[counterExistingCell].isAttachedToSomething()){
+                                        FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
                                         interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
                                         counterExistingCell += 1;
                                     }

@@ -249,6 +249,10 @@ public:
                     }
                     lastParticle += 1;
                 }
+                while(lastParticle < nbParticles && currentBlockIndexes[sizeOfBlock-1] == particlesToSort[lastParticle].mindex){
+                    nbParticlesPerLeaf[sizeOfBlock-1] += 1;
+                    lastParticle += 1;
+                }
 
                 // Create a group
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
