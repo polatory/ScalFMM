@@ -277,7 +277,7 @@ protected:
             while(iterParticles != endParticles && iterCells != endCells){
                 { // Can be a task(in:iterCells, inout:iterParticles)
                     const MortonIndex blockStartIdx = (*iterCells)->getStartingIndex();
-                    const MortonIndex blockEndIdx = (*iterCells)->getStartingIndex();
+                    const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
