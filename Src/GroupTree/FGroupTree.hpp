@@ -236,7 +236,7 @@ public:
             // We need to proceed each group in sub level
             while(firstParticle != nbParticles){
                 int sizeOfBlock = 0;
-                int lastParticle = firstParticle + 1;
+                int lastParticle = firstParticle;
                 // Count until end of sub group is reached or we have enough cells
                 while(sizeOfBlock < nbElementsPerBlock && lastParticle < nbParticles){
                     if(sizeOfBlock == 0 || currentBlockIndexes[sizeOfBlock-1] != particlesToSort[lastParticle].mindex){
