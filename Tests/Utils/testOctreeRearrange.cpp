@@ -34,6 +34,8 @@
 
 #include "../../Src/Arranger/FOctreeArranger.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 struct TestParticle{
     FPoint position;
     const FPoint& getPosition(){
@@ -62,6 +64,12 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Put the particles into a tree, then change the position of some particles and update the tree.\n"
+                         "This method should be used to avoid the tree reconstruction.",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
     typedef FBasicCell                      CellClass;
     typedef FBasicParticleContainer<0>      ContainerClass;
 
@@ -72,9 +80,9 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart           = FParameters::getValue(argc,argv,"-nb", 2000000);
+    const int NbLevels          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels     = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int NbPart           = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
 
     FTic counter;
 

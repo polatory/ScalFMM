@@ -42,6 +42,8 @@
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program find the best block blas size
   */
 
@@ -49,6 +51,17 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    const FParameterNames LocalOptionMaxBlockSize {
+        {"-mbs"},
+        "The maximum size of blocks."
+    };
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the TSM (target source model) using the Rotation or the Spherical Harmonic Old implementations.",
+                         FParameterDefinitions::OctreeHeight,FParameterDefinitions::SHDevelopment,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+                         LocalOptionMaxBlockSize);
+
+
     typedef FSphericalCell                 CellClass;
     typedef FP2PParticleContainer<>         ContainerClass;
 
@@ -60,13 +73,13 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
-    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
-    const int MaxBlockSize = FParameters::getValue(argc,argv,"-mbz", 10000);
+    const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 8);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int MaxBlockSize = FParameters::getValue(argc,argv,LocalOptionMaxBlockSize.options, 10000);
     FTic counter;
 
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
     // -----------------------------------------------------

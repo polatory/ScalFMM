@@ -40,6 +40,8 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
 
@@ -50,6 +52,8 @@ void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const
 
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv, "Test Chebyshev interation computations.");
+
     typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;

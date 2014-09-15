@@ -45,14 +45,19 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 
 int main(int argc, char* argv[])
 {
-	const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
+    FHelpDescribeAndExit(argc, argv,
+                         "Counts the number of flops requiered for a Chebyshev FMM.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
+    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 
 	const unsigned int ORDER = 8;
 	const FReal epsilon = FReal(1e-8);

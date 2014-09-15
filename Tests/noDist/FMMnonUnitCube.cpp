@@ -60,6 +60,7 @@
 #include "Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 /**
  * This program compute the potential and the energy in non cubic geometry
@@ -81,7 +82,7 @@ void usage() {
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::OctreeHeight.options)||FParameters::existParameter(argc, argv, "-help")){
 		usage() ;
 		std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
 
@@ -89,10 +90,10 @@ int main(int argc, char* argv[])
 	}
 
 	// get info from commande line
-	const std::string  filename(FParameters::getStr(argc,argv,"-f", "../Data/UTest/unitCubeRef20kDouble.bfma"));
-	const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-	const unsigned int NbThreads      = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
+    const std::string  filename(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/UTest/unitCubeRef20kDouble.bfma"));
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads      = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, omp_get_max_threads());
 
 	//
 #ifdef _OPENMP

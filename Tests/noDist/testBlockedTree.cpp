@@ -26,7 +26,18 @@
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 int main(int argc, char* argv[]){
+    const FParameterNames LocalOptionBlocSize {
+        {"-bs"},
+        "The size of the block of the blocked tree"
+    };
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the blocked tree.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::InputFile, LocalOptionBlocSize);
+
     static const int P = 3;
     typedef FRotationCell<P>               CellClass;
     typedef FP2PParticleContainer<>          ContainerClass;
@@ -36,9 +47,9 @@ int main(int argc, char* argv[]){
     typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 5, FReal>  GroupOctreeClass;
 
     FTic counter;
-    const int NbLevels      = FParameters::getValue(argc,argv,"-depth", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.bin.fma.double");
+    const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.bin.fma.double");
 
     FFmaGenericLoader loader(filename);
     FAssertLF(loader.isOpen());
@@ -57,7 +68,7 @@ int main(int argc, char* argv[]){
 
     std::cout << "Done  " << "(@Creating and Inserting Particles = " << counter.tacAndElapsed() << "s)." << std::endl;
 
-    const int groupSize      = FParameters::getValue(argc,argv,"-bs", 250);
+    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
 
     counter.tic();
     GroupOctreeClass groupedTree2(NbLevels, groupSize, &tree);

@@ -15,6 +15,7 @@
 // ===================================================================================
 #include <iostream>
 #include "../../Src/Utils/FTic.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 
 #include <cstdlib>
 #include <unistd.h>
@@ -23,7 +24,9 @@
 * Here we show an example of using FTic
 */
 
-int main(){
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Only the code is interesting in order to understand the use of timers.");
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";

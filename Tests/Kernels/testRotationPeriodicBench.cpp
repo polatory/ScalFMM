@@ -31,9 +31,32 @@
 
 #include "../../Src/Utils/FParameters.hpp"
 #include "../../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
+
 
 
 int main(int argc, char** argv){
+    const FParameterNames LocalOptionMinPer {
+        {"-min"},
+        "The starting periodicity"
+    };
+
+    const FParameterNames LocalOptionMaxPer {
+        {"-max"},
+        "The ending periodicity"
+    };
+
+    const FParameterNames LocalOptionNbPrint {
+        {"-nbprint"},
+        "Number of result to print"
+    };
+    FHelpDescribeAndExit(argc, argv,
+                         "Run a Spherical Harmonic (Rotation) FMM kernel in periodic.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight,LocalOptionMinPer,
+                         LocalOptionMaxPer, LocalOptionNbPrint
+                         );
+
     /////////////////////////////////////////////////
     // Types
     /////////////////////////////////////////////////
@@ -52,11 +75,11 @@ int main(int argc, char** argv){
     // Parameters
     const int NbLevels       = 4;
     const int SizeSubLevels  = 2;
-    const int MinLevelAbove  = FParameters::getValue(argc, argv, "-min",-1);
-    const int MaxLevelAbove  = FParameters::getValue(argc, argv, "-max",3);
+    const int MinLevelAbove  = FParameters::getValue(argc, argv, LocalOptionMinPer.options,-1);
+    const int MaxLevelAbove  = FParameters::getValue(argc, argv, LocalOptionMaxPer.options,3);
     const int IncLevelAbove  = 1;
-    const int NbParticles    = FParameters::getValue(argc, argv, "-nb",6);
-    const int NbParticlesPrint    = FParameters::getValue(argc, argv, "-nbprint", FMath::Min(6, NbParticles));
+    const int NbParticles    = FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options,6);
+    const int NbParticlesPrint    = FParameters::getValue(argc, argv, LocalOptionNbPrint.options, FMath::Min(6, NbParticles));
     FAssertLF(NbParticlesPrint <= NbParticles , "The number of printer particles cannot be higer than the number of particles.");
 
     std::cout << "The application will use " << NbParticles << " but studies only " << NbParticlesPrint << " of them." << std::endl;

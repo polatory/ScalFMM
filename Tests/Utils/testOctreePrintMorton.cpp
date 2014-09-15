@@ -25,6 +25,7 @@
 #include "../../Src/Containers/FTreeCoordinate.hpp"
 #include "../../Src/Utils/FPoint.hpp"
 #include "../../Src/Utils/FMath.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 
 /**
 * In this file we show the morton indexed for each boxes
@@ -52,7 +53,10 @@ std::string MortonToBinary(MortonIndex index, int level){
 }
 
 
-int main(int , char ** ){
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Print the morton and cell properties of an octree\n"
+                         "it is also interesting to look at the code if one needs to work with morton indexes");
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test morton index.\n";
     //////////////////////////////////////////////////////////////

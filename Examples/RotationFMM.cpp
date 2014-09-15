@@ -43,6 +43,8 @@
 #include "Core/FFmmAlgorithm.hpp"
 #endif
 
+#include "../Src/Utils/FParameterNames.hpp"
+
 /// \file  RotationFMM.cpp
 //!
 //! \brief This program runs the FMM Algorithm with harmonic spherical approximation of 1/r kernel
@@ -61,28 +63,22 @@
 //!
 //
 
-void usage() {
-	std::cout << "Driver for HArmonic Spherical + Rotation  --  kernel  (1/r kernel)" << std::endl;
-	std::cout <<	 "Options  "<< std::endl
-			<<     "      -help         to see the parameters    " << std::endl
-			<<	  "      -depth       the depth of the octree   "<< std::endl
-			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
-			<<     "      -f   name    name specifies the name of the particle distribution. If extension is . bfma th file is -in binary mode" << std::endl
-			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
-}
 
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver for HArmonic Spherical + Rotation  --  kernel  (1/r kernel).",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+                         FParameterDefinitions::NbThreads);
+
 	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
-	const std::string filename(FParameters::getStr(argc,argv,"-f", defaultFile.c_str()));
-	const unsigned int TreeHeight       = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
-	const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
-		usage() ;
-		exit(-1);
-	}
+    const std::string filename(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str()));
+    const unsigned int TreeHeight       = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads        = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
+
 #ifdef _OPENMP
 	omp_set_num_threads(NbThreads) ;
 	std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;

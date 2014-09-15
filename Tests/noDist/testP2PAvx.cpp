@@ -35,6 +35,7 @@
 #include "Components/FSimpleLeaf.hpp"
 #include "Containers/FOctree.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 //
 /// \file  DirectComputation.cpp
@@ -48,32 +49,24 @@
 //!     \param   -fin name:  file name  to convert (with extension .fma (ascii) or bfma (binary).
 //!                             Only our FMA (.bma, .bfma) is allowed "
 //!     \param    -fout filenameOUT   output file  with extension (default output.bfma)
-//!      \param   -verbose : print index x y z Q V fx fy fz
 //!
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
 	//
 	///////////////////////What we do/////////////////////////////
-	if( FParameters::existParameter(argc, argv, "-help" )){
-		std::cout << ">> This executable has to be used to compute  interaction either for periodic or non periodic system.\n";
-		std::cout << ">> Example -fin filenameIN.{fma or bfma)     -fout filenameOUT{fma or bfma) \n";
-		std::cout << ">> Default input file : ../Data/unitCubeXYZQ20k.fma\n";
-		std::cout << " Options " << std::endl;
-		std::cout << "     -verbose : print index x y z Q V fx fy fz " << std::endl;
-		std::cout << "     -fin filename. Extension specifies if the file is binary or not. " << std::endl;
-		std::cout << "                            Only our FMA (.bma, .bfma) is allowed " << std::endl;
-		std::cout << "     -fout filenameOUT   output file  with extension (default output.bfma)" << std::endl;
-		exit(-1);
-
-	}
+    FHelpDescribeAndExit(argc, argv,
+                         "This executable has to be used to compute  interaction either for periodic or non periodic system.\n"
+                         "Example -fin filenameIN.{fma or bfma)\n"
+                         "Default input file : ../Data/unitCubeXYZQ20k.fma\n"
+                         "For the input file, the extension specifies if the file is binary or not.\n",
+                         FParameterDefinitions::InputFile);
 
 	//////////////////////////////////////////////////////////////
 
 	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
-	const std::string filenameIn(FParameters::getStr(argc,argv,"-fin",  defaultFile.c_str()));
-	const std::string filenameOut(FParameters::getStr(argc,argv,"-fout", "output.bfma"));
-	//
+    const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
+
 	FTic counter;
 
 	// -----------------------------------------------------

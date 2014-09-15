@@ -40,8 +40,15 @@
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 int main(int argc, char** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Run a Spherical Harmonic (Rotation) FMM kernel and compare the accuracy with a direct computation.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SequentialFmm,
+                         FParameterDefinitions::TaskFmm);
+
     static const int P = 9;
 
     typedef FRotationCell<P>               CellClass;
@@ -58,10 +65,10 @@ int main(int argc, char** argv){
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     std::cout << ">> You can pass -sequential or -task (thread by default).\n";
     //////////////////////////////////////////////////////////////
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 5);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;
-    const char* const filename = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
 
     std::cout << "Opening : " << filename << "\n";
 
@@ -105,12 +112,12 @@ int main(int argc, char** argv){
 
     std::cout << "Working on particles ..." << std::endl;
 
-    if( FParameters::findParameter(argc,argv,"-sequential") != FParameters::NotFound){
+    if( FParameters::findParameter(argc,argv,FParameterDefinitions::SequentialFmm.options) != FParameters::NotFound){
         FmmClass algo(&tree,&kernels);
         counter.tic();
         algo.execute();
     }
-    else if( FParameters::findParameter(argc,argv,"-task") != FParameters::NotFound){
+    else if( FParameters::findParameter(argc,argv,FParameterDefinitions::TaskFmm.options) != FParameters::NotFound){
         FmmClassTask algo(&tree,&kernels);
         counter.tic();
         algo.execute();

@@ -34,7 +34,7 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
-
+#include "../../Src/Utils/FParameterNames.hpp"
 //
 // taylor kernel
 #include "../../Src/Kernels/Taylor/FTaylorCell.hpp"
@@ -53,11 +53,16 @@
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv,
+                         "Run a Taylor FMM kernel and compare the accuracy with a direct computation.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
+
     // get info from commandline
-    const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 5);
-    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-    const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
+    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, omp_get_max_threads());
 #ifdef _OPENMP
     omp_set_num_threads(NbThreads);
     std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;

@@ -33,20 +33,20 @@
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpSymmetries.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 template <int ORDER>
 void permuteMatrix(const unsigned int perm[ORDER*ORDER*ORDER], FReal *const Matrix)
 {
-	const unsigned int nnodes = ORDER*ORDER*ORDER;
-	// allocate temporary memory for matrix
-	FReal temp[nnodes*nnodes];
-	// permute rows
-	for (unsigned int r=0; r<nnodes; ++r)
-		FBlas::copy(nnodes, Matrix+r, nnodes, temp+perm[r], nnodes);
-	// permute columns
-	for (unsigned int c=0; c<nnodes; ++c)
-		FBlas::copy(nnodes, temp + c * nnodes, Matrix + perm[c] * nnodes);
+    const unsigned int nnodes = ORDER*ORDER*ORDER;
+    // allocate temporary memory for matrix
+    FReal temp[nnodes*nnodes];
+    // permute rows
+    for (unsigned int r=0; r<nnodes; ++r)
+        FBlas::copy(nnodes, Matrix+r, nnodes, temp+perm[r], nnodes);
+    // permute columns
+    for (unsigned int c=0; c<nnodes; ++c)
+        FBlas::copy(nnodes, temp + c * nnodes, Matrix + perm[c] * nnodes);
 }
 
 
@@ -55,107 +55,109 @@ void permuteMatrix(const unsigned int perm[ORDER*ORDER*ORDER], FReal *const Matr
 
 int main(int argc, char* argv[])
 {
-	// start timer /////////////////////////////////
-	FTic time;
-	
-	// define set matrix kernel
-	typedef FInterpMatrixKernelR MatrixKernelClass;
-	MatrixKernelClass MatrixKernel;
+    FHelpDescribeAndExit(argc, argv, "Test Chebyshev symmetries.");
 
-	// constants
-  //const FReal epsilon     = FReal(atof(argv[1]));
-  const unsigned int order = 5;
-	
-	// number of interpolation points per cell
-	const unsigned int nnodes = TensorTraits<order>::nnodes;
+    // start timer /////////////////////////////////
+    FTic time;
 
-	// interpolation points of source (Y) and target (X) cell
-	FPoint X[nnodes], Y[nnodes];
-	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
-	
-	// allocate 343 pointers to K, but only 16 are actually filled
-	FReal** K = new FReal* [343];
-	for (unsigned int t=0; t<343; ++t) K[t] = nullptr;
+    // define set matrix kernel
+    typedef FInterpMatrixKernelR MatrixKernelClass;
+    MatrixKernelClass MatrixKernel;
 
-	{ 
-		unsigned int counter = 0;
+    // constants
+    //const FReal epsilon     = FReal(atof(argv[1]));
+    const unsigned int order = 5;
 
-		for (int i=2; i<=3; ++i) {
-			for (int j=0; j<=i; ++j) {
-				for (int k=0; k<=j; ++k) {
-					
-					const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-					K[idx] = new FReal [nnodes*nnodes];
+    // number of interpolation points per cell
+    const unsigned int nnodes = TensorTraits<order>::nnodes;
 
-					//std::cout << i << "," << j << "," << k << "\t" << idx << std::endl;
-					
-					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
-					for (unsigned int n=0; n<nnodes; ++n)
-						for (unsigned int m=0; m<nnodes; ++m)
-							K[idx][n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);
-					
-					counter++;
-				}
-			}
-		}
+    // interpolation points of source (Y) and target (X) cell
+    FPoint X[nnodes], Y[nnodes];
+    // set roots of target cell (X)
+    FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
 
-		std::cout << "num interactions = " << counter << std::endl;
-	}
+    // allocate 343 pointers to K, but only 16 are actually filled
+    FReal** K = new FReal* [343];
+    for (unsigned int t=0; t<343; ++t) K[t] = nullptr;
 
-	// max difference
-	FReal maxdiff(0.);
+    {
+        unsigned int counter = 0;
 
-	// permuter
-	FInterpSymmetries<order> permuter;
+        for (int i=2; i<=3; ++i) {
+            for (int j=0; j<=i; ++j) {
+                for (int k=0; k<=j; ++k) {
 
-	// permutation vector
-	unsigned int perm[nnodes];
-	
-	FReal* K0 = new FReal [nnodes*nnodes];
+                    const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
+                    K[idx] = new FReal [nnodes*nnodes];
 
-	unsigned int counter = 0;
+                    //std::cout << i << "," << j << "," << k << "\t" << idx << std::endl;
 
-	for (int i=-3; i<=3; ++i) {
-		for (int j=-3; j<=3; ++j) {
-			for (int k=-3; k<=3; ++k) {
-				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    for (unsigned int n=0; n<nnodes; ++n)
+                        for (unsigned int m=0; m<nnodes; ++m)
+                            K[idx][n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);
 
-					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
-					for (unsigned int n=0; n<nnodes; ++n)
-						for (unsigned int m=0; m<nnodes; ++m)
-							K0[n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);
-					
-					// permute
-					const unsigned int pidx = permuter.getPermutationArrayAndIndex(i, j, k, perm);
-					permuteMatrix<order>(perm, K0);
+                    counter++;
+                }
+            }
+        }
 
-					if (K[pidx]==NULL) std::cout << " - not existing index " << pidx << std::endl;
+        std::cout << "num interactions = " << counter << std::endl;
+    }
 
-					FReal mdiff(0.);
-					for (unsigned int n=0; n<nnodes*nnodes; ++n) {
-						FReal diff(K0[n] - K[pidx][n]);
-						if (FMath::Abs(diff)>mdiff) mdiff = diff;
-					}
-					if (FMath::Abs(mdiff)>maxdiff) maxdiff = FMath::Abs(mdiff);
+    // max difference
+    FReal maxdiff(0.);
 
-					if (mdiff > 1e-15) exit(-1);
-					counter++;
+    // permuter
+    FInterpSymmetries<order> permuter;
 
-				}
-			}
-		}
-	}
+    // permutation vector
+    unsigned int perm[nnodes];
 
-	std::cout << "Max error = " << maxdiff << " of counter = " << counter << std::endl;
+    FReal* K0 = new FReal [nnodes*nnodes];
 
-	for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
-	delete [] K;
-	delete [] K0;
+    unsigned int counter = 0;
 
-	return 0;
+    for (int i=-3; i<=3; ++i) {
+        for (int j=-3; j<=3; ++j) {
+            for (int k=-3; k<=3; ++k) {
+                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+
+                    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    for (unsigned int n=0; n<nnodes; ++n)
+                        for (unsigned int m=0; m<nnodes; ++m)
+                            K0[n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);
+
+                    // permute
+                    const unsigned int pidx = permuter.getPermutationArrayAndIndex(i, j, k, perm);
+                    permuteMatrix<order>(perm, K0);
+
+                    if (K[pidx]==NULL) std::cout << " - not existing index " << pidx << std::endl;
+
+                    FReal mdiff(0.);
+                    for (unsigned int n=0; n<nnodes*nnodes; ++n) {
+                        FReal diff(K0[n] - K[pidx][n]);
+                        if (FMath::Abs(diff)>mdiff) mdiff = diff;
+                    }
+                    if (FMath::Abs(mdiff)>maxdiff) maxdiff = FMath::Abs(mdiff);
+
+                    if (mdiff > 1e-15) exit(-1);
+                    counter++;
+
+                }
+            }
+        }
+    }
+
+    std::cout << "Max error = " << maxdiff << " of counter = " << counter << std::endl;
+
+    for (unsigned int t=0; t<343; ++t) if (K[t]!=NULL) delete [] K[t];
+    delete [] K;
+    delete [] K0;
+
+    return 0;
 } 	
 
 

@@ -33,8 +33,18 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+
+    FHelpDescribeAndExit(argc, argv,
+                         "Load octrees that have been saved and compare everything from leaves to cells.\n"
+                         "Using the Spherical Harmonics old kernel.",
+                         FParameterDefinitions::SHDevelopment, FParameterDefinitions::InputFileOne,
+                         FParameterDefinitions::InputFileTwow
+                         );
+
     typedef FSphericalCell                 CellClass;
     typedef FP2PParticleContainer<>         ContainerClass;
 
@@ -43,7 +53,7 @@ int main(int argc, char ** argv){
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to compare two trees.\n";
     //////////////////////////////////////////////////////////////
-    const int DevP = FParameters::getValue(argc,argv,"-p", 8);
+    const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 8);
 
     // -----------------------------------------------------
     CellClass::Init(DevP, true);
@@ -51,8 +61,8 @@ int main(int argc, char ** argv){
     OctreeClass tree2(5, 3, 0, FPoint());
 
     // -----------------------------------------------------
-    const char* const filename1 = FParameters::getStr(argc,argv,"-f1", "tree.data");
-    const char* const filename2 = FParameters::getStr(argc,argv,"-f2", "dtree.data");
+    const char* const filename1 = FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options, "tree.data");
+    const char* const filename2 = FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options, "dtree.data");
     std::cout << "Compare tree " << filename1 << " and " << filename2 << std::endl;
 
     FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename1, tree1);

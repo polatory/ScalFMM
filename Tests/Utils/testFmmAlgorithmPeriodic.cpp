@@ -41,6 +41,8 @@
 
 #include "../../Src/Core/FFmmAlgorithmPeriodic.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is impacted each other particles
@@ -49,6 +51,12 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test FMM periodic algorithm by counting the nb of interactions each particle receive.",
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::PeriodicityNbLevels);
+
+
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
 
@@ -61,10 +69,10 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 5);
-    const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const long NbParticles      = FParameters::getValue(argc,argv,"-nb", 1000);
-    const int PeriodicDeep      = FParameters::getValue(argc,argv,"-per", 2);
+    const int NbLevels          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SizeSubLevels     = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const long NbParticles      = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 1000);
+    const int PeriodicDeep      = FParameters::getValue(argc,argv,FParameterDefinitions::PeriodicityNbLevels.options, 2);
     // choose in +x dir or -/+x dir or all dirs
 
     FTic counter;

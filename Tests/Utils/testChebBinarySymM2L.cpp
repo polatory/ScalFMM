@@ -33,7 +33,7 @@
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymM2LHandler.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 
 /**
@@ -41,6 +41,8 @@
 */
 int main(int argc, char* argv[])
 { 
+    FHelpDescribeAndExit(argc, argv, "Generate and store Chebyshev M2L matrices for several orders.");
+
 	// typedefs   
 	typedef FInterpMatrixKernelR MatrixKernelClass;
 

@@ -34,7 +34,7 @@
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymM2LHandler.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 /**
 * In this file we show how to use octree
@@ -42,6 +42,8 @@
 
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv, "Look to the code.");
+
 	typedef FInterpMatrixKernelR MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 

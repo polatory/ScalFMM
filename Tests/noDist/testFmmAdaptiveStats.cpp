@@ -46,6 +46,8 @@
 #include "../../Src/Adaptive/FAdaptiveKernelWrapper.hpp"
 #include "../../Src/Adaptive/FAbstractAdaptiveKernel.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 template< class CellClass, class ContainerClass>
 class FAdaptiveStatsKernel : public FAbstractKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
     const int nbLevels;
@@ -249,6 +251,11 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Test the adaptive FMM and print information about the real computation which is done.",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
     typedef FBasicCell                   CellClass;
     typedef FBasicParticleContainer<0>   ContainerClass;
 
@@ -263,15 +270,15 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels      = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-sh", 3);
+    const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     const int ParticlesThresh = FParameters::getValue(argc,argv,"-thresh", 10);
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(FParameters::getValue(argc,argv,"-nb", 2000000), 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////

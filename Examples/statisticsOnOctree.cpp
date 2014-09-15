@@ -29,6 +29,7 @@
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
+#include "../Src/Utils/FParameterNames.hpp"
 
 /// \file  statisticsOnOctree.cpp
 //!
@@ -46,52 +47,41 @@
 //!
 //!  \arg       The number of cells, of adaptive cells (cell with more one child)
 //!  \arg          The average, min and max numbers of M2L operators and also its  variance.
-
-//!
-//!  <b> General arguments:</b>
-//!     \param   -help(-h)      to see the parameters available in this driver
-//!     \param   -depth          The depth of the octree
-//!     \param   -subdepth     Specifies the size of the sub octree
-//!
-//!     \param   -infile name   Name of the particles file. The file have to be in our FMA format
-//!     \param    -bin              if the input file in binary mode
-//!     \param   -outfile name Generic name  for output file  (without extension)
 //!
 //!  <b> Statistics options:</b>
 //!   \param -histP build a file to generate histogram of particles per leaf. The data are store in file given by -outfile arguments and  .txt extension
 
 // Simply create particles and try the kernels
 //
-void usage() {
-	std::cout << "Driver to obtain statistics on the octree" << std::endl;
-	std::cout <<	 "Options  "<< std::endl
-                   <<     "      -help              to see the parameters    " << std::endl
-                   <<	     "      -depth            the depth of the octree   "<< std::endl
-                   <<	     "      -subdepth      specifies the size of the sub octree   " << std::endl
-                   <<     "      -infile name    specifies the name of the particle distribution" << std::endl
-                   <<    "        -bin              if the input file in binary mode"<< std::endl
-                   <<     "      -outfile name  specifies the file for the diagnostics" << std::endl
-                   <<     "      -histP              build the histogram of the particle number per leaf"<<std::endl;
-}
+
+
 
 int main(int argc, char ** argv){
-	typedef FBasicParticleContainer<0>                                    ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                              LeafClass;
+    const FParameterNames LocalOptitionHist = {
+        {"-histP", "--histogram-stat"} ,
+         "Build the histogram of the particle number per leaf."
+    };
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver to obtain statistics on the octree.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::OutputFile, LocalOptitionHist);
+
+
+    typedef FBasicParticleContainer<0>   ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >  LeafClass;
 	typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
-		usage() ;
-		exit(-1);
-	}
+
 	//
 	//   Octree parameters
 	//
-	const int TreeHeight        = FParameters::getValue(argc,argv,"-depth", 5);
-	const int SubTreeHeight  = FParameters::getValue(argc,argv,"-subdepth", 3);
+    const int TreeHeight        = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+    const int SubTreeHeight  = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
 	//
 	//  input and output  Files parameters
 	//
-	const char* const filename = FParameters::getStr(argc,argv,"-infile", "../Data/test20k.fma");
-	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output"));
 	//
 	std::cout <<	 "Parameters  "<< std::endl
 			<<     "      Octree Depth      "<< TreeHeight <<std::endl
@@ -171,7 +161,7 @@ int main(int argc, char ** argv){
 			//  Histogram of particles per leaf
 			//
 
-			if(FParameters::existParameter(argc, argv, "-histP")){
+            if(FParameters::existParameter(argc, argv, LocalOptitionHist.options)){
 				int size = maxParticles+1;
 				int * hist = new int [size] ;
 				memset(hist,0,(size)*sizeof(int));

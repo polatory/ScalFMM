@@ -42,6 +42,8 @@
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 struct TestParticle{
     FPoint position;
     const FPoint& getPosition(){
@@ -72,6 +74,13 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "In distributed!\n"
+                         "Put the particles into a tree, then change the position of some particles and update the tree.\n"
+                         "This method should be used to avoid the tree reconstruction.",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight);
+
     typedef FTestCell                   CellClass;
     typedef FBasicParticleContainer<0>      ContainerClass;
 
@@ -84,9 +93,9 @@ int main(int argc, char ** argv){
 
     FMpi app(argc, argv);
 
-    const int NbLevels          = FParameters::getValue(argc,argv,"-h", 7);
-    const int SizeSubLevels     = FParameters::getValue(argc,argv,"-sh", 3);
-    const int NbPart            = FParameters::getValue(argc,argv,"-nb", 20000);
+    const int NbLevels          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
+    const int SizeSubLevels     = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const int NbPart            = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20000);
 
     FTic counter;
 

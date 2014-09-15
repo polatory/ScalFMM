@@ -23,14 +23,18 @@
 
 #include "../../Src/Utils/FBlas.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 FReal FRandom() { return (FReal(drand48())); }
 
 /**
  * Test functionality of C - interfaced BLAS functions
  */
 
-int main()
+int main(int argc, char** argv)
 {
+    FHelpDescribeAndExit(argc, argv, "Simply ensure that blas are compuling and running.");
+
 	const unsigned int m = 4, n = 4; // to be able to test both, transpose and not transpose operations
 	FReal* A = new FReal [m * n]; // matrix: column major ordering
 	FReal* x = new FReal [n];

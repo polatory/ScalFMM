@@ -33,20 +33,22 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmTask.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 
+int main(int argc,char** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Compile a Taylor Kernel (but do nothing).");
+    const int P = 10;
+    const int order = 1;
+    FPoint centerBox = FPoint(0,0,0);
 
-int main(int /*argc*/,char** /*argv[]*/){
-const int P = 10;
-const int order = 1;
-FPoint centerBox = FPoint(0,0,0);
+    typedef FTaylorCell<P,order> CellClass;
+    typedef FP2PParticleContainer<> ContainerClass;
+    typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
+    //typedef FSimpleLeaf< ContainerClass > LeafClass;
+    //typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;
 
-typedef FTaylorCell<P,order> CellClass;
- typedef FP2PParticleContainer<> ContainerClass;
-typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
-//typedef FSimpleLeaf< ContainerClass > LeafClass;
-//typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;
+    KernelClass kernel(9,1.0,centerBox);
 
-KernelClass kernel(9,1.0,centerBox);
-
-return 0;
+    return 0;
 }

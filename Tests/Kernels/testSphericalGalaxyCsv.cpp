@@ -39,6 +39,7 @@
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
 
 class VelocityContainer : public FP2PParticleContainer<> {
   typedef FP2PParticleContainer<> Parent;
@@ -130,6 +131,12 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv,
+                         "Run a Spherical Harmonic (Old Implementation) FMM kernel with several time step.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
+                         FParameterDefinitions::DeltaT, FParameterDefinitions::OutputFile);
+
     typedef FSphericalCell          CellClass;
     typedef VelocityContainer  ContainerClass;
 
@@ -142,14 +149,14 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
 
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
-    const FReal DT          = FParameters::getValue(argc,argv,"-dt", FReal(0.1));
-    const int DevP          = FParameters::getValue(argc,argv,"-p", 5);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 6);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
+    const FReal DT          = FParameters::getValue(argc,argv,FParameterDefinitions::DeltaT.options, FReal(0.1));
+    const int DevP          = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 5);
 
     FSphericalCell::Init(DevP);
 
-    GalaxyLoader loader(FParameters::getStr(argc,argv,"-f", "../Data/galaxy.fma.tmp"));
+    GalaxyLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma.tmp"));
 
     // -----------------------------------------------------
 
@@ -175,7 +182,7 @@ int main(int argc, char ** argv){
     KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
     FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arranger(&tree);
-    FTreeCsvSaver<OctreeClass, ContainerClass> saver("./out/test%d.csv");
+    FTreeCsvSaver<OctreeClass, ContainerClass> saver(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "/tmp/test%d.csv"));
 
     for(int idx = 0; idx < 100 ; ++idx){
         algo.execute();

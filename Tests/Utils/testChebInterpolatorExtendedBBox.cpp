@@ -40,7 +40,7 @@
 #include "Kernels/P2P/FP2PParticleContainer.hpp"
 #include "Components/FSimpleLeaf.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 
 /**
@@ -50,7 +50,9 @@
  * in the extended bounding box of each clusters. 
  */
 
-int main(int, char **){
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Test Chebyshev interpolator.");
+
   typedef FP2PParticleContainer<> ContainerClass;
   typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;

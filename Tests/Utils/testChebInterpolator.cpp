@@ -40,14 +40,16 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 #include "../../Src/Components/FSimpleLeaf.hpp"
 
-
+#include "../../Src/Utils/FParameterNames.hpp"
 
 
 /**
 * In this file we show how to use octree
 */
 
-int main(int, char **){
+int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Test Chebyshev interpolator.");
+
     typedef FP2PParticleContainer<> ContainerClass;
     typedef FSimpleLeaf<ContainerClass> LeafClass;
 	typedef FInterpMatrixKernelR MatrixKernelClass;

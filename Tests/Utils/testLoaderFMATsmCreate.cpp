@@ -24,9 +24,15 @@
 #include "../../Src/Utils/FGlobal.hpp"
 #include "../../Src/Utils/FParameters.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 // This file can generate basic particles files in the FMA format
 
 int main(int argc, char ** argv){
+    FHelpDescribeAndExit(argc, argv, "Create a file for the TSM (target source model)",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OutputFile,
+                         FParameterDefinitions::PhysicalValue);
+
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable can create a FMA-like particles files (this is not a fma file!)";
     std::cout << ">> You can pass a filename in parameter else the program will use\n";
@@ -37,8 +43,8 @@ int main(int argc, char ** argv){
     std::cout << ">> [x] [y] [z] [physical value] [1 if target 0 if source]...\n";
     //////////////////////////////////////////////////////////////
     // Nb of particles
-    const long NbParticles = FParameters::getValue(argc,argv,"-nb", long(20000));
-    const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", FReal(0.1));
+    const long NbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, long(20000));
+    const FReal physicalValue = FParameters::getValue(argc,argv,FParameterDefinitions::PhysicalValue.options, FReal(0.1));
 
     // Center of the box
     const FReal XCenter = 0.5;
@@ -48,7 +54,7 @@ int main(int argc, char ** argv){
     // Box width
     const FReal BoxWidth = 1.0/2;
     // Output file please let .temp extension
-    const char* const Output = FParameters::getStr(argc,argv,"-f", "../Data/test20k.tsm.fma");
+    const char* const Output = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "../Data/test20k.tsm.fma");
     std::cout << "Creating : " << Output << "\n";
 
     // Create file

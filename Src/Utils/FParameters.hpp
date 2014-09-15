@@ -16,9 +16,13 @@
 #ifndef FPARAMETERS_H
 #define FPARAMETERS_H
 
+#include "FGlobal.hpp"
+
 #include <sstream>
 #include <iostream>
-//#include <cstring>
+#include <cstring>
+
+#include <vector>
 
 /** This file proposes some methods
   * to work with user input parameters.
@@ -114,6 +118,61 @@ namespace FParameters{
         }
         return argv[position+1];
     }
+
+
+    /** To find a parameters from user format char parameters
+      *
+      */
+    inline int findParameter(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const bool caseSensible = false){
+        for(const char* name : inNames){
+            const int res = findParameter(argc, argv, name, caseSensible);
+            if(res != NotFound){
+                return res;
+            }
+        }
+        return NotFound;
+    }
+
+    /** To know if a parameter exist from user format char parameters
+      *
+      */
+    inline bool existParameter(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const bool caseSensible = false){
+        for(const char* name : inNames){
+            if(existParameter(argc, argv, name, caseSensible)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** To get a value like :
+      * getValue(argc,argv, "Toto", 0, false);
+      * will return 55 if the command contains : -Toto 55
+      * else 0
+      */
+    template <class VariableType>
+    inline const VariableType getValue(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
+        for(const char* name : inNames){
+            const int position = findParameter(argc, argv, name, caseSensible);
+            if(position != NotFound && position != argc - 1){
+                return StrToOther(argv[position+1],defaultValue);
+            }
+        }
+        return defaultValue;
+    }
+
+    /** Get a str from argv
+      */
+    inline const char* getStr(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const char* const inDefault, const bool caseSensible = false){
+        for(const char* name : inNames){
+            const int position = findParameter(argc, argv, name, caseSensible);
+            if(position != NotFound && position != argc - 1){
+                return argv[position+1];
+            }
+        }
+        return inDefault;
+    }
+
 }
 
 

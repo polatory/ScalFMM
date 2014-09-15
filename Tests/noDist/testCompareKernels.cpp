@@ -51,6 +51,8 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with
  * the SphericalBlas kernel.
@@ -60,11 +62,17 @@
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
+    FHelpDescribeAndExit(argc, argv,
+                         "Compare lots of kernels.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads,
+                         FParameterDefinitions::SHDevelopment);
+
     // get info from commandline
-    const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-h", 5);
-    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-sh", 2);
-    const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
+    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, omp_get_max_threads());
 
     omp_set_num_threads(NbThreads);
 
@@ -198,7 +206,7 @@ int main(int argc, char* argv[])
     {	// begin FFmaBlas kernel
 
         // accuracy
-        const int DevP = FParameters::getValue(argc, argv, "-p", 11);
+        const int DevP = FParameters::getValue(argc, argv, FParameterDefinitions::SHDevelopment.options, 11);
 
         // typedefs
         typedef FSphericalCell                 CellClass;

@@ -35,6 +35,7 @@
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "Utils/FParameters.hpp"
+#include "../../Src/Utils/FParameterNames.hpp"
 #include "Utils/FMemUtils.hpp"
 
 #include "Containers/FOctree.hpp"
@@ -50,10 +51,15 @@
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
-  const char* const filename       = FParameters::getStr(argc,argv,"-f", "../Data/test20k.fma");
-  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, "-depth", 3);
-  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
-  const unsigned int NbThreads     = FParameters::getValue(argc, argv, "-t", 1);
+    FHelpDescribeAndExit(argc, argv,
+                         "Run the chebyshev FMM kernel and compare the accuracy with a direct computation.",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
+
+  const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
+  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+  const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 
 #ifdef _OPENMP
   omp_set_num_threads(NbThreads);
@@ -85,8 +91,6 @@ int main(int argc, char* argv[])
     FReal potential[NPOT];
   };
 
-  const FReal FRandMax = FReal(RAND_MAX);
-
   // open particle file
   FFmaGenericLoader loader(filename);
   if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
@@ -103,7 +107,7 @@ int main(int argc, char* argv[])
     //   Either copy same physical value in each component
       particles[idxPart].physicalValue[idxPV]  = physicalValue; 
     // ... or set random value
-//      particles[idxPart].physicalValue[idxPV]  = physicalValue*FReal(rand())/FRandMax;
+//      particles[idxPart].physicalValue[idxPV]  = physicalValue*FReal(rand())/FReal(RAND_MAX);
     }
 
     for(unsigned idxPot = 0; idxPot<NPOT;++idxPot){

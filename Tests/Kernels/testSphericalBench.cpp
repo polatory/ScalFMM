@@ -36,6 +36,8 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 /** This program show an example of use of
   * the fmm basic algo
   * it also check that each particles is little or longer
@@ -193,6 +195,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     std::cout << ">> You can pass -help to know more\n";
@@ -212,14 +215,16 @@ int main(int argc, char ** argv){
 
         std::cout << ">> -test-p [-p P] [-h H] [-nb NB PART] [-pv PHYSICAL VALUE]\n";
         std::cout << "To test the time for a run of different nb particles\n\n";
+
+        FHelpDescribeAndExit(argc, argv, "Please read the code to know more, sorry");
     }
 
-    const int NbParticles = FParameters::getValue(argc,argv,"-nb", 60000);
-    const int NbLevels = FParameters::getValue(argc,argv,"-depth", 6);
-    const int DevP = FParameters::getValue(argc,argv,"-p", 30);
+    const int NbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 60000);
+    const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 6);
+    const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 30);
     const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", 1.0);
     const bool neutral = FParameters::existParameter(argc,argv,"-neutral");
-    const int SizeSubLevels = FParameters::getValue(argc,argv,"-subdepth", 3);
+    const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
 
     if( FParameters::existParameter(argc,argv,"-test-hp") ){
         std::cout << "Execute : test-hp\n";

@@ -38,6 +38,8 @@
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebInterpolator.hpp"
 
+#include "../../Src/Utils/FParameterNames.hpp"
+
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
 
@@ -57,7 +59,8 @@ void applyl2l(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const
 
 int main(int argc, char* argv[])
 {
-  FTic time;
+    FHelpDescribeAndExit(argc, argv, "Test Chebyshev tensor product.");
+
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
 	FPoint X[nnodes];
