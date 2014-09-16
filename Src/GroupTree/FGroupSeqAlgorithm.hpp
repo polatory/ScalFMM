@@ -102,6 +102,7 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
+                            FAssertLF(cell->getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -112,6 +113,7 @@ protected:
                                     break;
                                 }
                                 child[idxChild] = (*iterChildCells)->getCell((mindex<<3)+idxChild);
+                                FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
                             kernels->M2M(cell, child, idxLevel);
@@ -145,9 +147,10 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
+                            FAssertLF(cell->getMortonIndex() == mindex);
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
-                            FTreeCoordinate coord(mindex, idxLevel);
+                            const FTreeCoordinate coord(cell->getCoordinate());
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                             const CellClass* interactions[343];
@@ -158,6 +161,7 @@ protected:
                                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
                                     CellClass* interCell = (*iterCells)->getCell(interactionsIndexes[idxInter]);
                                     if(interCell){
+                                        FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
                                         interactions[interactionsPosition[idxInter]] = interCell;
                                         counterExistingCell += 1;
                                     }
@@ -186,7 +190,7 @@ protected:
                     const MortonIndex blockStartIdx = (*iterLeftCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterLeftCells)->getEndingIndex();
 
-                    while(outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                    while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
                         currentOutInteraction += 1;
                     }
 
@@ -199,8 +203,11 @@ protected:
                         for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
                             CellClass* interCell = (*iterLeftCells)->getCell(outsideInteractions[outInterIdx].outIndex);
                             if(interCell){
+                                FAssertLF(interCell->getMortonIndex() == outsideInteractions[outInterIdx].outIndex);
                                 CellClass* cell = (*iterCells)->getCell(outsideInteractions[outInterIdx].insideIndex);
                                 FAssertLF(cell);
+                                FAssertLF(cell->getMortonIndex() == outsideInteractions[outInterIdx].insideIndex);
+
                                 const CellClass* interactions[343];
                                 memset(interactions, 0, 343*sizeof(CellClass*));
                                 interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
@@ -242,6 +249,7 @@ protected:
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
                         CellClass* cell = (*iterCells)->getCell(mindex);
                         if(cell){
+                            FAssertLF(cell->getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -252,6 +260,7 @@ protected:
                                     break;
                                 }
                                 child[idxChild] = (*iterChildCells)->getCell((mindex<<3)+idxChild);
+                                FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
                             kernels->L2L(cell, child, idxLevel);
@@ -354,7 +363,7 @@ protected:
                     const MortonIndex blockStartIdx = (*iterLeftParticles)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterLeftParticles)->getEndingIndex();
 
-                    while(outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                    while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
                         currentOutInteraction += 1;
                     }
 
