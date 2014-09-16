@@ -57,7 +57,7 @@ OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"    
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile only the lib (examples are not compiled) " OFF  )
-OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" OFF  )
+#OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" OFF  )
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
@@ -415,11 +415,14 @@ CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
 INSTALL(FILES 
   ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake
   DESTINATION lib/
-  )
-INSTALL(FILES 
-	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
-  DESTINATION Data/
+  )i
+  IF( NOT ScalFMM_BUILD_ONLY_LIB) 
+    INSTALL(FILES 
+        	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
+        DESTINATION Data/
   )	
+  endif()
+  
  #################################################################
 #                                                                                                                                #                                          
 #                               build a CPack driven installer package                                       # 
@@ -445,7 +448,8 @@ SET(PACK_PACKAGE_VERSION "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CP
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME  "ScalFMM-${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}") 
 SET(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;/*.ind;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier;tages;Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
+LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier")
+# Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
 #LIST(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
 #
 INCLUDE(CPack)
