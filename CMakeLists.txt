@@ -415,7 +415,7 @@ CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
 INSTALL(FILES 
   ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake
   DESTINATION lib/
-  )i
+  )
   IF( NOT ScalFMM_BUILD_ONLY_LIB) 
     INSTALL(FILES 
         	${ScalFMM_SOURCE_DIR}/Data/test20k.fma
