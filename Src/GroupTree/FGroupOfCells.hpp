@@ -135,10 +135,18 @@ public:
 
     /** Iterate on each allocated cells */
     template<typename... FunctionParams>
-    void forEachCell(std::function<void(CellClass*)> function, FunctionParams... args){
+    void forEachCell(std::function<void(CellClass*, FunctionParams...)> function, FunctionParams... args){
         for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
             if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
                 function(&blockCells[blockIndexesTable[idxCellPtr]], args...);
+            }
+        }
+    }
+
+    void forEachCell(std::function<void(CellClass*)> function){
+        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
+            if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
+                function(&blockCells[blockIndexesTable[idxCellPtr]]);
             }
         }
     }
