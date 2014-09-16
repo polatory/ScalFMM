@@ -162,6 +162,7 @@ protected:
                                     CellClass* interCell = (*iterCells)->getCell(interactionsIndexes[idxInter]);
                                     if(interCell){
                                         FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
+                                        FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
                                         interactions[interactionsPosition[idxInter]] = interCell;
                                         counterExistingCell += 1;
                                     }
