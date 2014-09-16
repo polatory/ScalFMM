@@ -70,6 +70,7 @@ protected:
                 for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                     CellClass* cell = (*iterCells)->getCell(mindex);
                     if(cell){
+                        FAssertLF(cell->getMortonIndex() == mindex);
                         ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                         FAssertLF(particles.isAttachedToSomething());
                         kernels->P2M(cell, &particles);
