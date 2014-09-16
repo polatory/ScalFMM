@@ -696,7 +696,7 @@ public:
      */
     CellClass* getCell(const MortonIndex inIndex, const int inLevel) const{
         SubOctreeTypesConst workingTree;
-        workingTree.tree = &this->root;
+        workingTree.tree = this->root;
         const MortonIndex treeSubLeafMask = ~(~0x00LL << (3 *  workingTree.tree->getSubOctreeHeight() ));
 
         // Find the suboctree a the correct level
