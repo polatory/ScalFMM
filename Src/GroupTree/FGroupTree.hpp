@@ -74,7 +74,7 @@ public:
     FGroupTree(const int inTreeHeight, const int inNbElementsPerBlock, OctreeClass*const inOctreeSrc)
         : treeHeight(inTreeHeight), nbElementsPerBlock(inNbElementsPerBlock), cellBlocksPerLevel(nullptr),
           boxCenter(inOctreeSrc->getBoxCenter()), boxCorner(inOctreeSrc->getBoxCenter(),-(inOctreeSrc->getBoxWidth()/2)),
-          boxWidth(inOctreeSrc->getBoxWidth()), boxWidthAtLeafLevel(inOctreeSrc->getBoxWidth()/FReal(1<<inTreeHeight)){
+          boxWidth(inOctreeSrc->getBoxWidth()), boxWidthAtLeafLevel(inOctreeSrc->getBoxWidth()/FReal(1<<(inTreeHeight-1))){
         cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
 
         // Iterate on the tree and build
@@ -192,7 +192,7 @@ public:
                const int inNbElementsPerBlock, ParticleContainer* inParticlesContainer, const bool particlesAreSorted = false):
             treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
-            boxWidthAtLeafLevel(inBoxWidth/FReal(1<<inTreeHeight)){
+            boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
 
         cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
 
@@ -264,6 +264,7 @@ public:
 
                 // Init cells
                 size_t nbParticlesOffsetBeforeLeaf = 0;
+                int offsetParticles = firstParticle;
                 for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                     newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
 
@@ -280,8 +281,9 @@ public:
                     BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
                     // Copy each particle from the original position
                     for(int idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
-                        attachedLeaf.setParticle(idxPart, particlesToSort[idxPart + firstParticle].originalIndex, inParticlesContainer);
+                        attachedLeaf.setParticle(idxPart, particlesToSort[idxPart + offsetParticles].originalIndex, inParticlesContainer);
                     }
+                    offsetParticles += nbParticlesPerLeaf[cellIdInBlock];
                 }
 
                 // Keep the block
