@@ -99,14 +99,14 @@ public:
     }
 
     bool preferP2M(const ContainerClass* const particles) override {
-        return particles->getNbParticles() < 10;
+        return particles->getNbParticles() > 10;
     }
     bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
         int counterParticles = 0;
         for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
             counterParticles += particles[idxContainer]->getNbParticles();
         }
-        return counterParticles < 10;
+        return counterParticles > 10;
     }
 };
 
