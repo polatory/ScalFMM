@@ -40,7 +40,7 @@ protected:
      */
     template <class NumClass>
     static NumClass RoundToUpperParticles(const NumClass& nbParticles){
-        return nbParticles + (MemoryAlignementParticles - (nbParticles%MemoryAlignementParticles)%MemoryAlignementParticles);
+        return nbParticles + (MemoryAlignementParticles - (nbParticles%MemoryAlignementParticles));
     }
 
     //< This value is for not used leaves
@@ -177,12 +177,13 @@ public:
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);
+        FAssertLF(offsetInGroup < size_t(nbParticlesAllocatedInGroup));
         blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
         leafHeader[id].nbParticles = nbParticles;
         leafHeader[id].offSet = offsetInGroup;
 
         const size_t nextLeafOffsetInGroup = RoundToUpperParticles(offsetInGroup+nbParticles);
-        FAssertLF(nextLeafOffsetInGroup <= size_t(nbParticlesAllocatedInGroup));
+        FAssertLF(nextLeafOffsetInGroup <= size_t(nbParticlesAllocatedInGroup + MemoryAlignementParticles));
         return nextLeafOffsetInGroup;
     }
 
