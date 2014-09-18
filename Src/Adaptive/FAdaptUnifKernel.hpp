@@ -70,7 +70,7 @@ class FAdaptiveUnifKernel : FUnifKernel<CellClass, ContainerClass, MatrixKernelC
 //  const M2LHandlerClass M2LHandler;
 
   const MatrixKernelClass *const MatrixKernel;
-
+  int sminM, sminL;
 public:
 
 	using KernelBaseClass::P2M;
@@ -87,11 +87,12 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveUnifKernel(const int inTreeHeight, const FReal inBoxWidth,
-                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel)
+                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel, const int &minM, const int &minL) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)
+/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel),sminM(minM),sminL(minM)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveUnifKernel(const FAdaptiveUnifKernel& other)
-  : KernelBaseClass(other)/*, M2LHandler(other.M2LHandler)*/, MatrixKernel(other.MatrixKernel)
+  : KernelBaseClass(other)/*, M2LHandler(other.M2LHandler)*/, MatrixKernel(other.MatrixKernel),sminM(other.sminM),sminL(other.sminL)
 		{	}
 
 	//
@@ -219,7 +220,7 @@ public:
     // Target cell: local
     const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
     const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
-
+    std::cout << "   call P2L  localLevel "<< localLevel << "  localCellCenter "<< localCellCenter <<std::endl;
     // interpolation points of target (X) cell
     FPoint X[nnodes];
     FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
@@ -235,7 +236,7 @@ public:
       const FReal*const physicalValues = particles->getPhysicalValues();
 
       // apply P2L
-      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+      for (int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
         const FPoint y = FPoint(positionsX[idxPart],
                                 positionsY[idxPart],
@@ -299,7 +300,7 @@ public:
       const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
     
       // apply M2P
-      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+      for ( int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
         const FPoint x = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
 
@@ -443,14 +444,15 @@ public:
 	}
 
 	bool preferP2M(const ContainerClass* const particles) override {
-		return particles->getNbParticles() < 10;
+		return particles->getNbParticles() >this->sminM;
 	}
 	bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
 		int counterParticles = 0;
 		for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
 			counterParticles += particles[idxContainer]->getNbParticles();
 		}
-		return counterParticles < 10;
+		std::cout << " Part("<<counterParticles<< ") ";
+		return counterParticles >this->sminM;
 	}
 };
 
