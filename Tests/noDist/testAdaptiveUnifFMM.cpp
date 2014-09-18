@@ -88,6 +88,11 @@ int main(int argc, char ** argv){
 			FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
 			LocalOptionMinMultipoleThreshod,LocalOptionMinLocalThreshod);
 
+	for (int i = 0 ; i< argc ; ++i){
+		std::cout << argv[i] << "  " ;
+	}
+	std::cout << std::endl<< std::endl;
+	// ---------------------------------------------
 	const std::string fileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "../Data/noDistprolate50.out.fma"));
 	const unsigned int TreeHeight      = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
