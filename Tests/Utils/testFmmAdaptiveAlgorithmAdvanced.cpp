@@ -40,75 +40,14 @@
 #include "../../Src/Components/FBasicKernels.hpp"
 
 #include "../../Src/Files/FRandomLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/Adaptive/FAdaptiveCell.hpp"
 #include "../../Src/Adaptive/FAdaptiveKernelWrapper.hpp"
 #include "../../Src/Adaptive/FAbstractAdaptiveKernel.hpp"
+#include "../../Src/Adaptive/FAdaptiveTestKernel.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
-
-template< class CellClass, class ContainerClass>
-class FAdaptiveTestKernel : public FTestKernels<CellClass, ContainerClass>, public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
-public:
-    using FTestKernels<CellClass, ContainerClass>::P2M;
-    using FTestKernels<CellClass, ContainerClass>::M2M;
-    using FTestKernels<CellClass, ContainerClass>::M2L;
-    using FTestKernels<CellClass, ContainerClass>::L2L;
-    using FTestKernels<CellClass, ContainerClass>::L2P;
-    using FTestKernels<CellClass, ContainerClass>::P2P;
-
-    void P2M(CellClass* const pole, const int /*cellLevel*/, const ContainerClass* const particles) override {
-        pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
-    }
-
-    void M2M(CellClass* const pole, const int /*poleLevel*/, const CellClass* const subCell, const int /*subCellLevel*/) override {
-        pole->setDataUp(pole->getDataUp() + subCell->getDataUp());
-    }
-
-    void P2L(CellClass* const local, const int /*localLevel*/, const ContainerClass* const particles) override {
-        local->setDataDown(local->getDataDown() + particles->getNbParticles());
-    }
-
-    void M2L(CellClass* const local, const int /*localLevel*/, const CellClass* const aNeighbor, const int /*neighborLevel*/) override {
-        local->setDataDown(local->getDataDown() + aNeighbor->getDataUp());
-    }
-
-    void M2P(const CellClass* const pole, const int /*poleLevel*/, ContainerClass* const particles) override {
-        long long int*const particlesAttributes = particles->getDataDown();
-        for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-            particlesAttributes[idxPart] += pole->getDataUp();
-        }
-    }
-
-    void L2L(const CellClass* const local, const int /*localLevel*/, CellClass* const subCell, const int /*subCellLevel*/) override {
-        subCell->setDataDown(local->getDataDown() + subCell->getDataDown());
-    }
-
-    void L2P(const CellClass* const local, const int /*cellLevel*/, ContainerClass* const particles)  override {
-        long long int*const particlesAttributes = particles->getDataDown();
-        for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-            particlesAttributes[idxPart] += local->getDataDown();
-        }
-    }
-
-    void P2P(ContainerClass* target, const ContainerClass* sources)  override {
-        long long int*const particlesAttributes = target->getDataDown();
-        for(int idxPart = 0 ; idxPart < target->getNbParticles() ; ++idxPart){
-            particlesAttributes[idxPart] += sources->getNbParticles();
-        }
-    }
-
-    bool preferP2M(const ContainerClass* const particles) override {
-        return particles->getNbParticles() > 10;
-    }
-    bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
-        int counterParticles = 0;
-        for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
-            counterParticles += particles[idxContainer]->getNbParticles();
-        }
-        return counterParticles > 10;
-    }
-};
 
 
 /** This program show an example of use of the fmm basic algo
@@ -117,22 +56,27 @@ public:
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    const FParameterNames PrintTree =  { {"-print-trees"}, "Print the details of the trees."};
     FHelpDescribeAndExit(argc, argv,
                          "Test the adaptive FMM.",
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight,);
+                         FParameterDefinitions::OctreeSubHeight,PrintTree);
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
-
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FAdaptiveTestKernel< CellClass, ContainerClass >         KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >         CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >         KernelWrapperClass;
     typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
-
-    // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
+
+    typedef FTestCell                   CellClassTest;
+    typedef FTestParticleContainer      ContainerClassTest;
+    typedef FSimpleLeaf< ContainerClassTest >                     LeafClassTest;
+    typedef FOctree< CellClassTest, ContainerClassTest , LeafClassTest >  OctreeClassTest;
+    typedef FTestKernels< CellClassTest, ContainerClassTest >         KernelClassTest;
+    typedef FFmmAlgorithm<OctreeClassTest, CellClass, ContainerClassTest, KernelClassTest, LeafClassTest >     FmmClassTest;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -146,7 +90,9 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
+    //FFmaGenericLoader loader("../Data/noDist/prolate100-ref.fma");
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    OctreeClassTest treeTest(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -158,8 +104,11 @@ int main(int argc, char ** argv){
     {
         FPoint particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            //FReal pv;
+            //loader.fillParticle(&particlePosition, &pv);
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);
+            treeTest.insert(particlePosition);
         }
     }
 
@@ -179,6 +128,10 @@ int main(int argc, char ** argv){
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << "s)." << std::endl;
 
+    KernelClassTest kernelsTest;            // FTestKernels FBasicKernels
+    FmmClassTest algoTest(&treeTest,&kernelsTest);  //FFmmAlgorithm FFmmAlgorithmThread
+    algoTest.execute();
+
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -190,6 +143,54 @@ int main(int argc, char ** argv){
             }
         }
     });
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+
+    tree.forEachCellWithLevel([&](CellWrapperClass* cell, int level){
+        if(cell->hasDevelopment()){
+            FAssertLF(cell->isAdaptive());
+            CellClass* testcell = cell->getRealCell();
+            FAssertLF(testcell);
+            CellClassTest* testcelltest = treeTest.getCell(testcell->getMortonIndex(), level);
+            FAssertLF(testcelltest);
+            if(testcell->getDataUp() != testcelltest->getDataUp()){
+                std::cout << "Error at index " << testcell->getMortonIndex() << " level " << level << " up is " << testcell->getDataUp()
+                             << " should be " << testcelltest->getDataUp() << "\n";
+            }
+        }
+    });
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
+
+    if(FParameters::existParameter(argc, argv, PrintTree.options)){
+        int previousLevel = 0;
+        tree.forEachCellWithLevel([&](CellWrapperClass* cell, int level){
+            if(cell->hasDevelopment()){
+                if(previousLevel != level){
+                    previousLevel = level;
+                    std::cout << "\n" << level << "] ";
+                }
+                FAssertLF(cell->isAdaptive());
+                CellClass* testcell = cell->getRealCell();
+                std::cout << "Idx:" << testcell->getMortonIndex() << " Up " << testcell->getDataUp() << "\t";
+            }
+        });
+        std::cout << "\n";
+
+        previousLevel = 0;
+        treeTest.forEachCellWithLevel([&](CellClassTest* cell, int level){
+            if(previousLevel != level){
+                previousLevel = level;
+                std::cout << "\n" << level << "] ";
+            }
+            std::cout << "Idx:" << cell->getMortonIndex() << " Up " << cell->getDataUp() << "\t";
+        });
+        std::cout << "\n";
+    }
 
     return 0;
 }

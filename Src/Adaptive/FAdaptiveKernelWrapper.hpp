@@ -93,7 +93,7 @@ public:
 		}
 		// We need to aggregate if there are only particles and if the kernel says so
 		std :: cout << "only Part ("<< std::boolalpha  << onlyParticlesCells << " ) ";
-		const bool continueToAgregate = (onlyParticlesCells && ! kernel.preferP2M(inLevel, subLeaves.data(), subLeaves.getSize()));
+        const bool continueToAgregate = (onlyParticlesCells && (kernel.preferP2M(inLevel, subLeaves.data(), subLeaves.getSize()) == false));
 		if(nbChild == 1){
 			// One child means that the cell is not Adaptive
 			pole->setAdaptive(false);
