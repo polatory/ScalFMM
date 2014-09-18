@@ -437,10 +437,8 @@ public:
 	}
 
 	void P2P(ContainerClass* target, const ContainerClass* sources)  override {
-//		long long int*const particlesAttributes = target->getDataDown();
-//		for(int idxPart = 0 ; idxPart < target->getNbParticles() ; ++idxPart){
-//			particlesAttributes[idxPart] += sources->getNbParticles();
-//		}
+        ContainerClass* sourcesArray[27] = { const_cast<ContainerClass*> (sources) };
+        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::template P2PRemote(target,sourcesArray,1,MatrixKernel);
 	}
 
 	bool preferP2M(const ContainerClass* const particles) override {
