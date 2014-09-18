@@ -638,7 +638,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
                                                                  const ContainerClass *const inParticles) const
 {
     // set all multipole expansions to zero
-    FBlas::setzero(2*nRhs*nnodes, multipoleExpansion);
+    // Should not be set to zero here (TODO remove this line) FBlas::setzero(2*nRhs*nnodes, multipoleExpansion);
 
     // allocate stuff
     const map_glob_loc map(center, width);
