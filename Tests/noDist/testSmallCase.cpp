@@ -33,6 +33,8 @@
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Adaptive/FAdaptChebSymKernel.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
+#include "Adaptive/FAdaptUnifKernel.hpp"
 
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
@@ -78,10 +80,13 @@ int main(int argc, char ** argv){
 
     const unsigned int P = 5 ;
     typedef FChebCell<P>                                        CellClass;
+    //typedef FUnifCell<P>                                        CellClass;
+
     typedef FP2PParticleContainerIndexed<>            ContainerClass;
     typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
     typedef FInterpMatrixKernelR                               MatrixKernelClass;
     typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+    //typedef FAdaptiveUnifKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
     typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;

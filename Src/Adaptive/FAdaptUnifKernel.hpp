@@ -295,6 +295,12 @@ public:
     const FReal*const positionsY = particles->getPositions()[1];
     const FReal*const positionsZ = particles->getPositions()[2];
 
+    // get potential
+    FReal*const potentials = particles->getPotentials(/*idxPot*/);
+    FReal*const fx = particles->getForcesX(/*idxPot*/);
+    FReal*const fy = particles->getForcesY(/*idxPot*/);
+    FReal*const fz = particles->getForcesZ(/*idxPot*/);
+
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
       const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
@@ -304,17 +310,18 @@ public:
 
         const FPoint x = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
 
-        FReal targetValue=0.;
-        {
-          for (unsigned int n=0; n<nnodes; ++n)
-            targetValue +=
-              MatrixKernel->evaluate(x, Y[n]) * MultipoleExpansion[/*idxLhs*nnodes+*/n];
-        }
+        for (unsigned int n=0; n<nnodes; ++n){
 
-        // get potential
-        FReal*const potentials = particles->getPotentials(/*idxPot*/);
-        // add contribution to potential
-        potentials[idxPart] += (targetValue);
+          FReal Kxy[1];
+          FReal dKxy[3];
+          MatrixKernel->evaluateBlockAndDerivative(x,Y[n],Kxy,dKxy);
+
+          potentials[idxPart] += Kxy[0] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fx[idxPart] += -dKxy[0] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fy[idxPart] += -dKxy[1] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fz[idxPart] += -dKxy[2] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+
+        }
 
       }// Particles
 
