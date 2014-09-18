@@ -104,7 +104,13 @@ public:
             pole->setHaveDevelopment(false);
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                 if(child[idxChild]){
-                    pole->addSubLeaves(child[idxChild]->getSubLeaves(), child[idxChild]->getNbSubLeaves());
+                    if(child[idxChild]->isAdaptive()){
+                        pole->addSubLeaves(child[idxChild]->getSubLeaves(), child[idxChild]->getNbSubLeaves());
+                    }
+                    else{
+                        const FAdaptiveCell<CellClass, ContainerClass>* lowerAdaptiveCell = child[idxChild]->getSubAdaptiveCell();
+                        pole->addSubLeaves(lowerAdaptiveCell->getSubLeaves(), lowerAdaptiveCell->getNbSubLeaves());
+                    }
                 }
             }
         }
@@ -142,7 +148,7 @@ public:
                         }
                         else{
                             // Else we perform P2M
-                            for(int idxLeaf = 0 ; idxLeaf < child[idxChild]->getNbSubLeaves() ; ++idxLeaf){
+                            for(int idxLeaf = 0 ; idxLeaf < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeaf){
                                 kernel.P2M(pole->getRealCell(), inLevel, lowerAdaptiveCell->getSubLeaf(idxLeaf));
                             }
                         }
@@ -306,8 +312,8 @@ public:
                         }
                         else{
                             // Else we propagate on the particles
-                            for(int idxLeafSrc = 0 ; idxLeafSrc < child[idxChild]->getNbSubLeaves() ; ++idxLeafSrc){
-                                kernel.L2P(local->getRealCell(), inLevel, child[idxChild]->getSubLeaf(idxLeafSrc));
+                            for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                                kernel.L2P(local->getRealCell(), inLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
                             }
                         }
                     }
