@@ -275,7 +275,7 @@ public:
     void L2L(const FAdaptiveCell<CellClass, ContainerClass>* const FRestrict local,
              FAdaptiveCell<CellClass, ContainerClass>* FRestrict * const FRestrict child, const int inLevel)  override {
         // If there is something on this cell
-        if(local->isAdaptive()){
+        if(local->isAdaptive() && local->hasDevelopment()){
             // We store the usual cell
             CellClass* realChild[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
             int counterRealChild    = 0;
