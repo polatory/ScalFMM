@@ -62,6 +62,7 @@ class FAdaptiveChebSymKernel : FChebSymKernel<CellClass, ContainerClass, MatrixK
         nnodes = TensorTraits<ORDER>::nnodes};
 
   const MatrixKernelClass *const MatrixKernel;
+  int sminM, sminL;
 
 public:
 
@@ -79,11 +80,11 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveChebSymKernel(const int inTreeHeight, const FReal inBoxWidth,
-                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), MatrixKernel(inMatrixKernel)
+                         const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel, const int &minM, const int &minL) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel), MatrixKernel(inMatrixKernel),sminM(minM),sminL(minM)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveChebSymKernel(const FAdaptiveChebSymKernel& other)
-  : KernelBaseClass(other), MatrixKernel(other.MatrixKernel)
+  : KernelBaseClass(other), MatrixKernel(other.MatrixKernel),sminM(other.sminM),sminL(other.sminL)
 		{	}
 
 	//
@@ -319,14 +320,14 @@ public:
 	}
 
 	bool preferP2M(const ContainerClass* const particles) override {
-		return particles->getNbParticles() < 10;
+		return particles->getNbParticles()  > this->sminM;
 	}
 	bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
 		int counterParticles = 0;
 		for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
 			counterParticles += particles[idxContainer]->getNbParticles();
 		}
-		return counterParticles < 10;
+		return counterParticles >this->sminM;
 	}
 };
 

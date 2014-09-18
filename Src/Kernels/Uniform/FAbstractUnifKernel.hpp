@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -156,8 +156,10 @@ public:
 
 
   virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
-                         ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                         ContainerClass* const inNeighbors[27], const int /*inSize*/) = 0;
+                         ContainerClass* const FRestrict inTargets,
+                         const ContainerClass* const FRestrict /*inSources*/,
+                         ContainerClass* const inNeighbors[27],
+                         const int /*inSize*/) = 0;
 
 };
 

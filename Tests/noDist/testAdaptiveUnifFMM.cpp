@@ -83,7 +83,7 @@ int main(int argc, char ** argv){
     };
 
 	FHelpDescribeAndExit(argc, argv,
-			"Test Uniform kernel and compare it with the direct computation.",
+			"Test Adaptive kernel and compare it with the direct computation.",
 			FParameterDefinitions::OctreeHeight,FParameterDefinitions::NbThreads,
 			FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
 			LocalOptionMinMultipoleThreshod,LocalOptionMinLocalThreshod);
