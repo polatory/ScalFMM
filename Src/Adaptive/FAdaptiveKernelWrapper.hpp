@@ -258,22 +258,26 @@ public:
 
 					if(lowerAdaptiveCell->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
 						// We are doing a M2L with distant interaction
+                        std::cout << "     M2L:  " ;
 						kernel.M2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel,
 								lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel);
 					}
 					else if(currentAdaptiveCell->hasDevelopment()){
+                        std::cout << "     P2L:  " ;
 						// If only current cell has development the neighbor has particles
 						for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
 							kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
 						}
 					}
 					else if(lowerAdaptiveCell->hasDevelopment()){
+                        std::cout << "     M2P:  " ;
 						// If only current cell has particles the neighbor has development
 						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
 							kernel.M2P(lowerAdaptiveCell->getRealCell(), currentAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
 						}
 					}
 					else{
+                        std::cout << "     P2P:  " ;
 						// If both have particles
 						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
 							for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
