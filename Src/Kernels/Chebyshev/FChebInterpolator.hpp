@@ -637,14 +637,12 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
                                                                  FReal *const multipoleExpansion,
                                                                  const ContainerClass *const inParticles) const
 {
-    // set all multipole expansions to zero
-    // Should not be set to zero here (TODO remove this line) FBlas::setzero(2*nRhs*nnodes, multipoleExpansion);
 
     // allocate stuff
     const map_glob_loc map(center, width);
     FPoint localPosition;
 
-//    FReal W1 = FReal(0.);
+    // Init W
     FReal W1[nRhs];
     FReal W2[nRhs][3][ ORDER-1];
     FReal W4[nRhs][3][(ORDER-1)*(ORDER-1)];
@@ -750,7 +748,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass>::applyP2M(const FPoint& c
         for (unsigned int j=0; j<ORDER; ++j) {
             for (unsigned int k=0; k<ORDER; ++k) {
                 const unsigned int idx = k*ORDER*ORDER + j*ORDER + i;
-                multipoleExpansion[2*idxRhs*nnodes + idx] = (W1[idxRhs] +
+                multipoleExpansion[2*idxRhs*nnodes + idx] += (W1[idxRhs] +
                                                                      FReal(2.) * (F2[0][i] + F2[1][j] + F2[2][k]) +
                                                                      FReal(4.) * (F4[0][j*ORDER+i] + F4[1][k*ORDER+i] + F4[2][k*ORDER+j]) +
                                                                      FReal(8.) *  F8[idx]) / nnodes; // 11 * ORDER*ORDER*ORDER flops
