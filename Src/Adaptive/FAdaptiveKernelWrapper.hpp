@@ -145,7 +145,7 @@ public:
 							// If it is Adaptive and has not development than we compute is using P2M
 							for(int idxLeaf = 0 ; idxLeaf < child[idxChild]->getNbSubLeaves() ; ++idxLeaf){
 								kernel.P2M(pole->getRealCell(), inLevel, child[idxChild]->getSubLeaf(idxLeaf));
-		 							std::cout << "       P2M  ("  <<child[idxChild]->getGlobalId( ) << ","<< child[idxChild]->getSubLeaf(idxLeaf)<< ")- ";
+                                    std::cout << "       P2M  ("  <<child[idxChild]->getGlobalId( ) << ","<< child[idxChild]->getSubLeaf(idxLeaf)<< ", level " << inLevel << ")- ";
 							}
 						}
 					}
@@ -164,7 +164,7 @@ public:
 							// Else we perform P2M
 							for(int idxLeaf = 0 ; idxLeaf < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeaf){
 								kernel.P2M(pole->getRealCell(), inLevel, lowerAdaptiveCell->getSubLeaf(idxLeaf));
-								std::cout << "       P2M  ( " <<pole->getGlobalId( ) << "): "  ;
+                                std::cout << "       P2M  ( " <<pole->getGlobalId( ) << " level " << inLevel << "): "  ;
 							}
 						}
 					}
