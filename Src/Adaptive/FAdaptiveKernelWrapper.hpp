@@ -258,7 +258,7 @@ public:
 
 					if(lowerAdaptiveCell->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
 						// We are doing a M2L with distant interaction
-                        std::cout << "     M2L:  " ;
+                        std::cout << "     M2L:  (level " << currentAdaptiveLevel << " and " << lowerAdaptiveLevel << " ) " ;
 						kernel.M2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel,
 								lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel);
 					}
@@ -266,6 +266,7 @@ public:
                         std::cout << "     P2L:  " ;
 						// If only current cell has development the neighbor has particles
 						for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                            std::cout << " (level " << currentAdaptiveLevel << ") " ;
 							kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
 						}
 					}
@@ -273,7 +274,8 @@ public:
                         std::cout << "     M2P:  " ;
 						// If only current cell has particles the neighbor has development
 						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
-							kernel.M2P(lowerAdaptiveCell->getRealCell(), currentAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
+                            std::cout << " (level " << lowerAdaptiveLevel << ") " ;
+                            kernel.M2P(lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
 						}
 					}
 					else{
@@ -333,8 +335,9 @@ public:
 						}
 						else {
 							// We need to propagate on the particles
+                            std::cout << "A]      L2P  ";
 							for(int idxLeafSrc = 0 ; idxLeafSrc < child[idxChild]->getNbSubLeaves() ; ++idxLeafSrc){
-								std::cout << "      L2P ( " <<child[idxChild]->getGlobalId() << ") ";
+                                std::cout << "      L2P ( " <<child[idxChild]->getGlobalId() << " " << inLevel << " ) ";
 								kernel.L2P(local->getRealCell(), inLevel, child[idxChild]->getSubLeaf(idxLeafSrc));
 							}
 						}
@@ -349,8 +352,10 @@ public:
 							kernel.L2L(local->getRealCell(), inLevel, lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel);
 						}
 						else{
+                            std::cout << "B]      L2P  ";
 							// Else we propagate on the particles
 							for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                                std::cout << "      L2P ( " <<lowerAdaptiveCell->getGlobalId() << "," << inLevel<< ") ";
 								kernel.L2P(local->getRealCell(), inLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
 							}
 						}
