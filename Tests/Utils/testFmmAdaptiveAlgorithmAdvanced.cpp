@@ -89,8 +89,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
-    //FFmaGenericLoader loader("../Data/noDist/prolate100-ref.fma");
+    //FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
+    FFmaGenericLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,"../Data/noDist/prolate50-ref.fma"));
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     OctreeClassTest treeTest(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
@@ -104,9 +104,9 @@ int main(int argc, char ** argv){
     {
         FPoint particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            //FReal pv;
-            //loader.fillParticle(&particlePosition, &pv);
-            loader.fillParticle(&particlePosition);
+            FReal pv;
+            loader.fillParticle(&particlePosition, &pv);
+            //loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);
             treeTest.insert(particlePosition);
         }
@@ -121,7 +121,7 @@ int main(int argc, char ** argv){
     std::cout << "Working on particles ..." << std::endl;
     counter.tic();
 
-    KernelWrapperClass kernels;            // FTestKernels FBasicKernels
+    KernelWrapperClass kernels(4);            // FTestKernels FBasicKernels
     FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
     algo.execute();
 
@@ -158,6 +158,10 @@ int main(int argc, char ** argv){
             if(testcell->getDataUp() != testcelltest->getDataUp()){
                 std::cout << "Error at index " << testcell->getMortonIndex() << " level " << level << " up is " << testcell->getDataUp()
                              << " should be " << testcelltest->getDataUp() << "\n";
+            }
+            if(testcell->getDataDown() != testcelltest->getDataDown()){
+                std::cout << "Error at index " << testcell->getMortonIndex() << " level " << level << " up is " << testcell->getDataDown()
+                             << " should be " << testcelltest->getDataDown() << "\n";
             }
         }
     });

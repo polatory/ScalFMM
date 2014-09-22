@@ -52,6 +52,8 @@
 #include "Adaptive/FAdaptTools.hpp"
 //#include "AdaptiveTree/FAdaptChebSymKernel.hpp"
 
+#include "Adaptive/FAdaptivePrintKernel.hpp"
+
 //
 //
 #include "Core/FFmmAlgorithm.hpp"
@@ -118,6 +120,11 @@ int main(int argc, char ** argv){
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
+
+
+    typedef FAdaptivePrintKernel<CellClass,ContainerClass> KernelClassPrint;
+    typedef FAdaptiveKernelWrapper< KernelClassPrint, CellClass, ContainerClass >   KernelWrapperClassPrint;
+    typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClassPrint, LeafClass >     FmmClassPrint;
 
 
     typedef FP2PParticleContainerIndexed<> ContainerClassDebug;
@@ -208,6 +215,10 @@ int main(int argc, char ** argv){
     FmmClassDebug algodebug(&treedebug,&kernelsdebug);  //FFmmAlgorithm FFmmAlgorithmThread
     algodebug.execute();
 
+    KernelWrapperClassPrint kernelsprint(sminM);            // FTestKernels FBasicKernels
+    FmmClassPrint algoprint(&tree,&kernelsprint);  //FFmmAlgorithm FFmmAlgorithmThread
+    algoprint.execute();
+
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << " s)." << std::endl;
     //
@@ -230,7 +241,10 @@ int main(int argc, char ** argv){
 
             //    std::cout << "indexPartOrig || DIRECT V fx || FMM V fx" << std::endl;
 
-            tree.forEachLeaf([&](LeafClass* leaf){
+            tree.forEachCellLeaf([&](CellWrapperClass* cell, LeafClass* leaf){
+                FMath::FAccurater potentialDiffLeaf;
+                FMath::FAccurater fxLeaf, fyLeaf, fzLeaf;
+
                 const FReal*const potentials        = leaf->getTargets()->getPotentials();
                 const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
                 const FReal*const forcesX            = leaf->getTargets()->getForcesX();
@@ -252,7 +266,17 @@ int main(int argc, char ** argv){
                     //                    << " " << potentials[idxPart] << " " << forcesX[idxPart]
                     //                    << std::endl;
 
+                    potentialDiffLeaf.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+                    fxLeaf.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+                    fyLeaf.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+                    fzLeaf.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
                 }
+
+                std::cout << "Cell id " << cell->getGlobalId( ) << " morton " << cell->getMortonIndex() << "\n";
+                std::cout << "\t Potential " << potentialDiffLeaf << std::endl;
+                std::cout << "\t Fx " << fxLeaf << std::endl;
+                std::cout << "\t Fy " << fyLeaf << std::endl;
+                std::cout << "\t Fz " << fzLeaf << std::endl;
             });
         }
 

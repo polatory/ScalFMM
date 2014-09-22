@@ -71,6 +71,10 @@ public:
 		}
 	}
 
+    void resetSubLeaves() {
+        subLeaves.clear();
+    }
+
 	bool hasDevelopment() const{
 		return realCell != nullptr;
 	}

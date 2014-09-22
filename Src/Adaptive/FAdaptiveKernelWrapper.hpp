@@ -40,15 +40,16 @@ public:
 	void P2M(FAdaptiveCell<CellClass, ContainerClass>* const pole, const ContainerClass* const particles)  override {
 		// Leaf is always Adaptive
 		pole->setAdaptive(true);
-		std::cout << "P2M ("<<pole->getGlobalId() <<") part (" <<particles->getNbParticles()<< ") " << particles;
+        pole->resetSubLeaves();
+
 		if( kernel.preferP2M(particles) ){
 			// If it is better to compute the P2M at this level
 			pole->setHaveDevelopment(true);
 			kernel.P2M(pole->getRealCell(), particles);
-			std::cout << "   true "<< std::endl;
+            std::cout << "P2M ("<<pole->getGlobalId() <<") part (" <<particles->getNbParticles()<< ") " << particles << " morton " << pole->getMortonIndex() << "\n";
 		}
 		else{
-			std::cout << "   false "<< std::endl;
+            std::cout << "No P2M ("<<pole->getGlobalId() <<") part (" <<particles->getNbParticles()<< ") " << particles << " morton " << pole->getMortonIndex() << "\n";
 
 			// Else simply keep the current leaf
 			pole->setHaveDevelopment(false);
@@ -70,8 +71,8 @@ public:
 		int lastChild     = 0;
 		bool onlyParticlesCells         = true;
 		FVector<const ContainerClass*> subLeaves;
-		std::cout << "     M2M ( " <<pole->getGlobalId( ) << "): " ;
-
+        std::cout << "M2M (" <<pole->getGlobalId( ) << ") morton " << pole->getMortonIndex() << " inLevel " << inLevel << " ";
+        pole->resetSubLeaves();
 		// Test all the children
 		for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
 			if(child[idxChild]){
@@ -92,13 +93,14 @@ public:
 			}
 		}
 		// We need to aggregate if there are only particles and if the kernel says so
-		std :: cout << "only Part ("<< std::boolalpha  << onlyParticlesCells << " ) ";
+        std :: cout << " only Part ("<< std::boolalpha  << onlyParticlesCells << " ) ";
         const bool continueToAgregate = (onlyParticlesCells && (kernel.preferP2M(inLevel, subLeaves.data(), subLeaves.getSize()) == false));
 		if(nbChild == 1){
 			// One child means that the cell is not Adaptive
 			pole->setAdaptive(false);
 			pole->setHaveDevelopment(false);
 			std::cout << "       not adaptive  ";
+            std::cout << " child " << child[lastChild]->getMortonIndex() << " ";
 
 			if(child[lastChild]->isAdaptive()){
 				pole->setSubAdaptiveCell(child[lastChild], inLevel + 1);
@@ -115,6 +117,7 @@ public:
 			pole->setHaveDevelopment(false);
 			for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
 				if(child[idxChild]){
+                    std::cout << " child " << child[idxChild]->getMortonIndex() << " ";
 					if(child[idxChild]->isAdaptive()){
 						pole->addSubLeaves(child[idxChild]->getSubLeaves(), child[idxChild]->getNbSubLeaves());
 					}
@@ -135,6 +138,7 @@ public:
 			// Test each child
 			for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
 				if(child[idxChild]){
+                    std::cout << " child " << child[idxChild]->getMortonIndex() << " ";
 					if(child[idxChild]->isAdaptive()){
 						if(child[idxChild]->hasDevelopment()){
 							// If it is Adaptive and has development than we compute is using usual M2M
@@ -196,7 +200,7 @@ public:
 		FAdaptiveCell<CellClass, ContainerClass>* currentAdaptiveCell = nullptr;
 		int currentAdaptiveLevel       = -1;
 		// If the current Adaptive cell is the current cell
-		std::cout << "     M2L cell (" <<local->getGlobalId( ) << "): " ;
+        std::cout << "     M2L cell (" <<local->getGlobalId( ) << "): morton " << local->getMortonIndex() << " inLevel " << inLevel << " " ;
 		if(local->isAdaptive()){
 			currentAdaptiveCell  = local;
 			currentAdaptiveLevel = inLevel;
@@ -211,6 +215,7 @@ public:
 
 		for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
 			if(distantNeighbors[idxNeigh]){
+                std::cout << " neigh " << distantNeighbors[idxNeigh]->getMortonIndex() << " ";
 				// If the current cell is Adaptive and the neighbor too
 				if(distantNeighbors[idxNeigh]->isAdaptive() && local->isAdaptive()){
 					if(distantNeighbors[idxNeigh]->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
@@ -236,11 +241,12 @@ public:
 					}
 					else{
 						// If both have particles
-						std::cout << "     P2P:  " ;
+                        std::cout << "B]     P2P:  " ;
 
 						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                            std::cout << "Target " << currentAdaptiveCell->getSubLeaf(idxLeafTgt) << " >> ";
 							for(int idxLeafSrc = 0 ; idxLeafSrc < distantNeighbors[idxNeigh]->getNbSubLeaves() ; ++idxLeafSrc){
-								std::cout << "  (  " <<distantNeighbors[idxNeigh]->getSubLeaf(idxLeafSrc)<< " ) " ;
+                                std::cout << " Srouce (  " <<distantNeighbors[idxNeigh]->getSubLeaf(idxLeafSrc)<< " ) " ;
 
 								kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), distantNeighbors[idxNeigh]->getSubLeaf(idxLeafSrc));
 							}
@@ -279,10 +285,14 @@ public:
 						}
 					}
 					else{
-                        std::cout << "     P2P:  " ;
+                        std::cout << "A]     P2P:  " ;
+                        std::cout << " currentAdaptiveCell->getNbSubLeaves() " << currentAdaptiveCell->getNbSubLeaves() ;
 						// If both have particles
 						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                            std::cout << "  ( currentAdaptiveCell " <<currentAdaptiveCell->getSubLeaf(idxLeafTgt)<< " ) " ;
+                            std::cout << "  ( lowerAdaptiveCell->getNbSubLeaves() " <<lowerAdaptiveCell->getNbSubLeaves()<< " ) " ;
 							for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                                std::cout << "  ( lowerAdaptiveCell " <<lowerAdaptiveCell->getSubLeaf(idxLeafSrc)<< " ) " ;
 								kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
 							}
 						}
