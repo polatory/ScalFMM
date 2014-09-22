@@ -133,7 +133,7 @@ public:
 	FChebSymKernel(const int inTreeHeight,
                  const FReal inBoxWidth,
                  const FPoint& inBoxCenter,
-                 const MatrixKernelClass *const inMatrixKernel) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
+                 const MatrixKernelClass *const inMatrixKernel) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER-1)))
 		       {}
 
 	
