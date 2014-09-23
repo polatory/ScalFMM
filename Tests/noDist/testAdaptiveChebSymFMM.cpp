@@ -65,27 +65,12 @@
  * it also check that each particles is impacted each other particles
  */
 
-void usage() {
-    std::cout << "Driver to obtain statistics on the octree" << std::endl;
-    std::cout <<	 "Options  "<< std::endl
-            <<     "      -help       to see the parameters    " << std::endl
-            <<	     "      -depth        the depth of the octree   "<< std::endl
-            <<	     "      -subdepth   specifies the size of the sub octree   " << std::endl
-            <<     "      -fin name specifies the name of the particle distribution" << std::endl
-            <<     "      -sM    s_min^M threshold for Multipole (l+1)^2 for Spherical harmonics"<<std::endl
-            <<     "      -sL    s_min^L threshold for Local  (l+1)^2 for Spherical harmonics"<<std::endl;
-}
+
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     //
-    const FParameterNames LocalOptionMinMultipoleThreshod {
-        {"-sM"},
-        " s_min^M threshold for Multipole (l+1)^2 for Spherical harmonic."
-    };
-    const FParameterNames LocalOptionMinLocalThreshod {
-        {"-SL"},
-        " s_min^L threshold for Local  (l+1)^2 for Spherical harmonics."
-    };
+    const FParameterNames LocalOptionMinMultipoleThreshod {{"-sM"}," s_min^M threshold for Multipole (l+1)^2 for Spherical harmonic."};
+    const FParameterNames LocalOptionMinLocalThreshod {{"-SL"}," s_min^L threshold for Local  (l+1)^2 for Spherical harmonics."};
 
     FHelpDescribeAndExit(argc, argv,
             "Test Adaptive kernel and compare it with the direct computation.",
@@ -104,28 +89,16 @@ int main(int argc, char ** argv){
     //
     // accuracy
     const unsigned int P = 5 ;
-    //    typedef FTestCell                   CellClass;
-    //    typedef FAdaptiveTestKernel< CellClass, ContainerClass >         KernelClass;
     typedef FChebCell<P>                                        CellClass;
     typedef FP2PParticleContainerIndexed<>            ContainerClass;
     typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
     typedef FInterpMatrixKernelR                               MatrixKernelClass;
-    //
     typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
-    //
-    //
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
     typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
-
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
-
-
-    typedef FAdaptivePrintKernel<CellClass,ContainerClass> KernelClassPrint;
-    typedef FAdaptiveKernelWrapper< KernelClassPrint, CellClass, ContainerClass >   KernelWrapperClassPrint;
-    typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClassPrint, LeafClass >     FmmClassPrint;
-
 
     typedef FP2PParticleContainerIndexed<> ContainerClassDebug;
     typedef FSimpleLeaf< ContainerClass >  LeafClassDebug;
@@ -140,7 +113,6 @@ int main(int argc, char ** argv){
     //
     const int sminM    = FParameters::getValue(argc,argv,LocalOptionMinMultipoleThreshod.options, P*P*P);
     const int sminL     = FParameters::getValue(argc,argv,LocalOptionMinLocalThreshod.options, P*P*P);
-    //
 
 
     FTic counter;
@@ -149,10 +121,8 @@ int main(int argc, char ** argv){
     // Not Random Loader
     //////////////////////////////////////////////////////////////////////////////////
     FFmaGenericLoader loader(fileName);
+    //FRandomLoader loader(FParameters::getValue(argc,argv,"-nb", 2000000), 1, FPoint(0.5,0.5,0.5), 1);
     const long int NbPart  = loader.getNumberOfParticles() ;
-    // Random Loader
-    //const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
-    //	FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
     //////////////////////////////////////////////////////////////////////////////////
 
     OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -214,10 +184,6 @@ int main(int argc, char ** argv){
     KernelClassDebug kernelsdebug(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);            // FTestKernels FBasicKernels
     FmmClassDebug algodebug(&treedebug,&kernelsdebug);  //FFmmAlgorithm FFmmAlgorithmThread
     algodebug.execute();
-
-    KernelWrapperClassPrint kernelsprint(sminM);            // FTestKernels FBasicKernels
-    FmmClassPrint algoprint(&tree,&kernelsprint);  //FFmmAlgorithm FFmmAlgorithmThread
-    algoprint.execute();
 
     counter.tac();
     std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << " s)." << std::endl;
