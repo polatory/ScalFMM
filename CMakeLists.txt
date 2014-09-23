@@ -38,6 +38,12 @@ SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFM
 # Active language
 # -----------------------
 ENABLE_LANGUAGE(CXX )
+if( ScalFMM_USE_MPI )
+    TRY_COMPILE(COMPILE_INTEL  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestIntel.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}")    
+    if (COMPILE_INTEL) 
+       SET(CMAKE_CXX_COMPILER_ID  "Intel")
+        endif()
+        endif()
 MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 #
@@ -150,7 +156,7 @@ else()
   ELSE(APPLE)
     # Not apple system - Check the compiler flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -march=native -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
       SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
@@ -174,6 +180,7 @@ endif(ScalFMM_ATTACHE_SOURCE)
 # 
 if( ScalFMM_USE_BLAS )
   OPTION( ScalFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
+  MESSAGE(STATUS "CMAKE_CXX_COMPILER_ID STREQUAL  ${CMAKE_CXX_COMPILER_ID}")
   if( ScalFMM_USE_MKL_AS_BLAS )
         IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" )
               SET(BLAS_LIBRARIES  "-mkl=sequential" CACHE STRING "Set your MKL flags")
