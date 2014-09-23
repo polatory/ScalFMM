@@ -169,7 +169,7 @@ public:
       const FReal*const physicalValues = particles->getPhysicalValues();
 
       // apply P2L
-      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+      for ( int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
         const FPoint y = FPoint(positionsX[idxPart],
                                 positionsY[idxPart],
@@ -240,11 +240,11 @@ public:
       const FReal *const MultipoleExpansion = pole->getMultipole(idxRhs);
     
       // apply M2P
-      for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
+      for (int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
         const FPoint x = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
 
-        for (unsigned int n=0; n<nnodes; ++n){
+        for (int n=0; n<nnodes; ++n){
 
           FReal Kxy[1];
           FReal dKxy[3];

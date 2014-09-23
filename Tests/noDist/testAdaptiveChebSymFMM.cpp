@@ -45,10 +45,10 @@
 #include "Adaptive/FAdaptiveCell.hpp"
 #include "Adaptive/FAdaptiveKernelWrapper.hpp"
 #include "Adaptive/FAbstractAdaptiveKernel.hpp"
+#include "Adaptive/FAdaptChebSymKernel.hpp"
 //
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebCell.hpp"
-#include "Adaptive/FAdaptChebSymKernel.hpp"
 #include "Adaptive/FAdaptTools.hpp"
 //#include "AdaptiveTree/FAdaptChebSymKernel.hpp"
 
@@ -121,7 +121,6 @@ int main(int argc, char ** argv){
     // Not Random Loader
     //////////////////////////////////////////////////////////////////////////////////
     FFmaGenericLoader loader(fileName);
-    //FRandomLoader loader(FParameters::getValue(argc,argv,"-nb", 2000000), 1, FPoint(0.5,0.5,0.5), 1);
     const long int NbPart  = loader.getNumberOfParticles() ;
     //////////////////////////////////////////////////////////////////////////////////
 
