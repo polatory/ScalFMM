@@ -229,6 +229,7 @@ public:
     const FReal*const positionsZ = particles->getPositions()[2];
 
     // get potential
+    FReal*const physVal = particles->getPhysicalValues(/*idxPot*/);
     FReal*const potentials = particles->getPotentials(/*idxPot*/);
     FReal*const fx = particles->getForcesX(/*idxPot*/);
     FReal*const fy = particles->getForcesY(/*idxPot*/);
@@ -250,9 +251,9 @@ public:
           MatrixKernel->evaluateBlockAndDerivative(x,Y[n],Kxy,dKxy);
 
           potentials[idxPart] += Kxy[0] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
-          fx[idxPart] += -dKxy[0] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
-          fy[idxPart] += -dKxy[1] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
-          fz[idxPart] += -dKxy[2] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fx[idxPart] += -dKxy[0] * physVal[idxPart] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fy[idxPart] += -dKxy[1] * physVal[idxPart] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
+          fz[idxPart] += -dKxy[2] * physVal[idxPart] * MultipoleExpansion[/*idxLhs*nnodes+*/n];
             
         }
 
