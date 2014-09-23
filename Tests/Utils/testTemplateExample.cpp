@@ -42,6 +42,13 @@ struct RunContainer{
     }
 };
 
+struct RunClass {
+    template <const int P>
+    void For(double mydouble, int myint){
+        std::cout << "RunClass::For >> P = " << P << " mydouble " << mydouble << " myint " << myint << "\n";
+    }
+};
+
 
 // Compile with g++ -std=c++11 main.cpp -o test.exe
 int main(int argc, char** argv){
@@ -50,6 +57,10 @@ int main(int argc, char** argv){
 
     // This will call the For method (maybe several times)
     FForAll::For<int, 0, 20, 1, RunContainer>(45.4, 55);
+
+    // This will call the For method (maybe several times)
+    RunClass runner;
+    FForAllThis::For<int, 0, 20, 1, RunClass>(&runner, 45.4, 55);
 
     // This will call the Run method
     FRunIf::Run<int, 0, 20, 1, RunContainer>(3, 45.4, 55);

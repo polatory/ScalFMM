@@ -16,6 +16,7 @@
 
 #include "../Src/Utils/FGlobal.hpp"
 #include "../Src/Utils/FTic.hpp"
+#include "../Src/Utils/FTemplate.hpp"
 
 #include "../Src/Containers/FOctree.hpp"
 #include "../Src/Containers/FVector.hpp"
@@ -198,17 +199,17 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** Rotation */
     template<int P>
     void TestRotation(){
-	typedef FRotationCell<P>              CellClass;
-	typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FRotationCell<P>              CellClass;
+        typedef FP2PParticleContainerIndexed<>  ContainerClass;
 
-	typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
+        typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-	typedef FSimpleLeaf<ContainerClass >                     LeafClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
+        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-	typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-	RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass,P>();
+        RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass,P>();
     }
 
     ///////////////////////////////////////////////////////////
@@ -217,29 +218,13 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
     /** set test */
     void SetTests(){
-	AddTest(&TestRotationDirect::TestRotation<4>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<6>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<8>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<10>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<12>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<14>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<16>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<18>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<20>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<22>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<24>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<26>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<28>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<32>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<35>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<40>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<45>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<50>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<55>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<60>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<65>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<70>,"Test Rotation Kernel");
-	AddTest(&TestRotationDirect::TestRotation<75>,"Test Rotation Kernel");
+        FForAllThis::For<int, 6, 40, 2, TestRotationDirect>(this);
+    }
+
+public:
+    template <int P>
+    void For(){
+        AddTest(&TestRotationDirect::TestRotation<P>,"Test Rotation Kernel");
     }
 };
 

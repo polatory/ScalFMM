@@ -58,6 +58,40 @@ void For(Args... args){
 }
 
 
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// FForAll : Compile all and exec all
+///////////////////////////////////////////////////////////////////////////////////////
+
+#include <functional>
+
+namespace FForAllThis{
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, const IterType IterStep,
+          class Func, bool IsNotOver, typename... Args>
+struct Evaluator{
+    static void Run(Func* object, Args... args){
+        object->Func::template For<CurrentIter>(args...);
+        Evaluator<IterType, CurrentIter+IterStep, iterTo, IterStep, Func, (CurrentIter+IterStep < iterTo), Args...>::Run(object, args...);
+    }
+};
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, const IterType IterStep,
+          class Func, typename... Args>
+struct Evaluator< IterType, CurrentIter, iterTo, IterStep, Func, false, Args...>{
+    static void Run(Func* object, Args... args){
+    }
+};
+
+template <class IterType, const IterType IterFrom, const IterType iterTo, const IterType IterStep,
+          class Func, typename... Args>
+void For(Func* object, Args... args){
+    Evaluator<IterType, IterFrom, iterTo, IterStep, Func, (IterFrom<iterTo), Args...>::Run(object, args...);
+}
+
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////
 /// FRunIf : Compile all and exec only one (if the template variable is equal to
 /// the first variable)
