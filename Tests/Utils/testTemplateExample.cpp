@@ -47,6 +47,11 @@ struct RunClass {
     void For(double mydouble, int myint){
         std::cout << "RunClass::For >> P = " << P << " mydouble " << mydouble << " myint " << myint << "\n";
     }
+
+    template <const int P>
+    void Run(double mydouble, int myint){
+        std::cout << "RunClass::Run >> P = " << P << " mydouble " << mydouble << " myint " << myint << "\n";
+    }
 };
 
 
@@ -64,6 +69,9 @@ int main(int argc, char** argv){
 
     // This will call the Run method
     FRunIf::Run<int, 0, 20, 1, RunContainer>(3, 45.4, 55);
+
+    // This will call the Run method
+    FRunIfThis::Run<int, 0, 20, 1, RunClass>(&runner, 3, 45.4, 55);
 
     // Should not run, because 21 is out of the compiled interval
     FRunIf::Run<int, 0, 20, 1, RunContainer>(21, 45.4, 55);

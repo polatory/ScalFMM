@@ -132,6 +132,43 @@ void Run(IterType value, Args... args){
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
+/// FRunIf : Compile all and exec only one (if the template variable is equal to
+/// the first variable)
+///////////////////////////////////////////////////////////////////////////////////////
+
+namespace FRunIfThis{
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, const IterType IterStep,
+          class Func, bool IsNotOver, typename... Args>
+struct Evaluator{
+    static void Run(Func* object, IterType value, Args... args){
+        if(CurrentIter == value){
+            object->Func::template Run<CurrentIter>(args...);
+        }
+        else{
+            Evaluator<IterType, CurrentIter+IterStep, iterTo, IterStep, Func, (CurrentIter+IterStep < iterTo), Args...>::Run(object, value, args...);
+        }
+    }
+};
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, const IterType IterStep,
+          class Func, typename... Args>
+struct Evaluator< IterType, CurrentIter, iterTo, IterStep, Func, false, Args...>{
+    static void Run(Func* object, IterType value, Args... args){
+        std::cout << __FUNCTION__ << " no matching value found\n";
+    }
+};
+
+template <class IterType, const IterType IterFrom, const IterType iterTo, const IterType IterStep,
+          class Func, typename... Args>
+void Run(Func* object, IterType value, Args... args){
+    Evaluator<IterType, IterFrom, iterTo, IterStep, Func, (IterFrom<iterTo), Args...>::Run(object, value, args...);
+}
+
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////
 /// FRunIfFunctional : Compile all and exec only those whose respect a condition
 ///////////////////////////////////////////////////////////////////////////////////////
 
