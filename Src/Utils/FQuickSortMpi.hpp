@@ -23,8 +23,8 @@
 #include <memory>
 #include <utility>
 
-template <class SortType, class CompareType, class IndexType>
-class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
+template <class SortType, class CompareType, class IndexType = size_t>
+class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
     // We need a structure see the algorithm detail to know more
     struct Partition{
         IndexType lowerPart;
@@ -392,7 +392,9 @@ public:
 
         ////FLOG( FLog::Controller << currentComm.processId() << "] Sequential sort\n"; )
         // Finish by a local sort
-        FQuickSort< SortType, CompareType, IndexType>::QsOmp(workingArray, currentSize);
+        FQuickSort< SortType, IndexType>::QsOmp(workingArray, currentSize, [&](const SortType& v1, const SortType& v2){
+            return CompareType(v1) <= CompareType(v2);
+        });
         (*outputSize)  = currentSize;
         (*outputArray) = workingArray;
     }

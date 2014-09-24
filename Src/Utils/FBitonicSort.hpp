@@ -153,7 +153,9 @@ public:
             FAssert(np == flag, "Bitonic sort work only with power of 2 for now.")
         }
 
-        FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
+        FQuickSort<SortType,IndexType>::QsOmp(array, size, [&](const SortType& v1, const SortType& v2){
+            return CompareType(v1) <= CompareType(v2);
+        });
 
         const int logNp = int(log2(np));
         for(int bitIdx = 1 ; bitIdx <= logNp ; ++bitIdx){
@@ -175,7 +177,9 @@ public:
                 }
                 // A merge sort is possible since the array is composed
                 // by two part already sorted, but we want to do this in space
-                FQuickSort<SortType,CompareType,IndexType>::QsOmp(array, size);
+                FQuickSort<SortType,IndexType>::QsOmp(array, size, [&](const SortType& v1, const SortType& v2){
+                    return CompareType(v1) <= CompareType(v2);
+                });
             }
         }
     }

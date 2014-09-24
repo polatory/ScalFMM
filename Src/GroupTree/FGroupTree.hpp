@@ -203,10 +203,6 @@ public:
             struct ParticleSortingStruct{
                 int originalIndex;
                 MortonIndex mindex;
-
-                operator MortonIndex(){
-                    return mindex;
-                }
             };
             // Convert position to morton index
             const int nbParticles = inParticlesContainer->getNbParticles();
@@ -226,7 +222,9 @@ public:
 
             // Sort if needed
             if(particlesAreSorted == false){
-                FQuickSort<ParticleSortingStruct, MortonIndex, int>::QsOmp(particlesToSort, nbParticles);
+                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [&](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
+                    return v1.mindex <= v2.mindex;
+                });
             }
 
             // Convert to block

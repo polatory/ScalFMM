@@ -18,9 +18,9 @@ protected:
         MortonIndex outIndex;
         MortonIndex insideIndex;
         int outPosition;
-
-        operator long long() const{
-            return static_cast<long long>(outIndex);
+        // To sort
+        bool operator <=(const OutOfBlockInteraction& other) const{
+            return outIndex <= other.outIndex;
         }
     };
 
@@ -184,7 +184,7 @@ protected:
 
 
                 // Manage outofblock interaction
-                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
+                FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
                 typename std::list<CellContainerClass*>::iterator iterLeftCells = tree->cellsBegin(idxLevel);
                 int currentOutInteraction = 0;
@@ -357,7 +357,7 @@ protected:
 
 
                 // Manage outofblock interaction
-                FQuickSort<OutOfBlockInteraction, long long, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
+                FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
                 typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
                 int currentOutInteraction = 0;

@@ -23,6 +23,7 @@
 #include <cstring>
 #include <vector> // For parallel without task
 #include <utility> // For move
+#include <functional> // To have std::function
 
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
@@ -38,77 +39,12 @@
   * Introduction to parallel computing (Grama Gupta Karypis Kumar)
   */
 
-template <class SortType, class CompareType, class IndexType>
+template <class SortType, class IndexType = size_t>
 class FQuickSort {
 protected:
-    /** swap to value */
-    template <class NumType>
-    static inline void Swap(NumType& value, NumType& other){
-        const NumType temp = std::move(value);
-        value = std::move(other);
-        other = std::move(temp);
-    }
-
-    ////////////////////////////////////////////////////////////
-    // Quick sort
-    ////////////////////////////////////////////////////////////
-
-    /* Use in the sequential qs */
-    static IndexType QsPartition(SortType array[], IndexType left, IndexType right){
-        Swap(array[right],array[((right - left ) / 2) + left]);
-
-        IndexType idx = left;
-        while( idx < right && CompareType(array[idx]) <= CompareType(array[right])){
-            idx += 1;
-        }
-        left = idx;
-
-        for( ; idx < right ; ++idx){
-            if( CompareType(array[idx]) <= CompareType(array[right]) ){
-                Swap(array[idx],array[left]);
-                left += 1;
-            }
-        }
-
-        Swap(array[left],array[right]);
-
-        return left;
-    }
-
-
-    /* The sequential qs */
-    static void QsSequentialStep(SortType array[], const IndexType left, const IndexType right){
-        if(left < right){
-            const IndexType part = QsPartition(array, left, right);
-            QsSequentialStep(array,part + 1,right);
-            QsSequentialStep(array,left,part - 1);
-        }
-    }
-
-    /** A task dispatcher */
-    static void QsOmpTask(SortType array[], const IndexType left, const IndexType right, const int deep){
-        if(left < right){
-            const IndexType part = QsPartition(array, left, right);
-            if( deep ){
-                #pragma omp task
-                QsOmpTask(array,part + 1,right, deep - 1);
-                #pragma omp task
-                QsOmpTask(array,left,part - 1, deep - 1);
-            }
-            else {
-                QsSequentialStep(array,part + 1,right);
-                QsSequentialStep(array,left,part - 1);
-            }
-        }
-    }
-
-public:
-    /* a sequential qs */
-    static void QsSequential(SortType array[], const IndexType size){
-        QsSequentialStep(array,0,size-1);
-    }
 
 #if _OPENMP < 200805 || defined(__ICC) || defined(__INTEL_COMPILER)
+#define FQS_TASKS_ARE_DISABLED
     class TaskInterval{
         IndexType left;
         IndexType right;
@@ -128,8 +64,85 @@ public:
             return deep;
         }
     };
+#endif
 
-    static void QsOmp(SortType elements[], const int nbElements){
+    /** swap to value */
+    template <class NumType>
+    static inline void Swap(NumType& value, NumType& other){
+        const NumType temp = std::move(value);
+        value = std::move(other);
+        other = std::move(temp);
+    }
+
+    typedef bool (*infOrEqualPtr)(const SortType&, const SortType&);
+
+    ////////////////////////////////////////////////////////////
+    // Quick sort
+    ////////////////////////////////////////////////////////////
+
+    /* Use in the sequential qs */
+    static IndexType QsPartition(SortType array[], IndexType left, IndexType right, const infOrEqualPtr infOrEqual){
+        Swap(array[right],array[((right - left ) / 2) + left]);
+
+        IndexType idx = left;
+        while( idx < right && infOrEqual(array[idx],array[right])){
+            idx += 1;
+        }
+        left = idx;
+
+        for( ; idx < right ; ++idx){
+            if( infOrEqual(array[idx],array[right]) ){
+                Swap(array[idx],array[left]);
+                left += 1;
+            }
+        }
+
+        Swap(array[left],array[right]);
+
+        return left;
+    }
+
+
+    /* The sequential qs */
+    static void QsSequentialStep(SortType array[], const IndexType left, const IndexType right, const infOrEqualPtr infOrEqual){
+        if(left < right){
+            const IndexType part = QsPartition(array, left, right, infOrEqual);
+            QsSequentialStep(array,part + 1,right, infOrEqual);
+            QsSequentialStep(array,left,part - 1, infOrEqual);
+        }
+    }
+
+    /** A task dispatcher */
+    static void QsOmpTask(SortType array[], const IndexType left, const IndexType right, const int deep, const infOrEqualPtr infOrEqual){
+        if(left < right){
+            const IndexType part = QsPartition(array, left, right, infOrEqual);
+            if( deep ){
+                #pragma omp task
+                QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
+                // #pragma omp task // not needed
+                QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
+            }
+            else {
+                QsSequentialStep(array,part + 1,right, infOrEqual);
+                QsSequentialStep(array,left,part - 1, infOrEqual);
+            }
+        }
+    }
+
+public:
+    /* a sequential qs */
+    static void QsSequential(SortType array[], const IndexType size, const infOrEqualPtr infOrEqual){
+        QsSequentialStep(array, 0, size-1, infOrEqual);
+    }
+
+    static void QsSequential(SortType array[], const IndexType size){
+        QsSequential(array, size, [&](const SortType& v1, const SortType& v2){
+            return v1 <= v2;
+        });
+    }
+
+#ifdef FQS_TASKS_ARE_DISABLED
+    static void QsOmp(SortType elements[], const int nbElements, const infOrEqualPtr infOrEqual){
         const int nbTasksRequiere = (omp_get_max_threads() * 5);
         int deep = 0;
         while( (1 << deep) < nbTasksRequiere ) deep += 1;
@@ -155,7 +168,7 @@ public:
                     if(ts.getDeep() == 0){
                         // No release the mutex and run in seq
                         omp_unset_lock(&mutexShareVariable);
-                        QsSequentialStep(elements , ts.getLeft(), ts.getRight());
+                        QsSequentialStep(elements , ts.getLeft(), ts.getRight(), infOrEqual);
                     }
                     else{
                         // Yes so inform other and release the mutex
@@ -163,7 +176,7 @@ public:
                         omp_unset_lock(&mutexShareVariable);
 
                         // Partition
-                        const IndexType part = QsPartition(elements, ts.getLeft(), ts.getRight());
+                        const IndexType part = QsPartition(elements, ts.getLeft(), ts.getRight(), infOrEqual);
 
                         // Push the new task in the vector
                         omp_set_lock(&mutexShareVariable);
@@ -191,7 +204,7 @@ public:
     }
 #else
     /** The openmp quick sort */
-    static void QsOmp(SortType array[], const IndexType size){
+    static void QsOmp(SortType array[], const IndexType size, const infOrEqualPtr infOrEqual){
         const int nbTasksRequiere = (omp_get_max_threads() * 5);
         int deep = 0;
         while( (1 << deep) < nbTasksRequiere ) deep += 1;
@@ -200,11 +213,17 @@ public:
         {
             #pragma omp single nowait
             {
-                QsOmpTask(array, 0, size - 1 , deep);
+                QsOmpTask(array, 0, size - 1 , deep, infOrEqual);
             }
         }
     }
 #endif
+
+    static void QsOmp(SortType array[], const IndexType size){
+        QsOmp(array, size, [&](const SortType& v1, const SortType& v2){
+            return v1 <= v2;
+        });
+    }
 };
 
 #endif // FQUICKSORT_HPP
