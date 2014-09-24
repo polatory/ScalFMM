@@ -128,11 +128,13 @@ public:
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
 
+        const int chunkSize = FMath::Max(1 , numberOfLeafs/(omp_get_max_threads()*omp_get_max_threads()));
+
         FLOG(FTic computationCounter);
         #pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-            #pragma omp for nowait
+            #pragma omp for nowait schedule(dynamic, chunkSize)
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 // We need the current cell that represent the leaf
                 // and the list of particles
@@ -178,11 +180,13 @@ public:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
+            const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+
             FLOG(computationCounter.tic());
             #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                #pragma omp for nowait
+                #pragma omp for nowait schedule(dynamic, chunkSize)
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
@@ -236,13 +240,15 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
+                const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+
                 FLOG(computationCounter.tic());
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[343];
 
-                    #pragma omp for  schedule(dynamic) nowait
+                    #pragma omp for  schedule(dynamic, chunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
@@ -299,11 +305,13 @@ public:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
+                const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+
                 FLOG(computationCounter.tic());
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    #pragma omp for nowait
+                    #pragma omp for nowait schedule(dynamic, chunkSize)
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         if( iterArray[idxCell].getCurrentCell()->hasTargetsChild() ){
                             CellClass* potentialChild[8];
@@ -345,6 +353,8 @@ public:
             } while(octreeIterator.moveRight());
         }
 
+        const int chunkSize = FMath::Max(1 , numberOfLeafs/(omp_get_max_threads()*omp_get_max_threads()));
+
         const int heightMinusOne = OctreeHeight - 1;
         FLOG(FTic computationCounter);
         #pragma omp parallel
@@ -353,7 +363,7 @@ public:
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[27];
 
-            #pragma omp for schedule(dynamic) nowait
+            #pragma omp for schedule(dynamic, chunkSize) nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 if( iterArray[idxLeafs].getCurrentCell()->hasTargetsChild() ){
                     myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
