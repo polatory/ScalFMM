@@ -59,11 +59,11 @@
 int main(int argc, char* argv[])
 {
     FHelpDescribeAndExit(argc, argv,
-                         "Driver for Chebyshev Interpolation kernel using MPI  (1/r kernel). "
-                         "Usully run using : mpirun -np nb_proc_needed ./ChebyshevInterpolationAlgorithm [params].",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
-                         FParameterDefinitions::NbThreads);
+			 "Driver for Chebyshev Interpolation kernel using MPI  (1/r kernel). "
+			 "Usully run using : mpirun -np nb_proc_needed ./ChebyshevInterpolationAlgorithm [params].",
+			 FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+			 FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+			 FParameterDefinitions::NbThreads);
 
 	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 
 	// init oct-tree
 	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-	
+
 
 	{ // -----------------------------------------------------
 	  if(app.global().processId() == 0){
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 	  }
 	  time.tic();
 	  //
-	  
+
 	  struct TestParticle{
 	    FSize index;
 	    FPoint position;
@@ -135,38 +135,39 @@ int main(int argc, char* argv[])
 	      return position;
 	    }
 	  };
-	  
+
 	  TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
 	  memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
-	  	  
-	  //idx (in file) of the first part that will be used by this proc. 
+
+	  //idx (in file) of the first part that will be used by this proc.
 	  FSize idxStart = loader.getStart();
 	  printf("Proc %d idxStart %lld \n",app.global().processId(),idxStart);
-	  
+
 	  for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
 	    //Storage of the index (in the original file) of each part.
 	    particles[idxPart].index = idxPart + idxStart;
 	    // Read particles from file
 	    loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
 	  }
-	  		
+
 	  FVector<TestParticle> finalParticles;
 	  FLeafBalance balancer;
 	  // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
-	  // 					 tree.getBoxCenter(),
-	  // 					 tree.getBoxWidth(),
-	  // 					 tree.getHeight(), &finalParticles,&balancer);
-	  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+	  //					 tree.getBoxCenter(),
+	  //					 tree.getBoxWidth(),
+	  //					 tree.getHeight(), &finalParticles,&balancer);
+	  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
 								      loader.getMyNumberOfParticles(),
 								      tree.getBoxCenter(),
 								      tree.getBoxWidth(),tree.getHeight(),
 								      &finalParticles, &balancer);
+
 	  for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
 	    tree.insert(finalParticles[idx].position,finalParticles[idx].index,finalParticles[idx].physicalValue);
 	  }
 	  printf("%d parts have been inserted in Tree \n",finalParticles.getSize());
 	  delete[] particles;
-	  
+
 	  time.tac();
 	  std::cout << "Done  " << "(@Creating and Inserting Particles = "
 		    << time.elapsed() << "s)." << std::endl;
@@ -174,7 +175,7 @@ int main(int argc, char* argv[])
 
 	{ // -----------------------------------------------------
 	  std::cout << "\nChebyshev Interpolation  FMM Proc (P="<< ORDER << ") ... " << std::endl;
-	  
+
 	  time.tic();
 	  //
 	  // Here we use a pointer due to the limited size of the stack
@@ -186,7 +187,14 @@ int main(int argc, char* argv[])
 	  algorithm.execute();   // Here the call of the FMM algorithm
 	  //
 	  time.tac();
+	  double timeUsed = time.elapsed();
+	  double minTime,maxTime;
 	  std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s)." << std::endl;
+	  MPI_Reduce(&timeUsed,&minTime,1,MPI_DOUBLE,MPI_MIN,0,app.global().getComm());
+	  MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
+	  if(app.global().processId() == 0){
+	      printf("Time used : \t MIN : %f \t MAX %f \n",minTime,maxTime);
+	  }
 	}
 	// -----------------------------------------------------
 	//
@@ -207,21 +215,21 @@ int main(int argc, char* argv[])
 	      const FReal*const posX = leaf->getTargets()->getPositions()[0];
 	      const FReal*const posY = leaf->getTargets()->getPositions()[1];
 	      const FReal*const posZ = leaf->getTargets()->getPositions()[2];
-	      
+
 	      const FReal*const potentials = leaf->getTargets()->getPotentials();
 	      const FReal*const forcesX = leaf->getTargets()->getForcesX();
 	      const FReal*const forcesY = leaf->getTargets()->getForcesY();
 	      const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
 	      const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 	      const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-	      
+
 	      const FVector<int>& indexes = leaf->getTargets()->getIndexes();
-	      
+
 	      for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 		const int indexPartOrig = indexes[idxPart];
 		if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
 		  std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
-			    << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]  
+			    << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]
 			    << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
 		}
 		energy += potentials[idxPart]*physicalValues[idxPart] ;
