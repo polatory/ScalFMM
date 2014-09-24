@@ -14,7 +14,7 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-//
+// @FUSE_FFT
 #include <iostream>
 #include <cstdio>
 
