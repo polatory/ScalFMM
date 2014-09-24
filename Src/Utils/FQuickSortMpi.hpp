@@ -21,6 +21,7 @@
 #include "FLog.hpp"
 
 #include <memory>
+#include <utility>
 
 template <class SortType, class CompareType, class IndexType>
 class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
@@ -38,9 +39,9 @@ class FQuickSortMpi : public FQuickSort< SortType, CompareType, IndexType> {
 
 
     static void Swap(SortType& value, SortType& other){
-        SortType temp = value;
-        value = other;
-        other = temp;
+        const SortType temp = std::move(value);
+        value = std::move(other);
+        other = std::move(temp);
     }
 
     /* A local iteration of qs */

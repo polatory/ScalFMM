@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector> // For parallel without task
+#include <utility> // For move
 
 #include "FGlobal.hpp"
 #include "FMemUtils.hpp"
@@ -43,9 +44,9 @@ protected:
     /** swap to value */
     template <class NumType>
     static inline void Swap(NumType& value, NumType& other){
-        NumType temp = value;
-        value = other;
-        other = temp;
+        const NumType temp = std::move(value);
+        value = std::move(other);
+        other = std::move(temp);
     }
 
     ////////////////////////////////////////////////////////////
