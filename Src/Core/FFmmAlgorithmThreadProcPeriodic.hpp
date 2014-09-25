@@ -1259,35 +1259,22 @@ private:
                 // Waitsend receive
                 //////////////////////////////////////////////////////////
 
-                int complete = 0;
-                int*const indexMessage = new int[nbProcess * 2];
-                while( complete != iterRequest){
-                    memset(indexMessage, 0, sizeof(int) * nbProcess * 2);
-                    int countMessages = 0;
-                    // Wait data
-                    FLOG(waitCounter.tic());
-                    MPI_Waitsome(iterRequest, requests, &countMessages, indexMessage, status);
+                FLOG(waitCounter.tic());
+                MPI_Waitall(iterRequest, requests, status);
+                FLOG(waitCounter.tac());
 
-                    FLOG(waitCounter.tac());
-                    complete += countMessages;
-
-
-                    for(int idxRcv = 0 ; idxRcv < countMessages ; ++idxRcv){
-                        if( indexMessage[idxRcv] < nbMessagesToRecv ){
-                            const int idxProc = status[idxRcv].MPI_SOURCE;
-                            int nbLeaves;
-                            (*recvBuffer[idxProc]) >> nbLeaves;
-                            for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                                MortonIndex leafIndex;
-                                (*recvBuffer[idxProc]) >> leafIndex;
-                                otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
-                            }
-                            delete recvBuffer[idxProc];
-                            recvBuffer[idxProc] = nullptr;
-                        }
+                for(int idxRcv = 0 ; idxRcv < nbMessagesToRecv ; ++idxRcv){
+                    const int idxProc = status[idxRcv].MPI_SOURCE;
+                    int nbLeaves;
+                    (*recvBuffer[idxProc]) >> nbLeaves;
+                    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                        MortonIndex leafIndex;
+                        (*recvBuffer[idxProc]) >> leafIndex;
+                        otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
                     }
+                    delete recvBuffer[idxProc];
+                    recvBuffer[idxProc] = nullptr;
                 }
-                delete[] indexMessage;
             }
 
             ///////////////////////////////////////////////////
