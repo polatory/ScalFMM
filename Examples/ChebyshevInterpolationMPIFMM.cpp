@@ -169,8 +169,14 @@ int main(int argc, char* argv[])
 	  delete[] particles;
 
 	  time.tac();
-	  std::cout << "Done  " << "(@Creating and Inserting Particles = "
-		    << time.elapsed() << "s)." << std::endl;
+	  double timeUsed = time.elapsed();
+	  double minTime,maxTime;
+	  std::cout << "Done  " << "(@Reading and Inserting Particles = "  << time.elapsed() << "s)." << std::endl;
+	  MPI_Reduce(&timeUsed,&minTime,1,MPI_DOUBLE,MPI_MIN,0,app.global().getComm());
+	  MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
+	  if(app.global().processId() == 0){
+	      printf("Reading and Inserting Particles Time used : \t MIN : %f \t MAX %f in s\n",minTime,maxTime);
+	  }
 	} // -----------------------------------------------------
 
 	{ // -----------------------------------------------------
