@@ -285,6 +285,21 @@ public:
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
+    ValueClass* getRawData(){
+        return reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
+    }
+
+    const ValueClass* getRawData() const {
+        return reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
+    }
+
+    int getLeadingRawData() const {
+        return allocatedParticles;
+    }
+
+    /////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
+
     /** The size to send a leaf */
     int getSavedSize() const{
         return int(sizeof(nbParticles) + nbParticles * (3 * sizeof(FReal) + NbAttributesPerParticle * sizeof(AttributeClass)));
