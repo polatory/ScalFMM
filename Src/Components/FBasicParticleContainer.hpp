@@ -24,6 +24,8 @@
 #include "Utils/FPoint.hpp"
 #include "FParticleType.hpp"
 
+#include <array>
+
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FBasicParticle
@@ -72,6 +74,35 @@ protected:
         attributes[index][insertPosition] = value;
         // Continue for reamining values
         addParticleValue<index+1>( insertPosition, args...);
+    }
+
+    /////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
+
+    void increaseSizeIfNeeded(){
+        if( nbParticles == allocatedParticles ){
+            // allocate memory
+            const int moduloParticlesNumber = (32/sizeof(FReal)); // We want to be rounded to 32B
+            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
+            // init with 0
+            const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate32BAligned(allocatedBytes));
+            memset( newData, 0, allocatedBytes);
+            // copy memory
+            const char*const toDelete  = reinterpret_cast<const char*>(positions[0]);
+            for(int idx = 0 ; idx < 3 ; ++idx){
+                memcpy(newData + (allocatedParticles * idx), positions[idx], sizeof(FReal) * nbParticles);
+                positions[idx] = newData + (allocatedParticles * idx);
+            }
+            // copy attributes
+            AttributeClass* startAddress = reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
+            for(unsigned idx = 0 ; idx < NbAttributesPerParticle ; ++idx){
+                memcpy(startAddress + (allocatedParticles * idx), attributes[idx], sizeof(AttributeClass) * nbParticles);
+                attributes[idx] = startAddress + (idx * allocatedParticles);
+            }
+            // delete old
+            FAlignedMemory::Dealloc32BAligned(toDelete);
+        }
     }
 
 public:
@@ -173,35 +204,35 @@ public:
     template<typename... Args>
     void push(const FPoint& inParticlePosition, Args... args){
         // enought space?
-        if( nbParticles == allocatedParticles ){
-            // allocate memory
-            const int moduloParticlesNumber = (32/sizeof(FReal)); // We want to be rounded to 32B
-            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
-            // init with 0
-            const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
-            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate32BAligned(allocatedBytes));
-            memset( newData, 0, allocatedBytes);
-            // copy memory
-            const char*const toDelete  = reinterpret_cast<const char*>(positions[0]);
-            for(int idx = 0 ; idx < 3 ; ++idx){
-                memcpy(newData + (allocatedParticles * idx), positions[idx], sizeof(FReal) * nbParticles);
-                positions[idx] = newData + (allocatedParticles * idx);
-            }
-            // copy attributes
-            AttributeClass* startAddress = reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
-            for(unsigned idx = 0 ; idx < NbAttributesPerParticle ; ++idx){
-                memcpy(startAddress + (allocatedParticles * idx), attributes[idx], sizeof(AttributeClass) * nbParticles);
-                attributes[idx] = startAddress + (idx * allocatedParticles);
-            }
-            // delete old
-            FAlignedMemory::Dealloc32BAligned(toDelete);
-        }
+        increaseSizeIfNeeded();
+
         // insert particle data
         positions[0][nbParticles] = inParticlePosition.getX();
         positions[1][nbParticles] = inParticlePosition.getY();
         positions[2][nbParticles] = inParticlePosition.getZ();
         // insert attribute data
         addParticleValue<0>( nbParticles, args...);
+        nbParticles += 1;
+    }
+
+
+    /**
+   * Push called bu FSimpleLeaf
+   * Should have a particle position fallowed by attributes
+   */
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const std::array<AttributeClass , NbAttributesPerParticle>& values){
+        // enought space?
+        increaseSizeIfNeeded();
+
+        // insert particle data
+        positions[0][nbParticles] = inParticlePosition.getX();
+        positions[1][nbParticles] = inParticlePosition.getY();
+        positions[2][nbParticles] = inParticlePosition.getZ();
+        // insert attribute data
+        for(int idxVal = 0 ; idxVal < NbAttributesPerParticle ; ++idxVal){
+            attributes[idxVal][nbParticles] = values[idxVal];
+        }
         nbParticles += 1;
     }
 
