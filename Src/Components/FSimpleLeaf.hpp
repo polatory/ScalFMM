@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FSIMPLELEAF_HPP
@@ -41,16 +41,28 @@ public:
     */
     template<typename... Args>
     void push(const FPoint& inParticlePosition, Args ...  args){
-        // We pass every thing to the container and let it manage
-        this->particles.push(inParticlePosition, args...);
+	// We pass every thing to the container and let it manage
+	this->particles.push(inParticlePosition, args...);
     }
+
+    /**
+    * To add several new particles
+    * @param inParticlePosition array of the positions of the parts to be stored in that leaf
+    * and the other parameters given by the user
+    */
+    template<typename... Args>
+    void pushArray(const FPoint* inParticlePosition, int numberOfParts, Args ...  args){
+	// We pass every thing to the container and let it manage
+	this->particles.pushArray(inParticlePosition,numberOfParts, args...);
+    }
+
 
     /**
     * To get all the sources in a leaf
     * @return a pointer to the list of particles that are sources
     */
     ContainerClass* getSrc() {
-        return &this->particles;
+	return &this->particles;
     }
 
     /**
@@ -58,11 +70,9 @@ public:
     * @return a pointer to the list of particles that are targets
     */
     ContainerClass* getTargets() {
-        return &this->particles;
+	return &this->particles;
     }
 };
 
 
 #endif //FSIMPLELEAF_HPP
-
-
