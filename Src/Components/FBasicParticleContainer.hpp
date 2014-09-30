@@ -285,11 +285,11 @@ public:
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
-    ValueClass* getRawData(){
+    AttributeClass* getRawData(){
         return reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
     }
 
-    const ValueClass* getRawData() const {
+    const AttributeClass* getRawData() const {
         return reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
     }
 

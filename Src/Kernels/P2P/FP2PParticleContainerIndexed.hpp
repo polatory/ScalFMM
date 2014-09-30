@@ -21,9 +21,9 @@
 #include "FP2PParticleContainer.hpp"
 #include "Components/FParticleType.hpp"
 
-template<int NRHS = 1, int NLHS = 1>
-class FP2PParticleContainerIndexed : public FP2PParticleContainer<NRHS,NLHS> {
-    typedef FP2PParticleContainer<NRHS,NLHS> Parent;
+template<int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FP2PParticleContainerIndexed : public FP2PParticleContainer<NRHS,NLHS,NVALS> {
+    typedef FP2PParticleContainer<NRHS,NLHS,NVALS> Parent;
 
     FVector<int> indexes;
 

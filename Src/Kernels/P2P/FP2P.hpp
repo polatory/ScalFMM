@@ -378,6 +378,7 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
 #include "FP2PAvx.h"
 #else
 #include "FP2PClassic.hpp"
+#include "FP2PMultiRhs.hpp"
 #endif //Includes
 
 #endif // FP2P_HPP

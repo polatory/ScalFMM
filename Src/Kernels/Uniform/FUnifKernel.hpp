@@ -80,13 +80,15 @@ public:
            const ContainerClass* const SourceParticles)
   {
     const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-    for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
       // 1) apply Sy
       AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                LeafCell->getMultipole(idxRhs), SourceParticles);
-      // 2) apply Discrete Fourier Transform
-      M2LHandler.applyZeroPaddingAndDFT(LeafCell->getMultipole(idxRhs), 
-                                         LeafCell->getTransformedMultipole(idxRhs));
+                                                LeafCell->getMultipole(0), SourceParticles);
+
+      for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
+        // 2) apply Discrete Fourier Transform
+        M2LHandler.applyZeroPaddingAndDFT(LeafCell->getMultipole(idxRhs), 
+                                          LeafCell->getTransformedMultipole(idxRhs));
 
     }
   }
@@ -196,15 +198,17 @@ public:
       M2LHandler.unapplyZeroPaddingAndDFT(LeafCell->getTransformedLocal(idxRhs), 
                                            const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
 
-      // 2.a) apply Sx
-      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                LeafCell->getLocal(idxRhs), TargetParticles);
-
-      // 2.b) apply Px (grad Sx)
-      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                        LeafCell->getLocal(idxRhs), TargetParticles);
-
     }
+
+    // 2.a) apply Sx
+    AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                              LeafCell->getLocal(0), TargetParticles);
+
+    // 2.b) apply Px (grad Sx)
+    AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                      LeafCell->getLocal(0), TargetParticles);
+
+
   }
 
   void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
@@ -213,7 +217,7 @@ public:
            ContainerClass* const NeighborSourceParticles[27],
            const int /* size */)
   {
-    DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+      DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
   }
 
 
@@ -221,7 +225,7 @@ public:
                  ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                  ContainerClass* const inNeighbors[27], const int /*inSize*/)
   {
-    DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+      DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
   }
 
 };

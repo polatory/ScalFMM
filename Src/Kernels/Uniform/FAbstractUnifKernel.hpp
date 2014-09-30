@@ -45,7 +45,7 @@ class FAbstractUnifKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-  typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+  typedef FUnifInterpolator<ORDER,MatrixKernelClass,NVALS> InterpolatorClass;
 
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
