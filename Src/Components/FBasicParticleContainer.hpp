@@ -65,6 +65,12 @@ protected:
     void addParticleValue(const int /*insertPosition*/){
     }
 
+    /** Ending call for pushing array of attributes */
+    template<int index>
+    void addParticleValueS(const int /*insertPosition*/,const int /*nbParticles*/){
+    }
+
+
     /** Filling call for each attributes values */
     template<int index, typename... Args>
     void addParticleValue(const int insertPosition, const AttributeClass value, Args... args){
@@ -75,6 +81,23 @@ protected:
 	// Continue for reamining values
 	addParticleValue<index+1>( insertPosition, args...);
     }
+
+	/** Filling call for each attributes values
+	 * add multiples attributes from arrays
+	 */
+    template<int index, typename... Args>
+    void addParticleValueS(const int insertPosition, const int nbParts, const AttributeClass* value, Args... args){
+	// Compile test to ensure indexing
+	static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
+	for(int idxPart = 0; idxPart<nbParts ; ++idxPart){
+	    // insert the value
+	    attributes[index][insertPosition+idxPart] = value[idxPart];
+	    // Continue for reamining values
+	}
+	addParticleValueS<index+1>( insertPosition, nbParts, args...);
+
+    }
+
 
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
@@ -205,19 +228,22 @@ public:
    */
     template<typename... Args>
     void pushArray(const FPoint * inParticlePosition, FSize numberOfParts, Args... args){
-
+	const int positionToInsert = nbParticles;
 	//Tests if enough space
 	increaseSizeIfNeeded(numberOfParts);
 	for(int idxPart = 0; idxPart<numberOfParts ; ++idxPart){
 	    // insert particle data
-	    positions[0][nbParticles] = inParticlePosition[idxPart].getX();
-	    positions[1][nbParticles] = inParticlePosition[idxPart].getY();
-	    positions[2][nbParticles] = inParticlePosition[idxPart].getZ();
-	    // insert attribute data
-	    addParticleValue<0>( nbParticles, args[idxPart]...);
-	    nbParticles += 1;
+	    positions[0][positionToInsert + idxPart] = inParticlePosition[idxPart].getX();
+	    positions[1][positionToInsert + idxPart] = inParticlePosition[idxPart].getY();
+	    positions[2][positionToInsert + idxPart] = inParticlePosition[idxPart].getZ();
+
 	}
+	// insert attribute data
+	addParticleValueS<0>( nbParticles, numberOfParts ,args...);
+	nbParticles += numberOfParts;
+
     }
+
 
     /**
    * Push called bu FSimpleLeaf
