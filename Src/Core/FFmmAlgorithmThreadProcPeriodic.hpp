@@ -761,7 +761,7 @@ private:
                     {
                         const int chunckSize = FMath::Max(1, numberOfCells/(omp_get_num_threads()*omp_get_num_threads()));
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
-#pragma omp task
+#pragma omp task default(none) shared(numberOfCells,idxLevel,chunckSize) firstprivate(idxCell)
                             {
                                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                                 const CellClass* neighbors[343];
@@ -783,11 +783,12 @@ private:
 #pragma omp taskwait
 
                     for(int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
-#pragma omp task
+#pragma omp task default(none) firstprivate(idxThread) shared(idxLevel)
                         {
                             kernels[idxThread]->finishedLevelM2L(fackLevel);
                         }
                     }
+#pragma omp taskwait
 
                     FLOG(computationCounter.tac());
                 }
@@ -1347,7 +1348,7 @@ private:
 
                         for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; idxLeafs += chunckSize){
                             const int nbLeavesInTask = FMath::Min(endAtThisShape-idxLeafs, chunckSize);
-#pragma omp task
+#pragma omp task default(none) firstprivate(nbLeavesInTask,idxLeafs) shared(leafsDataArray)
                             {
                                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
 
