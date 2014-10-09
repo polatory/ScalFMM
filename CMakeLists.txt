@@ -14,9 +14,9 @@ SET(CMAKE_MODULE_PATH  ${CMAKE_SOURCE_DIR}/CMakeModules)
 # MPI option has to be set before project, cannot be changed in the cache!
 if( ScalFMM_USE_MPI )
 	include(CMakeForceCompiler)
-	CMAKE_FORCE_C_COMPILER(mpicc    "MPI C Compiler") 
-    	CMAKE_FORCE_CXX_COMPILER(mpicxx "MPI C++ Compiler")
-	set(ScalFMM_USE_MPI ON CACHE BOOL "ScalFmm use MPI")
+	CMAKE_FORCE_C_COMPILER(mpicc         "MPI C Compiler") 
+    	CMAKE_FORCE_CXX_COMPILER(mpicxx   "MPI C++ Compiler")
+	set(ScalFMM_USE_MPI ON CACHE BOOL   "ScalFmm use MPI")
 else()
 	MESSAGE(STATUS "Remove CMake cache and run cmake .. -DScalFMM_USE_MPI=ON to enable MPI" )
 endif(ScalFMM_USE_MPI)
@@ -38,6 +38,7 @@ SET(ScalFMM_VERSION  "${ScalFMM_MAJOR_VERSION}.${ScalFMM_MINOR_VERSION}.${ScalFM
 # Active language
 # -----------------------
 ENABLE_LANGUAGE(CXX )
+#
 if( ScalFMM_USE_MPI )
     TRY_COMPILE(COMPILE_INTEL  ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_MODULE_PATH}/compileTestIntel.cpp COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS}")    
     if (COMPILE_INTEL) 
