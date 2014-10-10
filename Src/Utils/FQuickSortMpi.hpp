@@ -19,12 +19,16 @@
 #include "FQuickSort.hpp"
 #include "FMpi.hpp"
 #include "FLog.hpp"
+#include "FAssert.hpp"
 
 #include <memory>
 #include <utility>
 
 template <class SortType, class CompareType, class IndexType = size_t>
 class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
+    /** We are limited by the size of int in MPI coms */
+    static const int FQS_MAX_MPI_BYTES = 2000000000;
+
     // We need a structure see the algorithm detail to know more
     struct Partition{
         IndexType lowerPart;
@@ -169,15 +173,27 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         SortType* recvBuffer = new SortType[totalToRecv];
 
         // Recv all data
-        MPI_Request requests[whatToRecvFromWho.size()];
+        std::vector<MPI_Request> requests;
+        requests.reserve(whatToRecvFromWho.size());
         for(int idxPack = 0 ; idxPack < int(whatToRecvFromWho.size()) ; ++idxPack){
             const PackData& pack = whatToRecvFromWho[idxPack];
             ////FLOG( FLog::Controller << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; )
-            FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
-                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+            //// FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
+            ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+            // Work per max size
+            const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
+            for(IndexType idxSize = 0 ; idxSize < nbElementsInPack ; idxSize += FQS_MAX_MPI_BYTES){
+                MPI_Request currentRequest;
+                const int nbElementsInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), nbElementsInPack-idxSize));
+                FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement+idxSize], int(nbElementsInMessage * sizeof(SortType)), MPI_BYTE, pack.idProc,
+                              FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
+
+                requests.push_back(currentRequest);
+            }
         }
+        FAssertLF(whatToRecvFromWho.size() <= requests.size());
         // Wait to complete
-        FMpi::Assert( MPI_Waitall(whatToRecvFromWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        FMpi::Assert( MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         ////FLOG( FLog::Controller << currentComm.processId() << "] Recv Done \n"; )
         // Copy to ouput variables
         (*inPartRecv) = recvBuffer;
@@ -193,15 +209,27 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                                                                  procInTheMiddle, inFromRightToLeft);
 
         // Post send messages
-        MPI_Request requests[whatToSendToWho.size()];
+        std::vector<MPI_Request> requests;
+        requests.reserve(whatToSendToWho.size());
         for(int idxPack = 0 ; idxPack < int(whatToSendToWho.size()) ; ++idxPack){
             const PackData& pack = whatToSendToWho[idxPack];
             ////FLOG( FLog::Controller << currentComm.processId() << "] Send to " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; )
-            FMpi::Assert( MPI_Isend((SortType*)&inPartToSend[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE , pack.idProc,
-                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+            //// FMpi::Assert( MPI_Isend((SortType*)&inPartToSend[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE , pack.idProc,
+            ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
+            // Work per max size
+            const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
+            for(IndexType idxSize = 0 ; idxSize < nbElementsInPack ; idxSize += FQS_MAX_MPI_BYTES){
+                MPI_Request currentRequest;
+                const int nbElementsInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), nbElementsInPack-idxSize));
+                FMpi::Assert( MPI_Isend((SortType*)&inPartToSend[pack.fromElement+idxSize], int(nbElementsInMessage * sizeof(SortType)), MPI_BYTE , pack.idProc,
+                              FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
+
+                requests.push_back(currentRequest);
+            }
         }
+        FAssertLF(whatToSendToWho.size() <= requests.size());
         // Wait to complete
-        FMpi::Assert( MPI_Waitall(whatToSendToWho.size(), requests, MPI_STATUSES_IGNORE),  __LINE__ );
+        FMpi::Assert( MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         ////FLOG( FLog::Controller << currentComm.processId() << "] Send Done \n"; )
     }
 
