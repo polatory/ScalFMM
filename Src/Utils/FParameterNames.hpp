@@ -18,9 +18,9 @@
 #else
 #define FPARAMETERNAMES_HPP
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Utils/FParameters.hpp"
+#include "Utils/FParameters.hpp"
 
 #include <iostream>
 #include <vector>

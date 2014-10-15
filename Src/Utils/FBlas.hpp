@@ -70,7 +70,12 @@ extern "C"
 							 double*, double*, const unsigned*, int*);
 	void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*, int*);
-  void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
+	void dormqr_(const char*, const char*, 
+               const unsigned*, const unsigned*, const unsigned*,
+							 const double*, const unsigned*, 
+               double*, double*, const unsigned*, 
+               double*, const unsigned*, int*);
+    void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 #ifdef ScalFMM_USE_MKL_AS_BLAS
   // mkl: hadamard product is not implemented in mkl_blas
@@ -104,7 +109,12 @@ extern "C"
 							 float*, float*, const unsigned*, int*);
 	void sorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*, int*);
-  void spotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
+	void sormqr_(const char*, const char*, 
+               const unsigned*, const unsigned*, const unsigned*,
+							 const float*, const unsigned*, 
+               float*, float*, const unsigned*, 
+               float*, const unsigned*, int*);
+    void spotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 	// double complex //////////////////////////////////////////////////
 	// blas 1
@@ -125,7 +135,7 @@ extern "C"
 
 	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
-  void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
+    void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 	// single complex //////////////////////////////////////////////////
 	// blas 1
@@ -142,7 +152,7 @@ extern "C"
 							float*, const unsigned*, const float*, float*, const unsigned*);
 	void cgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
-  void cpotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
+    void cpotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 
 }
@@ -427,7 +437,7 @@ namespace FBlas {
 
 
 	// singular value decomposition
-//
+    //
 	inline int gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT,
 									 unsigned nwk, double* wk)
 	{
@@ -443,7 +453,6 @@ namespace FBlas {
 	{
 		int INF;
 		zgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
-//		zgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
 		return INF;
 	}
 
@@ -455,21 +464,37 @@ namespace FBlas {
 		return INF;
 	}
 
-  // singular value decomposition (SO)
-  inline int gesvdSO(unsigned m, unsigned n, double* A, double* S, double* U, unsigned ldU,
-										 unsigned nwk, double* wk)
-  {
-    int INF;
-    dgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
-    return INF;
-  }
-  inline int gesvdSO(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU,
-										 unsigned nwk, float* wk)
-  {
-    int INF;
-    sgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
-    return INF;
-  }
+    // singular value decomposition (SO)
+    inline int gesvdSO(unsigned m, unsigned n, double* A, double* S, double* U, unsigned ldU,
+                       unsigned nwk, double* wk)
+    {
+        int INF;
+        dgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        return INF;
+    }
+    inline int gesvdSO(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU,
+                       unsigned nwk, float* wk)
+    {
+        int INF;
+        sgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        return INF;
+    }
+
+    // singular value decomposition (AA)
+    inline int gesvdAA(unsigned m, unsigned n, double* A, double* S, double* U, unsigned ldU,
+                       unsigned nwk, double* wk)
+    {
+        int INF;
+        dgesvd_("A", "A", &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        return INF;
+    }
+    inline int gesvdAA(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU,
+                       unsigned nwk, float* wk)
+    {
+        int INF;
+        sgesvd_("A", "A", &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        return INF;
+    }
 
 	// Scalar product v1'*v2
 	inline double scpr(const unsigned n, const double* const v1, const double* const v2)
@@ -508,8 +533,20 @@ namespace FBlas {
 	}
 
 
-
-	// return Q-Matrix (QR factorization) in A
+	// return full of Q-Matrix (QR factorization) in A
+	inline int orgqr_full(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
+	{
+		int INF;
+		dorgqr_(&m, &m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	inline int orgqr_full(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
+	{
+		int INF;
+		sorgqr_(&m, &m, &n, A, &m, tau, wk, &nwk, &INF);
+		return INF;
+	}
+	// return the leading n columns of Q-Matrix (QR factorization) in A
 	inline int orgqr(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
 	{
 		int INF;
@@ -525,19 +562,47 @@ namespace FBlas {
 
 
 
-  // Cholesky decomposition: A=LL^T (if A is symmetric definite positive)
-  inline int potrf(const unsigned m, double* A, const unsigned n)
-  { 
+    // apply Q-Matrix (from QR factorization) to C
+    // LEFT: Q(^T)C
+	inline int left_ormqr(const char* TRANS, const unsigned m, const unsigned n, const double* A, double* tau, double* C, unsigned nwk, double* wk)
+	{
+		int INF;
+		dormqr_("L", TRANS, &m, &n, &m, A, &m, tau, C, &m, wk, &nwk, &INF);
+		return INF;
+	}
+	inline int left_ormqr(const char* TRANS, const unsigned m, const unsigned n, const float* A, float* tau, float* C, unsigned nwk, float* wk)
+	{
+		int INF;
+		sormqr_("L", TRANS, &m, &n, &m, A, &m, tau, C, &m, wk, &nwk, &INF);
+		return INF;
+	}
+    // RIGHT: CQ(^T)
+	inline int right_ormqr(const char* TRANS, const unsigned m, const unsigned n, const double* A, double* tau, double* C, unsigned nwk, double* wk)
+	{
+		int INF;
+		dormqr_("R", TRANS, &m, &n, &n, A, &n, tau, C, &m, wk, &nwk, &INF);
+		return INF;
+	}
+	inline int right_ormqr(const char* TRANS, const unsigned m, const unsigned n, const float* A, float* tau, float* C, unsigned nwk, float* wk)
+	{
+		int INF;
+		sormqr_("R", TRANS, &m, &n, &n, A, &n, tau, C, &m, wk, &nwk, &INF);
+		return INF;
+	}
+
+    // Cholesky decomposition: A=LL^T (if A is symmetric definite positive)
+    inline int potrf(const unsigned m, double* A, const unsigned n)
+    { 
 		int INF;  
-    dpotrf_("L", &m, A, &n, &INF); 
-    return INF;
-  }
-  inline int potrf(const unsigned m, float* A, const unsigned n)
-  { 
+        dpotrf_("L", &m, A, &n, &INF); 
+        return INF;
+    }
+    inline int potrf(const unsigned m, float* A, const unsigned n)
+    { 
 		int INF;  
-    spotrf_("L", &m, A, &n, &INF); 
-    return INF;
-  }
+        spotrf_("L", &m, A, &n, &INF); 
+        return INF;
+    }
 
 } // end namespace FCBlas
 
