@@ -56,6 +56,12 @@
 /**
  * This program runs the FMM Algorithm with the Uniform kernel in order to compute a Matrix to Matrix product 
  * (i.e. NVALS>=1) and compares the results with a direct computation. 
+ * NB1: We use a UNIQUE vector to assemble input matrix, thus the direct computation is a basic mat-vec product.
+ * NB2: NVALS should not be too large (<=100) otherwise the memory required by the expansions will explode 
+ * If ORDER=10, h=4 and NVALS=100 then leaf expansions require NVALS*2^(3*(h-1))*[(2*ORDER-1)^3*16+ORDER^3*8]=100*8^3*[9^3*16B+5^3*8B]=6GB
+ * If ORDER=5 then 0.65GB
+ * NB3: If you need to compute a product with a larger number of columns (N) then perform NFMM successive FMM schemes with NVALS such that N=NVALS*NFMM
+ * and make sure that you use a P2P Handler in order to precompute the P2P operators and apply them fast. 
  */
 
 // Simply create particles and try the kernels
@@ -90,12 +96,15 @@ int main(int argc, char* argv[])
   // NVALS
   const int NVALS = 10;
 
+  std::cout << "Number of input physical values: NVALS = " << NVALS << std::endl;
+  if(NVALS>100) throw std::runtime_error("NVALS should not exceed 100!");
+
   // init particles position and physical value
   struct TestParticle{
     FPoint position;
-    FReal forces[NVALS][3];
-    FReal physicalValue[NVALS];
-    FReal potential[NVALS];
+    FReal forces[1][3]; 
+    FReal physicalValue[1];
+    FReal potential[1];
   };
 
   // open particle file
@@ -111,7 +120,7 @@ int main(int argc, char* argv[])
     loader.fillParticle(&position,&physicalValue);
     // get copy
     particles[idxPart].position       = position;
-    for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
+    for(int idxVals = 0 ; idxVals < 1 ; ++idxVals){
       particles[idxPart].physicalValue[idxVals]  = physicalValue;
       particles[idxPart].potential[idxVals]      = 0.0;
       particles[idxPart].forces[idxVals][0]      = 0.0;
@@ -123,9 +132,9 @@ int main(int argc, char* argv[])
   ////////////////////////////////////////////////////////////////////
 
   { // begin direct computation
-    std::cout << "\nDirect Computation ... " << std::endl;
+    std::cout << "\nDirect Computation (Mat Vec Prod!)... " << std::endl;
     time.tic();
-    for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
+    for(int idxVals = 0 ; idxVals < 1 ; ++idxVals){
       for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
         for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
           FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
@@ -177,7 +186,7 @@ int main(int argc, char* argv[])
         // Convert FReal[NVALS] to std::array<FReal,NVALS>
         std::array<FReal, (1+4*1)*NVALS> physicalState;
         for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
-          physicalState[0*NVALS+idxVals]=particles[idxPart].physicalValue[idxVals];
+          physicalState[0*NVALS+idxVals]=particles[idxPart].physicalValue[0];
           physicalState[1*NVALS+idxVals]=0.0;
           physicalState[2*NVALS+idxVals]=0.0;
           physicalState[3*NVALS+idxVals]=0.0;
@@ -224,10 +233,10 @@ int main(int argc, char* argv[])
               for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                 const int indexPartOrig = indexes[idxPart];
 
-                potentialDiff.add(particles[indexPartOrig].potential[idxVals],potentials[idxPart]);
-                fx.add(particles[indexPartOrig].forces[idxVals][0],forcesX[idxPart]);
-                fy.add(particles[indexPartOrig].forces[idxVals][1],forcesY[idxPart]);
-                fz.add(particles[indexPartOrig].forces[idxVals][2],forcesZ[idxPart]);
+                potentialDiff.add(particles[indexPartOrig].potential[0],potentials[idxPart]);
+                fx.add(particles[indexPartOrig].forces[0][0],forcesX[idxPart]);
+                fy.add(particles[indexPartOrig].forces[0][1],forcesY[idxPart]);
+                fz.add(particles[indexPartOrig].forces[0][2],forcesZ[idxPart]);
               }
             }
           });
