@@ -37,13 +37,18 @@
   * The task based algorithm is easy to undestand,
   * for the mpi/openmp2nd please see
   * Introduction to parallel computing (Grama Gupta Karypis Kumar)
+  *
+  * In the previous version Intel Compiler was not using the QS with task
+  * defined(__ICC) || defined(__INTEL_COMPILER) defined the FQS_TASKS_ARE_DISABLED
+  *
+  * If needed one can define FQS_FORCE_NO_TASKS to ensure that the no task version is used.
   */
 
 template <class SortType, class IndexType = size_t>
 class FQuickSort {
 protected:
 
-#if _OPENMP < 200805 || defined(__ICC) || defined(__INTEL_COMPILER)
+#if _OPENMP < 200805 || defined(FQS_FORCE_NO_TASKS)
 #define FQS_TASKS_ARE_DISABLED
     class TaskInterval{
         IndexType left;
@@ -117,9 +122,9 @@ protected:
         if(left < right){
             const IndexType part = QsPartition(array, left, right, infOrEqual);
             if( deep ){
-                #pragma omp task
+                #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual)
                 QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
-                // #pragma omp task // not needed
+                // #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual) // not needed
                 QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
             }
             else {
