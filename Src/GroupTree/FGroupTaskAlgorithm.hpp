@@ -197,8 +197,10 @@ protected:
 
     void transferPass(){
         FLOG( FTic timer; );
+        FLOG( FTic timerInBlock; FTic timerSort; FTic timerOutBlock; );
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
             std::list<std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+            FLOG( timerInBlock.tic() );
             {
                 typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
                 const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -255,6 +257,8 @@ protected:
                 }
                 #pragma omp taskwait
             }
+            FLOG( timerInBlock.tac() );
+            FLOG( timerSort.tic() );
             {
                 typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
                 const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -274,6 +278,8 @@ protected:
 
 #pragma omp taskwait
             }
+            FLOG( timerSort.tac() );
+            FLOG( timerOutBlock.tic() );
             {
                 typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
                 const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
@@ -335,9 +341,12 @@ protected:
                     ++iterInteractions;
                 }
             }
-
+            FLOG( timerOutBlock.tac() );
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock in " << timerInBlock.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t sort in " << timerSort.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.tacAndElapsed() << "s\n" );
     }
 
     void downardPass(){
@@ -414,8 +423,10 @@ protected:
 
     void directPass(){
         FLOG( FTic timer; );
+        FLOG( FTic timerInBlock; FTic timerSort; FTic timerOutBlock; );
 
         typename std::list< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+        FLOG( timerInBlock.tic() );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
@@ -470,6 +481,8 @@ protected:
             }
 #pragma omp taskwait
         }
+        FLOG( timerInBlock.tac() );
+        FLOG( timerSort.tic() );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
@@ -489,6 +502,8 @@ protected:
 
 #pragma omp taskwait
         }
+        FLOG( timerSort.tac() );
+        FLOG( timerOutBlock.tic() );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
@@ -546,7 +561,12 @@ protected:
                 ++iterInteractions;
             }
         }
+        FLOG( timerOutBlock.tac() );
+
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock in " << timerInBlock.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t sort in " << timerSort.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.tacAndElapsed() << "s\n" );
     }
 
     void mergePass(){
