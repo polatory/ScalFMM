@@ -54,9 +54,9 @@ public:
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
 
-        #pragma omp parallel
+#pragma omp parallel
         {
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -68,14 +68,14 @@ public:
 
             }
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 if( operationsToProceed & FFmmP2P ) directPass();
             }
 
-            #pragma omp barrier
+#pragma omp barrier
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 if( operationsToProceed & FFmmL2P ) mergePass();
             }
@@ -94,7 +94,7 @@ protected:
         while(iterParticles != endParticles && iterCells != endCells){
             CellContainerClass* leafCells = (*iterCells);
             ParticleGroupClass* containers = (*iterParticles);
-            #pragma omp task default(shared) firstprivate(leafCells, containers)
+#pragma omp task default(shared) firstprivate(leafCells, containers)
             { // Can be a task(in:iterParticles, out:iterCells)
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -115,7 +115,7 @@ protected:
             ++iterCells;
         }
         // Wait for task to complete
-        #pragma omp taskwait
+#pragma omp taskwait
 
         FAssertLF(iterParticles == endParticles && iterCells == endCells);
         FLOG( FLog::Controller << "\t\t bottomPass in " << timer.tacAndElapsed() << "s\n" );
@@ -133,8 +133,8 @@ protected:
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass* currentCells = (*iterCells);
 
-                CellContainerClass* subCellGroups[8];
-                memset(subCellGroups, 0, sizeof(CellContainerClass*) * 8);
+                CellContainerClass* subCellGroups[9];
+                memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
 
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
@@ -148,10 +148,10 @@ protected:
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 8 );
+                    FAssertLF( nbSubCellGroups <= 9 );
                 }
 
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
@@ -168,7 +168,7 @@ protected:
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                                while(idxSubCellGroup != nbSubCellGroups && subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
+                                if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
                                     idxSubCellGroup += 1;
                                 }
                                 if( idxSubCellGroup == nbSubCellGroups ){
@@ -309,12 +309,12 @@ protected:
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass* currentCells = (*iterCells);
 
-                CellContainerClass* subCellGroups[8];
-                memset(subCellGroups, 0, sizeof(CellContainerClass*) * 8);
+                CellContainerClass* subCellGroups[9];
+                memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
 
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
-                    ++iterChildCells;                    
+                    ++iterChildCells;
                     FAssertLF( iterChildCells != endChildCells );
                     FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex() );
                 }
@@ -324,13 +324,13 @@ protected:
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 8 );
+                    FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
+#pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -344,7 +344,7 @@ protected:
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                                while(idxSubCellGroup != nbSubCellGroups && subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
+                                if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
                                     idxSubCellGroup += 1;
                                 }
                                 if( idxSubCellGroup == nbSubCellGroups ){
@@ -362,7 +362,7 @@ protected:
                 ++iterCells;
             }
 
-            #pragma omp taskwait
+#pragma omp taskwait
 
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
@@ -478,7 +478,7 @@ protected:
             while(iterParticles != endParticles && iterCells != endCells){
                 CellContainerClass* leafCells = (*iterCells);
                 ParticleGroupClass* containers = (*iterParticles);
-                #pragma omp task default(shared) firstprivate(leafCells, containers)
+#pragma omp task default(shared) firstprivate(leafCells, containers)
                 { // Can be a task(out:iterParticles, in:iterCells)
                     const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                     const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -499,7 +499,7 @@ protected:
                 ++iterCells;
             }
             // Wait for task to complete
-            #pragma omp taskwait
+#pragma omp taskwait
 
             FAssertLF(iterParticles == endParticles && iterCells == endCells);
         }
