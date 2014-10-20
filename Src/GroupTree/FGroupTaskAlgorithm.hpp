@@ -139,16 +139,19 @@ protected:
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
                     ++iterChildCells;
+                    FAssertLF( iterChildCells != endChildCells );
+                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex() );
                 }
-                FAssertLF(iterChildCells != endChildCells && ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex());
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getStartingIndex()<<3)+7)
-                      && (++iterChildCells) != endChildCells){
+                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
+                      && (++iterChildCells) != endChildCells
+                      && (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
+                    FAssertLF( nbSubCellGroups <= 8 );
                 }
 
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
@@ -311,17 +314,20 @@ protected:
 
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
-                    ++iterChildCells;
+                    ++iterChildCells;                    
+                    FAssertLF( iterChildCells != endChildCells );
+                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex() );
                 }
-                FAssertLF(iterChildCells != endChildCells && ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex());
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getStartingIndex()<<3)+7)
-                      && (++iterChildCells) != endChildCells){
+                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
+                      && (++iterChildCells) != endChildCells
+                      && (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
+                    FAssertLF( nbSubCellGroups <= 8 );
                 }
 
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
@@ -355,6 +361,8 @@ protected:
 
                 ++iterCells;
             }
+
+            #pragma omp taskwait
 
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
