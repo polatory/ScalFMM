@@ -182,10 +182,12 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            for(IndexType idxSize = 0 ; idxSize < nbElementsInPack ; idxSize += FQS_MAX_MPI_BYTES){
+            const IndexType totalByteToRecv  = nbElementsInPack*sizeof(SortType);
+            unsigned char*const ptrDataToRecv = (unsigned char*)&recvBuffer[pack.fromElement];
+            for(IndexType idxSize = 0 ; idxSize < totalByteToRecv ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
-                const int nbElementsInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), nbElementsInPack-idxSize));
-                FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement+idxSize], int(nbElementsInMessage * sizeof(SortType)), MPI_BYTE, pack.idProc,
+                const int nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToRecv-idxSize));
+                FMpi::Assert( MPI_Irecv(&ptrDataToRecv[idxSize], nbBytesInMessage, MPI_BYTE, pack.idProc,
                               FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
@@ -218,10 +220,12 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            for(IndexType idxSize = 0 ; idxSize < nbElementsInPack ; idxSize += FQS_MAX_MPI_BYTES){
+            const IndexType totalByteToSend  = nbElementsInPack*sizeof(SortType);
+            unsigned char*const ptrDataToSend = (unsigned char*)&inPartToSend[pack.fromElement];
+            for(IndexType idxSize = 0 ; idxSize < totalByteToSend ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
-                const int nbElementsInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), nbElementsInPack-idxSize));
-                FMpi::Assert( MPI_Isend((SortType*)&inPartToSend[pack.fromElement+idxSize], int(nbElementsInMessage * sizeof(SortType)), MPI_BYTE , pack.idProc,
+                const int nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToSend-idxSize));
+                FMpi::Assert( MPI_Isend((SortType*)&ptrDataToSend[idxSize], nbBytesInMessage, MPI_BYTE , pack.idProc,
                               FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
