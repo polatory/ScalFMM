@@ -23,11 +23,11 @@
 
 #ifndef ScalFMM_USE_LOG
 
-#define FLOG( X )
+#define FLOG( ... )
 
 #else
 
-#define FLOG( X ) X
+#define FLOG( ... ) __VA_ARGS__
 
 #include <iostream>
 #include <fstream>
