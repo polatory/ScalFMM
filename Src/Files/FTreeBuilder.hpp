@@ -15,23 +15,28 @@
 // ===================================================================================
 #ifndef FTREEBUILDER_H
 #define FTREEBUILDER_H
-#include <omp.h>
+
+#include "ScalFmmConfig.h"
 
 #include "../Utils/FLog.hpp"
 #include "../Utils/FQuickSort.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Containers/FOctree.hpp"
-#include "ScalFmmConfig.h"
+
+#include "../Components/FBasicParticleContainer.hpp"
+
+#include <omp.h>
+
+#include <memory>
 
 /**
-* @author Cyrille Piacibello
+* @author Cyrille Piacibello, Berenger Bramas
 * @class FTreeBuilder
 * @brief
 * Please read the license
 *
-* This class provides a way to insert efficiently large amount of
-* particles inside a tree.
+* This class provides a way to insert efficiently large amount of particles inside a tree.
 *
 * This is a static class. It's useless to instance it.  This class use
 * the Threaded QuickSort or the output of FMpiTreeBuilder in order to
@@ -39,216 +44,205 @@
 *
 */
 
-template<class ParticleClass, class OctreeClass, class LeafClass>
+template<class OctreeClass, class LeafClass>
 class FTreeBuilder{
-
 private:
     /**
      * This method has been taken from the octree class,
      * it computes a tree coordinate (x or y or z) from real cartesian position
      */
     static int GetTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel,
-				 const FReal boxWidth, const int height) {
-	FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
-	if(inRelativePosition == boxWidth){
-	    return FMath::pow2(height-1)-1;
-	}
-	const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-	return static_cast<int>(indexFReal);
+                                 const FReal boxWidth, const int height) {
+        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
+        if(inRelativePosition == boxWidth){
+            return FMath::pow2(height-1)-1;
+        }
+        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
+        return static_cast<int>(indexFReal);
     }
 
-
-    /**
-     * A particle may not have a MortonIndex Method (set/get morton
-     * index) But in this algorithm they are sorted based on their
-     * morton indexes.  So an IndexedParticle is storing a real
-     * particle + its index.
-     *
-     */
+    /** This class is the relation between particles and their morton idx */
     struct IndexedParticle{
-    public:
-	MortonIndex index;
-	ParticleClass particle;
+        MortonIndex mindex;
+        int particlePositionInArray;
 
-	operator MortonIndex() const {
-	    return this->index;
-	}
-	bool operator<=(const IndexedParticle& rhs){
-	    return this->index <= rhs.index;
-	}
+        // To sort according to the mindex
+        bool operator<=(const IndexedParticle& rhs) const {
+            return this->mindex <= rhs.mindex;
+        }
+    };
+
+    /** In order to keep all the created leaves */
+    struct LeafDescriptor{
+        LeafClass* leafPtr;
+        FSize offsetInArray;
+        int nbParticlesInLeaf;
     };
 
 public:
-    /**
-     *
-     * Fill the tree with the parts from the array.
-     * The Particles must provide a getPosition and a getPhysicalValue(), method.
-     */
-    template<class ContainerClass>
-    static void BuildTreeFromArray(ContainerClass* arrayToBeInserted, const FSize numberOfParticle, OctreeClass * tree,
-				   bool isAlreadySorted=false){
-	//If the parts are already sorted, no need to sort again
-	FLOG(FTic enumTimer);
-	FLOG(FTic leavesPtr);
-	FLOG(FTic leavesOffset);
-	FLOG(FTic insertTimer);
-	FLOG(FTic copyTimer);
-	FLOG(FTic sortTimer);
 
-	//General values needed
-	int NbLevels = tree->getHeight();
-	FPoint centerOfBox = tree->getBoxCenter();
-	FReal boxWidth = tree->getBoxWidth();
-	FReal boxWidthAtLeafLevel = boxWidth/FReal(1 << (NbLevels - 1));
-	FPoint boxCorner   = centerOfBox - boxWidth/2;
+    /** Should be used to insert a FBasicParticleContainer class */
+    template < unsigned NbAttributes, class AttributeClass>
+    static void BuildTreeFromArray(OctreeClass*const tree, const FBasicParticleContainer<NbAttributes, AttributeClass>& particlesContainers,
+                                   bool isAlreadySorted=false){
+        const FSize numberOfParticle = particlesContainers.getNbParticles();
+        // If the parts are already sorted, no need to sort again
+        FLOG(FTic enumTimer, leavesPtr, leavesOffset );
+        FLOG(FTic insertTimer, copyTimer);
 
-	//We need to sort it in order to insert efficiently
+        // General values needed
+        const int NbLevels       = tree->getHeight();
+        const FPoint centerOfBox = tree->getBoxCenter();
+        const FReal boxWidth     = tree->getBoxWidth();
+        const FReal boxWidthAtLeafLevel = boxWidth/FReal(1 << (NbLevels - 1));
+        const FPoint boxCorner   = centerOfBox - boxWidth/2;
 
-	//First, copy datas into an array that will be sorted and
-	//set Morton index for each particle
+        ////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////
+        /// We need to sort it in order to insert efficiently
+        ////////////////////////////////////////////////////////////////
 
-	//Temporary FTreeCoordinate
-	FTreeCoordinate host;
-	IndexedParticle * toBeSorted = new IndexedParticle[numberOfParticle];
-	//Things to keep
-	FPoint* posToBeIn = new FPoint[numberOfParticle];
-	FReal * phyToBeIn = new  FReal[numberOfParticle];
+        // First, copy datas into an array that will be sorted and
+        // set Morton index for each particle
 
-	FLOG(copyTimer.tic());
-	for(int idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
-	    toBeSorted[idxParts].particle = arrayToBeInserted->data()[idxParts];
+        // Temporary FTreeCoordinate
+        std::unique_ptr<IndexedParticle[]> particleIndexes(new IndexedParticle[numberOfParticle]);
 
-	    host.setX( GetTreeCoordinate(arrayToBeInserted->data()[idxParts].getPosition().getX() - boxCorner.getX(),
-					 boxWidthAtLeafLevel, boxWidth, NbLevels));
-	    host.setY( GetTreeCoordinate(arrayToBeInserted->data()[idxParts].getPosition().getY() - boxCorner.getY(),
-					 boxWidthAtLeafLevel, boxWidth, NbLevels ));
-	    host.setZ( GetTreeCoordinate(arrayToBeInserted->data()[idxParts].getPosition().getZ() - boxCorner.getZ(),
-					 boxWidthAtLeafLevel, boxWidth, NbLevels ));
+        FLOG(copyTimer.tic());
+        for(int idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
+            // Get the Morton Index
+            const FTreeCoordinate host(
+                     GetTreeCoordinate(particlesContainers.getPositions()[0][idxParts] - boxCorner.getX(),
+                                         boxWidthAtLeafLevel, boxWidth, NbLevels),
+                     GetTreeCoordinate(particlesContainers.getPositions()[1][idxParts] - boxCorner.getY(),
+                                         boxWidthAtLeafLevel, boxWidth, NbLevels ),
+                     GetTreeCoordinate(particlesContainers.getPositions()[2][idxParts] - boxCorner.getZ(),
+                                         boxWidthAtLeafLevel, boxWidth, NbLevels )
+            );
+            // Store morton index and original idx
+            particleIndexes[idxParts].mindex = host.getMortonIndex(NbLevels-1);
+            particleIndexes[idxParts].particlePositionInArray = idxParts;
+        }
 
+        FLOG(copyTimer.tac());
+        FLOG(FLog::Controller<<"Time needed for copying "<< numberOfParticle<<" particles : "<<copyTimer.elapsed() << " secondes !\n");
 
-	    toBeSorted[idxParts].index = host.getMortonIndex(NbLevels-1);
+        ////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////
+        /// Sort it needed
+        ////////////////////////////////////////////////////////////////
 
-	}
+        if(!isAlreadySorted){
+            //Sort dat array
+            FLOG(FTic sortTimer);
+            FQuickSort<IndexedParticle,FSize>::QsOmp( particleIndexes.get(), numberOfParticle);
+            FLOG(sortTimer.tac());
+            FLOG(FLog::Controller << "Time needed for sorting the particles : "<< sortTimer.elapsed() << " secondes !\n");
+        }
 
-	FLOG(copyTimer.tac());
-	FLOG(FLog::Controller<<"Time needed for copying "<< numberOfParticle<<" particles : "<<copyTimer.elapsed() << " secondes !\n");
+        ////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////
+        /// Get the number of leaves
+        ////////////////////////////////////////////////////////////////
 
-	if(!isAlreadySorted){
-	    //Sort dat array
-	    FLOG(sortTimer.tic());
-	    FQuickSort<IndexedParticle,MortonIndex>::QsOmp(toBeSorted,numberOfParticle);
-	    FLOG(sortTimer.tac());
-	    FLOG(FLog::Controller << "Time needed for sorting the particles : "<< sortTimer.elapsed() << " secondes !\n");
-	}
+        //Enumerate the different leaves AND copy the positions
+        unsigned int numberOfLeaves = 0;
+        FLOG(enumTimer.tic());
+        {
+            MortonIndex previousIndex = -1;
 
+            for(int idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
+                // If not the same leaf, inc the counter
+                if(particleIndexes[idxParts].mindex != previousIndex){
+                    previousIndex   = particleIndexes[idxParts].mindex;
+                    numberOfLeaves += 1;
+                }
+            }
+        }
 
+        FLOG(enumTimer.tac());
+        FLOG(FLog::Controller << "Time needed for enumerate the leaves : "<< enumTimer.elapsed() << " secondes !\n");
+        FLOG(FLog::Controller << "Found " << numberOfLeaves << " leaves differents. \n");
 
-	//Enumerate the different leaves AND copy the positions
-	unsigned int numberOfLeaves = 1;
-	FLOG(enumTimer.tic());
+        ////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////
+        /// Count the number of particles per leaf
+        ////////////////////////////////////////////////////////////////
 
-	//First Values are copied
-	posToBeIn[0] = toBeSorted[0].particle.getPosition();
-	phyToBeIn[0] = toBeSorted[0].particle.getPhysicalValue();
+        FLOG(leavesOffset.tic());
 
+        // Store the size of each leaves
+        std::unique_ptr<LeafDescriptor[]> leavesDescriptor(new LeafDescriptor[numberOfLeaves]);
+        memset(leavesDescriptor.get(), 0, sizeof(LeafDescriptor)*(numberOfLeaves));
+        {
+            //Init
+            int currentLeafIndex = -1;
+            MortonIndex currentMortonIndex = -1;
 
-	for(int idxParts = 1 ; idxParts < numberOfParticle ; ++idxParts){
-	    //Copy
-	    posToBeIn[idxParts] = toBeSorted[idxParts].particle.getPosition();
-	    phyToBeIn[idxParts] = toBeSorted[idxParts].particle.getPhysicalValue();
+            for(int idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
+                // If not the same leaf
+                if(particleIndexes[idxParts].mindex != currentMortonIndex){
+                    FAssertLF(FSize(currentLeafIndex) < numberOfLeaves);
+                    // Move to next descriptor
+                    currentLeafIndex  += 1;
+                    currentMortonIndex = particleIndexes[idxParts].mindex;
+                    // Fill the descriptor
+                    leavesDescriptor[currentLeafIndex].offsetInArray = idxParts;
+                    leavesDescriptor[currentLeafIndex].leafPtr = tree->createLeaf(currentMortonIndex);
+                    leavesDescriptor[currentLeafIndex].nbParticlesInLeaf = 0;
+                }
+                // Inc the number of particles in the current leaf
+                leavesDescriptor[currentLeafIndex].nbParticlesInLeaf += 1;
+            }
+        }
 
-	    if(toBeSorted[idxParts].index != toBeSorted[idxParts-1].index){
-		numberOfLeaves++;
-	    }
-	}
+        FLOG(leavesOffset.tac());
+        FLOG(FLog::Controller << "Time needed for setting the offset of each leaves : "<< leavesOffset.elapsed() << " secondes !\n");
+        //Then, we create the leaves inside the tree
 
-	FLOG(enumTimer.tac());
-	FLOG(FLog::Controller << "Time needed for enumerate the leaves : "<< enumTimer.elapsed() << " secondes !\n");
-	FLOG(FLog::Controller << "Found " << numberOfLeaves << " leaves differents. \n");
+        ////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////
+        /// Insert multiple particles inside their corresponding leaf
+        ////////////////////////////////////////////////////////////////
 
-	//Store the size of each leaves
-	int * arrayOfSizeNbLeaves = new int[numberOfLeaves];
-	memset(arrayOfSizeNbLeaves,0,sizeof(int)*(numberOfLeaves));
-	//Init
-	int indexInLeafArray = -1;
-	arrayOfSizeNbLeaves[0] = 1;
+        FLOG(insertTimer.tic());
 
-	FLOG(leavesOffset.tic());
-	MortonIndex currIndex = -1;
+        // Copy each parts into corresponding Leaf
+        #pragma omp parallel
+        {
+            std::array<AttributeClass, NbAttributes> particleAttr;
 
-	for(int idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
-	    if(toBeSorted[idxParts].index == currIndex){
-		arrayOfSizeNbLeaves[indexInLeafArray]++;
-	    }
-	    else{
-		FAssertLF(FSize(indexInLeafArray)<numberOfLeaves,"Problem there : ",indexInLeafArray);
-		indexInLeafArray++;
-		//There is alway at least 1 part in each leaf
-		arrayOfSizeNbLeaves[indexInLeafArray] = 1;
-		currIndex = toBeSorted[idxParts].index;
-	    }
-	}
-	//Debug
-	int acc = 0;
-	for(unsigned int i=0 ; i<numberOfLeaves ; ++i){
-	    //printf("acc : %d arrayofsize[%d] = %d \n",acc,i,arrayOfSizeNbLeaves[i]);
-	    acc += arrayOfSizeNbLeaves[i];
-	}
-	printf("Tot : %d/%lld\n",acc,numberOfParticle);
+            const FReal*const partX = particlesContainers.getPositions()[0];
+            const FReal*const partY = particlesContainers.getPositions()[1];
+            const FReal*const partZ = particlesContainers.getPositions()[2];
 
-	FLOG(leavesOffset.tac());
-	FLOG(FLog::Controller << "Time needed for setting the offset of each leaves : "<< leavesOffset.elapsed() << " secondes !\n");
-	//Then, we create the leaves inside the tree
+            #pragma omp for schedule(static)
+            for(FSize idxLeaf = 0 ; idxLeaf < numberOfLeaves ; ++idxLeaf ){
+                const int nbParticlesAlreadyInLeaf = leavesDescriptor[idxLeaf].leafPtr->getSrc()->getNbParticles();
+                // Reserve the space needed for the new particles
+                leavesDescriptor[idxLeaf].leafPtr->getSrc()->reserve(nbParticlesAlreadyInLeaf + leavesDescriptor[idxLeaf].nbParticlesInLeaf);
 
-	//Idx of the first part in this leaf in the array of part
-	int idxOfFirstPartInLeaf = 0;
+                // For all particles
+                for(int idxPart = 0 ; idxPart < leavesDescriptor[idxLeaf].nbParticlesInLeaf ; ++idxPart){
+                    // Get position in the original container
+                    const int particleOriginalPos = particleIndexes[leavesDescriptor[idxLeaf].offsetInArray + idxPart].particlePositionInArray;
+                    // Get the original position
+                    FPoint particlePos( partX[particleOriginalPos],
+                                        partY[particleOriginalPos],
+                                        partZ[particleOriginalPos]);
+                    // Copy the attributes
+                    for(unsigned idxAttr = 0 ; idxAttr < NbAttributes; ++idxAttr){
+                        particleAttr[idxAttr] = particlesContainers.getAttribute(idxAttr)[particleOriginalPos];
+                    }
+                    // Push the particle in the array
+                    leavesDescriptor[idxLeaf].leafPtr->push(particlePos, particleAttr);
+                }
+            }
+        }
 
-	//struct to store leaves and idx
-	struct LeafToFill{
-	    LeafClass * leaf;
-	    FSize idxOfLeafInPartArray;
-	};
-
-	FLOG(leavesPtr.tic());
-
-	LeafToFill * leavesToFill = new LeafToFill[numberOfLeaves];
-	memset(leavesToFill,0,sizeof(struct LeafToFill)*numberOfLeaves);
-
-
-	for(FSize idxLeaf = 0; idxLeaf < numberOfLeaves ; ++idxLeaf){
-	    leavesToFill[idxLeaf].leaf = tree->createLeaf(toBeSorted[idxOfFirstPartInLeaf].index);
-	    leavesToFill[idxLeaf].idxOfLeafInPartArray = idxOfFirstPartInLeaf;
-	    idxOfFirstPartInLeaf += arrayOfSizeNbLeaves[idxLeaf];
-	}
-
-	FLOG(leavesPtr.tac());
-	FLOG(FLog::Controller << "Time needed for creating empty leaves : "<< leavesPtr.elapsed() << " secondes !\n");
-
-
-	FLOG(insertTimer.tic());
-
-	//Copy each parts into corresponding Leaf
-#pragma omp parallel for schedule(auto)
-	for(FSize idxLeaf=0 ; idxLeaf<numberOfLeaves ; ++idxLeaf ){
-	    //Task consists in copy the parts inside the leaf
-	    leavesToFill[idxLeaf].leaf->pushArray(&posToBeIn[leavesToFill[idxLeaf].idxOfLeafInPartArray],
-						  arrayOfSizeNbLeaves[idxLeaf],
-						  &phyToBeIn[leavesToFill[idxLeaf].idxOfLeafInPartArray]);
-	}
-
-	FLOG(insertTimer.tac());
-	FLOG(FLog::Controller << "Time needed for inserting the parts into the leaves : "<< insertTimer.elapsed() << " secondes !\n");
-
-
-	//Clean the mess
-	delete [] leavesToFill;
-	delete [] arrayOfSizeNbLeaves;
-	delete [] posToBeIn;
-	delete [] phyToBeIn;
-	delete [] toBeSorted;
+        FLOG(insertTimer.tac());
+        FLOG(FLog::Controller << "Time needed for inserting the parts into the leaves : "<< insertTimer.elapsed() << " secondes !\n");
     }
-
-
 };
 
 
