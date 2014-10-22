@@ -217,7 +217,7 @@ int main(int argc, char** argv){
 
     FTic treeBuilder;
     treeBuilder.tic();
-    FTreeBuilder<FmaRWParticle<4,4>,OctreeClass,LeafClass>::BuildTreeFromArray(&finalParticles,finalParticles.getSize(),&tree,true);
+    FTreeBuilder<FmaRWParticle<4,4>,OctreeClass,LeafClass>::BuildTreeFromArray(finalParticles,finalParticles.getSize(),&tree,true);
     treeBuilder.tac();
     std::cout << "Time needed for TreeBuilder : "<< treeBuilder.elapsed() << " secondes !" << std::endl;
 
