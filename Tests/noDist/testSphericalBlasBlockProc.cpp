@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -41,6 +41,7 @@
 
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
+#include "../../Src/Files/FTreeBuilder.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
@@ -50,10 +51,10 @@
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv,
-                         "Test Spherical HArmonic kernel with blas.",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
-                         FParameterDefinitions::NbThreads);
+			 "Test Spherical HArmonic kernel with blas.",
+			 FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+			 FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
+			 FParameterDefinitions::NbThreads);
 
   typedef FSphericalCell         CellClass;
   typedef FP2PParticleContainer<>         ContainerClass;
@@ -92,8 +93,8 @@ int main(int argc, char ** argv){
   }
 
   CellClass::Init(DevP,true);
-  
-  
+
+
   OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
   // -----------------------------------------------------
@@ -127,22 +128,32 @@ int main(int argc, char ** argv){
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
     // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-    // 						 tree.getBoxCenter(),
-    // 						 tree.getBoxWidth(),
-    // 						 tree.getHeight(), &finalParticles,&balancer);
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+    //						 tree.getBoxCenter(),
+    //						 tree.getBoxWidth(),
+    //						 tree.getHeight(), &finalParticles,&balancer);
+    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
 								loader.getMyNumberOfParticles(),
 								tree.getBoxCenter(),
 								tree.getBoxWidth(),tree.getHeight(),
 								&finalParticles, &balancer);
 
-    for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
-      tree.insert(finalParticles[idx].position,finalParticles[idx].physicalValue);
+    ContainerClass parts;
+    parts.reserve(finalParticles.getSize());
 
+    //Convert ouput of DistributeArrayToContainer to a ContainerClass
+    for(int idxPart = 0; idxPart < finalParticles.getSize(); ++idxPart){
+
+	parts.push(finalParticles[idxPart].getPosition(),finalParticles[idxPart].physicalValue);
     }
 
-    delete[] particles;
 
+    FTreeBuilder<OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,true);
+    // for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+    //   tree.insert(finalParticles[idx].position,finalParticles[idx].physicalValue);
+
+    // }
+
+    delete[] particles;
     counter.tac();
     std::cout << "Done  " << "(" << counter.elapsed() << "s)." << std::endl;
 
@@ -213,4 +224,3 @@ int main(int argc, char ** argv){
   }
   return 0;
 }
-

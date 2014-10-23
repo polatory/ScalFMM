@@ -214,13 +214,21 @@ int main(int argc, char** argv){
     paraSort.tac();
     std::cout << "Time needed for FMpiTreeBuilder part : "<< paraSort.elapsed() << " secondes !" << std::endl;
 
+    ContainerClass parts;
+    parts.reserve(finalParticles.getSize());
+
+    //Convert ouput of DistributeArrayToContainer to a ContainerClass
+    for(int idxPart = 0; idxPart < finalParticles.getSize(); ++idxPart){
+
+	parts.push(finalParticles[idxPart].getPosition(),finalParticles[idxPart].getPhysicalValue());
+    }
 
     FTic treeBuilder;
     treeBuilder.tic();
-    FTreeBuilder<FmaRWParticle<4,4>,OctreeClass,LeafClass>::BuildTreeFromArray(finalParticles,finalParticles.getSize(),&tree,true);
+    FTreeBuilder<OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,true);
     treeBuilder.tac();
     std::cout << "Time needed for TreeBuilder : "<< treeBuilder.elapsed() << " secondes !" << std::endl;
-
+#define CHECK_TREE
     //Check the datas
 #ifdef CHECK_TREE
 

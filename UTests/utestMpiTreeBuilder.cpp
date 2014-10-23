@@ -215,12 +215,12 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	int * toSend = new int[outputSize];
 	int * displ = nullptr;
 	int * recvParts = nullptr;
+	int * myPart = nullptr;
 
 	//Prepare the indexInFile to send
 	for(int idPart=0 ; idPart<outputSize ; ++idPart){
 	    toSend[idPart] = int(outputArray[idPart].particle.indexInFile);
 	}
-
 
 	if(app.global().processId() == 0){
 	    //There, we build the array of displacement
@@ -234,7 +234,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	    MPI_Gatherv(toSend,outputSize,MPI_INT,recvParts,nbPartPerProcess,displ,MPI_INT,0,app.global().getComm());
 
 	    //Buffer to put result into
-	    int * myPart = new int[loader.getNumberOfParticles()];
+	    myPart = new int[loader.getNumberOfParticles()];
 	    memset(myPart,0,sizeof(int)*loader.getNumberOfParticles());
 	    for(int idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
 		myPart[recvParts[idP]] += 1;
@@ -252,28 +252,14 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 	}
 
 
-
-	//Test
-	// printf("Fin tri : %d hold %d my first [%lld,%lld] last [%lld,%lld]\n",app.global().processId(),outputSize,
-	//        outputArray[0].index,outputArray[0].particle.indexInFile,
-	//        outputArray[outputSize-1].index,outputArray[outputSize-1].particle.indexInFile);
-	// int tot = 0;
-	// MPI_Reduce((int*)&outputSize,&tot,1,MPI_INT,MPI_SUM,0,app.global().getComm());
-	// if(app.global().processId() == 0){
-	//     printf("Total Particule après tri = %d \n",tot);
-	// }
-	// for(int i=0 ; i<outputSize ; ++i){
-	//     if(outputArray[i].particle.indexInFile != arrayOfParticles[i+starter].indexInFile){
-	//	resultQsMpi = false;
-	//	printf("QsMpi :: %d finalParticle  [%lld,%lld] : sortedArray [%lld,%lld] \n",app.global().processId(),
-	//	       outputArray[i].particle.indexInFile, outputArray[i].index,
-	//	       arrayOfParticles[i+starter].indexInFile,arrayOfParticles[i+starter].index);
-	//     }
-	// }
-
-
 	Print("Test 1 : is QsMpi really sorting the array");
 	uassert(resultQsMpi);
+	if(app.global().processId() == 0){
+	    delete [] myPart;
+	    delete [] recvParts;
+	    delete [] displ;
+	}
+	delete [] toSend;
 
 
 	//Test MergeLeaves
