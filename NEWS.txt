@@ -1,6 +1,6 @@
 Copyright (c) 2011-2014 Inria,   All rights reserved.
- 
- 
+
+
 ===========================================================================
 
 This file contains the main features as well as overviews of specific
@@ -13,15 +13,17 @@ version 1.1
 -----
 - New FMA format to read/write particles
 - Add examples repository
-- Add distributions generator 
-- Fix bugs in periodic model 
+- Add distributions generator
+- Fix bugs in periodic model
 - Fix bug and performance improvements in MPI thread algorithms
-- Now we use MPI_THREAD_SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm. 
+- Now we use MPI_THREAD_SERIALIZED rather than MPI_THREAD_MULTIPLE in MPI+OpenMP algorithm.
 - Improve tests -> now we use CTest and CDash (Thanks to  F Rue  (Inria))
 - Add support for Intel icl++ compiler (Intel 2015 compiler) on MacOS X and Clang on linux system
 - Add SSE and AVX support in CMake
-- Add SSE and AVX code for 1/r kernel 
+- Add SSE and AVX code for 1/r kernel
 - CMake improvements
 
-
- 
+1.2.1
+-----
+- Bug fix : Support for huge MPI message in tree construction and Parallel QuickSort (count can be greater than Int32.MaxValue)
+- Bug fix : Data sharing attribute clauses for omp in Core/FAlgorithmThreadProc.hpp
