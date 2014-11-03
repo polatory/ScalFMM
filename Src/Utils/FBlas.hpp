@@ -433,7 +433,25 @@ namespace FBlas {
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
 	{	zgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, &d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
 
-
+	// C += d A B^T, A is m x p, B is n x p
+	inline void gemmta(unsigned m, unsigned p, unsigned n, double d,
+										 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	dgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	inline void gemmta(unsigned m, unsigned p, unsigned n, float d,
+										 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	sgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	inline void c_gemmta(unsigned m, unsigned p, unsigned n, float* d,
+											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	cgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	inline void c_gemmta(unsigned m, unsigned p, unsigned n, double* d,
+											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	zgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	inline void c_gemmha(unsigned m, unsigned p, unsigned n, float* d, // hermitian transposed
+											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
+	{	cgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	inline void c_gemmha(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
+											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
+	{	zgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
 
 
 	// singular value decomposition
