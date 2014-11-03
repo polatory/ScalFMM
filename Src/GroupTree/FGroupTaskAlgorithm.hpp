@@ -118,7 +118,10 @@ protected:
                     typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
                     ParticleGroupClass* containers = (*iterParticles);
 
-                    #pragma omp task default(none) firstprivate(containers, outsideInteractions)
+                    externalInteractionsLeafLevel.emplace_back();
+                    std::list<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
+
+                    #pragma omp task default(none) firstprivate(containers, outsideInteractions, externalInteractions)
                     { // Can be a task(inout:iterCells, out:outsideInteractions)
                         const MortonIndex blockStartIdx = containers->getStartingIndex();
                         const MortonIndex blockEndIdx = containers->getEndingIndex();
@@ -151,6 +154,37 @@ protected:
 
                         // Sort to match external order
                         FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
+
+                        typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
+                        int currentOutInteraction = 0;
+                        while((*iterLeftParticles) != containers && currentOutInteraction < int((*outsideInteractions).size())){
+                            ParticleGroupClass* leftContainers = (*iterLeftParticles);
+                            const MortonIndex blockStartIdx = leftContainers->getStartingIndex();
+                            const MortonIndex blockEndIdx = leftContainers->getEndingIndex();
+
+                            while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
+                                currentOutInteraction += 1;
+                            }
+
+                            int lastOutInteraction = currentOutInteraction;
+                            while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
+                                lastOutInteraction += 1;
+                            }
+
+                            const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                            if(nbInteractionsBetweenBlocks){
+                                externalInteractions->emplace_back();
+                                BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
+                                interactions->otherBlock = (*iterLeftParticles);
+                                interactions->interactions.resize(nbInteractionsBetweenBlocks);
+                                std::copy((*outsideInteractions).begin() + currentOutInteraction,
+                                          (*outsideInteractions).begin() + lastOutInteraction,
+                                          interactions->interactions.begin());
+                            }
+
+                            currentOutInteraction = lastOutInteraction;
+                            ++iterLeftParticles;
+                        }
                     }
                     ++iterParticles;
                 }
@@ -165,41 +199,7 @@ protected:
 
                 // For each block (can be moved to a task or into the previous one)
                 while(iterParticles != endParticles){
-                    typename std::vector<OutOfBlockInteraction>* outsideInteractions = &(*iterInteractions);
 
-                    externalInteractionsLeafLevel.emplace_back();
-                    std::list<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
-
-                    typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
-                    int currentOutInteraction = 0;
-                    while(iterLeftParticles != iterParticles && currentOutInteraction < int((*outsideInteractions).size())){
-                        ParticleGroupClass* leftContainers = (*iterLeftParticles);
-                        const MortonIndex blockStartIdx = leftContainers->getStartingIndex();
-                        const MortonIndex blockEndIdx = leftContainers->getEndingIndex();
-
-                        while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
-                            currentOutInteraction += 1;
-                        }
-
-                        int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
-                            lastOutInteraction += 1;
-                        }
-
-                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
-                        if(nbInteractionsBetweenBlocks){
-                            externalInteractions->emplace_back();
-                            BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
-                            interactions->otherBlock = (*iterLeftParticles);
-                            interactions->interactions.resize(nbInteractionsBetweenBlocks);
-                            std::copy((*outsideInteractions).begin() + currentOutInteraction,
-                                      (*outsideInteractions).begin() + lastOutInteraction,
-                                      interactions->interactions.begin());
-                        }
-
-                        currentOutInteraction = lastOutInteraction;
-                        ++iterLeftParticles;
-                    }
 
                     ++iterParticles;
                     ++iterInteractions;
