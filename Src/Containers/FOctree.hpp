@@ -863,6 +863,66 @@ public:
         return idxNeighbors;
     }
 
+    /** This function fills an array with all the neighbors of a cell, 
+     * i.e. childs of parent's neighbors, direct neighbors and cell itself.
+     * This is called for instance when the nearfield also needs to be approximated
+     * in that cas we only call this function at the leaf level.
+     * @param inNeighbors the array to store the elements
+     * @param inNeighborsIndex the array to store morton index of the neighbors
+     * @param inIndex the index of the element we want the neighbors
+     * @param inLevel the level of the element
+     * @return the number of neighbors
+     */
+    int getFullNeighborhood(const CellClass* inNeighbors[343],
+    const FTreeCoordinate& workingCell,
+    const int inLevel) const{
+        // reset
+        memset(inNeighbors, 0, sizeof(CellClass*) * 343);
+
+        // Then take each child of the parent's neighbors
+        // Father coordinate
+        const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
+
+        // Limite at parent level number of box (split by 2 by level)
+        const int boxLimite = FMath::pow2(inLevel-1);
+
+        int idxNeighbors = 0;
+        // We test all cells around
+        for(int idxX = -1 ; idxX <= 1 ; ++idxX){
+            if(!FMath::Between(parentCell.getX() + idxX,0,boxLimite)) continue;
+
+            for(int idxY = -1 ; idxY <= 1 ; ++idxY){
+                if(!FMath::Between(parentCell.getY() + idxY,0,boxLimite)) continue;
+
+                for(int idxZ = -1 ; idxZ <= 1 ; ++idxZ){
+                    if(!FMath::Between(parentCell.getZ() + idxZ,0,boxLimite)) continue;
+
+                    const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
+                    const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                    // Get child
+                    CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
+
+                    // If there is one or more child
+                    if(cells){
+                        // For each child
+                        for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
+                            if(cells[idxCousin]){
+                                const int xdiff  = ((otherParent.getX()<<1) | ( (idxCousin>>2) & 1)) - workingCell.getX();
+                                const int ydiff  = ((otherParent.getY()<<1) | ( (idxCousin>>1) & 1)) - workingCell.getY();
+                                const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
+
+                                // add to neighbors
+                                inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
+                                ++idxNeighbors;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return idxNeighbors;
+    }
 
     /** This function fill an array with the distant neighbors of a cell
      * it respects the periodic condition and will give the relative distance
