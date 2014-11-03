@@ -26,9 +26,18 @@ protected:
         }
     };
 
+    template <class OtherBlockClass>
+    struct BlockInteractions{
+        OtherBlockClass* otherBlock;
+        std::vector<OutOfBlockInteraction> interactions;
+    };
+
+    std::vector< std::list< std::list<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
+    std::list< std::list<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
+
     const int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
-    KernelClass** kernels;    //< The kernels
+    KernelClass** kernels;        //< The kernels
 
 public:
     FGroupTaskAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
@@ -53,6 +62,9 @@ public:
 
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
+
+        // For now rebuild all external interaction
+        buildExternalInteractionVecs();
 
 #pragma omp parallel
         {
@@ -83,6 +95,120 @@ public:
     }
 
 protected:
+    void buildExternalInteractionVecs(){
+        // Reset interactions
+        externalInteractionsAllLevel.clear();
+        externalInteractionsLeafLevel.clear();
+        // One per level + leaf level
+        externalInteractionsAllLevel.resize(tree->getHeight());
+
+        // First leaf level
+        {
+            // We create one big vector per block
+            typename std::list< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+
+            {
+                typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+                const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+
+                // We iterate on blocks
+                while(iterParticles != endParticles){
+                    // Create the vector
+                    allOutsideInteractions.push_back( std::vector<OutOfBlockInteraction>() );
+                    typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
+                    ParticleGroupClass* containers = (*iterParticles);
+
+                    #pragma omp task default(none) firstprivate(containers, outsideInteractions)
+                    { // Can be a task(inout:iterCells, out:outsideInteractions)
+                        const MortonIndex blockStartIdx = containers->getStartingIndex();
+                        const MortonIndex blockEndIdx = containers->getEndingIndex();
+
+                        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
+                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
+                            if(particles.isAttachedToSomething()){
+                                MortonIndex interactionsIndexes[26];
+                                int interactionsPosition[26];
+                                FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                                int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+
+                                ParticleContainerClass* interactions[27];
+                                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
+
+                                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                        // Inside block interaction, do nothing
+                                    }
+                                    else if(interactionsIndexes[idxInter] < mindex){
+                                        OutOfBlockInteraction property;
+                                        property.insideIndex = mindex;
+                                        property.outIndex    = interactionsIndexes[idxInter];
+                                        property.outPosition = interactionsPosition[idxInter];
+                                        (*outsideInteractions).push_back(property);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Sort to match external order
+                        FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
+                    }
+                    ++iterParticles;
+                }
+                #pragma omp taskwait
+            }
+            {
+                // Now we have to split the vector of interaction based on the existing blocks
+                typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+                const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+
+                typename std::list<std::vector<OutOfBlockInteraction> >::iterator iterInteractions = allOutsideInteractions.begin();
+
+                // For each block (can be moved to a task or into the previous one)
+                while(iterParticles != endParticles){
+                    typename std::vector<OutOfBlockInteraction>* outsideInteractions = &(*iterInteractions);
+
+                    externalInteractionsLeafLevel.emplace_back();
+                    std::list<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
+
+                    typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
+                    int currentOutInteraction = 0;
+                    while(iterLeftParticles != iterParticles && currentOutInteraction < int((*outsideInteractions).size())){
+                        ParticleGroupClass* leftContainers = (*iterLeftParticles);
+                        const MortonIndex blockStartIdx = leftContainers->getStartingIndex();
+                        const MortonIndex blockEndIdx = leftContainers->getEndingIndex();
+
+                        while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
+                            currentOutInteraction += 1;
+                        }
+
+                        int lastOutInteraction = currentOutInteraction;
+                        while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
+                            lastOutInteraction += 1;
+                        }
+
+                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                        if(nbInteractionsBetweenBlocks){
+                            externalInteractions->emplace_back();
+                            BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
+                            interactions->otherBlock = (*iterLeftParticles);
+                            interactions->interactions.resize(nbInteractionsBetweenBlocks);
+                            std::copy((*outsideInteractions).begin() + currentOutInteraction,
+                                      (*outsideInteractions).begin() + lastOutInteraction,
+                                      interactions->interactions.begin());
+                        }
+
+                        currentOutInteraction = lastOutInteraction;
+                        ++iterLeftParticles;
+                    }
+
+                    ++iterParticles;
+                    ++iterInteractions;
+                }
+            }
+        }
+    }
+
+
     void bottomPass(){
         FLOG( FTic timer; );
         typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
@@ -344,9 +470,9 @@ protected:
             FLOG( timerOutBlock.tac() );
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t inblock in " << timerInBlock.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t sort in " << timerSort.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock in " << timerInBlock.elapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t sort in " << timerSort.elapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.elapsed() << "s\n" );
     }
 
     void downardPass(){
@@ -423,20 +549,17 @@ protected:
 
     void directPass(){
         FLOG( FTic timer; );
-        FLOG( FTic timerInBlock; FTic timerSort; FTic timerOutBlock; );
+        FLOG( FTic timerInBlock; FTic timerOutBlock; );
 
-        typename std::list< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
         FLOG( timerInBlock.tic() );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
             while(iterParticles != endParticles){
-                allOutsideInteractions.push_back( std::vector<OutOfBlockInteraction>() );
-                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
                 ParticleGroupClass* containers = (*iterParticles);
 
-#pragma omp task default(none) firstprivate(containers, outsideInteractions)
+                #pragma omp task default(none) firstprivate(containers)
                 { // Can be a task(inout:iterCells, out:outsideInteractions)
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx = containers->getEndingIndex();
@@ -464,13 +587,6 @@ protected:
                                         counterExistingCell += 1;
                                     }
                                 }
-                                else if(interactionsIndexes[idxInter] < mindex){
-                                    OutOfBlockInteraction property;
-                                    property.insideIndex = mindex;
-                                    property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
-                                    (*outsideInteractions).push_back(property);
-                                }
                             }
 
                             kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
@@ -479,62 +595,31 @@ protected:
                 }
                 ++iterParticles;
             }
-#pragma omp taskwait
+            #pragma omp taskwait
         }
         FLOG( timerInBlock.tac() );
-        FLOG( timerSort.tic() );
-        {
-            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
-
-            typename std::list<std::vector<OutOfBlockInteraction> >::iterator iterInteractions = allOutsideInteractions.begin();
-
-            while(iterParticles != endParticles){
-                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &(*iterInteractions);
-#pragma omp task default(none) firstprivate(outsideInteractions)
-                {
-                    // Manage outofblock interaction
-                    FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
-                }
-                ++iterParticles;
-                ++iterInteractions;
-            }
-
-#pragma omp taskwait
-        }
-        FLOG( timerSort.tac() );
         FLOG( timerOutBlock.tic() );
         {
             typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
             const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-            typename std::list<std::vector<OutOfBlockInteraction> >::iterator iterInteractions = allOutsideInteractions.begin();
+            typename std::list<std::list<BlockInteractions<ParticleGroupClass>>>::iterator externalInteractionsIter = externalInteractionsLeafLevel.begin();
 
             while(iterParticles != endParticles){
-                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &(*iterInteractions);
+                typename std::list<BlockInteractions<ParticleGroupClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
+                const typename std::list<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
+
                 ParticleGroupClass* containers = (*iterParticles);
 
-                typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
-                int currentOutInteraction = 0;
-                while(iterLeftParticles != iterParticles && currentOutInteraction < int((*outsideInteractions).size())){
-                    ParticleGroupClass* leftContainers = (*iterLeftParticles);
-                    const MortonIndex blockStartIdx = leftContainers->getStartingIndex();
-                    const MortonIndex blockEndIdx = leftContainers->getEndingIndex();
+                while(currentInteractions != currentInteractionsEnd){
+                    ParticleGroupClass* containersOther = (*currentInteractions).otherBlock;
+                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                    while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
-                        currentOutInteraction += 1;
-                    }
-
-                    int lastOutInteraction = currentOutInteraction;
-                    while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
-                        lastOutInteraction += 1;
-                    }
-
-#pragma omp task default(none) firstprivate(containers, leftContainers, outsideInteractions, currentOutInteraction, lastOutInteraction)
-                    { // Can be a task(in:currentOutInteraction, in:outsideInteractions, in:lastOutInteraction, inout:iterLeftParticles, inout:iterParticles)
+                    #pragma omp task default(none) firstprivate(containers, containersOther, outsideInteractions)
+                    {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
-                        for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
-                            ParticleContainerClass interParticles = leftContainers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
+                        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
                             if(interParticles.isAttachedToSomething()){
                                 ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
                                 FAssertLF(particles.isAttachedToSomething());
@@ -551,22 +636,20 @@ protected:
                         }
                     }
                     // only one task but need to wait for it
-#pragma omp taskwait
+                    #pragma omp taskwait
 
-                    currentOutInteraction = lastOutInteraction;
-                    ++iterLeftParticles;
+                    ++currentInteractions;
                 }
 
                 ++iterParticles;
-                ++iterInteractions;
+                ++externalInteractionsIter;
             }
         }
         FLOG( timerOutBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t inblock in " << timerInBlock.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t sort in " << timerSort.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.tacAndElapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.elapsed() << "s\n" );
     }
 
     void mergePass(){
