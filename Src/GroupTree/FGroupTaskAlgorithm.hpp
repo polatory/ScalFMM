@@ -95,6 +95,12 @@ public:
     }
 
 protected:
+    /**
+     * This function is creating the interactions list between blocks.
+     * It fills externalInteractionsAllLevel and externalInteractionsLeafLevel.
+     * Warning, the omp task for now are using the class attributes!
+     *
+     */
     void buildExternalInteractionVecs(){
         FLOG( FTic timer; FTic leafTimer; FTic cellTimer; );
         // Reset interactions
@@ -408,7 +414,7 @@ protected:
                     CellContainerClass* currentCells = (*iterCells);
 
                     #pragma omp task default(none) firstprivate(currentCells, idxLevel)
-                    { // Can be a task(inout:iterCells, out:outsideInteractions)
+                    {
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -465,7 +471,7 @@ protected:
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
                         #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, cellsOther, idxLevel)
-                        { // Can be a task(in:currentOutInteraction, in:outsideInteractions, in:lastOutInteraction, inout:iterLeftCells, inout:iterCells)
+                        {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -590,7 +596,7 @@ protected:
                 ParticleGroupClass* containers = (*iterParticles);
 
                 #pragma omp task default(none) firstprivate(containers)
-                { // Can be a task(inout:iterCells, out:outsideInteractions)
+                {
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx = containers->getEndingIndex();
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -695,7 +701,7 @@ protected:
                 CellContainerClass* leafCells = (*iterCells);
                 ParticleGroupClass* containers = (*iterParticles);
 #pragma omp task default(shared) firstprivate(leafCells, containers)
-                { // Can be a task(out:iterParticles, in:iterCells)
+                {
                     const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                     const MortonIndex blockEndIdx = leafCells->getEndingIndex();
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
