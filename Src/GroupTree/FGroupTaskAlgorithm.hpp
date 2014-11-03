@@ -66,9 +66,9 @@ public:
         // For now rebuild all external interaction
         buildExternalInteractionVecs();
 
-#pragma omp parallel
+        #pragma omp parallel
         {
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -80,14 +80,14 @@ public:
 
             }
 
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 if( operationsToProceed & FFmmP2P ) directPass();
             }
 
-#pragma omp barrier
+            #pragma omp barrier
 
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 if( operationsToProceed & FFmmL2P ) mergePass();
             }
@@ -300,7 +300,7 @@ protected:
         while(iterParticles != endParticles && iterCells != endCells){
             CellContainerClass* leafCells = (*iterCells);
             ParticleGroupClass* containers = (*iterParticles);
-#pragma omp task default(shared) firstprivate(leafCells, containers)
+            #pragma omp task default(shared) firstprivate(leafCells, containers)
             { // Can be a task(in:iterParticles, out:iterCells)
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -321,7 +321,7 @@ protected:
             ++iterCells;
         }
         // Wait for task to complete
-#pragma omp taskwait
+        #pragma omp taskwait
 
         FAssertLF(iterParticles == endParticles && iterCells == endCells);
         FLOG( FLog::Controller << "\t\t bottomPass in " << timer.tacAndElapsed() << "s\n" );
@@ -360,7 +360,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-#pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -392,7 +392,7 @@ protected:
                 ++iterCells;
             }
             // Wait this level before the next one
-#pragma omp taskwait
+            #pragma omp taskwait
 
             FAssertLF(iterCells == endCells);
             FAssertLF((iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
@@ -544,7 +544,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-#pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -576,7 +576,7 @@ protected:
                 ++iterCells;
             }
 
-#pragma omp taskwait
+            #pragma omp taskwait
 
             FAssertLF(iterCells == endCells && (iterChildCells == endChildCells || (++iterChildCells) == endChildCells));
         }
@@ -700,7 +700,7 @@ protected:
             while(iterParticles != endParticles && iterCells != endCells){
                 CellContainerClass* leafCells = (*iterCells);
                 ParticleGroupClass* containers = (*iterParticles);
-#pragma omp task default(shared) firstprivate(leafCells, containers)
+                #pragma omp task default(shared) firstprivate(leafCells, containers)
                 {
                     const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                     const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -721,7 +721,7 @@ protected:
                 ++iterCells;
             }
             // Wait for task to complete
-#pragma omp taskwait
+            #pragma omp taskwait
 
             FAssertLF(iterParticles == endParticles && iterCells == endCells);
         }
