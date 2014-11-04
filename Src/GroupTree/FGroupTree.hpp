@@ -65,6 +65,11 @@ protected:
     }
 
 public:
+    typedef typename std::vector<CellGroupClass*>::iterator CellGroupIterator;
+    typedef typename std::vector<CellGroupClass*>::const_iterator CellGroupConstIterator;
+    typedef typename std::vector<ParticleGroupClass*>::iterator ParticleGroupIterator;
+    typedef typename std::vector<ParticleGroupClass*>::const_iterator ParticleGroupConstIterator;
+
     /** This constructor create a blocked octree from a usual octree
    * The cell are allocated as in the usual octree (no copy constructor are called!)
    * Once allocated each cell receive its morton index and tree coordinate.
@@ -297,8 +302,8 @@ public:
 
         // For each level from heigth - 2 to 1
         for(int idxLevel = treeHeight-2; idxLevel > 0 ; --idxLevel){
-            typename std::vector<CellGroupClass*>::const_iterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
-            const typename std::vector<CellGroupClass*>::const_iterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
+            CellGroupConstIterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
+            const CellGroupConstIterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
 
             MortonIndex currentCellIndex = (*iterChildCells)->getStartingIndex();
             int sizeOfBlock = 0;
@@ -417,11 +422,11 @@ public:
    */
     template<class ParticlesAttachedClass>
     void forEachCellLeaf(std::function<void(CellClass*,ParticlesAttachedClass*)> function){
-        typename std::vector<CellGroupClass*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
-        const typename std::vector<CellGroupClass*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
+        CellGroupIterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
+        const CellGroupIterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
 
-        typename std::vector<ParticleGroupClass*>::iterator iterLeaves = particleBlocks.begin();
-        const typename std::vector<ParticleGroupClass*>::iterator iterEndLeaves = particleBlocks.end();
+        ParticleGroupIterator iterLeaves = particleBlocks.begin();
+        const ParticleGroupIterator iterEndLeaves = particleBlocks.end();
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CellClass* aCell){
@@ -482,40 +487,40 @@ public:
         return treeHeight;
     }
 
-    typename std::vector<CellGroupClass*>::iterator cellsBegin(const int atHeight){
+    CellGroupIterator cellsBegin(const int atHeight){
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].begin();
     }
 
-    typename std::vector<CellGroupClass*>::const_iterator cellsBegin(const int atHeight) const {
+    CellGroupConstIterator cellsBegin(const int atHeight) const {
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].begin();
     }
 
-    typename std::vector<CellGroupClass*>::iterator cellsEnd(const int atHeight){
+    CellGroupIterator cellsEnd(const int atHeight){
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].end();
     }
 
-    typename std::vector<CellGroupClass*>::const_iterator cellsEnd(const int atHeight) const {
+    CellGroupConstIterator cellsEnd(const int atHeight) const {
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].end();
     }
 
 
-    typename std::vector<ParticleGroupClass*>::iterator leavesBegin(){
+    ParticleGroupIterator leavesBegin(){
         return particleBlocks.begin();
     }
 
-    typename std::vector<ParticleGroupClass*>::const_iterator leavesBegin() const {
+    ParticleGroupConstIterator leavesBegin() const {
         return particleBlocks.begin();
     }
 
-    typename std::vector<ParticleGroupClass*>::iterator leavesEnd(){
+    ParticleGroupIterator leavesEnd(){
         return particleBlocks.end();
     }
 
-    typename std::vector<ParticleGroupClass*>::const_iterator leavesEnd() const {
+    ParticleGroupConstIterator leavesEnd() const {
         return particleBlocks.end();
     }
 };
