@@ -8,7 +8,7 @@
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTic.hpp"
 
-#include <list>
+#include <vector>
 #include <vector>
 
 #include <omp.h>
@@ -32,8 +32,8 @@ protected:
         std::vector<OutOfBlockInteraction> interactions;
     };
 
-    std::vector< std::list< std::list<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
-    std::list< std::list<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
+    std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
+    std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
 
     const int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
@@ -96,7 +96,7 @@ public:
 
 protected:
     /**
-     * This function is creating the interactions list between blocks.
+     * This function is creating the interactions vector between blocks.
      * It fills externalInteractionsAllLevel and externalInteractionsLeafLevel.
      * Warning, the omp task for now are using the class attributes!
      *
@@ -112,11 +112,11 @@ protected:
         // First leaf level
         {
             // We create one big vector per block
-            typename std::list< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+            typename std::vector< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
 
             {
-                typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-                const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+                typename std::vector<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+                const typename std::vector<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
                 // We iterate on blocks
                 while(iterParticles != endParticles){
@@ -126,7 +126,7 @@ protected:
                     ParticleGroupClass* containers = (*iterParticles);
 
                     externalInteractionsLeafLevel.emplace_back();
-                    std::list<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
+                    std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
 
                     #pragma omp task default(none) firstprivate(containers, outsideInteractions, externalInteractions)
                     { // Can be a task(inout:iterCells, out:outsideInteractions)
@@ -159,7 +159,7 @@ protected:
                         // Sort to match external order
                         FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
 
-                        typename std::list<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
+                        typename std::vector<ParticleGroupClass*>::iterator iterLeftParticles = tree->leavesBegin();
                         int currentOutInteraction = 0;
                         while((*iterLeftParticles) != containers && currentOutInteraction < int((*outsideInteractions).size())){
                             ParticleGroupClass* leftContainers = (*iterLeftParticles);
@@ -199,10 +199,10 @@ protected:
         FLOG( cellTimer.tic(); );
         {
             for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
-                std::list<std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+                std::vector<std::vector<OutOfBlockInteraction> > allOutsideInteractions;
 
-                typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
-                const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
+                typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+                const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
                 while(iterCells != endCells){
                     allOutsideInteractions.push_back(std::vector<OutOfBlockInteraction>());
@@ -211,7 +211,7 @@ protected:
                     CellContainerClass* currentCells = (*iterCells);
 
                     externalInteractionsAllLevel[idxLevel].emplace_back();
-                    std::list<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel].back();
+                    std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel].back();
 
                     #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, idxLevel, externalInteractions)
                     {
@@ -245,7 +245,7 @@ protected:
                         // Manage outofblock interaction
                         FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
 
-                        typename std::list<CellContainerClass*>::iterator iterLeftCells = tree->cellsBegin(idxLevel);
+                        typename std::vector<CellContainerClass*>::iterator iterLeftCells = tree->cellsBegin(idxLevel);
                         int currentOutInteraction = 0;
                         while((*iterLeftCells) != currentCells && currentOutInteraction < int((*outsideInteractions).size())){
                             const MortonIndex blockStartIdx = (*iterLeftCells)->getStartingIndex();
@@ -291,11 +291,11 @@ protected:
 
     void bottomPass(){
         FLOG( FTic timer; );
-        typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-        const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+        typename std::vector<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+        const typename std::vector<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-        typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-        const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
+        typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
+        const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
 
         while(iterParticles != endParticles && iterCells != endCells){
             CellContainerClass* leafCells = (*iterCells);
@@ -330,11 +330,11 @@ protected:
     void upwardPass(){
         FLOG( FTic timer; );
         for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
-            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
-            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
+            typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+            const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
-            typename std::list<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
-            const typename std::list<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
+            typename std::vector<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
+            const typename std::vector<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass* currentCells = (*iterCells);
@@ -407,8 +407,8 @@ protected:
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
             FLOG( timerInBlock.tic() );
             {
-                typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
-                const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
+                typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+                const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
                 while(iterCells != endCells){
                     CellContainerClass* currentCells = (*iterCells);
@@ -455,16 +455,16 @@ protected:
             FLOG( timerInBlock.tac() );
             FLOG( timerOutBlock.tic() );
             {
-                typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
-                const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
+                typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+                const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
-                typename std::list<std::list<BlockInteractions<CellContainerClass>>>::iterator externalInteractionsIter = externalInteractionsAllLevel[idxLevel].begin();
+                typename std::vector<std::vector<BlockInteractions<CellContainerClass>>>::iterator externalInteractionsIter = externalInteractionsAllLevel[idxLevel].begin();
 
                 while(iterCells != endCells){
                     CellContainerClass* currentCells = (*iterCells);
 
-                    typename std::list<BlockInteractions<CellContainerClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
-                    const typename std::list<BlockInteractions<CellContainerClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
+                    typename std::vector<BlockInteractions<CellContainerClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
+                    const typename std::vector<BlockInteractions<CellContainerClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
 
                     while(currentInteractions != currentInteractionsEnd){
                         CellContainerClass* cellsOther = (*currentInteractions).otherBlock;
@@ -514,11 +514,11 @@ protected:
     void downardPass(){
         FLOG( FTic timer; );
         for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
-            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
-            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
+            typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(idxLevel);
+            const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(idxLevel);
 
-            typename std::list<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
-            const typename std::list<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
+            typename std::vector<CellContainerClass*>::iterator iterChildCells = tree->cellsBegin(idxLevel+1);
+            const typename std::vector<CellContainerClass*>::iterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass* currentCells = (*iterCells);
@@ -589,8 +589,8 @@ protected:
 
         FLOG( timerInBlock.tic() );
         {
-            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+            typename std::vector<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+            const typename std::vector<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
             while(iterParticles != endParticles){
                 ParticleGroupClass* containers = (*iterParticles);
@@ -636,14 +636,14 @@ protected:
         FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
         {
-            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+            typename std::vector<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+            const typename std::vector<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-            typename std::list<std::list<BlockInteractions<ParticleGroupClass>>>::iterator externalInteractionsIter = externalInteractionsLeafLevel.begin();
+            typename std::vector<std::vector<BlockInteractions<ParticleGroupClass>>>::iterator externalInteractionsIter = externalInteractionsLeafLevel.begin();
 
             while(iterParticles != endParticles){
-                typename std::list<BlockInteractions<ParticleGroupClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
-                const typename std::list<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
+                typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
+                const typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
 
                 ParticleGroupClass* containers = (*iterParticles);
 
@@ -691,11 +691,11 @@ protected:
     void mergePass(){
         FLOG( FTic timer; );
         {
-            typename std::list<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
-            const typename std::list<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
+            typename std::vector<ParticleGroupClass*>::iterator iterParticles = tree->leavesBegin();
+            const typename std::vector<ParticleGroupClass*>::iterator endParticles = tree->leavesEnd();
 
-            typename std::list<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-            const typename std::list<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
+            typename std::vector<CellContainerClass*>::iterator iterCells = tree->cellsBegin(tree->getHeight()-1);
+            const typename std::vector<CellContainerClass*>::iterator endCells = tree->cellsEnd(tree->getHeight()-1);
 
             while(iterParticles != endParticles && iterCells != endCells){
                 CellContainerClass* leafCells = (*iterCells);

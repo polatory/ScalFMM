@@ -1,6 +1,6 @@
 #ifndef FGROUPTREE_HPP
 #define FGROUPTREE_HPP
-#include <list>
+#include <vector>
 #include <functional>
 
 #include "../Utils/FAssert.hpp"
@@ -30,9 +30,9 @@ protected:
     //< max number of cells in a block
     const int nbElementsPerBlock;
     //< all the blocks of the tree
-    std::list<CellGroupClass*>* cellBlocksPerLevel;
+    std::vector<CellGroupClass*>* cellBlocksPerLevel;
     //< all the blocks of leaves
-    std::list<ParticleGroupClass*> particleBlocks;
+    std::vector<ParticleGroupClass*> particleBlocks;
 
     //< the space system center
     const FPoint boxCenter;
@@ -75,7 +75,7 @@ public:
         : treeHeight(inTreeHeight), nbElementsPerBlock(inNbElementsPerBlock), cellBlocksPerLevel(nullptr),
           boxCenter(inOctreeSrc->getBoxCenter()), boxCorner(inOctreeSrc->getBoxCenter(),-(inOctreeSrc->getBoxWidth()/2)),
           boxWidth(inOctreeSrc->getBoxWidth()), boxWidthAtLeafLevel(inOctreeSrc->getBoxWidth()/FReal(1<<(inTreeHeight-1))){
-        cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
+        cellBlocksPerLevel = new std::vector<CellGroupClass*>[treeHeight];
 
         // Iterate on the tree and build
         typename OctreeClass::Iterator octreeIterator(inOctreeSrc);
@@ -194,7 +194,7 @@ public:
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
             boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
 
-        cellBlocksPerLevel = new std::list<CellGroupClass*>[treeHeight];
+        cellBlocksPerLevel = new std::vector<CellGroupClass*>[treeHeight];
 
         MortonIndex* currentBlockIndexes = new MortonIndex[nbElementsPerBlock];
         // First we work at leaf level
@@ -297,8 +297,8 @@ public:
 
         // For each level from heigth - 2 to 1
         for(int idxLevel = treeHeight-2; idxLevel > 0 ; --idxLevel){
-            typename std::list<CellGroupClass*>::const_iterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
-            const typename std::list<CellGroupClass*>::const_iterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
+            typename std::vector<CellGroupClass*>::const_iterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
+            const typename std::vector<CellGroupClass*>::const_iterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
 
             MortonIndex currentCellIndex = (*iterChildCells)->getStartingIndex();
             int sizeOfBlock = 0;
@@ -357,7 +357,7 @@ public:
     /** This function dealloc the tree by deleting each block */
     ~FGroupTree(){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            std::vector<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
             for (CellGroupClass* block: levelBlocks){
                 delete block;
             }
@@ -391,7 +391,7 @@ public:
    */
     void forEachCell(std::function<void(CellClass*)> function){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            std::vector<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
             for (CellGroupClass* block: levelBlocks){
                 block->forEachCell(function);
             }
@@ -404,7 +404,7 @@ public:
    */
     void forEachCellWithLevel(std::function<void(CellClass*,const int)> function){
         for(int idxLevel = 0 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            std::vector<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
             for (CellGroupClass* block: levelBlocks){
                 block->forEachCell(function, idxLevel);
             }
@@ -417,11 +417,11 @@ public:
    */
     template<class ParticlesAttachedClass>
     void forEachCellLeaf(std::function<void(CellClass*,ParticlesAttachedClass*)> function){
-        typename std::list<CellGroupClass*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
-        const typename std::list<CellGroupClass*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
+        typename std::vector<CellGroupClass*>::iterator iterCells = cellBlocksPerLevel[treeHeight-1].begin();
+        const typename std::vector<CellGroupClass*>::iterator iterEndCells = cellBlocksPerLevel[treeHeight-1].end();
 
-        typename std::list<ParticleGroupClass*>::iterator iterLeaves = particleBlocks.begin();
-        const typename std::list<ParticleGroupClass*>::iterator iterEndLeaves = particleBlocks.end();
+        typename std::vector<ParticleGroupClass*>::iterator iterLeaves = particleBlocks.begin();
+        const typename std::vector<ParticleGroupClass*>::iterator iterEndLeaves = particleBlocks.end();
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CellClass* aCell){
@@ -447,7 +447,7 @@ public:
         std::cout << "\t Group Size = " << nbElementsPerBlock << "\n";
         std::cout << "\t Tree height = " << treeHeight << "\n";
         for(int idxLevel = 1 ; idxLevel < treeHeight ; ++idxLevel){
-            std::list<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
+            std::vector<CellGroupClass*>& levelBlocks = cellBlocksPerLevel[idxLevel];
             std::cout << "Level " << idxLevel << ", there are " << levelBlocks.size() << " groups.\n";
             int idxGroup = 0;
             for (const CellGroupClass* block: levelBlocks){
@@ -482,40 +482,40 @@ public:
         return treeHeight;
     }
 
-    typename std::list<CellGroupClass*>::iterator cellsBegin(const int atHeight){
+    typename std::vector<CellGroupClass*>::iterator cellsBegin(const int atHeight){
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].begin();
     }
 
-    typename std::list<CellGroupClass*>::const_iterator cellsBegin(const int atHeight) const {
+    typename std::vector<CellGroupClass*>::const_iterator cellsBegin(const int atHeight) const {
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].begin();
     }
 
-    typename std::list<CellGroupClass*>::iterator cellsEnd(const int atHeight){
+    typename std::vector<CellGroupClass*>::iterator cellsEnd(const int atHeight){
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].end();
     }
 
-    typename std::list<CellGroupClass*>::const_iterator cellsEnd(const int atHeight) const {
+    typename std::vector<CellGroupClass*>::const_iterator cellsEnd(const int atHeight) const {
         FAssertLF(atHeight < treeHeight);
         return cellBlocksPerLevel[atHeight].end();
     }
 
 
-    typename std::list<ParticleGroupClass*>::iterator leavesBegin(){
+    typename std::vector<ParticleGroupClass*>::iterator leavesBegin(){
         return particleBlocks.begin();
     }
 
-    typename std::list<ParticleGroupClass*>::const_iterator leavesBegin() const {
+    typename std::vector<ParticleGroupClass*>::const_iterator leavesBegin() const {
         return particleBlocks.begin();
     }
 
-    typename std::list<ParticleGroupClass*>::iterator leavesEnd(){
+    typename std::vector<ParticleGroupClass*>::iterator leavesEnd(){
         return particleBlocks.end();
     }
 
-    typename std::list<ParticleGroupClass*>::const_iterator leavesEnd() const {
+    typename std::vector<ParticleGroupClass*>::const_iterator leavesEnd() const {
         return particleBlocks.end();
     }
 };
