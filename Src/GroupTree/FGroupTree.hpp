@@ -487,26 +487,42 @@ public:
         return treeHeight;
     }
 
-    CellGroupIterator cellsBegin(const int atHeight){
-        FAssertLF(atHeight < treeHeight);
-        return cellBlocksPerLevel[atHeight].begin();
+    CellGroupIterator cellsBegin(const int inLevel){
+        FAssertLF(inLevel < treeHeight);
+        return cellBlocksPerLevel[inLevel].begin();
     }
 
-    CellGroupConstIterator cellsBegin(const int atHeight) const {
-        FAssertLF(atHeight < treeHeight);
-        return cellBlocksPerLevel[atHeight].begin();
+    CellGroupConstIterator cellsBegin(const int inLevel) const {
+        FAssertLF(inLevel < treeHeight);
+        return cellBlocksPerLevel[inLevel].begin();
     }
 
-    CellGroupIterator cellsEnd(const int atHeight){
-        FAssertLF(atHeight < treeHeight);
-        return cellBlocksPerLevel[atHeight].end();
+    CellGroupIterator cellsEnd(const int inLevel){
+        FAssertLF(inLevel < treeHeight);
+        return cellBlocksPerLevel[inLevel].end();
     }
 
-    CellGroupConstIterator cellsEnd(const int atHeight) const {
-        FAssertLF(atHeight < treeHeight);
-        return cellBlocksPerLevel[atHeight].end();
+    CellGroupConstIterator cellsEnd(const int inLevel) const {
+        FAssertLF(inLevel < treeHeight);
+        return cellBlocksPerLevel[inLevel].end();
     }
 
+    int getNbCellGroupAtLevel(const int inLevel) const {
+        FAssertLF(inLevel < treeHeight);
+        return int(cellBlocksPerLevel[inLevel].size());
+    }
+
+    CellGroupClass* getCellGroup(const int inLevel, const int inIdx){
+        FAssertLF(inLevel < treeHeight);
+        FAssertLF(inIdx < int(cellBlocksPerLevel[inLevel].size()));
+        return cellBlocksPerLevel[inLevel][inIdx];
+    }
+
+    const CellGroupClass* getCellGroup(const int inLevel, const int inIdx) const {
+        FAssertLF(inLevel < treeHeight);
+        FAssertLF(inIdx < int(cellBlocksPerLevel[inLevel].size()));
+        return cellBlocksPerLevel[inLevel][inIdx];
+    }
 
     ParticleGroupIterator leavesBegin(){
         return particleBlocks.begin();
@@ -522,6 +538,20 @@ public:
 
     ParticleGroupConstIterator leavesEnd() const {
         return particleBlocks.end();
+    }
+
+    int getNbParticleGroup() const {
+        return int(particleBlocks.size());
+    }
+
+    ParticleGroupClass* getParticleGroup(const int inIdx){
+        FAssertLF(inIdx < int(particleBlocks.size()));
+        return particleBlocks[inIdx];
+    }
+
+    const ParticleGroupClass* getParticleGroup(const int inIdx) const {
+        FAssertLF(inIdx < int(particleBlocks.size()));
+        return particleBlocks[inIdx];
     }
 };
 
