@@ -114,86 +114,77 @@ protected:
             // We create one big vector per block
             typename std::vector< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
 
-            {
-                typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
-                const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
+            for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+                // Create the vector
+                allOutsideInteractions.push_back( std::vector<OutOfBlockInteraction>() );
+                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
+                ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-                // We iterate on blocks
-                while(iterParticles != endParticles){
-                    // Create the vector
-                    allOutsideInteractions.push_back( std::vector<OutOfBlockInteraction>() );
-                    typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
-                    ParticleGroupClass* containers = (*iterParticles);
+                externalInteractionsLeafLevel.emplace_back();
+                std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
 
-                    externalInteractionsLeafLevel.emplace_back();
-                    std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
+                #pragma omp task default(none) firstprivate(idxGroup, containers, outsideInteractions, externalInteractions)
+                { // Can be a task(inout:iterCells, out:outsideInteractions)
+                    const MortonIndex blockStartIdx = containers->getStartingIndex();
+                    const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
-                    #pragma omp task default(none) firstprivate(containers, outsideInteractions, externalInteractions)
-                    { // Can be a task(inout:iterCells, out:outsideInteractions)
-                        const MortonIndex blockStartIdx = containers->getStartingIndex();
-                        const MortonIndex blockEndIdx = containers->getEndingIndex();
+                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
+                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
+                        if(particles.isAttachedToSomething()){
+                            MortonIndex interactionsIndexes[26];
+                            int interactionsPosition[26];
+                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                            int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
-                        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                            if(particles.isAttachedToSomething()){
-                                MortonIndex interactionsIndexes[26];
-                                int interactionsPosition[26];
-                                FTreeCoordinate coord(mindex, tree->getHeight()-1);
-                                int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
-
-                                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                        // Inside block interaction, do nothing
-                                    }
-                                    else if(interactionsIndexes[idxInter] < mindex){
-                                        OutOfBlockInteraction property;
-                                        property.insideIndex = mindex;
-                                        property.outIndex    = interactionsIndexes[idxInter];
-                                        property.outPosition = interactionsPosition[idxInter];
-                                        (*outsideInteractions).push_back(property);
-                                    }
+                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                    // Inside block interaction, do nothing
+                                }
+                                else if(interactionsIndexes[idxInter] < mindex){
+                                    OutOfBlockInteraction property;
+                                    property.insideIndex = mindex;
+                                    property.outIndex    = interactionsIndexes[idxInter];
+                                    property.outPosition = interactionsPosition[idxInter];
+                                    (*outsideInteractions).push_back(property);
                                 }
                             }
                         }
-
-                        // Sort to match external order
-                        FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
-
-                        typename OctreeClass::ParticleGroupIterator iterLeftParticles = tree->leavesBegin();
-                        int currentOutInteraction = 0;
-                        while((*iterLeftParticles) != containers && currentOutInteraction < int((*outsideInteractions).size())){
-                            ParticleGroupClass* leftContainers = (*iterLeftParticles);
-                            const MortonIndex blockStartIdx = leftContainers->getStartingIndex();
-                            const MortonIndex blockEndIdx = leftContainers->getEndingIndex();
-
-                            while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
-                                currentOutInteraction += 1;
-                            }
-
-                            int lastOutInteraction = currentOutInteraction;
-                            while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
-                                lastOutInteraction += 1;
-                            }
-
-                            const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
-                            if(nbInteractionsBetweenBlocks){
-                                externalInteractions->emplace_back();
-                                BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
-                                interactions->otherBlock = (*iterLeftParticles);
-                                interactions->interactions.resize(nbInteractionsBetweenBlocks);
-                                std::copy((*outsideInteractions).begin() + currentOutInteraction,
-                                          (*outsideInteractions).begin() + lastOutInteraction,
-                                          interactions->interactions.begin());
-                            }
-
-                            currentOutInteraction = lastOutInteraction;
-                            ++iterLeftParticles;
-                        }
                     }
-                    ++iterParticles;
+
+                    // Sort to match external order
+                    FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
+
+                    int currentOutInteraction = 0;
+                    for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int((*outsideInteractions).size()) ; ++idxLeftGroup){
+                        ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
+                        const MortonIndex blockStartIdx    = leftContainers->getStartingIndex();
+                        const MortonIndex blockEndIdx      = leftContainers->getEndingIndex();
+
+                        while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
+                            currentOutInteraction += 1;
+                        }
+
+                        int lastOutInteraction = currentOutInteraction;
+                        while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
+                            lastOutInteraction += 1;
+                        }
+
+                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                        if(nbInteractionsBetweenBlocks){
+                            externalInteractions->emplace_back();
+                            BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
+                            interactions->otherBlock = leftContainers;
+                            interactions->interactions.resize(nbInteractionsBetweenBlocks);
+                            std::copy((*outsideInteractions).begin() + currentOutInteraction,
+                                      (*outsideInteractions).begin() + lastOutInteraction,
+                                      interactions->interactions.begin());
+                        }
+
+                        currentOutInteraction = lastOutInteraction;
+                    }
                 }
-                #pragma omp taskwait
             }
+            #pragma omp taskwait
         }
         FLOG( leafTimer.tac(); );
         FLOG( cellTimer.tic(); );
@@ -201,22 +192,19 @@ protected:
             for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
                 std::vector<std::vector<OutOfBlockInteraction> > allOutsideInteractions;
 
-                typename OctreeClass::CellGroupConstIterator iterCells = tree->cellsBegin(idxLevel);
-                const typename OctreeClass::CellGroupConstIterator endCells = tree->cellsEnd(idxLevel);
-
-                while(iterCells != endCells){
+                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                     allOutsideInteractions.push_back(std::vector<OutOfBlockInteraction>());
                     std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
 
-                    const CellContainerClass* currentCells = (*iterCells);
+                    const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                     externalInteractionsAllLevel[idxLevel].emplace_back();
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel].back();
 
-                    #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, idxLevel, externalInteractions)
+                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, outsideInteractions, idxLevel, externalInteractions)
                     {
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-                        const MortonIndex blockEndIdx = currentCells->getEndingIndex();
+                        const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
                         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
                             const CellClass* cell = currentCells->getCell(mindex);
@@ -245,11 +233,11 @@ protected:
                         // Manage outofblock interaction
                         FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
 
-                        typename OctreeClass::CellGroupIterator iterLeftCells = tree->cellsBegin(idxLevel);
                         int currentOutInteraction = 0;
-                        while((*iterLeftCells) != currentCells && currentOutInteraction < int((*outsideInteractions).size())){
-                            const MortonIndex blockStartIdx = (*iterLeftCells)->getStartingIndex();
-                            const MortonIndex blockEndIdx = (*iterLeftCells)->getEndingIndex();
+                        for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int((*outsideInteractions).size()) ; ++idxLeftGroup){
+                            CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
+                            const MortonIndex blockStartIdx = leftCells->getStartingIndex();
+                            const MortonIndex blockEndIdx   = leftCells->getEndingIndex();
 
                             while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
                                 currentOutInteraction += 1;
@@ -265,7 +253,7 @@ protected:
                             if(nbInteractionsBetweenBlocks){
                                 externalInteractions->emplace_back();
                                 BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
-                                interactions->otherBlock = (*iterLeftCells);
+                                interactions->otherBlock = leftCells;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy((*outsideInteractions).begin() + currentOutInteraction,
                                           (*outsideInteractions).begin() + lastOutInteraction,
@@ -273,10 +261,8 @@ protected:
                             }
 
                             currentOutInteraction = lastOutInteraction;
-                            ++iterLeftCells;
                         }
                     }
-                    ++iterCells;
                 }
             }
             #pragma omp taskwait
@@ -291,17 +277,12 @@ protected:
 
     void bottomPass(){
         FLOG( FTic timer; );
-        typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
-        const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
 
-        typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-        const typename OctreeClass::CellGroupIterator endCells = tree->cellsEnd(tree->getHeight()-1);
-
-        while(iterParticles != endParticles && iterCells != endCells){
-            CellContainerClass* leafCells = (*iterCells);
-            ParticleGroupClass* containers = (*iterParticles);
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            CellContainerClass* leafCells  = tree->getCellGroup(tree->getHeight()-1, idxGroup);
+            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
             #pragma omp task default(shared) firstprivate(leafCells, containers)
-            { // Can be a task(in:iterParticles, out:iterCells)
+            {
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -316,14 +297,10 @@ protected:
                     }
                 }
             }
-
-            ++iterParticles;
-            ++iterCells;
         }
         // Wait for task to complete
         #pragma omp taskwait
 
-        FAssertLF(iterParticles == endParticles && iterCells == endCells);
         FLOG( FLog::Controller << "\t\t bottomPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
@@ -337,24 +314,24 @@ protected:
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
-                CellContainerClass* currentCells = (*iterCells);
+                CellContainerClass*const currentCells = (*iterCells);
 
                 CellContainerClass* subCellGroups[9];
                 memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
 
                 // Skip current group if needed
-                if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
+                if( (*iterChildCells)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
                     ++iterChildCells;
                     FAssertLF( iterChildCells != endChildCells );
-                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex() );
+                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == currentCells->getStartingIndex() );
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
@@ -363,7 +340,7 @@ protected:
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-                    const MortonIndex blockEndIdx = currentCells->getEndingIndex();
+                    const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
                     int idxSubCellGroup = 0;
 
@@ -521,24 +498,24 @@ protected:
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
             while(iterCells != endCells && iterChildCells != endChildCells){
-                CellContainerClass* currentCells = (*iterCells);
+                CellContainerClass*const currentCells = (*iterCells);
 
                 CellContainerClass* subCellGroups[9];
                 memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
 
                 // Skip current group if needed
-                if( (*iterChildCells)->getEndingIndex() <= ((*iterCells)->getStartingIndex()<<3) ){
+                if( (*iterChildCells)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
                     ++iterChildCells;
                     FAssertLF( iterChildCells != endChildCells );
-                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == (*iterCells)->getStartingIndex() );
+                    FAssertLF( ((*iterChildCells)->getStartingIndex()>>3) == currentCells->getStartingIndex() );
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= (((*iterCells)->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= ((*iterCells)->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
@@ -690,41 +667,30 @@ protected:
 
     void mergePass(){
         FLOG( FTic timer; );
-        {
-            typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
-            const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
 
-            typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(tree->getHeight()-1);
-            const typename OctreeClass::CellGroupIterator endCells = tree->cellsEnd(tree->getHeight()-1);
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            CellContainerClass* leafCells  = tree->getCellGroup(tree->getHeight()-1, idxGroup);
+            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
+            #pragma omp task default(shared) firstprivate(leafCells, containers)
+            {
+                const MortonIndex blockStartIdx = leafCells->getStartingIndex();
+                const MortonIndex blockEndIdx = leafCells->getEndingIndex();
+                KernelClass*const kernel = kernels[omp_get_thread_num()];
 
-            while(iterParticles != endParticles && iterCells != endCells){
-                CellContainerClass* leafCells = (*iterCells);
-                ParticleGroupClass* containers = (*iterParticles);
-                #pragma omp task default(shared) firstprivate(leafCells, containers)
-                {
-                    const MortonIndex blockStartIdx = leafCells->getStartingIndex();
-                    const MortonIndex blockEndIdx = leafCells->getEndingIndex();
-                    KernelClass*const kernel = kernels[omp_get_thread_num()];
-
-                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        CellClass* cell = leafCells->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
-                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                            FAssertLF(particles.isAttachedToSomething());
-                            kernel->L2P(cell, &particles);
-                        }
+                for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
+                    CellClass* cell = leafCells->getCell(mindex);
+                    if(cell){
+                        FAssertLF(cell->getMortonIndex() == mindex);
+                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
+                        FAssertLF(particles.isAttachedToSomething());
+                        kernel->L2P(cell, &particles);
                     }
                 }
-
-                ++iterParticles;
-                ++iterCells;
             }
-            // Wait for task to complete
-            #pragma omp taskwait
-
-            FAssertLF(iterParticles == endParticles && iterCells == endCells);
         }
+        // Wait for task to complete
+        #pragma omp taskwait
+
         FLOG( FLog::Controller << "\t\t L2P in " << timer.tacAndElapsed() << "s\n" );
     }
 
