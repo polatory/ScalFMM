@@ -17,6 +17,7 @@
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
+#include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -45,7 +46,8 @@ int main(int argc, char* argv[]){
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
     typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>   GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-    typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    //typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
