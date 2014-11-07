@@ -88,6 +88,8 @@ public:
                 if(operationsToProceed & FFmmL2L) downardPass();
 
                 if( operationsToProceed & FFmmL2P ) mergePass();
+
+                #pragma omp taskwait
             }
         }
     }
