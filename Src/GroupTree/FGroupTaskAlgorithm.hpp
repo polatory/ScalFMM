@@ -63,8 +63,14 @@ public:
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
 
-        // For now rebuild all external interaction
-        buildExternalInteractionVecs();
+        //#pragma omp parallel
+        {
+            //#pragma omp single nowait
+            {
+                // For now rebuild all external interaction
+                buildExternalInteractionVecs();
+            }
+        }
 
         #pragma omp parallel
         {
