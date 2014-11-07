@@ -38,7 +38,13 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
+                          FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize, LocalOptionNoValidate);
+
+    // Set the number of threads
+    omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
+
+
     // Initialize the types
     static const int P = 9;
     typedef FRotationCell<P>               GroupCellClass;

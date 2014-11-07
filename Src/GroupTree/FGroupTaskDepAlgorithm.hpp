@@ -64,9 +64,9 @@ public:
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskDepAlgorithm\n" );
 
-        //#pragma omp parallel
+        #pragma omp parallel
         {
-            //#pragma omp single nowait
+            #pragma omp single nowait
             {
                 // For now rebuild all external interaction
                 buildExternalInteractionVecs();
@@ -111,15 +111,15 @@ protected:
         {
             // We create one big vector per block
             typename std::vector< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+            allOutsideInteractions.resize(tree->getNbParticleGroup());
+            externalInteractionsLeafLevel.resize(tree->getNbParticleGroup());
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 // Create the vector
-                allOutsideInteractions.push_back( std::vector<OutOfBlockInteraction>() );
-                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
+                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions[idxGroup];
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-                externalInteractionsLeafLevel.emplace_back();
-                std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel.back();
+                std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
                 #pragma omp task default(none) firstprivate(idxGroup, containers, outsideInteractions, externalInteractions)
                 { // Can be a task(inout:iterCells, out:outsideInteractions)
@@ -187,17 +187,20 @@ protected:
         FLOG( leafTimer.tac(); );
         FLOG( cellTimer.tic(); );
         {
+            std::vector<std::vector<std::vector<OutOfBlockInteraction> > > allOutsideInteractions;
+            allOutsideInteractions.resize(tree->getHeight());
+
             for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
-                std::vector<std::vector<OutOfBlockInteraction> > allOutsideInteractions;
+
+                allOutsideInteractions[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
+                externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
 
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                    allOutsideInteractions.push_back(std::vector<OutOfBlockInteraction>());
-                    std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions.back();
+                    std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions[idxLevel][idxGroup];
 
                     const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
-                    externalInteractionsAllLevel[idxLevel].emplace_back();
-                    std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel].back();
+                    std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
                     #pragma omp task default(none) firstprivate(idxGroup, currentCells, outsideInteractions, idxLevel, externalInteractions)
                     {
