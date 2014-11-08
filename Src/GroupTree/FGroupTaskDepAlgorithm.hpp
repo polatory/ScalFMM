@@ -112,19 +112,17 @@ protected:
         // First leaf level
         {
             // We create one big vector per block
-            typename std::vector< std::vector<OutOfBlockInteraction> > allOutsideInteractions;
-            allOutsideInteractions.resize(tree->getNbParticleGroup());
             externalInteractionsLeafLevel.resize(tree->getNbParticleGroup());
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 // Create the vector
-                typename std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions[idxGroup];
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, containers, outsideInteractions, externalInteractions)
-                { // Can be a task(inout:iterCells, out:outsideInteractions)
+                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+                { // Can be a task(inout:iterCells)
+                    std::vector<OutOfBlockInteraction> outsideInteractions;
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
@@ -145,27 +143,27 @@ protected:
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
                                     property.outPosition = interactionsPosition[idxInter];
-                                    (*outsideInteractions).push_back(property);
+                                    outsideInteractions.push_back(property);
                                 }
                             }
                         }
                     }
 
                     // Sort to match external order
-                    FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
+                    FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
                     int currentOutInteraction = 0;
-                    for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int((*outsideInteractions).size()) ; ++idxLeftGroup){
+                    for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                         ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
                         const MortonIndex blockStartIdx    = leftContainers->getStartingIndex();
                         const MortonIndex blockEndIdx      = leftContainers->getEndingIndex();
 
-                        while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
+                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
+                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                             lastOutInteraction += 1;
                         }
 
@@ -175,8 +173,8 @@ protected:
                             BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
                             interactions->otherBlock = leftContainers;
                             interactions->interactions.resize(nbInteractionsBetweenBlocks);
-                            std::copy((*outsideInteractions).begin() + currentOutInteraction,
-                                      (*outsideInteractions).begin() + lastOutInteraction,
+                            std::copy(outsideInteractions.begin() + currentOutInteraction,
+                                      outsideInteractions.begin() + lastOutInteraction,
                                       interactions->interactions.begin());
                         }
 
@@ -184,28 +182,21 @@ protected:
                     }
                 }
             }
-            #pragma omp taskwait
         }
         FLOG( leafTimer.tac(); );
         FLOG( cellTimer.tic(); );
         {
-            std::vector<std::vector<std::vector<OutOfBlockInteraction> > > allOutsideInteractions;
-            allOutsideInteractions.resize(tree->getHeight());
-
             for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
-
-                allOutsideInteractions[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
                 externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
 
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                    std::vector<OutOfBlockInteraction>* outsideInteractions = &allOutsideInteractions[idxLevel][idxGroup];
-
                     const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
-                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, outsideInteractions, idxLevel, externalInteractions)
+                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                     {
+                        std::vector<OutOfBlockInteraction> outsideInteractions;
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
@@ -227,27 +218,27 @@ protected:
                                         property.insideIndex = mindex;
                                         property.outIndex    = interactionsIndexes[idxInter];
                                         property.outPosition = interactionsPosition[idxInter];
-                                        (*outsideInteractions).push_back(property);
+                                        outsideInteractions.push_back(property);
                                     }
                                 }
                             }
                         }
 
                         // Manage outofblock interaction
-                        FQuickSort<OutOfBlockInteraction, int>::QsSequential((*outsideInteractions).data(),int((*outsideInteractions).size()));
+                        FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
                         int currentOutInteraction = 0;
-                        for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int((*outsideInteractions).size()) ; ++idxLeftGroup){
+                        for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                             CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
                             const MortonIndex blockStartIdx = leftCells->getStartingIndex();
                             const MortonIndex blockEndIdx   = leftCells->getEndingIndex();
 
-                            while(currentOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[currentOutInteraction].outIndex < blockStartIdx){
+                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
-                            while(lastOutInteraction < int((*outsideInteractions).size()) && (*outsideInteractions)[lastOutInteraction].outIndex < blockEndIdx){
+                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
                                 lastOutInteraction += 1;
                             }
 
@@ -258,8 +249,8 @@ protected:
                                 BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
                                 interactions->otherBlock = leftCells;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
-                                std::copy((*outsideInteractions).begin() + currentOutInteraction,
-                                          (*outsideInteractions).begin() + lastOutInteraction,
+                                std::copy(outsideInteractions.begin() + currentOutInteraction,
+                                          outsideInteractions.begin() + lastOutInteraction,
                                           interactions->interactions.begin());
                             }
 
@@ -268,9 +259,10 @@ protected:
                     }
                 }
             }
-            #pragma omp taskwait
         }
         FLOG( cellTimer.tac(); );
+
+        #pragma omp taskwait
 
         FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
