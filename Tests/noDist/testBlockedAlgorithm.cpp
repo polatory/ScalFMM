@@ -12,6 +12,7 @@
 #include "../../Src/Files/FRandomLoader.hpp"
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
+#include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -35,7 +36,8 @@ int main(int argc, char* argv[]){
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
     typedef FTestKernels< GroupCellClass, GroupContainerClass >                       GroupKernelClass;
-    typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;
