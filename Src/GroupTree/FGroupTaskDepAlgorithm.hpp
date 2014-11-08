@@ -330,7 +330,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: currentCells[0]) depend(in: subCellGroups[0])
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: currentCells[0]) depend(in: subCellGroups[0][0], subCellGroups[1][0], subCellGroups[2][0], subCellGroups[3][0], subCellGroups[4][0], subCellGroups[5][0], subCellGroups[6][0], subCellGroups[7][0], subCellGroups[8][0])
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
@@ -509,7 +509,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: subCellGroups[0]) depend(in: currentCells[0])
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: subCellGroups[0][0], subCellGroups[1][0], subCellGroups[2][0], subCellGroups[3][0], subCellGroups[4][0], subCellGroups[5][0], subCellGroups[6][0], subCellGroups[7][0], subCellGroups[8][0]) depend(in: currentCells[0])
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
