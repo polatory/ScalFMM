@@ -49,10 +49,10 @@ namespace FP2P {
    */
 template <typename MatrixKernelClass>
 inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-			    FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-			    const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-			    FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
-			    const MatrixKernelClass *const MatrixKernel){
+                            FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                            const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                            FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                            const MatrixKernelClass *const MatrixKernel){
 
     // Compute kernel of interaction...
     const FPoint sourcePoint(sourceX,sourceY,sourceZ);
@@ -90,9 +90,9 @@ inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal 
    */
 template <typename MatrixKernelClass>
 inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-			       const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-			       FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
-			       const MatrixKernelClass *const MatrixKernel){
+                               const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                               const MatrixKernelClass *const MatrixKernel){
 
     // Compute kernel of interaction...
     const FPoint sourcePoint(sourceX,sourceY,sourceZ);
@@ -118,7 +118,7 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  /**
+/**
    * @brief MutualParticlesKIJ
    * @param sourceX
    * @param sourceY
@@ -137,12 +137,12 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
    * @param targetForceZ
    * @param targetPotential
    */
-  template<typename MatrixKernelClass>
-  inline void MutualParticlesKIJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
-                                 FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-                                 const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
-                                 FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
-                                 const MatrixKernelClass *const MatrixKernel){
+template<typename MatrixKernelClass>
+inline void MutualParticlesKIJ(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal* sourcePhysicalValue,
+                               FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
+                               const FReal targetX,const FReal targetY,const FReal targetZ, const FReal* targetPhysicalValue,
+                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                               const MatrixKernelClass *const MatrixKernel){
 
     // get information on tensorial aspect of matrix kernel
     const int ncmp = MatrixKernelClass::NCMP;
@@ -158,28 +158,28 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
     MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
 
     for(unsigned int i = 0 ; i < 3 ; ++i){
-      for(unsigned int j = 0 ; j < 3 ; ++j){
+        for(unsigned int j = 0 ; j < 3 ; ++j){
 
-        // update component to be applied
-        const int d = applyTab[i*3+j];
+            // update component to be applied
+            const int d = applyTab[i*3+j];
 
-        // forces prefactor
-        const FReal coef = -(targetPhysicalValue[j] * sourcePhysicalValue[j]);
+            // forces prefactor
+            const FReal coef = -(targetPhysicalValue[j] * sourcePhysicalValue[j]);
 
-        targetForceX[i] += dKxy[d][0] * coef;
-        targetForceY[i] += dKxy[d][1] * coef;
-        targetForceZ[i] += dKxy[d][2] * coef;
-        targetPotential[i] += ( Kxy[d] * sourcePhysicalValue[j] );
+            targetForceX[i] += dKxy[d][0] * coef;
+            targetForceY[i] += dKxy[d][1] * coef;
+            targetForceZ[i] += dKxy[d][2] * coef;
+            targetPotential[i] += ( Kxy[d] * sourcePhysicalValue[j] );
 
-        sourceForceX[i] -= dKxy[d][0] * coef;
-        sourceForceY[i] -= dKxy[d][1] * coef;
-        sourceForceZ[i] -= dKxy[d][2] * coef;
-        sourcePotential[i] += ( Kxy[d] * targetPhysicalValue[j] );
+            sourceForceX[i] -= dKxy[d][0] * coef;
+            sourceForceY[i] -= dKxy[d][1] * coef;
+            sourceForceZ[i] -= dKxy[d][2] * coef;
+            sourcePotential[i] += ( Kxy[d] * targetPhysicalValue[j] );
 
-      }// j
+        }// j
     }// i
 
-  }
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -195,9 +195,9 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
 /**
  * @brief FullMutualKIJ
  */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullMutualKIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullMutualKIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                          const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     // get information on tensorial aspect of matrix kernel
     const int ncmp = MatrixKernelClass::NCMP;
@@ -211,106 +211,106 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
-            // evaluate kernel and its partial derivatives
-            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-            FReal Kxy[ncmp];
-            FReal dKxy[ncmp][3];
-            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+                    // evaluate kernel and its partial derivatives
+                    const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+                    const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+                    FReal Kxy[ncmp];
+                    FReal dKxy[ncmp][3];
+                    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
 
-            for(unsigned int i = 0 ; i < 3 ; ++i){
-              FReal*const targetsPotentials = inTargets->getPotentials(i);
-              FReal*const targetsForcesX = inTargets->getForcesX(i);
-              FReal*const targetsForcesY = inTargets->getForcesY(i);
-              FReal*const targetsForcesZ = inTargets->getForcesZ(i);
-              FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
-              FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
-              FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
-              FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                        FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentials(i);
+                        FReal*const sourcesForcesX = inNeighbors[idxNeighbors]->getForcesX(i);
+                        FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesY(i);
+                        FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZ(i);
 
-              for(unsigned int j = 0 ; j < 3 ; ++j){
-                const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
-                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+                            const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
 
-                // update component to be applied
-                const int d = applyTab[i*3+j];
+                            // update component to be applied
+                            const int d = applyTab[i*3+j];
 
-                // forces prefactor
-                FReal coef = -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                            // forces prefactor
+                            FReal coef = -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-                targetsForcesX[idxTarget] += dKxy[d][0] * coef;
-                targetsForcesY[idxTarget] += dKxy[d][1] * coef;
-                targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
-                targetsPotentials[idxTarget] += ( Kxy[d] * sourcesPhysicalValues[idxSource] );
+                            targetsForcesX[idxTarget] += dKxy[d][0] * coef;
+                            targetsForcesY[idxTarget] += dKxy[d][1] * coef;
+                            targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
+                            targetsPotentials[idxTarget] += ( Kxy[d] * sourcesPhysicalValues[idxSource] );
 
-                sourcesForcesX[idxSource] -= dKxy[d][0] * coef;
-                sourcesForcesY[idxSource] -= dKxy[d][1] * coef;
-                sourcesForcesZ[idxSource] -= dKxy[d][2] * coef;
-                sourcesPotentials[idxSource] += Kxy[d] * targetsPhysicalValues[idxTarget];
+                            sourcesForcesX[idxSource] -= dKxy[d][0] * coef;
+                            sourcesForcesY[idxSource] -= dKxy[d][1] * coef;
+                            sourcesForcesZ[idxSource] -= dKxy[d][2] * coef;
+                            sourcesPotentials[idxSource] += Kxy[d] * targetsPhysicalValues[idxTarget];
 
-              }// j
-            }// i
-          }
+                        }// j
+                    }// i
+                }
+            }
         }
-      }
     }
 
     for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-      for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
- 
-        // evaluate kernel and its partial derivatives
-        const FPoint sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
-        const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-        FReal Kxy[ncmp];
-        FReal dKxy[ncmp][3];
-        MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+        for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
 
-        for(unsigned int i = 0 ; i < 3 ; ++i){
-          FReal*const targetsPotentials = inTargets->getPotentials(i);
-          FReal*const targetsForcesX = inTargets->getForcesX(i);
-          FReal*const targetsForcesY = inTargets->getForcesY(i);
-          FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+            // evaluate kernel and its partial derivatives
+            const FPoint sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
+            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+            FReal Kxy[ncmp];
+            FReal dKxy[ncmp][3];
+            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
 
-          for(unsigned int j = 0 ; j < 3 ; ++j){
-            const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+            for(unsigned int i = 0 ; i < 3 ; ++i){
+                FReal*const targetsPotentials = inTargets->getPotentials(i);
+                FReal*const targetsForcesX = inTargets->getForcesX(i);
+                FReal*const targetsForcesY = inTargets->getForcesY(i);
+                FReal*const targetsForcesZ = inTargets->getForcesZ(i);
 
-            // update component to be applied
-            const int d = applyTab[i*3+j];
+                for(unsigned int j = 0 ; j < 3 ; ++j){
+                    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
 
-            // forces prefactor
-            const FReal coef = -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
+                    // update component to be applied
+                    const int d = applyTab[i*3+j];
 
-            targetsForcesX[idxTarget] += dKxy[d][0] * coef;
-            targetsForcesY[idxTarget] += dKxy[d][1] * coef;
-            targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
-            targetsPotentials[idxTarget] += ( Kxy[d] * targetsPhysicalValues[idxSource] );
+                    // forces prefactor
+                    const FReal coef = -(targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
 
-            targetsForcesX[idxSource] -= dKxy[d][0] * coef;
-            targetsForcesY[idxSource] -= dKxy[d][1] * coef;
-            targetsForcesZ[idxSource] -= dKxy[d][2] * coef;
-            targetsPotentials[idxSource] += Kxy[d] * targetsPhysicalValues[idxTarget];
-          }// j
-        }// i
+                    targetsForcesX[idxTarget] += dKxy[d][0] * coef;
+                    targetsForcesY[idxTarget] += dKxy[d][1] * coef;
+                    targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
+                    targetsPotentials[idxTarget] += ( Kxy[d] * targetsPhysicalValues[idxSource] );
 
-      }
+                    targetsForcesX[idxSource] -= dKxy[d][0] * coef;
+                    targetsForcesY[idxSource] -= dKxy[d][1] * coef;
+                    targetsForcesZ[idxSource] -= dKxy[d][2] * coef;
+                    targetsPotentials[idxSource] += Kxy[d] * targetsPhysicalValues[idxTarget];
+                }// j
+            }// i
+
+        }
     }
-  }
+}
 
-  /**
+/**
    * @brief FullRemoteKIJ
    */
-  template <class ContainerClass, typename MatrixKernelClass>
-  inline void FullRemoteKIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+template <class ContainerClass, typename MatrixKernelClass>
+inline void FullRemoteKIJ(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                          const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     // get information on tensorial aspect of matrix kernel
     const int ncmp = MatrixKernelClass::NCMP;
@@ -324,61 +324,342 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-      for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        if( inNeighbors[idxNeighbors] ){
-          const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
-          const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
-          const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
-          const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            if( inNeighbors[idxNeighbors] ){
+                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
+                const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
+                const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-          for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
-            // evaluate kernel and its partial derivatives
-            const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
-            FReal Kxy[ncmp];
-            FReal dKxy[ncmp][3];
-            MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
+                    // evaluate kernel and its partial derivatives
+                    const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+                    const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+                    FReal Kxy[ncmp];
+                    FReal dKxy[ncmp][3];
+                    MatrixKernel->evaluateBlockAndDerivative(sourcePoint,targetPoint,Kxy,dKxy);
 
-            for(unsigned int i = 0 ; i < 3 ; ++i){
-              FReal*const targetsPotentials = inTargets->getPotentials(i);
-              FReal*const targetsForcesX = inTargets->getForcesX(i);
-              FReal*const targetsForcesY = inTargets->getForcesY(i);
-              FReal*const targetsForcesZ = inTargets->getForcesZ(i);
+                    for(unsigned int i = 0 ; i < 3 ; ++i){
+                        FReal*const targetsPotentials = inTargets->getPotentials(i);
+                        FReal*const targetsForcesX = inTargets->getForcesX(i);
+                        FReal*const targetsForcesY = inTargets->getForcesY(i);
+                        FReal*const targetsForcesZ = inTargets->getForcesZ(i);
 
-              for(unsigned int j = 0 ; j < 3 ; ++j){
-                const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
-                const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
+                        for(unsigned int j = 0 ; j < 3 ; ++j){
+                            const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues(j);
+                            const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValues(j);
 
-                // update component to be applied
-                const int d = applyTab[i*3+j];
+                            // update component to be applied
+                            const int d = applyTab[i*3+j];
 
-                // forces prefactor
-                const FReal coef = -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
+                            // forces prefactor
+                            const FReal coef = -(targetsPhysicalValues[idxTarget] * sourcesPhysicalValues[idxSource]);
 
-                targetsForcesX[idxTarget] += dKxy[d][0] * coef;
-                targetsForcesY[idxTarget] += dKxy[d][1] * coef;
-                targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
-                targetsPotentials[idxTarget] += ( Kxy[d] * sourcesPhysicalValues[idxSource] );
+                            targetsForcesX[idxTarget] += dKxy[d][0] * coef;
+                            targetsForcesY[idxTarget] += dKxy[d][1] * coef;
+                            targetsForcesZ[idxTarget] += dKxy[d][2] * coef;
+                            targetsPotentials[idxTarget] += ( Kxy[d] * sourcesPhysicalValues[idxSource] );
 
-              }// j
-            }// i
+                        }// j
+                    }// i
 
-          }
+                }
+            }
         }
-      }
     }
-  }
+}
+
+
+template <class ContainerClass, class MatrixKernelClass, class ComputeClass, int NbFRealInComputeClass>
+static void GenericFullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                              const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+
+    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
+    FReal*const targetsForcesX = inTargets->getForcesX();
+    FReal*const targetsForcesY = inTargets->getForcesY();
+    FReal*const targetsForcesZ = inTargets->getForcesZ();
+    FReal*const targetsPotentials = inTargets->getPotentials();
+
+    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        if( inNeighbors[idxNeighbors] ){
+            const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+            const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)inNeighbors[idxNeighbors]->getPhysicalValues();
+            const ComputeClass*const sourcesX = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[0];
+            const ComputeClass*const sourcesY = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[1];
+            const ComputeClass*const sourcesZ = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[2];
+            ComputeClass*const sourcesForcesX = (ComputeClass*)inNeighbors[idxNeighbors]->getForcesX();
+            ComputeClass*const sourcesForcesY = (ComputeClass*)inNeighbors[idxNeighbors]->getForcesY();
+            ComputeClass*const sourcesForcesZ = (ComputeClass*)inNeighbors[idxNeighbors]->getForcesZ();
+            ComputeClass*const sourcesPotentials = (ComputeClass*)inNeighbors[idxNeighbors]->getPotentials();
+
+            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
+                const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
+                const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
+                const ComputeClass tv = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsPhysicalValues[idxTarget]);
+                ComputeClass  tfx = FMath::Zero<ComputeClass>();
+                ComputeClass  tfy = FMath::Zero<ComputeClass>();
+                ComputeClass  tfz = FMath::Zero<ComputeClass>();
+                ComputeClass  tpo = FMath::Zero<ComputeClass>();
+
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    ComputeClass Kxy[1];
+                    ComputeClass dKxy[3];
+                    MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],
+                                                             tx,ty,tz,Kxy,dKxy);
+                    const ComputeClass coef = (tv * sourcesPhysicalValues[idxSource]);
+
+                    dKxy[0] *= coef;
+                    dKxy[1] *= coef;
+                    dKxy[2] *= coef;
+
+                    tfx += dKxy[0];
+                    tfy += dKxy[1];
+                    tfz += dKxy[2];
+                    tpo += Kxy[0] * sourcesPhysicalValues[idxSource];
+
+                    sourcesForcesX[idxSource] -= dKxy[0];
+                    sourcesForcesY[idxSource] -= dKxy[1];
+                    sourcesForcesZ[idxSource] -= dKxy[2];
+                    sourcesPotentials[idxSource] += Kxy[0] * tv;
+                }
+
+                targetsForcesX[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfx);
+                targetsForcesY[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfy);
+                targetsForcesZ[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfz);
+                targetsPotentials[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tpo);
+            }
+        }
+    }
+
+    {//In this part, we compute (vectorially) the interaction
+        //within the target leaf.
+
+        const int nbParticlesSources = (nbParticlesTargets+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+        const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)targetsPhysicalValues;
+        const ComputeClass*const sourcesX = (const ComputeClass*)targetsX;
+        const ComputeClass*const sourcesY = (const ComputeClass*)targetsY;
+        const ComputeClass*const sourcesZ = (const ComputeClass*)targetsZ;
+        ComputeClass*const sourcesForcesX = (ComputeClass*)targetsForcesX;
+        ComputeClass*const sourcesForcesY = (ComputeClass*)targetsForcesY;
+        ComputeClass*const sourcesForcesZ = (ComputeClass*)targetsForcesZ;
+        ComputeClass*const sourcesPotentials = (ComputeClass*)targetsPotentials;
+
+        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
+            const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
+            const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
+            const ComputeClass tv = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsPhysicalValues[idxTarget]);
+            ComputeClass  tfx = FMath::Zero<ComputeClass>();
+            ComputeClass  tfy = FMath::Zero<ComputeClass>();
+            ComputeClass  tfz = FMath::Zero<ComputeClass>();
+            ComputeClass  tpo = FMath::Zero<ComputeClass>();
+
+            for(int idxSource = (idxTarget+NbFRealInComputeClass)/NbFRealInComputeClass ; idxSource < nbParticlesSources ; ++idxSource){
+                ComputeClass Kxy[1];
+                ComputeClass dKxy[3];
+                MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],
+                                                         tx,ty,tz,Kxy,dKxy);
+                const ComputeClass coef = (tv * sourcesPhysicalValues[idxSource]);
+
+                dKxy[0] *= coef;
+                dKxy[1] *= coef;
+                dKxy[2] *= coef;
+
+                tfx += dKxy[0];
+                tfy += dKxy[1];
+                tfz += dKxy[2];
+                tpo += Kxy[0] * sourcesPhysicalValues[idxSource];
+
+                sourcesForcesX[idxSource] -= dKxy[0];
+                sourcesForcesY[idxSource] -= dKxy[1];
+                sourcesForcesZ[idxSource] -= dKxy[2];
+                sourcesPotentials[idxSource] += Kxy[0] * tv;
+            }
+
+            targetsForcesX[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfx);
+            targetsForcesY[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfy);
+            targetsForcesZ[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfz);
+            targetsPotentials[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tpo);
+        }
+    }
+
+    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+        const int limitForTarget = NbFRealInComputeClass-(idxTarget%NbFRealInComputeClass);
+        for(int idxS = 1 ; idxS < limitForTarget ; ++idxS){
+            const int idxSource = idxTarget + idxS;
+            FReal Kxy[1];
+            FReal dKxy[3];
+            MatrixKernel->evaluateBlockAndDerivative(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource],
+                                                     targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget],
+                                                     Kxy,dKxy);
+            const FReal coef = (targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource]);
+
+            dKxy[0] *= coef;
+            dKxy[1] *= coef;
+            dKxy[2] *= coef;
+
+            targetsForcesX[idxTarget] += dKxy[0];
+            targetsForcesY[idxTarget] += dKxy[1];
+            targetsForcesZ[idxTarget] += dKxy[2];
+            targetsPotentials[idxTarget] += Kxy[0] * targetsPhysicalValues[idxSource];
+
+            targetsForcesX[idxSource] -= dKxy[0];
+            targetsForcesY[idxSource] -= dKxy[1];
+            targetsForcesZ[idxSource] -= dKxy[2];
+            targetsPotentials[idxSource] += Kxy[0] * targetsPhysicalValues[idxTarget];
+        }
+    }
+}
+
+template <class ContainerClass, class MatrixKernelClass, class ComputeClass, int NbFRealInComputeClass>
+static void GenericFullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                              const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
+    FReal*const targetsForcesX = inTargets->getForcesX();
+    FReal*const targetsForcesY = inTargets->getForcesY();
+    FReal*const targetsForcesZ = inTargets->getForcesZ();
+    FReal*const targetsPotentials = inTargets->getPotentials();
+
+    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        if( inNeighbors[idxNeighbors] ){
+            const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+            const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)inNeighbors[idxNeighbors]->getPhysicalValues();
+            const ComputeClass*const sourcesX = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[0];
+            const ComputeClass*const sourcesY = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[1];
+            const ComputeClass*const sourcesZ = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[2];
+
+            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+                const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
+                const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
+                const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
+                const ComputeClass tv = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsPhysicalValues[idxTarget]);
+                ComputeClass  tfx = FMath::Zero<ComputeClass>();
+                ComputeClass  tfy = FMath::Zero<ComputeClass>();
+                ComputeClass  tfz = FMath::Zero<ComputeClass>();
+                ComputeClass  tpo = FMath::Zero<ComputeClass>();
+
+                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                    ComputeClass Kxy[1];
+                    ComputeClass dKxy[3];
+                    MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],
+                                                             tx,ty,tz,Kxy,dKxy);
+                    const ComputeClass coef = (tv * sourcesPhysicalValues[idxSource]);
+
+                    dKxy[0] *= coef;
+                    dKxy[1] *= coef;
+                    dKxy[2] *= coef;
+
+                    tfx += dKxy[0];
+                    tfy += dKxy[1];
+                    tfz += dKxy[2];
+                    tpo += Kxy[0] * sourcesPhysicalValues[idxSource];
+                }
+
+                targetsForcesX[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfx);
+                targetsForcesY[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfy);
+                targetsForcesZ[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tfz);
+                targetsPotentials[idxTarget] += FMath::ConvertTo<FReal, ComputeClass>(tpo);
+            }
+        }
+    }
+}
+
+#ifdef ScalFMM_USE_DOUBLE_PRECISION
+#if defined(ScalFMM_USE_AVX)
+// AVX DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#elif defined(ScalFMM_USE_SSE)
+// SSE DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#else
+// SSE DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#endif
+#else
+#if defined(ScalFMM_USE_AVX)
+// AVX DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#elif defined(ScalFMM_USE_SSE)
+// SSE DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#else
+// SSE DOUBLE
+template <class ContainerClass, class MatrixKernelClass>
+static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+
+template <class ContainerClass, class MatrixKernelClass>
+static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+    GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+}
+#endif
+#endif
 
 }
 
-#ifdef ScalFMM_USE_SSE
-#include "FP2PSse.hpp"
-#elif defined(ScalFMM_USE_AVX)
-#include "FP2PAvx.h"
-#else
-#include "FP2PClassic.hpp"
-#endif //Includes
 #include "FP2PMultiRhs.hpp"
 
 #endif // FP2P_HPP
