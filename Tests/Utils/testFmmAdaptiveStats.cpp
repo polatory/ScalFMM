@@ -74,10 +74,10 @@ public:
             nbAdaptiveFmmOperationsVerbose[idx] = 0;
         }
 
-        nbAdaptiveFmmOperationsVerbosePerLevel = new (int[nbLevels][7]);
+        nbAdaptiveFmmOperationsVerbosePerLevel = new int[nbLevels][7];
         memset(nbAdaptiveFmmOperationsVerbosePerLevel, 0, sizeof(int) * nbLevels * 7);
 
-        nbAdaptiveFmmOperationsVerboseJump = new (int[nbLevels][4]);
+        nbAdaptiveFmmOperationsVerboseJump = new int[nbLevels][4];
         memset(nbAdaptiveFmmOperationsVerboseJump, 0, sizeof(int) * nbLevels * 4);
     }
 
