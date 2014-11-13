@@ -16,7 +16,8 @@
 
 /**
  * @file This file contain a class, gathering all the function that
- * can be called by the ScalFMM API.
+ * can be called by the ScalFMM API. Documentation for each function
+ * can be found in the C Header.
  *
  */
 

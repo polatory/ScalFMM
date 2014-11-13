@@ -581,12 +581,12 @@ inline __m256d FMath::ConvertTo<__m256d,double>(const double val){
 
 template <>
 inline __m256 FMath::ConvertTo<__m256,const float*>(const float* val){
-    return _mm256_load1_ps(val);
+    return _mm256_broadcast_ss(val);
 }
 
 template <>
 inline __m256d FMath::ConvertTo<__m256d,const double*>(const double* val){
-    return _mm256_load1_pd(val);
+    return _mm256_broadcast_sd(val);
 }
 
 template <>
