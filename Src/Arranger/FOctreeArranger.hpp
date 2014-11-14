@@ -132,7 +132,7 @@ public:
 
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(partPos);
                     if(particuleIndex != currentIndex){
-                        tomove.push(ConverterClass::GetParticle(particles,idxPart));
+                        tomove.push(ConverterClass::GetParticleAndRemove(particles,idxPart));
                     }
                 }
             } while(octreeIterator.moveRight());
