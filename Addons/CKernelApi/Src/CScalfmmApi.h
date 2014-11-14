@@ -90,6 +90,8 @@ typedef void* scalfmm_handle;
 scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* BoxCenter, scalfmm_kernel_type KernelType);
 
 
+
+
 /////////////////////////////////////////////////////////////////////
 //////////////////       Tree  Part                    //////////////
 /////////////////////////////////////////////////////////////////////
@@ -167,10 +169,10 @@ void scalfmm_get_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValu
  * Forces will be stored sequentially, according to the indices in the
  * array. (ie fx1,fy1,fz1,fx2,fy2,fz2,fx3 ....)
  */
-void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * forcesToFill);
-void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
-void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
-void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
+void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill);
+void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
+void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
+void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
 
 
 /**
@@ -186,10 +188,10 @@ void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOf
  * forces . WARNING : User must allocate the array before call.
  *
  */
-void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * forcesToFill);
-void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
-void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
-void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
+void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill);
+void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
+void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
+void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
 
 
 /**
@@ -218,10 +220,10 @@ void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOf
  * @param updatedXYZ array of displacement (ie
  * dx1,dy1,dz1,dx2,dy2,dz2,dx3 ...)
  */
-void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
-void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
-void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
+void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
+void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
+void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
 
 
 /**
@@ -239,15 +241,15 @@ void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, 
  * compliant.
  *
  */
-void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
-void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
-void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
+void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
+void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
+void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
 
-void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
-void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
-void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
+void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
+void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
+void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
 
 
 
@@ -258,18 +260,6 @@ void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int
 
 
 ///////////////// User kernel part :
-
-/**
- * @param user_kernel Scalfmm_Kernel_Descriptor containing callbacks
- * to user Fmm function. Meaningless if using one of our kernel
- * (Chebyshev or Interpolation).
-
- * @param userDatas Data that will be passed to each FMM
- * function. Can be anything, but allocation/deallocation is user
- * side.
- *
- */
-void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas);
 
 
 /**
@@ -346,7 +336,7 @@ typedef void (*Callback_P2PInner)(int nbParticles, int* particleIndexes, void* u
  * user kernel.
  *
  */
-struct Scalfmm_Kernel_Descriptor {
+typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2M p2m;
     Callback_M2M m2m;
     Callback_M2L m2l;
@@ -354,9 +344,42 @@ struct Scalfmm_Kernel_Descriptor {
     Callback_L2P l2p;
     Callback_P2P p2p;
     Callback_P2PInner p2pinner;
-};
+}Scalfmm_Kernel_Descriptor;
+
+
+/**
+ * @param user_kernel Scalfmm_Kernel_Descriptor containing callbacks
+ * to user Fmm function. Meaningless if using one of our kernel
+ * (Chebyshev or Interpolation).
+
+ * @param userDatas Data that will be passed to each FMM
+ * function. Can be anything, but allocation/deallocation is user
+ * side.
+ *
+ */
+void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas);
+
+
 
 //To fill gestion des cellules utilisateurs
+
+/**
+ * @brief Function to init the cells (should be given by the user when
+ * calling Scalfmm_init_cell)
+ * @param level  level of the cell.
+ * @param morton_index morton index of the cell to be allocated.
+ * @param tree_position int[3] position inside the tree (number of boxes in
+ * each direction)
+ * @param spatial_position double[3] center of the cell
+ */
+typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position);
+
+/**
+ * Function to destroy what have bee initialized by the user (should
+ * be give in Scalfmm_dealloc_handle)
+ */
+typedef void (*Callback_free_cell)(void*);
+
 
 
 ///////////////// Common kernel part : /////////////////
@@ -367,3 +390,25 @@ struct Scalfmm_Kernel_Descriptor {
  * @param Handle scalfmm_handle provided by scalfmm_init
  */
 void scalfmm_execute_fmm(scalfmm_handle Handle);
+
+
+/////////////////////////////////////////////////////////////////////
+//////////////////       Dealloc  Part              /////////////////
+/////////////////////////////////////////////////////////////////////
+
+
+
+
+/**
+ * @brief This function dealloc the scalfmm handle.
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ * @param cellDestroyer Function to be called on the user cell to
+ * dealloc
+ *
+ * The last param cellDestroyer is meaningless in case the user uses
+ * one of the provided kernel. (i.e. Chebyshev, Lagrange)
+ */
+void Scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestroyer);
+
+
+#endif
