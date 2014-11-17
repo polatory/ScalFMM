@@ -185,7 +185,7 @@ public:
                     if(particuleIndex != currentIndex){
                         // find the right interval
                         const int procConcerned = getInterval( particuleIndex, comm.processCount(), intervals);
-                        toMove[procConcerned].push(ConverterClass::GetParticle(particles,idxPart));
+                        toMove[procConcerned].push(ConverterClass::GetParticleAndRemove(particles,idxPart));
                         indexesToExtract.push(idxPart);
                     }
                 }

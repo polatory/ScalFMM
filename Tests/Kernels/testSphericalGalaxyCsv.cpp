@@ -99,7 +99,7 @@ template <class ParticleClass>
 class Converter {
 public:
     template <class ContainerClass>
-    static ParticleClass GetParticle(ContainerClass* containers, const int idxExtract){
+    static ParticleClass GetParticleAndRemove(ContainerClass* containers, const int idxExtract){
         const FReal*const positionsX = containers->getPositions()[0];
         const FReal*const positionsY = containers->getPositions()[1];
         const FReal*const positionsZ = containers->getPositions()[2];
@@ -118,6 +118,8 @@ public:
         part.forces[2] = forcesZ[idxExtract];
         part.potential = potentials[idxExtract];
         part.velocity  = velocites[idxExtract];
+
+        containers->removeParticles(&idxExtract, 1);
 
         return part;
     }

@@ -47,12 +47,13 @@ template <class ParticleClass>
 class Converter {
 public:
     template <class ContainerClass>
-    static ParticleClass GetParticle(ContainerClass* container, const int idxExtract){
+    static ParticleClass GetParticleAndRemove(ContainerClass* container, const int idxExtract){
         TestParticle part;
         part.position.setPosition(
                     container->getPositions()[0][idxExtract],
                     container->getPositions()[1][idxExtract],
                     container->getPositions()[2][idxExtract]);
+        container->removeParticles(&idxExtract, 1);
         return part;
     }
 
