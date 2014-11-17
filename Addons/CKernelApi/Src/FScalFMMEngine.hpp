@@ -47,17 +47,39 @@
  * @class FScalFMMEngine
  */
 class FScalFMMEngine{
-private:
-    scalfmm_kernel_type kernel;
+protected:
+    scalfmm_kernel_type kernelType;
+    scalfmm_out_of_box_behavior OutOfBoxBehavior;
+    scalfmm_algorithm Algorithm;
     FVector<bool> progress;
+    int nbPart;
 
 public:
-    scalfmm_kernel_type getKernelType(){
-        return this->kernel;
+    FScalFMMEngine() : OutOfBoxBehavior(exiting), Algorithm(multi_thread), progress(), nbPart(0){
+        //Default behavior in case of out of the box particles is exiting
     }
 
-    //Function about the tree (to be redefined)
+    //First function displayed there are common function for every
+    //kernel
+    scalfmm_kernel_type getKernelType(){
+        return this->kernelType;
+    }
 
+    //To deal with particles moving outside the box
+    void out_of_the_box_config(scalfmm_out_of_box_behavior config){
+        this->OutOfBoxBehavior = config;
+    }
+
+    //To change default algorithm
+    void algorithm_config(scalfmm_algorithm config){
+        this->Algorithm = config;
+    }
+
+
+    //Functions displayed there are function that are to be redefined
+    //by specific Engine
+
+    //Function about the tree
     virtual void tree_insert_particles( int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
@@ -96,6 +118,7 @@ public:
     virtual void get_forces_npart( int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
+
     //To set initial condition
     virtual void set_forces_xyz( int nbParts, double * forcesToFill){
         FAssertLF(0,"No tree instancied, exiting ...\n");
@@ -113,17 +136,17 @@ public:
     virtual void get_potentials( int nbParts, double * potentialsToFill){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_potentials( int nbParts, double * potentialsToFill){
+    virtual void set_potentials( int nbParts, double * potentialsToRead){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_potentials_npart( int nbParts, int* idxOfParticles, double * potentialsToFill){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_potentials_npart( int nbParts, int* idxOfParticles, double * potentialsToFill){
+    virtual void set_potentials_npart( int nbParts, int* idxOfParticles, double * potentialsToRead){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    //To deal with positions
+    //Function to move particles
     virtual void add_to_positions_xyz( int NbPositions, double * updatedXYZ){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
@@ -134,7 +157,7 @@ public:
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void add_to_positions_npart( int NbPositions, int* idxOfParticles,
-                                             double * X, double * Y , double * Z){
+                                         double * X, double * Y , double * Z){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void set_positions_xyz( int NbPositions, double * updatedXYZ){
@@ -147,7 +170,7 @@ public:
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void set_positions_npart( int NbPositions, int* idxOfParticles,
-                                          double * X, double * Y , double * Z){
+                                      double * X, double * Y , double * Z){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_positions_xyz( int NbPositions, double * updatedXYZ){
@@ -160,7 +183,7 @@ public:
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_positions_npart( int NbPositions, int* idxOfParticles,
-                                          double * X, double * Y , double * Z){
+                                      double * X, double * Y , double * Z){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
@@ -170,8 +193,8 @@ public:
         FAssertLF(0,"No user kernel defined, exiting ...\n");
     }
 
-    virtual void scalfmm_execute_fmm(){
-        FAssertLF(0,"No kernel set, exiting ...\n");
+    virtual void execute_fmm(){
+        FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
 };
@@ -272,6 +295,11 @@ extern "C" void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts,
 
 
 //To deal with positions
+//Out of the box behavior
+extern "C" void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config){
+    ((ScalFmmCoreHandle * ) Handle)->engine->out_of_the_box_config(config);
+}
+
 //Update
 extern "C" void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
     ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions_xyz(NbPositions, updatedXYZ);
@@ -286,7 +314,7 @@ extern "C" void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int Nb
 }
 
 extern "C" void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles,
-                                                   double * X, double * Y , double * Z){
+                                               double * X, double * Y , double * Z){
     ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
 }
 //Set new positions
@@ -320,14 +348,20 @@ extern "C" void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPos
 }
 
 extern "C" void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles,
-                                                double * X, double * Y , double * Z){
+                                            double * X, double * Y , double * Z){
     ((ScalFmmCoreHandle * ) Handle)->engine->get_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
+}
+
+//To choose algorithm
+extern "C" void scalfmm_algorithm_config(scalfmm_handle Handle, scalfmm_algorithm config){
+    ((ScalFmmCoreHandle * ) Handle)->engine->algorithm_config(config);
 }
 
 //Executing FMM
 extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
-    ((ScalFmmCoreHandle * ) Handle)->engine->scalfmm_execute_fmm();
+    ((ScalFmmCoreHandle * ) Handle)->engine->execute_fmm();
 }
+
 
 
 #endif
