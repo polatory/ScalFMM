@@ -152,15 +152,12 @@ static void Run(int argc, char* argv[])
 
 
 	{ // -----------------------------------------------------
-		std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+		std::cout << "Creating & Inserting " <<nbParticles
 																			<< " particles ..." << std::endl;
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
 		//
-		FPoint position;
-		FReal physicalValue = 0.0;
-		//
-		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+		for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 			//
 			// Read particle per particle from file
 			//
@@ -259,3 +256,5 @@ int main(int argc, char** argv){
   FRunIf::Run<unsigned int, 2, 13, 1, TempMainStruct>(order, argc, argv);
   return 0;
 }
+
+

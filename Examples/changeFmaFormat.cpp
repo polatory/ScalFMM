@@ -11,14 +11,14 @@
 #include <string>
 #include <cstdlib>
 //
-#include "Utils/FGlobal.hpp"
-#include "Utils/FPoint.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FDlpolyLoader.hpp"
+//
+#include "Utils/FGlobal.hpp"
+#include "Utils/FPoint.hpp"
 #include "Utils/FParameters.hpp"
 #include "Utils/FGenerateDistribution.hpp"
-
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 //
 /// \file  changeFmaFormat.cpp

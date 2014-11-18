@@ -57,7 +57,7 @@
 
 
 int main(int argc, char ** argv){
-    const FParameterNames LocalOptitionHist = {
+    const FParameterNames LocalOptionHist = {
         {"-histP", "--histogram-stat"} ,
          "Build the histogram of the particle number per leaf."
     };
@@ -65,7 +65,7 @@ int main(int argc, char ** argv){
                          "Driver to obtain statistics on the octree.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,
-                         FParameterDefinitions::OutputFile, LocalOptitionHist);
+                         FParameterDefinitions::OutputFile, LocalOptionHist);
 
 
     typedef FBasicParticleContainer<0>   ContainerClass;
@@ -161,7 +161,7 @@ int main(int argc, char ** argv){
 			//  Histogram of particles per leaf
 			//
 
-            if(FParameters::existParameter(argc, argv, LocalOptitionHist.options)){
+            if(FParameters::existParameter(argc, argv, LocalOptionHist.options)){
 				int size = maxParticles+1;
 				int * hist = new int [size] ;
 				memset(hist,0,(size)*sizeof(int));
