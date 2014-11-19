@@ -64,10 +64,11 @@ public:
             do{
                 const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                 ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
-                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); ++idxPart){
+                //IdxPart is incremented at the end of the loop
+                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
                     FPoint partPos( particles->getPositions()[0][idxPart],
-                            particles->getPositions()[1][idxPart],
-                            particles->getPositions()[2][idxPart] );
+                                    particles->getPositions()[1][idxPart],
+                                    particles->getPositions()[2][idxPart] );
                     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                     if( TestPeriodicCondition(isPeriodic, DirPlusX) ){
                         while(partPos.getX() >= max.getX()){
@@ -133,6 +134,10 @@ public:
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(partPos);
                     if(particuleIndex != currentIndex){
                         tomove.push(ConverterClass::GetParticleAndRemove(particles,idxPart));
+                        //No need to increment idxPart, since the array has been staggered
+                    }
+                    else{
+                        idxPart++;
                     }
                 }
             } while(octreeIterator.moveRight());

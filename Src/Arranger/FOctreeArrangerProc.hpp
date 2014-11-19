@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FOCTREEARRANGERPROC_HPP
@@ -114,7 +114,8 @@ public:
             do{
                 const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                 ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
-                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); ++idxPart){
+                //IdxPart is incremented at the end of the loop
+                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
                     FPoint partPos( particles->getPositions()[0][idxPart],
                             particles->getPositions()[1][idxPart],
                             particles->getPositions()[2][idxPart] );
@@ -187,6 +188,10 @@ public:
                         const int procConcerned = getInterval( particuleIndex, comm.processCount(), intervals);
                         toMove[procConcerned].push(ConverterClass::GetParticleAndRemove(particles,idxPart));
                         indexesToExtract.push(idxPart);
+                        //No need to increment idxPart, since the array has been staggered
+                    }
+                    else{
+                        idxPart++;
                     }
                 }
 
@@ -271,7 +276,7 @@ public:
                     }
                     hasToRecvFrom -= 1;
                 }
-            }            
+            }
         }
 
         int counterLeavesAlive = 0;
@@ -290,7 +295,7 @@ public:
                 // Not empty, just continue
                 else {
                     workOnNext = octreeIterator.moveRight();
-                    counterLeavesAlive += 1;                    
+                    counterLeavesAlive += 1;
                 }
             } while( workOnNext );
         }
