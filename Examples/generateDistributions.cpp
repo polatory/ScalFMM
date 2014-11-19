@@ -102,7 +102,8 @@ int main(int argc, char ** argv){
                          "             -filename name: generic name for files (without extension) and save data\n"
                          "                     with following format in name.fma or name.bfma in -bin is set\n"
                          "             -visufmt  vtk, vtp, cosmo or cvs format.",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::NbParticles);
+                         FParameterDefinitions::InputFile,  FParameterDefinitions::OutputBinFormat, FParameterDefinitions::NbParticles);
+
 
 
 
@@ -164,6 +165,7 @@ int main(int argc, char ** argv){
 		BoxWith = FMath::Max(A,FMath::Max(B,C) );
 		FReal halfBW = BoxWith*0.5;
 		Centre.setPosition(halfBW,halfBW,halfBW);
+		std::cout << "Cuboid "<< A << ":"<< B<<":"<<C<<std::endl;
 	}
 	else if(FParameters::existParameter(argc, argv, "-unitSphere")){
 		unifRandonPointsOnUnitSphere(NbPoints, particles) ;
