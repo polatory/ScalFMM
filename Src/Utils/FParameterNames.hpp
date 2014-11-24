@@ -197,6 +197,11 @@ inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
         return 0;\
     } \
+    {\
+        std::cout << "[ScalFMM] To have the help for this executable pass: "; \
+        for(auto pr: FParameterDefinitions::Help.options) std::cout << pr << ", "; \
+        std::cout << "\n";\
+    }
 
 
 #endif // FPARAMETERNAMES_HPP
