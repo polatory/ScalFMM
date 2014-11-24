@@ -95,5 +95,14 @@ typedef long long MortonIndex;
     #endif
 #endif
 
+
+///////////////////////////////////////////////////////
+// Test OMP4
+///////////////////////////////////////////////////////
+
+#if _OPENMP >= 201307
+#define ScalFMM_USE_OMP4
+#endif
+
 #endif //FGLOBAL_HPP
 
