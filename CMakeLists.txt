@@ -64,7 +64,10 @@ OPTION( ScalFMM_USE_AVX              "Set to ON to compile with AVX support"    
 OPTION( ScalFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
 OPTION( ScalFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
 OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile only the lib (examples are not compiled) " OFF  )
-OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" OFF  )
+OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" ON )
+if( ScalFMM_ONLY_DEVEL ) 
+OPTION( ScalFMM_USE_STARPU      "Set to ON to build ScaFMM with StarPU" OFF )
+endif
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
