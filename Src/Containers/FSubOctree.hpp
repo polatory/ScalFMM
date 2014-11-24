@@ -137,11 +137,6 @@ protected:
         if(arrayIndex == this->leftLeafIndex && arrayIndex == this->rightLeafIndex){
             this->rightLeafIndex = -1;
             // only one cells, return true
-            // remove the last cells
-            cellAllocator.deleteObject(this->cells[indexLevel][arrayIndex]);
-            this->cells[indexLevel][arrayIndex] =nullptr;
-
-            return true;
         }
         else if(arrayIndex == this->leftLeafIndex){
             while( !this->cells[indexLevel][++this->leftLeafIndex] );
