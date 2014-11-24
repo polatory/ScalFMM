@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -31,37 +31,13 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
+#include "../../Src/Kernels/P2P/FP2PLeafInterface.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "../../Src/Arranger/FOctreeArranger.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
-struct TestParticle{
-    FPoint position;
-    const FPoint& getPosition(){
-        return position;
-    }
-};
-
-template <class ParticleClass>
-class Converter {
-public:
-    template <class ContainerClass>
-    static ParticleClass GetParticleAndRemove(ContainerClass* container, const int idxExtract){
-        TestParticle part;
-        part.position.setPosition(
-                    container->getPositions()[0][idxExtract],
-                    container->getPositions()[1][idxExtract],
-                    container->getPositions()[2][idxExtract]);
-        container->removeParticles(&idxExtract, 1);
-        return part;
-    }
-
-    template <class OctreeClass>
-    static void Insert(OctreeClass* tree, const ParticleClass& part){
-        tree->insert(part.position);
-    }
-};
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -72,10 +48,12 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeSubHeight);
 
     typedef FBasicCell                      CellClass;
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FP2PParticleContainerIndexed<>      ContainerClass;
 
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+
+    typedef FOctreeArranger<OctreeClass,ContainerClass,FP2PLeafInterface<OctreeClass>> ArrangerClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -113,7 +91,7 @@ int main(int argc, char ** argv){
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)));
-            tree.insert(particleToFill);
+            tree.insert(particleToFill,idxPart);
         }
     }
 
@@ -122,42 +100,46 @@ int main(int argc, char ** argv){
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
+    ArrangerClass arrange(&tree);
 
-    std::cout << "Working on particles ..." << std::endl;
-    counter.tic();
+    // In order to test multiple displacement of particles
+    //    for(int ite=0 ; ite<10 ; ++ite){
+        std::cout << "Working on particles ..." << std::endl;
+        counter.tic();
 
-    { // Create new position for each particles
-        OctreeClass::Iterator octreeIterator(&tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ContainerClass* particles = octreeIterator.getCurrentListTargets();
-            for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
-                particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
-                particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
-                particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
-            }
-        } while(octreeIterator.moveRight());
-    }
+        { // Create new position for each particles
+            OctreeClass::Iterator octreeIterator(&tree);
+            octreeIterator.gotoBottomLeft();
+            do{
+                ContainerClass* particles = octreeIterator.getCurrentListTargets();
+                for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
+                    particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
+                    particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
+                    particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
+                }
+            } while(octreeIterator.moveRight());
+        }
 
-    counter.tac();
-    std::cout << "Done  " << "(@Moving = " << counter.elapsed() << "s)." << std::endl;
+        counter.tac();
+        std::cout << "Done  " << "(@Moving = " << counter.elapsed() << "s)." << std::endl;
 
 
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
 
-    std::cout << "Arrange ..." << std::endl;
-    counter.tic();
+        std::cout << "Arrange ..." << std::endl;
+        counter.tic();
 
-    FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
-    arrange.rearrange();
+        //FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
+        arrange.rearrange();
 
-    counter.tac();
-    std::cout << "Done  " << "(@Arrange = " << counter.elapsed() << "s)." << std::endl;
 
-    //////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////
+        counter.tac();
+        std::cout << "Done  " << "(@Arrange = " << counter.elapsed() << "s)." << std::endl;
 
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+        //    }
     std::cout << "Test ..." << std::endl;
     counter.tic();
 
@@ -228,6 +210,3 @@ int main(int argc, char ** argv){
 
     return 0;
 }
-
-
-
