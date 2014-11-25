@@ -35,6 +35,7 @@ SET(ScalFMM_FLAGS                "@ScaLFMM_FLAGS_OPTI@")
 SET(ScalFMM_USE_ADDONS           "@ScalFMM_USE_ADDONS@")
 SET(ScalFMM_USE_LOG              "@ScalFMM_USE_LOG@")
 SET(ScalFMM_USE_FFT              "@ScalFMM_USE_FFT@")
+SET(ScalFMM_USE_STARPU           "@ScalFMM_USE_STARPU@")
 #SET(ScalFMM_USE_SSE 			  "@ScalFMM_USE_SSE@")
 #SET(ScalFMM_USE_AVX   			"@ScalFMM_USE_AVX@")
 #
