@@ -40,31 +40,32 @@
 template <class OctreeClass, class ContainerClass, class LeafInterface >
 class FOctreeArranger {
     OctreeClass* const tree; //< The tree to work on
-    FReal boxWidth;
 
-    FPoint min;
-    FPoint max;
+public:
+    FReal boxWidth;
+    FPoint MinBox;
+    FPoint MaxBox;
     LeafInterface * interface;
 
 public:
     /** Basic constructor */
     FOctreeArranger(OctreeClass* const inTree) : tree(inTree), boxWidth(tree->getBoxWidth()),
-                                                 min(tree->getBoxCenter(),-tree->getBoxWidth()/2),
-                                                 max(tree->getBoxCenter(),tree->getBoxWidth()/2),
+                                                 MinBox(tree->getBoxCenter(),-tree->getBoxWidth()/2),
+                                                 MaxBox(tree->getBoxCenter(),tree->getBoxWidth()/2),
                                                  interface(){
         FAssertLF(tree, "Tree cannot be null" );
         interface = new LeafInterface();
-       }
+    }
 
     virtual ~FOctreeArranger(){
         delete interface;
     }
 
-    virtual void checkPosition(const FPoint& particlePos){
+    virtual void checkPosition(FPoint& particlePos){
         // Assert
-        FAssertLF(   min.getX() < particlePos.getX() && max.getX() > particlePos.getX()
-                  && min.getY() < particlePos.getY() && max.getY() > particlePos.getY()
-                  && min.getZ() < particlePos.getZ() && max.getZ() > particlePos.getZ());
+        FAssertLF(   MinBox.getX() < particlePos.getX() && MaxBox.getX() > particlePos.getX()
+                  && MinBox.getY() < particlePos.getY() && MaxBox.getY() > particlePos.getY()
+                  && MinBox.getZ() < particlePos.getZ() && MaxBox.getZ() > particlePos.getZ());
     }
 
 

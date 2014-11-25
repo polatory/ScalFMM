@@ -49,13 +49,13 @@
 class FScalFMMEngine{
 protected:
     scalfmm_kernel_type kernelType;
-    scalfmm_out_of_box_behavior OutOfBoxBehavior;
+
     scalfmm_algorithm Algorithm;
     FVector<bool> progress;
     int nbPart;
 
 public:
-    FScalFMMEngine() : OutOfBoxBehavior(exiting), Algorithm(multi_thread), progress(), nbPart(0){
+    FScalFMMEngine() : Algorithm(multi_thread), progress(), nbPart(0){
         //Default behavior in case of out of the box particles is exiting
     }
 
@@ -65,10 +65,10 @@ public:
         return this->kernelType;
     }
 
-    //To deal with particles moving outside the box
-    void out_of_the_box_config(scalfmm_out_of_box_behavior config){
-        this->OutOfBoxBehavior = config;
-    }
+    // //To deal with particles moving outside the box
+    // void out_of_the_box_config(scalfmm_out_of_box_behavior config){
+    //     this->OutOfBoxBehavior = config;
+    // }
 
     //To change default algorithm
     void algorithm_config(scalfmm_algorithm config){
@@ -173,13 +173,21 @@ public:
                                       double * X, double * Y , double * Z){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void get_positions_xyz( int NbPositions, double * updatedXYZ){
+
+    //Function to update the tree
+    virtual void update_tree(){
+        FAssertLF(0,"No tree instancied, exiting ...\n");
+    }
+
+
+    //Function to get the positions
+    virtual void get_positions_xyz( int NbPositions, double * positionsToFill){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_positions( int NbPositions, double * X, double * Y , double * Z){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void get_positions_xyz_npart( int NbPositions, int* idxOfParticles, double * updatedXYZ){
+    virtual void get_positions_xyz_npart( int NbPositions, int* idxOfParticles, double * positionsToFill){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_positions_npart( int NbPositions, int* idxOfParticles,
@@ -294,11 +302,11 @@ extern "C" void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts,
 }
 
 
-//To deal with positions
-//Out of the box behavior
-extern "C" void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config){
-    ((ScalFmmCoreHandle * ) Handle)->engine->out_of_the_box_config(config);
-}
+// //To deal with positions
+// //Out of the box behavior
+// extern "C" void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config){
+//     ((ScalFmmCoreHandle * ) Handle)->engine->out_of_the_box_config(config);
+// }
 
 //Update
 extern "C" void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
@@ -334,6 +342,11 @@ extern "C" void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositio
                                             double * X, double * Y , double * Z){
     ((ScalFmmCoreHandle * ) Handle)->engine->set_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
 }
+
+extern "C" void scalfmm_update_tree(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle * ) Handle)->engine->update_tree();
+}
+
 //Get back positions
 extern "C" void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
     ((ScalFmmCoreHandle * ) Handle)->engine->get_positions_xyz(NbPositions, updatedXYZ);

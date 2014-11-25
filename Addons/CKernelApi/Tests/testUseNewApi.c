@@ -7,8 +7,13 @@
 
 
 
-void compute_displacement_from_forces(double * fXYZ, double* dXYZ, int nb_xyz){
-    //Do some things
+void compute_displacement_from_forces(double * fXYZ, double * charge,double* dXYZ, int nb_xyz){
+    int idPart;
+    for(idPart = 0 ; idPart < nb_xyz ; ++idPart){
+        dXYZ[idPart*3+0] = fXYZ[idPart*3+0]*0.001/charge[idPart];
+        dXYZ[idPart*3+1] = fXYZ[idPart*3+1]*0.001/charge[idPart];
+        dXYZ[idPart*3+2] = fXYZ[idPart*3+2]*0.001/charge[idPart];
+    }
 }
 
 
@@ -19,16 +24,18 @@ int main(int argc, char ** av){
 
     //Octree configuration
     int TreeHeight = 5;
-    double boxWidth = 1.0;
+    double boxWidth = 2.0;
     double boxCenter[3] = {0.0,0.0,0.0};
 
     //Init our lib
     scalfmm_handle handle = scalfmm_init(TreeHeight,boxWidth,boxCenter,myChoice); //The tree is built
 
     //Creation of an array of particles
-    int nb_of_parts = 200;
+    int nb_of_parts = 10;
     int idxPart;
     double * positionsXYZ = malloc(sizeof(double)*3*nb_of_parts);
+    memset(positionsXYZ,0,sizeof(double)*3*nb_of_parts);
+
     for(idxPart = 0; idxPart<nb_of_parts ; ++idxPart){
         positionsXYZ[idxPart*3+0] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
         positionsXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
@@ -38,11 +45,12 @@ int main(int argc, char ** av){
     //Creation of charge for each part
     double * array_of_charge = malloc(sizeof(double)*nb_of_parts);
     for(idxPart = 0; idxPart<nb_of_parts ; ++idxPart){
-        array_of_charge[idxPart] = (random()/(double)(RAND_MAX)); //charge in [-1,1]
+        array_of_charge[idxPart] = 1.0*(idxPart%2);
     }
 
     //Inserting the array in the tree
     scalfmm_tree_insert_particles_xyz(handle,nb_of_parts,positionsXYZ);
+
     //Set the charge
     scalfmm_set_physical_values(handle,nb_of_parts,array_of_charge);
 
@@ -51,11 +59,15 @@ int main(int argc, char ** av){
     int nb_iteration = 100;
     int curr_iteration = 0;
 
-    //Array to store the forces
+    //Array to store the output
     double * array_of_forces = malloc(sizeof(double)*3*nb_of_parts);
+    memset(array_of_forces,0,sizeof(double)*3*nb_of_parts);
+    double * array_of_pot = malloc(sizeof(double)*nb_of_parts);
+    memset(array_of_pot,0,sizeof(double)*nb_of_parts);
 
     //Array to store the displacement
     double * array_of_displacement = malloc(sizeof(double)*3*nb_of_parts);
+    memset(array_of_displacement,0,sizeof(double)*3*nb_of_parts);
 
     //Start of an iteration loop
     while(curr_iteration < nb_iteration){
@@ -64,13 +76,39 @@ int main(int argc, char ** av){
 
         //Get the resulting forces
         scalfmm_get_forces_xyz(handle,nb_of_parts,array_of_forces);
+        //Get the resulting potential
+        scalfmm_get_potentials(handle,nb_of_parts,array_of_pot);
+
+
 
         //User function to compute the movement of each part
-        compute_displacement_from_forces(array_of_forces,array_of_displacement,nb_of_parts);
+        compute_displacement_from_forces(array_of_forces,array_of_charge,array_of_displacement,nb_of_parts);
 
+        //get position in order to display
+        scalfmm_get_positions_xyz(handle,nb_of_parts,positionsXYZ);
+
+        //Display forces :
+        {
+            printf("Iteration n° %d\n",curr_iteration);
+            for(idxPart = 0 ; idxPart< nb_of_parts ; ++idxPart){
+                printf("Pos : %e, %e, %e, Fxyz %e %e %e, \n \t displ : %e, %e, %e \n",
+                       positionsXYZ[idxPart*3+0],
+                       positionsXYZ[idxPart*3+1],
+                       positionsXYZ[idxPart*3+2],
+                       array_of_forces[idxPart*3],
+                       array_of_forces[idxPart*3+1],
+                       array_of_forces[idxPart*3+2],
+                       array_of_displacement[idxPart*3+0],
+                       array_of_displacement[idxPart*3+1],
+                       array_of_displacement[idxPart*3+2]);
+            }
+        }
         //Apply displacement computed
         scalfmm_add_to_positions_xyz(handle,nb_of_parts,array_of_displacement);
 
+        //Update Consequently the tree
+        scalfmm_update_tree(handle);
+        //Continue the loop
         curr_iteration++;
     }
 

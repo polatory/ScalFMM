@@ -68,26 +68,27 @@ typedef enum kernel_type {
 } scalfmm_kernel_type;
 
 
-/**
- * Enum over the different way scalfmm can handle a particule moving
- * out of the simulation box
- */
-typedef enum out_of_the_box_config {
-    exiting = 0,  /*If a particule move outside the simulation box,
-                    the simulation stop*/
-    periodic = 1, /*If a particule move outside the simulation box,
-                    the particules is inserted back at the other side
-                    of the simulation box*/
-    erasing = 2   /*If a particule move outside the simulation box, it
-                    simply disappears from the simulation */
-} scalfmm_out_of_box_behavior;
+/* /\** */
+/*  * Enum over the different way scalfmm can handle a particule moving */
+/*  * out of the simulation box */
+/*  *\/ */
+/* typedef enum out_of_the_box_config { */
+/*     exiting = 0,  /\*If a particule move outside the simulation box, */
+/*                     the simulation stop*\/ */
+/*     periodic = 1, /\*If a particule move outside the simulation box, */
+/*                     the particules is inserted back at the other side */
+/*                     of the simulation box*\/ */
+/*     erasing = 2   /\*If a particule move outside the simulation box, it */
+/*                     simply disappears from the simulation *\/ */
+/* } scalfmm_out_of_box_behavior; */
 
 /**
  * Enum over the different algorithm that scalfmm can use
  */
 typedef enum scalfmm_algorithm_config {
     sequential = 0,  /* Use the sequential version of Scalfmm*/
-    multi_thread = 1 /* Use the Multi thread version of Scalfmm*/
+    multi_thread = 1, /* Use the Multi thread version of Scalfmm*/
+    periodic = 2    /* Use the periodic version of Scalfmm*/
 } scalfmm_algorithm;
 
 
@@ -236,7 +237,7 @@ void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfPart
 void scalfmm_get_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill);
 void scalfmm_set_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToRead);
 void scalfmm_get_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill);
-void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill);
+void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToRead);
 
 
 /**
@@ -274,20 +275,27 @@ void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, d
 void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
 void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
 
-void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
+/**
+ *@brief This is function is to be called after a call modifying some
+ *of the particles positions (add_to_position or set_position)
+ *
+ */
+void scalfmm_update_tree(scalfmm_handle handle);
+
+void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * positionsToFill);
 void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
+void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * positionsToFill);
 void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
 
-/**
- * @brief This function provides a way for the user to define scalfmm
- * behavior in case a particule get out of the box after a
- * displacement
- * @param  Handle scalfmm_handle provided by scalfmm_init
- * @param  Member of enum scalfmm_out_of_box_behavior
- */
+/* /\** */
+/*  * @brief This function provides a way for the user to define scalfmm */
+/*  * behavior in case a particule get out of the box after a */
+/*  * displacement */
+/*  * @param  Handle scalfmm_handle provided by scalfmm_init */
+/*  * @param  Member of enum scalfmm_out_of_box_behavior */
+/*  *\/ */
 
-void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config);
+/* void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config); */
 
 /**
  * @brief This function provides a way for choosing the algorithm to
