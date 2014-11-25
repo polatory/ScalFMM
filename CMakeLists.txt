@@ -255,6 +255,14 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     endif()
   endif()
 endif()
+
+if( ScalFMM_USE_STARPU )
+    SET(STARPU_LIBRARIES " -L$ENV{STARPU_LIB}; -lstarpu-1.1") # CACHE STRING "Set your STARPU flags"
+    SET(STARPU_INCLUDES "$ENV{STARPU_INC}" ) # CACHE STRING "Set your STARPU flags"
+    SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${STARPU_LIBRARIES}")  
+    # SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${STARPU_INCLUDES}")  
+    include_directories(${STARPU_INCLUDES})
+endif(ScalFMM_USE_STARPU)
 ##############################################################################
 ##############################################################################
 

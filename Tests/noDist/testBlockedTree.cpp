@@ -21,6 +21,7 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmTask.hpp"
+#include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]){
 
     typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FGroupStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FGroupTaskStarpuAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #else

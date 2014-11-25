@@ -20,6 +20,7 @@
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
 #include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
+#include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -50,7 +51,7 @@ int main(int argc, char* argv[]){
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
     typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>   GroupKernelClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FGroupStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
