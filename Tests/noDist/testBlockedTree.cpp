@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
 
     typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FGroupTaskStarpuAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #else

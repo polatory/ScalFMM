@@ -42,9 +42,10 @@ protected:
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
     std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
 
-    const int MaxThreads;         //< The number of threads
+    int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
     KernelClass** kernels;        //< The kernels
+    ThisClass* thisptr;
 
     std::vector<starpu_data_handle_t>* handles;
 
@@ -61,24 +62,29 @@ protected:
 
 public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
-        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr),
-          handles(nullptr){
+        : MaxThreads(inMaxThreads), tree(inTree), kernels(nullptr),
+          thisptr(this), handles(nullptr){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
+        FAssertLF(MaxThreads <= STARPU_MAXCPUS, "number of threads to high");
 
+        struct starpu_conf conf;
+        FAssertLF(starpu_conf_init(&conf) == 0);
+        conf.ncpus = MaxThreads;
+        FAssertLF(starpu_init(&conf) == 0);
+        starpu_pause();
+
+        MaxThreads = starpu_worker_get_count();//starpu_cpu_worker_get_count();
+
+        handles = new std::vector<starpu_data_handle_t>[tree->getHeight()+1];
         kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread] = new KernelClass(*inKernels);
         }
 
-        handles = new std::vector<starpu_data_handle_t>[tree->getHeight()+1];
+        initCodelet();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Thread " << MaxThreads << ")\n");
-
-        FAssertLF(starpu_init(NULL) == 0);
-        starpu_pause();
-
-        initCodelet();
     }
 
     ~FGroupTaskStarPUAlgorithm(){
@@ -90,6 +96,7 @@ public:
         cleanHandle();
         delete[] handles;
 
+        starpu_resume();
         starpu_shutdown();
     }
 
@@ -104,17 +111,17 @@ public:
 
         starpu_resume();
 
-  //      if( operationsToProceed & FFmmP2P ) directPass();
+        if( operationsToProceed & FFmmP2P ) directPass();
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
-  //      if(operationsToProceed & FFmmM2M) upwardPass();
+        if(operationsToProceed & FFmmM2M) upwardPass();
 
-  //      if(operationsToProceed & FFmmM2L) transferPass();
+        if(operationsToProceed & FFmmM2L) transferPass();
 
-  //      if(operationsToProceed & FFmmL2L) downardPass();
+        if(operationsToProceed & FFmmL2L) downardPass();
 
-  //      if( operationsToProceed & FFmmL2P ) mergePass();
+        if( operationsToProceed & FFmmL2P ) mergePass();
 
         starpu_task_wait_for_all();
         starpu_pause();
@@ -408,7 +415,7 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
-                    STARPU_VALUE, this, sizeof(ThisClass*),
+                    STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                     STARPU_RW, handles[tree->getHeight()-1][idxGroup],
                     STARPU_R, handles[tree->getHeight()][idxGroup],
                     0);
@@ -482,7 +489,7 @@ protected:
                 char *arg_buffer;
                 size_t arg_buffer_size;
                 starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, this, sizeof(ThisClass*),
+                                         STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                          0);
@@ -498,11 +505,9 @@ protected:
         CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
 
         ThisClass* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
         int nbSubCellGroups = 0;
-        starpu_codelet_unpack_args(cl_arg, &nbSubCellGroups);
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &idxLevel);
+        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
@@ -554,7 +559,7 @@ protected:
             FLOG( timerInBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 starpu_insert_task(&m2l_cl_in,
-                        STARPU_VALUE, this, sizeof(ThisClass*),
+                        STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                         STARPU_RW, handles[idxLevel][idxGroup],
                         0);
@@ -568,9 +573,9 @@ protected:
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
                     starpu_insert_task(&m2l_cl_inout,
-                            STARPU_VALUE, this, sizeof(ThisClass*),
+                            STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, outsideInteractions, sizeof(outsideInteractions),
+                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                             STARPU_RW, handles[idxLevel][idxGroup],
                             STARPU_RW, handles[idxLevel][interactionid],
                             0);
@@ -587,9 +592,8 @@ protected:
         CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
 
         ThisClass* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &idxLevel);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel);
 
         worker->transferInPassPerform(currentCells, idxLevel);
     }
@@ -631,14 +635,12 @@ protected:
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
         CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
-        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         ThisClass* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &idxLevel);
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
-        starpu_codelet_unpack_args(cl_arg, &outsideInteractions);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
         worker->transferInoutPassPerform(currentCells, externalCells, idxLevel, outsideInteractions);
     }
@@ -711,7 +713,7 @@ protected:
                 char *arg_buffer;
                 size_t arg_buffer_size;
                 starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, this, sizeof(ThisClass*),
+                                         STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                          0);
@@ -727,11 +729,9 @@ protected:
         CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
 
         ThisClass* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
         int nbSubCellGroups = 0;
-        starpu_codelet_unpack_args(cl_arg, &nbSubCellGroups);
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &idxLevel);
+        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
@@ -783,19 +783,19 @@ protected:
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
-                    STARPU_VALUE, this, sizeof(ThisClass*),
+                    STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                     STARPU_RW, handles[tree->getHeight()][idxGroup],
                     0);
         }
         FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-            for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel.size()) ; ++idxInteraction){
+            for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
-                starpu_insert_task(&p2p_cl_in,
-                        STARPU_VALUE, this, sizeof(ThisClass*),
-                        STARPU_VALUE, outsideInteractions, sizeof(outsideInteractions),
+                starpu_insert_task(&p2p_cl_inout,
+                        STARPU_VALUE, &thisptr, sizeof(ThisClass*),
+                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                         STARPU_RW, handles[tree->getHeight()][idxGroup],
                         STARPU_RW, handles[tree->getHeight()][interactionid],
                         0);
@@ -856,9 +856,8 @@ protected:
         ParticleGroupClass* externalContainers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         ThisClass* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &outsideInteractions);
+        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
         worker->directInoutPassPerform(containers, externalContainers, outsideInteractions);
     }
@@ -893,7 +892,7 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
-                    STARPU_VALUE, this, sizeof(ThisClass*),
+                    STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                     STARPU_R, handles[tree->getHeight()-1][idxGroup],
                     STARPU_RW, handles[tree->getHeight()][idxGroup],
                     0);
