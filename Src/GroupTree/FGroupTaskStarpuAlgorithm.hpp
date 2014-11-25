@@ -132,17 +132,19 @@ protected:
         for(int idx = 0 ; idx < 9 ; ++idx){
             m2m_cl[idx].where = STARPU_CPU;
             m2m_cl[idx].cpu_funcs[0] = upwardPassCallback;
-            m2m_cl[idx].nbuffers = idx+1;
-            m2m_cl[idx].modes[0] = STARPU_RW;
+            m2m_cl[idx].nbuffers = idx+2;
+            m2m_cl[idx].dyn_modes = malloc((idx+2)*sizeof(starpu_data_access_mode));
+            m2m_cl[idx].dyn_modes[0] = STARPU_RW;
 
             l2l_cl[idx].where = STARPU_CPU;
             l2l_cl[idx].cpu_funcs[0] = downardPassCallback;
-            l2l_cl[idx].nbuffers = idx+1;
-            l2l_cl[idx].modes[0] = STARPU_R;
+            l2l_cl[idx].nbuffers = idx+2;
+            l2l_cl[idx].dyn_modes = malloc((idx+2)*sizeof(starpu_data_access_mode));
+            l2l_cl[idx].dyn_modes[0] = STARPU_R;
 
             for(int idxBuffer = 0 ; idxBuffer <= idx ; ++idxBuffer){
-                m2m_cl[idx].modes[idxBuffer+1] = STARPU_R;
-                l2l_cl[idx].modes[idxBuffer+1] = STARPU_RW;
+                m2m_cl[idx].dyn_modes[idxBuffer+1] = STARPU_R;
+                l2l_cl[idx].dyn_modes[idxBuffer+1] = STARPU_RW;
             }
         }
 
@@ -450,7 +452,8 @@ protected:
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 struct starpu_task* const task = starpu_task_create();
-                task->handles[0] = handles[idxLevel][idxGroup];
+                task->dyn_nodes = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
+                task->dyn_nodes[0] = handles[idxLevel][idxGroup];
 
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -460,12 +463,12 @@ protected:
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
-                task->handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                task->dyn_nodes[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (++idxSubGroup) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
-                    task->handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                    task->dyn_nodes[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
@@ -678,7 +681,8 @@ protected:
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 struct starpu_task* const task = starpu_task_create();
-                task->handles[0] = handles[idxLevel][idxGroup];
+                task->dyn_nodes = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
+                task->dyn_nodes[0] = handles[idxLevel][idxGroup];
 
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -688,12 +692,12 @@ protected:
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
-                task->handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                task->dyn_nodes[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (++idxSubGroup) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
-                    task->handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                    task->dyn_nodes[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
