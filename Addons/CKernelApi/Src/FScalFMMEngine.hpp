@@ -65,10 +65,6 @@ public:
         return this->kernelType;
     }
 
-    // //To deal with particles moving outside the box
-    // void out_of_the_box_config(scalfmm_out_of_box_behavior config){
-    //     this->OutOfBoxBehavior = config;
-    // }
 
     //To change default algorithm
     void algorithm_config(scalfmm_algorithm config){

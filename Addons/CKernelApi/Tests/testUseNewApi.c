@@ -29,9 +29,9 @@ int main(int argc, char ** av){
 
     //Init our lib
     scalfmm_handle handle = scalfmm_init(TreeHeight,boxWidth,boxCenter,myChoice); //The tree is built
-
+    scalfmm_algorithm_config(handle,periodic);
     //Creation of an array of particles
-    int nb_of_parts = 10;
+    int nb_of_parts = 2;
     int idxPart;
     double * positionsXYZ = malloc(sizeof(double)*3*nb_of_parts);
     memset(positionsXYZ,0,sizeof(double)*3*nb_of_parts);
@@ -45,7 +45,7 @@ int main(int argc, char ** av){
     //Creation of charge for each part
     double * array_of_charge = malloc(sizeof(double)*nb_of_parts);
     for(idxPart = 0; idxPart<nb_of_parts ; ++idxPart){
-        array_of_charge[idxPart] = 1.0*(idxPart%2);
+        array_of_charge[idxPart] = 1.0;
     }
 
     //Inserting the array in the tree
