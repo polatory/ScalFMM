@@ -67,7 +67,7 @@ OPTION( ScalFMM_BUILD_ONLY_LIB        "Set to ON to compile only the lib (exampl
 OPTION( ScalFMM_ONLY_DEVEL             "Set to ON to compile Development tools (only scalfmm team)" ON )
 if( ScalFMM_ONLY_DEVEL ) 
 OPTION( ScalFMM_USE_STARPU      "Set to ON to build ScaFMM with StarPU" OFF )
-endif
+endif()
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
 SET(ScaLFMM_CXX_FLAGS "")
