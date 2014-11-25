@@ -21,7 +21,7 @@ class FAbstractLeafInterface{
 public:
     //    virtual FPoint getParticlePosition(ParticleClass* lf, const int idxPart) = 0;
     virtual void getParticlePosition(ParticleClass* lf, const int idxPart, FPoint& newPos) = 0;
-    virtual void removeFromLeafAndKeep(ParticleClass* lf, const int idxPart) = 0;
+    virtual void removeFromLeafAndKeep(ParticleClass* lf, const FPoint& newPos,const int idxPart) = 0;
     virtual void insertAllParticles(OctreeClass* tree) = 0;
 };
 

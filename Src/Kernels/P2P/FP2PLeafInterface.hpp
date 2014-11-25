@@ -40,13 +40,14 @@ public:
 
     void getParticlePosition(ContainerClass* lf,const int idxPart, FPoint& newPos){
         newPos = FPoint(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
+
     }
 
-    void removeFromLeafAndKeep(ContainerClass* lf, const int idxPart){
+    void removeFromLeafAndKeep(ContainerClass* lf, const FPoint& newPos, const int idxPart){
         //Store index
         indexes.push(lf->getIndexes()[idxPart]);
         //Store particles attributes
-        toStoreRemovedParts->push(FPoint(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]),
+        toStoreRemovedParts->push(newPos,
                                   idxPart,
                                   lf->getPhysicalValues()[idxPart],
                                   lf->getForcesX()[idxPart],lf->getForcesY()[idxPart],lf->getForcesZ()[idxPart]);

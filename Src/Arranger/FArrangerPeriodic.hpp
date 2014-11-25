@@ -35,7 +35,7 @@ public:
         particlePos.setZ( getPeriodicPos( particlePos.getZ(), DirMinusZ, DirPlusZ, (this->MaxBox).getZ(),(this->MinBox).getZ(),DirZ));
     }
 
-    FReal getPeriodicPos(FReal pos, PeriodicCondition periodicPlus, PeriodicCondition periodicMinus,FReal minDir,FReal maxDir,const int dir){
+    FReal getPeriodicPos(FReal pos, PeriodicCondition periodicPlus, PeriodicCondition periodicMinus,FReal maxDir,FReal minDir,const int dir){
         FReal res = pos;
         if( TestPeriodicCondition(dir, periodicPlus) ){
             while(res >= maxDir){

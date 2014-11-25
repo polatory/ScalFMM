@@ -82,7 +82,7 @@ public:
                 const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
                 if(particuleIndex != currentMortonIndex){
                     //Need to move this one
-                    interface->removeFromLeafAndKeep(particles,idxPart);
+                    interface->removeFromLeafAndKeep(particles,currentPart,idxPart);
                 }
                 else{
                     //Need to increment idx;
@@ -93,7 +93,6 @@ public:
         //Insert back the parts that have been removed
         interface->insertAllParticles(tree);
         //Then, remove the empty leaves
-
         { // Remove empty leaves
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
