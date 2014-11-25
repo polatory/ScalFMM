@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -76,7 +76,7 @@ static const FParameterNames InputFileTwow = {
 };
 
 static const FParameterNames InputBinFormat = {
-    {"-binin", "-bininput", "--binary-input"} ,
+    {"-binin", "-bininput", "--binary-input" } ,
      "To input is in binary format."
 };
 
@@ -197,6 +197,11 @@ inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
         return 0;\
     } \
+    {\
+        std::cout << "[ScalFMM] To have the help for this executable pass: "; \
+        for(auto pr: FParameterDefinitions::Help.options) std::cout << pr << ", "; \
+        std::cout << "\n";\
+    }
 
 
 #endif // FPARAMETERNAMES_HPP

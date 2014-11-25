@@ -1,3 +1,4 @@
+#include "../../Src/Utils/FGlobal.hpp"
 
 #include "../../Src/GroupTree/FGroupTree.hpp"
 
@@ -24,6 +25,8 @@
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
+#include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
+#include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
@@ -84,7 +87,14 @@ int main(int argc, char* argv[]){
 
 
     typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
-    typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+#ifdef ScalFMM_USE_STARPU
+    typedef FGroupStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+#elif defined(ScalFMM_USE_OMP4)
+    typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+#else
+    //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+#endif
 
     KernelClass kernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     GroupAlgorithm algo(&groupedTree2,&kernel);
