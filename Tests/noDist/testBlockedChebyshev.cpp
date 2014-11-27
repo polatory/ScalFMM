@@ -1,3 +1,7 @@
+// ==== CMAKE =====
+// @FUSE_BLAS
+// ================
+
 #include "../../Src/Utils/FGlobal.hpp"
 
 #include "../../Src/GroupTree/FGroupTree.hpp"
@@ -20,8 +24,13 @@
 
 #include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
+#ifdef ScalFMM_USE_OMP4
 #include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
+#endif
+#ifdef ScalFMM_USE_STARPU
 #include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
+#endif
+#include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

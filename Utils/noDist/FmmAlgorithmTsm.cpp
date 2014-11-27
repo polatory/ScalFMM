@@ -17,6 +17,11 @@
 //
 //  Utils/Release/FmmAlgorithmTsm -N 2 -h 4
 //  plot "output.txt"  using ($1):(log10($3)) w l,"output.txt"  using ($1):(log10($4)) w l,"output.txt"  using ($1):(log10($5)) w l,"output.txt"  using ($1):(log10($6)) w l
+
+// ==== CMAKE =====
+// @FUSE_BLAS
+// ================
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -49,6 +54,7 @@
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "Files/FRandomLoader.hpp"
+
 
 struct sourcePart {
 	FPoint   position;
