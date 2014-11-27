@@ -56,7 +56,6 @@ protected:
 
 public:
     FScalFMMEngine() : Algorithm(multi_thread), progress(), nbPart(0){
-        //Default behavior in case of out of the box particles is exiting
     }
 
     //First function displayed there are common function for every
@@ -194,6 +193,14 @@ public:
 
     //User define Kernel Part
     virtual void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
+        FAssertLF(0,"No user kernel defined, exiting ...\n");
+    }
+
+    virtual void init_cell(Callback_init_cell user_cell_initializer){
+        FAssertLF(0,"No user kernel defined, exiting ...\n");
+    }
+
+    virtual void free_cell(Callback_free_cell user_cell_initializer){
         FAssertLF(0,"No user kernel defined, exiting ...\n");
     }
 
@@ -371,6 +378,13 @@ extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
     ((ScalFmmCoreHandle * ) Handle)->engine->execute_fmm();
 }
 
+extern "C" void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer){
+    ((ScalFmmCoreHandle * ) Handle)->engine->init_cell(user_cell_initializer);
+}
+
+extern "C" void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user_cell_deallocator){
+    ((ScalFmmCoreHandle * ) Handle)->engine->free_cell(user_cell_deallocator);
+}
 
 
 #endif

@@ -362,7 +362,7 @@ typedef void (*Callback_L2L)(int level, void* parentCell, int childPosition, voi
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_L2P)(void* leafCell, int nbParticles, int* particleIndexes, void* userData);
+typedef void (*Callback_L2P)(void* leafCell, int nbParticles,const int* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
@@ -380,7 +380,7 @@ typedef void (*Callback_P2P)(int nbParticles, const int* particleIndexes, int nb
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2PInner)(int nbParticles, int* particleIndexes, void* userData);
+typedef void (*Callback_P2PInner)(int nbParticles, const int* particleIndexes, void* userData);
 
 
 
@@ -433,6 +433,10 @@ typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree
  */
 typedef void (*Callback_free_cell)(void*);
 
+
+void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer);
+
+void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user_cell_deallocator);
 
 
 ///////////////// Common kernel part : /////////////////

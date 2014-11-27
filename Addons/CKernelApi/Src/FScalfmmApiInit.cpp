@@ -8,6 +8,7 @@ extern "C" {
 }
 
 #include "FInterEngine.hpp"
+#include "FUserKernelEngine.hpp"
 
 extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* BoxCenter, scalfmm_kernel_type KernelType){
     ScalFmmCoreHandle * handle = new ScalFmmCoreHandle();
@@ -26,7 +27,7 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
         typedef FInterpMatrixKernelR                                        MatrixKernelClass;
         typedef FChebSymKernel<ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-        handle->engine = new FInterEngine<ChebCell,ChebKernel>(TreeHeight,BoxWidth,BoxCenter);
+        handle->engine = new FInterEngine<ChebCell,ChebKernel>(TreeHeight,BoxWidth,BoxCenter, KernelType);
         break;
     case 2:
         //TODO typedefs
@@ -36,7 +37,7 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
         typedef FInterpMatrixKernelR                                        MatrixKernelClass;
         typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
-        handle->engine = new FInterEngine<UnifCell,UnifKernel>(TreeHeight,BoxWidth,BoxCenter);
+        handle->engine = new FInterEngine<UnifCell,UnifKernel>(TreeHeight,BoxWidth,BoxCenter,KernelType);
         break;
 
     default:

@@ -67,11 +67,12 @@ public:
      * @param BoxCenter double[3] coordinate of the center of the
      * simulation box
      */
-    FInterEngine(int TreeHeight, double BoxWidth , double * BoxCenter) : kernel(nullptr), matrix(nullptr), octree(nullptr),arranger(nullptr){
+    FInterEngine(int TreeHeight, double BoxWidth , double * BoxCenter,scalfmm_kernel_type KernelType) :
+        kernel(nullptr), matrix(nullptr), octree(nullptr),arranger(nullptr){
         octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
         this->matrix = new MatrixKernelClass();
         this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint(BoxCenter),matrix);
-        kernelType = chebyshev;
+        kernelType = KernelType;
         arranger = nullptr;
     }
 
