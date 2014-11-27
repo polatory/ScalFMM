@@ -16,7 +16,7 @@
 #include "Files/FFmaGenericLoader.hpp"
 #include "Utils/FParameters.hpp"
 #include "Utils/FCompareResults.hpp"
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 //
 /// \file  compare2files.cpp
 //!
@@ -58,7 +58,7 @@ int main(int argc, char ** argv){
 	//
 	// Allocation
 	//
-	FSize nbParticles                    = loader1.getNumberOfParticles();
+	FSize nbParticles          = loader1.getNumberOfParticles();
 	const unsigned int nbData   = loader1.getNbRecordPerline() ;
 	if(nbParticles !=  loader2.getNumberOfParticles()){
 		std::cerr << "Number of points is different in the two files."<<std::endl ;
@@ -75,13 +75,8 @@ int main(int argc, char ** argv){
 	//
 	loader1.fillParticle(particles1,nbParticles);
 	loader2.fillParticle(particles2,nbParticles);
-    if(FParameters::existParameter(argc, argv, LocalParameterEwald.options) ) {
-		FReal volume =1.0 ;
-//		double volume               =  boxsize[0] *boxsize[1]*boxsize[2] ;
-		 removeFirstMoment( "DLPOLY", nbParticles, particles2,  volume) ;
-			FPoint FirstMoment ;
-	}
-	//
+
+ 
     const int error = compareTwoArrays("TAG", nbParticles, particles1, particles2);
 
 	//

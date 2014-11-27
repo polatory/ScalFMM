@@ -87,10 +87,11 @@ int main(int argc, char* argv[])
 #endif
     //
     std::cout <<	 "Parameters  "<< std::endl
-                  <<     "      Octree Depth      "<< TreeHeight <<std::endl
-                      <<	  "      SubOctree depth " << SubTreeHeight <<std::endl
-                           <<     "      Input file  name: " <<filename <<std::endl
-                               <<     "      Thread number:  " << NbThreads <<std::endl
+                  <<     "\t      Octree Depth      \t"<< TreeHeight <<std::endl
+                  <<	    "\t      SubOctree depth \t" << SubTreeHeight <<std::endl
+                  <<	    "\t      Periodic depth    \t" << PeriodicDeep <<std::endl
+                  <<     "\t      Input file  name: \t" <<filename <<std::endl
+                   <<    "\t      Thread number: \t " << NbThreads <<std::endl
                                    <<std::endl;
     //
     // init timer
@@ -128,7 +129,6 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
         std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
                   << " particles ..." << std::endl;
-        std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
         time.tic();
         //
         FPoint position;
