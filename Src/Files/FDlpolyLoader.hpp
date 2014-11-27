@@ -312,6 +312,7 @@ public:
             this->boxWidth    = 0;
             this->nbParticles = 0;
         }
+        	std::cout << "nbParticles  "<< nbParticles <<std::endl;
     }
     /**
     * Default destructor, simply close the file
@@ -368,7 +369,7 @@ public:
 
         int size;
         removeWarning = fread(&size, sizeof(int), 1, file);
-        if(size != 60) printf("Error in loader Dlpoly Size %d should be %d\n", size, 60);
+       if(size != 60) printf("Error in loader Dlpoly Size %d should be %d\n", size, 60);
 
         removeWarning = fread(&index, sizeof(int), 1, file);
         removeWarning = fread(&charge, sizeof(double), 1, file);
