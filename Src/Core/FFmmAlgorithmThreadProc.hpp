@@ -305,7 +305,6 @@ private:
 
     /** M2M */
     void upwardPass(){
-        const int MaxSizePerCell = CellClass::GetSize();
         FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
@@ -326,11 +325,14 @@ private:
         MPI_Request requests[8];
         MPI_Status status[8];
 
-        // Maximum data per message is:
-        FMpiBufferWriter sendBuffer(comm.getComm(), 7*MaxSizePerCell + 1);
-        const int recvBufferOffset = (7 * MaxSizePerCell + 1);
-        FMpiBufferReader recvBuffer(comm.getComm(), 7*recvBufferOffset);
-        CellClass recvBufferCells[8];
+        MPI_Request requestsSize[8];
+        MPI_Status statusSize[8];
+
+        int bufferSize;
+        FMpiBufferWriter sendBuffer(comm.getComm(), 1);// Max = 1 + sizeof(cell)*7
+        std::unique_ptr<FMpiBufferReader[]> recvBuffer(new FMpiBufferReader[7]);
+        int recvBufferSize[7];
+        CellClass recvBufferCells[7];
 
         // The first proc that send to me a cell
         // This variable will go to nbProcess
@@ -354,7 +356,8 @@ private:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;
 
-            int iterMpiRequests   = 0; // The iterator for send/recv requests
+            int iterMpiRequests       = 0; // The iterator for send/recv requests
+            int iterMpiRequestsSize   = 0; // The iterator for send/recv requests
 
             int nbCellsToSkip     = 0; // The number of cells to send
             // Skip all the cells that are out of my working interval
@@ -379,12 +382,11 @@ private:
             }
 
             FLOG(parallelCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
-                const int threadNumber = omp_get_thread_num();
-                KernelClass* myThreadkernels = (kernels[threadNumber]);
+                KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                 //This single section post and receive the comms, and then do the M2M associated with it.
-#pragma omp single nowait
+                #pragma omp single nowait
                 {
                     FLOG(singleCounter.tic());
                     // Master proc never send
@@ -414,6 +416,9 @@ private:
                             // Add the flag as first value
                             sendBuffer.writeAt(0,packageFlags);
                             // Post the message
+                            bufferSize = sendBuffer.getSize();
+                            MPI_Isend(&bufferSize, 1, MPI_INT, currentProcIdToSendTo,
+                                      FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
                             MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, currentProcIdToSendTo,
                                       FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                         }
@@ -429,7 +434,32 @@ private:
                         while( idProcSource < nbProcess
                                && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
                             if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
-                                MPI_Irecv(&recvBuffer.data()[nbProcThatSendToMe * recvBufferOffset], recvBufferOffset, MPI_PACKED,
+                                MPI_Irecv(&recvBufferSize[nbProcThatSendToMe], 1, MPI_INT,
+                                        idProcSource, FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
+                                nbProcThatSendToMe += 1;
+                                FAssertLF(nbProcThatSendToMe <= 7);
+                            }
+                            ++idProcSource;
+                        }
+                    }
+
+                    //Wait For the comms, and do the work
+                    // Are we sending or waiting anything?
+                    if(iterMpiRequestsSize){
+                        FAssertLF(iterMpiRequestsSize <= 8);
+                        MPI_Waitall( iterMpiRequestsSize, requestsSize, statusSize);
+                    }
+
+                    if(hasToReceive){
+                        nbProcThatSendToMe = 0;
+                        //Test : if the firstProcThatSend father minimal value in interval is lesser than mine
+                        int idProcSource = firstProcThatSend;
+                        // Find the last proc that should send to me
+                        while( idProcSource < nbProcess
+                               && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
+                            if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
+                                recvBuffer[nbProcThatSendToMe].cleanAndResize(recvBufferSize[nbProcThatSendToMe]);
+                                MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), recvBufferSize[nbProcThatSendToMe], MPI_PACKED,
                                         idProcSource, FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
@@ -443,7 +473,8 @@ private:
                     if(iterMpiRequests){
                         FAssertLF(iterMpiRequests <= 8);
                         MPI_Waitall( iterMpiRequests, requests, status);
-                    }
+                    }                                       
+
                     // We had received something so we need to proceed the last M2M
                     if( hasToReceive ){
                         FAssertLF(iterMpiRequests != 0);
@@ -452,8 +483,7 @@ private:
 
                         // Retreive data and merge my child and the child from others
                         for(int idxProc = 0 ; idxProc < nbProcThatSendToMe ; ++idxProc){
-                            recvBuffer.seek(idxProc * recvBufferOffset);
-                            int packageFlags = int(recvBuffer.getValue<char>());
+                            int packageFlags = int(recvBuffer[idxProc].getValue<char>());
 
                             int position = 0;
                             while( packageFlags && position < 8){
@@ -462,25 +492,26 @@ private:
                                     ++position;
                                 }
                                 FAssertLF(!currentChild[position], "Already has a cell here");
-                                recvBufferCells[position].deserializeUp(recvBuffer);
+                                recvBufferCells[position].deserializeUp(recvBuffer[idxProc]);
                                 currentChild[position] = (CellClass*) &recvBufferCells[position];
 
                                 packageFlags >>= 1;
                                 ++position;
                             }
+
+                            recvBuffer[idxProc].seek(0);
                         }
                         // Finally compute
-                        (*kernels[threadNumber]).M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
+                        myThreadkernels->M2M( iterArray[totalNbCellsAtLevel - 1].getCurrentCell() , currentChild, idxLevel);
                         firstProcThatSend += nbProcThatSendToMe - 1;
                     }
                     // Reset buffer
                     sendBuffer.reset();
-                    recvBuffer.seek(0);
                     FLOG(singleCounter.tac());
                 }//End Of Single section
 
                 // All threads proceed the M2M
-#pragma omp for nowait
+                #pragma omp for nowait
                 for( int idxCell = nbCellsToSkip ; idxCell < nbCellsForThreads ; ++idxCell){
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }

@@ -328,12 +328,12 @@ int main(int argc, char ** argv){
     FMpiFmaGenericLoader loader(filename,app.global());
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
-    const int nbParts = loader.getNumberOfParticles();
+    const int nbPartsForMe = loader.getMyNumberOfParticles();
     const FReal boxWidth = loader.getBoxWidth();
     const FPoint centerOfBox = loader.getCenterOfBox();
 
     std::cout << "Simulation properties :\n";
-    std::cout << "Nb Particles " << nbParts << "\n";
+    std::cout << "Nb Particles For me " << nbPartsForMe << "\n";
     std::cout << "Box Width : " << boxWidth << "\n";
     std::cout << "Box Center : " << centerOfBox << "\n";
 
@@ -354,24 +354,19 @@ int main(int argc, char ** argv){
             }
         };
 
-        TestParticle* particles = new TestParticle[nbParts];
-        memset(particles, 0, sizeof(TestParticle) * nbParts);
-        for(int idxPart = 0 ; idxPart < nbParts ; ++idxPart){
+        TestParticle* particles = new TestParticle[nbPartsForMe];
+        memset(particles, 0, sizeof(TestParticle) * nbPartsForMe);
+        for(int idxPart = 0 ; idxPart < nbPartsForMe ; ++idxPart){
             FPoint position;
             FReal physicalValue;
             loader.fillParticle(&position, &physicalValue);
             particles[idxPart].position = position;
         }
 
-        const int leftPart = app.global().getLeft(nbParts);
-        const int rightPart = app.global().getRight(nbParts);
-
-        std::cout << "Go from " << leftPart << " to " << rightPart << "\n";
-
         FVector<TestParticle> finalParticles;
         FLeafBalance balancer;
-        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),&particles[leftPart],
-                                                                    rightPart-leftPart,
+        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+                                                                    nbPartsForMe,
                                                                     realTree.getBoxCenter(),
                                                                     realTree.getBoxWidth(),realTree.getHeight(),
                                                                     &finalParticles, &balancer);
@@ -389,7 +384,7 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }
     else{
-        for(FSize idxPart = 0 ; idxPart < nbParts ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < nbPartsForMe ; ++idxPart){
             FPoint position;
             FReal physicalValue;
             loader.fillParticle(&position, &physicalValue);
@@ -403,7 +398,7 @@ int main(int argc, char ** argv){
 
     OctreeClass treeValide(NbLevels, SizeSubLevels,boxWidth,centerOfBox);
     {
-        FMpiFmaGenericLoader loaderValide(filename,app.global());
+        FFmaGenericLoader loaderValide(filename);
         if(!loaderValide.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
         const int nbPartsValide = loaderValide.getNumberOfParticles();

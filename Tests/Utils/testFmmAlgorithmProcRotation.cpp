@@ -262,7 +262,7 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
 
-    std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+    std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
@@ -281,19 +281,16 @@ int main(int argc, char ** argv){
             }
         };
 
-        TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-        memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getNumberOfParticles()));
+        TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
+        memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
 
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
         }
 
         FVector<TestParticle> finalParticles;
         FLeafBalance balancer;
-        // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
-        //						 tree.getBoxCenter(),
-        //						 tree.getBoxWidth(),
-        //						 tree.getHeight(), &finalParticles,&balancer);
+
         FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                     loader.getMyNumberOfParticles(),
                                                                     tree.getBoxCenter(),
@@ -312,9 +309,10 @@ int main(int argc, char ** argv){
         //////////////////////////////////////////////////////////////////////////////////
     }
     else{
+        FAssertLF(loader.getMyNumberOfParticles() == loader.getNumberOfParticles());
         FPoint position;
         FReal physicalValue;
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&position,&physicalValue);
             tree.insert(position, physicalValue);
         }

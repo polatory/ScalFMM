@@ -109,9 +109,9 @@ int main(int argc, char* argv[])
     OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 
     time.tic();
-    TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
-    memset(particles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
+    memset(particles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
+    for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
     }
 
@@ -123,8 +123,8 @@ int main(int argc, char* argv[])
                                                                 tree.getBoxWidth(),tree.getHeight(),
                                                                 &finalParticles, &balancer);
     { // -----------------------------------------------------
-        std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                  << " particles ..." << std::endl;
+        std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "For a total of " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
         time.tic();
 
