@@ -70,6 +70,7 @@ public:
         TagFmmM2M = 1000,
         TagFmmM2MSize = 1500,
         TagFmmL2L = 2000,
+        TagFmmL2LSize = 2500,
         TagFmmP2P = 3000,
 
         // Bitonic,

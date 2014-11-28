@@ -914,6 +914,8 @@ private:
         // Max 1 receive and 7 send (but 7 times the same data)
         MPI_Request*const requests = new MPI_Request[8];
         MPI_Status*const status = new MPI_Status[8];
+        MPI_Request*const requestsSize = new MPI_Request[8];
+        MPI_Status*const statusSize = new MPI_Status[8];
 
         const int heightMinusOne = OctreeHeight - 1;
 
@@ -959,18 +961,20 @@ private:
                 }
             }
 
-#pragma omp parallel
+            #pragma omp parallel
             {
-                int threadNumber = omp_get_thread_num();
-                KernelClass* myThreadkernels = (kernels[threadNumber]);
-#pragma omp single nowait
+                KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
+                #pragma omp single nowait
                 {
                     FLOG(prepareCounter.tic());
                     int iterRequests = 0;
+                    int iterRequestsSize = 0;
+                    int recvBufferSize = 0;
+                    int sendBufferSize;
                     // Post the receive
                     if(hasToReceive){
-                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive,
-                                                    FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
+                        FMpi::MpiAssert( MPI_Irecv( &recvBufferSize, 1, MPI_INT, idxProcToReceive,
+                                                    FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__ );
                     }
 
                     // We have to be sure that we are not sending if we have no work in the current level
@@ -986,8 +990,11 @@ private:
                                 if( nbMessageSent == 0 ){
                                     // We send our last cell
                                     iterArray[totalNbCellsAtLevel - 1].getCurrentCell()->serializeDown(sendBuffer);
+                                    sendBufferSize = sendBuffer.getSize();
                                 }
                                 // Post the send message
+                                FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, MPI_INT, idxProcSend,
+                                                           FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
                                 FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProcSend,
                                                            FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
                                 // Inc and check the counter
@@ -999,30 +1006,44 @@ private:
                         // Next time we will not need to go further than idxProcSend
                         righestProcToSendTo = idxProcSend;
                     }
+
                     // Finalize the communication
+                    if(iterRequestsSize){
+                        FLOG(waitCounter.tic());
+                        FAssertLF(iterRequestsSize <= 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, statusSize), __LINE__);
+                        FLOG(waitCounter.tac());
+                    }
+
+                    if(hasToReceive){
+                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive,
+                                                    FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
+                    }
+
                     if(iterRequests){
                         FLOG(waitCounter.tic());
                         FAssertLF(iterRequests <= 8);
                         FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, status), __LINE__);
                         FLOG(waitCounter.tac());
                     }
+
                     // If we receive something proceed the L2L
                     if(hasToReceive){
                         FAssertLF(iterRequests != 0);
                         // In this case we know that we have to perform the L2L with the last cell that are
                         // exclude from our working interval nbCellsToSkip-1
                         iterArray[nbCellsToSkip-1].getCurrentCell()->deserializeDown(recvBuffer);
-                        kernels[threadNumber]->L2L( iterArray[nbCellsToSkip-1].getCurrentCell() , iterArray[nbCellsToSkip-1].getCurrentChild(), idxLevel);
+                        myThreadkernels->L2L( iterArray[nbCellsToSkip-1].getCurrentCell() , iterArray[nbCellsToSkip-1].getCurrentChild(), idxLevel);
                     }
                     FLOG(prepareCounter.tac());
                 }
 
-#pragma omp single nowait
+                #pragma omp single nowait
                 {
                     FLOG(computationCounter.tic());
                 }
                 // Threads are working on all the cell of our working interval at that level
-#pragma omp for nowait
+                #pragma omp for nowait
                 for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
