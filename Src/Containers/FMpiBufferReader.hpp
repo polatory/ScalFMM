@@ -29,19 +29,33 @@
  * finally use data pointer as you like
  */
 class FMpiBufferReader : public FAbstractBufferReader {
-    const MPI_Comm comm;            //< Communicator needed by MPI_Pack functions
-    const int arrayCapacity;        //< Allocated space
+    MPI_Comm comm;            //< Communicator needed by MPI_Pack functions
+    int arrayCapacity;        //< Allocated space
     std::unique_ptr<char[]> array;  //< Allocated Array
     int currentIndex;
 
 public :
     /*Constructor with a default arrayCapacity of 512 bytes */
-    FMpiBufferReader(const MPI_Comm inComm, const int inCapacity = 512):
+    explicit FMpiBufferReader(const MPI_Comm inComm = MPI_COMM_WORLD, const int inDefaultCapacity = 512):
         comm(inComm),
-        arrayCapacity(inCapacity),
-        array(new char[inCapacity]),
+        arrayCapacity(inDefaultCapacity),
+        array(new char[inDefaultCapacity]),
         currentIndex(0){
         FAssertLF(array, "Cannot allocate array");
+    }
+
+    /** Change the comm (or to set it later) */
+    void setComm(const MPI_Comm inComm){
+        comm = inComm;
+    }
+
+    /** To change the capacity (but reset the head to 0) */
+    void cleanAndResize(const int newCapacity){
+        if(newCapacity != arrayCapacity){
+            arrayCapacity = newCapacity;
+            array.reset(new char[newCapacity]);
+        }
+        currentIndex = 0;
     }
 
     /** Destructor

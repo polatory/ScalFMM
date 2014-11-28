@@ -68,6 +68,7 @@ public:
 
         // FMM
         TagFmmM2M = 1000,
+        TagFmmM2MSize = 1500,
         TagFmmL2L = 2000,
         TagFmmP2P = 3000,
 

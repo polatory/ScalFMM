@@ -29,24 +29,46 @@
  * finally use data pointer as you like
  */
 class FMpiBufferWriter : public FAbstractBufferWriter {
-    const MPI_Comm mpiComm;         //< Communicator needed by MPI_Pack functions
-    const int arrayCapacity;        //< Allocated Space
+    MPI_Comm mpiComm;         //< Communicator needed by MPI_Pack functions
+    int arrayCapacity;              //< Allocated Space
     std::unique_ptr<char[]> array;  //< Allocated Array
     int currentIndex;               //< Currently filled space
 
     /** Test and exit if not enought space */
-    void assertRemainingSpace(const size_t requestedSpace) const {
-        FAssertLF(int(currentIndex + requestedSpace) <= arrayCapacity, "Error FMpiBufferWriter has not enough space");
+    void expandIfNeeded(const size_t requestedSpace) {
+        if( arrayCapacity < int(currentIndex + requestedSpace) ){
+            arrayCapacity = int((currentIndex + requestedSpace + 1) * 1.5);
+            char* arrayTmp = new char[arrayCapacity];
+            memcpy(arrayTmp, array.get(), sizeof(char)*currentIndex);
+            array.reset(arrayTmp);
+        }
     }
 
 public:
     /** Constructor with a default arrayCapacity of 512 bytes */
-    FMpiBufferWriter(const MPI_Comm inComm, const int inCapacity = 1024):
+    explicit FMpiBufferWriter(const MPI_Comm inComm, const int inDefaultCapacity = 1024):
         mpiComm(inComm),
-        arrayCapacity(inCapacity),
-        array(new char[inCapacity]),
+        arrayCapacity(inDefaultCapacity),
+        array(new char[inDefaultCapacity]),
         currentIndex(0)
     {}
+
+
+    /** Change the comm (or to set it later) */
+    void setComm(const MPI_Comm inComm){
+        mpiComm = inComm;
+    }
+
+    /** To change the capacity (but reset the head to 0 if size if lower) */
+    void resize(const int newCapacity){
+        if(newCapacity != arrayCapacity){
+            arrayCapacity = newCapacity;
+            char* arrayTmp = new char[arrayCapacity];
+            currentIndex = (currentIndex < arrayCapacity ? currentIndex : arrayCapacity-1);
+            memcpy(arrayTmp, array.get(), sizeof(char)*currentIndex);
+            array.reset(arrayTmp);
+        }
+    }
 
     /** Destructor */
     virtual ~FMpiBufferWriter(){
@@ -75,7 +97,7 @@ public:
     /** Write data by packing cpy */
     template <class ClassType>
     void write(const ClassType& object){
-        assertRemainingSpace(sizeof(ClassType));
+        expandIfNeeded(sizeof(ClassType));
         MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
     }
 
@@ -84,7 +106,7 @@ public:
    */
     template <class ClassType>
     void write(const ClassType&& object){
-        assertRemainingSpace(sizeof(ClassType));
+        expandIfNeeded(sizeof(ClassType));
         MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
     }
 
@@ -101,7 +123,7 @@ public:
    */
     template <class ClassType>
     void write(const ClassType* const objects, const int inSize){
-        assertRemainingSpace(sizeof(ClassType) * inSize);
+        expandIfNeeded(sizeof(ClassType) * inSize);
         MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm);
     }
 
