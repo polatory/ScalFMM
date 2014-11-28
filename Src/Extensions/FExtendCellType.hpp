@@ -86,6 +86,10 @@ public:
         containsTargets = false;
         containsSources = false;
     }
+
+    int getSavedSize() const {
+        return sizeof(containsTargets) + sizeof(containsSources);
+    }
 };
 
 

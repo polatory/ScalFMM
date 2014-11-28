@@ -75,6 +75,9 @@ public:
         coordinate.restore(buffer);
     }
   
+    int getSavedSize() const {
+        return coordinate.getSavedSize();
+    }
 };
 
 

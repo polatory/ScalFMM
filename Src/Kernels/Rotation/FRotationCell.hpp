@@ -92,10 +92,10 @@ public:
         return local_exp;
     }
 
-  const int getArraySize() const
-  {
-    return MultipoleSize;
-  }
+    const int getArraySize() const
+    {
+        return MultipoleSize;
+    }
 
 
     /** Make it like the begining */
@@ -144,9 +144,19 @@ public:
         buffer.fillArray(multipole_exp, MultipoleSize);
         buffer.fillArray(local_exp, LocalSize);
     }
-  static constexpr int GetSize(){
-    return ((int) sizeof(FComplex)) * (MultipoleSize + LocalSize);
-  }
+
+    int getSavedSize() const {
+        return ((int) sizeof(FComplex)) * (MultipoleSize + LocalSize)
+                + FBasicCell::getSavedSize();
+    }
+
+    int getSavedSizeUp() const {
+        return ((int) sizeof(FComplex)) * (MultipoleSize);
+    }
+
+    int getSavedSizeDown() const {
+        return ((int) sizeof(FComplex)) * (LocalSize);
+    }
 };
 
 template <int P>
@@ -165,6 +175,10 @@ public:
     void resetToInitialState(){
         FRotationCell<P>::resetToInitialState();
         FExtendCellType::resetToInitialState();
+    }
+
+    int getSavedSize() const {
+        return FExtendCellType::getSavedSize() + FRotationCell<P>::getSavedSize();
     }
 };
 

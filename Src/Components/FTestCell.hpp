@@ -76,10 +76,9 @@ public:
 		buffer >> dataDown >> dataUp;
 	}
 
-	//   	  static constexpr int GetSize(){
-	static constexpr     std::size_t GetSize(){
-		return sizeof(long long int)*2;
-	}
+    int getSavedSize() const {
+        return int(sizeof(long long int))*2;
+    }
 
 	/////////////////////////////////////////////////
 
@@ -105,6 +104,13 @@ public:
 		buffer >> this->dataDown;
 	}
 
+    int getSavedSizeDown() {
+        return int(sizeof(long long int));
+    }
+
+    int getSavedSizeUp() {
+        return int(sizeof(long long int));
+    }
 };
 
 

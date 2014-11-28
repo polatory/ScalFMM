@@ -258,6 +258,11 @@ public:
         buffer >> data[0] >> data[1] >> data[2];
     }
 
+    /** To know the size when we save it */
+    int getSavedSize() const {
+        return int(sizeof(data[0]) + sizeof(data[1]) + sizeof(data[2]));
+    }
+
 
     static std::string MortonToBinary(MortonIndex index, int level){
         std::string str;

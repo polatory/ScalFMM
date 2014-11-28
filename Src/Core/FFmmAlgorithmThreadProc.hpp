@@ -62,9 +62,6 @@
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
-    // Can be deleted
-    // const static int MaxSizePerCell = CellClass::GetSize();
-
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
 
@@ -533,7 +530,6 @@ private:
 
 
     void transferPass(){
-        const int MaxSizePerCell = CellClass::GetSize();
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
@@ -549,16 +545,16 @@ private:
         // pointer to send
         FVector<typename OctreeClass::Iterator> toSend[nbProcess * OctreeHeight];
         // index
-        int*const indexToSend = new int[nbProcess * OctreeHeight];
-        memset(indexToSend, 0, sizeof(int) * nbProcess * OctreeHeight);
+        long long int*const indexToSend = new long long int[nbProcess * OctreeHeight];
+        memset(indexToSend, 0, sizeof(long long int) * nbProcess * OctreeHeight);
         // To know which one has need someone
         FBoolArray** const leafsNeedOther = new FBoolArray*[OctreeHeight];
         memset(leafsNeedOther, 0, sizeof(FBoolArray*) * OctreeHeight);
 
         // All process say to each others
         // what the will send to who
-        int*const globalReceiveMap = new int[nbProcess * nbProcess * OctreeHeight];
-        memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess * OctreeHeight);
+        long long int*const globalReceiveMap = new long long  int[nbProcess * nbProcess * OctreeHeight];
+        memset(globalReceiveMap, 0, sizeof(long long  int) * nbProcess * nbProcess * OctreeHeight);
 
         FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess * OctreeHeight];
         memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess * OctreeHeight);
@@ -566,9 +562,9 @@ private:
         FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess * OctreeHeight];
         memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess * OctreeHeight);
 
-#pragma omp parallel
+        #pragma omp parallel
         {
-#pragma omp master
+            #pragma omp master
             {
                 {
                     FLOG(prepareCounter.tic());
@@ -636,7 +632,11 @@ private:
                                         needOther = true;
 
                                         toSend[idxLevel * nbProcess + procToReceive].push(iterArrayLocal[idxCell]);
-                                        ++indexToSend[idxLevel * nbProcess + procToReceive];
+                                        if(indexToSend[idxLevel * nbProcess + procToReceive] == 0){
+                                            indexToSend[idxLevel * nbProcess + procToReceive] = sizeof(int);
+                                        }
+                                        indexToSend[idxLevel * nbProcess + procToReceive] += iterArrayLocal[idxCell].getCurrentCell()->getSavedSizeUp();
+                                        indexToSend[idxLevel * nbProcess + procToReceive] += sizeof(MortonIndex);
                                     }
                                 }
                             }
@@ -655,7 +655,7 @@ private:
                 //////////////////////////////////////////////////////////////////
 
                 FLOG(gatherCounter.tic());
-                FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_INT, comm.getComm()),  __LINE__ );
+                FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
                 //////////////////////////////////////////////////////////////////
@@ -669,28 +669,30 @@ private:
                 MPI_Status*const status = new MPI_Status[2 * nbProcess * OctreeHeight];
                 int iterRequest = 0;
 
-                const int SizeOfCellToSend = sizeof(MortonIndex) + sizeof(int) + MaxSizePerCell;
-
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                        const int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
+                        const long long int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                         if(toSendAtProcAtLevel != 0){
-                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),toSendAtProcAtLevel * SizeOfCellToSend);
+                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),toSendAtProcAtLevel);
 
-                            for(int idxLeaf = 0 ; idxLeaf < toSendAtProcAtLevel; ++idxLeaf){
+                            sendBuffer[idxLevel * nbProcess + idxProc]->write(int(toSend[idxLevel * nbProcess + idxProc].getSize()));
+
+                            for(int idxLeaf = 0 ; idxLeaf < toSend[idxLevel * nbProcess + idxProc].getSize(); ++idxLeaf){
                                 const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
                                 sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
                                 toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
                             }
+
+                            FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() == toSendAtProcAtLevel);
 
                             FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
                                              sendBuffer[idxLevel * nbProcess + idxProc]->getSize(),MPI_PACKED, idxProc,
                                     FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                         }
 
-                        const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
+                        const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                         if(toReceiveFromProcAtLevel){
-                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),toReceiveFromProcAtLevel * SizeOfCellToSend);
+                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),toReceiveFromProcAtLevel);
 
                             FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
                                              recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), MPI_PACKED,idxProc,
@@ -704,7 +706,7 @@ private:
                 //////////////////////////////////////////////////////////////////
 
                 // Wait to receive every things (and send every things)
-                MPI_Waitall(iterRequest, requests, status);
+                FMpi::MpiAssert(MPI_Waitall(iterRequest, requests, status), __LINE__);
 
                 delete[] requests;
                 delete[] status;
@@ -716,7 +718,7 @@ private:
             // Do M2L
             //////////////////////////////////////////////////////////////////
 
-#pragma omp single nowait
+            #pragma omp single nowait
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -746,7 +748,7 @@ private:
                     {
                         const int chunckSize = FMath::Max(1, numberOfCells/(omp_get_num_threads()*omp_get_num_threads()));
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
-#pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
+                            #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
                                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                                 const CellClass* neighbors[343];
@@ -760,15 +762,15 @@ private:
                         }
                     }//End of task spawning
 
-#pragma omp taskwait
+                    #pragma omp taskwait
 
                     for(int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
-#pragma omp task  default(none) firstprivate(idxThread) shared(idxLevel)
+                        #pragma omp task  default(none) firstprivate(idxThread) shared(idxLevel)
                         {
                             kernels[idxThread]->finishedLevelM2L(idxLevel);
                         }
                     }
-#pragma omp taskwait
+                    #pragma omp taskwait
 
                     FLOG(computationCounter.tac());
                 }
@@ -793,19 +795,23 @@ private:
                 // put the received data into a temporary tree
                 FLightOctree<CellClass> tempTree;
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-                    const int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
+                    if(recvBuffer[idxLevel * nbProcess + idxProc]){
+                        const int toReceiveFromProcAtLevel = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<int>();
 
-                    for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                        const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<MortonIndex>();
+                        for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
+                            const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<MortonIndex>();
 
-                        CellClass* const newCell = new CellClass;
-                        newCell->setMortonIndex(cellIndex);
-                        newCell->deserializeUp(*recvBuffer[idxLevel * nbProcess + idxProc]);
+                            CellClass* const newCell = new CellClass;
+                            newCell->setMortonIndex(cellIndex);
+                            newCell->deserializeUp(*recvBuffer[idxLevel * nbProcess + idxProc]);
 
-                        tempTree.insertCell(cellIndex, idxLevel, newCell);
+                            tempTree.insertCell(cellIndex, idxLevel, newCell);
+                        }
+
+                        FAssertLF(globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess] ==
+                                recvBuffer[idxLevel * nbProcess + idxProc]->tell());
                     }
                 }
-
 
                 // take cells from our octree only if they are
                 // linked to received data
@@ -830,14 +836,14 @@ private:
 
                 // Compute this cells
                 FLOG(computationCounter.tic());
-#pragma omp parallel
+                #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[189];
                     int neighborsPosition[189];
                     const CellClass* neighbors[343];
 
-#pragma omp for schedule(static) nowait
+                    #pragma omp for schedule(static) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
@@ -899,7 +905,6 @@ private:
     //////////////////////////////////////////////////////////////////
 
     void downardPass(){ // second L2L
-        const int MaxSizePerCell = CellClass::GetSize();
         FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
@@ -919,8 +924,8 @@ private:
 
         const int heightMinusOne = OctreeHeight - 1;
 
-        FMpiBufferWriter sendBuffer(comm.getComm(),MaxSizePerCell);
-        FMpiBufferReader recvBuffer(comm.getComm(),MaxSizePerCell);
+        FMpiBufferWriter sendBuffer(comm.getComm());
+        FMpiBufferReader recvBuffer(comm.getComm());
 
         int righestProcToSendTo   = nbProcess - 1;
 

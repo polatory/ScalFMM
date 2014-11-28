@@ -53,6 +53,10 @@ public:
         FExtendCoordinate::restore(buffer);
     }
 
+    int getSavedSize() const {
+        return FExtendMortonIndex::getSavedSize() + FExtendMortonIndex::getSavedSize();
+    }
+
     /** Do nothing */
     void resetToInitialState(){
     }

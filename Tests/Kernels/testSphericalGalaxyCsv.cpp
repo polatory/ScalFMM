@@ -40,10 +40,11 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
+#include "../../Src/Arranger/FAbstractMover.hpp"
+
 
 class VelocityContainer : public FP2PParticleContainer<> {
-  typedef FP2PParticleContainer<> Parent;
-
+    typedef FP2PParticleContainer<> Parent;
     FVector<FPoint> velocities;
 
 public:
@@ -84,52 +85,56 @@ public:
     }
 };
 
-struct TestParticle{
-    FPoint position;
-    FReal physicalValue;
-    FReal forces[3];
-    FReal potential;
-    FPoint velocity;
-    const FPoint& getPosition(){
-        return position;
-    }
-};
+template<class OctreeClass>
+class GalaxyMover : public FAbstractMover<OctreeClass, VelocityContainer>{
+private:
+    VelocityContainer toStoreRemovedParts;
 
-template <class ParticleClass>
-class Converter {
 public:
-    template <class ContainerClass>
-    static ParticleClass GetParticleAndRemove(ContainerClass* containers, const int idxExtract){
-        const FReal*const positionsX = containers->getPositions()[0];
-        const FReal*const positionsY = containers->getPositions()[1];
-        const FReal*const positionsZ = containers->getPositions()[2];
-        const FReal*const forcesX = containers->getForcesX();
-        const FReal*const forcesY = containers->getForcesY();
-        const FReal*const forcesZ = containers->getForcesZ();
-        const FReal*const physicalValues = containers->getPhysicalValues();
-        const FReal*const potentials = containers->getPotentials();
-        FVector<FPoint> velocites = containers->getVelocities();
-
-        TestParticle part;
-        part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
-        part.physicalValue = physicalValues[idxExtract];
-        part.forces[0] = forcesX[idxExtract];
-        part.forces[1] = forcesY[idxExtract];
-        part.forces[2] = forcesZ[idxExtract];
-        part.potential = potentials[idxExtract];
-        part.velocity  = velocites[idxExtract];
-
-        containers->removeParticles(&idxExtract, 1);
-
-        return part;
+    GalaxyMover() {
     }
 
-    template <class OctreeClass>
-    static void Insert(OctreeClass* tree, const ParticleClass& part){
-        tree->insert(part.position , part.velocity, part.physicalValue, part.forces[0],
-                part.forces[1],part.forces[2],part.potential);
+    virtual ~GalaxyMover(){
+    }
+
+    /** To get the position of the particle at idx idxPart in leaf lf */
+    void getParticlePosition(VelocityContainer* lf, const int idxPart, FPoint* particlePos){
+        (*particlePos) = FPoint(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
+    }
+
+    /** Remove a particle but keep it to reinsert it later*/
+    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint& particlePos, const int idxPart){
+        std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
+        for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
+            particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
+        }
+
+        toStoreRemovedParts.push(particlePos,lf->getVelocities()[idxPart],particleValues);
+
+        lf->getVelocities().removeOne(idxPart);
+        lf->removeParticles(&idxPart,1);
+    }
+
+    /** Reinsert the previously saved particles */
+    void insertAllParticles(OctreeClass* tree){
+        std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
+
+        for(int idxToInsert = 0; idxToInsert<toStoreRemovedParts.getNbParticles() ; ++idxToInsert){
+            for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
+                particleValues[idxAttr] = toStoreRemovedParts.getAttribute(idxAttr)[idxToInsert];
+            }
+            const FPoint particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
+                                     toStoreRemovedParts.getPositions()[1][idxToInsert],
+                                     toStoreRemovedParts.getPositions()[2][idxToInsert]);
+
+            tree->insert(particlePos, toStoreRemovedParts.getVelocities()[idxToInsert], particleValues);
+        }
+
+        toStoreRemovedParts.clear();
+        toStoreRemovedParts.getVelocities().clear();
     }
 };
+
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
@@ -147,6 +152,9 @@ int main(int argc, char ** argv){
     typedef FSphericalKernel< CellClass, ContainerClass >   KernelClass;
 
     typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+
+    typedef GalaxyMover<OctreeClass> MoverClass;
+    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -183,7 +191,7 @@ int main(int argc, char ** argv){
 
     KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
-    FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arranger(&tree);
+    ArrangerClass arranger(&tree);
     FTreeCsvSaver<OctreeClass, ContainerClass> saver(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "/tmp/test%d.csv"));
 
     for(int idx = 0; idx < 100 ; ++idx){
@@ -197,7 +205,7 @@ int main(int argc, char ** argv){
             } while(octreeIterator.moveRight());
         }
         // update tree and vtk
-        arranger.rearrange(AllDirs);
+        arranger.rearrange();
         saver.exportTree(&tree);
     }
 

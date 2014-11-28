@@ -43,6 +43,8 @@ protected:
         static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeUp");
     }
 
+    virtual int getSavedSizeUp() = 0;
+
     ///////////////////////////////////////////////
     // For Downward pass
     ///////////////////////////////////////////////
@@ -57,6 +59,8 @@ protected:
     void deserializeDown(BufferReaderClass&){
         static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeDown");
     }
+
+    virtual int getSavedSizeDown() = 0;
 };
 
 

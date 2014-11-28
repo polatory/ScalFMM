@@ -151,10 +151,19 @@ public:
         buffer.fillArray(multipole_exp, PoleSize);
         buffer.fillArray(local_exp, LocalSize);
     }
-  
-  static  int GetSize(){
-    return (int) sizeof(FComplex) * (PoleSize+LocalSize);
-  }
+
+    int getSavedSize() const {
+        return ((int) sizeof(FComplex)) * (PoleSize+LocalSize)
+                + FBasicCell::getSavedSize();
+    }
+
+    int getSavedSizeUp() const {
+        return ((int) sizeof(FComplex)) * (PoleSize);
+    }
+
+    int getSavedSizeDown() const {
+        return ((int) sizeof(FComplex)) * (LocalSize);
+    }
 };
 
 int FSphericalCell::DevP(-1);
@@ -180,6 +189,10 @@ public:
     void resetToInitialState(){
         FSphericalCell::resetToInitialState();
         FExtendCellType::resetToInitialState();
+    }
+
+    int getSavedSize() const {
+        return FExtendCellType::getSavedSize() + FSphericalCell::getSavedSize();
     }
 };
 

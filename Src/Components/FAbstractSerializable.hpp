@@ -45,14 +45,7 @@ protected:
         static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement restore");
     }
 
-    /**
-   * @brief GetSize returns the size of the current block (in order to prepare the buffer)
-   * @return
-   */
-    static constexpr int GetSize(){
-        return 0;
-    }
-
+    virtual int getSavedSize() const = 0;
 };
 
 #endif // FABSTRACTSERIALIZABLE_HPP

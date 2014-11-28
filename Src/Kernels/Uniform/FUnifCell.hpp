@@ -165,9 +165,18 @@ public:
     buffer.fillArray(local_exp, VectorSize*NVALS*NLHS);
     buffer.fillArray(transformed_local_exp, TransformedVectorSize*NVALS*NLHS);
   }
-  
-  static constexpr int GetSize(){
-    return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+
+  int getSavedSize() const {
+      return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex)
+              + FBasicCell::getSavedSize();
+  }
+
+  int getSavedSizeUp() const {
+      return (NRHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+  }
+
+  int getSavedSizeDown() const {
+      return (NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
   }
 
  template <class StreamClass>

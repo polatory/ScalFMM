@@ -174,6 +174,21 @@ public:
     return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
   }
 
+  int getSavedSize() const {
+      return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal)
+              + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex)
+              + FBasicCell::getSavedSize();
+  }
+
+  int getSavedSizeUp() const {
+      return (NRHS)*NVALS*VectorSize * (int) sizeof(FReal)
+              + (NRHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+  }
+
+  int getSavedSizeDown() const {
+      return (NLHS)*NVALS*VectorSize * (int) sizeof(FReal)
+              + (NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+  }
 
 };
 

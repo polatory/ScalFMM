@@ -66,6 +66,10 @@ public:
     void restore(BufferReaderClass& buffer) {
         buffer >> mortonIndex;
     }
+
+    int getSavedSize() const {
+        return int(sizeof(mortonIndex));
+    }
 };
 
 
