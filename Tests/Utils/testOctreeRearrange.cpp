@@ -31,7 +31,7 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 #include "../../Src/Components/FBasicCell.hpp"
-#include "../../Src/Kernels/P2P/FP2PLeafInterface.hpp"
+#include "../../Src/Arranger/FBasicParticleContainerIndexedMover.hpp"
 #include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "../../Src/Arranger/FOctreeArranger.hpp"
@@ -53,7 +53,8 @@ int main(int argc, char ** argv){
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-    typedef FOctreeArranger<OctreeClass,ContainerClass,FP2PLeafInterface<OctreeClass>> ArrangerClass;
+    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";

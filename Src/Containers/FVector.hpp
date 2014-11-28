@@ -134,13 +134,28 @@ public:
             // Copy elements
             ObjectType* const nextArray = reinterpret_cast< ObjectType* >( inCapacity ? new char[sizeof(ObjectType) * inCapacity] : nullptr);
             for(int idx = 0 ; idx < index ; ++idx){
-                new((void*)&nextArray[idx]) ObjectType(array[idx]);
+                new((void*)&nextArray[idx]) ObjectType(std::move(array[idx]));
                 (&array[idx])->~ObjectType();
             }
             delete [] reinterpret_cast< char* >(array);
 
             array    = nextArray;
             capacity = inCapacity;
+        }
+    }
+
+    /** Resize the vector (and change the capacity if needed) */
+    void resize(const int newSize){
+        if(index < newSize){
+            if(capacity < newSize){
+                setCapacity(int(newSize*1.5));
+            }
+            while(index != newSize){
+                new((void*)&array[index]) ObjectType();
+            }
+        }
+        else{
+            index = newSize;
         }
     }
 
@@ -275,6 +290,14 @@ public:
         // Copy values
         memcpy(&array[index], inArray, inSize * sizeof(ObjectType));
         index += inSize;
+    }
+
+    /** Remove a values by shifting all the next values */
+    void removeOne(const int idxToRemove){
+        for(int idxMove = idxToRemove + 1; idxMove < index ; ++idxMove){
+            array[idxMove - 1] = array[idxMove];
+        }
+        index -= 1;
     }
 
     /** This class is a basic iterator

@@ -43,6 +43,36 @@ public:
     const FVector<int>& getIndexes() const{
         return indexes;
     }
+
+    void clear(){
+        indexes.clear();
+        Parent::clear();
+    }
+
+    void removeParticles(const int indexesToRemove[], const int nbParticlesToRemove){
+        if(nbParticlesToRemove == 0 || indexesToRemove == nullptr){
+            return;
+        }
+
+        int offset     = 1;
+        int idxIndexes = 1;
+        int idxIns = indexesToRemove[0] + 1;
+        for( ; idxIns < indexes.getSize() && idxIndexes < nbParticlesToRemove ; ++idxIns){
+            if( idxIns == indexesToRemove[idxIndexes] ){
+                idxIndexes += 1;
+                offset += 1;
+            }
+            else{
+                indexes[idxIns-offset] = indexes[idxIns];
+            }
+        }
+        for( ; idxIns < indexes.getSize() ; ++idxIns){
+            indexes[idxIns-offset] = indexes[idxIns];
+        }
+        indexes.resize(indexes.getSize()-nbParticlesToRemove);
+
+        Parent::removeParticles(indexesToRemove, nbParticlesToRemove);
+    }
 };
 
 #endif // FP2PPARTICLECONTAINERINDEXED_HPP

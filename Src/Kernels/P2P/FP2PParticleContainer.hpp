@@ -23,6 +23,9 @@ class FP2PParticleContainer : public FBasicParticleContainer<NVALS*(NRHS+4*NLHS)
     typedef FBasicParticleContainer<NVALS*(NRHS+4*NLHS)> Parent;
 
 public:
+    static const int NbAttributes = NVALS*(NRHS+4*NLHS);
+    typedef FReal AttributesClass;
+
     FReal* getPhysicalValues(const int idxVals = 0, const int idxRhs = 0){
       return Parent::getAttribute((0+idxRhs)*NVALS+idxVals);
     }

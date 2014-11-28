@@ -23,18 +23,6 @@
 template <class OctreeClass, class ContainerClass, class LeafInterface >
 class FArrangerPeriodic : public FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>{
 
-public:
-
-    FArrangerPeriodic(OctreeClass * octree) : FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>(octree){
-    }
-
-    // To put in inhereed class
-    void checkPosition(FPoint& particlePos) override {
-        particlePos.setX( getPeriodicPos( particlePos.getX(), DirMinusX, DirPlusX, (this->MaxBox).getX(),(this->MinBox).getX(),DirX));
-        particlePos.setY( getPeriodicPos( particlePos.getY(), DirMinusY, DirPlusY, (this->MaxBox).getY(),(this->MinBox).getY(),DirY));
-        particlePos.setZ( getPeriodicPos( particlePos.getZ(), DirMinusZ, DirPlusZ, (this->MaxBox).getZ(),(this->MinBox).getZ(),DirZ));
-    }
-
     FReal getPeriodicPos(FReal pos, PeriodicCondition periodicPlus, PeriodicCondition periodicMinus,FReal maxDir,FReal minDir,const int dir){
         FReal res = pos;
         if( TestPeriodicCondition(dir, periodicPlus) ){
@@ -49,6 +37,18 @@ public:
             }
         }
         return res;
+    }
+
+public:
+
+    FArrangerPeriodic(OctreeClass * octree) : FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>(octree){
+    }
+
+    // To put in inhereed class
+    void checkPosition(FPoint& particlePos) override {
+        particlePos.setX( getPeriodicPos( particlePos.getX(), DirMinusX, DirPlusX, (this->MaxBox).getX(),(this->MinBox).getX(),DirX));
+        particlePos.setY( getPeriodicPos( particlePos.getY(), DirMinusY, DirPlusY, (this->MaxBox).getY(),(this->MinBox).getY(),DirY));
+        particlePos.setZ( getPeriodicPos( particlePos.getZ(), DirMinusZ, DirPlusZ, (this->MaxBox).getZ(),(this->MinBox).getZ(),DirZ));
     }
 };
 
