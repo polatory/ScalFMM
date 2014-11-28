@@ -77,7 +77,7 @@ public:
 	}
 
     int getSavedSize() const {
-        return int(sizeof(long long int))*2;
+        return int(sizeof(long long int))*2 + FBasicCell::getSavedSize();
     }
 
 	/////////////////////////////////////////////////
