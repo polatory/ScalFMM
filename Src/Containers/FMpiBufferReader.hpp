@@ -101,7 +101,7 @@ public :
         ClassType value;
         int previousIndex = currentIndex;
         seek(int(sizeof(value) + previousIndex));
-        MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm);
+        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
         return value;
     }
 
@@ -111,7 +111,7 @@ public :
         ClassType value;
         int previousIndex = ind;
         seek(int(sizeof(value)+ind));
-        MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm);
+        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
         return value;
     }
 
@@ -120,7 +120,7 @@ public :
     void fillValue(ClassType* const inValue){
         int previousIndex = currentIndex;
         seek(int(sizeof(ClassType) + previousIndex));
-        MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inValue,1,FMpi::GetType(*inValue),comm);
+        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inValue,1,FMpi::GetType(*inValue),comm), __LINE__);
     }
 
     /** Fill one/many value(s) with memcpy */
@@ -128,7 +128,7 @@ public :
     void fillArray(ClassType* const inArray, const int inSize){
         int previousIndex = currentIndex;
         seek(int(sizeof(ClassType) * inSize + previousIndex));
-        MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inArray,inSize,FMpi::GetType(*inArray),comm);
+        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inArray,inSize,FMpi::GetType(*inArray),comm), __LINE__);
     }
 
     /** Same as fillValue */

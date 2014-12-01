@@ -98,7 +98,7 @@ public:
     template <class ClassType>
     void write(const ClassType& object){
         expandIfNeeded(sizeof(ClassType));
-        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
     }
 
     /**
@@ -107,7 +107,7 @@ public:
     template <class ClassType>
     void write(const ClassType&& object){
         expandIfNeeded(sizeof(ClassType));
-        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
     }
 
     /** Write back, position + sizeof(object) has to be < size */
@@ -115,7 +115,7 @@ public:
     void writeAt(const int position, const ClassType& object){
         FAssertLF(int(position + sizeof(ClassType)) <= currentIndex)
         int noConstPosition = position;
-        MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &noConstPosition, mpiComm);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &noConstPosition, mpiComm), __LINE__);
     }
 
     /** Write an array
@@ -124,7 +124,7 @@ public:
     template <class ClassType>
     void write(const ClassType* const objects, const int inSize){
         expandIfNeeded(sizeof(ClassType) * inSize);
-        MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm);
+        FMpi::Assert(MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
     }
 
     /** Equivalent to write */

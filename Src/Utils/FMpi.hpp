@@ -289,6 +289,10 @@ public:
         return MPI_CHAR;
     }
 
+    static  MPI_Datatype GetType(const unsigned char&){
+        return MPI_UNSIGNED_CHAR;
+    }
+
     static  MPI_Datatype GetType(const FComplex& a){
         MPI_Datatype FMpiComplexe;
         MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
