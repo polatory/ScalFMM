@@ -265,38 +265,12 @@ public:
     // Mpi Types meta function
     ////////////////////////////////////////////////////////////
 
-    static  MPI_Datatype GetType(const long long&){
-        return MPI_LONG_LONG;
-    }
+    template <class TypeClass>
+    static MPI_Datatype GetType();
 
-    static  MPI_Datatype GetType(const long int&){
-        return MPI_LONG;
-    }
-
-    static  MPI_Datatype GetType(const double&){
-        return MPI_DOUBLE;
-    }
-
-    static  MPI_Datatype GetType(const float&){
-        return MPI_FLOAT;
-    }
-
-    static  MPI_Datatype GetType(const int&){
-        return MPI_INT;
-    }
-
-    static  MPI_Datatype GetType(const char&){
-        return MPI_CHAR;
-    }
-
-    static  MPI_Datatype GetType(const unsigned char&){
-        return MPI_UNSIGNED_CHAR;
-    }
-
-    static  MPI_Datatype GetType(const FComplex& a){
-        MPI_Datatype FMpiComplexe;
-        MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
-        return FMpiComplexe;
+    template <class TypeClass>
+    static MPI_Datatype GetType(const TypeClass&){
+        return GetType<TypeClass>();
     }
 
     ////////////////////////////////////////////////////////////
@@ -352,6 +326,49 @@ private:
     /** The original communicator */
     FComm* communicator;
 };
+
+
+template <>
+MPI_Datatype FMpi::GetType<long long>(const long long&){
+    return MPI_LONG_LONG;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<long int>(const long int&){
+    return MPI_LONG;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<double>(const double&){
+    return MPI_DOUBLE;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<float>(const float&){
+    return MPI_FLOAT;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<int>(const int&){
+    return MPI_INT;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<char>(const char&){
+    return MPI_CHAR;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<unsigned char>(const unsigned char&){
+    return MPI_UNSIGNED_CHAR;
+}
+
+template <>
+MPI_Datatype FMpi::GetType<FComplex>(const FComplex& a){
+    MPI_Datatype FMpiComplexe;
+    MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
+    return FMpiComplexe;
+}
 
 
 #endif //FMPI_HPP
