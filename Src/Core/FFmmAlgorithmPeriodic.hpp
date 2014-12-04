@@ -97,7 +97,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
     }
 
 
@@ -247,7 +247,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounterL2P);
@@ -264,64 +264,65 @@ public:
         bool hasPeriodicLeaves;
         // for each leafs
         do{
-            FLOG(computationCounterL2P.tic());
-            kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            FLOG(computationCounterL2P.tac());
+            if(l2pEnabled){
+                FLOG(computationCounterL2P.tic());
+                kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+                FLOG(computationCounterL2P.tac());
+            }
+            if(p2pEnabled){
+                // need the current particles and neighbors particles
+                const FTreeCoordinate centerOfLeaf = octreeIterator.getCurrentGlobalCoordinate();
+                const int counter = tree->getPeriodicLeafsNeighbors( neighbors, offsets, &hasPeriodicLeaves, centerOfLeaf, heightMinusOne, AllDirs);
+                int periodicNeighborsCounter = 0;
 
-            // need the current particles and neighbors particles
-            const FTreeCoordinate centerOfLeaf = octreeIterator.getCurrentGlobalCoordinate();
-            const int counter = tree->getPeriodicLeafsNeighbors( neighbors, offsets, &hasPeriodicLeaves, centerOfLeaf, heightMinusOne, AllDirs);
-            int periodicNeighborsCounter = 0;
+                if(hasPeriodicLeaves){
+                    ContainerClass* periodicNeighbors[27];
+                    memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
 
-            if(hasPeriodicLeaves){
-                ContainerClass* periodicNeighbors[27];
-                memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
+                    for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                        if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
+                            // Put periodic neighbors into other array
+                            periodicNeighbors[idxNeig] = neighbors[idxNeig];
+                            neighbors[idxNeig] = nullptr;
+                            ++periodicNeighborsCounter;
 
-                for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                    if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
-                        // Put periodic neighbors into other array
-                        periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                        neighbors[idxNeig] = nullptr;
-                        ++periodicNeighborsCounter;
+                            FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                            FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                            FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
 
-                        FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                        FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                        FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+                            for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
+                                positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
+                                positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
+                            }
+                        }
+                    }
 
-                        for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                            positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
-                            positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
-                            positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
+                    FLOG(computationCounterP2P.tic());
+                    kernels->P2PRemote(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
+                                 octreeIterator.getCurrentListSrc(), periodicNeighbors, periodicNeighborsCounter);
+                    FLOG(computationCounterP2P.tac());
+
+                    for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                        if( periodicNeighbors[idxNeig] ){
+                            FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                            FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                            FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                            for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                                positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                                positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
+                            }
                         }
                     }
                 }
 
                 FLOG(computationCounterP2P.tic());
-                kernels->P2PRemote(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                             octreeIterator.getCurrentListSrc(), periodicNeighbors, periodicNeighborsCounter);
+                kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
+                             octreeIterator.getCurrentListSrc(), neighbors, counter - periodicNeighborsCounter);
                 FLOG(computationCounterP2P.tac());
-
-                for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                    if( periodicNeighbors[idxNeig] ){
-                        FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                        FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                        FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
-
-                        for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                            positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
-                            positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
-                            positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
-                        }
-                    }
-                }
             }
-
-            FLOG(computationCounterP2P.tic());
-            kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                         octreeIterator.getCurrentListSrc(), neighbors, counter - periodicNeighborsCounter);
-            FLOG(computationCounterP2P.tac());
-
-
         } while(octreeIterator.moveRight());
 
 

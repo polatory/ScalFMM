@@ -246,7 +246,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
 
 
         // delete array
@@ -1204,7 +1204,7 @@ private:
 
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG( FTic counterTime);
         FLOG( FTic prepareCounter);
@@ -1261,7 +1261,7 @@ private:
 #pragma omp parallel
         {
 #pragma omp master // MUST WAIT to fill leafsNeedOther
-            {
+            if(p2pEnabled){
                 // Copy leafs
                 {
                     typename OctreeClass::Iterator octreeIterator(tree);
@@ -1327,7 +1327,7 @@ private:
 #pragma omp barrier
 
 #pragma omp master // nowait
-            {
+            if(p2pEnabled){
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
@@ -1465,55 +1465,59 @@ private:
                                 bool hasPeriodicLeaves;
                                 for(int idxTaskLeaf = idxLeafs ; idxTaskLeaf < (idxLeafs + nbLeavesInTask) ; ++idxTaskLeaf){
                                     LeafData& currentIter = leafsDataArray[idxTaskLeaf];
-                                    myThreadkernels->L2P(currentIter.cell, currentIter.targets);
-                                    // need the current particles and neighbors particles
-                                    const int counter = tree->getPeriodicLeafsNeighbors(neighbors, offsets, &hasPeriodicLeaves,
-                                                                                        currentIter.coord, LeafIndex, AllDirs);
-                                    int periodicNeighborsCounter = 0;
-
-                                    if(hasPeriodicLeaves){
-                                        ContainerClass* periodicNeighbors[27];
-                                        memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
-
-                                        for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                                            if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
-                                                // Put periodic neighbors into other array
-                                                periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                                                neighbors[idxNeig] = nullptr;
-                                                ++periodicNeighborsCounter;
-
-                                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
-
-                                                for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                                                    positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
-                                                    positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
-                                                    positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
-                                                }
-                                            }
-                                        }
-
-                                        myThreadkernels->P2PRemote(currentIter.coord,currentIter.targets,
-                                                                   currentIter.sources, periodicNeighbors, periodicNeighborsCounter);
-
-                                        for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                                            if( periodicNeighbors[idxNeig] ){
-                                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
-
-                                                for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                                                    positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
-                                                    positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
-                                                    positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
-                                                }
-                                            }
-                                        }
+                                    if(l2pEnabled){
+                                        myThreadkernels->L2P(currentIter.cell, currentIter.targets);
                                     }
+                                    if(p2pEnabled){
+                                        // need the current particles and neighbors particles
+                                        const int counter = tree->getPeriodicLeafsNeighbors(neighbors, offsets, &hasPeriodicLeaves,
+                                                                                            currentIter.coord, LeafIndex, AllDirs);
+                                        int periodicNeighborsCounter = 0;
 
-                                    myThreadkernels->P2P( currentIter.coord, currentIter.targets,
+                                        if(hasPeriodicLeaves){
+                                            ContainerClass* periodicNeighbors[27];
+                                            memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
+
+                                            for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                                                if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
+                                                    // Put periodic neighbors into other array
+                                                    periodicNeighbors[idxNeig] = neighbors[idxNeig];
+                                                    neighbors[idxNeig] = nullptr;
+                                                    ++periodicNeighborsCounter;
+
+                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                                                    for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                        positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
+                                                        positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
+                                                        positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
+                                                    }
+                                                }
+                                            }
+
+                                            myThreadkernels->P2PRemote(currentIter.coord,currentIter.targets,
+                                                                       currentIter.sources, periodicNeighbors, periodicNeighborsCounter);
+
+                                            for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
+                                                if( periodicNeighbors[idxNeig] ){
+                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+
+                                                    for(int idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                        positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                                                        positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                                                        positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        myThreadkernels->P2P( currentIter.coord, currentIter.targets,
                                                           currentIter.sources, neighbors, counter - periodicNeighborsCounter);
+                                    }
                                 }
 
                             }
@@ -1537,7 +1541,7 @@ private:
 #pragma omp master
         { FLOG( computation2Counter.tic() ); }
 
-        {
+        if(p2pEnabled){
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
             ContainerClass* neighbors[27];

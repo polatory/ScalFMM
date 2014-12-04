@@ -247,7 +247,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
 
 
         // delete array
@@ -1082,7 +1082,7 @@ private:
 
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG( FTic counterTime);
         FLOG( FTic prepareCounter);
@@ -1139,7 +1139,7 @@ private:
 #pragma omp parallel
         {
 #pragma omp master // MUST WAIT to fill leafsNeedOther
-            {
+            if(p2pEnabled){
                 // Copy leafs
                 {
                     typename OctreeClass::Iterator octreeIterator(tree);
@@ -1203,7 +1203,7 @@ private:
 #pragma omp barrier
 
 #pragma omp master // nowait
-            {
+            if(p2pEnabled){
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
@@ -1338,12 +1338,15 @@ private:
 
                                 for(int idxTaskLeaf = idxLeafs ; idxTaskLeaf < (idxLeafs + nbLeavesInTask) ; ++idxTaskLeaf){
                                     LeafData& currentIter = leafsDataArray[idxTaskLeaf];
-                                    myThreadkernels->L2P(currentIter.cell, currentIter.targets);
-
-                                    // need the current particles and neighbors particles
-                                    const int counter = tree->getLeafsNeighbors(neighbors, currentIter.coord, LeafIndex);
-                                    myThreadkernels->P2P( currentIter.coord,currentIter.targets,
+                                    if(l2pEnabled){
+                                        myThreadkernels->L2P(currentIter.cell, currentIter.targets);
+                                    }
+                                    if(p2pEnabled){
+                                        // need the current particles and neighbors particles
+                                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.coord, LeafIndex);
+                                        myThreadkernels->P2P( currentIter.coord,currentIter.targets,
                                                           currentIter.sources, neighbors, counter);
+                                    }
                                 }
                             }
                         }
@@ -1365,7 +1368,7 @@ private:
 #pragma omp master
             { FLOG( computation2Counter.tic() ); }
 
-            {
+            if(p2pEnabled){
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                 // There is a maximum of 26 neighbors
                 ContainerClass* neighbors[27];

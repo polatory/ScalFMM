@@ -82,7 +82,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
     }
 
     /** P2M */
@@ -276,7 +276,7 @@ public:
 
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG( counterTime.tic() );
         FLOG( double totalComputation = 0 );
@@ -291,12 +291,16 @@ public:
         do{
             if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
                 FLOG(computationCounter.tic());
-                kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-                // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-                neighbors[13] = octreeIterator.getCurrentListSrc();
-                kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+                if(l2pEnabled){
+                    kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+                }
+                if(p2pEnabled){
+                    // need the current particles and neighbors particles
+                    const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
+                    neighbors[13] = octreeIterator.getCurrentListSrc();
+                    kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
                               octreeIterator.getCurrentListSrc() , neighbors, counter + 1);
+                }
                 FLOG(computationCounter.tac());
                 FLOG(totalComputation += computationCounter.elapsed());
             }

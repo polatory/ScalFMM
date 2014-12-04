@@ -79,7 +79,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass();
+        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
     }
 
 private:
@@ -236,7 +236,7 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounterL2P);
@@ -250,15 +250,19 @@ private:
         ContainerClass* neighbors[27];
         // for each leafs
         do{
-            FLOG(computationCounterL2P.tic());
-            kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
-            FLOG(computationCounterL2P.tac());
-            // need the current particles and neighbors particles
-            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
-            FLOG(computationCounterP2P.tic());
-            kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                         octreeIterator.getCurrentListSrc(), neighbors, counter);
-            FLOG(computationCounterP2P.tac());
+            if(l2pEnabled){
+                FLOG(computationCounterL2P.tic());
+                kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
+                FLOG(computationCounterL2P.tac());
+            }
+            if(p2pEnabled){
+                // need the current particles and neighbors particles
+                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
+                FLOG(computationCounterP2P.tic());
+                kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
+                             octreeIterator.getCurrentListSrc(), neighbors, counter);
+                FLOG(computationCounterP2P.tac());
+            }
         } while(octreeIterator.moveRight());
 
 

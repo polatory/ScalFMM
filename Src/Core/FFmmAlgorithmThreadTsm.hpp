@@ -107,7 +107,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
 
         delete [] iterArray;
         iterArray = nullptr;
@@ -339,7 +339,7 @@ public:
 
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
@@ -367,12 +367,16 @@ public:
             #pragma omp for schedule(dynamic, chunkSize) nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
                 if( iterArray[idxLeafs].getCurrentCell()->hasTargetsChild() ){
-                    myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
-                    // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
-                    neighbors[13] = iterArray[idxLeafs].getCurrentListSrc();
-                    myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
+                    if(l2pEnabled){
+                        myThreadkernels->L2P(iterArray[idxLeafs].getCurrentCell(), iterArray[idxLeafs].getCurrentListTargets());
+                    }
+                    if(p2pEnabled){
+                        // need the current particles and neighbors particles
+                        const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
+                        neighbors[13] = iterArray[idxLeafs].getCurrentListSrc();
+                        myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
                                       iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter + 1);
+                    }
                 }
             }
         }

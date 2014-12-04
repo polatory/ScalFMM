@@ -94,7 +94,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
     }
 
 private:
@@ -281,7 +281,7 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
@@ -317,12 +317,16 @@ private:
                     const int nbLeaf = shapes[idxShape].getSize();
                     for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-                        #pragma omp task firstprivate(neighbors, toWork)
+                        #pragma omp task firstprivate(neighbors, toWork, l2pEnabled, p2pEnabled)
                         {
-                            kernels[omp_get_thread_num()]->L2P(toWork.getCurrentCell(), toWork.getCurrentListTargets());
-                            const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
-                            kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
+                            if(l2pEnabled){
+                                kernels[omp_get_thread_num()]->L2P(toWork.getCurrentCell(), toWork.getCurrentListTargets());
+                            }
+                            if(p2pEnabled){
+                                const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
+                                kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
                                                  toWork.getCurrentListSrc(), neighbors, counter);
+                            }
                         }
                     }
 

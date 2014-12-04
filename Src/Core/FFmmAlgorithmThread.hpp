@@ -119,7 +119,7 @@ public:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass();
+        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
 
         delete [] iterArray;
         iterArray = nullptr;
@@ -320,7 +320,7 @@ private:
     /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
@@ -396,13 +396,17 @@ private:
                 #pragma omp for schedule(dynamic, chunkSize)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
-                    myThreadkernels.L2P(currentIter.cell, currentIter.targets);
-                    // need the current particles and neighbors particles
-                    FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                    const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                    myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
-                                        currentIter.sources, neighbors, counter);
-                    FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
+                    if(l2pEnabled){
+                        myThreadkernels.L2P(currentIter.cell, currentIter.targets);
+                    }
+                    if(p2pEnabled){
+                        // need the current particles and neighbors particles
+                        FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
+                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                        myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
+                                            currentIter.sources, neighbors, counter);
+                        FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
+                    }
                 }
 
                 previous = endAtThisShape;
