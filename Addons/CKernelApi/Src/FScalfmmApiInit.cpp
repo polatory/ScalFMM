@@ -1,7 +1,3 @@
-#ifndef CALL_HPP
-#define CALL_HPP
-
-
 /** It should be compiled with C export */
 extern "C" {
 #include "CScalfmmApi.h"
@@ -15,7 +11,7 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
 
     switch(KernelType){
     case 0:
-        //handle->engine = new FUserKernelEngine(...);
+        handle->engine = new FUserKernelEngine(TreeHeight, BoxWidth, BoxCenter, KernelType);
         std::cout<< "User Kernel type unsupported yet" << std::endl;
         break;
 
@@ -48,5 +44,8 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
     return handle;
 }
 
-
-#endif
+extern "C" void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell userDeallocator){
+    ((ScalFmmCoreHandle *) handle)->engine->intern_dealloc_handle(userDeallocator);
+    delete ((ScalFmmCoreHandle *) handle)->engine ;
+    delete (ScalFmmCoreHandle *) handle;
+}

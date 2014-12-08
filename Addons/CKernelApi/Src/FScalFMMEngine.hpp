@@ -51,11 +51,16 @@ protected:
     scalfmm_kernel_type kernelType;
 
     scalfmm_algorithm Algorithm;
-    FVector<bool> progress;
+    FVector<bool>* progress;
     int nbPart;
 
 public:
-    FScalFMMEngine() : Algorithm(multi_thread), progress(), nbPart(0){
+    FScalFMMEngine() : Algorithm(multi_thread), progress(nullptr), nbPart(0){
+        progress = new FVector<bool>();
+    }
+
+    virtual ~FScalFMMEngine() {
+        delete progress;
     }
 
     //First function displayed there are common function for every
@@ -205,6 +210,10 @@ public:
     }
 
     virtual void execute_fmm(){
+        FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
+    }
+
+    virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
@@ -378,6 +387,10 @@ extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
     ((ScalFmmCoreHandle * ) Handle)->engine->execute_fmm();
 }
 
+extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
+    ((ScalFmmCoreHandle * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
+}
+
 extern "C" void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer){
     ((ScalFmmCoreHandle * ) Handle)->engine->init_cell(user_cell_initializer);
 }
@@ -386,5 +399,8 @@ extern "C" void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user
     ((ScalFmmCoreHandle * ) Handle)->engine->free_cell(user_cell_deallocator);
 }
 
+// extern "C" void scalfmm_intern_dealloc_handle(scalfmm_handle Handle,Callback_free_cell userDeallocator){
+//     ((ScalFmmCoreHandle * ) Handle)->engine->intern_dealloc_handle(userDeallocator);
+// }
 
 #endif

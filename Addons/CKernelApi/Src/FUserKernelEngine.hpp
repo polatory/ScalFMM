@@ -153,10 +153,11 @@ private:
     typedef FSimpleLeaf<ContainerClass>                   LeafClass;
     typedef FOctree<CoreCell,ContainerClass,LeafClass>  OctreeClass;
     typedef CoreKernel<CoreCell,ContainerClass>     CoreKernelClass;
-    typedef FP2PLeafInterface<OctreeClass>            LeafInterface;
+
     //For arranger classes
-    typedef FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>           ArrangerClass;
-    typedef FArrangerPeriodic<OctreeClass,ContainerClass,LeafInterface> ArrangerClassPeriodic;
+    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
 
     //Attributes
@@ -171,12 +172,23 @@ public:
         kernelType = KernelType;
         //Kernel is not set now because the user must provide a
         //Scalfmm_Kernel_descriptor
-        //kernel = new CoreKernelClass();
     }
 
+    ~FUserKernelEngine(){
+        delete octree;
+
+        if(arranger){
+            delete arranger;
+        }
+        if(kernel){
+            delete kernel;
+        }
+    }
 
     void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
-        kernel = new CoreKernelClass(userKernel,userDatas);
+        if(!kernel){
+            kernel = new CoreKernelClass(userKernel,userDatas);
+        }
     }
 
 
@@ -226,11 +238,11 @@ public:
     }
 
     void execute_fmm(){
-        //FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
         switch(Algorithm){
         case 0:
             {
-                typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafInterface> AlgoClassSeq;
+                typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassSeq;
                 AlgoClassSeq algoSeq(octree,kernel);
                 algoSeq.execute();
                 break;
@@ -255,7 +267,10 @@ public:
         }
 
     }
-
+    void intern_dealloc_handle(Callback_free_cell userDeallocator){
+       free_cell(userDeallocator);
+       this->~FUserKernelEngine();
+    }
 };
 
 

@@ -236,10 +236,10 @@ int main(int argc, char ** argv){
     scalfmm_handle handle = scalfmm_init(treeHeight, boxWidth, boxCenter,user_defined_kernel);
     // Insert particles
     printf("Inserting particles...\n");
-    Scalfmm_insert_array_of_particles(handle, nbParticles, particleIndexes, particleXYZ);
+    scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ);
     // Init cell
     printf("Initizalizing the cells:\n");
-    Scalfmm_init_cell(handle, my_Callback_init_cell);
+    scalfmm_init_cell(handle, my_Callback_init_cell);
 
     // Init our callback struct
     struct User_Scalfmm_Kernel_Descriptor kernel;
@@ -255,9 +255,11 @@ int main(int argc, char ** argv){
     struct MyData my_data;
     memset(&my_data, 0, sizeof(struct MyData));
     my_data.insertedPositions = particleXYZ;
+    //Set my datas before calling fmm (this will set as well the kernel)
+    scalfmm_user_kernel_config(handle,kernel,&my_data);
 
     // Execute the FMM
-    Scalfmm_execute_kernel(handle, kernel, &my_data);
+    scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
 
     // Print the results store in our callback
     printf("There was %d P2M\n", my_data.countP2M);
@@ -268,8 +270,10 @@ int main(int argc, char ** argv){
     printf("There was %d P2PInner\n", my_data.countP2PInner);
     printf("There was %d P2P\n", my_data.countP2P);
 
+    //Dealloc the cells
+    scalfmm_free_cell(handle,my_Callback_free_cell);
     // Dealloc the handle
-    Scalfmm_dealloc_handle(handle,my_Callback_free_cell);
+    scalfmm_dealloc_handle(handle,my_Callback_free_cell);
 
     return 0;
 }

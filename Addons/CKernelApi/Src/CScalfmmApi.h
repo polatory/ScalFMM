@@ -465,7 +465,7 @@ void scalfmm_execute_fmm(scalfmm_handle Handle);
  * The last param cellDestroyer is meaningless in case the user uses
  * one of the provided kernel. (i.e. Chebyshev, Lagrange)
  */
-void Scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestroyer);
+void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestroyer);
 
 
 #endif

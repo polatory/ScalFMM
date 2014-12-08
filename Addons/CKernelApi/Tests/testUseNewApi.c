@@ -23,7 +23,7 @@ int main(int argc, char ** av){
     scalfmm_kernel_type myChoice = chebyshev;
 
     //Octree configuration
-    int TreeHeight = 5;
+    int TreeHeight = 7;
     double boxWidth = 2.0;
     double boxCenter[3] = {0.0,0.0,0.0};
 
@@ -56,7 +56,7 @@ int main(int argc, char ** av){
 
 
     //Computation Part
-    int nb_iteration = 100;
+    int nb_iteration = 10;//atoi(av[1]);
     int curr_iteration = 0;
 
     //Array to store the output
@@ -112,13 +112,16 @@ int main(int argc, char ** av){
         curr_iteration++;
     }
 
-    //End of Computation, useer get the position after a hundreds of iterations
-
     //Free memory
     free(positionsXYZ);
     free(array_of_charge);
     free(array_of_forces);
+    free(array_of_pot);
     free(array_of_displacement);
+
+    //End of Computation, useer get the position after some iterations
+    scalfmm_dealloc_handle(handle,NULL);
+
 
     return 0;
 }
