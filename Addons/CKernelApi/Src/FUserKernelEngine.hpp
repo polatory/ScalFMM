@@ -233,7 +233,9 @@ public:
 
     void free_cell(Callback_free_cell user_cell_deallocator){
         octree->forEachCell([&](CoreCell * currCell){
-                user_cell_deallocator(currCell->getContainer());
+                if(currCell->getContainer()){
+                    user_cell_deallocator(currCell->getContainer());
+                }
             });
     }
 
@@ -267,9 +269,9 @@ public:
         }
 
     }
+
     void intern_dealloc_handle(Callback_free_cell userDeallocator){
-       free_cell(userDeallocator);
-       this->~FUserKernelEngine();
+        free_cell(userDeallocator);
     }
 };
 
