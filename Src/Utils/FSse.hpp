@@ -26,6 +26,14 @@
 #include <smmintrin.h> // SSE4
 #endif
 
+
+#ifndef _mm_set_pd1
+// Looks like clang's emmintrin.h doesn't have this alternate name.
+// But _mm_set1_pd is an equivalent to _mm_set_pd1.
+#define _mm_set_pd1 _mm_set1_pd
+#endif
+
+
 #ifdef __SSEPE_INTEL_COMPILER
 
 inline __m128d& operator+=(__m128d& v1, const __m128d& v2){

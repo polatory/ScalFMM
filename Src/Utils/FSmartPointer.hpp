@@ -22,6 +22,16 @@ enum FSmartPointerType{
     FSmartPointerMemory
 };
 
+template <FSmartPointerType MemoryType, class ClassType>
+inline typename std::enable_if<(MemoryType == FSmartArrayMemory), void>::type FSmartDeletePointer(ClassType* ptr){
+    delete ptr;
+}
+
+template <FSmartPointerType MemoryType, class ClassType>
+inline typename std::enable_if<(MemoryType == FSmartPointerMemory), void>::type FSmartDeletePointer(ClassType* ptr){
+    delete[] ptr;
+}
+
 /** This class is a basic smart pointer class
   * Use as FSmartPointer<int> array = new int[5];
   * FSmartPointer<int, PointerMemory> pt = new int;
@@ -87,8 +97,7 @@ public:
         if(counter){
             (*counter) -= 1;
             if( (*counter) == 0 ){
-                if(MemoryType == FSmartArrayMemory) delete[] pointer;
-                else if(MemoryType == FSmartPointerMemory) delete pointer;
+                FSmartDeletePointer<MemoryType>(pointer);
                 delete counter;
             }
             pointer = nullptr;
