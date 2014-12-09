@@ -674,7 +674,7 @@ private:
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                         const long long int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                         if(toSendAtProcAtLevel != 0){
-                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),toSendAtProcAtLevel);
+                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),int(toSendAtProcAtLevel));
 
                             sendBuffer[idxLevel * nbProcess + idxProc]->write(int(toSend[idxLevel * nbProcess + idxProc].getSize()));
 
@@ -693,7 +693,7 @@ private:
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                         if(toReceiveFromProcAtLevel){
-                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),toReceiveFromProcAtLevel);
+                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
 
                             FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
                                              recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), MPI_PACKED,idxProc,
