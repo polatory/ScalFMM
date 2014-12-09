@@ -330,6 +330,11 @@ ENDIF(ScalFMM_USE_AVX AND ScalFMM_USE_SSE)
 #                                           Use  native MIC compilation                                          #
 ##################################################################
 if( ScalFMM_USE_MIC_NATIVE ) 
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-mmic HAS_MMIC_FLAG)
+    IF(NOT HAS_MMIC_FLAG)
+        MESSAGE(FATAL_ERROR "MIC NOT SUPPORTED ; Set ScalFMM_USE_MIC_NATIVE to OFF")
+    ENDIF()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
 else()
  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
