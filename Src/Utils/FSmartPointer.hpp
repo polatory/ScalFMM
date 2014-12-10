@@ -24,12 +24,12 @@ enum FSmartPointerType{
 
 template <FSmartPointerType MemoryType, class ClassType>
 inline typename std::enable_if<(MemoryType == FSmartArrayMemory), void>::type FSmartDeletePointer(ClassType* ptr){
-    delete ptr;
+    delete[] ptr;
 }
 
 template <FSmartPointerType MemoryType, class ClassType>
 inline typename std::enable_if<(MemoryType == FSmartPointerMemory), void>::type FSmartDeletePointer(ClassType* ptr){
-    delete[] ptr;
+    delete ptr;
 }
 
 /** This class is a basic smart pointer class
