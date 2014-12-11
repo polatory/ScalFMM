@@ -70,14 +70,17 @@ public:
      * @param BoxCenter double[3] coordinate of the center of the
      * simulation box
      */
-    FInterEngine(int TreeHeight, double BoxWidth , double * BoxCenter,scalfmm_kernel_type KernelType) :
+    FInterEngine(scalfmm_kernel_type KernelType) :
         kernel(nullptr), matrix(nullptr), octree(nullptr),arranger(nullptr){
+        kernelType = KernelType;
+    }
+
+    void build_tree(int TreeHeight, double BoxWidth , double * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
         octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
         this->matrix = new MatrixKernelClass();
         this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint(BoxCenter),matrix);
-        kernelType = KernelType;
-        arranger = nullptr;
     }
+
 
     //TODO free kernel too
     ~FInterEngine(){

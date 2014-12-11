@@ -6,13 +6,12 @@ extern "C" {
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
 
-extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* BoxCenter, scalfmm_kernel_type KernelType){
+extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType){
     ScalFmmCoreHandle * handle = new ScalFmmCoreHandle();
 
     switch(KernelType){
     case 0:
-        handle->engine = new FUserKernelEngine(TreeHeight, BoxWidth, BoxCenter, KernelType);
-        std::cout<< "User Kernel type unsupported yet" << std::endl;
+        handle->engine = new FUserKernelEngine(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
         break;
 
     case 1:
@@ -23,7 +22,7 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
         typedef FInterpMatrixKernelR                                        MatrixKernelClass;
         typedef FChebSymKernel<ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-        handle->engine = new FInterEngine<ChebCell,ChebKernel>(TreeHeight,BoxWidth,BoxCenter, KernelType);
+        handle->engine = new FInterEngine<ChebCell,ChebKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
         break;
     case 2:
         //TODO typedefs
@@ -33,7 +32,7 @@ extern "C" scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* Bo
         typedef FInterpMatrixKernelR                                        MatrixKernelClass;
         typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
-        handle->engine = new FInterEngine<UnifCell,UnifKernel>(TreeHeight,BoxWidth,BoxCenter,KernelType);
+        handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
         break;
 
     default:

@@ -101,9 +101,6 @@ typedef void* scalfmm_handle;
 
 /**
  * @brief This function initialize scalfmm datas.
- * @param TreeHeight Height of the octree.
- * @param BoxWidth Width of the entire simulation box.
- * @param BoxCenter Coordinate of the center of the box (ie array)
  * @param KernelType kernel to be used
  * @return scalfmm_handle (ie void *). This handle will be given to
  * every other scalfmm functions.
@@ -111,14 +108,57 @@ typedef void* scalfmm_handle;
  * Every data will be stored in order to crete later through a builder
  * what is needed for the simulation
  */
-scalfmm_handle scalfmm_init(int TreeHeight,double BoxWidth,double* BoxCenter, scalfmm_kernel_type KernelType);
-
-
+scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType);
 
 
 /////////////////////////////////////////////////////////////////////
 //////////////////       Tree  Part                    //////////////
 /////////////////////////////////////////////////////////////////////
+
+//In order to initate the tree for user defined cell and kernel, we
+//define here the call_backs to deal with cells
+
+/**
+ * @brief Function to init the cells (should be given by the user when
+ * calling Scalfmm_init_cell)
+ * @param level  level of the cell.
+ * @param morton_index morton index of the cell to be allocated.
+ * @param tree_position int[3] position inside the tree (number of boxes in
+ * each direction)
+ * @param spatial_position double[3] center of the cell
+ */
+typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position);
+
+/**
+ * Function to destroy what have bee initialized by the user (should
+ * be give in Scalfmm_dealloc_handle)
+ */
+typedef void (*Callback_free_cell)(void*);
+
+
+/**
+ * @brief Structure containing user's call_backs in order to
+ * initialize/free the cell's user data.
+ */
+typedef struct User_Scalfmm_Cell_Descriptor{
+    Callback_free_cell user_free_cell;
+    Callback_init_cell user_init_cell;
+}Scalfmm_Cell_Descriptor;
+
+
+/**
+ * @brief This function build the tree. If scalfmm_init has been
+ * called with a user defined kernel, then user_cell_descriptor need
+ * to be provided
+ *
+ * @param TreeHeight Height of the octree.
+ * @param BoxWidth Width of the entire simulation box.
+ * @param BoxCenter Coordinate of the center of the box (ie array)
+ */
+void scalfmm_build_tree(scalfmm_handle handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor);
+
+
+
 
 /**
  * @brief This function insert an array of position into the octree
@@ -414,30 +454,14 @@ void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor
 
 
 
-//To fill gestion des cellules utilisateurs
 
-/**
- * @brief Function to init the cells (should be given by the user when
- * calling Scalfmm_init_cell)
- * @param level  level of the cell.
- * @param morton_index morton index of the cell to be allocated.
- * @param tree_position int[3] position inside the tree (number of boxes in
- * each direction)
- * @param spatial_position double[3] center of the cell
- */
-typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position);
+/* void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer); */
 
-/**
- * Function to destroy what have bee initialized by the user (should
- * be give in Scalfmm_dealloc_handle)
- */
-typedef void (*Callback_free_cell)(void*);
-
-
-void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer);
-
-void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user_cell_deallocator);
-
+/* void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user_cell_deallocator); */
+/* /\** */
+/*  *@param Struct defining how scalfmm will handle user's cell data. */
+/*  *\/ */
+/* void scalfmm_user_cell_config(scalfmm_handle Handle, Scalfmm_Cell_Descriptor user_cell_descriptor); */
 
 ///////////////// Common kernel part : /////////////////
 

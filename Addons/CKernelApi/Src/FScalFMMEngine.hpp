@@ -80,6 +80,10 @@ public:
     //by specific Engine
 
     //Function about the tree
+    virtual void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+        FAssertLF(0,"Nothing has been done yet, exiting");
+    }
+
     virtual void tree_insert_particles( int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
@@ -201,15 +205,7 @@ public:
         FAssertLF(0,"No user kernel defined, exiting ...\n");
     }
 
-    virtual void init_cell(Callback_init_cell user_cell_initializer){
-        FAssertLF(0,"No user kernel defined, exiting ...\n");
-    }
-
-    virtual void free_cell(Callback_free_cell user_cell_initializer){
-        FAssertLF(0,"No user kernel defined, exiting ...\n");
-    }
-
-    virtual void execute_fmm(){
+     virtual void execute_fmm(){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
@@ -234,7 +230,9 @@ struct ScalFmmCoreHandle {
 
 
 
-
+extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    ((ScalFmmCoreHandle *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
+}
 
 extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
     ((ScalFmmCoreHandle *) Handle)->engine->tree_insert_particles(NbPositions, arrayX, arrayY, arrayZ);
@@ -391,16 +389,5 @@ extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel
     ((ScalFmmCoreHandle * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
 }
 
-extern "C" void scalfmm_init_cell(scalfmm_handle Handle, Callback_init_cell user_cell_initializer){
-    ((ScalFmmCoreHandle * ) Handle)->engine->init_cell(user_cell_initializer);
-}
-
-extern "C" void scalfmm_free_cell(scalfmm_handle Handle, Callback_free_cell user_cell_deallocator){
-    ((ScalFmmCoreHandle * ) Handle)->engine->free_cell(user_cell_deallocator);
-}
-
-// extern "C" void scalfmm_intern_dealloc_handle(scalfmm_handle Handle,Callback_free_cell userDeallocator){
-//     ((ScalFmmCoreHandle * ) Handle)->engine->intern_dealloc_handle(userDeallocator);
-// }
 
 #endif

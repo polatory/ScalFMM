@@ -25,7 +25,7 @@
 #include "../Src/CScalfmmApi.h"
 
 // Uncomment the next line to avoid the print in the kernel and verbosity
-// #define NOT_TOO_MUCH_VERBOSE
+#define NOT_TOO_MUCH_VERBOSE
 #ifdef NOT_TOO_MUCH_VERBOSE
 #define VerbosePrint(X...)
 #else
@@ -233,13 +233,19 @@ int main(int argc, char ** argv){
     }
 
     // Init the handle
-    scalfmm_handle handle = scalfmm_init(treeHeight, boxWidth, boxCenter,user_defined_kernel);
+    scalfmm_handle handle = scalfmm_init(user_defined_kernel);
+
+    //Build our own call backs
+    struct User_Scalfmm_Cell_Descriptor cellDescriptor;
+    cellDescriptor.user_init_cell = my_Callback_init_cell;
+    cellDescriptor.user_free_cell = my_Callback_free_cell;
+    // Init tree and cell
+    printf("Building the tree and Initizalizing the cells:\n");
+
+    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
     // Insert particles
     printf("Inserting particles...\n");
     scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ);
-    // Init cell
-    printf("Initizalizing the cells:\n");
-    scalfmm_init_cell(handle, my_Callback_init_cell);
 
     // Init our callback struct
     struct User_Scalfmm_Kernel_Descriptor kernel;
@@ -258,8 +264,31 @@ int main(int argc, char ** argv){
     //Set my datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&my_data);
 
-    // Execute the FMM
-    scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+    //loop to multiples runs of the fmm
+    int nb_ite = 1;
+    int curr_ite = 0;
+    //array to store positions
+    double new_positions[nbParticles*3];
+    memset(new_positions,0,3*nbParticles*sizeof(double));
+
+    while(curr_ite < nb_ite){
+        // Execute the FMM
+        scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        scalfmm_get_positions_xyz(handle,nbParticles,new_positions);
+        //Computation on those positions
+        //Here it's a random
+        int id;
+        for(id = 0 ; id < nbParticles ; ++id){
+            new_positions[id*3  ] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
+            new_positions[id*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
+            new_positions[id*3+2] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[2];
+        }
+        printf("Positions changed \n");
+
+        scalfmm_set_positions_xyz(handle,nbParticles,new_positions);
+        scalfmm_update_tree(handle);
+        curr_ite++;
+    }
 
     // Print the results store in our callback
     printf("There was %d P2M\n", my_data.countP2M);
@@ -270,8 +299,6 @@ int main(int argc, char ** argv){
     printf("There was %d P2PInner\n", my_data.countP2PInner);
     printf("There was %d P2P\n", my_data.countP2P);
 
-    //Dealloc the cells
-    scalfmm_free_cell(handle,my_Callback_free_cell);
     // Dealloc the handle
     scalfmm_dealloc_handle(handle,my_Callback_free_cell);
 
