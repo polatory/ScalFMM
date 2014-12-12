@@ -21,6 +21,7 @@
 #include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
 #endif
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
+#include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
