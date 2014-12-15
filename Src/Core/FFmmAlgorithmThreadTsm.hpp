@@ -70,7 +70,7 @@ public:
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            #pragma omp critical
+            #pragma omp critical (InitFFmmAlgorithmThreadTsm)
             {
                 this->kernels[idxThread] = new KernelClass(*inKernels);
             }
