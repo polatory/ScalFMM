@@ -86,9 +86,14 @@ static const FParameterNames OutputFile = {
 };
 
 static const FParameterNames OutputVisuFile = {
-    {"-fvisuout", "-visufmt"} ,
+    {"-fvisuout"} ,
      "To give the output filename in visu format."
 };
+static const FParameterNames FormatVisuFile{
+	        {"-visufmt","-visu-fmt"},
+	        "To specify format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default"
+	    };
+
 
 static const FParameterNames OutputBinFormat = {
     {"-binout", "-binoutput"} ,
