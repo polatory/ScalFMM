@@ -30,7 +30,7 @@
 //!  <b> General arguments:</b>
 //!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param   -fin name:  file name  to convert (with extension .fma (ascii) or bfma (binary)
-//!       \param  -fdlpoly name  file coming from a DLpoly simulation
+//!     \param  -fdlpoly name  file coming from a DLpoly simulation
 //!
 //!     \param   -fout name: generic name for files (without extension) and save data
 //!                  with following format in name.fma or name.bfma if -bin is set"
@@ -46,11 +46,13 @@
 
 
 int main(int argc, char ** argv){
+
     FHelpDescribeAndExit(argc, argv,
                          "Driver to change the format of the input file. "
                          "fdlpoly is not supported for now.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OutputFile,
-                         FParameterDefinitions::OutputVisuFile, FParameterDefinitions::OutputBinFormat);
+                         FParameterDefinitions::OutputVisuFile,FParameterDefinitions::FormatVisuFile,
+                         FParameterDefinitions::OutputBinFormat);
 
     FSize NbPoints;
     FReal	 * particles = nullptr ;

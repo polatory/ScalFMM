@@ -50,7 +50,8 @@ void genDistusage() {
 			<< "      -fout fileout.{bfma, fma)  output file name "<< std::endl
 			<< "      -Ewald2FMM to add the Electric Moment in the potential and the force " << std::endl
 			<< "      -energy  Value of the energy (Ewald)" << std::endl
-			<< "      -FMM2Ewald  to remove the  Electric Moment in the potential and the force " << std::endl ;
+			<< "      -FMM2Ewald  to remove the  Electric Moment in the potential and the force " << std::endl
+		    << "       Scaling parameters:  -noscale, -dlpoly, -stamp" <<std::endl;
 	std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
 	exit(-1);
 }
@@ -60,14 +61,9 @@ int main(int argc, char ** argv){
 	bool useDLPOLY=false,useFMA=false,useSTAMP=false;
 //
 	FReal scaleEnergy, scaleForce  ;
-	const FReal r4pie0 = FReal(138935.4835);
 	const double q0  = 1.6021892e-19;
 	const double e0  = 8.854187e-12;
 	const double  ang = 1.0e-10;
-	const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi*e0); //8.98755179e+9 ;
-	 double D0 = 1.0;
-
-	std::cout << "Unsur4pie0: " <<   Unsur4pie0 << " 8.98755179e+9  Diff " << Unsur4pie0-8.98755179e+9 <<std::endl;
 
 	if( argc == 1 ){
 		genDistusage() ;
@@ -88,17 +84,27 @@ int main(int argc, char ** argv){
 	scaleForce   = 1.0 ;
 	//	bool scale = true ;
 	if(FParameters::existParameter(argc, argv, "-dlpoly")){
+		const FReal r4pie0 = FReal(138935.4835);
 		//		scale = false ;
 		scaleEnergy =  r4pie0 / 418.4 ;   // kcal mol^{-1}
 		scaleForce  = -r4pie0 ;                // 10 J mol^{-1} A^{-1}
-		D0 = 1.0;
 		useDLPOLY = true ;
 	}
 	else 	if(FParameters::existParameter(argc, argv, "-stamp")){
+		// used in Stamp
+		const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi*e0); //8.98755179e+9 ;
 		scaleEnergy =  q0*q0*Unsur4pie0 /ang;
-		scaleForce  = -scaleEnergy/ang;
-		D0              = q0/ang/ang;
-		useSTAMP = true;
+		scaleForce   = -scaleEnergy/ang;
+		useSTAMP   = true;
+	}
+	else 	if(FParameters::existParameter(argc, argv, "-noscale")){
+		scaleEnergy =  1.0;
+		scaleForce   = -1.0;
+	}
+
+	else {
+		std::cout << "Parameter -dlpoly, -stamp, -noscale is not set" <<std::endl;
+		std::exit(-1);
 	}
 	std::cout <<"Scaling factor " <<std::endl
 			<<      "         Energy factor " << scaleEnergy<<std::endl
@@ -184,14 +190,7 @@ int main(int argc, char ** argv){
 		}
 		boxsize[0] = boxsize[1]= boxsize[2] = loaderFMA->getBoxWidth();
 
-		//		scaleEnergy /=    boxsize[0]  ;
-		//		scaleForce     = -scaleEnergy/boxsize[0] ;
-		//		boxsize[0] = boxsize[1]= boxsize[2] = 1.0 ;
-
-
 		numberofParticles  = loaderFMA->getNumberOfParticles() ;
-		std::cout << " numberofParticles "<< std::endl;
-
 		particlesIn              = new FmaRWParticle<8,8>[numberofParticles];
 		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
 		loaderFMA->fillParticle(particlesIn,numberofParticles);
@@ -200,6 +199,7 @@ int main(int argc, char ** argv){
 
 	counter.tic();
 	FPoint electricMoment(0.0,0.0,0.0) ;
+	FPoint xmin,xmax ;
 
 	// const --> then shared
 	//
@@ -247,7 +247,7 @@ int main(int argc, char ** argv){
 		std::cout << " -Ewald2FMM or -FMM2Ewald should be set"<<std::endl;
 		exit(EXIT_FAILURE);
 	}
-	std::cout << "coeffCorrection: "<<coeffCorrection<<"   " <<coeffCorrection*D0<< std::endl;
+	std::cout << "coeffCorrection: "<<coeffCorrection<< std::endl;
 	std::cout << "preScaleEnergy:  "<<preScaleEnergy<<std::endl;
 	std::cout << "postScaleEnergy: "<<postScaleEnergy<<std::endl;
 	std::cout << "preScaleForce:     "<<preScaleForce<<std::endl;
@@ -259,7 +259,7 @@ int main(int argc, char ** argv){
 					+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
 		//  Potential rescaling    ( Not checked)
 		double P = particlesIn[idx].getPotential();
-		particlesIn[idx].setPotential(  P + tmp*coeffCorrection);
+	//	particlesIn[idx].setPotential(  P + tmp*coeffCorrection);
 		//
 		//  Force rescaling
 		double * forces ;

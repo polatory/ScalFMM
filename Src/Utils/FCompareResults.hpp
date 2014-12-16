@@ -34,10 +34,11 @@ int compareTwoArrays(const std::string &tag,  const int &nbParticles, const clas
 		if(array1[idxPart].getPosition() != array2[idxPart].getPosition() ){
 			std::cerr <<"Wrong positions  " <<std::endl
 					<< "   P1: " <<array1[idxPart].getPosition()<<std::endl
-					<< "   P2: " <<array2[idxPart].getPosition()<<std::endl;
+					<< "   P2: " <<array2[idxPart].getPosition()<<std::endl
+			<< "   error  " <<array1[idxPart].getPosition()-array2[idxPart].getPosition()<<std::endl;
 		}
 		potentialDiff.add(array1[idxPart].getPotential(),array2[idxPart].getPotential());
-		fx.add(array1[idxPart].getForces()[0],array1[idxPart].getForces()[0]);
+		fx.add(array1[idxPart].getForces()[0],array2[idxPart].getForces()[0]);
 		fy.add(array1[idxPart].getForces()[1],array2[idxPart].getForces()[1]);
 		fz.add(array1[idxPart].getForces()[2],array2[idxPart].getForces()[2]);
 		energy1 += array1[idxPart].getPhysicalValue() *array1[idxPart].getPotential() ;
