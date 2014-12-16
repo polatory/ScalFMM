@@ -53,16 +53,17 @@ void genDistusage() {
 			<< "      -FMM2Ewald  to remove the  Electric Moment in the potential and the force " << std::endl
 		    << "       Scaling parameters:  -noscale, -dlpoly, -stamp" <<std::endl;
 	std::cout << "     -verbose : print index x y z fx fy fy Q and V" << std::endl;
-	exit(-1);
+	exit(EXIT_SUCCESS);
 }
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
 	//
-	bool useDLPOLY=false,useFMA=false,useSTAMP=false;
+	bool useFMA=false;
 //
 	FReal scaleEnergy, scaleForce  ;
+	// Physical constants
 	const double q0  = 1.6021892e-19;
-	const double e0  = 8.854187e-12;
+//	const double e0  = 8.854187e-12;
 	const double  ang = 1.0e-10;
 
 	if( argc == 1 ){
@@ -73,7 +74,8 @@ int main(int argc, char ** argv){
 		genDistusage() ;
 	}
 	if( FParameters::existParameter(argc, argv, "-Ewald2FMM") &&FParameters::existParameter(argc, argv, "-FMM2Ewald") ){
-		std::cerr << " Only -Ewald2FMM or FDMM2Ewald have to be set " <<std::endl;
+		std::cerr << " Only -Ewald2FMM or FMM2Ewald have to be set " <<std::endl;
+		genDistusage();
 		exit(EXIT_FAILURE);
 	}
 	///
@@ -88,14 +90,12 @@ int main(int argc, char ** argv){
 		//		scale = false ;
 		scaleEnergy =  r4pie0 / 418.4 ;   // kcal mol^{-1}
 		scaleForce  = -r4pie0 ;                // 10 J mol^{-1} A^{-1}
-		useDLPOLY = true ;
 	}
 	else 	if(FParameters::existParameter(argc, argv, "-stamp")){
 		// used in Stamp
 		const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi*e0); //8.98755179e+9 ;
 		scaleEnergy =  q0*q0*Unsur4pie0 /ang;
 		scaleForce   = -scaleEnergy/ang;
-		useSTAMP   = true;
 	}
 	else 	if(FParameters::existParameter(argc, argv, "-noscale")){
 		scaleEnergy =  1.0;
@@ -104,7 +104,8 @@ int main(int argc, char ** argv){
 
 	else {
 		std::cout << "Parameter -dlpoly, -stamp, -noscale is not set" <<std::endl;
-		std::exit(-1);
+		genDistusage();
+		exit(EXIT_FAILURE);
 	}
 	std::cout <<"Scaling factor " <<std::endl
 			<<      "         Energy factor " << scaleEnergy<<std::endl
@@ -142,11 +143,11 @@ int main(int argc, char ** argv){
 		std::cout << "Input file not allowed only .bin or .txt extensions" <<std::endl;
 		std::exit ( EXIT_FAILURE) ;
 	}
-	double boxsize[3] ;
+	double boxsize[3] = {0.0, 0.0, 0.0} ;
 	FPoint centre ;
     FSize numberofParticles = 0;
 	double energy = 0.0 ;
-	FmaRWParticle<8,8>*  particlesIn  ; //= new FmaRWParticle<8,8>[numberofParticles];
+	FmaRWParticle<8,8>*  particlesIn = nullptr  ;
 	if( FParameters::existParameter(argc, argv, "-energy") ){
 		energy = FParameters::getValue(argc,argv,"-energy", 0.0);
 
@@ -253,12 +254,12 @@ int main(int argc, char ** argv){
 	std::cout << "preScaleForce:     "<<preScaleForce<<std::endl;
 	std::cout << "postScaleForce:   "<<postScaleForce<<std::endl;
 	//
-	double tmp, newEnergy =0.0;
+	double newEnergy =0.0;
 	for(int idx = 0 ; idx < numberofParticles ; ++idx){
-			tmp = particlesIn[idx].getPosition().getX()*electricMoment.getX()  + particlesIn[idx].getPosition().getY()*electricMoment.getY()
-					+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
+		//	tmp = particlesIn[idx].getPosition().getX()*electricMoment.getX()  + particlesIn[idx].getPosition().getY()*electricMoment.getY()
+		//			+ particlesIn[idx].getPosition().getZ()*electricMoment.getZ()  ;
 		//  Potential rescaling    ( Not checked)
-		double P = particlesIn[idx].getPotential();
+	//	double P = particlesIn[idx].getPotential();
 	//	particlesIn[idx].setPotential(  P + tmp*coeffCorrection);
 		//
 		//  Force rescaling
