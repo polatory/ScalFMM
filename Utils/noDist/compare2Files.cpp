@@ -48,7 +48,7 @@ int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv,
                          "Driver to change the format of the input file.",
                          FParameterDefinitions::InputFileOne, FParameterDefinitions::InputFileTwow,
-                         LocalParameterEwald);
+                         /*LocalParameterEwald*/);
 
     const std::string filename1(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options,   "data.fma"));
     const std::string filename2(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileTwow.options,   "data.fma"));
