@@ -480,6 +480,15 @@ Force &$C_{force}$& -138935.4835 &  $10\,J  mol^{-1}\, \AA^{-1}$\\
 The force unit is the internal DL\_Poly unit.
 
 
+\begin{equation}
+E_{Ewald} = C_{energy} \left (  E_{FMM} + \frac{2\pi}{3V} 
+\mathbf{D}.\mathbf{D}  \right ).
+\end{equation}
+and the forces write 
+
+\begin{equation}
+F_{Ewald}(x_k) = C_{force} \left( F_{FMM}(x_k)  - \frac{4\pi}{3V} q_k \mathbf{D} \right ).
+\end{equation}
 The first test consists in a small crystal $4\times 4\times 4$ of NaCl. It is composed of 128 atoms The second test is a larger crystal  $10\times 10\times 10$ of NaCl and have 2000 atoms. The positions and the forces are stored in the \texttt{REVCON} file and the energy in the  \texttt{STATIS} file. The Ewald's parameters are chosen such that the  Ewald sum  precision is $10^{-14}$. In the test1 (reps. test2) the cut off is $8\, \AA$ (reps. $12\, \AA$) and the reciprocal lattice vector in $18$ (resp. 25) in each direction.
 \begin{center}
 \begin{tabular}{|l|c|c|c|c|c|}
