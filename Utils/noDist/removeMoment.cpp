@@ -144,7 +144,7 @@ int main(int argc, char ** argv){
 	}
 	double boxsize[3] ;
 	FPoint centre ;
-	FSize numberofParticles ;
+    FSize numberofParticles = 0;
 	double energy = 0.0 ;
 	FmaRWParticle<8,8>*  particlesIn  ; //= new FmaRWParticle<8,8>[numberofParticles];
 	if( FParameters::existParameter(argc, argv, "-energy") ){
@@ -203,7 +203,7 @@ int main(int argc, char ** argv){
 
 	// const --> then shared
 	//
-	double totalCharge = 0.0, readEnergy;
+    double totalCharge = 0.0, readEnergy = 0.0;
 	//
 	for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 		//
@@ -241,7 +241,7 @@ int main(int argc, char ** argv){
 	}
 	else if( FParameters::existParameter(argc, argv, "-FMM2Ewald") ){
 		preScaleEnergy  = 1.0 ;  postScaleEnergy = scaleEnergy ; preScaleForce = 1.0;  postScaleForce = scaleForce ;
-		coeffCorrection  = coeffCorrection;
+        //coeffCorrection  = coeffCorrection;
 	}
 	else {
 		std::cout << " -Ewald2FMM or -FMM2Ewald should be set"<<std::endl;

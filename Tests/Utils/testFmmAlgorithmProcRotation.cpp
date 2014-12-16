@@ -231,8 +231,9 @@ int main(int argc, char ** argv){
     typedef FRotationKernel< CellClass, ContainerClass,7 >     KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+#ifdef VALIDATE_FMM
     typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
-
+#endif
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Proc Rotation algorithm.\n";

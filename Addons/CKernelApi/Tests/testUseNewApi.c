@@ -23,12 +23,17 @@ int main(int argc, char ** av){
     scalfmm_kernel_type myChoice = chebyshev;
 
     //Octree configuration
-    int TreeHeight = 5;
+    int TreeHeight = 7;
     double boxWidth = 2.0;
     double boxCenter[3] = {0.0,0.0,0.0};
 
     //Init our lib
-    scalfmm_handle handle = scalfmm_init(TreeHeight,boxWidth,boxCenter,myChoice); //The tree is built
+    scalfmm_handle handle = scalfmm_init(/* TreeHeight,boxWidth,boxCenter, */myChoice); //The tree is built
+    struct User_Scalfmm_Cell_Descriptor user_descr;
+    user_descr.user_init_cell = NULL;
+    user_descr.user_free_cell = NULL;
+
+    scalfmm_build_tree(handle,TreeHeight,boxWidth,boxCenter,user_descr);
     scalfmm_algorithm_config(handle,periodic);
     //Creation of an array of particles
     int nb_of_parts = 2;
@@ -56,7 +61,7 @@ int main(int argc, char ** av){
 
 
     //Computation Part
-    int nb_iteration = 100;
+    int nb_iteration = 3;//atoi(av[1]);
     int curr_iteration = 0;
 
     //Array to store the output
@@ -112,13 +117,16 @@ int main(int argc, char ** av){
         curr_iteration++;
     }
 
-    //End of Computation, useer get the position after a hundreds of iterations
-
     //Free memory
     free(positionsXYZ);
     free(array_of_charge);
     free(array_of_forces);
+    free(array_of_pot);
     free(array_of_displacement);
+
+    //End of Computation, useer get the position after some iterations
+    scalfmm_dealloc_handle(handle,NULL);
+
 
     return 0;
 }

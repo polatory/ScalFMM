@@ -122,7 +122,7 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
     ////////////////////////////////////////////////////////////
 
     void TestSmallSort(){
-        const int myRank = app.global().processId();
+        //const int myRank = app.global().processId();
         const int nbProcess = app.global().processCount();
 
         const int nbElements = nbProcess;
@@ -170,7 +170,7 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
     }
 
     void TestSameSort(){
-        const int myRank = app.global().processId();
+        //const int myRank = app.global().processId();
         const int nbProcess = app.global().processCount();
 
         const int nbElements = nbProcess * 100;
@@ -219,8 +219,8 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
     }
 
     void TestBigSort(){
-        const int myRank = app.global().processId();
-        const int nbProcess = app.global().processCount();
+        //const int myRank = app.global().processId();
+        //const int nbProcess = app.global().processCount();
 
         const int nbElements = 500;
         std::unique_ptr<long[]> elements(new long[nbElements]);
@@ -245,8 +245,8 @@ class TestMpiQs : public FUTesterMpi<TestMpiQs> {
 
 
     void TestPivotSort(){
-        const int myRank = app.global().processId();
-        const int nbProcess = app.global().processCount();
+        //const int myRank = app.global().processId();
+        //const int nbProcess = app.global().processCount();
 
         const int nbElements = 500;
         std::unique_ptr<long[]> elements(new long[nbElements]);

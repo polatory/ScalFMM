@@ -37,7 +37,7 @@ class FMpiBufferWriter : public FAbstractBufferWriter {
     /** Test and exit if not enought space */
     void expandIfNeeded(const size_t requestedSpace) {
         if( arrayCapacity < int(currentIndex + requestedSpace) ){
-            arrayCapacity = int((currentIndex + requestedSpace + 1) * 1.5);
+            arrayCapacity = int(double(currentIndex + requestedSpace + 1) * 1.5);
             char* arrayTmp = new char[arrayCapacity];
             memcpy(arrayTmp, array.get(), sizeof(char)*currentIndex);
             array.reset(arrayTmp);

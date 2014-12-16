@@ -24,9 +24,10 @@
 
 #include "FScalFMMEngine.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "Kernels/P2P/FP2PLeafInterface.hpp"
+//#include "Kernels/P2P/FP2PLeafInterface.hpp"
 #include "Arranger/FOctreeArranger.hpp"
 #include "Arranger/FArrangerPeriodic.hpp"
+#include "Arranger/FBasicParticleContainerIndexedMover.hpp"
 
 #include "Core/FFmmAlgorithmThread.hpp"
 #include "Core/FFmmAlgorithm.hpp"
@@ -45,12 +46,14 @@ class FInterEngine : public FScalFMMEngine{
 private:
     //Typedef on the octree class, in order to clarify following code
     typedef FOctree<InterCell,ContainerClass,LeafClass> OctreeClass;
-    typedef FP2PLeafInterface<OctreeClass>            LeafInterface;
+    //typedef FP2PLeafInterface<OctreeClass>            LeafInterface;
 
 
     //Typedef on Octree Arranger, in order to clarify following code
-    typedef FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>   ArrangerClass;
-    typedef FArrangerPeriodic<OctreeClass,ContainerClass,LeafInterface> ArrangerClassPeriodic;
+    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
+
     //Pointer to the kernel to be executed
     InterKernel * kernel;
     MatrixKernelClass * matrix;
@@ -67,19 +70,26 @@ public:
      * @param BoxCenter double[3] coordinate of the center of the
      * simulation box
      */
-    FInterEngine(int TreeHeight, double BoxWidth , double * BoxCenter,scalfmm_kernel_type KernelType) :
+    FInterEngine(scalfmm_kernel_type KernelType) :
         kernel(nullptr), matrix(nullptr), octree(nullptr),arranger(nullptr){
+        kernelType = KernelType;
+    }
+
+    void build_tree(int TreeHeight, double BoxWidth , double * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
         octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
         this->matrix = new MatrixKernelClass();
         this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint(BoxCenter),matrix);
-        kernelType = KernelType;
-        arranger = nullptr;
     }
+
 
     //TODO free kernel too
     ~FInterEngine(){
-        free(octree);
-        free(kernel);
+        delete matrix;
+        delete octree;
+        delete kernel;
+        if(arranger){
+            delete arranger;
+        }
     }
 
     //Inserting array of position
@@ -528,7 +538,6 @@ public:
 
 
     void execute_fmm(){
-        //typedef FOctree<InterCell,ContainerClass,LeafClass> OctreeClass;
         switch(Algorithm){
         case 0:
             {
@@ -557,7 +566,9 @@ public:
         }
     }
 
-
+    void intern_dealloc_handle(Callback_free_cell unUsed){
+        //this->~FInterEngine();
+    }
 };
 
 

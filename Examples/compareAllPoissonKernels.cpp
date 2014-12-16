@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 #ifdef _OPENMP
 	omp_set_num_threads(NbThreads);
 #else
-	std::cout << "\n>> Sequential version.\n" << std::
+    std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
 
 	std::cout <<	 "Parameters  "<< std::endl

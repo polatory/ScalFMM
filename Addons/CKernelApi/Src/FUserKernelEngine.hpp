@@ -31,12 +31,32 @@ class CoreCell : public FBasicCell {
     // Mutable in order to work with the API
     mutable void* userData;
 
+    //Static members to be initialised before octree creation
+    static Scalfmm_Cell_Descriptor user_cell_descriptor;
+
 public:
+    static void Init(Scalfmm_Cell_Descriptor cell_descriptor){
+        user_cell_descriptor=cell_descriptor;
+    }
+
+    static Callback_init_cell GetInit(){
+        return user_cell_descriptor.user_init_cell;
+    }
+
+    static Callback_free_cell GetFree(){
+        return user_cell_descriptor.user_free_cell;
+    }
+
     CoreCell() : userData(nullptr) {
     }
 
+    //We free the cells here
     ~CoreCell(){
+        if(userData){
+            this->user_cell_descriptor.user_free_cell(userData);
+        }
     }
+
     /**
      * @brief setContainer store the ptr to the user data inside our
      * struct
@@ -54,6 +74,10 @@ public:
     }
 };
 
+/**
+ * Define here static member
+ */
+Scalfmm_Cell_Descriptor CoreCell::user_cell_descriptor;
 
 /**
  * This class simply call the function pointers from Scalfmm_Kernel_Descriptor.
@@ -142,8 +166,6 @@ public:
 };
 
 
-
-
 class FUserKernelEngine : public FScalFMMEngine{
 
 private:
@@ -153,10 +175,11 @@ private:
     typedef FSimpleLeaf<ContainerClass>                   LeafClass;
     typedef FOctree<CoreCell,ContainerClass,LeafClass>  OctreeClass;
     typedef CoreKernel<CoreCell,ContainerClass>     CoreKernelClass;
-    typedef FP2PLeafInterface<OctreeClass>            LeafInterface;
+
     //For arranger classes
-    typedef FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>           ArrangerClass;
-    typedef FArrangerPeriodic<OctreeClass,ContainerClass,LeafInterface> ArrangerClassPeriodic;
+    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
 
     //Attributes
@@ -164,27 +187,45 @@ private:
     CoreKernelClass * kernel;
     ArrangerClass * arranger;
 
+
 public:
-    FUserKernelEngine(int TreeHeight, double BoxWidth , double * BoxCenter, scalfmm_kernel_type KernelType) :
+    FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType) :
         octree(nullptr), kernel(nullptr), arranger(nullptr){
-        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
+        //        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
         kernelType = KernelType;
         //Kernel is not set now because the user must provide a
         //Scalfmm_Kernel_descriptor
-        //kernel = new CoreKernelClass();
     }
 
+
+    ~FUserKernelEngine(){
+        delete octree;
+
+        if(arranger){
+            delete arranger;
+        }
+        if(kernel){
+            delete kernel;
+        }
+    }
 
     void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
-        kernel = new CoreKernelClass(userKernel,userDatas);
+        if(!kernel){
+            kernel = new CoreKernelClass(userKernel,userDatas);
+        }
     }
 
+    void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+        CoreCell::Init(user_cell_descriptor);
+        this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
+    }
 
     void tree_insert_particles( int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
         for(int idPart = 0; idPart<NbPositions ; ++idPart){
             octree->insert(FPoint(arrayX[idPart],arrayY[idPart],arrayZ[idPart]),idPart);
         }
         nbPart += NbPositions;
+        this->init_cell();
     }
 
     void tree_insert_particles_xyz( int NbPositions, double * XYZ){
@@ -194,19 +235,176 @@ public:
         nbPart += NbPositions;
     }
 
+    /**
+     * To retrieve the positions, in order to move the parts
+     */
+    void get_positions_xyz(int NbPositions, double * positionsToFill){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    positionsToFill[indexes[idxPart]*3+0] = sources->getPositions()[0][idxPart];
+                    positionsToFill[indexes[idxPart]*3+1] = sources->getPositions()[1][idxPart];
+                    positionsToFill[indexes[idxPart]*3+2] = sources->getPositions()[2][idxPart];
+                }
+            });
+    }
+
+    void get_positions_xyz_npart(int NbPositions, int * idxOfParticles, double * positionsToFill){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    int iterPart = 0;
+                    bool notFoundYet = true;
+                    while(iterPart < NbPositions && notFoundYet){
+                        if(indexes[idxPart] == idxOfParticles[iterPart]){
+                            positionsToFill[indexes[idxPart]*3+0] =  sources->getPositions()[0][idxPart];
+                            positionsToFill[indexes[idxPart]*3+1] =  sources->getPositions()[1][idxPart];
+                            positionsToFill[indexes[idxPart]*3+2] =  sources->getPositions()[2][idxPart];
+                            notFoundYet = false;
+                        }
+                        else{
+                            ++iterPart;
+                        }
+                    }
+                }
+            });
+    }
+
+    void get_positions( int NbPositions, double * X, double * Y , double * Z){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    X[indexes[idxPart]] = sources->getPositions()[0][idxPart];
+                    Y[indexes[idxPart]] = sources->getPositions()[1][idxPart];
+                    Z[indexes[idxPart]] = sources->getPositions()[2][idxPart];
+                }
+            });
+    }
+
+    void get_positions_npart(int NbPositions, int * idxOfParticles,double * X, double * Y , double * Z){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    int iterPart = 0;
+                    bool notFoundYet = true;
+                    while(iterPart < NbPositions && notFoundYet){
+                        if(indexes[idxPart] == idxOfParticles[iterPart]){
+                            X[indexes[idxPart]] =  sources->getPositions()[0][idxPart];
+                            Y[indexes[idxPart]] =  sources->getPositions()[1][idxPart];
+                            Z[indexes[idxPart]] =  sources->getPositions()[2][idxPart];
+                            notFoundYet = false;
+                        }
+                        else{
+                            ++iterPart;
+                        }
+                    }
+                }
+            });
+    }
+
+
+
+    //Arranger parts : following function provide a way to move parts
+    //inside the tree
+    void add_to_positions_xyz(int NbPositions,double * updatedXYZ){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    sources->getWPositions()[0][idxPart] += updatedXYZ[indexes[idxPart]*3+0];
+                    sources->getWPositions()[1][idxPart] += updatedXYZ[indexes[idxPart]*3+1];
+                    sources->getWPositions()[2][idxPart] += updatedXYZ[indexes[idxPart]*3+2];
+                }
+            });
+    }
+
+    void add_to_positions(int NbPositions,double * X, double * Y , double * Z){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    sources->getWPositions()[0][idxPart] += X[indexes[idxPart]];
+                    sources->getWPositions()[1][idxPart] += Y[indexes[idxPart]];
+                    sources->getWPositions()[2][idxPart] += Z[indexes[idxPart]];
+                }
+            });
+    }
+
+
+    void set_positions_xyz(int NbPositions, double * updatedXYZ){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    sources->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
+                    sources->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
+                    sources->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
+                }
+            });
+    }
+
+    void set_positions(int NbPositions, double * X, double * Y, double * Z){
+        octree->forEachLeaf([&](LeafClass* leaf){
+                ContainerClass * sources = leaf->getSrc();
+                const FVector<int>& indexes = sources->getIndexes();
+                int nbPartThere = sources->getNbParticles();
+                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                    sources->getWPositions()[0][idxPart] = X[indexes[idxPart]];
+                    sources->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
+                    sources->getWPositions()[2][idxPart] = Z[indexes[idxPart]];
+                }
+            });
+    }
+
+
+    void update_tree(){
+        if(arranger){
+            arranger->rearrange();
+            //then, we need to re-allocate cells user data for the
+            //cells created during the process and free user datas for
+            //the cells removed during the process
+            init_cell();
+        }
+        else{
+            if(Algorithm == 2){ //case in wich the periodic algorithm is used
+                arranger = new ArrangerClassPeriodic(octree);
+                arranger->rearrange();
+            }
+            else{
+                arranger = new ArrangerClass(octree);
+                arranger->rearrange();
+                init_cell();
+            }
+        }
+    }
+
+
+
     /*
      * Call the user allocator on userDatas member field of each cell
      */
-    void init_cell(Callback_init_cell user_cell_initializer){
-        if(user_cell_initializer){
-            double boxwidth = octree->getBoxWidth();
-            FPoint BoxCenter = octree->getBoxCenter();
-            double boxCorner[3];
-            boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
-            boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;
-            boxCorner[2] = BoxCenter.getZ() - boxwidth/2.0;
-            //apply user function on each cell
-            octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
+    void init_cell(){
+
+        double boxwidth = octree->getBoxWidth();
+        FPoint BoxCenter = octree->getBoxCenter();
+        double boxCorner[3];
+        boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
+        boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;
+        boxCorner[2] = BoxCenter.getZ() - boxwidth/2.0;
+        //apply user function on each cell
+        octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
+                if(!(currCell->getContainer())){
                     FTreeCoordinate currCoord = currCell->getCoordinate();
                     int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
                     MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
@@ -214,23 +412,26 @@ public:
                     position[0] = boxCorner[0] + currCoord.getX()*boxwidth/double(1<<currLevel);
                     position[1] = boxCorner[1] + currCoord.getY()*boxwidth/double(1<<currLevel);
                     position[2] = boxCorner[2] + currCoord.getZ()*boxwidth/double(1<<currLevel);
-                    currCell->setContainer(user_cell_initializer(currLevel,currMorton,arrayCoord,position));
-                });
-        }
+                    currCell->setContainer(CoreCell::GetInit()(currLevel,currMorton,arrayCoord,position));
+                }
+            });
     }
+
 
     void free_cell(Callback_free_cell user_cell_deallocator){
         octree->forEachCell([&](CoreCell * currCell){
-                user_cell_deallocator(currCell->getContainer());
+                if(currCell->getContainer()){
+                    user_cell_deallocator(currCell->getContainer());
+                }
             });
     }
 
     void execute_fmm(){
-        //FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
         switch(Algorithm){
         case 0:
             {
-                typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafInterface> AlgoClassSeq;
+                typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassSeq;
                 AlgoClassSeq algoSeq(octree,kernel);
                 algoSeq.execute();
                 break;
@@ -256,6 +457,9 @@ public:
 
     }
 
+    void intern_dealloc_handle(Callback_free_cell userDeallocator){
+        free_cell(userDeallocator);
+    }
 };
 
 

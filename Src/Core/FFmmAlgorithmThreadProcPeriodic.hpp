@@ -115,7 +115,10 @@ public:
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass(*inKernels);
+            #pragma omp critical (InitFFmmAlgorithmThreadProcPeriodic)
+            {
+                this->kernels[idxThread] = new KernelClass(*inKernels);
+            }
         }
     }
 

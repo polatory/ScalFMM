@@ -145,13 +145,14 @@ public:
     }
 
     /** Resize the vector (and change the capacity if needed) */
-    void resize(const int newSize){
+    template <typename... Args>
+    void resize(const int newSize, Args... args){
         if(index < newSize){
             if(capacity < newSize){
                 setCapacity(int(newSize*1.5));
             }
             while(index != newSize){
-                new((void*)&array[index]) ObjectType();
+                new((void*)&array[index]) ObjectType(args...);
             }
         }
         else{
@@ -213,6 +214,19 @@ public:
         }
         // add the new element
         new((void*)&array[index++]) ObjectType(inValue);
+    }
+
+    /**
+     * To Create a new object
+     */
+    template <typename... Args>
+    void pushNew(Args... args){
+        // if needed, increase the vector
+        if( index == capacity ){
+            setCapacity(int((capacity+1) * 1.5));
+        }
+        // add the new element
+        new((void*)&array[index++]) ObjectType(args...);
     }
 
     /**

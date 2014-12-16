@@ -64,7 +64,6 @@ int main(int argc, char ** argv){
   typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >     KernelClass;
 
   typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
-  typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassNoProc;
 
 
   ///////////////////////What we do/////////////////////////////
