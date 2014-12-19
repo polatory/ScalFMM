@@ -13,6 +13,9 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef FUNIFSYMM2LHANDLER_HPP
 #define FUNIFSYMM2LHANDLER_HPP
 

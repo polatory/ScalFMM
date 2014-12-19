@@ -1,3 +1,6 @@
+
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #ifndef FGROUPOFCELLS_HPP
 #define FGROUPOFCELLS_HPP
 

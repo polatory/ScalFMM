@@ -21,6 +21,8 @@
 //
 // Tests/Release/removeMoment  -Ewald2FMM -fin ../Data/forceNacl_2000_dlpolyPer.bin -dlpoly -fout ../Data/forceNacl_2000.fma
 
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 
 #include <iostream>
 #include <iomanip>

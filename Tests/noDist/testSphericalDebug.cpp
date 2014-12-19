@@ -14,6 +14,9 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
  #define DEBUG_SPHERICAL_M2L
 #define  BLAS_SPHERICAL_COMPRESS
 #define  BLAS_M2L_P

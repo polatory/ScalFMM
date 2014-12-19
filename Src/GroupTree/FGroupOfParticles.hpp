@@ -1,3 +1,6 @@
+
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #ifndef FGROUPOFPARTICLES_HPP
 #define FGROUPOFPARTICLES_HPP
 

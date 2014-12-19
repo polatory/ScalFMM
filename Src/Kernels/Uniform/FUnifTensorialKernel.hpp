@@ -13,6 +13,9 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef FUNIFTENSORIALKERNEL_HPP
 #define FUNIFTENSORIALKERNEL_HPP
 

@@ -14,6 +14,9 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 // @FUSE_FFT
 #include <iostream>
 #include <cstdio>

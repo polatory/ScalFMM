@@ -18,6 +18,9 @@
 // @FUSE_MPI
 // @FUSE_BLAS
 // ================
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 
 #include "../../Src/Utils/FTic.hpp"
 #include "../../Src/Utils/FMpi.hpp"

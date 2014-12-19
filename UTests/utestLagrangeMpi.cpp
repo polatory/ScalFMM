@@ -18,7 +18,8 @@
 // @FUSE_FFT
 // @FUSE_MPI
 // ================
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 
 #include "ScalFmmConfig.h"
 #include "Utils/FGlobal.hpp"

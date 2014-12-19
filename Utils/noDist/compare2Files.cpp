@@ -5,6 +5,8 @@
  *      Author: Olivier Coulaud
  */
 
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 
 #include <iostream>
 #include <fstream>

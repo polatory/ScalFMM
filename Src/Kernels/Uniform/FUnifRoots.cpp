@@ -1,6 +1,9 @@
 #include "FUnifInterpolator.hpp" //PB: if include FUnifRoots.hpp then Error: "FReal is not a type"...
 
 // In case of multiple include of FUnifInterpolator.hpp, this has to be defined only once!!
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 
 // order 2
 template<> const double FUnifRoots<2>::roots[] = {-1.,

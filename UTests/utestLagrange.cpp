@@ -17,6 +17,9 @@
 // ==== CMAKE =====
 // @FUSE_FFT
 // ================
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #include "ScalFmmConfig.h"
 #include "Utils/FGlobal.hpp"
 

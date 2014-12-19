@@ -1,3 +1,6 @@
+
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #ifndef FGROUPATTACHEDLEAF_HPP
 #define FGROUPATTACHEDLEAF_HPP
 
