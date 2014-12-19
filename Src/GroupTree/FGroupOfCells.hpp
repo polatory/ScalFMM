@@ -25,6 +25,8 @@ class FGroupOfCells {
     };
 
 protected:
+    //< The size of the memoryBuffer
+    int allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
@@ -45,7 +47,7 @@ public:
  * @param inNumberOfCells total number of cells in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells)
-        : memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr) {
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr) {
         // Find the number of cell to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfCells <= blockIndexesTableSize);
@@ -53,6 +55,8 @@ public:
         const size_t memoryToAlloc = sizeof(BlockHeader) + (blockIndexesTableSize*sizeof(int)) + (inNumberOfCells*sizeof(CellClass));
 
         // Allocate
+        FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
+        allocatedMemoryInByte = memoryToAlloc;
         memoryBuffer = new unsigned char[memoryToAlloc];
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
@@ -82,6 +86,11 @@ public:
             }
         }
         delete[] memoryBuffer;
+    }
+
+    /** The the size of the allocated buffer */
+    int getBufferSizeInByte() const {
+        return allocatedMemoryInByte;
     }
 
     /** The index of the fist cell (set from the constructor) */

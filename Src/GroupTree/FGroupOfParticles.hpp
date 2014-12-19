@@ -24,6 +24,15 @@ class FGroupOfParticles {
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
         int blockIndexesTableSize;
+
+        //< The real number of particles allocated
+        int nbParticlesAllocatedInGroup;
+        //< Bytes difference/offset between position
+        size_t positionOffset;
+        //< Bytes difference/offset between attributes
+        size_t attributeOffset;
+        //< The total number of particles in the group
+        int nbParticlesInGroup;
     };
 
     /** Information about a leaf */
@@ -49,6 +58,8 @@ protected:
     //< This value is for not used leaves
     static const int LeafIsEmptyFlag = -1;
 
+    //< The size of memoryBuffer in byte
+    int allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
@@ -60,18 +71,12 @@ protected:
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
     const int nbParticlesInGroup;
-    //< The real number of particles allocated
-    int nbParticlesAllocatedInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
-    //< Bytes difference/offset between position
-    size_t positionOffset;
 
     //< Pointers to the particles data inside the block memory
     AttributeClass*      particleAttributes[NbAttributesPerParticle];
-    //< Bytes difference/offset between attributes
-    size_t attributeOffset;
 
 public:
     /**
@@ -81,12 +86,11 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const int inNbParticles)
-        : memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
-          nbParticlesAllocatedInGroup(0), positionOffset(0), attributeOffset(0) {
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles) {
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
 
-        nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
+        const int nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
@@ -99,6 +103,8 @@ public:
                                     + nbParticlesAllocatedInGroup*sizeOfOneParticle;
 
         // Allocate
+        FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
+        allocatedMemoryInByte = memoryToAlloc;
         memoryBuffer = (unsigned char*)FAlignedMemory::Allocate32BAligned(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
@@ -113,16 +119,17 @@ public:
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfLeavesInBlock  = inNumberOfLeaves;
         blockHeader->blockIndexesTableSize = blockIndexesTableSize;
+        blockHeader->nbParticlesAllocatedInGroup = nbParticlesAllocatedInGroup;
 
         // Init particle pointers
-        positionOffset = (sizeof(FReal) * nbParticlesAllocatedInGroup);
+        blockHeader->positionOffset = (sizeof(FReal) * nbParticlesAllocatedInGroup);
         particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + inNumberOfLeaves)
                                                        +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
         particlePosition[1] = (particlePosition[0] + nbParticlesAllocatedInGroup);
         particlePosition[2] = (particlePosition[1] + nbParticlesAllocatedInGroup);
 
         // Redirect pointer to data
-        attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
+        blockHeader->attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
         unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + nbParticlesAllocatedInGroup);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
@@ -138,6 +145,11 @@ public:
     /** Call the destructor of leaves and dealloc block memory */
     ~FGroupOfParticles(){
         FAlignedMemory::Dealloc32BAligned(memoryBuffer);
+    }
+
+    /** The the size of the allocated buffer */
+    int getBufferSizeInByte() const {
+        return allocatedMemoryInByte;
     }
 
     /** The index of the fist leaf (set from the constructor) */
@@ -180,13 +192,13 @@ public:
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);
-        FAssertLF(offsetInGroup < size_t(nbParticlesAllocatedInGroup));
+        FAssertLF(offsetInGroup < size_t(blockHeader->nbParticlesAllocatedInGroup));
         blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
         leafHeader[id].nbParticles = nbParticles;
         leafHeader[id].offSet = offsetInGroup;
 
         const size_t nextLeafOffsetInGroup = RoundToUpperParticles(offsetInGroup+nbParticles);
-        FAssertLF(nextLeafOffsetInGroup <= size_t(nbParticlesAllocatedInGroup + MemoryAlignementParticles));
+        FAssertLF(nextLeafOffsetInGroup <= size_t(blockHeader->nbParticlesAllocatedInGroup + MemoryAlignementParticles));
         return nextLeafOffsetInGroup;
     }
 
@@ -198,9 +210,9 @@ public:
                 const int id = blockIndexesTable[idxLeafPtr];
                 ParticlesAttachedClass leaf(leafHeader[id].nbParticles,
                                             particlePosition[0] + leafHeader[id].offSet,
-                        positionOffset,
+                        blockHeader->positionOffset,
                         particleAttributes[0] + leafHeader[id].offSet,
-                        attributeOffset);
+                        blockHeader->attributeOffset);
                 function(&leaf);
             }
         }
@@ -214,9 +226,9 @@ public:
             const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
             return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
-                                            positionOffset,
+                                            blockHeader->positionOffset,
                                             particleAttributes[0] + leafHeader[id].offSet,
-                                            attributeOffset);
+                                            blockHeader->attributeOffset);
         }
         return ParticlesAttachedClass();
     }
