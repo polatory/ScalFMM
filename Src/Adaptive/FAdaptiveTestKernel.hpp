@@ -1,6 +1,7 @@
 #ifndef FADAPTIVETESTKERNEL_HPP
 #define FADAPTIVETESTKERNEL_HPP
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include "FAbstractAdaptiveKernel.hpp"
 #include "../Components/FTestKernels.hpp"
 

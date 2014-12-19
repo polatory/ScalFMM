@@ -15,7 +15,8 @@
 // ===================================================================================
 #ifndef FADAPTTOOLS_HPP
 #define FADAPTTOOLS_HPP
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include <fstream>
 
 #include "Containers/FOctree.hpp"

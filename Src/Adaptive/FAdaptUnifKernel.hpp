@@ -14,7 +14,8 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include "Utils/FGlobal.hpp"
 
 #include "Utils/FPoint.hpp"

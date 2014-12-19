@@ -1,6 +1,7 @@
 #ifndef FAdaptiveCELL
 #define FAdaptiveCELL
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include "Components/FBasicCell.hpp"
 
 /**

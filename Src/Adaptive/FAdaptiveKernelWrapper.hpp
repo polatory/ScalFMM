@@ -1,6 +1,7 @@
 #ifndef FAdaptiveKERNELWRAPPER_HPP
 #define FAdaptiveKERNELWRAPPER_HPP
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include "Components/FAbstractKernels.hpp"
 #include "Containers/FVector.hpp"
 

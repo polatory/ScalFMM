@@ -1,6 +1,7 @@
 #ifndef FABSTRACTADAPTIVEKERNEL
 #define FABSTRACTADAPTIVEKERNEL
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 /**
  * This class represent the method that an adaptive kernel must implement.
  * There are two kinds of operators, the first one represent computation and the others

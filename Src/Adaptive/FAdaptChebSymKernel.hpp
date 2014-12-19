@@ -25,7 +25,8 @@
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
 class FTreeCoordinate;
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 // ==== CMAKE =====
 // @FUSE_BLAS
 // ================

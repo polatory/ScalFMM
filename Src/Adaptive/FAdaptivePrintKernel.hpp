@@ -1,6 +1,7 @@
 #ifndef FADAPTIVEPRINTKERNEL_HPP
 #define FADAPTIVEPRINTKERNEL_HPP
-
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include <iostream>
 
 #include "FAbstractAdaptiveKernel.hpp"
