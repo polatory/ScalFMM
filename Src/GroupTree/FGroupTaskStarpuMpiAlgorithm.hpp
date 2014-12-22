@@ -763,7 +763,8 @@ protected:
         for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
             int idxSubGroup = 0;
 
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel)
+                    && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 struct starpu_task* const task = starpu_task_create();
@@ -987,7 +988,8 @@ protected:
         for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
             int idxSubGroup = 0;
 
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel)
+                    && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 struct starpu_task* const task = starpu_task_create();
