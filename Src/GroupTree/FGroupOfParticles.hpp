@@ -41,6 +41,7 @@ class FGroupOfParticles {
         size_t offSet;
     };
 
+
 protected:
     static const int MemoryAlignementBytes     = 32;
     static const int MemoryAlignementParticles = MemoryAlignementBytes/sizeof(FReal);
@@ -78,7 +79,40 @@ protected:
     //< Pointers to the particles data inside the block memory
     AttributeClass*      particleAttributes[NbAttributesPerParticle];
 
+    /** To know if we have to delete the buffer */
+    bool deleteBuffer;
+
 public:
+    /**
+     * Init from a given buffer
+     * @param inBuffer
+     * @param inAllocatedMemoryInByte
+     */
+    FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte)
+        : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
+          blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          deleteBuffer(false){
+        // Move the pointers to the correct position
+        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
+        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
+        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+
+        // Init particle pointers
+        blockHeader->positionOffset = (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
+        particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + blockHeader->numberOfLeavesInBlock)
+                                                       +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
+        particlePosition[1] = (particlePosition[0] + blockHeader->nbParticlesAllocatedInGroup);
+        particlePosition[2] = (particlePosition[1] + blockHeader->nbParticlesAllocatedInGroup);
+
+        // Redirect pointer to data
+        blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
+        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + blockHeader->nbParticlesAllocatedInGroup);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
+            previousPointer += sizeof(AttributeClass)*blockHeader->nbParticlesAllocatedInGroup;
+        }
+    }
+
     /**
  * @brief FGroupOfParticles
  * @param inStartingIndex first leaf morton index
@@ -86,7 +120,8 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const int inNbParticles)
-        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles) {
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
+          deleteBuffer(true){
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
 
@@ -144,12 +179,24 @@ public:
 
     /** Call the destructor of leaves and dealloc block memory */
     ~FGroupOfParticles(){
-        FAlignedMemory::Dealloc32BAligned(memoryBuffer);
+        if(deleteBuffer){
+            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
+        }
+    }
+
+    /** Give access to the buffer to send the data */
+    const unsigned char* getRawBuffer() const{
+        return memoryBuffer;
     }
 
     /** The the size of the allocated buffer */
     int getBufferSizeInByte() const {
         return allocatedMemoryInByte;
+    }
+
+    /** To know if the object will delete the memory block */
+    bool getDeleteMemory() const{
+        return deleteBuffer;
     }
 
     /** The index of the fist leaf (set from the constructor) */

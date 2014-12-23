@@ -10,6 +10,7 @@
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTic.hpp"
 #include "../Utils/FAssert.hpp"
+#include "../Utils/FAlignedMemory.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -230,6 +231,18 @@ protected:
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevelMpi;
     std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevelMpi;
 
+    struct RemoteHandle{
+        RemoteHandle() : ptr(nullptr){
+            memset(&handle, 0, sizeof(handle));
+        }
+
+        unsigned char * ptr;
+        starpu_data_handle_t handle;
+    };
+
+    std::vector<std::vector<RemoteHandle>> remoteCellGroups;
+    std::vector<RemoteHandle> remoteParticleGroupss;
+
     void buildRemoteInteractionsAndHandles(){
         // We need to have information about all other blocks
         std::unique_ptr<int[]> nbBlocksPerLevel(new int[tree->getHeight()]);
@@ -290,6 +303,13 @@ protected:
                                         processesBlockInfos[idxLevel].data(), recvBlocksCount.get(), recvBlockDispl.get(), MPI_BYTE,
                                         comm.getComm()), __LINE__);
         }
+        // Prepare remate ptr and handles
+        remoteCellGroups.resize( tree->getHeight() );
+        for(int idxLevel = 1 ; idxLevel < tree->getHeight() ; ++idxLevel){
+            remoteCellGroups[idxLevel].resize( processesBlockInfos[idxLevel].size());
+        }
+        remoteParticleGroupss.resize(processesBlockInfos[tree->getHeight()-1].size());
+
         // From now we have the number of blocks for all process
         // we also have the size of the blocks therefor we can
         // create the handles we need
@@ -409,9 +429,22 @@ protected:
                         // Create interactions
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
+                            if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
+                                #pragma omp critical(CreateM2LRemotes)
+                                {
+                                    if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
+                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
+                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                                        remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
+                                        starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
+                                                                      (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptr, nbBytesInBlock);
+                                    }
+                                }
+                            }
+
                             externalInteractions->emplace_back();
                             BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
-                            //interactions->otherBlock = leftCells;
+                            //interactions->otherBlock = remoteCellGroups[idxLevel][idxOtherGroup].ptr;
                             interactions->otherBlockId = idxOtherGroup;
                             interactions->interactions.resize(nbInteractionsBetweenBlocks);
                             std::copy(outsideInteractions.begin() + currentOutInteraction,
@@ -493,9 +526,22 @@ protected:
 
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
+                            if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
+                                #pragma omp critical(CreateM2LRemotes)
+                                {
+                                    if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
+                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
+                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                                        remoteParticleGroupss[idxOtherGroup].ptr = memoryBlock;
+                                        starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handle, 0,
+                                                                      (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptr, nbBytesInBlock);
+                                    }
+                                }
+                            }
+
                             externalInteractions->emplace_back();
                             BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
-                            //interactions->otherBlock = leftContainers;
+                            //interactions->otherBlock = remoteParticleGroupss[idxOtherGroup].ptr;
                             interactions->otherBlockId = idxOtherGroup;
                             interactions->interactions.resize(nbInteractionsBetweenBlocks);
                             std::copy(outsideInteractions.begin() + currentOutInteraction,
@@ -522,7 +568,7 @@ protected:
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)currentCells, sizeof(*currentCells)); // TODO
+                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte()); // TODO
             }
         }
         {
@@ -530,7 +576,7 @@ protected:
             handles[idxLevel].resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)containers, sizeof(*containers)); // TODO
+                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte()); // TODO
             }
         }
     }
@@ -730,12 +776,14 @@ protected:
     }
 
     static void bottomPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* leafCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
-        ParticleGroupClass* containers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
         ThisClass* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->bottomPassPerform(leafCells, containers);
+        worker->bottomPassPerform(&leafCells, &containers);
     }
 
     void bottomPassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
@@ -808,7 +856,8 @@ protected:
     }
 
     static void upwardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
         ThisClass* worker = nullptr;
         int nbSubCellGroups = 0;
@@ -818,10 +867,15 @@ protected:
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
+                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->upwardPassPerform(currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+        worker->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+
+        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
+            delete subCellGroups[idxSubGroup];
+        }
     }
 
     void upwardPassPerform(CellContainerClass*const currentCells,
@@ -895,13 +949,14 @@ protected:
     }
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
         ThisClass* worker = nullptr;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel);
 
-        worker->transferInPassPerform(currentCells, idxLevel);
+        worker->transferInPassPerform(&currentCells, idxLevel);
     }
 
     void transferInPassPerform(CellContainerClass*const currentCells, const int idxLevel){
@@ -940,8 +995,8 @@ protected:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
-        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         ThisClass* worker = nullptr;
         int idxLevel = 0;
@@ -1033,7 +1088,8 @@ protected:
     }
 
     static void downardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
         ThisClass* worker = nullptr;
         int nbSubCellGroups = 0;
@@ -1043,10 +1099,15 @@ protected:
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
+                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->downardPassPerform(currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+        worker->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+
+        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
+            delete subCellGroups[idxSubGroup];
+        }
     }
 
     void downardPassPerform(CellContainerClass*const currentCells,
@@ -1116,12 +1177,13 @@ protected:
     }
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
-        ParticleGroupClass* containers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
         ThisClass* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
 
-        worker->directInPassPerform(containers);
+        worker->directInPassPerform(&containers);
     }
 
     void directInPassPerform(ParticleGroupClass* containers){
@@ -1159,14 +1221,16 @@ protected:
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
-        ParticleGroupClass* containers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
-        ParticleGroupClass* externalContainers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
         ThisClass* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
-        worker->directInoutPassPerform(containers, externalContainers, outsideInteractions);
+        worker->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
     }
 
     void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
@@ -1209,12 +1273,14 @@ protected:
     }
 
     static void mergePassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* leafCells = reinterpret_cast<CellContainerClass*>(STARPU_VARIABLE_GET_PTR(buffers[0]));
-        ParticleGroupClass* containers = reinterpret_cast<ParticleGroupClass*>(STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
         ThisClass* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->mergePassPerform(leafCells, containers);
+        worker->mergePassPerform(&leafCells, &containers);
     }
 
     void mergePassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){

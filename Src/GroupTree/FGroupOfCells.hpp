@@ -5,6 +5,7 @@
 #define FGROUPOFCELLS_HPP
 
 #include "../Utils/FAssert.hpp"
+#include "../Utils/FAlignedMemory.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
 
 #include <list>
@@ -39,7 +40,25 @@ protected:
     //< This value is for not used cells
     static const MortonIndex CellIsEmptyFlag = -1;
 
+    //< To kown if the object has to delete the memory
+    bool deleteBuffer;
+
 public:
+    /**
+     * Init from a given buffer
+     * @param inBuffer
+     * @param inAllocatedMemoryInByte
+     */
+    FGroupOfCells(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte)
+        : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
+          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          deleteBuffer(false){
+        // Move the pointers to the correct position
+        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
+        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
+        blockCells          = reinterpret_cast<CellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+    }
+
     /**
  * @brief FGroupOfCells
  * @param inStartingIndex first cell morton index
@@ -47,7 +66,8 @@ public:
  * @param inNumberOfCells total number of cells in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells)
-        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr) {
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          deleteBuffer(true){
         // Find the number of cell to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfCells <= blockIndexesTableSize);
@@ -57,7 +77,7 @@ public:
         // Allocate
         FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
         allocatedMemoryInByte = memoryToAlloc;
-        memoryBuffer = new unsigned char[memoryToAlloc];
+        memoryBuffer = (unsigned char*)FAlignedMemory::Allocate32BAligned(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -80,17 +100,29 @@ public:
 
     /** Call the destructor of cells and dealloc block memory */
     ~FGroupOfCells(){
-        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
-            if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
-                (&blockCells[blockIndexesTable[idxCellPtr]])->~CellClass();
+        if(deleteBuffer){
+            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
+                if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
+                    (&blockCells[blockIndexesTable[idxCellPtr]])->~CellClass();
+                }
             }
+            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
         }
-        delete[] memoryBuffer;
+    }
+
+    /** Give access to the buffer to send the data */
+    const unsigned char* getRawBuffer() const{
+        return memoryBuffer;
     }
 
     /** The the size of the allocated buffer */
     int getBufferSizeInByte() const {
         return allocatedMemoryInByte;
+    }
+
+    /** To know if the object will delete the memory block */
+    bool getDeleteMemory() const{
+        return deleteBuffer;
     }
 
     /** The index of the fist cell (set from the constructor) */
