@@ -399,16 +399,16 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
-//                                #pragma omp critical(CreateM2LRemotes)
-//                                {
-//                                    if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
-//                                        const int nbBytesInBlock = processesBlockInfos[idxLevel][idxOtherGroup].leavesBufferSize;
-//                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
-//                                        remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
-//                                        starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
-//                                                                      (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptr, nbBytesInBlock);
-//                                    }
-//                                }
+                                #pragma omp critical(CreateM2LRemotes)
+                                {
+                                    if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
+                                        const int nbBytesInBlock = processesBlockInfos[idxLevel][idxOtherGroup].leavesBufferSize;
+                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                                        remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
+                                        starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
+                                                                      (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptr, nbBytesInBlock);
+                                    }
+                                }
                             }
 
                             externalInteractions->emplace_back();
@@ -496,16 +496,16 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
-//                                #pragma omp critical(CreateM2LRemotes)
-//                                {
-//                                    if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
-//                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
-//                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
-//                                        remoteParticleGroupss[idxOtherGroup].ptr = memoryBlock;
-//                                        starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handle, 0,
-//                                                                      (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptr, nbBytesInBlock);
-//                                    }
-//                                }
+                                #pragma omp critical(CreateM2LRemotes)
+                                {
+                                    if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
+                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
+                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                                        remoteParticleGroupss[idxOtherGroup].ptr = memoryBlock;
+                                        starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handle, 0,
+                                                                      (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptr, nbBytesInBlock);
+                                    }
+                                }
                             }
 
                             externalInteractions->emplace_back();
