@@ -882,6 +882,33 @@ protected:
 
                     idxBlockToRecv += 1;
                 }
+                FAssertLF(idxBlockToRecv < 8);
+                if(idxBlockToRecv){// Perform the work
+                    struct starpu_task* const task = starpu_task_create();
+                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
+                    task->dyn_handles[0] = handles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1];
+
+                    // Copy at max 8 groups
+                    int nbSubCellGroups = 0;
+                    while(nbSubCellGroups < idxBlockToRecv){
+                        task->dyn_handles[nbSubCellGroups + 1] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handle;
+                        nbSubCellGroups += 1;
+                    }
+
+                    // put the right codelet
+                    task->cl = &m2m_cl[nbSubCellGroups-1];
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &thisptr, sizeof(ThisClass*),
+                                             STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    FAssertLF(starpu_task_submit(task) == 0);
+                }
             }
             // Find what to send
             if(tree->getNbCellGroupAtLevel(idxLevel+1)
@@ -1173,6 +1200,47 @@ protected:
                                                 idxLevel*processesBlockInfos[idxLevel][firstOtherBlock].firstIndex,
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
+                    {
+                        struct starpu_task* const task = starpu_task_create();
+                        task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
+                        task->dyn_handles[0] = remoteCellGroups[idxLevel][firstOtherBlock].handle;
+
+                        const MortonIndex parentStartingIdx = processesBlockInfos[idxLevel][firstOtherBlock].firstIndex;
+                        const MortonIndex parentEndingIdx = processesBlockInfos[idxLevel][firstOtherBlock].lastIndex;
+
+                        int idxSubGroup = 0;
+                        // Skip current group if needed
+                        if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (parentStartingIdx<<3) ){
+                            ++idxSubGroup;
+                            FAssertLF( idxSubGroup != tree->getNbCellGroupAtLevel(idxLevel+1) );
+                            FAssertLF( (tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex()>>3) == parentStartingIdx );
+                        }
+                        // Copy at max 8 groups
+                        int nbSubCellGroups = 0;
+                        task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                        nbSubCellGroups += 1;
+                        while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((parentEndingIdx<<3)+7)
+                              && (++idxSubGroup) != tree->getNbCellGroupAtLevel(idxLevel+1)
+                              && tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex() <= (parentEndingIdx<<3)+7 ){
+                            task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                            nbSubCellGroups += 1;
+                            FAssertLF( nbSubCellGroups <= 9 );
+                        }
+
+                        // put the right codelet
+                        task->cl = &l2l_cl[nbSubCellGroups-1];
+                        // put args values
+                        char *arg_buffer;
+                        size_t arg_buffer_size;
+                        starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                                 STARPU_VALUE, &thisptr, sizeof(ThisClass*),
+                                                 STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
+                                                 STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                 0);
+                        task->cl_arg = arg_buffer;
+                        task->cl_arg_size = arg_buffer_size;
+                        FAssertLF(starpu_task_submit(task) == 0);
+                    }
                 }
             }
             /////////////////////////////////////////////////////////////
