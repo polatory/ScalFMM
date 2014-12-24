@@ -21,6 +21,7 @@
 
 extern "C"{
 #include <starpu.h>
+#include <starpu_mpi.h>
 }
 
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
@@ -80,6 +81,7 @@ public:
         FAssertLF(starpu_conf_init(&conf) == 0);
         conf.ncpus = MaxThreads;
         FAssertLF(starpu_init(&conf) == 0);
+        FAssertLF(starpu_mpi_init ( 0, 0, 0 ) == 0);
         starpu_pause();
 
         MaxThreads = starpu_worker_get_count();//starpu_cpu_worker_get_count();
@@ -102,9 +104,11 @@ public:
         delete[] kernels;
 
         cleanHandle();
+        cleanHandleMpi();
         delete[] handles;
 
         starpu_resume();
+        starpu_mpi_shutdown();
         starpu_shutdown();
     }
 
@@ -297,6 +301,8 @@ protected:
                 else{
                     myBlocksAtLevel[idxGroup].leavesBufferSize = 0;
                 }
+                std::cout << "level " << idxLevel << " group " << idxGroup << " size " <<
+                             myBlocksAtLevel[idxGroup].bufferSize << "\n"; // TODO remove me
             }
             // Exchange with all other
             FMpi::Assert(MPI_Allgatherv(myBlocksAtLevel.data(), int(myBlocksAtLevel.size()*sizeof(BlockDescriptor)), MPI_BYTE,
@@ -430,16 +436,16 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
-                                #pragma omp critical(CreateM2LRemotes)
-                                {
-                                    if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
-                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
-                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
-                                        remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
-                                        starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
-                                                                      (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptr, nbBytesInBlock);
-                                    }
-                                }
+//                                #pragma omp critical(CreateM2LRemotes)
+//                                {
+//                                    if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
+//                                        const int nbBytesInBlock = processesBlockInfos[idxLevel][idxOtherGroup].leavesBufferSize;
+//                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+//                                        remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
+//                                        starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
+//                                                                      (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptr, nbBytesInBlock);
+//                                    }
+//                                }
                             }
 
                             externalInteractions->emplace_back();
@@ -527,16 +533,16 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
-                                #pragma omp critical(CreateM2LRemotes)
-                                {
-                                    if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
-                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
-                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
-                                        remoteParticleGroupss[idxOtherGroup].ptr = memoryBlock;
-                                        starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handle, 0,
-                                                                      (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptr, nbBytesInBlock);
-                                    }
-                                }
+//                                #pragma omp critical(CreateM2LRemotes)
+//                                {
+//                                    if(remoteParticleGroupss[idxOtherGroup].ptr == nullptr){
+//                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
+//                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+//                                        remoteParticleGroupss[idxOtherGroup].ptr = memoryBlock;
+//                                        starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handle, 0,
+//                                                                      (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptr, nbBytesInBlock);
+//                                    }
+//                                }
                             }
 
                             externalInteractions->emplace_back();
@@ -555,6 +561,28 @@ protected:
             }
         }
     }
+
+    void cleanHandleMpi(){
+        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+            for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
+                if(remoteCellGroups[idxLevel][idxHandle].ptr){
+                    starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handle);
+                    delete[] remoteCellGroups[idxLevel][idxHandle].ptr;
+                }
+            }
+            remoteCellGroups[idxLevel].clear();
+        }
+        {
+            for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
+                if(remoteParticleGroupss[idxHandle].ptr){
+                    starpu_data_unregister(remoteParticleGroupss[idxHandle].handle);
+                    delete[] remoteParticleGroupss[idxHandle].ptr;
+                }
+            }
+            remoteParticleGroupss.clear();
+        }
+    }
+
     ////////////////////////////////////////////////////////////////////////////
 
     /** Reset the handles array and create new ones to define
@@ -568,7 +596,8 @@ protected:
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte()); // TODO
+                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
+                                              (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte()); // TODO
             }
         }
         {
@@ -576,7 +605,8 @@ protected:
             handles[idxLevel].resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0, (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte()); // TODO
+                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
+                                              (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte()); // TODO
             }
         }
     }
@@ -851,6 +881,66 @@ protected:
                 task->cl_arg_size = arg_buffer_size;
                 FAssertLF(starpu_task_submit(task) == 0);
             }
+
+            // Manage the external operations
+            // Find what to recv
+            if(tree->getNbCellGroupAtLevel(idxLevel)){
+                // Take last block at this level
+                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, tree->getNbCellGroupAtLevel(idxLevel)-1);
+                // Take the last cell index of the last block
+                const MortonIndex myLastIdx = currentCells->getEndingIndex()-1;
+                // Find the descriptor of the first block that belong to someone else at lower level
+                const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel+1] + tree->getNbCellGroupAtLevel(idxLevel+1);
+                FAssertLF(processesBlockInfos[idxLevel+1][firstOtherBlock-1].owner == comm.processId());
+                // Iterate while the block has our cell has parent
+                int idxBlockToRecv = 0;
+                while(firstOtherBlock + idxBlockToRecv < int(processesBlockInfos[idxLevel+1].size()) &&
+                      myLastIdx == (processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex >> 3)){
+
+                    if(remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptr == nullptr){
+                        const int nbBytesInBlock = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSize;
+                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                        remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptr = memoryBlock;
+                        starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handle, 0,
+                                                      (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptr, nbBytesInBlock);
+                    }
+
+                    starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handle,
+                                                processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
+                                                idxLevel*processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex,
+                                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
+
+
+                    idxBlockToRecv += 1;
+                }
+            }
+            // Find what to send
+            if(tree->getNbCellGroupAtLevel(idxLevel+1)
+                    && nbBlocksBeforeMinPerLevel[idxLevel] != 0){
+                // Take the first lower block
+                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel+1, 0);
+                // Take its first index
+                const MortonIndex myFirstChildIdx = currentCells->getStartingIndex();
+                const MortonIndex missingParentIdx = (myFirstChildIdx>>3);
+                // If no parent or the first parent is not the good one
+                if(tree->getNbCellGroupAtLevel(idxLevel) == 0
+                        || tree->getCellGroup(idxLevel, 0)->getStartingIndex() != missingParentIdx){
+                    // Look if the parent is owned by another block
+                    const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel]-1;
+                    FAssertLF(processesBlockInfos[idxLevel][firstOtherBlock].lastIndex-1 == missingParentIdx);
+                    const int dest = processesBlockInfos[idxLevel][firstOtherBlock].owner;
+                    int lowerIdxToSend = 0;
+                    while(lowerIdxToSend != tree->getNbCellGroupAtLevel(idxLevel+1)
+                          && missingParentIdx == (tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex()>>3)){
+
+                        starpu_mpi_isend_detached( handles[idxLevel+1][lowerIdxToSend], dest,
+                                idxLevel*tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(),
+                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                        lowerIdxToSend += 1;
+                    }
+
+                }
+            }
         }
         FLOG( FLog::Controller << "\t\t upwardPass in " << timer.tacAndElapsed() << "s\n" );
     }
@@ -881,8 +971,11 @@ protected:
     void upwardPassPerform(CellContainerClass*const currentCells,
                            CellContainerClass* subCellGroups[9],
                             const int nbSubCellGroups, const int idxLevel){
-        const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-        const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
+        FAssertLF(nbSubCellGroups != 0);
+        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
+                                              subCellGroups[0]->getStartingIndex());
+        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
+                                              subCellGroups[nbSubCellGroups-1]->getEndingIndex());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
 
@@ -1113,8 +1206,11 @@ protected:
     void downardPassPerform(CellContainerClass*const currentCells,
                             CellContainerClass* subCellGroups[9],
                              const int nbSubCellGroups, const int idxLevel){
-        const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-        const MortonIndex blockEndIdx = currentCells->getEndingIndex();
+        FAssertLF(nbSubCellGroups != 0);
+        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
+                                              subCellGroups[0]->getStartingIndex());
+        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
+                                              subCellGroups[nbSubCellGroups-1]->getEndingIndex());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
 
