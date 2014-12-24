@@ -301,8 +301,6 @@ protected:
                 else{
                     myBlocksAtLevel[idxGroup].leavesBufferSize = 0;
                 }
-                std::cout << "level " << idxLevel << " group " << idxGroup << " size " <<
-                             myBlocksAtLevel[idxGroup].bufferSize << "\n"; // TODO remove me
             }
             // Exchange with all other
             FMpi::Assert(MPI_Allgatherv(myBlocksAtLevel.data(), int(myBlocksAtLevel.size()*sizeof(BlockDescriptor)), MPI_BYTE,
@@ -323,41 +321,6 @@ protected:
         // During the M2M (which is the same for the L2L)
         // During the M2L and during the P2P
         // I need to insert the task that read my data or that write the data I need.
-        for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
-            // Find what to recv
-            if(tree->getNbCellGroupAtLevel(idxLevel)){
-                // Take last block at this level
-                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, tree->getNbCellGroupAtLevel(idxLevel)-1);
-                // Take the last cell index of the last block
-                const MortonIndex myLastIdx = currentCells->getEndingIndex()-1;
-                // Find the descriptor of the first block that belong to someone else at lower level
-                const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel+1] + tree->getNbCellGroupAtLevel(idxLevel+1);
-                FAssertLF(processesBlockInfos[idxLevel+1][firstOtherBlock-1].owner == comm.processId());
-                // Iterate while the block has our cell has parent
-                int idxBlockToRecv = 0;
-                while(firstOtherBlock + idxBlockToRecv < int(processesBlockInfos[idxLevel+1].size()) &&
-                      myLastIdx == (processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex >> 3)){
-                    std::cout << "Need to recv One block from " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << "\n";
-                    idxBlockToRecv += 1;
-                }
-            }
-            // Find what to send
-            if(tree->getNbCellGroupAtLevel(idxLevel+1)
-                    && nbBlocksBeforeMinPerLevel[idxLevel] != 0){
-                // Take the first lower block
-                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel+1, 0);
-                // Take its first index
-                const MortonIndex myFirstChildIdx = currentCells->getStartingIndex();
-                // If no parent or the first parent is not the good one
-                if(tree->getNbCellGroupAtLevel(idxLevel) == 0
-                        || tree->getCellGroup(idxLevel, 0)->getStartingIndex()
-                             != (myFirstChildIdx>>3)){
-                    // Look if the parent is owned by another block
-                    const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel]-1;
-                    std::cout << "Send to " << processesBlockInfos[idxLevel][firstOtherBlock].owner << "\n";
-                }
-            }
-        }
         // M2L
         externalInteractionsAllLevelMpi.resize(tree->getHeight());
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
@@ -882,6 +845,9 @@ protected:
                 FAssertLF(starpu_task_submit(task) == 0);
             }
 
+            /////////////////////////////////////////////////////////////
+            // Exchange for mpi
+            /////////////////////////////////////////////////////////////
             // Manage the external operations
             // Find what to recv
             if(tree->getNbCellGroupAtLevel(idxLevel)){
@@ -904,6 +870,9 @@ protected:
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handle, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptr, nbBytesInBlock);
                     }
+
+                    FLOG(FLog::Controller << "[SMpi] Post a recv during M2M for Idx " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex <<
+                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << "\n");
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handle,
                                                 processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
@@ -933,6 +902,9 @@ protected:
                     while(lowerIdxToSend != tree->getNbCellGroupAtLevel(idxLevel+1)
                           && missingParentIdx == (tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex()>>3)){
 
+                        FLOG(FLog::Controller << "[SMpi] Post a send during M2M for Idx " << tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex() <<
+                             " and dest is " << dest << "\n");
+
                         starpu_mpi_isend_detached( handles[idxLevel+1][lowerIdxToSend], dest,
                                 idxLevel*tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
@@ -941,6 +913,7 @@ protected:
 
                 }
             }
+            /////////////////////////////////////////////////////////////
         }
         FLOG( FLog::Controller << "\t\t upwardPass in " << timer.tacAndElapsed() << "s\n" );
     }
@@ -1134,6 +1107,78 @@ protected:
     void downardPass(){
         FLOG( FTic timer; );
         for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
+            /////////////////////////////////////////////////////////////
+            // Exchange for MPI
+            /////////////////////////////////////////////////////////////
+            // Manage the external operations
+            // Find what to recv
+            if(tree->getNbCellGroupAtLevel(idxLevel)){
+                // Take last block at this level
+                const int idxLastBlock = tree->getNbCellGroupAtLevel(idxLevel)-1;
+                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxLastBlock);
+                // Take the last cell index of the last block
+                const MortonIndex myLastIdx = currentCells->getEndingIndex()-1;
+                // Find the descriptor of the first block that belong to someone else at lower level
+                const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel+1] + tree->getNbCellGroupAtLevel(idxLevel+1);
+                FAssertLF(processesBlockInfos[idxLevel+1][firstOtherBlock-1].owner == comm.processId());
+                // Iterate while the block has our cell has parent
+                int idxBlockToSend = 0;
+                int lastProcSend   = 0;
+                while(firstOtherBlock + idxBlockToSend < int(processesBlockInfos[idxLevel+1].size()) &&
+                      myLastIdx == (processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].firstIndex >> 3)){
+
+                    if(lastProcSend != processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner){
+
+                        FLOG(FLog::Controller << "[SMpi] Post a send during L2L for Idx " << tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex() <<
+                             " and dest is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner << "\n");
+
+                        starpu_mpi_isend_detached( handles[idxLevel][idxLastBlock],
+                                                   processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
+                                                   idxLevel*tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(),
+                                                   comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                        lastProcSend = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner;
+                    }
+                    idxBlockToSend += 1;
+                }
+            }
+            // Find what to send
+            if(tree->getNbCellGroupAtLevel(idxLevel+1)
+                    && nbBlocksBeforeMinPerLevel[idxLevel] != 0){
+                // Take the first lower block
+                const CellContainerClass* currentCells = tree->getCellGroup(idxLevel+1, 0);
+                // Take its first index
+                const MortonIndex myFirstChildIdx = currentCells->getStartingIndex();
+                const MortonIndex missingParentIdx = (myFirstChildIdx>>3);
+                // If no parent or the first parent is not the good one
+                if(tree->getNbCellGroupAtLevel(idxLevel) == 0
+                        || tree->getCellGroup(idxLevel, 0)->getStartingIndex() != missingParentIdx){
+
+                    // Look if the parent is owned by another block
+                    const int firstOtherBlock = nbBlocksBeforeMinPerLevel[idxLevel]-1;
+                    FAssertLF(processesBlockInfos[idxLevel][firstOtherBlock].lastIndex-1 == missingParentIdx);
+
+                    if(remoteCellGroups[idxLevel][firstOtherBlock].ptr == nullptr){
+                        const int nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSize;
+                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
+                        remoteCellGroups[idxLevel][firstOtherBlock].ptr = memoryBlock;
+                        starpu_variable_data_register(&remoteCellGroups[idxLevel][firstOtherBlock].handle, 0,
+                                                      (uintptr_t)remoteCellGroups[idxLevel][firstOtherBlock].ptr, nbBytesInBlock);
+                    }
+
+                    FLOG(FLog::Controller << "[SMpi] Post a recv during L2L for Idx " << processesBlockInfos[idxLevel][firstOtherBlock].firstIndex <<
+                         " and owner " << processesBlockInfos[idxLevel][firstOtherBlock].owner << "\n");
+
+                    starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel][firstOtherBlock].handle,
+                                                processesBlockInfos[idxLevel][firstOtherBlock].owner,
+                                                idxLevel*processesBlockInfos[idxLevel][firstOtherBlock].firstIndex,
+                                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
+
+                }
+            }
+            /////////////////////////////////////////////////////////////
+
+
+
             int idxSubGroup = 0;
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel)
