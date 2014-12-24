@@ -65,9 +65,11 @@ protected:
 
     starpu_codelet m2l_cl_in;
     starpu_codelet m2l_cl_inout;
+    starpu_codelet m2l_cl_inout_mpi;
 
     starpu_codelet p2p_cl_in;
     starpu_codelet p2p_cl_inout;
+    starpu_codelet p2p_cl_inout_mpi;
 
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
@@ -93,6 +95,7 @@ public:
         }
 
         initCodelet();
+        initCodeletMpi();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUMpiAlgorithm (Max Thread " << MaxThreads << ")\n");
     }
@@ -125,12 +128,14 @@ public:
         starpu_resume();
 
         if( operationsToProceed & FFmmP2P ) directPass();
+        //if( operationsToProceed & FFmmP2P ) directPassMpi();
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
         if(operationsToProceed & FFmmM2M) upwardPass();
 
         if(operationsToProceed & FFmmM2L) transferPass();
+        //if(operationsToProceed & FFmmM2L) transferPassMpi();
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
@@ -220,6 +225,23 @@ protected:
     }
 
     ////////////////////////////////////////////////////////////////////////////
+
+    void initCodeletMpi(){
+        memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));
+        p2p_cl_inout_mpi.where = STARPU_CPU;
+        p2p_cl_inout_mpi.cpu_funcs[0] = directInoutPassCallbackMpi;
+        p2p_cl_inout_mpi.nbuffers = 2;
+        p2p_cl_inout_mpi.modes[0] = STARPU_RW;
+        p2p_cl_inout_mpi.modes[1] = STARPU_R;
+
+        memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));
+        m2l_cl_inout_mpi.where = STARPU_CPU;
+        m2l_cl_inout_mpi.cpu_funcs[0] = transferInoutPassCallbackMpi;
+        m2l_cl_inout_mpi.nbuffers = 2;
+        m2l_cl_inout_mpi.modes[0] = STARPU_RW;
+        m2l_cl_inout_mpi.modes[1] = STARPU_R;
+    }
+
     std::vector<std::pair<MortonIndex,MortonIndex>> processesIntervalPerLevels;
     struct BlockDescriptor{
         MortonIndex firstIndex;
@@ -402,7 +424,7 @@ protected:
                                 #pragma omp critical(CreateM2LRemotes)
                                 {
                                     if(remoteCellGroups[idxLevel][idxOtherGroup].ptr == nullptr){
-                                        const int nbBytesInBlock = processesBlockInfos[idxLevel][idxOtherGroup].leavesBufferSize;
+                                        const int nbBytesInBlock = processesBlockInfos[idxLevel][idxOtherGroup].bufferSize;
                                         unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::Allocate32BAligned(nbBytesInBlock);
                                         remoteCellGroups[idxLevel][idxOtherGroup].ptr = memoryBlock;
                                         starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handle, 0,
@@ -1001,6 +1023,68 @@ protected:
         }
     }
 
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    /// Transfer Pass Mpi
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    void transferPassMpi(){
+        FLOG( FTic timer; );
+        for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
+            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevelMpi[idxLevel][idxGroup].size()) ; ++idxInteraction){
+                    const int interactionid = externalInteractionsAllLevelMpi[idxLevel][idxGroup][idxInteraction].otherBlockId;
+                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevelMpi[idxLevel][idxGroup][idxInteraction].interactions;
+
+                    starpu_insert_task(&m2l_cl_inout_mpi,
+                            STARPU_VALUE, &thisptr, sizeof(ThisClass*),
+                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                            STARPU_RW, handles[idxLevel][idxGroup],
+                            STARPU_R, remoteCellGroups[idxLevel][interactionid].handle,
+                            0);
+                }
+            }
+        }
+        FLOG( FLog::Controller << "\t\t transferPassMpi in " << timer.tacAndElapsed() << "s\n" );
+    }
+
+    static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
+        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+
+        ThisClass* worker = nullptr;
+        int idxLevel = 0;
+        const std::vector<OutOfBlockInteraction>* outsideInteractions;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
+
+        worker->transferInoutPassPerformMpi(currentCells, externalCells, idxLevel, outsideInteractions);
+    }
+
+
+    void transferInoutPassPerformMpi(CellContainerClass*const currentCells,
+                                  CellContainerClass*const cellsOther,
+                                  const int idxLevel,
+                                  const std::vector<OutOfBlockInteraction>* outsideInteractions){
+        KernelClass*const kernel = kernels[starpu_worker_get_id()];
+
+        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+            CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
+            if(interCell){
+                FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
+                FAssertLF(cell);
+                FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+
+                const CellClass* interactions[343];
+                memset(interactions, 0, 343*sizeof(CellClass*));
+                interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
+                const int counter = 1;
+                kernel->M2L( cell , interactions, counter, idxLevel);
+            }
+        }
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////
     /// Transfer Pass
     /////////////////////////////////////////////////////////////////////////////////////
@@ -1345,6 +1429,59 @@ protected:
                 }
 
                 kernel->L2L(cell, child, idxLevel);
+            }
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    /// Direct Pass MPI
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    void directPassMpi(){
+        FLOG( FTic timer; );
+
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevelMpi[idxGroup].size()) ; ++idxInteraction){
+                const int interactionid = externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].otherBlockId;
+                const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].interactions;
+                starpu_insert_task(&p2p_cl_inout_mpi,
+                        STARPU_VALUE, &thisptr, sizeof(ThisClass*),
+                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                        STARPU_RW, handles[tree->getHeight()][idxGroup],
+                        STARPU_R, remoteParticleGroupss[interactionid].handle,
+                        0);
+            }
+        }
+
+        FLOG( FLog::Controller << "\t\t directPass in MPI " << timer.tacAndElapsed() << "s\n" );
+    }
+
+    static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+
+        ThisClass* worker = nullptr;
+        const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
+        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
+
+        worker->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
+    }
+
+    void directInoutPassPerformMpi(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
+                                const std::vector<OutOfBlockInteraction>* outsideInteractions){
+        KernelClass*const kernel = kernels[starpu_worker_get_id()];
+        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
+            if(interParticles.isAttachedToSomething()){
+                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
+                FAssertLF(particles.isAttachedToSomething());
+                ParticleContainerClass* interactions[27];
+                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
+                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
+                const int counter = 1;
+                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1), &particles, &particles , interactions, counter);
             }
         }
     }
