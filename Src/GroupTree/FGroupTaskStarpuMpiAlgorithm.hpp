@@ -1183,15 +1183,17 @@ protected:
     }
 
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]));
-        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
         ThisClass* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->transferInoutPassPerformMpi(currentCells, externalCells, idxLevel, outsideInteractions);
+        worker->transferInoutPassPerformMpi(&currentCells, &externalCells, idxLevel, outsideInteractions);
     }
 
 
@@ -1305,15 +1307,17 @@ protected:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass* currentCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]));
-        CellContainerClass* externalCells = reinterpret_cast<CellContainerClass*>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
         ThisClass* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->transferInoutPassPerform(currentCells, externalCells, idxLevel, outsideInteractions);
+        worker->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions);
     }
 
 
