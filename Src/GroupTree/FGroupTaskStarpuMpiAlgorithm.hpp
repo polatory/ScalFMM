@@ -567,6 +567,9 @@ protected:
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptr){
+                    FLOG(FLog::Controller << "[SMpi] Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
+                         " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << "\n");
+
                     starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handle,
                                                 processesBlockInfos[idxLevel][idxHandle].owner,
                                                 idxLevel*processesBlockInfos[idxLevel][idxHandle].firstIndex,
@@ -580,6 +583,9 @@ protected:
         {
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptr){
+                    FLOG(FLog::Controller << "[SMpi] Post a recv during P2P for Idx " << processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex <<
+                         " and dest is " << processesBlockInfos[tree->getHeight()-1][idxHandle].owner << "\n");
+
                     starpu_mpi_irecv_detached( remoteParticleGroupss[idxHandle].handle,
                                                 processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
                                                 (tree->getHeight())*processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex,
@@ -670,7 +676,7 @@ protected:
                 FAssertLF(0 <= localId);
                 FAssertLF(localId < tree->getNbCellGroupAtLevel(sd.level));
 
-                FLOG(FLog::Controller << "[SMpi] Post a send during P2P for Idx " << tree->getCellGroup(sd.level, localId)->getStartingIndex() <<
+                FLOG(FLog::Controller << "[SMpi] Post a send during M2L for Idx " << tree->getCellGroup(sd.level, localId)->getStartingIndex() <<
                      " and dest is " << sd.dest << "\n");
 
                 starpu_mpi_isend_detached( handles[sd.level][localId], sd.dest,
