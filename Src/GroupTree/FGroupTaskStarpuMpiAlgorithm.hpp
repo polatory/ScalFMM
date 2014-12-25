@@ -124,6 +124,7 @@ public:
         buildHandles();
 
         buildRemoteInteractionsAndHandles();
+        postRecvAllocatedBlocks();
 
         starpu_resume();
 
@@ -276,6 +277,7 @@ protected:
     void buildRemoteInteractionsAndHandles(){
         // We need to have information about all other blocks
         std::unique_ptr<int[]> nbBlocksPerLevel(new int[tree->getHeight()]);
+        nbBlocksPerLevel[0] = 0;
         for(int idxLevel = 1 ; idxLevel < tree->getHeight() ; ++idxLevel){
             nbBlocksPerLevel[idxLevel] = tree->getNbCellGroupAtLevel(idxLevel);
         }
@@ -613,22 +615,29 @@ protected:
                 std::unique_ptr<int[]> displs(new int[comm.processCount()]);
                 displs[0] = 0;
                 for(int idxProc = 1 ; idxProc < comm.processCount() ; ++idxProc){
-                    displs[idxProc] = displs[idxProc-1] + nbBlocksToRecvFromEach[idxProc-1];
+                    displs[idxProc] = displs[idxProc-1] + nbBlocksToSendToEach[idxProc-1];
+                }
+                toSend.resize(displs[comm.processCount()-1] + nbBlocksToSendToEach[comm.processCount()-1]);
+
+                // We work in bytes
+                for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
+                    nbBlocksToSendToEach[idxProc] *= sizeof(MpiDependency);
+                    displs[idxProc] *= sizeof(MpiDependency);
                 }
 
-                toSend.resize(displs[comm.processCount()-1] + nbBlocksToRecvFromEach[comm.processCount()-1]);
-
-                FMpi::Assert(MPI_Gatherv( 0, 0, MPI_BYTE,
-                                 toSend.data(), toSend.size()*sizeof(MpiDependency),
+                FMpi::Assert(MPI_Gatherv( nullptr, 0, MPI_BYTE,
+                                 toSend.data(),
                                  nbBlocksToSendToEach.get(), displs.get(),
                                  MPI_BYTE, idxProc, comm.getComm()), __LINE__);
             }
             else{
+                std::cout << "nb sent " << nbBlocksToRecvFromEach[idxProc] << "\n";
                 FMpi::Assert(MPI_Gather(&nbBlocksToRecvFromEach[idxProc], 1,
                                  MPI_INT, 0, 0, MPI_INT, idxProc, comm.getComm() ), __LINE__);
                 FMpi::Assert(MPI_Gatherv(
-                                 toRecv[offset], nbBlocksToRecvFromEach[idxProc]*sizeof(MpiDependency), MPI_BYTE,
+                                 &toRecv[offset], int(nbBlocksToRecvFromEach[idxProc]*sizeof(MpiDependency)), MPI_BYTE,
                                  0, 0, 0, MPI_BYTE, idxProc, comm.getComm() ), __LINE__);
+
                 offset += nbBlocksToRecvFromEach[idxProc];
             }
         }
@@ -638,7 +647,8 @@ protected:
         for(int idxSd = 0 ; idxSd < int(toSend.size()) ; ++idxSd){
             const MpiDependency sd = toSend[idxSd];
             if(sd.level == tree->getHeight()){
-                const int localId = sd.globalBlockId - nbBlocksPerLevelAll[tree->getHeight()];
+                const int localId = sd.globalBlockId - nbBlocksBeforeMinPerLevel[tree->getHeight()-1];
+                FAssertLF(sd.src == comm.processId());
                 FAssertLF(0 <= localId);
                 FAssertLF(localId < tree->getNbParticleGroup());
 
@@ -656,7 +666,8 @@ protected:
         for(int idxSd = 0 ; idxSd < int(toSend.size()) ; ++idxSd){
             const MpiDependency sd = toSend[idxSd];
             if(sd.level != tree->getHeight()){
-                const int localId = sd.globalBlockId - nbBlocksPerLevelAll[sd.level];
+                const int localId = sd.globalBlockId - nbBlocksBeforeMinPerLevel[sd.level];
+                FAssertLF(sd.src == comm.processId());
                 FAssertLF(0 <= localId);
                 FAssertLF(localId < tree->getNbCellGroupAtLevel(sd.level));
 
