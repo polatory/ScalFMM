@@ -81,6 +81,7 @@ int main(int argc, char* argv[]){
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
+    const int totalNbParticles = (NbParticles*mpiComm.global().processCount());
 
     // Load the particles
     FRandomLoader loader(NbParticles, 1.0, FPoint(0,0,0), mpiComm.global().processId());
@@ -147,6 +148,16 @@ int main(int argc, char* argv[]){
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
     groupalgo.execute();
+
+    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
+        const int nbPartsInLeaf = leaf->getNbParticles();
+        const long long int* dataDown = leaf->getDataDown();
+        for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
+            if(dataDown[idxPart] != totalNbParticles-1){
+                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (NbParticles-1) << ") at index " << cell->getMortonIndex() << "\n";
+            }
+        }
+    });
 
     return 0;
 }
