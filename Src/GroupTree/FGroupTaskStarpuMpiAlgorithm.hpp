@@ -131,7 +131,7 @@ public:
         if( operationsToProceed & FFmmP2P ) directPass();
         if( operationsToProceed & FFmmP2P ) {
             insertParticlesSend();
-            //directPassMpi();
+            directPassMpi();
         }
 
         if(operationsToProceed & FFmmP2M) bottomPass();
