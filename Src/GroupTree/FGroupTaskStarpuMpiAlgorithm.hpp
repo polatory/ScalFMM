@@ -140,7 +140,7 @@ public:
         if(operationsToProceed & FFmmM2L) insertCellsSend();
 
         if(operationsToProceed & FFmmM2L) transferPass();
-        //if(operationsToProceed & FFmmM2L) transferPassMpi();
+        if(operationsToProceed & FFmmM2L) transferPassMpi();
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
@@ -631,7 +631,6 @@ protected:
                                  MPI_BYTE, idxProc, comm.getComm()), __LINE__);
             }
             else{
-                std::cout << "nb sent " << nbBlocksToRecvFromEach[idxProc] << "\n";
                 FMpi::Assert(MPI_Gather(&nbBlocksToRecvFromEach[idxProc], 1,
                                  MPI_INT, 0, 0, MPI_INT, idxProc, comm.getComm() ), __LINE__);
                 FMpi::Assert(MPI_Gatherv(
