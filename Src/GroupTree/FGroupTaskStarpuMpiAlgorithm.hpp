@@ -29,6 +29,13 @@ class FGroupTaskStarPUMpiAlgorithm {
 protected:
     typedef FGroupTaskStarPUMpiAlgorithm<OctreeClass, CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
 
+    int getTag(const int inLevel, const MortonIndex mindex) const{
+        int shift = 0;
+        int height = tree->getHeight();
+        while(height) { shift += 1; height >>= 1; }
+        return (mindex<<shift) + inLevel;
+    }
+
     const FMpi::FComm& comm;
 
     struct OutOfBlockInteraction{
@@ -572,7 +579,7 @@ protected:
 
                     starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handle,
                                                 processesBlockInfos[idxLevel][idxHandle].owner,
-                                                idxLevel*processesBlockInfos[idxLevel][idxHandle].firstIndex,
+                                                getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex),
                                                 comm.getComm(), 0, 0 );
 
                     toRecv.push_back({processesBlockInfos[idxLevel][idxHandle].owner,
@@ -588,7 +595,7 @@ protected:
 
                     starpu_mpi_irecv_detached( remoteParticleGroupss[idxHandle].handle,
                                                 processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
-                                                (tree->getHeight())*processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex,
+                                                getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex),
                                                 comm.getComm(), 0, 0 );
 
                     toRecv.push_back({processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
@@ -661,7 +668,7 @@ protected:
                      " and dest is " << sd.dest << "\n");
 
                 starpu_mpi_isend_detached( handles[tree->getHeight()][localId], sd.dest,
-                        tree->getHeight()*tree->getParticleGroup(localId)->getStartingIndex(),
+                        getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex()),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
         }
@@ -680,7 +687,7 @@ protected:
                      " and dest is " << sd.dest << "\n");
 
                 starpu_mpi_isend_detached( handles[sd.level][localId], sd.dest,
-                        sd.level*tree->getCellGroup(sd.level, localId)->getStartingIndex(),
+                        getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex()),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
         }
@@ -1037,7 +1044,7 @@ protected:
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handle,
                                                 processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                                                idxLevel*processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex,
+                                                getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex),
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
 
@@ -1094,7 +1101,7 @@ protected:
                              " and dest is " << dest << "\n");
 
                         starpu_mpi_isend_detached( handles[idxLevel+1][lowerIdxToSend], dest,
-                                idxLevel*tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(),
+                                getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex()),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         lowerIdxToSend += 1;
                     }
@@ -1388,7 +1395,7 @@ protected:
 
                         starpu_mpi_isend_detached( handles[idxLevel][idxLastBlock],
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
-                                                   idxLevel*tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(),
+                                                   getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex()),
                                                    comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         lastProcSend = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner;
                     }
@@ -1424,7 +1431,7 @@ protected:
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel][firstOtherBlock].handle,
                                                 processesBlockInfos[idxLevel][firstOtherBlock].owner,
-                                                idxLevel*processesBlockInfos[idxLevel][firstOtherBlock].firstIndex,
+                                                getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].firstIndex),
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
                     {
