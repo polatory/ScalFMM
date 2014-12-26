@@ -573,7 +573,7 @@ protected:
 
     void postRecvAllocatedBlocks(){
         std::vector<MpiDependency> toRecv;
-        FAssertLF(tree->getHeight() == int(remoteCellGroups[idxLevel].size()));
+        FAssertLF(tree->getHeight() == int(remoteCellGroups.size()));
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptr){
