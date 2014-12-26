@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
         const long long int* dataDown = leaf->getDataDown();
         for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
             if(dataDown[idxPart] != totalNbParticles-1){
-                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (NbParticles-1) << ") at index " << cell->getMortonIndex() << "\n";
+                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (totalNbParticles-1) << ") at index " << cell->getMortonIndex() << "\n";
             }
         }
     });
