@@ -135,11 +135,9 @@ public:
 
         starpu_resume();
 
+        if( operationsToProceed & FFmmP2P ) insertParticlesSend();
         if( operationsToProceed & FFmmP2P ) directPass();
-        if( operationsToProceed & FFmmP2P ) {
-            insertParticlesSend();
-            directPassMpi();
-        }
+        if( operationsToProceed & FFmmP2P ) directPassMpi();
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -282,6 +280,8 @@ protected:
     std::vector<RemoteHandle> remoteParticleGroupss;
 
     void buildRemoteInteractionsAndHandles(){
+        cleanHandleMpi();
+
         // We need to have information about all other blocks
         std::unique_ptr<int[]> nbBlocksPerLevel(new int[tree->getHeight()]);
         nbBlocksPerLevel[0] = 0;
@@ -357,6 +357,7 @@ protected:
         // During the M2L and during the P2P
         // I need to insert the task that read my data or that write the data I need.
         // M2L
+        externalInteractionsAllLevelMpi.clear();
         externalInteractionsAllLevelMpi.resize(tree->getHeight());
         for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
             // From this level there are no more blocks
@@ -467,6 +468,7 @@ protected:
             const MortonIndex myFirstIndex = tree->getParticleGroup(0)->getStartingIndex();
             const MortonIndex myLastIndex = tree->getParticleGroup(tree->getNbParticleGroup()-1)->getEndingIndex();
 
+            externalInteractionsLeafLevelMpi.clear();
             externalInteractionsLeafLevelMpi.resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 // Create the vector
@@ -571,6 +573,7 @@ protected:
 
     void postRecvAllocatedBlocks(){
         std::vector<MpiDependency> toRecv;
+        FAssertLF(tree->getHeight() == int(remoteCellGroups[idxLevel].size()));
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptr){
@@ -694,7 +697,7 @@ protected:
     }
 
     void cleanHandleMpi(){
-        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+        for(int idxLevel = 0 ; idxLevel < int(remoteCellGroups.size()) ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptr){
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handle);
