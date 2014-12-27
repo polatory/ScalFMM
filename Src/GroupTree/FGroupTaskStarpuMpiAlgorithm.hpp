@@ -1144,9 +1144,9 @@ protected:
                             const int nbSubCellGroups, const int idxLevel){
         FAssertLF(nbSubCellGroups != 0);
         const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex());
+                                              subCellGroups[0]->getStartingIndex()>>3);
         const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              subCellGroups[nbSubCellGroups-1]->getEndingIndex());
+                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
 
@@ -1558,9 +1558,9 @@ protected:
                              const int nbSubCellGroups, const int idxLevel){
         FAssertLF(nbSubCellGroups != 0);
         const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex());
+                                              subCellGroups[0]->getStartingIndex()>>3);
         const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              subCellGroups[nbSubCellGroups-1]->getEndingIndex());
+                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
 
