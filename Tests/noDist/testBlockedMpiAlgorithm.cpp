@@ -35,6 +35,7 @@
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
+#include "../../Src/Core/FFmmAlgorithm.hpp"
 
 int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
                       const FReal boxWidthAtLeafLevel, const int treeHeight) {
@@ -160,6 +161,50 @@ int main(int argc, char* argv[]){
             }
         }
     });
+
+
+    typedef FTestCell                   CellClass;
+    typedef FTestParticleContainer      ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+
+    // Usual octree
+    OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
+    for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+        tree.insert(myParticles[idxPart].position);
+    }
+
+    // Usual algorithm
+    KernelClass kernels;            // FTestKernels FBasicKernels
+    FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
+    algo.execute();
+
+    // Validate the result
+    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
+        const int nbPartsInLeaf = leaf->getNbParticles();
+        if(cell->getDataUp() != nbPartsInLeaf){
+            std::cout << "[P2M] Error a Cell has " << cell->getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
+        }
+    });
+
+    // Compare the results
+    groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
+        const CellClass* cell = tree.getCell(gcell->getMortonIndex(), level);
+        if(cell == nullptr){
+            std::cout << "[Empty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
+        }
+        else {
+            if(gcell->getDataUp() != cell->getDataUp()){
+                std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataUp() << " should be " << cell->getDataUp() << "\n";
+            }
+//            if(gcell->getDataDown() != cell->getDataDown()){
+//                std::cout << "[Down] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataDown() << " should be " << cell->getDataDown() << "\n";
+//            }
+        }
+    });
+
 
     return 0;
 }
