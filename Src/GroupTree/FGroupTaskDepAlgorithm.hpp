@@ -326,8 +326,9 @@ protected:
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
-                      && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (iterChildCells+1) != endChildCells
+                      && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                    (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
@@ -505,8 +506,9 @@ protected:
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
-                      && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (iterChildCells+1) != endChildCells
+                      && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                    (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
