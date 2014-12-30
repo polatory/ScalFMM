@@ -158,7 +158,8 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     FP2PParticleContainer<> myParticlesInContainer;
     for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
-        myParticlesInContainer.push(myParticles[idxPart].position);
+        myParticlesInContainer.push(myParticles[idxPart].position,
+                                    myParticles[idxPart].physicalValue);
     }
     GroupOctreeClass groupedTree(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &myParticlesInContainer, true, leftLimite);
@@ -185,9 +186,50 @@ int main(int argc, char* argv[]){
 
 
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
+        int offsetParticles = 0;
+        FReal*const allPhysicalValues = myParticlesInContainer.getPhysicalValues();
+        FReal*const allPosX = const_cast<FReal*>( myParticlesInContainer.getPositions()[0]);
+        FReal*const allPosY = const_cast<FReal*>( myParticlesInContainer.getPositions()[1]);
+        FReal*const allPosZ = const_cast<FReal*>( myParticlesInContainer.getPositions()[2]);
+
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* /*cellTarget*/, FP2PGroupParticleContainer<> * leafTarget){
+            const FReal*const physicalValues = leafTarget->getPhysicalValues();
+            const FReal*const posX = leafTarget->getPositions()[0];
+            const FReal*const posY = leafTarget->getPositions()[1];
+            const FReal*const posZ = leafTarget->getPositions()[2];
+            const int nbPartsInLeafTarget = leafTarget->getNbParticles();
+
+            for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+                allPhysicalValues[offsetParticles + idxPart] = physicalValues[idxPart];
+                allPosX[offsetParticles + idxPart] = posX[idxPart];
+                allPosY[offsetParticles + idxPart] = posY[idxPart];
+                allPosZ[offsetParticles + idxPart] = posZ[idxPart];
+            }
+
+            offsetParticles += nbPartsInLeafTarget;
+        });
+
+        FAssertLF(offsetParticles == myParticles.getSize());
+
+        FReal*const allDirectPotentials = myParticlesInContainer.getPotentials();
+        FReal*const allDirectforcesX = myParticlesInContainer.getForcesX();
+        FReal*const allDirectforcesY = myParticlesInContainer.getForcesY();
+        FReal*const allDirectforcesZ = myParticlesInContainer.getForcesZ();
+
+        for(int idxTgt = 0 ; idxTgt < offsetParticles ; ++idxTgt){
+            for(int idxMutual = idxTgt + 1 ; idxMutual < offsetParticles ; ++idxMutual){
+                FP2PR::MutualParticles(
+                    allPosX[idxTgt],allPosY[idxTgt],allPosZ[idxTgt], allPhysicalValues[idxTgt],
+                    &allDirectforcesX[idxTgt], &allDirectforcesY[idxTgt], &allDirectforcesZ[idxTgt], &allDirectPotentials[idxTgt],
+                    allPosX[idxMutual],allPosY[idxMutual],allPosZ[idxMutual], allPhysicalValues[idxMutual],
+                    &allDirectforcesX[idxMutual], &allDirectforcesY[idxMutual], &allDirectforcesZ[idxMutual], &allDirectPotentials[idxMutual]
+                );
+            }
+        }
+
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
-
+        offsetParticles = 0;
         groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* /*cellTarget*/, FP2PGroupParticleContainer<> * leafTarget){
             const FReal*const potentials = leafTarget->getPotentials();
             const FReal*const forcesX = leafTarget->getForcesX();
@@ -196,11 +238,13 @@ int main(int argc, char* argv[]){
             const int nbPartsInLeafTarget = leafTarget->getNbParticles();
 
             for(int idxTgt = 0 ; idxTgt < nbPartsInLeafTarget ; ++idxTgt){
-//                potentialDiff.add(allDirectPotentials[idxTgt + offsetParticles], potentials[idxTgt]);
-//                fx.add(allDirectforcesX[idxTgt + offsetParticles], forcesX[idxTgt]);
-//                fy.add(allDirectforcesY[idxTgt + offsetParticles], forcesY[idxTgt]);
-//                fz.add(allDirectforcesZ[idxTgt + offsetParticles], forcesZ[idxTgt]);
+                potentialDiff.add(allDirectPotentials[idxTgt + offsetParticles], potentials[idxTgt]);
+                fx.add(allDirectforcesX[idxTgt + offsetParticles], forcesX[idxTgt]);
+                fy.add(allDirectforcesY[idxTgt + offsetParticles], forcesY[idxTgt]);
+                fz.add(allDirectforcesZ[idxTgt + offsetParticles], forcesZ[idxTgt]);
             }
+
+            offsetParticles += nbPartsInLeafTarget;
         });
 
         std::cout << "Error : Potential " << potentialDiff << "\n";
