@@ -130,6 +130,8 @@ public:
         buildExternalInteractionVecs();
         buildHandles();
 
+        #pragma omp parallel
+        #pragma omp single
         buildRemoteInteractionsAndHandles();
         postRecvAllocatedBlocks();
 
