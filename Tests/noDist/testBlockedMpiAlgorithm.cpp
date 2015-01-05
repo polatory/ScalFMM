@@ -1,8 +1,8 @@
 
 // Keep in private GIT
 // @SCALFMM_PRIVATE
-// @SCALFMM_USE_MPI
-// @SCALFMM_USE_STARPU
+// @FUSE_MPI
+// @FUSE_STARPU
 
 #include "../../Src/Utils/FGlobal.hpp"
 #include "../../Src/Utils/FMpi.hpp"
@@ -170,41 +170,74 @@ int main(int argc, char* argv[]){
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
-    // Usual octree
-    OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
-    for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
-        tree.insert(myParticles[idxPart].position);
-    }
+//    {
+//        // Usual octree
+//        OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
+//        for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+//            tree.insert(myParticles[idxPart].position);
+//        }
 
-    // Usual algorithm
-    KernelClass kernels;            // FTestKernels FBasicKernels
-    FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
-    algo.execute();
+//        // Usual algorithm
+//        KernelClass kernels;            // FTestKernels FBasicKernels
+//        FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
+//        algo.execute();
 
-    // Validate the result
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
-        const int nbPartsInLeaf = leaf->getNbParticles();
-        if(cell->getDataUp() != nbPartsInLeaf){
-            std::cout << "[P2M] Error a Cell has " << cell->getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
-        }
-    });
-
-    // Compare the results
-    groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
-        const CellClass* cell = tree.getCell(gcell->getMortonIndex(), level);
-        if(cell == nullptr){
-            std::cout << "[Empty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
-        }
-        else {
-            if(gcell->getDataUp() != cell->getDataUp()){
-                std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataUp() << " should be " << cell->getDataUp() << "\n";
-            }
-//            if(gcell->getDataDown() != cell->getDataDown()){
-//                std::cout << "[Down] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataDown() << " should be " << cell->getDataDown() << "\n";
+//        // Validate the result
+//        groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
+//            const int nbPartsInLeaf = leaf->getNbParticles();
+//            if(cell->getDataUp() != nbPartsInLeaf){
+//                std::cout << "[P2M] Error a Cell has " << cell->getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
 //            }
-        }
-    });
+//        });
 
+//        // Compare the results
+//        groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
+//            const CellClass* cell = tree.getCell(gcell->getMortonIndex(), level);
+//            if(cell == nullptr){
+//                std::cout << "[Empty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
+//            }
+//            else {
+//                if(gcell->getDataUp() != cell->getDataUp()){
+//                    std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataUp() << " should be " << cell->getDataUp() << "\n";
+//                }
+//    //            if(gcell->getDataDown() != cell->getDataDown()){
+//    //                std::cout << "[Down] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataDown() << " should be " << cell->getDataDown() << "\n";
+//    //            }
+//            }
+//        });
+//    }
+    {
+        // Usual octree
+        OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
+        for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
+            FRandomLoader loaderAll(NbParticles, 1.0, FPoint(0,0,0), idxProc);
+            for(int idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
+                FPoint pos;
+                loaderAll.fillParticle(&pos);
+                tree.insert(pos);
+            }
+        }
+        // Usual algorithm
+        KernelClass kernels;            // FTestKernels FBasicKernels
+        FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
+        algo.execute();
+
+        // Compare the results
+        groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
+            const CellClass* cell = tree.getCell(gcell->getMortonIndex(), level);
+            if(cell == nullptr){
+                std::cout << "[Empty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
+            }
+            else {
+                if(gcell->getDataUp() != cell->getDataUp()){
+                    std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataUp() << " should be " << cell->getDataUp() << "\n";
+                }
+                if(gcell->getDataDown() != cell->getDataDown()){
+                    std::cout << "[Down] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataDown() << " should be " << cell->getDataDown() << "\n";
+                }
+            }
+        });
+    }
 
     return 0;
 }

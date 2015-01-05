@@ -3,8 +3,8 @@
 // ================
 // Keep in private GIT
 // @SCALFMM_PRIVATE
-// @SCALFMM_USE_MPI
-// @SCALFMM_USE_STARPU
+// @FUSE_MPI
+// @FUSE_STARPU
 
 
 #include "../../Src/Utils/FGlobal.hpp"
@@ -39,7 +39,7 @@
 #include "../../Src/Components/FTestKernels.hpp"
 #include "../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
-#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 #include "../../Src/GroupTree/FGroupTaskStarpuMpiAlgorithm.hpp"
 
@@ -186,71 +186,111 @@ int main(int argc, char* argv[]){
 
 
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
-        int offsetParticles = 0;
-        FReal*const allPhysicalValues = myParticlesInContainer.getPhysicalValues();
-        FReal*const allPosX = const_cast<FReal*>( myParticlesInContainer.getPositions()[0]);
-        FReal*const allPosY = const_cast<FReal*>( myParticlesInContainer.getPositions()[1]);
-        FReal*const allPosZ = const_cast<FReal*>( myParticlesInContainer.getPositions()[2]);
+        typedef FP2PParticleContainer<> ContainerClass;
+        typedef FSimpleLeaf< ContainerClass >  LeafClass;
+        typedef FInterpMatrixKernelR MatrixKernelClass;
+        typedef FChebCell<ORDER> CellClass;
+        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* /*cellTarget*/, FP2PGroupParticleContainer<> * leafTarget){
-            const FReal*const physicalValues = leafTarget->getPhysicalValues();
-            const FReal*const posX = leafTarget->getPositions()[0];
-            const FReal*const posY = leafTarget->getPositions()[1];
-            const FReal*const posZ = leafTarget->getPositions()[2];
-            const int nbPartsInLeafTarget = leafTarget->getNbParticles();
+        const FReal epsi = 1E-10;
 
-            for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
-                allPhysicalValues[offsetParticles + idxPart] = physicalValues[idxPart];
-                allPosX[offsetParticles + idxPart] = posX[idxPart];
-                allPosY[offsetParticles + idxPart] = posY[idxPart];
-                allPosZ[offsetParticles + idxPart] = posZ[idxPart];
-            }
+        OctreeClass treeCheck(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 
-            offsetParticles += nbPartsInLeafTarget;
-        });
-
-        FAssertLF(offsetParticles == myParticles.getSize());
-
-        FReal*const allDirectPotentials = myParticlesInContainer.getPotentials();
-        FReal*const allDirectforcesX = myParticlesInContainer.getForcesX();
-        FReal*const allDirectforcesY = myParticlesInContainer.getForcesY();
-        FReal*const allDirectforcesZ = myParticlesInContainer.getForcesZ();
-
-        for(int idxTgt = 0 ; idxTgt < offsetParticles ; ++idxTgt){
-            for(int idxMutual = idxTgt + 1 ; idxMutual < offsetParticles ; ++idxMutual){
-                FP2PR::MutualParticles(
-                    allPosX[idxTgt],allPosY[idxTgt],allPosZ[idxTgt], allPhysicalValues[idxTgt],
-                    &allDirectforcesX[idxTgt], &allDirectforcesY[idxTgt], &allDirectforcesZ[idxTgt], &allDirectPotentials[idxTgt],
-                    allPosX[idxMutual],allPosY[idxMutual],allPosZ[idxMutual], allPhysicalValues[idxMutual],
-                    &allDirectforcesX[idxMutual], &allDirectforcesY[idxMutual], &allDirectforcesZ[idxMutual], &allDirectPotentials[idxMutual]
-                );
-            }
+        for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+            // put in tree
+            treeCheck.insert(myParticles[idxPart].position,
+                             myParticles[idxPart].physicalValue);
         }
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
-        offsetParticles = 0;
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* /*cellTarget*/, FP2PGroupParticleContainer<> * leafTarget){
-            const FReal*const potentials = leafTarget->getPotentials();
-            const FReal*const forcesX = leafTarget->getForcesX();
-            const FReal*const forcesY = leafTarget->getForcesY();
-            const FReal*const forcesZ = leafTarget->getForcesZ();
-            const int nbPartsInLeafTarget = leafTarget->getNbParticles();
+        const MatrixKernelClass MatrixKernel;
+        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
+        FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
+        algorithm.execute();
+        std::cout << "Algo is over" << std::endl;
 
-            for(int idxTgt = 0 ; idxTgt < nbPartsInLeafTarget ; ++idxTgt){
-                potentialDiff.add(allDirectPotentials[idxTgt + offsetParticles], potentials[idxTgt]);
-                fx.add(allDirectforcesX[idxTgt + offsetParticles], forcesX[idxTgt]);
-                fy.add(allDirectforcesY[idxTgt + offsetParticles], forcesY[idxTgt]);
-                fz.add(allDirectforcesZ[idxTgt + offsetParticles], forcesZ[idxTgt]);
+        groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
+            const CellClass* cell = treeCheck.getCell(gcell->getMortonIndex(), level);
+            if(cell == nullptr){
+                std::cout << "[Empty] Error cell should exist " << gcell->getMortonIndex() << "\n";
             }
-
-            offsetParticles += nbPartsInLeafTarget;
+            else {
+                FMath::FAccurater diffUp;
+                diffUp.add(cell->getMultipole(0), gcell->getMultipole(0), gcell->getVectorSize());
+                if(diffUp.getRelativeInfNorm() > epsi || diffUp.getRelativeL2Norm() > epsi){
+                    std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << diffUp << "\n";
+                }
+                FMath::FAccurater diffDown;
+                diffDown.add(cell->getLocal(0), gcell->getLocal(0), gcell->getVectorSize());
+                if(diffDown.getRelativeInfNorm() > epsi || diffDown.getRelativeL2Norm() > epsi){
+                    std::cout << "[Up] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << diffDown << "\n";
+                }
+            }
         });
 
-        std::cout << "Error : Potential " << potentialDiff << "\n";
-        std::cout << "Error : fx " << fx << "\n";
-        std::cout << "Error : fy " << fy << "\n";
-        std::cout << "Error : fz " << fz << "\n";
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* gcell, FP2PGroupParticleContainer<> * leafTarget){
+            const ContainerClass* targets = treeCheck.getLeafSrc(gcell->getMortonIndex());
+            if(targets == nullptr){
+                std::cout << "[Empty] Error leaf should exist " << gcell->getMortonIndex() << "\n";
+            }
+            else{
+                const FReal*const gposX = leafTarget->getPositions()[0];
+                const FReal*const gposY = leafTarget->getPositions()[1];
+                const FReal*const gposZ = leafTarget->getPositions()[2];
+                const int gnbPartsInLeafTarget = leafTarget->getNbParticles();
+                const FReal*const gforceX = leafTarget->getForcesX();
+                const FReal*const gforceY = leafTarget->getForcesY();
+                const FReal*const gforceZ = leafTarget->getForcesZ();
+                const FReal*const gpotential = leafTarget->getPotentials();
+
+                const FReal*const posX = targets->getPositions()[0];
+                const FReal*const posY = targets->getPositions()[1];
+                const FReal*const posZ = targets->getPositions()[2];
+                const int nbPartsInLeafTarget = targets->getNbParticles();
+                const FReal*const forceX = targets->getForcesX();
+                const FReal*const forceY = targets->getForcesY();
+                const FReal*const forceZ = targets->getForcesZ();
+                const FReal*const potential = targets->getPotentials();
+
+                if(gnbPartsInLeafTarget != nbPartsInLeafTarget){
+                    std::cout << "[Empty] Not the same number of particles at " << gcell->getMortonIndex()
+                              << " gnbPartsInLeafTarget " << gnbPartsInLeafTarget << " nbPartsInLeafTarget " << nbPartsInLeafTarget << "\n";
+                }
+                else{
+                    FMath::FAccurater potentialDiff;
+                    FMath::FAccurater fx, fy, fz;
+                    for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+                        if(gposX[idxPart] != posX[idxPart] || gposY[idxPart] != posY[idxPart]
+                                || gposZ[idxPart] != posZ[idxPart]){
+                            std::cout << "[Empty] Not the same particlea at " << gcell->getMortonIndex() << " idx " << idxPart
+                                      << gposX[idxPart] << " " << posX[idxPart] << " " << gposY[idxPart] << " " << posY[idxPart]
+                                      << " " << gposZ[idxPart] << " " << posZ[idxPart] << "\n";
+                        }
+                        else{
+                            potentialDiff.add(potential[idxPart], gpotential[idxPart]);
+                            fx.add(forceX[idxPart], gforceX[idxPart]);
+                            fy.add(forceY[idxPart], gforceY[idxPart]);
+                            fz.add(forceZ[idxPart], gforceZ[idxPart]);
+                        }
+                    }
+                    if(potentialDiff.getRelativeInfNorm() > epsi || potentialDiff.getRelativeL2Norm() > epsi){
+                        std::cout << "[Up] potentialDiff is different at index " << gcell->getMortonIndex() << " is " << potentialDiff << "\n";
+                    }
+                    if(fx.getRelativeInfNorm() > epsi || fx.getRelativeL2Norm() > epsi){
+                        std::cout << "[Up] fx is different at index " << gcell->getMortonIndex() << " is " << fx << "\n";
+                    }
+                    if(fy.getRelativeInfNorm() > epsi || fy.getRelativeL2Norm() > epsi){
+                        std::cout << "[Up] fy is different at index " << gcell->getMortonIndex() << " is " << fy << "\n";
+                    }
+                    if(fz.getRelativeInfNorm() > epsi || fz.getRelativeL2Norm() > epsi){
+                        std::cout << "[Up] fz is different at index " << gcell->getMortonIndex() << " is " << fz << "\n";
+                    }
+                }
+            }
+        });
+
+        std::cout << "Comparing is over" << std::endl;
     }
 
     return 0;
