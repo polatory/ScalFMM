@@ -926,9 +926,7 @@ private:
 
         // Max 1 receive and 7 send (but 7 times the same data)
         MPI_Request*const requests = new MPI_Request[8];
-        MPI_Status*const status = new MPI_Status[8];
         MPI_Request*const requestsSize = new MPI_Request[8];
-        MPI_Status*const statusSize = new MPI_Status[8];
 
         const int heightMinusOne = OctreeHeight - 1;
 
@@ -1023,8 +1021,8 @@ private:
                     // Finalize the communication
                     if(iterRequestsSize){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequestsSize <= 8);
-                        FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, statusSize), __LINE__);
+                        FAssertLF(iterRequestsSize < 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
 
@@ -1035,8 +1033,8 @@ private:
 
                     if(iterRequests){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequests <= 8);
-                        FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, status), __LINE__);
+                        FAssertLF(iterRequests < 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
 
@@ -1068,7 +1066,7 @@ private:
         }
 
         delete[] requests;
-        delete[] status;
+        delete[] requestsSize;
 
         FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
