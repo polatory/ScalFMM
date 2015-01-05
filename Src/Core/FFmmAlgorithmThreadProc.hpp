@@ -487,17 +487,21 @@ private:
                             int packageFlags = int(recvBuffer[idxProc].getValue<char>());
 
                             int position = 0;
+                            int positionToInsert = 0;
                             while( packageFlags && position < 8){
                                 while(!(packageFlags & 0x1)){
                                     packageFlags >>= 1;
                                     ++position;
                                 }
+                                FAssertLF(positionToInsert < 7);
+                                FAssertLF(position < 8);
                                 FAssertLF(!currentChild[position], "Already has a cell here");
-                                recvBufferCells[position].deserializeUp(recvBuffer[idxProc]);
-                                currentChild[position] = (CellClass*) &recvBufferCells[position];
+                                recvBufferCells[positionToInsert].deserializeUp(recvBuffer[idxProc]);
+                                currentChild[position] = (CellClass*) &recvBufferCells[positionToInsert];
 
                                 packageFlags >>= 1;
-                                ++position;
+                                position += 1;
+                                positionToInsert += 1;
                             }
 
                             recvBuffer[idxProc].seek(0);
