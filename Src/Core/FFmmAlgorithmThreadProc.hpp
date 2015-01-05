@@ -1027,6 +1027,7 @@ private:
                     }
 
                     if(hasToReceive){
+                        recvBuffer.cleanAndResize(recvBufferSize);
                         FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive,
                                                     FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
