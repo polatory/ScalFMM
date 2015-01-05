@@ -703,7 +703,7 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptr){
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handle);
-                    delete[] remoteCellGroups[idxLevel][idxHandle].ptr;
+                    FAlignedMemory::Dealloc32BAligned(remoteCellGroups[idxLevel][idxHandle].ptr);
                 }
             }
             remoteCellGroups[idxLevel].clear();
@@ -712,7 +712,7 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptr){
                     starpu_data_unregister(remoteParticleGroupss[idxHandle].handle);
-                    delete[] remoteParticleGroupss[idxHandle].ptr;
+                    FAlignedMemory::Dealloc32BAligned(remoteParticleGroupss[idxHandle].ptr);
                 }
             }
             remoteParticleGroupss.clear();
