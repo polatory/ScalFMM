@@ -733,7 +733,7 @@ protected:
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
                 starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
-                                              (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte()); // TODO
+                                              (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte());
             }
         }
         {
@@ -742,7 +742,7 @@ protected:
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
                 starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
-                                              (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte()); // TODO
+                                              (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
             }
         }
     }
