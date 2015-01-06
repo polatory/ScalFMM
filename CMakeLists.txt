@@ -70,25 +70,23 @@ OPTION( ScalFMM_USE_STARPU      "Set to ON to build ScaFMM with StarPU" OFF )
 endif()
 # Set scalfmm to default libraries
 SET(SCALFMM_LIBRARIES "")
-SET(ScaLFMM_CXX_FLAGS "")
+SET(ScaLFMM_CXX_FLAGS "-std=c++11  -fpic  -Wall")
 #
 #
 # Test if openmp is here
 #
 find_package (OpenMP) 
 if(OPENMP_FOUND)
-	set(CMAKE_C_FLAGS                  "${CMAKE_C_FLAGS}     ${OpenMP_C_FLAGS}")
+	set(CMAKE_C_FLAGS                  "${CMAKE_C_FLAGS}  ${OpenMP_C_FLAGS}")
 	set(CMAKE_CXX_FLAGS              "${CMAKE_CXX_FLAGS}  ${OpenMP_CXX_FLAGS}")
-	set(CMAKE_EXE_LINKER_FLAGS   "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")	
-# 	 SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-	else()
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")	
+else(OPENMP_FOUND)
 		MESSAGE(WARNING "OPENMP NOT FOUND")
 endif(OPENMP_FOUND)
-MESSAGE(STATUS "ScalFMM_BUILD_DEBUG          = ${ScalFMM_BUILD_DEBUG}" )
+MESSAGE(STATUS "ScalFMM_BUILD_DEBUG = ${ScalFMM_BUILD_DEBUG}" )
+#
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  SET(FLAGS_64bits "-m64")
-else()
-  SET(FLAGS_64bits "")
+   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -m64")
 endif()
 ##############################################################################
 #                                                       Compile options                                                                        #
@@ -96,10 +94,8 @@ endif()
 #  -xHost -mfpmath=sse
 # -Wall Wnosign-conversion 
 #
-SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS}  -std=c++11  -fpic  -Wall ") 
-#
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    # INTEL
+# INTEL
     IF (APPLE)
         SET(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
     ELSE(APPLE)
@@ -139,9 +135,9 @@ if( ScalFMM_BUILD_DEBUG )
     SET(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
   ELSE(APPLE)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        SET(SCALFMM_FLAGS_OPTI_DEBUG "${FLAGS_64bits} -fp-model strict  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+        SET(SCALFMM_FLAGS_OPTI_DEBUG "-fp-model strict  -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
     else()
-        SET(SCALFMM_FLAGS_OPTI_DEBUG "${FLAGS_64bits} -funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
+        SET(SCALFMM_FLAGS_OPTI_DEBUG "-funroll-loops" CACHE STRING "Set your optimization flags for debug mode.")
     endif()
   ENDIF(APPLE)
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
@@ -164,24 +160,24 @@ else()
   ELSE(APPLE)
     # Not apple system - Check the compiler flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     else()
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "${FLAGS_64bits} -ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
   ENDIF(APPLE)
 #
   SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
 endif()
+#
 ##############################################################################
 #                                           Attach source code to exec                                                                   #
 ##############################################################################
 MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
 if( ScalFMM_ATTACHE_SOURCE )
-  MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
-#  ADD_DEFINITIONS(-g)
+    MESSAGE( STATUS "Option -g is used, the code is attached to the binary." )
     SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -g")
 endif(ScalFMM_ATTACHE_SOURCE)
-
+#
 ##############################################################################
 #                                               Blas option                                                                                       #  
 ##############################################################################
@@ -234,7 +230,6 @@ if( ScalFMM_USE_FFT )
   SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
-  
 endif(ScalFMM_USE_FFT)
 
 # Compile option
@@ -259,7 +254,10 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     endif()
   endif()
 endif()
-
+#
+##################################################################
+##################################################################
+#
 if( ScalFMM_USE_STARPU )
     SET(STARPU_LIBRARIES " -L$ENV{STARPU_LIB}; -lstarpu-1.1") # CACHE STRING "Set your STARPU flags"
     
@@ -272,9 +270,7 @@ if( ScalFMM_USE_STARPU )
     # SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${STARPU_INCLUDES}")  
     include_directories(${STARPU_INCLUDES})
 endif(ScalFMM_USE_STARPU)
-##############################################################################
-##############################################################################
-
+#
 ##################################################################
 #                                               Use SSE                                                                     #
 ##################################################################
@@ -347,10 +343,12 @@ ENDIF()
 ##################################################################
 #                                
 ##################################################################
-
+#
 # Add CBLAS
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
-
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
+# SI CBLAS necessaire utiliser la ligne cidessous 
+#SET(SCALFMM_LIBRARIES   "${CBLAS_LIBRARIES} ${SCALFMM_LIBRARIES} ")
+#
 ##################################################################
 #                                                                                                                                #                                          
 #                                            END SETTING VARIABLES                                              # 
@@ -359,6 +357,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  ${CBLAS_LIBRARIES}")
 #
 # Generate  ScalFmmConfig.h 
 #
+SET(ScalFMM_COMPILE_FLAGS "${ScaLFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+SET(ScalFMM_COMPILE_LIBS   "${SCALFMM_LIBRARIES} ")
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
         ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
 #
@@ -438,7 +438,7 @@ endif()
 #                                   Build and export cmake files                                                 #  
 #                                                                                                                                #                                          
 ##################################################################
-
+#
 MESSAGE(STATUS "ScalFMM_BINARY_DIR:          " ${ScalFMM_BINARY_DIR})
 CONFIGURE_FILE(${ScalFMM_SOURCE_DIR}/ScalFMMConfig.cmake.in
                ${ScalFMM_BINARY_DIR}/ScalFMMConfig.cmake 
@@ -503,11 +503,11 @@ MESSAGE( STATUS "ScalFMM_USE_LOG              = ${ScalFMM_USE_LOG}" )
 #                    Use Assert
 MESSAGE( STATUS "ScalFMM_USE_ASSERT           = ${ScalFMM_USE_ASSERT}" )
  #
- MESSAGE(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
- SET(CMAKE_CXX_FLAGS "${ScaLFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+ #MESSAGE(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
+ #SET(CMAKE_CXX_FLAGS "${ScaLFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
  
-MESSAGE(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
-MESSAGE(STATUS "ScaLFMM_CXX_FLAGS   =  ${ScaLFMM_CXX_FLAGS}")
+MESSAGE(STATUS "CMAKE_CXX_FLAGS     =  ${CMAKE_CXX_FLAGS}")
+MESSAGE(STATUS "SCALFMM_CXX_FLAGS =  ${ScaLFMM_CXX_FLAGS}")
 MESSAGE(STATUS "SCALFMM_LIBRARIES   =  ${SCALFMM_LIBRARIES}")
 MESSAGE(STATUS "SCALFMM_INCLUDES   =  ${SCALFMM_INCLUDES}")
  ##################################################################

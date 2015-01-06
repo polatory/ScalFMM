@@ -106,7 +106,7 @@ const std::string SCALFMMDataPath("@CMAKE_SOURCE_DIR@/Data/");
 ///////////////////////////////////////////////////////
 // Flags and libs used to compile
 ///////////////////////////////////////////////////////
-const std::string SCALFMMCompileFlags("@CMAKE_COMPILE_FLAGS@");
-const std::string SCALFMMCompileLibs("@CMAKE_COMPILE_LIBS@");
+const std::string SCALFMMCompileFlags("@ScalFMM_COMPILE_FLAGS@");
+const std::string SCALFMMCompileLibs("@ScalFMM_COMPILE_LIBS@");
 
 #endif // CONFIG_H
