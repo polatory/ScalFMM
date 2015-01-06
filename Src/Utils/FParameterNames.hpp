@@ -24,6 +24,8 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <unistd.h>
 
 /**
  * This file contains some useful classes/functions to manage the parameters,
@@ -48,6 +50,11 @@ static const FParameterNames Help = {
 static const FParameterNames Compile = {
     {"-show-compile", "--show-compile", "--flags"} ,
      "To have the list of flags and lib linked to scalfmm."
+};
+
+static const FParameterNames DateHost = {
+    {"-show-info", "--show-host", "--datehost"} ,
+     "To have to print the current host and the execution date."
 };
 
 static const FParameterNames NbParticles = {
@@ -185,8 +192,18 @@ inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
 
 inline void PrintFlags(){
     std::cout << "This executable has been compiled with:\n";
-    std::cout << "Flags = " << SCALFMMCompileFlags << "\n";
-    std::cout << "Libs  = " << SCALFMMCompileLibs << "\n";
+    std::cout << "× Flags = " << SCALFMMCompileFlags << "\n";
+    std::cout << "× Libs  = " << SCALFMMCompileLibs << "\n";
+    std::cout.flush();
+}
+
+inline void PrintDateHost(){
+    std::cout << "This execution is on:\n";
+    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::cout << "× Date = " << std::ctime(&now) << "\n";
+    char hostname[1024];
+    gethostname(hostname, 1024);
+    std::cout << "× Host  = " << hostname << "\n";
     std::cout.flush();
 }
 
@@ -198,10 +215,12 @@ inline void PrintFlags(){
 #define FHelpAndExit(argc, argv, ...) \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Compile.options)) {\
         FParameterDefinitions::PrintFlags();\
-        return 0;\
+    } \
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::DateHost.options)) {\
+        FParameterDefinitions::PrintDateHost();\
     } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
-        const std::vector<FParameterNames> optionsvec = {__VA_ARGS__};\
+        const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, __VA_ARGS__};\
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
         return 0;\
     } \
@@ -214,11 +233,13 @@ inline void PrintFlags(){
 #define FHelpDescribeAndExit(argc, argv, description, ...) \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Compile.options)) {\
         FParameterDefinitions::PrintFlags();\
-        return 0;\
+    } \
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::DateHost.options)) {\
+        FParameterDefinitions::PrintDateHost();\
     } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
         std::cout << argv[0] << " : " << description << "\n"; \
-        const std::vector<FParameterNames> optionsvec = {__VA_ARGS__};\
+        const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, __VA_ARGS__};\
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
         return 0;\
     } \
