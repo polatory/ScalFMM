@@ -16,6 +16,8 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+//  ==== Git =====
+// @SCALFMM_PRIVATE
 // ================
 
 #include <iostream>
@@ -46,6 +48,8 @@
 #endif
 
 #include "Utils/FTemplate.hpp"
+#include "Utils/FParameterNames.hpp"
+
 
 /**
  * This program runs the FMM Algorithm with the Chebyshev kernel and compares the results with a direct computation.
@@ -83,15 +87,13 @@ struct TempMainStruct{
 template <const unsigned int ORDER>
 static void Run(int argc, char* argv[])
 {
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma" );
+    //
+    const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/UTest/unitCubeRef20kDouble.bfma" );
 	const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
 	const unsigned int TreeHeight        = FParameters::getValue(argc, argv, "-depth", 5);
 	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
 	const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
-	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")){
-		usage() ;
-		exit(EXIT_SUCCESS);
-	}
+
 #ifdef _OPENMP
 	omp_set_num_threads(NbThreads);
 	std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
@@ -260,7 +262,12 @@ static void Run(int argc, char* argv[])
 int main(int argc, char** argv){
 //	const std::string outputFile("accuracyChebyschev.txt") ;
 //	std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
-
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver for Chebyshev interpolation kernel  (1/r kernel).",
+                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+                         FParameterDefinitions::NbThreads);
+    //
   const unsigned int order = FParameters::getValue(argc, argv, "-order", 5);
   std::cout << "Order given by user is : " << order << "\n";
 

@@ -44,7 +44,7 @@ for l in `seq 1 $MaxCore `;
 do
     OUTPUT=${FILEPERF}-${HOST}-${l}.out
     echo "Running  per = " ${l}
-    $EXEC -f $FILE  -depth 7 -subdepth 4  -t $l >  $OUTPUT
+    $EXEC --datehost --flags -show-params -f $FILE  -depth 7 -subdepth 4  -t $l >  $OUTPUT
     #
     TIME=`grep "@Algorithm"  $OUTPUT | awk '{print $4}'`
     Energy=`grep "Energy"  $OUTPUT | awk '{print $2}'`

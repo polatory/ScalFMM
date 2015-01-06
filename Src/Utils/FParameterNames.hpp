@@ -197,19 +197,19 @@ inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
 
 inline void PrintFlags(){
     std::cout << "[ScalFMM] This executable has been compiled with:\n";
-    std::cout << "× Flags = " << SCALFMMCompileFlags << "\n";
-    std::cout << "× Libs  = " << SCALFMMCompileLibs << "\n";
-    std::cout.flush();
+    std::cout << "    Flags: " << SCALFMMCompileFlags << "\n";
+    std::cout << "    Libs;   " << SCALFMMCompileLibs   << "\n";
+    std::cout << std::endl;     std::cout.flush();
 }
 
 inline void PrintDateHost(){
     std::cout << "[ScalFMM] This execution is on:\n";
     std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::cout << "× Date = " << std::ctime(&now) << "\n";
+    std::cout << "    Date: " << std::ctime(&now) ;
     char hostname[1024];
     gethostname(hostname, 1024);
-    std::cout << "× Host  = " << hostname << "\n";
-    std::cout.flush();
+    std::cout << "    Host: " << hostname << "\n";
+    std::cout << std::endl;     std::cout.flush();
 }
 
 inline void PrintGivenParams(int argc, const char* const * const argv){
@@ -217,7 +217,7 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
     for(int idx = 0 ; idx < argc ; ++idx){
         std::cout << " | " << argv[idx];
     }
-    std::cout << "\n";
+    std::cout << " | \n\n";
     std::cout.flush();
 }
 
