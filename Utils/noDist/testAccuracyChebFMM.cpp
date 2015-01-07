@@ -263,7 +263,7 @@ int main(int argc, char** argv){
 //	const std::string outputFile("accuracyChebyschev.txt") ;
 //	std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
     FHelpDescribeAndExit(argc, argv,
-                         "Driver for Chebyshev interpolation kernel  (1/r kernel).",
+                         "Test for different accuracy).",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
                          FParameterDefinitions::NbThreads);
