@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FFMMALGORITHMTHREAD_HPP
@@ -22,6 +22,7 @@
 
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
+#include "Utils/FAlgorithmTimers.hpp"
 
 #include "../Containers/FOctree.hpp"
 
@@ -45,7 +46,7 @@
 * When using this algorithm the P2P is thread safe.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThread : public FAbstractAlgorithm{
+class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 
@@ -53,7 +54,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm{
     int leafsNumber;
 
     static const int SizeShape = 3*3*3;
-    int shapeLeaf[SizeShape];    
+    int shapeLeaf[SizeShape];
 
     const int MaxThreads;
 
@@ -114,15 +115,25 @@ public:
         iterArray = new typename OctreeClass::Iterator[leafsNumber];
         FAssertLF(iterArray, "iterArray bad alloc");
 
+        Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
+        Timers[P2MTimer].tac();
 
+        Timers[M2MTimer].tic();
         if(operationsToProceed & FFmmM2M) upwardPass();
+        Timers[M2MTimer].tac();
 
+        Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
+        Timers[M2LTimer].tac();
 
+        Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
+        Timers[L2LTimer].tac();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tic();
+        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tac();
 
         delete [] iterArray;
         iterArray = nullptr;
@@ -434,5 +445,3 @@ private:
 
 
 #endif //FFMMALGORITHMTHREAD_HPP
-
-

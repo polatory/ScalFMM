@@ -23,6 +23,7 @@
 #include "../Utils/FLog.hpp"
 
 #include "../Utils/FTic.hpp"
+#include "Utils/FAlgorithmTimers.hpp"
 
 #include "../Utils/FGlobal.hpp"
 
@@ -61,7 +62,7 @@
  * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadProc : public FAbstractAlgorithm {
+class FFmmAlgorithmThreadProc : public FAbstractAlgorithm, public FAlgorithmTimers {
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
 
@@ -242,16 +243,34 @@ public:
         }
 
         // run;
+        // if(operationsToProceed & FFmmP2M) bottomPass();
+
+        // if(operationsToProceed & FFmmM2M) upwardPass();
+
+        // if(operationsToProceed & FFmmM2L) transferPass();
+
+        // if(operationsToProceed & FFmmL2L) downardPass();
+
+        // if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
+        Timers[P2MTimer].tac();
 
+        Timers[M2MTimer].tic();
         if(operationsToProceed & FFmmM2M) upwardPass();
+        Timers[M2MTimer].tac();
 
+        Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
+        Timers[M2LTimer].tac();
 
+        Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
+        Timers[L2LTimer].tac();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
-
+        Timers[NearTimer].tic();
+        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tac();
 
         // delete array
         delete []     iterArray;
@@ -474,7 +493,7 @@ private:
                     if(iterMpiRequests){
                         FAssertLF(iterMpiRequests <= 8);
                         MPI_Waitall( iterMpiRequests, requests, status);
-                    }                                       
+                    }
 
                     // We had received something so we need to proceed the last M2M
                     if( hasToReceive ){

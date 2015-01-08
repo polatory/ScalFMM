@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FFMMALGORITHM_HPP
@@ -25,6 +25,7 @@
 
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
+#include "../Utils/FAlgorithmTimers.hpp"
 
 #include "FCoreCommon.hpp"
 
@@ -40,14 +41,14 @@
 * Of course this class does not deallocate pointer given in arguements.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithm :  public FAbstractAlgorithm {
+class FFmmAlgorithm :  public FAbstractAlgorithm, public FAlgorithmTimers {
 
     OctreeClass* const tree;       //< The octree to work on
     KernelClass* const kernels;    //< The kernels
 
     const int OctreeHeight;
 
-public:	
+public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
@@ -71,15 +72,26 @@ public:
       * Call this function to run the complete algorithm
       */
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+
+        Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
+        Timers[P2MTimer].tac();
 
+        Timers[M2MTimer].tic();
         if(operationsToProceed & FFmmM2M) upwardPass();
+        Timers[M2MTimer].tac();
 
+        Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
+        Timers[M2LTimer].tac();
 
+        Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
+        Timers[L2LTimer].tac();
 
+        Timers[NearTimer].tic();
         if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tac();
     }
 
 private:
@@ -276,5 +288,3 @@ private:
 
 
 #endif //FFMMALGORITHM_HPP
-
-
