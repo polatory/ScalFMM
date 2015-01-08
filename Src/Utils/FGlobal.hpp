@@ -101,7 +101,9 @@ typedef long long MortonIndex;
 ///////////////////////////////////////////////////////
 
 #if _OPENMP >= 201307
+#ifndef __INTEL_COMPILER
 #define ScalFMM_USE_OMP4
+#endif
 #endif
 
 #endif //FGLOBAL_HPP

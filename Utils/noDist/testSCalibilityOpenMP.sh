@@ -1,20 +1,20 @@
-#!/bin/bash
-project_dir=$HOME/Dev/src/ScalFMM/scalfmmT
+#!/bin/bash -v
+project_dir=$HOME/Dev/src/ScalFMM/scalfmmN/BuildOMP/run1
 #
 # PlaFRIM environment
 #
 #
 #
-MaxCore=20
+#MaxCore=20
 #  `cat /proc/cpuinfo |grep processor |wc -l`
 # tester si linux alors
-#MaxCore=`cat /proc/cpuinfo |grep processor |wc -l`
+MaxCore=`getconf _NPROCESSORS_ONLN`
 HOST=`hostname`
 echo $HOST
-EXEC="Examples/Release/ChebyshevInterpolationFMM"
+EXEC="../Examples/Release/ChebyshevInterpolationFMM"
 REP="Test"
-FILEPERF="RES_Chebyshev-openmpi-10M"
-FILE="../Data/unitCubeXYZQ20k.bfma"
+FILEPERF="output-scab-Cheb-10M"
+FILE="../../Data/unitCubeXYZQ20k.bfma"
 FILE="casTest-20000.fma"
 FILE="/projets/scalfmm/benchPlafrim/unifCube_2_10000000.bfma"
 echo "=================================================================="
@@ -23,17 +23,18 @@ echo "   pgm:   ${EXEC}"
 echo "   file:  ${FILE}"
 echo "   args  -depth 7 -subdepth 4 "
 echo "   "
-echo "   Host:      $HOST"
-echo "   MaxCore:   $MaxCore"
+echo "   Host:    $HOST"
+echo "   MaxCore: $MaxCore"
+echo "   File:    $FILE"
+echo "   "
+echo "   Projectdir:    $project_dir"
 echo "=================================================================="
-
 #
-cd $project_dir/BuildOMP/
-
+mkdir -f $project_dir
+cd $project_dir
 #
-REP
 pwd
-#export OMP_PROC_BIND=true
+export OMP_PROC_BIND=true
 export KMP_AFFINITY=verbose,scatter
 echo $FILEPERF-${HOST}.out 
 echo  "# Core TIME  ENERGY Pot_0 Pot_5000000 Pot_9999999"> $FILEPERF-${HOST}.out 

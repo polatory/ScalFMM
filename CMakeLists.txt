@@ -89,7 +89,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -m64")
 endif()
 ##############################################################################
-#                                                       Compile options                                                                        #
+#                      Compile options                                       #
 ##############################################################################
 #  -xHost -mfpmath=sse
 # -Wall Wnosign-conversion 
@@ -141,26 +141,31 @@ if( ScalFMM_BUILD_DEBUG )
     endif()
   ENDIF(APPLE)
 #  ADD_DEFINITIONS(${SCALFMM_FLAGS_OPTI_DEBUG})
-  SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
+SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_DEBUG}")
+  SET(CMAKE_CXX_FLAGS_TYPE  "${CMAKE_CXX_FLAGS_DEBUG}") 
+
 else()
 ##############################################################################
-#                                                            Release flags                                                                        #
+#                          Release flags                                     #
 ##############################################################################
   SET(CMAKE_BUILD_TYPE Release)
   # force -O3 in release
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-  STRING(REPLACE "-O2" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
+#  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+  STRING(REPLACE "-O2" "-O3" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
+  SET(CMAKE_CXX_FLAGS_TYPE  "${CMAKE_CXX_FLAGS_RELEASE}") 
   # if compiler is intel add -ip
-  IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
-  ENDIF()
+ IF(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip")
+#    SET(ScaLFMM_CXX_FLAGS  "${ScaLFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
+ ENDIF()
   # Compile optimization
   IF( APPLE ) 
     SET(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING "Set your optimization flags for release mode.")
   ELSE(APPLE)
     # Not apple system - Check the compiler flags 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      SET(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+#      SET(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
+      SET(SCALFMM_FLAGS_OPTI_RELEASE " " CACHE STRING "Set your optimization flags for release mode.")
     else()
       SET(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING "Set your optimization flags for release mode.")
     endif()
@@ -170,7 +175,7 @@ else()
 endif()
 #
 ##############################################################################
-#                                           Attach source code to exec                                                                   #
+#                Attach source code to exec                                  #
 ##############################################################################
 MESSAGE(STATUS "ScalFMM_ATTACHE_SOURCE       = ${ScalFMM_ATTACHE_SOURCE}" )
 if( ScalFMM_ATTACHE_SOURCE )
@@ -212,24 +217,27 @@ endif(ScalFMM_USE_BLAS)
 #
 if( ScalFMM_USE_FFT )
   OPTION( ScalFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" OFF )
+  MESSAGE(STATUS "SCALFMM USE FFT Configure:")
   if( ScalFMM_USE_MKL_AS_FFTW )
-      if( ScalFMM_USE_MKL_AS_BLAS )
-               UNSET(FFT_LIBRARIES CACHE)
-       #        UNSET(FFT_INCLUDES CACHE)
+ 	MESSAGE(STATUS "         SCALFMM USE MKL ")
+     if( ScalFMM_USE_MKL_AS_BLAS )
+       UNSET(FFT_LIBRARIES CACHE)
+        	MESSAGE(STATUS "         SCALFMM USE MKL already defined")
                 SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
-        ELSE()
+        ELSE(ScalFMM_USE_MKL_AS_BLAS)
              SET(FFT_LIBRARIES "-L$ENV{MKLROOT}/lib; -lmkl_intel_lp64; -lmkl_sequential; -lmkl_core; -lpthread; -lm" CACHE STRING "Set your MKL flags")
              SET(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
             SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
-        ENDIF()        
-  else()
-    SET(FFT_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
-    SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
-  endif()
-  
+        ENDIF(ScalFMM_USE_MKL_AS_BLAS)        
+      else(ScalFMM_USE_MKL_AS_FFTW)
+	MESSAGE(STATUS "         SCALFMM USE FFTW ")
+	SET(FFT_LIBRARIES "-lfftw3" CACHE STRING "Use LIBFFTW")
+	SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+  endif(ScalFMM_USE_MKL_AS_FFTW)
+ 
   SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
-  MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
-  MESSAGE(STATUS "SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
+  MESSAGE(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
+  MESSAGE(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
 endif(ScalFMM_USE_FFT)
 
 # Compile option
@@ -328,7 +336,7 @@ IF( ScalFMM_USE_AVX AND ScalFMM_USE_SSE)
     MESSAGE(FATAL_ERROR "Check ScalFMM_USE_SSE or ScalFMM_USE_AVX BUT NOT BOTH. ")
 ENDIF(ScalFMM_USE_AVX AND ScalFMM_USE_SSE)
 ##################################################################
-#                                           Use  native MIC compilation                                          #
+#                     Use  native MIC compilation                                          #
 ##################################################################
 if( ScalFMM_USE_MIC_NATIVE ) 
     include(CheckCCompilerFlag)
@@ -357,7 +365,7 @@ ENDIF()
 #
 # Generate  ScalFmmConfig.h 
 #
-SET(ScalFMM_COMPILE_FLAGS "${ScaLFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+SET(ScalFMM_COMPILE_FLAGS "${ScaLFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
 SET(ScalFMM_COMPILE_LIBS   "${SCALFMM_LIBRARIES} ")
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake 
         ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
