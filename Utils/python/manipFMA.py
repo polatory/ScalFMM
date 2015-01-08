@@ -35,6 +35,7 @@ def readFMAHeader(Filename):
     s1,s2,s3,s4,s5 = (item.strip() for item in header2.split())
     NbParticles=int(s1)
     BoxWidth=float(s2)*2
+    print "BoxWidth= ", BoxWidth 
     Centre = [float(s3),float(s4),float(s5)]
     f.close()
     return dataType,nbRecordPerline,NbParticles,BoxWidth,Centre
