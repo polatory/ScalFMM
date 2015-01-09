@@ -80,9 +80,7 @@ int main(int argc, char* argv[])
     FTic time;
 
   // interaction kernel evaluator
-//  typedef FInterpMatrixKernelLJ MatrixKernelClass;
-  typedef FInterpMatrixKernelR MatrixKernelClass;
-//  typedef FInterpMatrixKernelRR MatrixKernelClass;
+typedef FInterpMatrixKernelR MatrixKernelClass;
   const MatrixKernelClass MatrixKernel;
 
   // init particles position and physical value
@@ -114,7 +112,7 @@ int main(int argc, char* argv[])
   ////////////////////////////////////////////////////////////////////
 
   { // begin direct computation
-    std::cout << "\nDirect Computation ... " << std::endl;
+    std::cout << "\nDirect computation ... " << std::endl;
     time.tic();
     {
       for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
@@ -132,7 +130,7 @@ int main(int argc, char* argv[])
       }
     }
     time.tac();
-    std::cout << "Done  " << "(@Direct Computation = "
+    std::cout << "Done  " << "(@Direct computation = "
               << time.elapsed() << "s)." << std::endl;
 
   } // end direct computation
@@ -142,7 +140,7 @@ int main(int argc, char* argv[])
   {	// begin Lagrange kernel
 
     // accuracy
-    const unsigned int ORDER = 5;
+    const unsigned int ORDER = 5 ;
 
     // typedefs
     typedef FP2PParticleContainerIndexed<> ContainerClass;
@@ -176,8 +174,8 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
-      FmmClass algorithm(&tree, &kernels);
+      KernelClass* kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
+      FmmClass algorithm(&tree, kernels);
       algorithm.execute();
       time.tac();
       std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;

@@ -136,12 +136,12 @@ int main(int argc, char* argv[])
                     FP2P::MutualParticlesKIJ(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                              particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
                                              particles[idxTarget].forces[0], particles[idxTarget].forces[1],
-                            particles[idxTarget].forces[2], particles[idxTarget].potential,
-                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                            particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                            particles[idxOther].forces[0], particles[idxOther].forces[1],
-                            particles[idxOther].forces[2], particles[idxOther].potential,
-                            &MatrixKernel);
+                                             particles[idxTarget].forces[2], particles[idxTarget].potential,
+                                             particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                             particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                             particles[idxOther].forces[0], particles[idxOther].forces[1],
+                                             particles[idxOther].forces[2], particles[idxOther].potential,
+                                             &MatrixKernel);
                 }
             }
         }
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
         // set box width extension
         // ... either deduce from element size
         const FReal LeafCellWidth = FReal(loader.getBoxWidth()) / FReal(FMath::pow(2.,TreeHeight-1));
-        const FReal ElementSize = LeafCellWidth / FReal(3.);
+        //const FReal ElementSize = LeafCellWidth / FReal(3.);
         //    const FReal BoxWidthExtension = ElementSize; // depends on type of element
         // ... or set to arbitrary value (0. means no extension)
         const FReal BoxWidthExtension = FReal(0.);
@@ -188,10 +188,6 @@ int main(int argc, char* argv[])
         { // -----------------------------------------------------
             std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
                       << " particles ..." << std::endl;
-
-
-
-
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
             time.tic();
 
@@ -215,8 +211,8 @@ int main(int argc, char* argv[])
         { // -----------------------------------------------------
             std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
             time.tic();
-            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel,BoxWidthExtension);
-            FmmClass algorithm(&tree, &kernels);
+            KernelClass* kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel,BoxWidthExtension);
+            FmmClass algorithm(&tree, kernels);
             algorithm.execute();
             time.tac();
             std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;

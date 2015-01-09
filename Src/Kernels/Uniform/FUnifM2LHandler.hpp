@@ -40,108 +40,104 @@ PB: Compute() does not belong to the M2LHandler like it does in the Chebyshev ke
 template <int ORDER, typename MatrixKernelClass>
 static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth, FComplex* &FC)
 {
-	// allocate memory and store compressed M2L operators
-  if (FC) throw std::runtime_error("M2L operators are already set");
+    // allocate memory and store compressed M2L operators
+    if (FC) throw std::runtime_error("M2L operators are already set");
+    // dimensions of operators
+    const unsigned int order = ORDER;
+    const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
+    const unsigned int ninteractions = 316;
+    typedef FUnifTensor<ORDER> TensorType;
 
-  // dimensions of operators
-  const unsigned int order = ORDER;
-  const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-  const unsigned int ninteractions = 316;
+    // interpolation points of source (Y) and target (X) cell
+    FPoint X[nnodes], Y[nnodes];
+    // set roots of target cell (X)
+    TensorType::setRoots(FPoint(0.,0.,0.), CellWidth, X);
 
-  typedef FUnifTensor<ORDER> TensorType;
+    // allocate memory and compute 316 m2l operators
+    FReal    *_C;
+    FComplex *_FC;
 
-	// interpolation points of source (Y) and target (X) cell
-	FPoint X[nnodes], Y[nnodes];
-	// set roots of target cell (X)
-	TensorType::setRoots(FPoint(0.,0.,0.), CellWidth, X);
+    // reduce storage from nnodes^2=order^6 to (2order-1)^3
+    const unsigned int rc = (2*order-1)*(2*order-1)*(2*order-1);
+    _C = new FReal [rc];
+    _FC = new FComplex [rc * ninteractions];
 
-	// allocate memory and compute 316 m2l operators
-	FReal           *_C;
-	FComplex *_FC;
+    // initialize root node ids pairs
+    unsigned int node_ids_pairs[rc][2];
+    TensorType::setNodeIdsPairs(node_ids_pairs);
+    // init Discrete Fourier Transformator
+    const int dimfft = 1; // unidim FFT since fully circulant embedding
+    const int steps[dimfft] = {rc};
+    FFft<dimfft> Dft;
+    Dft.buildDFT(steps);
+    // get first column of K via permutation
+    unsigned int perm[rc];
+    TensorType::setStoragePermutation(perm);
 
-  // reduce storage from nnodes^2=order^6 to (2order-1)^3
-  const unsigned int rc = (2*order-1)*(2*order-1)*(2*order-1);
-	_C = new FReal [rc];
-	_FC = new FComplex [rc * ninteractions];
+    unsigned int counter = 0;
+    for (int i=-3; i<=3; ++i) {
+        for (int j=-3; j<=3; ++j) {
+            for (int k=-3; k<=3; ++k) {
+                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                    // set roots of source cell (Y)
+                    const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
+                    FUnifTensor<order>::setRoots(cy, CellWidth, Y);
+                    // evaluate m2l operator
+                    unsigned int ido=0;
+                    for(unsigned int l=0; l<2*order-1; ++l)
+                        for(unsigned int m=0; m<2*order-1; ++m)
+                            for(unsigned int n=0; n<2*order-1; ++n){   
+                    
+                                // store value at current position in C
+                                // use permutation if DFT is used because 
+                                // the storage of the first column is required
+                                // i.e. C[0] C[rc-1] C[rc-2] .. C[1] < WRONG!
+                                // i.e. C[rc-1] C[0] C[1] .. C[rc-2] < RIGHT!
+                                //                _C[counter*rc + ido]
+                                _C[perm[ido]]
+                                  = MatrixKernel->evaluate(X[node_ids_pairs[ido][0]], 
+                                                           Y[node_ids_pairs[ido][1]]);
+                                ido++;
+                            }
 
-  // initialize root node ids pairs
-  unsigned int node_ids_pairs[rc][2];
-  TensorType::setNodeIdsPairs(node_ids_pairs);
+                    // Apply Discrete Fourier Transformation
+                    Dft.applyDFT(_C,_FC+counter*rc);
 
-  // init Discrete Fourier Transformator
-  const int dimfft = 1; // unidim FFT since fully circulant embedding
-  const int steps[dimfft] = {rc};
-  FFft<dimfft> Dft;
-  Dft.buildDFT(steps);
-
-  // get first column of K via permutation
-  unsigned int perm[rc];
-  TensorType::setStoragePermutation(perm);
-
-	unsigned int counter = 0;
-	for (int i=-3; i<=3; ++i) {
-		for (int j=-3; j<=3; ++j) {
-			for (int k=-3; k<=3; ++k) {
-				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
-					// set roots of source cell (Y)
-					const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-					FUnifTensor<order>::setRoots(cy, CellWidth, Y);
-					// evaluate m2l operator
-          unsigned int ido=0;
-          for(unsigned int l=0; l<2*order-1; ++l)
-            for(unsigned int m=0; m<2*order-1; ++m)
-              for(unsigned int n=0; n<2*order-1; ++n){   
-          
-                // store value at current position in C
-                // use permutation if DFT is used because 
-                // the storage of the first column is required
-                // i.e. C[0] C[rc-1] C[rc-2] .. C[1] < WRONG!
-                // i.e. C[rc-1] C[0] C[1] .. C[rc-2] < RIGHT!
-                //                _C[counter*rc + ido]
-                _C[perm[ido]]
-                  = MatrixKernel->evaluate(X[node_ids_pairs[ido][0]], 
-                                           Y[node_ids_pairs[ido][1]]);
-                ido++;
-              }
-
-          // Apply Discrete Fourier Transformation
-          Dft.applyDFT(_C,_FC+counter*rc);
-
-					// increment interaction counter
-					counter++;
-				}
-			}
-		}
-	}
-	if (counter != ninteractions)
-		throw std::runtime_error("Number of interactions must correspond to 316");
-
-  // Free _C
-	delete [] _C;
-
-	// store FC
-	counter = 0;
-  // reduce storage if real valued kernel
-  const unsigned int opt_rc = rc/2+1;
-  // allocate M2L
-	FC = new FComplex[343 * opt_rc];
-
-	for (int i=-3; i<=3; ++i)
-		for (int j=-3; j<=3; ++j)
-			for (int k=-3; k<=3; ++k) {
-				const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
-					FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC + counter*rc), 
-                        reinterpret_cast<FReal*>(FC + idx*opt_rc));
-					counter++;
-				} else{ 
-          FBlas::c_setzero(opt_rc, reinterpret_cast<FReal*>(FC + idx*opt_rc));
+                    // increment interaction counter
+                    counter++;
+                }
+            }
         }
+    }
+    if (counter != ninteractions)
+        throw std::runtime_error("Number of interactions must correspond to 316");
+
+    // Free _C
+    delete [] _C;
+
+    // store FC
+    counter = 0;
+    // reduce storage if real valued kernel
+    const unsigned int opt_rc = rc/2+1;
+    // allocate M2L
+    FC = new FComplex[343 * opt_rc];
+
+    for (int i=-3; i<=3; ++i)
+        for (int j=-3; j<=3; ++j)
+            for (int k=-3; k<=3; ++k) {
+                const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
+                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                    FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC + counter*rc), 
+                                  reinterpret_cast<FReal*>(FC + idx*opt_rc));
+                    counter++;
+                } else { 
+                    FBlas::c_setzero(opt_rc, reinterpret_cast<FReal*>(FC + idx*opt_rc));
+                }
       }
 
-	if (counter != ninteractions)
-		throw std::runtime_error("Number of interactions must correspond to 316");
-  delete [] _FC;  	
+    if (counter != ninteractions)
+        throw std::runtime_error("Number of interactions must correspond to 316");
+    delete [] _FC;      
 }
 
 
@@ -168,159 +164,155 @@ template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class FUnifM2LHandler;
 template <int ORDER>
 class FUnifM2LHandler<ORDER,HOMOGENEOUS>
 {
-	enum {order = ORDER,
-				nnodes = TensorTraits<ORDER>::nnodes,
-				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
-        rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
+    enum {order = ORDER,
+          nnodes = TensorTraits<ORDER>::nnodes,
+          ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
+          rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
-  /// M2L Operators (stored in Fourier space)
-  FSmartPointer< FComplex,FSmartArrayMemory> FC;
+    /// M2L Operators (stored in Fourier space)
+    FSmartPointer< FComplex,FSmartArrayMemory> FC;
 
-  /// Utils
-  typedef FUnifTensor<ORDER> TensorType;
-  unsigned int node_diff[nnodes*nnodes];
+    /// Utils
+    typedef FUnifTensor<ORDER> TensorType;
+    unsigned int node_diff[nnodes*nnodes];
 
-  /// DFT specific
-  static const int dimfft = 1; // unidim FFT since fully circulant embedding
-  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
-  DftClass Dft;
-  const unsigned int opt_rc; // specific to real valued kernel
-
-
-	static const std::string getFileName()
-	{
-		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
-		std::stringstream stream;
-		stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
-					 << "_o" << order << ".bin";
-		return stream.str();
-	}
-
-	
-public:
-	template <typename MatrixKernelClass>
-	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-		: FC(nullptr), Dft(), opt_rc(rc/2+1)
-	{    
-    // init DFT
-    const int steps[dimfft] = {rc};
-    Dft.buildDFT(steps);
-
-    // initialize root node ids
-    TensorType::setNodeIdsDiff(node_diff);
-
-    // Compute and Set M2L Operators
-    ComputeAndSet(MatrixKernel);
-
-  }
-
-  /*
-   * Copy constructor
-   */
-  FUnifM2LHandler(const FUnifM2LHandler& other)
-    : FC(other.FC), Dft(), opt_rc(other.opt_rc)
-  {    
-    // init DFT
-    const int steps[dimfft] = {rc};
-    Dft.buildDFT(steps);
- 
-    // copy node_diff
-    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
-  }
-
-	~FUnifM2LHandler()
-	{ }
-
-	/**
-	 * Computes and sets the matrix \f$C_t\f$
-	 */
-	template <typename MatrixKernelClass>
-	void ComputeAndSet(const MatrixKernelClass *const MatrixKernel)
-	{
-		// measure time
-		FTic time; time.tic();
-		// check if aready set
-    if (FC) throw std::runtime_error("M2L operator already set");
-    // Compute matrix of interactions
-		const FReal ReferenceCellWidth = FReal(2.);
-    FComplex* pFC = NULL;
-		Compute<order>(MatrixKernel,ReferenceCellWidth,pFC);
-    FC.assign(pFC);
-
-    // Compute memory usage
-    unsigned long sizeM2L = 343*opt_rc*sizeof(FComplex);
+    /// DFT specific
+    static const int dimfft = 1; // unidim FFT since fully circulant embedding
+    typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+    DftClass Dft;
+    const unsigned int opt_rc; // specific to real valued kernel
 
 
-		// write info
-		std::cout << "Compute and Set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
-							<< time.tacAndElapsed() << "sec."	<< std::endl;
-	}
-		
-
-  /**
-	 * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
-	 * seen as part of the L2L operation.
-	 *
-	 * @param[in] X transformed local expansion of size \f$r\f$
-	 * @param[out] x local expansion of size \f$\ell^3\f$
-	 */
-  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
-  { 
-    FReal Px[rc];
-    FBlas::setzero(rc,Px);
-    // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
-
-    // Unapply Zero Padding
-    for (unsigned int j=0; j<nnodes; ++j)
-      x[j]+=Px[node_diff[nnodes-j-1]];
-  }
-
-  /**
-	 * The M2L operation \f$X+=C_tY\f$ is performed in Fourier space by 
-   * application of the convolution theorem (i.e. \f$FX+=FC_t:FY\f$), 
-   * where \f$FY\f$ is the transformed multipole expansion and 
-   * \f$FX\f$ is the transformed local expansion, both padded with zeros and
-	 * of size \f$r_c=(2\times ORDER-1)^3\f$ or \f$r_c^{opt}=\frac{r_c}{2}+1\f$ 
-   * for real valued kernels. The index \f$t\f$ denotes the transfer vector 
-	 * of the target cell to the source cell.
-	 *
-	 * @param[in] transfer transfer vector
-	 * @param[in] FY transformed multipole expansion
-	 * @param[out] FX transformed local expansion
-	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
-	 */
-  void applyFC(const unsigned int idx, const unsigned int, const FReal scale,
-               const FComplex *const FY, FComplex *const FX) const
-  {
-    // Perform entrywise product manually
-    for (unsigned int j=0; j<opt_rc; ++j){
-      FX[j].addMul(FComplex(scale*FC[idx*opt_rc + j].getReal(),
-                             scale*FC[idx*opt_rc + j].getImag()),
-                   FY[j]);
+    static const std::string getFileName()
+    {
+        const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
+        std::stringstream stream;
+        stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
+                     << "_o" << order << ".bin";
+        return stream.str();
     }
-  }
+
+    
+public:
+    template <typename MatrixKernelClass>
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
+        : FC(nullptr), Dft(), opt_rc(rc/2+1)
+    {    
+        // init DFT
+        const int steps[dimfft] = {rc};
+        Dft.buildDFT(steps);
+
+        // initialize root node ids
+        TensorType::setNodeIdsDiff(node_diff);
+
+        // Compute and Set M2L Operators
+        ComputeAndSet(MatrixKernel);
+
+    }
+
+    /*
+     * Copy constructor
+     */
+    FUnifM2LHandler(const FUnifM2LHandler& other)
+      : FC(other.FC), Dft(), opt_rc(other.opt_rc)
+    {    
+        // init DFT
+        const int steps[dimfft] = {rc};
+        Dft.buildDFT(steps);
+        // copy node_diff
+        memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
+    }
+
+    ~FUnifM2LHandler()
+    { }
+
+    /**
+     * Computes and sets the matrix \f$C_t\f$
+     */
+    template <typename MatrixKernelClass>
+    void ComputeAndSet(const MatrixKernelClass *const MatrixKernel)
+    {
+        // measure time
+        FTic time; time.tic();
+        // check if aready set
+        if (FC) throw std::runtime_error("M2L operator already set");
+        // Compute matrix of interactions
+        const FReal ReferenceCellWidth = FReal(2.);
+        FComplex* pFC = NULL;
+        Compute<order>(MatrixKernel,ReferenceCellWidth,pFC);
+        FC.assign(pFC);
+
+        // Compute memory usage
+        unsigned long sizeM2L = 343*opt_rc*sizeof(FComplex);
 
 
-  /**
-	 * Transform densities \f$Y= DFT(y)\f$ of a source cell. This operation
-	 * can be seen as part of the M2M operation.
-	 *
-	 * @param[in] y multipole expansion of size \f$\ell^3\f$
-	 * @param[out] Y transformed multipole expansion of size \f$r\f$
-	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
-  {
-    FReal Py[rc];
-    FBlas::setzero(rc,Py);
+        // write info
+        std::cout << "Compute and set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" B) in "
+                  << time.tacAndElapsed() << "sec."   << std::endl;
+    }
+        
 
-    // Apply Zero Padding
-    for (unsigned int i=0; i<nnodes; ++i)
-      Py[node_diff[i*nnodes]]=y[i];
+    /**
+    * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
+    * seen as part of the L2L operation.
+    *
+    * @param[in] X transformed local expansion of size \f$r\f$
+    * @param[out] x local expansion of size \f$\ell^3\f$
+    */
+    void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
+    { 
+        FReal Px[rc];
+        FBlas::setzero(rc,Px);
+        // Apply forward Discrete Fourier Transform
+        Dft.applyIDFT(FX,Px);
+        // Unapply Zero Padding
+        for (unsigned int j=0; j<nnodes; ++j)
+            x[j]+=Px[node_diff[nnodes-j-1]];
+    }
 
-    // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
-  }
+    /**
+     * The M2L operation \f$X+=C_tY\f$ is performed in Fourier space by 
+     * application of the convolution theorem (i.e. \f$FX+=FC_t:FY\f$), 
+     * where \f$FY\f$ is the transformed multipole expansion and 
+     * \f$FX\f$ is the transformed local expansion, both padded with zeros and
+     * of size \f$r_c=(2\times ORDER-1)^3\f$ or \f$r_c^{opt}=\frac{r_c}{2}+1\f$ 
+     * for real valued kernels. The index \f$t\f$ denotes the transfer vector 
+     * of the target cell to the source cell.
+     *
+     * @param[in] transfer transfer vector
+     * @param[in] FY transformed multipole expansion
+     * @param[out] FX transformed local expansion
+     * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
+     */
+    void applyFC(const unsigned int idx, const unsigned int, const FReal scale,
+                 const FComplex *const FY, FComplex *const FX) const
+    {
+        // Perform entrywise product manually
+        for (unsigned int j=0; j<opt_rc; ++j){
+            FX[j].addMul(FComplex(scale*FC[idx*opt_rc + j].getReal(),
+                                  scale*FC[idx*opt_rc + j].getImag()),
+                         FY[j]);
+        }
+    }
+
+
+    /**
+     * Transform densities \f$Y= DFT(y)\f$ of a source cell. This operation
+     * can be seen as part of the M2M operation.
+     *
+     * @param[in] y multipole expansion of size \f$\ell^3\f$
+     * @param[out] Y transformed multipole expansion of size \f$r\f$
+     */
+    void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
+    {
+        FReal Py[rc];
+        FBlas::setzero(rc,Py);
+        // Apply Zero Padding
+        for (unsigned int i=0; i<nnodes; ++i)
+            Py[node_diff[i*nnodes]]=y[i];
+        // Apply forward Discrete Fourier Transform
+        Dft.applyDFT(Py,FY);
+    }
 
 
 };
@@ -330,181 +322,173 @@ public:
 template <int ORDER>
 class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
 {
-	enum {order = ORDER,
-				nnodes = TensorTraits<ORDER>::nnodes,
-				ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
-        rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
+    enum {order = ORDER,
+          nnodes = TensorTraits<ORDER>::nnodes,
+          ninteractions = 316, // 7^3 - 3^3 (max num cells in far-field)
+          rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
 
-  /// M2L Operators (stored in Fourier space for each level)
-  FSmartPointer< FComplex*,FSmartArrayMemory> FC;
-  /// Homogeneity specific variables
-  const unsigned int TreeHeight;
-  const FReal RootCellWidth;
-
-  /// Utils
-  typedef FUnifTensor<ORDER> TensorType;
-  unsigned int node_diff[nnodes*nnodes];
-
-  /// DFT specific
-  static const int dimfft = 1; // unidim FFT since fully circulant embedding
-  typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
-  DftClass Dft;
-  const unsigned int opt_rc; // specific to real valued kernel
+    /// M2L Operators (stored in Fourier space for each level)
+    FSmartPointer< FComplex*,FSmartArrayMemory> FC;
+    /// Homogeneity specific variables
+    const unsigned int TreeHeight;
+    const FReal RootCellWidth;
+    /// Utils
+    typedef FUnifTensor<ORDER> TensorType;
+    unsigned int node_diff[nnodes*nnodes];
+    /// DFT specific
+    static const int dimfft = 1; // unidim FFT since fully circulant embedding
+    typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+    DftClass Dft;
+    const unsigned int opt_rc; // specific to real valued kernel
 
 
-	static const std::string getFileName()
-	{
-		const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
-		std::stringstream stream;
-		stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
-					 << "_o" << order << ".bin";
-		return stream.str();
-	}
-
-	
-public:
-	template <typename MatrixKernelClass>
-	FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
-		: TreeHeight(inTreeHeight),
-      RootCellWidth(inRootCellWidth),
-      Dft(), opt_rc(rc/2+1)
-      
-	{
-    // init DFT
-    const int steps[dimfft] = {rc};
-    Dft.buildDFT(steps);
-
-    // initialize root node ids
-    TensorType::setNodeIdsDiff(node_diff);
-    
-    // init M2L operators
-    FC = new FComplex*[TreeHeight];
-    FC[0]       = NULL; FC[1]       = NULL;
-		for (unsigned int l=2; l<TreeHeight; ++l) FC[l] = NULL;
-
-    // Compute and Set M2L Operators
-    ComputeAndSet(MatrixKernel);
-
-  }
-
-  /*
-   * Copy constructor
-   */
-  FUnifM2LHandler(const FUnifM2LHandler& other)
-    : FC(other.FC),
-      TreeHeight(other.TreeHeight),
-      RootCellWidth(other.RootCellWidth),
-      Dft(), opt_rc(other.opt_rc)
-  {    
-    // init DFT
-    const int steps[dimfft] = {rc};
-    Dft.buildDFT(steps); 
-
-    // copy node_diff
-    memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
-  }
-
-
-
-	~FUnifM2LHandler()
-	{
-    for (unsigned int l=0; l<TreeHeight; ++l) 
-      if (FC[l] != NULL) delete [] FC[l];
-	}
-
-	/**
-	 * Computes and sets the matrix \f$C_t\f$
-	 */
-	template <typename MatrixKernelClass>
-	void ComputeAndSet(const MatrixKernelClass *const MatrixKernel)
-	{
-		// measure time
-		FTic time; time.tic();
-
-    // Compute matrix of interactions at each level !! (since non homog)
-		FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
-		CellWidth /= FReal(2.);                      // at level 2
-		for (unsigned int l=2; l<TreeHeight; ++l) {
-//			precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
-      // check if aready set
-      if (FC[l]) throw std::runtime_error("M2L operator already set");
-      Compute<order>(MatrixKernel,CellWidth,FC[l]);
-			CellWidth /= FReal(2.);                    // at level l+1 
-		}
-
-    // Compute memory usage
-    unsigned long sizeM2L = (TreeHeight-1)*343*opt_rc*sizeof(FComplex);
-
-
-		// write info
-		std::cout << "Compute and Set M2L operators of " << TreeHeight-2 << " levels ("<< long(sizeM2L/**1e-6*/) <<" Bytes) in "
-							<< time.tacAndElapsed() << "sec."	<< std::endl;
-	}
-
-
-  /**
-	 * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
-	 * seen as part of the L2L operation.
-	 *
-	 * @param[in] X transformed local expansion of size \f$r\f$
-	 * @param[out] x local expansion of size \f$\ell^3\f$
-	 */
-  void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
-  { 
-    FReal Px[rc];
-    FBlas::setzero(rc,Px);
-    // Apply forward Discrete Fourier Transform
-    Dft.applyIDFT(FX,Px);
-
-    // Unapply Zero Padding
-    for (unsigned int j=0; j<nnodes; ++j)
-      x[j]+=Px[node_diff[nnodes-j-1]];
-  }
-
-  /**
-	 * The M2L operation \f$X+=C_tY\f$ is performed in Fourier space by 
-   * application of the convolution theorem (i.e. \f$FX+=FC_t:FY\f$), 
-   * where \f$FY\f$ is the transformed multipole expansion and 
-   * \f$FX\f$ is the transformed local expansion, both padded with zeros and
-	 * of size \f$r_c=(2\times ORDER-1)^3\f$ or \f$r_c^{opt}=\frac{r_c}{2}+1\f$ 
-   * for real valued kernels. The index \f$t\f$ denotes the transfer vector 
-	 * of the target cell to the source cell.
-	 *
-	 * @param[in] transfer transfer vector
-	 * @param[in] FY transformed multipole expansion
-	 * @param[out] FX transformed local expansion
-	 * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
-	 */
-  void applyFC(const unsigned int idx, const unsigned int TreeLevel, const FReal,
-               const FComplex *const FY, FComplex *const FX) const
-  {
-    // Perform entrywise product manually
-    for (unsigned int j=0; j<opt_rc; ++j){
-      FX[j].addMul(FC[TreeLevel][idx*opt_rc + j],FY[j]);
+    static const std::string getFileName()
+    {
+        const char precision_type = (typeid(FReal)==typeid(double) ? 'd' : 'f');
+        std::stringstream stream;
+        stream << "m2l_k"/*<< MatrixKernelClass::getID()*/ << "_" << precision_type
+               << "_o" << order << ".bin";
+        return stream.str();
     }
-  }
+
+    
+public:
+    template <typename MatrixKernelClass>
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
+        : TreeHeight(inTreeHeight),
+          RootCellWidth(inRootCellWidth),
+          Dft(), opt_rc(rc/2+1)
+    {
+        // init DFT
+        const int steps[dimfft] = {rc};
+        Dft.buildDFT(steps);
+
+        // initialize root node ids
+        TensorType::setNodeIdsDiff(node_diff);
+        
+        // init M2L operators
+        FC = new FComplex*[TreeHeight];
+        FC[0]       = NULL; FC[1]       = NULL;
+        for (unsigned int l=2; l<TreeHeight; ++l) FC[l] = NULL;
+
+        // Compute and Set M2L Operators
+        ComputeAndSet(MatrixKernel);
+
+    }
+
+    /*
+     * Copy constructor
+     */
+    FUnifM2LHandler(const FUnifM2LHandler& other)
+      : FC(other.FC),
+        TreeHeight(other.TreeHeight),
+        RootCellWidth(other.RootCellWidth),
+        Dft(), opt_rc(other.opt_rc)
+    {    
+        // init DFT
+        const int steps[dimfft] = {rc};
+        Dft.buildDFT(steps); 
+        // copy node_diff
+        memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
+    }
 
 
-  /**
-	 * Transform densities \f$Y= DFT(y)\f$ of a source cell. This operation
-	 * can be seen as part of the M2M operation.
-	 *
-	 * @param[in] y multipole expansion of size \f$\ell^3\f$
-	 * @param[out] Y transformed multipole expansion of size \f$r\f$
-	 */
-  void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
-  {
-    FReal Py[rc];
-    FBlas::setzero(rc,Py);
 
-    // Apply Zero Padding
-    for (unsigned int i=0; i<nnodes; ++i)
-      Py[node_diff[i*nnodes]]=y[i];
+    ~FUnifM2LHandler()
+    {
+        for (unsigned int l=0; l<TreeHeight; ++l) 
+            if (FC[l] != NULL) delete [] FC[l];
+    }
 
-    // Apply forward Discrete Fourier Transform
-    Dft.applyDFT(Py,FY);
+    /**
+     * Computes and sets the matrix \f$C_t\f$
+     */
+    template <typename MatrixKernelClass>
+    void ComputeAndSet(const MatrixKernelClass *const MatrixKernel)
+    {
+        // measure time
+        FTic time; time.tic();
 
-  }
+        // Compute matrix of interactions at each level !! (since non homog)
+        FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
+        CellWidth /= FReal(2.);                      // at level 2
+        for (unsigned int l=2; l<TreeHeight; ++l) {
+
+            // check if already set
+            if (FC[l]) throw std::runtime_error("M2L operator already set");
+            Compute<order>(MatrixKernel,CellWidth,FC[l]);
+            CellWidth /= FReal(2.);                    // at level l+1 
+
+        }
+
+        // Compute memory usage
+        unsigned long sizeM2L = (TreeHeight-2)*343*opt_rc*sizeof(FComplex);
+
+        // write info
+        std::cout << "Compute and set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" B) in "
+                  << time.tacAndElapsed() << "sec."   << std::endl;
+    }
+
+
+    /**
+    * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
+    * seen as part of the L2L operation.
+    *
+    * @param[in] X transformed local expansion of size \f$r\f$
+    * @param[out] x local expansion of size \f$\ell^3\f$
+    */
+    void unapplyZeroPaddingAndDFT(const FComplex *const FX, FReal *const x) const
+    { 
+        FReal Px[rc];
+        FBlas::setzero(rc,Px);
+        // Apply forward Discrete Fourier Transform
+        Dft.applyIDFT(FX,Px);
+        // Unapply Zero Padding
+        for (unsigned int j=0; j<nnodes; ++j)
+            x[j]+=Px[node_diff[nnodes-j-1]];
+    }
+
+    /**
+     * The M2L operation \f$X+=C_tY\f$ is performed in Fourier space by 
+     * application of the convolution theorem (i.e. \f$FX+=FC_t:FY\f$), 
+     * where \f$FY\f$ is the transformed multipole expansion and 
+     * \f$FX\f$ is the transformed local expansion, both padded with zeros and
+     * of size \f$r_c=(2\times ORDER-1)^3\f$ or \f$r_c^{opt}=\frac{r_c}{2}+1\f$ 
+     * for real valued kernels. The index \f$t\f$ denotes the transfer vector 
+     * of the target cell to the source cell.
+     *
+     * @param[in] transfer transfer vector
+     * @param[in] FY transformed multipole expansion
+     * @param[out] FX transformed local expansion
+     * @param[in] CellWidth needed for the scaling of the compressed M2L operators which are based on a homogeneous matrix kernel computed for the reference cell width \f$w=2\f$, ie in \f$[-1,1]^3\f$.
+     */
+    void applyFC(const unsigned int idx, const unsigned int TreeLevel, const FReal,
+                 const FComplex *const FY, FComplex *const FX) const
+    {
+        // Perform entrywise product manually
+        for (unsigned int j=0; j<opt_rc; ++j){
+            FX[j].addMul(FC[TreeLevel][idx*opt_rc + j],FY[j]);
+        }
+    }
+
+
+    /**
+     * Transform densities \f$Y= DFT(y)\f$ of a source cell. This operation
+     * can be seen as part of the M2M operation.
+     *
+     * @param[in] y multipole expansion of size \f$\ell^3\f$
+     * @param[out] Y transformed multipole expansion of size \f$r\f$
+     */
+    void applyZeroPaddingAndDFT(FReal *const y, FComplex *const FY) const
+    {
+        FReal Py[rc];
+        FBlas::setzero(rc,Py);
+        // Apply Zero Padding
+        for (unsigned int i=0; i<nnodes; ++i)
+            Py[node_diff[i*nnodes]]=y[i];
+        // Apply forward Discrete Fourier Transform
+        Dft.applyDFT(Py,FY);
+    }
 
 
 };
