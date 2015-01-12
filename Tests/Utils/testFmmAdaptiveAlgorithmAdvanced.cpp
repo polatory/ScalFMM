@@ -14,7 +14,8 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-//
+// Keep in private GIT
+// @SCALFMM_PRIVATE
 #include <iostream>
 #include <cstdio>
 
