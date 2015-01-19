@@ -150,7 +150,7 @@ else()
 ##############################################################################
   SET(CMAKE_BUILD_TYPE Release)
   # force -O3 in release
-#  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
   STRING(REPLACE "-O2" "-O3" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
   SET(CMAKE_CXX_FLAGS_TYPE  "${CMAKE_CXX_FLAGS_RELEASE}")
   # if compiler is intel add -ip
