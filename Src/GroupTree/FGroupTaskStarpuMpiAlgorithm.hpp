@@ -11,6 +11,7 @@
 #include "../Utils/FTic.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FAlignedMemory.hpp"
+#include "../Utils/FAssert.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -63,7 +64,8 @@ protected:
     KernelClass** kernels;        //< The kernels
     ThisClass* thisptr;
 
-    std::vector<starpu_data_handle_t>* handles;
+    std::vector<starpu_data_handle_t>* handles_up;
+    std::vector<starpu_data_handle_t>* handles_down;
 
     starpu_codelet p2m_cl;
     starpu_codelet m2m_cl[9];
@@ -81,7 +83,7 @@ protected:
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
         : comm(inComm), MaxThreads(inMaxThreads), tree(inTree), kernels(nullptr),
-          thisptr(this), handles(nullptr){
+          thisptr(this), handles_up(nullptr), handles_down(nullptr){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
         FAssertLF(MaxThreads <= STARPU_MAXCPUS, "number of threads to high");
@@ -95,7 +97,9 @@ public:
 
         MaxThreads = starpu_worker_get_count();//starpu_cpu_worker_get_count();
 
-        handles = new std::vector<starpu_data_handle_t>[tree->getHeight()+1];
+        handles_up = new std::vector<starpu_data_handle_t>[tree->getHeight()+1];
+        handles_down = new std::vector<starpu_data_handle_t>[tree->getHeight()+1];
+
         kernels = new KernelClass*[MaxThreads];
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             this->kernels[idxThread] = new KernelClass(*inKernels);
@@ -115,7 +119,8 @@ public:
 
         cleanHandle();
         cleanHandleMpi();
-        delete[] handles;
+        delete[] handles_up;
+        delete[] handles_down;
 
         starpu_resume();
         starpu_mpi_shutdown();
@@ -222,17 +227,25 @@ protected:
     /** dealloc in a starpu way all the defined handles */
     void cleanHandle(){
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
-            for(int idxHandle = 0 ; idxHandle < int(handles[idxLevel].size()) ; ++idxHandle){
-                starpu_data_unregister(handles[idxLevel][idxHandle]);
+            for(int idxHandle = 0 ; idxHandle < int(handles_up[idxLevel].size()) ; ++idxHandle){
+                starpu_data_unregister(handles_up[idxLevel][idxHandle]);
             }
-            handles[idxLevel].clear();
+            handles_up[idxLevel].clear();
+            for(int idxHandle = 0 ; idxHandle < int(handles_down[idxLevel].size()) ; ++idxHandle){
+                starpu_data_unregister(handles_down[idxLevel][idxHandle]);
+            }
+            handles_down[idxLevel].clear();
         }
         {
             const int idxLevel = tree->getHeight();
-            for(int idxHandle = 0 ; idxHandle < int(handles[idxLevel].size()) ; ++idxHandle){
-                starpu_data_unregister(handles[idxLevel][idxHandle]);
+            for(int idxHandle = 0 ; idxHandle < int(handles_up[idxLevel].size()) ; ++idxHandle){
+                starpu_data_unregister(handles_up[idxLevel][idxHandle]);
             }
-            handles[idxLevel].clear();
+            handles_up[idxLevel].clear();
+            for(int idxHandle = 0 ; idxHandle < int(handles_down[idxLevel].size()) ; ++idxHandle){
+                starpu_data_unregister(handles_down[idxLevel][idxHandle]);
+            }
+            handles_down[idxLevel].clear();
         }
     }
 
@@ -672,7 +685,7 @@ protected:
                 FLOG(FLog::Controller << "[SMpi] Post a send during P2P for Idx " << tree->getParticleGroup(localId)->getStartingIndex() <<
                      " and dest is " << sd.dest << "\n");
 
-                starpu_mpi_isend_detached( handles[tree->getHeight()][localId], sd.dest,
+                starpu_mpi_isend_detached( handles_up[tree->getHeight()][localId], sd.dest,
                         getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex()),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
@@ -691,7 +704,7 @@ protected:
                 FLOG(FLog::Controller << "[SMpi] Post a send during M2L for Idx " << tree->getCellGroup(sd.level, localId)->getStartingIndex() <<
                      " and dest is " << sd.dest << "\n");
 
-                starpu_mpi_isend_detached( handles[sd.level][localId], sd.dest,
+                starpu_mpi_isend_detached( handles_up[sd.level][localId], sd.dest,
                         getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex()),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
@@ -728,20 +741,26 @@ protected:
         cleanHandle();
 
         for(int idxLevel = 2 ; idxLevel < tree->getHeight() ; ++idxLevel){
-            handles[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
+            handles_up[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
+            handles_down[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
+                starpu_variable_data_register(&handles_up[idxLevel][idxGroup], 0,
+                                              (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte());
+                starpu_variable_data_register(&handles_down[idxLevel][idxGroup], 0,
                                               (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte());
             }
         }
         {
             const int idxLevel = tree->getHeight();
-            handles[idxLevel].resize(tree->getNbParticleGroup());
+            handles_up[idxLevel].resize(tree->getNbParticleGroup());
+            handles_down[idxLevel].resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-                starpu_variable_data_register(&handles[idxLevel][idxGroup], 0,
+                starpu_variable_data_register(&handles_up[idxLevel][idxGroup], 0,
+                                              (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
+                starpu_variable_data_register(&handles_down[idxLevel][idxGroup], 0,
                                               (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
             }
         }
@@ -933,8 +952,8 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
                     STARPU_VALUE, &thisptr, sizeof(ThisClass*),
-                    STARPU_RW, handles[tree->getHeight()-1][idxGroup],
-                    STARPU_R, handles[tree->getHeight()][idxGroup],
+                    STARPU_RW, handles_up[tree->getHeight()-1][idxGroup],
+                    STARPU_R, handles_up[tree->getHeight()][idxGroup],
                     0);
         }
 
@@ -983,7 +1002,7 @@ protected:
 
                 struct starpu_task* const task = starpu_task_create();
                 task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
-                task->dyn_handles[0] = handles[idxLevel][idxGroup];
+                task->dyn_handles[0] = handles_up[idxLevel][idxGroup];
 
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -993,13 +1012,13 @@ protected:
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
-                task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                task->dyn_handles[nbSubCellGroups + 1] = handles_up[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     idxSubGroup += 1;
-                    task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                    task->dyn_handles[nbSubCellGroups + 1] = handles_up[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
@@ -1060,7 +1079,7 @@ protected:
                 if(idxBlockToRecv){// Perform the work
                     struct starpu_task* const task = starpu_task_create();
                     task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
-                    task->dyn_handles[0] = handles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1];
+                    task->dyn_handles[0] = handles_up[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1];
 
                     // Copy at max 8 groups
                     int nbSubCellGroups = 0;
@@ -1106,7 +1125,7 @@ protected:
                         FLOG(FLog::Controller << "[SMpi] Post a send during M2M for Idx " << tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex() <<
                              " and dest is " << dest << "\n");
 
-                        starpu_mpi_isend_detached( handles[idxLevel+1][lowerIdxToSend], dest,
+                        starpu_mpi_isend_detached( handles_up[idxLevel+1][lowerIdxToSend], dest,
                                 getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex()),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         lowerIdxToSend += 1;
@@ -1192,7 +1211,7 @@ protected:
                             STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                            STARPU_RW, handles[idxLevel][idxGroup],
+                            STARPU_RW, handles_down[idxLevel][idxGroup],
                             STARPU_R, remoteCellGroups[idxLevel][interactionid].handle,
                             0);
                 }
@@ -1252,7 +1271,8 @@ protected:
                 starpu_insert_task(&m2l_cl_in,
                         STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                        STARPU_RW, handles[idxLevel][idxGroup],
+                                   STARPU_RW, handles_down[idxLevel][idxGroup],
+                                   STARPU_R, handles_up[idxLevel][idxGroup],
                         0);
             }
             FLOG( timerInBlock.tac() );
@@ -1267,8 +1287,10 @@ protected:
                             STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                            STARPU_RW, handles[idxLevel][idxGroup],
-                            STARPU_RW, handles[idxLevel][interactionid],
+                            STARPU_RW, handles_down[idxLevel][idxGroup],
+                            STARPU_RW, handles_down[idxLevel][interactionid],
+                                       STARPU_R, handles_up[idxLevel][idxGroup],
+                                       STARPU_R, handles_up[idxLevel][interactionid],
                             0);
                 }
             }
@@ -1280,6 +1302,7 @@ protected:
     }
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
+        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
@@ -1326,6 +1349,9 @@ protected:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
+        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
+        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
+
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
         CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
@@ -1399,7 +1425,7 @@ protected:
                         FLOG(FLog::Controller << "[SMpi] Post a send during L2L for Idx " << tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex() <<
                              " and dest is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner << "\n");
 
-                        starpu_mpi_isend_detached( handles[idxLevel][idxLastBlock],
+                        starpu_mpi_isend_detached( handles_down[idxLevel][idxLastBlock],
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
                                                    getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex()),
                                                    comm.getComm(), 0/*callback*/, 0/*arg*/ );
@@ -1457,13 +1483,13 @@ protected:
                         }
                         // Copy at max 8 groups
                         int nbSubCellGroups = 0;
-                        task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                        task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                         nbSubCellGroups += 1;
                         while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((parentEndingIdx<<3)+7)
                               && (idxSubGroup + 1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                               && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (parentEndingIdx<<3)+7 ){
                             idxSubGroup += 1;
-                            task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                            task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                             nbSubCellGroups += 1;
                             FAssertLF( nbSubCellGroups <= 9 );
                         }
@@ -1496,7 +1522,7 @@ protected:
 
                 struct starpu_task* const task = starpu_task_create();
                 task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*10);
-                task->dyn_handles[0] = handles[idxLevel][idxGroup];
+                task->dyn_handles[0] = handles_down[idxLevel][idxGroup];
 
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -1506,13 +1532,13 @@ protected:
                 }
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
-                task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     idxSubGroup += 1;
-                    task->dyn_handles[nbSubCellGroups + 1] = handles[idxLevel+1][idxSubGroup];
+                    task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
@@ -1605,7 +1631,7 @@ protected:
                 starpu_insert_task(&p2p_cl_inout_mpi,
                         STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                        STARPU_RW, handles[tree->getHeight()][idxGroup],
+                        STARPU_RW, handles_down[tree->getHeight()][idxGroup],
                         STARPU_R, remoteParticleGroupss[interactionid].handle,
                         0);
             }
@@ -1656,7 +1682,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
                     STARPU_VALUE, &thisptr, sizeof(ThisClass*),
-                    STARPU_RW, handles[tree->getHeight()][idxGroup],
+                    STARPU_RW, handles_down[tree->getHeight()][idxGroup],
                     0);
         }
         FLOG( timerInBlock.tac() );
@@ -1668,8 +1694,8 @@ protected:
                 starpu_insert_task(&p2p_cl_inout,
                         STARPU_VALUE, &thisptr, sizeof(ThisClass*),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                        STARPU_RW, handles[tree->getHeight()][idxGroup],
-                        STARPU_RW, handles[tree->getHeight()][interactionid],
+                        STARPU_RW, handles_down[tree->getHeight()][idxGroup],
+                        STARPU_RW, handles_down[tree->getHeight()][interactionid],
                         0);
             }
         }
@@ -1768,8 +1794,8 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
                     STARPU_VALUE, &thisptr, sizeof(ThisClass*),
-                    STARPU_R, handles[tree->getHeight()-1][idxGroup],
-                    STARPU_RW, handles[tree->getHeight()][idxGroup],
+                    STARPU_R, handles_down[tree->getHeight()-1][idxGroup],
+                    STARPU_RW, handles_down[tree->getHeight()][idxGroup],
                     0);
         }
 
