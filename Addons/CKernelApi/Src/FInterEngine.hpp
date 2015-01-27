@@ -187,8 +187,6 @@ public:
                     forcesToFill[indexes[idxPart]*3+0] = sources->getForcesX()[idxPart];
                     forcesToFill[indexes[idxPart]*3+1] = sources->getForcesY()[idxPart];
                     forcesToFill[indexes[idxPart]*3+2] = sources->getForcesZ()[idxPart];
-                    printf("forces found : %e,%e,%e\n",
-                           sources->getForcesX()[idxPart],sources->getForcesY()[idxPart],sources->getForcesZ()[idxPart]);
                 }
             });
     }

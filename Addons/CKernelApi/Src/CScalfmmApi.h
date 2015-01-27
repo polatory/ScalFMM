@@ -380,10 +380,19 @@ typedef void (*Callback_M2M)(int level, void* parentCell, int childPosition, voi
  * @param targetCell pointer to cell to be filled
  * @param sourceCellPosition number of source cell (source cell
  * position in the tree can inferred from its number (refer to doc))
- * @param sourceCell array of cell to be read
+ * @param sourceCell cell to be read
  * @param userData datas specific to the user's kernel
  */
 typedef void (*Callback_M2L)(int level, void* targetCell, int sourceCellPosition, void* sourceCell, void* userData);
+
+/**
+ * @brief Function to be filled by user's M2L
+ * @param level current level in the tree
+ * @param targetCell pointer to cell to be filled
+ * @param sourceCell array of cell to be read
+ * @param userData datas specific to the user's kernel
+ */
+typedef void (*Callback_M2LFull)(int level, void* targetCell, void* sourceCell[343], void* userData);
 
 /**
  * @brief Function to be filled by user's L2L
@@ -415,6 +424,19 @@ typedef void (*Callback_L2P)(void* leafCell, int nbParticles,const int* particle
 typedef void (*Callback_P2P)(int nbParticles, const int* particleIndexes, int nbSourceParticles, const int* sourceParticleIndexes, void* userData);
 
 /**
+ * @brief Function to be filled by user's P2P
+ * @param nbParticles number of particle in current leaf
+ * @param particleIndexes indexes of particles currently computed
+ * @param sourceCell array of the neighbors source cells
+ * @param sourceParticleIndexes array of indices of source particles currently computed
+ * @param sourceNbPart array containing the number of part in each neighbors
+ * @param userData datas specific to the user's kernel
+ */
+typedef void (*Callback_P2PFull)(int nbParticles, const int* particleIndexes,
+                                 const int * sourceParticleIndexes[27],int sourceNbPart[27], void* userData);
+
+
+/**
  * @brief Function to be filled by user's P2P inside the leaf
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
@@ -433,9 +455,11 @@ typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2M p2m;
     Callback_M2M m2m;
     Callback_M2L m2l;
+    Callback_M2LFull m2l_full;
     Callback_L2L l2l;
     Callback_L2P l2p;
     Callback_P2P p2p;
+    Callback_P2PFull p2p_full;
     Callback_P2PInner p2pinner;
 }Scalfmm_Kernel_Descriptor;
 
