@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 //For timing monitoring
 #include <time.h>
 #include <sys/time.h>
@@ -106,17 +107,22 @@ void print_difference_elapsed(Timer* inTimer1,Timer*inTimer2){
  * @param number of particle (no default value)
  */
 int main(int argc, char ** av){
-    omp_set_num_threads(1);
+    //omp_set_num_threads(1);
     printf("Start\n");
     if(argc<2){
-        printf("Use : %s nb_part\n exiting\n",av[0]);
+        printf("Use : %s nb_part (optionnal : TreeHeight) \nexiting\n",av[0]);
         exit(0);
     }
     int nbPart= atoi(av[1]);
+    int treeHeight = 5 ;
+    if(argc>2){
+        int treeHeight = atoi(av[2]);
+    }
+
     double* particleXYZ = malloc(sizeof(double)*3*nbPart);
     double* physicalValues = malloc(sizeof(double)*nbPart);
 
-    int treeHeight = 5;
+
     double boxWidth = 1.0;
     double boxCenter[3];
     boxCenter[0] = boxCenter[1] = boxCenter[2] = 0.0;
@@ -193,12 +199,29 @@ int main(int argc, char ** av){
 
     //Set my datas
     UserData userDatas;
-    userDatas.kernelStruct = ChebKernelStruct_create(treeHeight,boxWidth,boxCenter); // Set my kernel inside userDatas
+
+    int nb_threads = omp_get_max_threads();
+    int idThreads= 0;
+
+    //Create as many kernels as there are threads in order to void concurrent write
+    userDatas.kernelStruct = ChebKernelStruct_create(treeHeight,boxWidth,boxCenter);
+    /* malloc(sizeof(void *)*nb_threads); */
+    /* for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){ */
+    /*     userDatas.kernelStruct[idThreads] = ChebKernelStruct_create(treeHeight,boxWidth,boxCenter); // Set my kernel inside userDatas */
+    /* } */
+
+    //Only read, so no split needed
     userDatas.insertedPositions = particleXYZ;                                       // Set the position
     userDatas.myPhyValues = physicalValues;                                          // Set the physical values
-    double * forcesToStore =  malloc(sizeof(double)*nbPart*3);                       // Create array to store results
-    memset(forcesToStore,0,sizeof(double)*nbPart*3);                                 // memset array
-    userDatas.forcesComputed = forcesToStore;                                        // Set the forces array
+
+    //Create as many array of forces as there are threads in order to void concurrent write
+    double ** forcesToStore = malloc(sizeof(double*)*nb_threads);
+    //For each array, initialisation
+    for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){
+        forcesToStore[idThreads] =  malloc(sizeof(double)*nbPart*3); //allocate memory
+        memset(forcesToStore[idThreads],0,sizeof(double)*nbPart*3);  //set to zero (IMPORTANT, as operators usually "+=" on forces)
+    }
+    userDatas.forcesComputed = forcesToStore;
 
     //Give ScalFMM the datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&userDatas);
@@ -210,6 +233,17 @@ int main(int argc, char ** av){
     tic(&interface_timer);
     scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
     tac(&interface_timer);
+
+    //Reduction on forces array
+    {
+        int idxPart;
+        for(idThreads=1 ; idThreads<nb_threads ; ++idThreads){
+            for(idxPart=0 ; idxPart<nbPart*3 ; ++idxPart){
+                //Everything is stored in first array
+                forcesToStore[0][idxPart] += forcesToStore[idThreads][idxPart];
+            }
+        }
+    }
 
     printf("User defined Chebyshev done\n");
     print_elapsed(&interface_timer);
@@ -228,34 +262,49 @@ int main(int argc, char ** av){
     double * forcesRef = malloc(sizeof(double)*3*nbPart);
     memset(forcesRef,0,sizeof(double)*3*nbPart);
     scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef);
-    {
+    {//Comparison part
         int idxPart;
         int nbPartOkay = 0;
         for(idxPart=0 ; idxPart<nbPart ; ++idxPart ){
             double diffX,diffY,diffZ;
-            diffX = userDatas.forcesComputed[idxPart*3+0]-forcesRef[idxPart*3+0];
-            diffY = userDatas.forcesComputed[idxPart*3+1]-forcesRef[idxPart*3+1];
-            diffZ = userDatas.forcesComputed[idxPart*3+2]-forcesRef[idxPart*3+2];
-            /* printf("id : %d : %e, %e, %e\n",idxPart,diffX,diffY,diffZ); */
-            if(diffX < 0.00000001 || diffY < 0.00000001 || diffZ < 0.00000001){
+            diffX = forcesToStore[0][idxPart*3+0]-forcesRef[idxPart*3+0];
+            diffY = forcesToStore[0][idxPart*3+1]-forcesRef[idxPart*3+1];
+            diffZ = forcesToStore[0][idxPart*3+2]-forcesRef[idxPart*3+2];
+            if(diffX < 0.00000001 && diffY < 0.00000001 && diffZ < 0.00000001){
                 nbPartOkay++;
+            }
+            else{
+                //printf("id : %d : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
             }
             //That part is to verify with our usual exec' if everything is alright
             if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
-                printf("id : %d : %e, %e, %e\n",idxPart,userDatas.forcesComputed[idxPart*3+0],
-                       userDatas.forcesComputed[idxPart*3+1],
-                       userDatas.forcesComputed[idxPart*3+2]);
+                printf("User one's id : %d : %e, %e, %e\n",idxPart,
+                       forcesToStore[0][idxPart*3+0],
+                       forcesToStore[0][idxPart*3+1],
+                       forcesToStore[0][idxPart*3+2]);
+                printf("Chebyshev one's id : %d : %e, %e, %e\n",idxPart,
+                       forcesRef[idxPart*3+0],
+                       forcesRef[idxPart*3+1],
+                       forcesRef[idxPart*3+2]);
             }
         }
         printf("End of simulation \n \t Percentage of good parts : %d/%d (%f %%) \n",
                nbPartOkay,nbPart,(((double) nbPartOkay)/(double)nbPart)*100);
     }
+    printf("Free the kernels\n");
 
-    printf("Free the Handle ...\n");
+    printf("Free the Handles ...\n");
     scalfmm_dealloc_handle(handle,cheb_free_cell);
     scalfmm_dealloc_handle(handle_ref,NULL);
 
     free(particleXYZ);
     free(physicalValues);
+    free(forcesRef);
+    //free the thread' specific datas
+    for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){
+        free(forcesToStore[idThreads]);
+    }
+    ChebKernelStruct_free(userDatas.kernelStruct);
+
     free(userDatas.forcesComputed);
 }

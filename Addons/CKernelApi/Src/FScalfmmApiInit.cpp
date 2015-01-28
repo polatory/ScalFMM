@@ -24,16 +24,16 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
 
         handle->engine = new FInterEngine<ChebCell,ChebKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
         break;
-    // case 2:
-    //     //TODO typedefs
-    //     typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
-    //     typedef FUnifCell<7>                                                         UnifCell;
+        // case 2:
+        //     //TODO typedefs
+        //     typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
+        //     typedef FUnifCell<7>                                                         UnifCell;
 
-    //     typedef FInterpMatrixKernelR                                        MatrixKernelClass;
-    //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+        //     typedef FInterpMatrixKernelR                                        MatrixKernelClass;
+        //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
-    //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
-    //     break;
+        //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+        //     break;
 
     default:
         std::cout<< "Kernel type unsupported" << std::endl;
@@ -67,14 +67,12 @@ extern "C" {
 typedef struct FChebCell_struct{
     //Store what's needed
     FChebCell<7> * cell;
-    long long int index;
 }ChebCellStruct;
 
 
 //How to create/destroy cells
 extern "C" ChebCellStruct * ChebCellStruct_create(long long int inIndex,int * position){
     ChebCellStruct * newCell = new ChebCellStruct();
-    newCell->index = inIndex;
     newCell->cell = new FChebCell<7>();
     newCell->cell->setMortonIndex(inIndex);
     newCell->cell->setCoordinate(position[0],position[1],position[2]);
@@ -92,7 +90,7 @@ extern "C" void ChebCellStruct_free(ChebCellStruct * inCell){
 
 typedef struct FChebKernel_struct{
     //Be ready full duplication go there !!!
-    FChebSymKernel<FChebCell<7>,FP2PParticleContainerIndexed<>,FInterpMatrixKernelR,7> * kernel;
+    FChebSymKernel<FChebCell<7>,FP2PParticleContainerIndexed<>,FInterpMatrixKernelR,7> ** kernel;
     FInterpMatrixKernelR * matrix;
 } ChebKernelStruct;
 
@@ -100,21 +98,30 @@ typedef struct FChebKernel_struct{
 extern "C" ChebKernelStruct * ChebKernelStruct_create(int inTreeHeight,
                                                       double inBoxWidth,
                                                       double* inBoxCenter){
-
+    //typedef to lighten the writing
+    typedef FChebSymKernel<FChebCell<7>, FP2PParticleContainerIndexed<>, FInterpMatrixKernelR,7> KernelClass;
     ChebKernelStruct * newKernel = new ChebKernelStruct();
     newKernel->matrix= new FInterpMatrixKernelR();
-    newKernel->kernel =
-        new FChebSymKernel<FChebCell<7>,FP2PParticleContainerIndexed<>,
-                           FInterpMatrixKernelR,7>(inTreeHeight,
-                                                   inBoxWidth,
-                                                   FPoint(inBoxCenter[0],inBoxCenter[1],inBoxCenter[2]),
-                                                   newKernel->matrix);
+    int nb_threads = omp_get_max_threads();
+    newKernel->kernel = new KernelClass*[nb_threads];
+    newKernel->kernel[0]=new KernelClass(inTreeHeight,
+                                         inBoxWidth,
+                                         FPoint(inBoxCenter[0], inBoxCenter[1], inBoxCenter[2]),
+                                         newKernel->matrix);
+
+    for(int idThreads=1 ; idThreads<nb_threads ; ++idThreads){
+        newKernel->kernel[idThreads] = new KernelClass(*newKernel->kernel[0]);
+    }
     return newKernel;
 }
 
 extern "C" void ChebKernelStruct_free(void *inKernel){
     delete reinterpret_cast<ChebKernelStruct *>(inKernel)->matrix;
-    delete reinterpret_cast<ChebKernelStruct *>(inKernel)->kernel;
+    int nb_threads = omp_get_max_threads();
+    for(int idThreads=0 ; idThreads<nb_threads ; ++idThreads){
+        delete reinterpret_cast<ChebKernelStruct *>(inKernel)->kernel[idThreads];
+    }
+    delete [] reinterpret_cast<ChebKernelStruct *>(inKernel)->kernel;
     delete reinterpret_cast<ChebKernelStruct *>(inKernel);
 }
 
@@ -136,11 +143,14 @@ extern "C" void ChebKernel_P2M(void * leafCell, int nbParticles, const int *part
     ChebCellStruct * realCellStruct = reinterpret_cast<ChebCellStruct *>(leafCell);
     FChebCell<7> * realCell = realCellStruct->cell;
 
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //get the real chebyshev struct
     UserData * userDataKernel = reinterpret_cast<UserData *>(inKernel);
     ChebKernelStruct * realKernel = userDataKernel->kernelStruct;
 
-    realKernel->kernel->P2M(realCell, tempContainer);
+    realKernel->kernel[id_thread]->P2M(realCell, tempContainer);
     delete tempContainer;
 }
 
@@ -152,11 +162,14 @@ extern "C" void  ChebKernel_M2M(int level, void* parentCell, int childPosition, 
     FChebCell<7>* parentChebCell = parentCellStruct->cell;
     FChebCell<7>* childChebCell = childCellStruct->cell;
 
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
-    inKernelStruct->kernel->getPtrToInterpolator()->applyM2M(childPosition,
-                                                             childChebCell->getMultipole(0),
-                                                             parentChebCell->getMultipole(0));
+    inKernelStruct->kernel[id_thread]->getPtrToInterpolator()->applyM2M(childPosition,
+                                                                        childChebCell->getMultipole(0),
+                                                                        parentChebCell->getMultipole(0));
 }
 
 extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[343], void* inKernel){
@@ -175,24 +188,31 @@ extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[34
             arrayOfChebCell[i] = nullptr;
         }
     }
+
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
-    inKernelStruct->kernel->M2L(targetChebCell,arrayOfChebCell,0,level);
+    inKernelStruct->kernel[id_thread]->M2L(targetChebCell,arrayOfChebCell,0,level);
 }
 
 extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, void* childCell, void* inKernel){
-   //Get our structures
+    //Get our structures
     ChebCellStruct * parentCellStruct = reinterpret_cast<ChebCellStruct *>(parentCell);
     ChebCellStruct * childCellStruct = reinterpret_cast<ChebCellStruct *>(childCell);
     //get real cheb cell
     FChebCell<7>* parentChebCell = parentCellStruct->cell;
     FChebCell<7>* childChebCell = childCellStruct->cell;
 
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
-    inKernelStruct->kernel->getPtrToInterpolator()->applyL2L(childPosition,
-                                                             parentChebCell->getLocal(0),
-                                                             childChebCell->getLocal(0));
+    inKernelStruct->kernel[id_thread]->getPtrToInterpolator()->applyL2L(childPosition,
+                                                                        parentChebCell->getLocal(0),
+                                                                        childChebCell->getLocal(0));
 }
 
 extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* particleIndexes, void* inKernel){
@@ -202,8 +222,8 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
     FPoint pos;
     for(int i=0 ; i<nbParticles ; ++i){
         pos = FPoint(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
-                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
-                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
+                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
+                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
         double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
         tempContainer->push(pos,particleIndexes[i],Phi);
     }
@@ -212,13 +232,16 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
     //get real cheb cell
     FChebCell<7>* leafChebCell = leafCellStruct->cell;
 
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
 
-    inKernelStruct->kernel->L2P(leafChebCell,tempContainer);
+    inKernelStruct->kernel[id_thread]->L2P(leafChebCell,tempContainer);
 
     //Then retrieve the results
-    double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed;
+    double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
     const FVector<int>& indexes = tempContainer->getIndexes();
     for(int idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
@@ -233,6 +256,7 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
 
 void ChebKernel_P2P(int nbParticles, const int* particleIndexes,
                     const int * sourceParticleIndexes[27],int sourceNbPart[27],void* inKernel){
+
     //Create temporary FSimpleLeaf for target
     FP2PParticleContainerIndexed<>* tempContTarget = new FP2PParticleContainerIndexed<>();
     tempContTarget->reserve(nbParticles);
@@ -269,16 +293,19 @@ void ChebKernel_P2P(int nbParticles, const int* particleIndexes,
     }
     //Everything is fine, now, call Chebyshev P2P
 
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
 
     //Empty tree coordinate
     int coord[3] = {0,0,0};
 
-    inKernelStruct->kernel->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,0);
+    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,0);
 
     //get back forces
-    double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed;
+    double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
     const FVector<int>& indexes = tempContTarget->getIndexes();
     for(int idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContTarget->getForcesX()[idxPart];

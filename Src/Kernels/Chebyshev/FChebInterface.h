@@ -60,7 +60,7 @@ typedef struct myUserDatas{
     ChebKernelStruct * kernelStruct;
     double * insertedPositions;
     double * myPhyValues;
-    double * forcesComputed;
+    double ** forcesComputed;
 }UserData;
 
 
