@@ -46,7 +46,7 @@ public:
     }
 
     ~FAlgorithmTimers(){
-        delete Timers;
+        delete[] Timers;
     }
 
     const FTic * getAllTimers() const {

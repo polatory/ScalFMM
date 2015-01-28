@@ -72,6 +72,7 @@ public:
     void* getContainer() const {
         return userData;
     }
+
 };
 
 /**
@@ -115,10 +116,25 @@ public:
 
     /** Do nothing */
     virtual void M2L(CellClass* const FRestrict cell, const CellClass* interactions[], const int , const int level) {
-        if(kernel.m2l){
-            for(int idx = 0 ; idx < 343 ; ++idx){
-                if( interactions[idx] ){
-                    kernel.m2l(level, cell->getContainer(), idx, interactions[idx]->getContainer(), userData);
+        if(kernel.m2l_full){//all 343 interactions will be computed directly
+            //First, copy the fmm cell inside an array of user cells
+            void * userCellArray[343];
+            for(int i=0 ; i<343 ; ++i){
+                if(interactions[i] != nullptr){
+                    userCellArray[i] = interactions[i]->getContainer();
+                }
+                else{
+                    userCellArray[i] = nullptr;
+                }
+            }
+            kernel.m2l_full(level,cell->getContainer(),userCellArray,userData);
+        }
+        else{
+            if(kernel.m2l){
+                for(int idx = 0 ; idx < 343 ; ++idx){
+                    if( interactions[idx] ){
+                        kernel.m2l(level, cell->getContainer(), idx, interactions[idx]->getContainer(), userData);
+                    }
                 }
             }
         }
@@ -147,11 +163,27 @@ public:
                      ContainerClass* const neighbors[27], const int ){
         if(kernel.p2pinner) kernel.p2pinner(targets->getNbParticles(), targets->getIndexes().data(), userData);
 
+        if(kernel.p2p_full){
+            //Create the arrays of size and indexes
+            int nbPartPerNeighbors[27];
+            const int * indicesPerNeighbors[27];
+            for(int idx=0 ; idx<27 ; ++idx){
+                if(neighbors[idx]){
+                    nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
+                    indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
+                }
+                else{
+                    nbPartPerNeighbors[idx] = 0;
+                    indicesPerNeighbors[idx] = nullptr;
+                }
+            }
+            kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,userData);
+        }
         if(kernel.p2p){
             for(int idx = 0 ; idx < 27 ; ++idx){
                 if( neighbors[idx] ){
                     kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
-                                    neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
                 }
             }
         }
@@ -200,12 +232,14 @@ public:
 
     ~FUserKernelEngine(){
         delete octree;
-
+        octree=nullptr;
         if(arranger){
             delete arranger;
+            arranger=nullptr;
         }
         if(kernel){
             delete kernel;
+            kernel=nullptr;
         }
     }
 
@@ -233,6 +267,7 @@ public:
             octree->insert(FPoint(&XYZ[3*idPart]),idPart);
         }
         nbPart += NbPositions;
+        this->init_cell();
     }
 
     /**
@@ -389,8 +424,6 @@ public:
         }
     }
 
-
-
     /*
      * Call the user allocator on userDatas member field of each cell
      */
@@ -422,6 +455,7 @@ public:
         octree->forEachCell([&](CoreCell * currCell){
                 if(currCell->getContainer()){
                     user_cell_deallocator(currCell->getContainer());
+                    currCell->setContainer(nullptr);
                 }
             });
     }
