@@ -20,31 +20,31 @@
 
 #include "FUTester.hpp"
 
-#include "../../Src/Utils/FMpi.hpp"
-#include "../../Src/Utils/FTic.hpp"
+#include "Utils/FMpi.hpp"
+#include "Utils/FTic.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
-#include "../../Src/Containers/FVector.hpp"
-#include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Utils/FGlobal.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
+#include "Utils/FParameters.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
-#include "../../Src/Utils/FPoint.hpp"
+#include "Utils/FPoint.hpp"
 
-#include "../../Src/Components/FTestCell.hpp"
-#include "../../Src/Components/FTestKernels.hpp"
-#include "../../Src/Components/FTestParticleContainer.hpp"
+#include "Components/FTestCell.hpp"
+#include "Components/FTestKernels.hpp"
+#include "Components/FTestParticleContainer.hpp"
 
-#include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmThreadProc.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
-#include "../../Src/Files/FMpiFmaGenericLoader.hpp"
-#include "../../Src/Files/FMpiTreeBuilder.hpp"
+#include "Files/FMpiFmaGenericLoader.hpp"
+#include "Files/FMpiTreeBuilder.hpp"
 
-#include "../../Src/Components/FBasicKernels.hpp"
+#include "Components/FBasicKernels.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "BalanceTree/FLeafBalance.hpp"
 
 #include <iostream>
 #include <cstdio>

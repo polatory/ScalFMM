@@ -17,22 +17,22 @@
 
 #include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
-#include "../Src/Components/FTypedLeaf.hpp"
-#include "../Src/Extensions/FExtendCellType.hpp"
-#include "../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "Components/FTypedLeaf.hpp"
+#include "Extensions/FExtendCellType.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
 
-#include "../Src/Files/FRandomLoader.hpp"
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FRandomLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithmThreadTsm.hpp"
-#include "../Src/Core/FFmmAlgorithmTsm.hpp"
+#include "Core/FFmmAlgorithmThreadTsm.hpp"
+#include "Core/FFmmAlgorithmTsm.hpp"
 
 #include "FUTester.hpp"
 

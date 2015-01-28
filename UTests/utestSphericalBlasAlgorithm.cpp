@@ -14,23 +14,23 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Spherical/FSphericalCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalRotationKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlasKernel.hpp"
-#include "../Src/Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/Spherical/FSphericalKernel.hpp"
+#include "Kernels/Spherical/FSphericalRotationKernel.hpp"
+#include "Kernels/Spherical/FSphericalBlasKernel.hpp"
+#include "Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 

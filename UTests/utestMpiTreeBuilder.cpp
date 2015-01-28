@@ -27,22 +27,22 @@
 
 #include "FUTester.hpp"
 
-#include "../Src/Utils/FMpi.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Utils/FMpi.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
-#include "../Src/Files/FMpiFmaGenericLoader.hpp"
-#include "../Src/BalanceTree/FLeafBalance.hpp"
-#include "../Src/Containers/FTreeCoordinate.hpp"
+#include "Files/FFmaGenericLoader.hpp"
+#include "Files/FMpiFmaGenericLoader.hpp"
+#include "BalanceTree/FLeafBalance.hpp"
+#include "Containers/FTreeCoordinate.hpp"
 
 
-#include "../Src/Utils/FQuickSortMpi.hpp"
-#include "../Src/Utils/FBitonicSort.hpp"
-#include "../Src/Files/FMpiTreeBuilder.hpp"
-#include "../Src/Core/FCoreCommon.hpp"
+#include "Utils/FQuickSortMpi.hpp"
+#include "Utils/FBitonicSort.hpp"
+#include "Files/FMpiTreeBuilder.hpp"
+#include "Core/FCoreCommon.hpp"
 
-#include "../Src/Utils/FPoint.hpp"
-#include "../Src/Utils/FMath.hpp"
+#include "Utils/FPoint.hpp"
+#include "Utils/FMath.hpp"
 
 
 class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {

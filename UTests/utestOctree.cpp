@@ -15,18 +15,18 @@
 // ===================================================================================
 #include "FUTester.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FBlockAllocator.hpp"
-#include "../Src/Containers/FVector.hpp"
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FBlockAllocator.hpp"
+#include "Containers/FVector.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
-#include "../Src/Utils/FAssert.hpp"
-#include "../Src/Utils/FPoint.hpp"
+#include "Utils/FAssert.hpp"
+#include "Utils/FPoint.hpp"
 
-#include "../Src/Components/FBasicParticleContainer.hpp"
-#include "../Src/Components/FBasicCell.hpp"
+#include "Components/FBasicParticleContainer.hpp"
+#include "Components/FBasicCell.hpp"
 
-#include "../Src/Utils/FTic.hpp"
+#include "Utils/FTic.hpp"
 
 /**
   In this test we create a lot of different octree by using various height and subheigt

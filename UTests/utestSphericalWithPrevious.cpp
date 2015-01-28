@@ -15,23 +15,23 @@
 // ===================================================================================
 
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../Src/Kernels/Spherical/FSphericalKernel.hpp"
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "Kernels/Spherical/FSphericalCell.hpp"
+#include "Kernels/Spherical/FSphericalKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Files/FTreeIO.hpp"
+#include "Files/FTreeIO.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 /**
  * This test compare a previous FMM result with a previous simulation result.

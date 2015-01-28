@@ -20,19 +20,19 @@
 
 #include "FUKernelTester.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Adaptive/FAdaptiveCell.hpp"
-#include "../Src/Adaptive/FAdaptiveKernelWrapper.hpp"
-#include "../Src/Adaptive/FAbstractAdaptiveKernel.hpp"
-#include "../Src/Adaptive/FAdaptChebSymKernel.hpp"
+#include "Adaptive/FAdaptiveCell.hpp"
+#include "Adaptive/FAdaptiveKernelWrapper.hpp"
+#include "Adaptive/FAbstractAdaptiveKernel.hpp"
+#include "Adaptive/FAdaptChebSymKernel.hpp"
 
 /*
   In this test we compare the Chebyschev fmm results and the direct results.

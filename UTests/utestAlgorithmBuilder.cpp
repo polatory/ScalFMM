@@ -15,15 +15,15 @@
 // ===================================================================================
 #include "FUTester.hpp"
 
-#include "../Src/Core/FAlgorithmBuilder.hpp"
+#include "Core/FAlgorithmBuilder.hpp"
 
-#include "../../Src/Containers/FOctree.hpp"
+#include "Containers/FOctree.hpp"
 
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Components/FTestParticleContainer.hpp"
-#include "../../Src/Components/FTestCell.hpp"
-#include "../../Src/Components/FTestKernels.hpp"
-#include "../../Src/Components/FBasicKernels.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Components/FTestParticleContainer.hpp"
+#include "Components/FTestCell.hpp"
+#include "Components/FTestKernels.hpp"
+#include "Components/FBasicKernels.hpp"
 
 
 /** This class test the core algorithm builder */

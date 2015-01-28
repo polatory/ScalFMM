@@ -15,7 +15,7 @@
 // ===================================================================================
 #include "FUTester.hpp"
 
-#include "../Src/Containers/FTreeCoordinate.hpp"
+#include "Containers/FTreeCoordinate.hpp"
 
 // compile by g++ utestMorton.cpp -o utestMorton.exe
 

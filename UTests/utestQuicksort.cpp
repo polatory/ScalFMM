@@ -14,7 +14,7 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #include "FUTester.hpp"
-#include "../Src/Utils/FQuickSort.hpp"
+#include "Utils/FQuickSort.hpp"
 
 #include <unistd.h>
 

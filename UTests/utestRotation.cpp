@@ -14,22 +14,22 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-#include "../Src/Utils/FGlobal.hpp"
-#include "../Src/Utils/FTic.hpp"
-#include "../Src/Utils/FTemplate.hpp"
+#include "Utils/FGlobal.hpp"
+#include "Utils/FTic.hpp"
+#include "Utils/FTemplate.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 

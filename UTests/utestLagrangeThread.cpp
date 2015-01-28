@@ -34,9 +34,9 @@
 #include "Components/FSimpleLeaf.hpp"
 
 
-#include "../../Src/Kernels/Uniform/FUnifCell.hpp"
-#include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
+#include "Kernels/Uniform/FUnifCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Uniform/FUnifKernel.hpp"
 
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 /*

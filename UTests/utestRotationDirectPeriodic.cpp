@@ -13,22 +13,22 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Core/FFmmAlgorithmPeriodic.hpp"
-#include "../Src/Files/FRandomLoader.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Core/FFmmAlgorithmPeriodic.hpp"
+#include "Files/FRandomLoader.hpp"
 
 #include "FUTester.hpp"
 
-#include "../Src/Components/FTestCell.hpp"
-#include "../Src/Components/FTestKernels.hpp"
+#include "Components/FTestCell.hpp"
+#include "Components/FTestKernels.hpp"
 
 /** The class to run the test */
 class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {

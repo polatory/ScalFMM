@@ -208,7 +208,7 @@ public :
 
 #ifdef ScalFMM_USE_MPI
 
-#include "../Src/Utils/FMpi.hpp"
+#include "Utils/FMpi.hpp"
 
 #define TestClassMpi(X)						\
     int main(int argc, char** argv){				\

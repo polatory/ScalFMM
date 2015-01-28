@@ -17,14 +17,14 @@
 #define FUKERNELTESTER_HPP
 
 #include "ScalFmmConfig.h"
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
 #include "FUTester.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Files/FFmaGenericLoader.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
-#include "../Src/Utils/FPoint.hpp"
+#include "Containers/FOctree.hpp"
+#include "Files/FFmaGenericLoader.hpp"
+#include "Core/FFmmAlgorithm.hpp"
+#include "Utils/FPoint.hpp"
 
 #include <memory>
 #include <functional>

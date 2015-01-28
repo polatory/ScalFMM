@@ -16,11 +16,11 @@
 #ifndef UTESTMPIQS_HPP
 #define UTESTMPIQS_HPP
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 #include "FUTester.hpp"
 
-#include "../Src/Utils/FMpi.hpp"
-#include "../Src/Utils/FQuickSortMpi.hpp"
+#include "Utils/FMpi.hpp"
+#include "Utils/FQuickSortMpi.hpp"
 
 #include <memory>
 #include <limits>

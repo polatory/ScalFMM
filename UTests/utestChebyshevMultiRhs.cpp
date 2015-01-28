@@ -19,26 +19,26 @@
 // ==============
 
 #include "ScalFmmConfig.h"
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
+#include "Containers/FOctree.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
+#include "Components/FSimpleLeaf.hpp"
 
 
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 /*
   In this test we compare the spherical FMM results and the direct results.
 */

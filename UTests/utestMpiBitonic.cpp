@@ -16,11 +16,11 @@
 #ifndef UTESTMPIBITONIC_CPP
 #define UTESTMPIBITONIC_CPP
 
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 #include "FUTester.hpp"
 
-#include "../Src/Utils/FMpi.hpp"
-#include "../Src/Utils/FBitonicSort.hpp"
+#include "Utils/FMpi.hpp"
+#include "Utils/FBitonicSort.hpp"
 
 #include <memory>
 #include <limits>

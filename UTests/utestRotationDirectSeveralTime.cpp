@@ -1,21 +1,21 @@
 
 // ===================================================================================
 // Copyright ScalFmm 2011 INRIA
-#include "../Src/Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Containers/FVector.hpp"
+#include "Containers/FOctree.hpp"
+#include "Containers/FVector.hpp"
 
-#include "../Src/Kernels/Rotation/FRotationCell.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Kernels/Rotation/FRotationCell.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/Rotation/FRotationKernel.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/Rotation/FRotationKernel.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../Src/Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithm.hpp"
 
 #include "FUTester.hpp"
 
