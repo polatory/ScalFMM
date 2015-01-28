@@ -45,7 +45,7 @@
 #include "Core/FFmmAlgorithm.hpp"
 #endif
 
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 /**
  * This program runs the FMM Algorithm with the Chebyshev kernel and compares the results with a direct computation.
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::NbThreads);
 
 
-    const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ100.bfma" );
+    const std::string defaultFile(/*SCALFMMDataPath+*/"Data/unitCubeXYZQ100.bfma" );
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const unsigned int TreeHeight        = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);

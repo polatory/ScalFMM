@@ -18,18 +18,18 @@
 #include <iostream>
 #include <fstream>
 
-#include "../../Src/Utils/FParameters.hpp"
-#include "../../Src/Containers/FOctree.hpp"
+#include "Utils/FParameters.hpp"
+#include "Containers/FOctree.hpp"
 
-#include "../../Src/Components/FBasicCell.hpp"
-#include "../../Src/Components/FSimpleLeaf.hpp"
-#include "../../Src/Components/FBasicParticleContainer.hpp"
+#include "Components/FBasicCell.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Components/FBasicParticleContainer.hpp"
 
 
-#include "../../Src/Utils/FMath.hpp"
-#include "../../Src/Files/FFmaGenericLoader.hpp"
+#include "Utils/FMath.hpp"
+#include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 /// \file  statisticsOnOctree.cpp
 //!

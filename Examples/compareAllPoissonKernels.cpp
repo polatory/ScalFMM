@@ -60,8 +60,8 @@
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 //Classical Spherical kernel
-#include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
-#include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
+#include "Kernels/Spherical/FSphericalCell.hpp"
+#include "Kernels/Spherical/FSphericalKernel.hpp"
 
 //Rotation kernel
 #include "Kernels/Rotation/FRotationKernel.hpp"
@@ -75,7 +75,7 @@
 #include "Kernels/Uniform/FUnifKernel.hpp"
 #endif
 
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 /**
  * This program compares two different kernels, eg., the Chebyshev kernel with

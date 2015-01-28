@@ -17,7 +17,7 @@
 #include "Utils/FGenerateDistribution.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 //
 /// \file  generateDistributions.cpp

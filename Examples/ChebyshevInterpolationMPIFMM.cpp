@@ -26,25 +26,25 @@
 
 
 #include "ScalFmmConfig.h"
-#include "../Src/Containers/FOctree.hpp"
-#include "../Src/Utils/FMpi.hpp"
-#include "../Src/Core/FFmmAlgorithmThreadProc.hpp"
+#include "Containers/FOctree.hpp"
+#include "Utils/FMpi.hpp"
+#include "Core/FFmmAlgorithmThreadProc.hpp"
 
-#include "../Src/Files/FFmaGenericLoader.hpp"
-#include "../Src/Files/FMpiFmaGenericLoader.hpp"
-#include "../Src/Files/FMpiTreeBuilder.hpp"
+#include "Files/FFmaGenericLoader.hpp"
+#include "Files/FMpiFmaGenericLoader.hpp"
+#include "Files/FMpiTreeBuilder.hpp"
 
-#include "../Src/BalanceTree/FLeafBalance.hpp"
+#include "BalanceTree/FLeafBalance.hpp"
 
-#include "../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
-#include "../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
 
-#include "../Src/Components/FSimpleLeaf.hpp"
-#include "../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "../Src/Utils/FParameters.hpp"
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameters.hpp"
+#include "Utils/FParameterNames.hpp"
 
 
 /// \file ChebyshevInterpolationMPIFMM
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 			 FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
 			 FParameterDefinitions::NbThreads);
 
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
+    const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma");
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const unsigned int TreeHeight       = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);

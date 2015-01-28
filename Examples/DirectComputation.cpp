@@ -31,7 +31,7 @@
 #include "Kernels/P2P/FP2P.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
-#include "../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 //
 /// \file  DirectComputation.cpp
 //!
@@ -52,7 +52,7 @@ int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv,
                          ">> This executable has to be used to compute  interaction either for periodic or non periodic system.\n"
                          ">> Example -fin filenameIN.{fma or bfma)     -fout filenameOUT{fma or bfma) \n"
-                         ">> Default input file : ../Data/unitCubeXYZQ20k.fma\n"
+                         ">> Default input file : Data/unitCubeXYZQ20k.fma\n"
                          ">> Only our FMA (.bma, .bfma) is allowed as input.\n"
                          ">> Output file  with extension (default output.bfma).",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OutputFile,
@@ -60,7 +60,7 @@ int main(int argc, char ** argv){
 
 	//////////////////////////////////////////////////////////////
 
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
+    const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
     const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
     const std::string filenameOut(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "output.bfma"));
 	//
