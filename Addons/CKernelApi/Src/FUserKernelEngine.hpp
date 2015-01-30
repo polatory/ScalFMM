@@ -474,7 +474,7 @@ public:
             {
                 typedef FFmmAlgorithmThread<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassThread;
                 AlgoClassThread algoThread(octree,kernel);
-                algoThread.execute();
+                algoThread.execute(FFmmNearField);
                 break;
             }
         case 2:
