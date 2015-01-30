@@ -68,11 +68,12 @@ public:
     virtual ~FFmmAlgorithmTsm(){
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 

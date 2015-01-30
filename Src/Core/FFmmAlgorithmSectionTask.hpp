@@ -83,11 +83,12 @@ public:
         delete [] this->kernels;
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
 
         #pragma omp parallel
         {
@@ -115,7 +116,6 @@ public:
         }
     }
 
-private:
     /////////////////////////////////////////////////////////////////////////////
     // P2M
     /////////////////////////////////////////////////////////////////////////////

@@ -41,17 +41,55 @@ enum FFmmOperations {
  */
 class FAbstractAlgorithm {
 protected:
+    //< Where to start the work
+    int upperWorkingLevel;
+    //< Where to end the work (exclusif)
+    int lowerWorkingLevel;
+    //< Height of the tree
+    int nbLevelsInTree;
+
+    void setNbLevelsInTree(const int inNbLevelsInTree){
+        nbLevelsInTree = inNbLevelsInTree;
+        lowerWorkingLevel = nbLevelsInTree;
+    }
+
+    virtual void executeCore(const unsigned operationsToProceed) = 0;
+
 public:
+    FAbstractAlgorithm()
+        : upperWorkingLevel(2), lowerWorkingLevel(0), nbLevelsInTree(-1){
+    }
+
     virtual ~FAbstractAlgorithm(){
     }
 
+    /** Execute all the fmm but for given levels*/
+    virtual void execute(const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
+        upperWorkingLevel = inUpperWorkingLevel;
+        lowerWorkingLevel = inLowerWorkingLevel;
+        executeCore(FFmmNearAndFarFields);
+    }
+
     /** Execute all the fmm */
-    void execute(){
-        execute(FFmmNearAndFarFields);
+    virtual void execute() final {
+        upperWorkingLevel = 2;
+        lowerWorkingLevel = nbLevelsInTree;
+        executeCore(FFmmNearAndFarFields);
+    }
+
+    /** Execute only some FMM operation for given levels */
+    virtual void execute(const unsigned operationsToProceed, const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
+        upperWorkingLevel = inUpperWorkingLevel;
+        lowerWorkingLevel = inLowerWorkingLevel;
+        executeCore(operationsToProceed);
     }
 
     /** Execute only some steps */
-    virtual void execute(const unsigned operationsToProceed) = 0;
+    virtual void execute(const unsigned operationsToProceed) final {
+        upperWorkingLevel = 2;
+        lowerWorkingLevel = nbLevelsInTree;
+        executeCore(operationsToProceed);
+    }
 };
 
 

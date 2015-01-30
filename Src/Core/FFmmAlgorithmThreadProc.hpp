@@ -164,11 +164,12 @@ public:
         delete [] workingIntervalsPerLevel;
     }
 
+protected:
     /**
      * To execute the fmm algorithm
      * Call this function to run the complete algorithm
      */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
         // Count leaf
         this->numberOfLeafs = 0;
         {
@@ -278,8 +279,6 @@ public:
         iterArray     = nullptr;
         iterArrayComm = nullptr;
     }
-
-private:
 
     /////////////////////////////////////////////////////////////////////////////
     // P2M

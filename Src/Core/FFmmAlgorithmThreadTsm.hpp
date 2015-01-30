@@ -87,11 +87,12 @@ public:
         delete [] this->kernels;
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
         // Count leaf
         int numberOfLeafs = 0;
         typename OctreeClass::Iterator octreeIterator(tree);

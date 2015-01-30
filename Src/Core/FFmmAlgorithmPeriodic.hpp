@@ -78,11 +78,77 @@ public:
         kernels = inKernel;
     }
 
+
+
+
+    long long int theoricalRepetition() const {
+        if( nbLevelsAboveRoot == -1 ){
+            // we know it is 3 (-1;+1)
+            return 3;
+        }
+        // Else we find the repetition in one dir and double it
+        const long long int oneDirectionRepetition = (1<<(nbLevelsAboveRoot+2)); // 2^nbLevelsAboveRoot in each dim
+        const long long int fullRepetition = 2 * oneDirectionRepetition;
+        return fullRepetition;
+    }
+
+
+    void repetitionsIntervals(FTreeCoordinate*const min, FTreeCoordinate*const max) const {
+        if( nbLevelsAboveRoot == -1 ){
+            // We know it is (-1;1)
+            min->setPosition(-1,-1,-1);
+            max->setPosition(1,1,1);
+        }
+        else{
+            const int halfRepeated = int(theoricalRepetition()/2);
+            min->setPosition(-halfRepeated,-halfRepeated,-halfRepeated);
+            // if we repeat the box 8 times, we go from [-4 to 3]
+            max->setPosition(halfRepeated-1,halfRepeated-1,halfRepeated-1);
+        }
+    }
+
+
+    FReal extendedBoxWidth() const {
+        // The simulation box is repeated is repeated 4 times if nbLevelsAboveRoot==-1
+        // And then it doubles by two
+        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+3));
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the box cneter seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalBoxWidth and originalBoxCenter given in parameter
+      * @param originalBoxCenter the real system center
+      * @param originalBoxWidth the real system size
+      * @return the center the kernel should use
+      */
+    FPoint extendedBoxCenter() const {
+        const FReal originalBoxWidth     = tree->getBoxWidth();
+        const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
+        const FPoint originalBoxCenter   = tree->getBoxCenter();
+
+        const FReal offset = extendedBoxWidth()/FReal(2.0);
+        return FPoint( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+                       originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
+                       originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
+    }
+
+    /** This function has to be used to init the kernel with correct args
+      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalTreeHeight given in parameter
+      * @param originalTreeHeight the real tree heigh
+      * @return the heigh the kernel should use
+      */
+    int extendedTreeHeight() const {
+        // The real height
+        return OctreeHeight + offsetRealTree;
+    }
+
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
         FAssertLF(kernels, "kernels cannot be null");
 
         if(operationsToProceed & FFmmP2M) bottomPass();
@@ -344,69 +410,6 @@ public:
       */
     int neighIndex(const int x, const int y, const int z) const {
         return (((x+3)*7) + (y+3))*7 + (z + 3);
-    }
-
-
-    long long int theoricalRepetition() const {
-        if( nbLevelsAboveRoot == -1 ){
-            // we know it is 3 (-1;+1)
-            return 3;
-        }
-        // Else we find the repetition in one dir and double it
-        const long long int oneDirectionRepetition = (1<<(nbLevelsAboveRoot+2)); // 2^nbLevelsAboveRoot in each dim
-        const long long int fullRepetition = 2 * oneDirectionRepetition;
-        return fullRepetition;
-    }
-
-
-    void repetitionsIntervals(FTreeCoordinate*const min, FTreeCoordinate*const max) const {
-        if( nbLevelsAboveRoot == -1 ){
-            // We know it is (-1;1)
-            min->setPosition(-1,-1,-1);
-            max->setPosition(1,1,1);
-        }
-        else{
-            const int halfRepeated = int(theoricalRepetition()/2);
-            min->setPosition(-halfRepeated,-halfRepeated,-halfRepeated);
-            // if we repeat the box 8 times, we go from [-4 to 3]
-            max->setPosition(halfRepeated-1,halfRepeated-1,halfRepeated-1);
-        }
-    }
-
-
-    FReal extendedBoxWidth() const {
-        // The simulation box is repeated is repeated 4 times if nbLevelsAboveRoot==-1
-        // And then it doubles by two
-        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+3));
-    }
-
-    /** This function has to be used to init the kernel with correct args
-      * it return the box cneter seen from a kernel point of view from the periodicity the user ask for
-      * this is computed using the originalBoxWidth and originalBoxCenter given in parameter
-      * @param originalBoxCenter the real system center
-      * @param originalBoxWidth the real system size
-      * @return the center the kernel should use
-      */
-    FPoint extendedBoxCenter() const {
-        const FReal originalBoxWidth     = tree->getBoxWidth();
-        const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
-        const FPoint originalBoxCenter   = tree->getBoxCenter();
-
-        const FReal offset = extendedBoxWidth()/FReal(2.0);
-        return FPoint( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
-                       originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
-                       originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
-    }
-
-    /** This function has to be used to init the kernel with correct args
-      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
-      * this is computed using the originalTreeHeight given in parameter
-      * @param originalTreeHeight the real tree heigh
-      * @return the heigh the kernel should use
-      */
-    int extendedTreeHeight() const {
-        // The real height
-        return OctreeHeight + offsetRealTree;
     }
 
     /** Periodicity Core

@@ -60,6 +60,8 @@ public:
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithm\n");
     }
 
@@ -67,11 +69,12 @@ public:
     virtual ~FFmmAlgorithm(){
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
 
         Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
@@ -94,7 +97,6 @@ public:
         Timers[NearTimer].tac();
     }
 
-private:
     /////////////////////////////////////////////////////////////////////////////
     // P2M
     /////////////////////////////////////////////////////////////////////////////

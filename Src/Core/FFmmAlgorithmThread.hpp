@@ -92,11 +92,12 @@ public:
         delete [] this->kernels;
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
 
         for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
             this->shapeLeaf[idxShape] = 0;
@@ -139,7 +140,6 @@ public:
         iterArray = nullptr;
     }
 
-private:
     /////////////////////////////////////////////////////////////////////////////
     // P2M
     /////////////////////////////////////////////////////////////////////////////

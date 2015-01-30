@@ -83,11 +83,12 @@ public:
         delete [] this->kernels;
     }
 
+protected:
     /**
       * To execute the fmm algorithm
       * Call this function to run the complete algorithm
       */
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+    void executeCore(const unsigned operationsToProceed) override {
 
         if(operationsToProceed & FFmmP2M) bottomPass();
 
@@ -100,7 +101,6 @@ public:
         if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
     }
 
-private:
     /////////////////////////////////////////////////////////////////////////////
     // P2M
     /////////////////////////////////////////////////////////////////////////////
