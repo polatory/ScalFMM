@@ -16,6 +16,9 @@
 #ifndef FCORECOMMON_HPP
 #define FCORECOMMON_HPP
 
+#include "../Utils/FGlobal.hpp"
+#include "../Utils/FAssert.hpp"
+
 /**
  * @brief The FFmmOperations enum
  * To chose which operation has to be performed.
@@ -53,6 +56,11 @@ protected:
         lowerWorkingLevel = nbLevelsInTree;
     }
 
+    void validateLevels() const {
+        FAssertLF(FAbstractAlgorithm::upperWorkingLevel <= FAbstractAlgorithm::lowerWorkingLevel);
+        FAssertLF(2 <= FAbstractAlgorithm::upperWorkingLevel);
+    }
+
     virtual void executeCore(const unsigned operationsToProceed) = 0;
 
 public:
@@ -67,6 +75,7 @@ public:
     virtual void execute(const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
         upperWorkingLevel = inUpperWorkingLevel;
         lowerWorkingLevel = inLowerWorkingLevel;
+        validateLevels();
         executeCore(FFmmNearAndFarFields);
     }
 
@@ -74,6 +83,7 @@ public:
     virtual void execute() final {
         upperWorkingLevel = 2;
         lowerWorkingLevel = nbLevelsInTree;
+        validateLevels();
         executeCore(FFmmNearAndFarFields);
     }
 
@@ -81,6 +91,7 @@ public:
     virtual void execute(const unsigned operationsToProceed, const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
         upperWorkingLevel = inUpperWorkingLevel;
         lowerWorkingLevel = inLowerWorkingLevel;
+        validateLevels();
         executeCore(operationsToProceed);
     }
 
@@ -88,6 +99,7 @@ public:
     virtual void execute(const unsigned operationsToProceed) final {
         upperWorkingLevel = 2;
         lowerWorkingLevel = nbLevelsInTree;
+        validateLevels();
         executeCore(operationsToProceed);
     }
 };

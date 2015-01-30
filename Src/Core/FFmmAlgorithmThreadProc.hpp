@@ -334,6 +334,11 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
+
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-2 ; --idxLevel){
+            octreeIterator.moveUp();
+        }
+
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // The proc to send the shared cells to
@@ -359,7 +364,7 @@ protected:
         FLOG(computationCounter.tic());
 
         // We work from height-1 to 1
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel - 2 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
             // Does my cells are covered by my neighbors working interval and so I have no more work?
             const bool noMoreWorkForMe = (idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess));
             if(noMoreWorkForMe){
@@ -603,9 +608,14 @@ protected:
 
                     typename OctreeClass::Iterator octreeIterator(tree);
                     octreeIterator.moveDown();
+
+                    for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+                        octreeIterator.moveDown();
+                    }
+
                     typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                     // for each levels
-                    for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                    for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
                             octreeIterator = avoidGotoLeftIterator;
@@ -748,10 +758,15 @@ protected:
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
+
+                for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+                    octreeIterator.moveDown();
+                }
+
                 typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                 // Now we can compute all the data
                 // for each levels
-                for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+                for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
                         octreeIterator = avoidGotoLeftIterator;
@@ -808,10 +823,15 @@ protected:
             FLOG(receiveCounter.tic());
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.moveDown();
+
+            for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+                octreeIterator.moveDown();
+            }
+
             typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
             // compute the second time
             // for each levels
-            for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+            for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -940,13 +960,18 @@ protected:
         // Start from leal level - 1
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
+
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+            octreeIterator.moveDown();
+        }
+
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // Max 1 receive and 7 send (but 7 times the same data)
         MPI_Request*const requests = new MPI_Request[8];
         MPI_Request*const requestsSize = new MPI_Request[8];
 
-        const int heightMinusOne = OctreeHeight - 1;
+        const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
 
         FMpiBufferWriter sendBuffer(comm.getComm());
         FMpiBufferReader recvBuffer(comm.getComm());
@@ -954,7 +979,7 @@ protected:
         int righestProcToSendTo   = nbProcess - 1;
 
         // for each levels exepted leaf level
-        for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < heightMinusOne ; ++idxLevel ){
             // If nothing to do in the next level skip the current one
             if(idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess) ){
                 avoidGotoLeftIterator.moveDown();

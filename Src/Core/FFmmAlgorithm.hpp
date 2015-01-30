@@ -138,10 +138,14 @@ protected:
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
 
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-2 ; --idxLevel){
+            octreeIterator.moveUp();
+        }
+
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > 1 ; --idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel - 2 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
             FLOG(FTic counterTimeLevel);
 
             // for each cells
@@ -177,12 +181,16 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
 
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+            octreeIterator.moveDown();
+        }
+
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         const CellClass* neighbors[343];
 
         // for each levels
-        for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
 
             // for each cells
@@ -219,11 +227,15 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
 
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+            octreeIterator.moveDown();
+        }
+
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const int heightMinusOne = OctreeHeight - 1;
+        const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
         // for each levels exepted leaf level
-        for(int idxLevel = 2 ; idxLevel < heightMinusOne ; ++idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < heightMinusOne ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
 
             // for each cells
