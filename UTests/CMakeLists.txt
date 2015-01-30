@@ -69,34 +69,17 @@ foreach(exec ${source_tests_files})
 		NAME_WE
 	)
 
-	set(compile_exec "TRUE")	
-
-	# Test Blas dependency
-	file(STRINGS "${exec}" lines_blas REGEX "@FUSE_BLAS")
-	if(lines_blas)
-		if( NOT ScalFMM_USE_BLAS )
-			MESSAGE( STATUS "This needs BLAS = ${exec}" )
-			set(compile_exec "FALSE")
-		endif()
-	endif()
-
-	# Test FFT dependency
-	file(STRINGS "${exec}" lines_fft REGEX "@FUSE_FFT")
-	if(lines_fft)
-		if( NOT ScalFMM_USE_FFT )
-			MESSAGE( STATUS "This needs FFT = ${exec}" )
-			set(compile_exec "FALSE")
-		endif()
-	endif()
-
-	# Test MPI dependency
-	file(STRINGS "${exec}" lines_mpi REGEX "@FUSE_MPI")
-	if(lines_mpi)
-		if( NOT ScalFMM_USE_MPI )
-			MESSAGE( STATUS "This needs MPI = ${exec}" )
-			set(compile_exec "FALSE")
-		endif()
-	endif()
+	set(compile_exec "TRUE")
+	
+	foreach(fuse_key ${FUSE_LIST})
+	    file(STRINGS "${exec}" lines_fuse REGEX "@FUSE_${fuse_key}")
+	    if(lines_fuse)
+		    if( NOT ScalFMM_USE_${fuse_key} )
+			    MESSAGE( STATUS "This needs ${fuse_key} = ${exec}" )
+			    set(compile_exec "FALSE")
+		    endif()
+	    endif()
+	endforeach()
 
 	# Dependency are OK
 	if( compile_exec )

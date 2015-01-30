@@ -121,6 +121,14 @@ ELSE(APPLE)
     SET(SSE_FLAGS  "-mtune=native -march=native")   # -mtune=native -march=native
  ENDIF(APPLE)
 endif()
+
+##############################################################################
+#     FUSE list                                                              #
+##############################################################################
+set(FUSE_LIST "")
+# then do list(APPEND FUSE_LIST "BLAS") to protect from FUSE_BLAS
+list(APPEND FUSE_LIST "MPI")
+
 ##############################################################################
 #                                                        Debug      flags                                                                        #
 ##############################################################################
@@ -212,6 +220,7 @@ if( ScalFMM_USE_BLAS )
   SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
   MESSAGE(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
 endif(ScalFMM_USE_BLAS)
+list(APPEND FUSE_LIST "BLAS")
 #
 # FFT option
 #
@@ -239,6 +248,7 @@ if( ScalFMM_USE_FFT )
   MESSAGE(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
   MESSAGE(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
 endif(ScalFMM_USE_FFT)
+list(APPEND FUSE_LIST "FFT")
 
 # Compile option
 #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
@@ -278,6 +288,7 @@ if( ScalFMM_USE_STARPU )
     # SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${STARPU_INCLUDES}")
     include_directories(${STARPU_INCLUDES})
 endif(ScalFMM_USE_STARPU)
+list(APPEND FUSE_LIST "STARPU")
 #
 ##################################################################
 #                                               Use SSE                                                                     #
@@ -304,6 +315,7 @@ if( ScalFMM_USE_SSE )
                  MESSAGE(FATAL_ERROR "SSE NOT SUPPORTED ; Set ScalFMM_USE_SSE  to OFF \n Output from test is : ${COMPILE_SSE_OUTPUT}")
         ENDIF(${COMPILE_SSE})
 endif()
+list(APPEND FUSE_LIST "SSE")
 ##################################################################
 #                                                Use AVX                                                                   #
 ##################################################################
@@ -329,6 +341,7 @@ ELSE(${COMPILE_AVX})
                  MESSAGE(FATAL_ERROR "AVX NOT SUPPORTED ; Set ScalFMM_USE_AVX  to OFF \n Output from test is : ${COMPILE_AVX_OUTPUT} ")
 ENDIF(${COMPILE_AVX})
 endif(ScalFMM_USE_AVX)
+list(APPEND FUSE_LIST "AVX")
 #
 # Error if both ScalFMM_USE_AVX AND ScalFMM_USE_SSE are set
 #
@@ -348,6 +361,7 @@ if( ScalFMM_USE_MIC_NATIVE )
 else()
  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xhost")
 ENDIF()
+list(APPEND FUSE_LIST "MIC")
 ##################################################################
 #
 ##################################################################
