@@ -61,6 +61,8 @@ public:
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithmTsm\n");
     }
 

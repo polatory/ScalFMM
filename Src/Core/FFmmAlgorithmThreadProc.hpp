@@ -150,6 +150,8 @@ public:
             }
         }
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }

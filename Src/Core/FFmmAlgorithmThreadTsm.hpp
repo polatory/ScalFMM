@@ -76,6 +76,8 @@ public:
             }
         }
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithmThreadTsm\n");
     }
 

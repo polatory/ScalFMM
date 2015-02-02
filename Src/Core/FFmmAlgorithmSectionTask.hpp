@@ -72,6 +72,8 @@ public:
             }
         }
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithmSectionTask (Max Thread " << omp_get_max_threads() << ")\n");
     }
 

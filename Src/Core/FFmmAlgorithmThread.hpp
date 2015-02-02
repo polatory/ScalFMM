@@ -81,6 +81,8 @@ public:
             }
         }
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
     }
 
