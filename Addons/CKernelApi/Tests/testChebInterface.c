@@ -119,13 +119,15 @@ int main(int argc, char ** av){
         int treeHeight = atoi(av[2]);
     }
 
-    double* particleXYZ = malloc(sizeof(double)*3*nbPart);
-    double* physicalValues = malloc(sizeof(double)*nbPart);
-
 
     double boxWidth = 1.0;
     double boxCenter[3];
     boxCenter[0] = boxCenter[1] = boxCenter[2] = 0.0;
+
+    //Allocation of the positions and physical values
+    double* particleXYZ = malloc(sizeof(double)*3*nbPart);
+    double* physicalValues = malloc(sizeof(double)*nbPart);
+
 
     {
         printf("Creating Particles:\n");
@@ -274,7 +276,7 @@ int main(int argc, char ** av){
                 nbPartOkay++;
             }
             else{
-                //printf("id : %d : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
+                printf("id : %d : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
             }
             //That part is to verify with our usual exec' if everything is alright
             if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
