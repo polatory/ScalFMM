@@ -439,6 +439,8 @@ add_subdirectory(Doc)
 #
 if( ScalFMM_USE_ADDONS )
         file(GLOB all_addons ./Addons/*)
+        # Options
+        OPTION( ScalFMM_ADDON_CKERNELAPI "Set to ON to build ScaFMM FMM API interface" OFF )
 
         foreach(addon_name ${all_addons})
                 MESSAGE(STATUS "Addons += ${addon_name}" )
