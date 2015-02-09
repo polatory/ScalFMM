@@ -251,7 +251,7 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
 
-        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
             octreeIterator.moveDown();
         }
 
@@ -306,7 +306,7 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
 
-        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
             octreeIterator.moveDown();
         }
 
