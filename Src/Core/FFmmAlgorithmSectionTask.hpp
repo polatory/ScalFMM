@@ -160,14 +160,14 @@ protected:
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
 
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-2 ; --idxLevel){
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-1 ; --idxLevel){
             octreeIterator.moveUp();
         }
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
-        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel - 2 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
+        for(int idxLevel = FMath::Min(OctreeHeight - 2, FAbstractAlgorithm::lowerWorkingLevel - 1) ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
             FLOG(FTic counterTimeLevel);
             // for each cells
             do{

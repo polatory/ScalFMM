@@ -337,7 +337,7 @@ protected:
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp();
 
-        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-2 ; --idxLevel){
+        for(int idxLevel = OctreeHeight - 2 ; idxLevel > FAbstractAlgorithm::lowerWorkingLevel-1 ; --idxLevel){
             octreeIterator.moveUp();
         }
 
@@ -365,8 +365,8 @@ protected:
         int firstProcThatSend = idProcess + 1;
         FLOG(computationCounter.tic());
 
-        // We work from height-1 to 1
-        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel - 2 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
+        // for each levels
+        for(int idxLevel = FMath::Min(OctreeHeight - 2, FAbstractAlgorithm::lowerWorkingLevel - 1) ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel ){
             // Does my cells are covered by my neighbors working interval and so I have no more work?
             const bool noMoreWorkForMe = (idProcess != 0 && !procHasWorkAtLevel(idxLevel+1, idProcess));
             if(noMoreWorkForMe){
