@@ -176,6 +176,7 @@ protected:
         p2m_cl.nbuffers = 2;
         p2m_cl.modes[0] = STARPU_RW;
         p2m_cl.modes[1] = STARPU_R;
+        p2m_cl.name = "p2m_cl";
 
         memset(m2m_cl, 0, sizeof(m2m_cl[0])*9);
         memset(l2l_cl, 0, sizeof(l2l_cl[0])*9);
@@ -185,12 +186,14 @@ protected:
             m2m_cl[idx].nbuffers = idx+2;
             m2m_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc((idx+2)*sizeof(starpu_data_access_mode));
             m2m_cl[idx].dyn_modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+            m2m_cl[idx].name = "m2m_cl";
 
             l2l_cl[idx].where = STARPU_CPU;
             l2l_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
             l2l_cl[idx].nbuffers = idx+2;
             l2l_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc((idx+2)*sizeof(starpu_data_access_mode));
             l2l_cl[idx].dyn_modes[0] = STARPU_R;
+            l2l_cl[idx].name = "l2l_cl";
 
             for(int idxBuffer = 0 ; idxBuffer <= idx ; ++idxBuffer){
                 m2m_cl[idx].dyn_modes[idxBuffer+1] = STARPU_R;
@@ -204,18 +207,21 @@ protected:
         l2p_cl.nbuffers = 2;
         l2p_cl.modes[0] = STARPU_R;
         l2p_cl.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        l2p_cl.name = "l2p_cl";
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
         p2p_cl_in.where = STARPU_CPU;
         p2p_cl_in.cpu_funcs[0] = StarPUCpuWrapperClass::directInPassCallback;
         p2p_cl_in.nbuffers = 1;
         p2p_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
         p2p_cl_inout.where = STARPU_CPU;
         p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
         p2p_cl_inout.nbuffers = 2;
         p2p_cl_inout.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         p2p_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_inout.name = "p2p_cl_inout";
 
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
         m2l_cl_in.where = STARPU_CPU;
@@ -223,6 +229,7 @@ protected:
         m2l_cl_in.nbuffers = 2;
         m2l_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_in.modes[1] = STARPU_R;
+        m2l_cl_in.name = "m2l_cl_in";
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
         m2l_cl_inout.where = STARPU_CPU;
         m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
@@ -231,6 +238,7 @@ protected:
         m2l_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_inout.modes[2] = STARPU_R;
         m2l_cl_inout.modes[3] = STARPU_R;
+        m2l_cl_inout.name = "m2l_cl_inout";
     }
 
     /** dealloc in a starpu way all the defined handles */
@@ -267,6 +275,7 @@ protected:
         p2p_cl_inout_mpi.nbuffers = 2;
         p2p_cl_inout_mpi.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         p2p_cl_inout_mpi.modes[1] = STARPU_R;
+        p2p_cl_inout_mpi.name = "p2p_cl_inout_mpi";
 
         memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));
         m2l_cl_inout_mpi.where = STARPU_CPU;
@@ -274,6 +283,7 @@ protected:
         m2l_cl_inout_mpi.nbuffers = 2;
         m2l_cl_inout_mpi.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_inout_mpi.modes[1] = STARPU_R;
+        m2l_cl_inout_mpi.name = "m2l_cl_inout_mpi";
     }
 
     std::vector<std::pair<MortonIndex,MortonIndex>> processesIntervalPerLevels;
