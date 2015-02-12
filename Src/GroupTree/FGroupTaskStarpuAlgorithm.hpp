@@ -157,7 +157,7 @@ protected:
             m2m_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::upwardPassCallback;
             m2m_cl[idx].nbuffers = idx+2;
             m2m_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc((idx+2)*sizeof(starpu_data_access_mode));
-            m2m_cl[idx].dyn_modes[0] = STARPU_RW;
+            m2m_cl[idx].dyn_modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
 
             l2l_cl[idx].where = STARPU_CPU;
             l2l_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
@@ -167,7 +167,7 @@ protected:
 
             for(int idxBuffer = 0 ; idxBuffer <= idx ; ++idxBuffer){
                 m2m_cl[idx].dyn_modes[idxBuffer+1] = STARPU_R;
-                l2l_cl[idx].dyn_modes[idxBuffer+1] = STARPU_RW;
+                l2l_cl[idx].dyn_modes[idxBuffer+1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
             }
         }
 
@@ -176,32 +176,32 @@ protected:
         l2p_cl.cpu_funcs[0] = StarPUCpuWrapperClass::mergePassCallback;
         l2p_cl.nbuffers = 2;
         l2p_cl.modes[0] = STARPU_R;
-        l2p_cl.modes[1] = STARPU_RW;
+        l2p_cl.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
         p2p_cl_in.where = STARPU_CPU;
         p2p_cl_in.cpu_funcs[0] = StarPUCpuWrapperClass::directInPassCallback;
         p2p_cl_in.nbuffers = 1;
-        p2p_cl_in.modes[0] = STARPU_RW;
+        p2p_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
         p2p_cl_inout.where = STARPU_CPU;
         p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
         p2p_cl_inout.nbuffers = 2;
-        p2p_cl_inout.modes[0] = STARPU_RW;
-        p2p_cl_inout.modes[1] = STARPU_RW;
+        p2p_cl_inout.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
 
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
         m2l_cl_in.where = STARPU_CPU;
         m2l_cl_in.cpu_funcs[0] = StarPUCpuWrapperClass::transferInPassCallback;
         m2l_cl_in.nbuffers = 2;
-        m2l_cl_in.modes[0] = STARPU_RW;
+        m2l_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_in.modes[1] = STARPU_R;
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
         m2l_cl_inout.where = STARPU_CPU;
         m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
         m2l_cl_inout.nbuffers = 4;
-        m2l_cl_inout.modes[0] = STARPU_RW;
-        m2l_cl_inout.modes[1] = STARPU_RW;
+        m2l_cl_inout.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        m2l_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_inout.modes[2] = STARPU_R;
         m2l_cl_inout.modes[3] = STARPU_R;
     }
@@ -523,7 +523,7 @@ protected:
                 starpu_insert_task(&m2l_cl_in,
                         STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                   STARPU_RW, handles_down[idxLevel][idxGroup],
+                                   (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][idxGroup],
                                    STARPU_R, handles_up[idxLevel][idxGroup],
                         0);
             }
@@ -539,8 +539,8 @@ protected:
                             STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                       STARPU_RW, handles_down[idxLevel][idxGroup],
-                                       STARPU_RW, handles_down[idxLevel][interactionid],
+                                       (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][idxGroup],
+                                       (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][interactionid],
                                        STARPU_R, handles_up[idxLevel][idxGroup],
                                        STARPU_R, handles_up[idxLevel][interactionid],
                             0);
@@ -618,7 +618,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
                     STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
-                               STARPU_RW, handles_down[tree->getHeight()][idxGroup],
+                               (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                     0);
         }
         FLOG( timerInBlock.tac() );
@@ -630,8 +630,8 @@ protected:
                 starpu_insert_task(&p2p_cl_inout,
                         STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                        STARPU_RW, handles_down[tree->getHeight()][idxGroup],
-                        STARPU_RW, handles_down[tree->getHeight()][interactionid],
+                        (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
+                        (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][interactionid],
                         0);
             }
         }
@@ -652,7 +652,7 @@ protected:
             starpu_insert_task(&l2p_cl,
                     STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
                     STARPU_R, handles_down[tree->getHeight()-1][idxGroup],
-                    STARPU_RW, handles_down[tree->getHeight()][idxGroup],
+                    (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                     0);
         }
 

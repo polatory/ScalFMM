@@ -277,16 +277,18 @@ endif()
 ##################################################################
 #
 if( ScalFMM_USE_STARPU )
-    SET(STARPU_LIBRARIES " -L$ENV{STARPU_LIB}; -lstarpu-1.1") # CACHE STRING "Set your STARPU flags"
+    SET(STARPU_LIBRARIES " -L$ENV{STARPU_LIB}; -lstarpu-$ENV{STARPU_VERSION}") # CACHE STRING "Set your STARPU flags"
 
     if(ScalFMM_USE_MPI)
-        SET(STARPU_LIBRARIES "${STARPU_LIBRARIES} -lstarpumpi-1.1")
+        SET(STARPU_LIBRARIES "${STARPU_LIBRARIES} -lstarpumpi-$ENV{STARPU_VERSION}")
     endif()
 
     SET(STARPU_INCLUDES "$ENV{STARPU_INC}" ) # CACHE STRING "Set your STARPU flags"
     SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${STARPU_LIBRARIES}")
-    # SET(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${STARPU_INCLUDES}")
     include_directories(${STARPU_INCLUDES})
+    
+    MESSAGE(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
+    MESSAGE(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDES}")
 endif(ScalFMM_USE_STARPU)
 list(APPEND FUSE_LIST "STARPU")
 #
