@@ -125,8 +125,6 @@ public:
 
         starpu_resume();
 
-        if( operationsToProceed & FFmmP2P ) directPass();
-
         if(operationsToProceed & FFmmP2M) bottomPass();
 
         if(operationsToProceed & FFmmM2M) upwardPass();
@@ -134,6 +132,8 @@ public:
         if(operationsToProceed & FFmmM2L) transferPass();
 
         if(operationsToProceed & FFmmL2L) downardPass();
+
+        if( operationsToProceed & FFmmP2P ) directPass();
 
         if( operationsToProceed & FFmmL2P ) mergePass();
 
@@ -158,7 +158,7 @@ protected:
             m2m_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::upwardPassCallback;
             m2m_cl[idx].nbuffers = idx+2;
             m2m_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc((idx+2)*sizeof(starpu_data_access_mode));
-            m2m_cl[idx].dyn_modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+            m2m_cl[idx].dyn_modes[0] = STARPU_RW;
             m2m_cl[idx].name = "m2m_cl";
 
             l2l_cl[idx].where = STARPU_CPU;
