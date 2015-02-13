@@ -21,7 +21,16 @@ extern "C"{
 #include <starpu.h>
 }
 
+#ifdef STARPU_USE_CPU
 #include "FStarPUCpuWrapper.hpp"
+#endif
+#ifdef STARPU_USE_CUDA
+#include "FStarPUCudaWrapper.hpp"
+#endif
+#ifdef STARPU_USE_OPENCL
+#include "FStarPUOpenClWrapper.hpp"
+#endif
+
 #include "FStarPUUtils.hpp"
 
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
@@ -71,6 +80,14 @@ protected:
     typedef FStarPUCpuWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCpuWrapperClass;
     StarPUCpuWrapperClass cpuWrapper;
 #endif
+#ifdef STARPU_USE_CUDA
+    typedef FStarPUCudaWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCudaWrapperClass;
+    StarPUCudaWrapperClass cudaWrapper;
+#endif
+#ifdef STARPU_USE_OPENCL
+    typedef FStarPUOpenClWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUOpenClWrapperClass;
+    StarPUOpenClWrapperClass openclWrapper;
+#endif
 
     FStarPUPtrInterface wrappers;
     FStarPUPtrInterface* wrapperptr;
@@ -81,6 +98,12 @@ public:
           handles_up(nullptr), handles_down(nullptr),
 #ifdef STARPU_USE_CPU
             cpuWrapper(tree->getHeight()),
+#endif
+#ifdef STARPU_USE_CUDA
+            cudaWrapper(tree->getHeight()),
+#endif
+#ifdef STARPU_USE_OPENCL
+            openclWrapper(tree->getHeight()),
 #endif
             wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
@@ -101,6 +124,22 @@ public:
             starpu_pthread_mutex_unlock(&initMutex);
         });
         wrappers.set(FSTARPU_CPU_IDX, &cpuWrapper);
+#endif
+#ifdef STARPU_USE_CUDA
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, [&](){
+            starpu_pthread_mutex_lock(&initMutex);
+            cudaWrapper.initKernel(starpu_worker_get_id(), inKernels);
+            starpu_pthread_mutex_unlock(&initMutex);
+        });
+        wrappers.set(FSTARPU_CUDA_IDX, &cudaWrapper);
+#endif
+#ifdef STARPU_USE_OPENCL
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, [&](){
+            starpu_pthread_mutex_lock(&initMutex);
+            openclWrapper.initKernel(starpu_worker_get_id(), inKernels);
+            starpu_pthread_mutex_unlock(&initMutex);
+        });
+        wrappers.set(FSTARPU_OPENCL_IDX, &openclWrapper);
 #endif
         starpu_pthread_mutex_destroy(&initMutex);
 
@@ -161,6 +200,18 @@ protected:
             p2m_cl.where |= STARPU_CPU;
         }
 #endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportP2M()){
+            p2m_cl.cuda_funcs[0] = StarPUCudaWrapperClass::bottomPassCallback;
+            p2m_cl.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportP2M()){
+            p2m_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::bottomPassCallback;
+            p2m_cl.where |= STARPU_OPENCL;
+        }
+#endif
         p2m_cl.nbuffers = 2;
         p2m_cl.modes[0] = STARPU_RW;
         p2m_cl.modes[1] = STARPU_R;
@@ -175,6 +226,18 @@ protected:
                 m2m_cl[idx].where |= STARPU_CPU;
             }
 #endif
+#ifdef STARPU_USE_CUDA
+            if(originalCpuKernel->supportM2M()){
+                m2m_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::upwardPassCallback;
+                m2m_cl[idx].where |= STARPU_CUDA;
+            }
+#endif
+#ifdef STARPU_USE_OPENCL
+            if(originalCpuKernel->supportM2M()){
+                m2m_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::upwardPassCallback;
+                m2m_cl[idx].where |= STARPU_OPENCL;
+            }
+#endif
             m2m_cl[idx].nbuffers = idx+2;
             m2m_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc((idx+2)*sizeof(starpu_data_access_mode));
             m2m_cl[idx].dyn_modes[0] = STARPU_RW;
@@ -184,6 +247,18 @@ protected:
             if(originalCpuKernel->supportL2L()){
                 l2l_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
                 l2l_cl[idx].where |= STARPU_CPU;
+            }
+#endif
+#ifdef STARPU_USE_CUDA
+            if(originalCpuKernel->supportL2L()){
+                l2l_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
+                l2l_cl[idx].where |= STARPU_CUDA;
+            }
+#endif
+#ifdef STARPU_USE_OPENCL
+            if(originalCpuKernel->supportL2L()){
+                l2l_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
+                l2l_cl[idx].where |= STARPU_OPENCL;
             }
 #endif
             l2l_cl[idx].nbuffers = idx+2;
@@ -204,6 +279,18 @@ protected:
             l2p_cl.where |= STARPU_CPU;
         }
 #endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportL2P()){
+            l2p_cl.cuda_funcs[0] = StarPUCudaWrapperClass::mergePassCallback;
+            l2p_cl.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportL2P()){
+            l2p_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::mergePassCallback;
+            l2p_cl.where |= STARPU_OPENCL;
+        }
+#endif
         l2p_cl.nbuffers = 2;
         l2p_cl.modes[0] = STARPU_R;
         l2p_cl.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
@@ -216,6 +303,18 @@ protected:
             p2p_cl_in.where |= STARPU_CPU;
         }
 #endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportP2P()){
+            p2p_cl_in.cuda_funcs[0] = StarPUCudaWrapperClass::directInPassCallback;
+            p2p_cl_in.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportP2P()){
+            p2p_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::directInPassCallback;
+            p2p_cl_in.where |= STARPU_OPENCL;
+        }
+#endif
         p2p_cl_in.nbuffers = 1;
         p2p_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         p2p_cl_in.name = "p2p_cl_in";
@@ -224,6 +323,18 @@ protected:
         if(originalCpuKernel->supportP2P()){
             p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CPU;
+        }
+#endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportP2P()){
+            p2p_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallback;
+            p2p_cl_inout.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportP2P()){
+            p2p_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallback;
+            p2p_cl_inout.where |= STARPU_OPENCL;
         }
 #endif
         p2p_cl_inout.nbuffers = 2;
@@ -238,6 +349,18 @@ protected:
             m2l_cl_in.where |= STARPU_CPU;
         }
 #endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportM2L()){
+            m2l_cl_in.cuda_funcs[0] = StarPUCudaWrapperClass::transferInPassCallback;
+            m2l_cl_in.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportM2L()){
+            m2l_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInPassCallback;
+            m2l_cl_in.where |= STARPU_OPENCL;
+        }
+#endif
         m2l_cl_in.nbuffers = 2;
         m2l_cl_in.modes[0] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
         m2l_cl_in.modes[1] = STARPU_R;
@@ -247,6 +370,18 @@ protected:
         if(originalCpuKernel->supportM2L()){
             m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CPU;
+        }
+#endif
+#ifdef STARPU_USE_CUDA
+        if(originalCpuKernel->supportM2L()){
+            m2l_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallback;
+            m2l_cl_inout.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef STARPU_USE_OPENCL
+        if(originalCpuKernel->supportM2L()){
+            m2l_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallback;
+            m2l_cl_inout.where |= STARPU_OPENCL;
         }
 #endif
         m2l_cl_inout.nbuffers = 4;
