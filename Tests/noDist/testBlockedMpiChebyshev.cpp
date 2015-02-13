@@ -45,6 +45,8 @@
 
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+
 #include <memory>
 
 
@@ -87,7 +89,7 @@ int main(int argc, char* argv[]){
     typedef FChebCell<ORDER>               GroupCellClass;
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
-    typedef FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
+    typedef FStarPUAllYesCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 
     // Get params

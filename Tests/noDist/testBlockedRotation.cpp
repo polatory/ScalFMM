@@ -40,6 +40,8 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+
 #include <memory>
 
 
@@ -58,7 +60,7 @@ int main(int argc, char* argv[]){
     typedef FRotationCell<P>               GroupCellClass;
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
-    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>   GroupKernelClass;
+    typedef FStarPUAllYesCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)

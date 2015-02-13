@@ -33,10 +33,12 @@
 #include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
-#include "../Src/GroupTree/FGroupTestParticleContainer.hpp"
+#include "../../Src/GroupTree/FGroupTestParticleContainer.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 #include "../../Src/Core/FFmmAlgorithm.hpp"
+
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -50,7 +52,7 @@ int main(int argc, char* argv[]){
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
-    typedef FTestKernels< GroupCellClass, GroupContainerClass >                       GroupKernelClass;
+    typedef FStarPUAllYesCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)

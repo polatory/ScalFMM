@@ -37,6 +37,9 @@
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+
+
 int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
                       const FReal boxWidthAtLeafLevel, const int treeHeight) {
     FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
@@ -75,7 +78,7 @@ int main(int argc, char* argv[]){
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
-    typedef FTestKernels< GroupCellClass, GroupContainerClass >                       GroupKernelClass;
+    typedef FStarPUAllYesCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 
     FMpi mpiComm(argc, argv);
