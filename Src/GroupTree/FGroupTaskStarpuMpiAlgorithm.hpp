@@ -82,8 +82,10 @@ protected:
     starpu_codelet p2p_cl_inout;
     starpu_codelet p2p_cl_inout_mpi;
 
+#ifdef STARPU_USE_CPU
     typedef FStarPUCpuWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCpuWrapperClass;
     StarPUCpuWrapperClass cpuWrapper;
+#endif
 
     FStarPUPtrInterface wrappers;
     FStarPUPtrInterface* wrapperptr;
@@ -92,7 +94,10 @@ public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
         :   comm(inComm), MaxThreads(inMaxThreads), tree(inTree), originalCpuKernel(inKernels),
             handles_up(nullptr), handles_down(nullptr),
-            cpuWrapper(tree->getHeight()), wrapperptr(&wrappers){
+#ifdef STARPU_USE_CPU
+            cpuWrapper(tree->getHeight()),
+#endif
+            wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
         FAssertLF(MaxThreads <= STARPU_MAXCPUS, "number of threads to high");
@@ -105,13 +110,14 @@ public:
 
         starpu_pthread_mutex_t initMutex;
         starpu_pthread_mutex_init(&initMutex, NULL);
+#ifdef STARPU_USE_CPU
         FStarPUUtils::ExecOnWorkers(STARPU_CPU, [&](){
             starpu_pthread_mutex_lock(&initMutex);
             cpuWrapper.initKernel(starpu_worker_get_id(), inKernels);
             starpu_pthread_mutex_unlock(&initMutex);
         });
         wrappers.set(FSTARPU_CPU_IDX, &cpuWrapper);
-
+#endif
         starpu_pthread_mutex_destroy(&initMutex);
 
         starpu_pause();
