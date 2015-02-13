@@ -1006,9 +1006,9 @@ protected:
                 int nbSubCellGroups = 0;
                 task->dyn_handles[nbSubCellGroups + 1] = handles_up[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
-                while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
-                      && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     idxSubGroup += 1;
                     task->dyn_handles[nbSubCellGroups + 1] = handles_up[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
@@ -1338,9 +1338,9 @@ protected:
                 int nbSubCellGroups = 0;
                 task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                 nbSubCellGroups += 1;
-                while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
-                      && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     idxSubGroup += 1;
                     task->dyn_handles[nbSubCellGroups + 1] = handles_down[idxLevel+1][idxSubGroup];
                     nbSubCellGroups += 1;
