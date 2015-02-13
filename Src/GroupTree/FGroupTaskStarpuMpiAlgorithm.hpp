@@ -83,13 +83,15 @@ protected:
 
     typedef FStarPUCpuWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCpuWrapperClass;
     StarPUCpuWrapperClass cpuWrapper;
-    StarPUCpuWrapperClass* wrapperptr;
+
+    FStarPUPtrInterface wrappers;
+    FStarPUPtrInterface* wrapperptr;
 
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
         :   comm(inComm), MaxThreads(inMaxThreads), tree(inTree),
             handles_up(nullptr), handles_down(nullptr),
-            cpuWrapper(tree->getHeight()), wrapperptr(&cpuWrapper){
+            cpuWrapper(tree->getHeight()), wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
         FAssertLF(MaxThreads <= STARPU_MAXCPUS, "number of threads to high");
@@ -107,6 +109,8 @@ public:
             cpuWrapper.initKernel(starpu_worker_get_id(), inKernels);
             starpu_pthread_mutex_unlock(&initMutex);
         });
+        wrappers.set(FSTARPU_CPU_IDX, &cpuWrapper);
+
         starpu_pthread_mutex_destroy(&initMutex);
 
         starpu_pause();
@@ -971,7 +975,7 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                     STARPU_RW, handles_up[tree->getHeight()-1][idxGroup],
                     STARPU_R, handles_up[tree->getHeight()][idxGroup],
                     0);
@@ -1021,7 +1025,7 @@ protected:
                 char *arg_buffer;
                 size_t arg_buffer_size;
                 starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                          0);
@@ -1086,7 +1090,7 @@ protected:
                     char *arg_buffer;
                     size_t arg_buffer_size;
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                             STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              0);
@@ -1143,7 +1147,7 @@ protected:
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevelMpi[idxLevel][idxGroup][idxInteraction].interactions;
 
                     starpu_insert_task(&m2l_cl_inout_mpi,
-                            STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                             (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][idxGroup],
@@ -1166,7 +1170,7 @@ protected:
             FLOG( timerInBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 starpu_insert_task(&m2l_cl_in,
-                        STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                    (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][idxGroup],
                                    STARPU_R, handles_up[idxLevel][idxGroup],
@@ -1181,7 +1185,7 @@ protected:
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
                     starpu_insert_task(&m2l_cl_inout,
-                            STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                             (STARPU_RW|STARPU_COMMUTE), handles_down[idxLevel][idxGroup],
@@ -1304,7 +1308,7 @@ protected:
                         char *arg_buffer;
                         size_t arg_buffer_size;
                         starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                                 STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                                                 STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                                  STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                                  STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                                  0);
@@ -1353,7 +1357,7 @@ protected:
                 char *arg_buffer;
                 size_t arg_buffer_size;
                 starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                          0);
@@ -1376,7 +1380,7 @@ protected:
                 const int interactionid = externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].interactions;
                 starpu_insert_task(&p2p_cl_inout_mpi,
-                        STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                         (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                         STARPU_R, remoteParticleGroupss[interactionid].handle,
@@ -1398,7 +1402,7 @@ protected:
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
-                    STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                     (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                     0);
         }
@@ -1409,7 +1413,7 @@ protected:
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
                 starpu_insert_task(&p2p_cl_inout,
-                        STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                         (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                         (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][interactionid],
@@ -1432,7 +1436,7 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(StarPUCpuWrapperClass*),
+                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                     STARPU_R, handles_down[tree->getHeight()-1][idxGroup],
                     (STARPU_RW|STARPU_COMMUTE), handles_down[tree->getHeight()][idxGroup],
                     0);

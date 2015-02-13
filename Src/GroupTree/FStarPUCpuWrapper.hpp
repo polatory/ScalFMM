@@ -31,6 +31,7 @@ extern "C"{
 }
 #endif
 
+#include "FStarPUUtils.hpp"
 
 template <class CellContainerClass, class CellClass, class KernelClass,
           class ParticleGroupClass, class ParticleContainerClass>
@@ -80,9 +81,9 @@ public:
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                             STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->bottomPassPerform(&leafCells, &containers);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->bottomPassPerform(&leafCells, &containers);
     }
 
     void bottomPassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
@@ -109,7 +110,7 @@ public:
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
@@ -121,7 +122,7 @@ public:
                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
 
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
             delete subCellGroups[idxSubGroup];
@@ -172,12 +173,12 @@ public:
         CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->transferInoutPassPerformMpi(&currentCells, &externalCells, idxLevel, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerformMpi(&currentCells, &externalCells, idxLevel, outsideInteractions);
     }
 
 
@@ -213,11 +214,11 @@ public:
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel);
 
-        worker->transferInPassPerform(&currentCells, idxLevel);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInPassPerform(&currentCells, idxLevel);
     }
 
     void transferInPassPerform(CellContainerClass*const currentCells, const int idxLevel){
@@ -264,12 +265,12 @@ public:
         CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions);
     }
 
 
@@ -307,7 +308,7 @@ public:
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
@@ -319,7 +320,7 @@ public:
                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
 
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
             delete subCellGroups[idxSubGroup];
@@ -370,11 +371,11 @@ public:
         ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                       STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
-        worker->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
     }
 
     void directInoutPassPerformMpi(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
@@ -402,10 +403,9 @@ public:
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                       STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-
-        worker->directInPassPerform(&containers);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInPassPerform(&containers);
     }
 
     void directInPassPerform(ParticleGroupClass* containers){
@@ -448,11 +448,11 @@ public:
         ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                       STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
-        worker->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
     }
 
     void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
@@ -486,9 +486,9 @@ public:
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
 
-        ThisClass* worker = nullptr;
+        FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->mergePassPerform(&leafCells, &containers);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->mergePassPerform(&leafCells, &containers);
     }
 
     void mergePassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
