@@ -20,7 +20,6 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmaParticle
 * Please read the license
 *
 * This class defines a particle container for FMA loader.
