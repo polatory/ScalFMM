@@ -33,9 +33,12 @@
 #include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
-#include "../Src/GroupTree/FGroupTestParticleContainer.hpp"
+#include "../../Src/GroupTree/FGroupTestParticleContainer.hpp"
 
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 #include "../../Src/Core/FFmmAlgorithm.hpp"
+
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -49,7 +52,7 @@ int main(int argc, char* argv[]){
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
-    typedef FTestKernels< GroupCellClass, GroupContainerClass >                       GroupKernelClass;
+    typedef FStarPUAllYesCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
@@ -72,11 +75,17 @@ int main(int argc, char* argv[]){
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
 
-    // Load the particles
+//#define LOAD_FILE
+#ifndef LOAD_FILE
+    const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
     FRandomLoader loader(NbParticles, 1.0, FPoint(0,0,0), 0);
+#else
+    // Load the particles
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    FFmaGenericLoader loader(filename);
+#endif
     FAssertLF(loader.isOpen());
 
     // Usual octree
@@ -85,7 +94,12 @@ int main(int argc, char* argv[]){
     FP2PParticleContainer<> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint particlePosition;
+#ifndef LOAD_FILE
         loader.fillParticle(&particlePosition);
+#else
+        FReal ph;
+        loader.fillParticle(&particlePosition, &ph);
+#endif
         allParticles.push(particlePosition);
         tree.insert(particlePosition);
     }
@@ -129,8 +143,8 @@ int main(int argc, char* argv[]){
         const int nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
         for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
-            if(dataDown[idxPart] != NbParticles-1){
-                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (NbParticles-1) << ") at index " << cell->getMortonIndex() << "\n";
+            if(dataDown[idxPart] != loader.getNumberOfParticles()-1){
+                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (loader.getNumberOfParticles()-1) << ") at index " << cell->getMortonIndex() << "\n";
             }
         }
     });

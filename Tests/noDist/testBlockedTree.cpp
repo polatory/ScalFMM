@@ -40,6 +40,8 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
@@ -95,7 +97,7 @@ int main(int argc, char* argv[]){
 
 
 
-    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
+    typedef FStarPUAllYesCapacities<FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>>   KernelClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)

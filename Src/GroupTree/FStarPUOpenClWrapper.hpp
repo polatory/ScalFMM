@@ -1,7 +1,8 @@
 
+
 // @SCALFMM_PRIVATE
-#ifndef FSTARPUCPUWRAPPER_HPP
-#define FSTARPUCPUWRAPPER_HPP
+#ifndef FSTARPUOPENCLWRAPPER_HPP
+#define FSTARPUOPENCLWRAPPER_HPP
 
 
 #include "../Utils/FGlobal.hpp"
@@ -37,9 +38,9 @@ extern "C"{
 
 template <class CellContainerClass, class CellClass, class KernelClass,
           class ParticleGroupClass, class ParticleContainerClass>
-class FStarPUCpuWrapper {
+class FStarPUOpenClWrapper {
 protected:
-    typedef FStarPUCpuWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
+    typedef FStarPUOpenClWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
 
     struct OutOfBlockInteraction{
         MortonIndex outIndex;
@@ -59,11 +60,11 @@ protected:
     };
 
     const int treeHeight;
-    KernelClass* kernels[STARPU_MAXCPUS];        //< The kernels
+    KernelClass* kernels[STARPU_MAXOPENCLDEVS];        //< The kernels
 
 public:
-    FStarPUCpuWrapper(const int inTreeHeight): treeHeight(inTreeHeight){
-        memset(kernels, 0, sizeof(KernelClass*)*STARPU_MAXCPUS);
+    FStarPUOpenClWrapper(const int inTreeHeight): treeHeight(inTreeHeight){
+        memset(kernels, 0, sizeof(KernelClass*)*STARPU_MAXOPENCLDEVS);
     }
 
     void initKernel(const int workerId, KernelClass* originalKernel){
@@ -71,8 +72,8 @@ public:
         kernels[workerId] = new KernelClass(*originalKernel);
     }
 
-    ~FStarPUCpuWrapper(){
-        for(int idxKernel = 0 ; idxKernel < STARPU_MAXCPUS ; ++idxKernel ){
+    ~FStarPUOpenClWrapper(){
+        for(int idxKernel = 0 ; idxKernel < STARPU_MAXOPENCLDEVS ; ++idxKernel ){
             delete kernels[idxKernel];
         }
     }
@@ -520,5 +521,6 @@ public:
     }
 };
 
-#endif // FSTARPUCPUWRAPPER_HPP
+
+#endif // FSTARPUOPENCLWRAPPER_HPP
 
