@@ -310,7 +310,7 @@ if( ScalFMM_USE_SSE )
                 TRY_COMPILE(COMPILE_RESULT_VAR  ${CMAKE_CURRENT_BINARY_DIR}
                                                      ${CMAKE_MODULE_PATH}/checkSSEpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${SSE_FLAGS}")
                 IF( NOT ${COMPILE_RESULT_VAR})
-                         SET(ScaLFMM_CXX_FLAGS "${ScaLFMM_CXX_FLAGS} -D__SSEPE_INTEL_COMPILER")
+                         SET(__SSEPE_INTEL_COMPILER ON)
                 ENDIF()
   #		SET(ScalFMM_USE_AVX OFF)
         ELSE(${COMPILE_SSE})
@@ -335,7 +335,7 @@ if(ScalFMM_USE_AVX)
                         TRY_COMPILE(COMPILE_RESULT_AVSPE  ${CMAKE_CURRENT_BINARY_DIR}
                           ${CMAKE_MODULE_PATH}/checkAVXpe.cpp  COMPILE_DEFINITIONS  "${CMAKE_CXX_FLAGS} ${AVX_FLAGS}")
                         IF( NOT ${COMPILE_RESULT_AVSPE})
-                                  SET(ScaLFMM_CXX_FLAGS "${ScaLFMM_CXX_FLAGS} -D__AVXPE_INTEL_COMPILER")
+                                  SET(__AVXPE_INTEL_COMPILER ON)
                         ENDIF()
 
                 MESSAGE(STATUS ${CMAKE_CXX_FLAGS} )
