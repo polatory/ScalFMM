@@ -23,8 +23,6 @@
 
 #include "../../Src/Containers/FOctree.hpp"
 
-#include "../../Src/Core/FFmmAlgorithm.hpp"
-
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
@@ -33,10 +31,6 @@
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
 #include "../../Src/Utils/FParameters.hpp"
-
-#include "../../Src/Core/FFmmAlgorithm.hpp"
-#include "../../Src/Core/FFmmAlgorithmThread.hpp"
-#include "../../Src/Core/FFmmAlgorithmTask.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
