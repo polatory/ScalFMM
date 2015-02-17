@@ -4,7 +4,9 @@
 #define FSTARPUUTILS_HPP
 
 /////////////////////////////////////////////////////
+#include "../Utils/FGlobal.hpp"
 
+/////////////////////////////////////////////////////
 
 extern "C"{
 #include <starpu.h>
@@ -14,6 +16,16 @@ extern "C"{
 
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2)
 #define STARPU_SUPPORT_COMMUTE
+#endif
+
+/////////////////////////////////////////////////////
+
+#if defined(STARPU_USE_CUDA) && defined(ScalFMM_USE_CUDA)
+#define ScalFMM_ENABLE_CUDA_KERNEL
+#else
+    #if defined(STARPU_USE_CUDA) || defined(ScalFMM_USE_CUDA)
+        #warning CUDA is turned off because it is not supported by ScalFMM AND StarPU.
+    #endif
 #endif
 
 /////////////////////////////////////////////////////
