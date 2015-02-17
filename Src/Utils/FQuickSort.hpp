@@ -141,7 +141,7 @@ public:
     }
 
     static void QsSequential(SortType array[], const IndexType size){
-        QsSequential(array, size, [&](const SortType& v1, const SortType& v2){
+        QsSequential(array, size, [](const SortType& v1, const SortType& v2){
             return v1 <= v2;
         });
     }
@@ -225,7 +225,7 @@ public:
 #endif
 
     static void QsOmp(SortType array[], const IndexType size){
-        QsOmp(array, size, [&](const SortType& v1, const SortType& v2){
+        QsOmp(array, size, [](const SortType& v1, const SortType& v2){
             return v1 <= v2;
         });
     }
