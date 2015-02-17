@@ -122,7 +122,8 @@ protected:
         if(left < right){
             const IndexType part = QsPartition(array, left, right, infOrEqual);
             if( deep ){
-                #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual)
+                // default(none) has been removed for clang compatibility
+                #pragma omp task firstprivate(array, part, right, deep, infOrEqual)
                 QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
                 // #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual) // not needed
                 QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
