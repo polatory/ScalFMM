@@ -1,7 +1,8 @@
-
 // @SCALFMM_PRIVATE
 #ifndef FSTARPUKERNELCAPACITIES_HPP
 #define FSTARPUKERNELCAPACITIES_HPP
+
+#include "FStarPUUtils.hpp"
 
 /** A class used with the starpu system should
   * implement this interface in order to inform the algorithm about what the kernel
@@ -9,12 +10,12 @@
   */
 class FStarPUKernelCapacities {
 public:
-    virtual bool supportP2M() const = 0;
-    virtual bool supportM2M() const = 0;
-    virtual bool supportM2L() const = 0;
-    virtual bool supportL2L() const = 0;
-    virtual bool supportL2P() const = 0;
-    virtual bool supportP2P() const = 0;
+    virtual bool supportP2M(const FStarPUTypes inPu) const = 0;
+    virtual bool supportM2M(const FStarPUTypes inPu) const = 0;
+    virtual bool supportM2L(const FStarPUTypes inPu) const = 0;
+    virtual bool supportL2L(const FStarPUTypes inPu) const = 0;
+    virtual bool supportL2P(const FStarPUTypes inPu) const = 0;
+    virtual bool supportP2P(const FStarPUTypes inPu) const = 0;
 };
 
 /**
@@ -25,22 +26,22 @@ class FStarPUAllYesCapacities : public BaseClass, public FStarPUKernelCapacities
 public:
     using BaseClass::BaseClass;
 
-    bool supportP2M() const override {
+    bool supportP2M(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
-    bool supportM2M() const override {
+    bool supportM2M(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
-    bool supportM2L() const override {
+    bool supportM2L(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
-    bool supportL2L() const override {
+    bool supportL2L(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
-    bool supportL2P() const override {
+    bool supportL2P(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
-    bool supportP2P() const override {
+    bool supportP2P(const FStarPUTypes /*inPu*/) const override {
         return true;
     }
 };
