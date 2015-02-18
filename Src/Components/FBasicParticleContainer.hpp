@@ -28,21 +28,21 @@
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FBasicParticle
  * Please read the license
  *
  * This class defines a container which can holds one type (AttributeClass)
  * for each particle.
  * The memory is allocated for all informations, the positions and the
  * request type.
- * For example is one want to store a struct for each particle:
- * @code
- * @code struct AStruct{
- * @code ...
- * @code };
- * @code FBasicParticleContainer<1, AStruct> container;
- * And then the access is done using:
- * @code AStruct* strucs = container.getAttributes<0>();
+ * For example if one wants to store a struct for each particle:
+ * \code
+ * struct AStruct{ ... };
+ * FBasicParticleContainer<1, AStruct> container;
+ * \endcode
+ * And then access is done using:
+ * \code
+ * AStruct* strucs = container.getAttributes<0>();
+ * \endcode
  */
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal >
 class FBasicParticleContainer : public FAbstractParticleContainer, public FAbstractSerializable {
