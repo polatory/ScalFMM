@@ -6,9 +6,17 @@
 
 // We need to describe this cell
 #include "../../Components/FTestCell.hpp"
+#include "../../Utils/FOffetOf.hpp"
 
 struct FTestCellDescriptor{
-    static const int offset_up = 0;
+    static const int offset_mortonIndex =  FOffsetOf(FTestCell, mortonIndex);
+    static const int offset_FTreeCoordinate_data =  FOffsetOf(FTestCell, coordinate);
+
+    static const int offset_dataUp = FOffsetOf(FTestCell, dataUp);
+    static const int offset_dataDown = FOffsetOf(FTestCell, dataDown);
+
+    static const int size = alignof(FTestCell)*((offset_dataDown + sizeof(FTestCell::dataDown) + alignof(FTestCell) - 1)/alignof(FTestCell));
+    static_assert(size == sizeof(FTestCell), "Error in attribute shift.");
 };
 
 template< class ContainerClass >
