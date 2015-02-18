@@ -308,7 +308,7 @@ if( ScalFMM_USE_STARPU )
          
             # Add libcudart and cuda.h
             # link_directories($ENV{CUDA_LIB})
-            include_directories(${$ENV{CUDA_INC}})
+            include_directories($ENV{CUDA_INC})
             SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
       endif()
 endif(ScalFMM_USE_STARPU)
