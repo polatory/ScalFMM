@@ -116,7 +116,7 @@ public:
         }
     }
 
-    const int getNVALS() const {
+    int getNVALS() const {
         return NVALS;
     }
 

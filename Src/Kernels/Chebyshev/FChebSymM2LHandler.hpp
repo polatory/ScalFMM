@@ -576,11 +576,11 @@ public:
 
 
     /*! return the t-th approximated far-field interactions*/
-    const FReal *const getK(const  int, const unsigned int t) const
+    const FReal * getK(const  int, const unsigned int t) const
     {   return K[t]; }
 
     /*! return the t-th approximated far-field interactions*/
-    const int getLowRank(const int, const unsigned int t) const
+    int getLowRank(const int, const unsigned int t) const
     {   return LowRank[t]; }
 
 };
@@ -668,11 +668,11 @@ public:
     }
 
     /*! return the t-th approximated far-field interactions*/
-    const FReal *const getK(const  int l, const unsigned int t) const
+    const FReal * getK(const  int l, const unsigned int t) const
     {   return K[l][t]; }
 
     /*! return the t-th approximated far-field interactions*/
-    const int getLowRank(const  int l, const unsigned int t) const
+    int getLowRank(const  int l, const unsigned int t) const
     {   return LowRank[l][t]; }
 
 };
