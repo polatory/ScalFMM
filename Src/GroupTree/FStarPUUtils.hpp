@@ -8,9 +8,9 @@
 
 /////////////////////////////////////////////////////
 
-extern "C"{
+//extern "C"{
 #include <starpu.h>
-}
+//}
 
 /////////////////////////////////////////////////////
 
@@ -25,6 +25,14 @@ extern "C"{
 #else
     #if defined(STARPU_USE_CUDA) || defined(ScalFMM_USE_CUDA)
         #warning CUDA is turned off because it is not supported by ScalFMM AND StarPU.
+    #endif
+#endif
+
+/////////////////////////////////////////////////////
+
+#if defined(STARPU_USE_MPI) && defined(ScalFMM_USE_MPI)
+    #if !defined(ScalFMM_USE_MPI)
+        #warning Cannot may not link because MPI is needed by starpu.
     #endif
 #endif
 

@@ -15,20 +15,22 @@
 
 #include "../Utils/FMpi.hpp"
 
+#include "FOutOfBlockInteraction.hpp"
+
 #include <vector>
 #include <memory>
 
 #include <omp.h>
 
-extern "C"{
+//extern "C"{
 #include <starpu.h>
 #include <starpu_mpi.h>
-}
+//}
 
 #ifdef STARPU_USE_CPU
 #include "FStarPUCpuWrapper.hpp"
 #endif
-#ifdef STARPU_USE_CUDA
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
 #include "FStarPUCudaWrapper.hpp"
 #endif
 #ifdef STARPU_USE_OPENCL
@@ -49,16 +51,6 @@ protected:
     }
 
     const FMpi::FComm& comm;
-
-    struct OutOfBlockInteraction{
-        MortonIndex outIndex;
-        MortonIndex insideIndex;
-        int outPosition;
-        // To sort
-        bool operator <=(const OutOfBlockInteraction& other) const{
-            return outIndex <= other.outIndex;
-        }
-    };
 
     template <class OtherBlockClass>
     struct BlockInteractions{
@@ -94,7 +86,7 @@ protected:
     typedef FStarPUCpuWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCpuWrapperClass;
     StarPUCpuWrapperClass cpuWrapper;
 #endif
-#ifdef STARPU_USE_CUDA
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
     typedef FStarPUCudaWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCudaWrapperClass;
     StarPUCudaWrapperClass cudaWrapper;
 #endif
@@ -113,7 +105,7 @@ public:
 #ifdef STARPU_USE_CPU
             cpuWrapper(tree->getHeight()),
 #endif
-#ifdef STARPU_USE_CUDA
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
             cudaWrapper(tree->getHeight()),
 #endif
 #ifdef STARPU_USE_OPENCL
@@ -140,7 +132,7 @@ public:
         });
         wrappers.set(FSTARPU_CPU_IDX, &cpuWrapper);
 #endif
-#ifdef STARPU_USE_CUDA
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
         FStarPUUtils::ExecOnWorkers(STARPU_CUDA, [&](){
             starpu_pthread_mutex_lock(&initMutex);
             cudaWrapper.initKernel(starpu_worker_get_id(), inKernels);
@@ -222,19 +214,19 @@ protected:
     void initCodelet(){
         memset(&p2m_cl, 0, sizeof(p2m_cl));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportP2M()){
+        if(originalCpuKernel->supportP2M(FSTARPU_CPU_IDX)){
             p2m_cl.cpu_funcs[0] = StarPUCpuWrapperClass::bottomPassCallback;
             p2m_cl.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportP2M()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportP2M(FSTARPU_CUDA_IDX)){
             p2m_cl.cuda_funcs[0] = StarPUCudaWrapperClass::bottomPassCallback;
             p2m_cl.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportP2M()){
+        if(originalCpuKernel->supportP2M(FSTARPU_OPENCL_IDX)){
             p2m_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::bottomPassCallback;
             p2m_cl.where |= STARPU_OPENCL;
         }
@@ -248,19 +240,19 @@ protected:
         memset(l2l_cl, 0, sizeof(l2l_cl[0])*9);
         for(int idx = 0 ; idx < 9 ; ++idx){
 #ifdef STARPU_USE_CPU
-            if(originalCpuKernel->supportM2M()){
+            if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
                 m2m_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::upwardPassCallback;
                 m2m_cl[idx].where |= STARPU_CPU;
             }
 #endif
-#ifdef STARPU_USE_CUDA
-            if(originalCpuKernel->supportM2M()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+            if(originalCpuKernel->supportM2M(FSTARPU_CUDA_IDX)){
                 m2m_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::upwardPassCallback;
                 m2m_cl[idx].where |= STARPU_CUDA;
             }
 #endif
 #ifdef STARPU_USE_OPENCL
-            if(originalCpuKernel->supportM2M()){
+            if(originalCpuKernel->supportM2M(FSTARPU_OPENCL_IDX)){
                 m2m_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::upwardPassCallback;
                 m2m_cl[idx].where |= STARPU_OPENCL;
             }
@@ -271,19 +263,19 @@ protected:
             m2m_cl[idx].name = "m2m_cl";
 
 #ifdef STARPU_USE_CPU
-            if(originalCpuKernel->supportL2L()){
+            if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
                 l2l_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
                 l2l_cl[idx].where |= STARPU_CPU;
             }
 #endif
-#ifdef STARPU_USE_CUDA
-            if(originalCpuKernel->supportL2L()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+            if(originalCpuKernel->supportL2L(FSTARPU_CUDA_IDX)){
                 l2l_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
                 l2l_cl[idx].where |= STARPU_CUDA;
             }
 #endif
 #ifdef STARPU_USE_OPENCL
-            if(originalCpuKernel->supportL2L()){
+            if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
                 l2l_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
                 l2l_cl[idx].where |= STARPU_OPENCL;
             }
@@ -301,19 +293,19 @@ protected:
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportL2P()){
+        if(originalCpuKernel->supportL2P(FSTARPU_CPU_IDX)){
             l2p_cl.cpu_funcs[0] = StarPUCpuWrapperClass::mergePassCallback;
             l2p_cl.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportL2P()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportL2P(FSTARPU_CUDA_IDX)){
             l2p_cl.cuda_funcs[0] = StarPUCudaWrapperClass::mergePassCallback;
             l2p_cl.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportL2P()){
+        if(originalCpuKernel->supportL2P(FSTARPU_OPENCL_IDX)){
             l2p_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::mergePassCallback;
             l2p_cl.where |= STARPU_OPENCL;
         }
@@ -325,19 +317,19 @@ protected:
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportP2P()){
+        if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
             p2p_cl_in.cpu_funcs[0] = StarPUCpuWrapperClass::directInPassCallback;
             p2p_cl_in.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportP2P()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportP2P(FSTARPU_CUDA_IDX)){
             p2p_cl_in.cuda_funcs[0] = StarPUCudaWrapperClass::directInPassCallback;
             p2p_cl_in.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportP2P()){
+        if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
             p2p_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::directInPassCallback;
             p2p_cl_in.where |= STARPU_OPENCL;
         }
@@ -347,19 +339,19 @@ protected:
         p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportP2P()){
+        if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
             p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportP2P()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportP2P(FSTARPU_CUDA_IDX)){
             p2p_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportP2P()){
+        if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_OPENCL;
         }
@@ -371,19 +363,19 @@ protected:
 
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             m2l_cl_in.cpu_funcs[0] = StarPUCpuWrapperClass::transferInPassCallback;
             m2l_cl_in.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportM2L()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
             m2l_cl_in.cuda_funcs[0] = StarPUCudaWrapperClass::transferInPassCallback;
             m2l_cl_in.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInPassCallback;
             m2l_cl_in.where |= STARPU_OPENCL;
         }
@@ -394,19 +386,19 @@ protected:
         m2l_cl_in.name = "m2l_cl_in";
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CPU;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportM2L()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
             m2l_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_OPENCL;
         }
@@ -449,19 +441,19 @@ protected:
     void initCodeletMpi(){
         memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));        
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_CPU;
             p2p_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallbackMpi;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportM2L()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_CUDA;
             p2p_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallbackMpi;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_OPENCL;
             p2p_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallbackMpi;
         }
@@ -473,19 +465,19 @@ protected:
 
         memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));        
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_CPU;
             m2l_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallbackMpi;
         }
 #endif
-#ifdef STARPU_USE_CUDA
-        if(originalCpuKernel->supportM2L()){
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_CUDA;
             m2l_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallbackMpi;
         }
 #endif
 #ifdef STARPU_USE_OPENCL
-        if(originalCpuKernel->supportM2L()){
+        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_OPENCL;
             m2l_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallbackMpi;
         }

@@ -46,5 +46,30 @@ public:
     }
 };
 
+template <class BaseClass>
+class FStarPUAllCpuCapacities : public BaseClass, public FStarPUKernelCapacities {
+public:
+    using BaseClass::BaseClass;
+
+    bool supportP2M(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+    bool supportM2M(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+    bool supportM2L(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+    bool supportL2L(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+    bool supportL2P(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+    bool supportP2P(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX;
+    }
+};
+
 #endif // FSTARPUKERNELCAPACITIES_HPP
 
