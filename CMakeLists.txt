@@ -276,6 +276,8 @@ endif()
 ##################################################################
 ##################################################################
 #
+
+MESSAGE( STATUS "ScalFMM_USE_STARPU             = ${ScalFMM_USE_STARPU}" )
 if( ScalFMM_USE_STARPU )
     SET(STARPU_LIBRARIES " -L$ENV{STARPU_LIB}; -lstarpu-$ENV{STARPU_VERSION}") # CACHE STRING "Set your STARPU flags"
 
@@ -290,24 +292,25 @@ if( ScalFMM_USE_STARPU )
     MESSAGE(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     MESSAGE(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDES}")
     
-  OPTION( ScalFMM_USE_CUDA      "Set to ON to use CUDA with StarPU" OFF )
-  if(ScalFMM_USE_CUDA)
-        execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
-        if(cuda_error_output)
-            message( FATAL_ERROR "nvcc is needed with CUDA." )
-        endif()
-        if(NOT DEFINED CUSTOM_CUDA_FLAGS)
-            SET( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
-        endif()
-        # This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
-        SEPARATE_ARGUMENTS(CUSTOM_CUDA_FLAGS)
-        MESSAGE( STATUS "CUSTOM_CUDA_FLAGS             = ${CUSTOM_CUDA_FLAGS}" )
-     
-        # Add libcudart and cuda.h
-        # link_directories($ENV{CUDA_LIB})
-        include_directories(${$ENV{CUDA_INC}})
-        SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
-  endif()
+    OPTION( ScalFMM_USE_CUDA      "Set to ON to use CUDA with StarPU" OFF )
+        MESSAGE( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
+      if(ScalFMM_USE_CUDA)
+            execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
+            if(cuda_error_output)
+                message( FATAL_ERROR "nvcc is needed with CUDA." )
+            endif()
+            if(NOT DEFINED CUSTOM_CUDA_FLAGS)
+                SET( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
+            endif()
+            # This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
+            SEPARATE_ARGUMENTS(CUSTOM_CUDA_FLAGS)
+            MESSAGE( STATUS "CUSTOM_CUDA_FLAGS             = ${CUSTOM_CUDA_FLAGS}" )
+         
+            # Add libcudart and cuda.h
+            # link_directories($ENV{CUDA_LIB})
+            include_directories(${$ENV{CUDA_INC}})
+            SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
+      endif()
 endif(ScalFMM_USE_STARPU)
 list(APPEND FUSE_LIST "STARPU")
 list(APPEND FUSE_LIST "CUDA")
