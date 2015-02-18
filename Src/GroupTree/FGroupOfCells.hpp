@@ -44,6 +44,30 @@ protected:
     bool deleteBuffer;
 
 public:
+    FGroupOfCells()
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr),
+          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          deleteBuffer(false){
+    }
+
+    void reset(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte){
+        if(deleteBuffer){
+            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
+                if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
+                    (&blockCells[blockIndexesTable[idxCellPtr]])->~CellClass();
+                }
+            }
+            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
+        }
+        // Move the pointers to the correct position
+        allocatedMemoryInByte = (inAllocatedMemoryInByte);
+        memoryBuffer = (inBuffer);
+        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
+        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
+        blockCells          = reinterpret_cast<CellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        deleteBuffer = (false);
+    }
+
     /**
      * Init from a given buffer
      * @param inBuffer
