@@ -25,28 +25,35 @@ public:
     /** Before upward */
     __device__ void P2M(unsigned char* const pole, const ContainerClass* const particles) {
         // the pole represents all particles under
-    ////    if(threadIdx.x == 0) pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
+        if(threadIdx.x == 0){
+            long long int* dataUp = reinterpret_cast<long long int*>(&pole[FTestCellDescriptor::offset_dataUp]);
+            (*dataUp) += particles->getNbParticles();
+        }
     }
 
     /** During upward */
     __device__ void M2M(unsigned char* const  pole, const unsigned char*const*const  child, const int /*level*/) {
         if(threadIdx.x == 0) {
+            long long int* dataUp = reinterpret_cast<long long int*>(&pole[FTestCellDescriptor::offset_dataUp]);
             // A parent represents the sum of the child
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if(child[idx]){
-                ////    pole->setDataUp(pole->getDataUp() + child[idx]->getDataUp());
+                    const long long int* child_dataUp = reinterpret_cast<const long long int*>(&child[idx][FTestCellDescriptor::offset_dataUp]);
+                    (*dataUp) += (*child_dataUp);
                 }
             }
         }
     }
 
     /** Before Downward */
-    __device__ void M2L(unsigned char* const  pole, const unsigned char* distantNeighbors[343], const int /*size*/, const int /*level*/) {
+    __device__ void M2L(unsigned char* const  local, const unsigned char* distantNeighbors[343], const int /*size*/, const int /*level*/) {
         if(threadIdx.x == 0) {
+            long long int* dataDown = reinterpret_cast<long long int*>(&local[FTestCellDescriptor::offset_dataDown]);
             // The pole is impacted by what represent other poles
             for(int idx = 0 ; idx < 343 ; ++idx){
                 if(distantNeighbors[idx]){
-                 ////   pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
+                    const long long int* dataUp = reinterpret_cast<const long long int*>(&distantNeighbors[idx][FTestCellDescriptor::offset_dataUp]);
+                    (*dataDown) += (*dataUp);
                 }
             }
         }
@@ -55,10 +62,12 @@ public:
     /** During Downward */
     __device__ void L2L(const unsigned char*const  local, unsigned char**const  child, const int /*level*/) {
         if(threadIdx.x == 0) {
+            const long long int* dataDown = reinterpret_cast<const long long int*>(&local[FTestCellDescriptor::offset_dataDown]);
             // Each child is impacted by the father
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if(child[idx]){
-                ////    child[idx]->setDataDown(local->getDataDown() + child[idx]->getDataDown());
+                    long long int* child_dataDown = reinterpret_cast<long long int*>(&child[idx][FTestCellDescriptor::offset_dataDown]);
+                    (*child_dataDown) = (*dataDown);
                 }
             }
         }
@@ -67,10 +76,11 @@ public:
     /** After Downward */
     __device__ void L2P(const unsigned char* const  local, ContainerClass*const particles){
         if(threadIdx.x == 0) {
+            const long long int* dataDown = reinterpret_cast<const long long int*>(&local[FTestCellDescriptor::offset_dataDown]);
             // The particles is impacted by the parent cell
             long long int*const particlesAttributes = particles->template getAttribute<0>();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-            ////    particlesAttributes[idxPart] += local->getDataDown();
+                particlesAttributes[idxPart] += (*dataDown);
             }
         }
     }
