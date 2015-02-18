@@ -32,16 +32,29 @@
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
 #include "FStarPUCudaWrapper.hpp"
+#include "Cuda/FCudaEmptyKernel.hpp"
+#include "Cuda/FCudaGroupAttachedLeaf.hpp"
+#include "Cuda/FCudaGroupOfParticles.hpp"
+#include "Cuda/FCudaGroupOfCells.hpp"
 #endif
 #ifdef STARPU_USE_OPENCL
 #include "FStarPUOpenClWrapper.hpp"
 #endif
 #include "FStarPUUtils.hpp"
 
-template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
+template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+    , class CudaCellContainerClass = FCudaGroupOfCells<0>, class CudaParticleGroupClass = FCudaGroupOfParticles<0, int>, class CudaParticleContainerClass = FCudaGroupAttachedLeaf<0, int>,
+    class CudaKernelClass = FCudaEmptyKernel<>
+#endif
+          >
 class FGroupTaskStarPUMpiAlgorithm {
 protected:
-    typedef FGroupTaskStarPUMpiAlgorithm<OctreeClass, CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
+    typedef FGroupTaskStarPUMpiAlgorithm<OctreeClass, CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        , CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass
+#endif
+    > ThisClass;
 
     int getTag(const int inLevel, const MortonIndex mindex) const{
         int shift = 0;
@@ -87,7 +100,7 @@ protected:
     StarPUCpuWrapperClass cpuWrapper;
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-    typedef FStarPUCudaWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUCudaWrapperClass;
+    typedef FStarPUCudaWrapper<KernelClass, CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> StarPUCudaWrapperClass;
     StarPUCudaWrapperClass cudaWrapper;
 #endif
 #ifdef STARPU_USE_OPENCL
@@ -439,7 +452,7 @@ protected:
     ////////////////////////////////////////////////////////////////////////////
 
     void initCodeletMpi(){
-        memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));        
+        memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_CPU;
@@ -463,7 +476,7 @@ protected:
         p2p_cl_inout_mpi.modes[1] = STARPU_R;
         p2p_cl_inout_mpi.name = "p2p_cl_inout_mpi";
 
-        memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));        
+        memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_CPU;
