@@ -92,7 +92,7 @@ public:
         return local_exp;
     }
 
-    const int getArraySize() const
+    int getArraySize() const
     {
         return MultipoleSize;
     }

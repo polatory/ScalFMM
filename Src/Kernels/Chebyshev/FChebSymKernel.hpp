@@ -170,7 +170,7 @@ public:
     }
 
 
-    const SymmetryHandlerClass *const getPtrToSymHandler() const
+    const SymmetryHandlerClass * getPtrToSymHandler() const
     {   return SymHandler.getPtr(); }
     
 

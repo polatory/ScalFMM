@@ -17,11 +17,35 @@ file(
 	./*.cpp
 )
 
+# Add CUDA files once they are compiled from cu to .o
+if(ScalFMM_USE_CUDA)
+    # Find all the CU files in my project
+    file(GLOB_RECURSE source_cu_files ./*.cu)
+ 
+    # Iterate and add builind command for each file
+    set( SCALFMM_CUDA_SOURCES "" )
+    FOREACH (_file ${source_cu_files})
+ 
+        GET_FILENAME_COMPONENT (_filewe ${_file} NAME_WE)
+        SET (_filehpp_output ${CMAKE_CURRENT_BINARY_DIR}/${_filewe}.o)
+ 
+        ADD_CUSTOM_COMMAND(OUTPUT  ${_filehpp_output}
+                  DEPENDS ${_file}
+                  COMMAND echo ARGS Compiling ${_filewe}
+                  COMMAND nvcc ARGS -c ${_file} -o ${_filehpp_output} ${CUSTOM_CUDA_FLAGS})
+ 
+        LIST (APPEND SCALFMM_CUDA_SOURCES ${_filehpp_output})
+    ENDFOREACH ()
+ 
+    MESSAGE( STATUS "SCALFMM_CUDA_SOURCES          = ${SCALFMM_CUDA_SOURCES}" )
+endif()
+
 # Adding cpp files to project
 add_library(
 	scalfmm
 	STATIC
 	${source_lib_files}
+	${SCALFMM_CUDA_SOURCES}
 )
 
 # Add blas library (even if it is set to off)

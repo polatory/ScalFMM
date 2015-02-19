@@ -15,6 +15,8 @@
 #include "../Utils/FAlignedMemory.hpp"
 #include "../Utils/FAssert.hpp"
 
+#include "FOutOfBlockInteraction.hpp"
+
 #ifdef ScalFMM_USE_MPI
 #include "../Utils/FMpi.hpp"
 #endif
@@ -24,14 +26,14 @@
 
 #include <omp.h>
 
-extern "C"{
+//extern "C"{
 #include <starpu.h>
-}
+//}
 
 #ifdef STARPU_USE_MPI
-extern "C"{
+//extern "C"{
 #include <starpu_mpi.h>
-}
+//}
 #endif
 
 #include "FStarPUUtils.hpp"
@@ -41,16 +43,6 @@ template <class CellContainerClass, class CellClass, class KernelClass,
 class FStarPUOpenClWrapper {
 protected:
     typedef FStarPUOpenClWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
-
-    struct OutOfBlockInteraction{
-        MortonIndex outIndex;
-        MortonIndex insideIndex;
-        int outPosition;
-        // To sort
-        bool operator <=(const OutOfBlockInteraction& other) const{
-            return outIndex <= other.outIndex;
-        }
-    };
 
     template <class OtherBlockClass>
     struct BlockInteractions{
