@@ -606,6 +606,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
         set(REQUIRED_INCDIRS)
         set(REQUIRED_LIBDIRS)
         set(REQUIRED_LIBS)
+        set(REQUIRED_FLAGS)
 
         # STARPU
         if (STARPU_INCLUDE_DIRS)
@@ -640,7 +641,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
                 list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
             endif()
             if (MPI_C_LINK_FLAGS)
-                list(APPEND REQUIRED_LIBS "${MPI_C_LINK_FLAGS}")
+                list(APPEND REQUIRED_FLAGS "${MPI_C_LINK_FLAGS}")
             endif()
             list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
         endif()
@@ -718,6 +719,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
             list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
         endforeach()
         list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+        list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
 
         # test link
         unset(STARPU_WORKS CACHE)
@@ -727,7 +729,11 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
 
         if(STARPU_WORKS)
             # save link with dependencies
-            set(STARPU_LIBRARIES_DEP "${REQUIRED_LIBS}")
+            if (REQUIRED_FLAGS)
+                set(STARPU_LIBRARIES_DEP "${REQUIRED_FLAGS};${REQUIRED_LIBS}")
+            else()
+                set(STARPU_LIBRARIES_DEP "${REQUIRED_LIBS}")
+            endif()
             set(STARPU_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
         else()
