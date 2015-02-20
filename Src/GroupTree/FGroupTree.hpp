@@ -230,7 +230,7 @@ public:
 
             // Sort if needed
             if(particlesAreSorted == false){
-                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [&](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
+                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
                     return v1.mindex <= v2.mindex;
                 });
             }
@@ -407,7 +407,7 @@ public:
 
             // Sort if needed
             if(particlesAreSorted == false){
-                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [&](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
+                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
                     return v1.mindex <= v2.mindex;
                 });
             }

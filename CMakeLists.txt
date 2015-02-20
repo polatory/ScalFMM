@@ -13,31 +13,13 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 #===========================================================================
 project(ScalFMM C CXX)
 
-# directly make an error if in-source build
-#if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-#   message(FATAL_ERROR "In-source builds are not allowed.\n"
-#   "Please create a build directory first and execute cmake configuration from "
-#   "this directory. Example: mkdir build && cd build && cmake ..")
-#endif()
-#
 # check if compiling into source directories
-#string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
-#if(insource)
-#  message(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
-#endif(insource)
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
+if(insource)
+  message(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
+endif(insource)
 
 set(ScalFMM_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
-
-
-# MPI option has to be set before project, cannot be changed in the cache!
-#if( ScalFMM_USE_MPI )
-#  include(CMakeForceCompiler)
-#  CMAKE_FORCE_C_COMPILER(mpicc      "MPI C Compiler")
-#  CMAKE_FORCE_CXX_COMPILER(mpicxx   "MPI C++ Compiler")
-#  set(ScalFMM_USE_MPI ON CACHE BOOL "ScalFMM use MPI")
-#else()
-#  message(STATUS "Remove CMake cache and run cmake .. -DScalFMM_USE_MPI=ON to enable MPI" )
-#endif(ScalFMM_USE_MPI)
 
 
 #===========================================================================
@@ -65,12 +47,6 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       set(MORSE_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/morse )
   endif()
   include(MorseInit)
-
-  #
-  # Active language
-  # -----------------------
-#  enable_language(CXX)
-  #
 
   #
   # Options
@@ -411,6 +387,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   ##################################################################
   ##################################################################
   #
+  message( STATUS "ScalFMM_USE_STARPU             = ${ScalFMM_USE_STARPU}" )
   if( ScalFMM_USE_STARPU )
 
     set(ScalFMM_STARPU_VERSION "1.1" CACHE STRING "oldest STARPU version desired")
@@ -441,6 +418,26 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
         include_directories(${STARPU_INCLUDES})
     endif()
 
+    option( ScalFMM_USE_CUDA      "Set to ON to use CUDA with StarPU" OFF )
+    message( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
+	if(ScalFMM_USE_CUDA)
+		execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
+		if(cuda_error_output)
+		    message( FATAL_ERROR "nvcc is needed with CUDA." )
+		endif()
+		if(NOT DEFINED CUSTOM_CUDA_FLAGS)
+		    set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
+		endif()
+		# This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
+		separate_arguments(CUSTOM_CUDA_FLAGS)
+		message( STATUS "CUSTOM_CUDA_FLAGS             = ${CUSTOM_CUDA_FLAGS}" )
+
+		# Add libcudart and cuda.h
+		# link_directories($ENV{CUDA_LIB})
+		include_directories($ENV{CUDA_INC})
+		set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
+	endif()
+
     message(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     if (STARPU_INCLUDE_DIRS)
         message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDES}")
@@ -448,7 +445,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
 
   endif(ScalFMM_USE_STARPU)
   list(APPEND FUSE_LIST "STARPU")
-  #
+  list(APPEND FUSE_LIST "CUDA")
+
   ##################################################################
   #                         Use SSE                                #
   ##################################################################
@@ -479,6 +477,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     endif(${COMPILE_SSE})
   endif()
   list(APPEND FUSE_LIST "SSE")
+
   ##################################################################
   #                           Use AVX                              #
   ##################################################################

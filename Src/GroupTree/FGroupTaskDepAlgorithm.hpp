@@ -12,6 +12,8 @@
 #include "../Utils/FLog.hpp"
 #include "../Utils/FTic.hpp"
 
+#include "FOutOfBlockInteraction.hpp"
+
 #include <vector>
 #include <vector>
 
@@ -20,16 +22,6 @@
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
 class FGroupTaskDepAlgorithm {
 protected:
-    struct OutOfBlockInteraction{
-        MortonIndex outIndex;
-        MortonIndex insideIndex;
-        int outPosition;
-        // To sort
-        bool operator <=(const OutOfBlockInteraction& other) const{
-            return outIndex <= other.outIndex;
-        }
-    };
-
     template <class OtherBlockClass>
     struct BlockInteractions{
         OtherBlockClass* otherBlock;

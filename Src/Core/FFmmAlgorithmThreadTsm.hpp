@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FFMMALGORITHMTHREADTSM_HPP
@@ -22,7 +22,7 @@
 
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
-
+#include "../Utils/FAlgorithmTimers.hpp"
 #include "../Containers/FOctree.hpp"
 #include "FCoreCommon.hpp"
 
@@ -45,7 +45,7 @@
 * You should not write on sources in the P2P method!
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm{
+class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm, public FAlgorithmTimers{
     OctreeClass* const tree;                  //< The octree to work on
     KernelClass** kernels;                    //< The kernels
 
@@ -413,5 +413,3 @@ protected:
 
 
 #endif //FFMMALGORITHMTHREADTSM_HPP
-
-

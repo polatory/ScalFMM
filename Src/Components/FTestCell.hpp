@@ -19,6 +19,9 @@
 #include <cstddef>
 #include "FBasicCell.hpp"
 
+// To get access to descriptors
+struct FTestCellDescriptor;
+
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FBasicCell*
@@ -111,6 +114,9 @@ public:
     int getSavedSizeUp() {
         return int(sizeof(long long int));
     }
+
+	// To get access to descriptor
+    friend struct FTestCellDescriptor;
 };
 
 

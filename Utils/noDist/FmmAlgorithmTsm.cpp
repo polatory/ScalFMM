@@ -217,8 +217,7 @@ struct TempMainStruct{
 			const FReal*const forcesY = leaf->getTargets()->getForcesY();
 			const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
 			const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-			//
-			const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            //
 			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 				double pot = 0.0 , xx,yy,zz;
 				FPoint  FF ;

@@ -74,6 +74,7 @@ public:
         octreeIterator.gotoBottomLeft();
         do{
             const MortonIndex currentMortonIndex = octreeIterator.getCurrentGlobalIndex();
+            //First we test sources
             ContainerClass * particles = octreeIterator.getCurrentLeaf()->getSrc();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
                 FPoint currentPart;
@@ -82,15 +83,33 @@ public:
                 const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
                 if(particuleIndex != currentMortonIndex){
                     //Need to move this one
-                    interface->removeFromLeafAndKeep(particles,currentPart,idxPart);
+                    interface->removeFromLeafAndKeep(particles,currentPart,idxPart,FParticleTypeSource);
                 }
                 else{
                     //Need to increment idx;
                     ++idxPart;
                 }
             }
+            //Then we test targets
+            if(octreeIterator.getCurrentLeaf()->getTargets() != particles){ //Leaf is TypedLeaf
+                ContainerClass * particleTargets = octreeIterator.getCurrentLeaf()->getTargets();
+                for(int idxPart = 0 ; idxPart < particleTargets->getNbParticles(); /*++idxPart*/){
+                    FPoint currentPart;
+                    interface->getParticlePosition(particleTargets,idxPart,&currentPart);
+                    checkPosition(currentPart);
+                    const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
+                    if(particuleIndex != currentMortonIndex){
+                        //Need to move this one
+                        interface->removeFromLeafAndKeep(particleTargets,currentPart,idxPart, FParticleTypeTarget);
+                    }
+                    else{
+                        //Need to increment idx;
+                        ++idxPart;
+                    }
+                }
+            }
         }while(octreeIterator.moveRight());
-
+        printf("Insert back particles\n");
         //Insert back the parts that have been removed
         interface->insertAllParticles(tree);
 
@@ -101,7 +120,8 @@ public:
             bool workOnNext = true;
             do{
                 // Empty leaf
-                if( octreeIterator.getCurrentListTargets()->getNbParticles() == 0 ){
+                if( octreeIterator.getCurrentListTargets()->getNbParticles() == 0 &&
+                    octreeIterator.getCurrentListSrc()->getNbParticles() == 0 ){
                     const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                     workOnNext = octreeIterator.moveRight();
                     tree->removeLeaf( currentIndex );

@@ -122,7 +122,8 @@ protected:
         if(left < right){
             const IndexType part = QsPartition(array, left, right, infOrEqual);
             if( deep ){
-                #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual)
+                // default(none) has been removed for clang compatibility
+                #pragma omp task firstprivate(array, part, right, deep, infOrEqual)
                 QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
                 // #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual) // not needed
                 QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
@@ -141,7 +142,7 @@ public:
     }
 
     static void QsSequential(SortType array[], const IndexType size){
-        QsSequential(array, size, [&](const SortType& v1, const SortType& v2){
+        QsSequential(array, size, [](const SortType& v1, const SortType& v2){
             return v1 <= v2;
         });
     }
@@ -225,7 +226,7 @@ public:
 #endif
 
     static void QsOmp(SortType array[], const IndexType size){
-        QsOmp(array, size, [&](const SortType& v1, const SortType& v2){
+        QsOmp(array, size, [](const SortType& v1, const SortType& v2){
             return v1 <= v2;
         });
     }
