@@ -466,7 +466,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
         set(STARPU_libs_to_find     "starpu-${STARPU_VERSION_STRING}")
         set(STARPU_SHM_libs_to_find "starpu-${STARPU_VERSION_STRING}")
         if (STARPU_LOOK_FOR_MPI OR MPI_FOUND)
-            list(APPEND STARPU_libs_to_find "starpumpi-${STARPU_VERSION_STRING}")
+            list(INSERT STARPU_libs_to_find 0 "starpumpi-${STARPU_VERSION_STRING}")
             set(STARPU_MPI_libs_to_find "${STARPU_libs_to_find}")
         endif()
 
