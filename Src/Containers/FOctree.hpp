@@ -638,21 +638,33 @@ public:
             return this->current.tree->cellsAt(this->currentLocalLevel)[this->currentLocalIndex];
         }
 
-        /** Get the child of the current cell
-         * This function return an array of CellClass (array size = 8)
-         * User has to test each case to know if there is a cell
-         * @return the child array
+        /** Gets the children of the current cell.
+         *
+         * This function return an array of 8 CellClass. To konw whether
+         * a child cell exists or not, the pointer must be checked.
+         *
+         * @return the 8-child array.
          */
         CellClass** getCurrentChild() const {
             // are we at the bottom of the suboctree
             if(this->current.tree->getSubOctreeHeight() - 1 == this->currentLocalLevel ){
                 // then return first level of the suboctree under
                 return &this->current.middleTree->leafs(this->currentLocalIndex)->cellsAt(0)[0];
-            }
-            else{
+            } else {
                 // else simply return the array at the right position
                 return &this->current.tree->cellsAt(this->currentLocalLevel + 1)[this->currentLocalIndex << 3];
             }
+        }
+
+        /** Gets the children of the current cell.
+         *
+         * This function return an array of 8 CellClass. To konw whether
+         * a child cell exists or not, the pointer must be checked.
+         *
+         * @return the 8-child array.
+         */
+        CellClass** getCurrentChildren() const {
+            return getCurrentChild();
         }
 
         /** Get the part of array that contains all the pointers
