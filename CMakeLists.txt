@@ -390,16 +390,50 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   message( STATUS "ScalFMM_USE_STARPU             = ${ScalFMM_USE_STARPU}" )
   if( ScalFMM_USE_STARPU )
 
+    # CUDA could be used with StarPU enabled
+    option( ScalFMM_USE_CUDA "Set to ON to use CUDA with StarPU" OFF )
+    message( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
+    if(ScalFMM_USE_CUDA)
+        execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
+        if(cuda_error_output)
+            message( FATAL_ERROR "nvcc is needed with CUDA." )
+        endif()
+        if(NOT DEFINED CUSTOM_CUDA_FLAGS)
+            set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE
+            STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
+        endif()
+        # This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
+        separate_arguments(CUSTOM_CUDA_FLAGS)
+        message( STATUS "CUSTOM_CUDA_FLAGS             = ${CUSTOM_CUDA_FLAGS}" )
+
+        find_package(CUDA REQUIRED)
+
+        if (CUDA_INCLUDE_DIRS)
+            include_directories(${CUDA_INCLUDE_DIRS})
+        endif()
+        if (CUDA_LIBRARIES)
+            set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${CUDA_LIBRARIES}")
+        endif()
+    endif()
+
+    # Find StarPU with a list of optional components
     set(ScalFMM_STARPU_VERSION "1.1" CACHE STRING "oldest STARPU version desired")
     # create list of components in order to make a single call to find_package(starpu...)
     set(STARPU_COMPONENT_LIST "HWLOC")
     if(ScalFMM_USE_MPI)
         list(APPEND STARPU_COMPONENT_LIST "MPI")
     endif()
+    if(ScalFMM_USE_CUDA)
+        list(APPEND STARPU_COMPONENT_LIST "CUDA")
+    endif()
 
     find_package(STARPU ${ScalFMM_STARPU_VERSION} REQUIRED
                  COMPONENTS ${STARPU_COMPONENT_LIST})
 
+    # Append list of libraries and include dirs
+    if (STARPU_INCLUDE_DIRS)
+        include_directories(${STARPU_INCLUDE_DIRS})
+    endif()
     foreach (starpu_libdir ${STARPU_LIBRARY_DIRS})
       if (${starpu_libdir} MATCHES "^-L")
           set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${starpu_libdir}")
@@ -414,30 +448,12 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
           set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -l${starpu_lib}")
       endif()
     endforeach()
-    if (STARPU_INCLUDE_DIRS)
-        include_directories(${STARPU_INCLUDE_DIRS})
+
+    if (CUDA_LIBRARIES)
+        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${CUDA_LIBRARIES}")
     endif()
 
-    option( ScalFMM_USE_CUDA      "Set to ON to use CUDA with StarPU" OFF )
-    message( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
-	if(ScalFMM_USE_CUDA)
-		execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
-		if(cuda_error_output)
-		    message( FATAL_ERROR "nvcc is needed with CUDA." )
-		endif()
-		if(NOT DEFINED CUSTOM_CUDA_FLAGS)
-		    set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
-		endif()
-		# This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
-		separate_arguments(CUSTOM_CUDA_FLAGS)
-		message( STATUS "CUSTOM_CUDA_FLAGS             = ${CUSTOM_CUDA_FLAGS}" )
-
-		# Add libcudart and cuda.h
-		# link_directories($ENV{CUDA_LIB})
-		include_directories($ENV{CUDA_INC})
-		set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
-	endif()
-
+    # Message
     message(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     if (STARPU_INCLUDE_DIRS)
         message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
