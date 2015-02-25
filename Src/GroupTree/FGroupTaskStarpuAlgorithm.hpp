@@ -43,7 +43,7 @@ template <class OctreeClass, class CellContainerClass, class CellClass, class Ke
     class CudaKernelClass = FCudaEmptyKernel<>
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-    , class OpenCLDeviceWrapperClass = FOpenCLDeviceWrapper<KernelClass, nullptr>
+    , class OpenCLDeviceWrapperClass = FOpenCLDeviceWrapper<KernelClass>
 #endif
           >
 class FGroupTaskStarPUAlgorithm {
