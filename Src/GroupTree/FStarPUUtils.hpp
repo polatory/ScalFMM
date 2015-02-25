@@ -8,9 +8,7 @@
 
 /////////////////////////////////////////////////////
 
-//extern "C"{
 #include <starpu.h>
-//}
 
 /////////////////////////////////////////////////////
 
@@ -23,8 +21,24 @@
 #if defined(STARPU_USE_CUDA) && defined(ScalFMM_USE_CUDA)
 #define ScalFMM_ENABLE_CUDA_KERNEL
 #else
-    #if defined(STARPU_USE_CUDA) || defined(ScalFMM_USE_CUDA)
-        #warning CUDA is turned off because it is not supported by ScalFMM AND StarPU.
+    #if defined(STARPU_USE_CUDA)
+        #warning CUDA is turned off because it is not supported by ScalFMM.
+    #endif
+    #if defined(ScalFMM_USE_CUDA)
+        #warning CUDA is turned off because it is not supported by StarPU.
+    #endif
+#endif
+
+/////////////////////////////////////////////////////
+
+#if defined(STARPU_USE_OPENCL) && defined(ScalFMM_USE_OPENCL)
+#define ScalFMM_ENABLE_OPENCL_KERNEL
+#else
+    #if defined(STARPU_USE_OPENCL)
+        #warning OPENCL is turned off because it is not supported by ScalFMM.
+    #endif
+    #if defined(ScalFMM_USE_OPENCL)
+        #warning OPENCL is turned off because it is not supported by StarPU.
     #endif
 #endif
 

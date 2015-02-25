@@ -26,42 +26,36 @@
 
 #include <omp.h>
 
-//extern "C"{
 #include <starpu.h>
-//}
 
 #ifdef STARPU_USE_MPI
-//extern "C"{
 #include <starpu_mpi.h>
-//}
 #endif
 
 #include "FStarPUUtils.hpp"
 
-template <class CellContainerClass, class CellClass, class KernelClass,
-          class ParticleGroupClass, class ParticleContainerClass>
+#ifndef CL_VERSION_2_0
+#error should use opencl 2.0
+#endif
+
+
+template <class KernelClass, class OpenCLKernelClass>
 class FStarPUOpenClWrapper {
 protected:
-    typedef FStarPUOpenClWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> ThisClass;
-
-    template <class OtherBlockClass>
-    struct BlockInteractions{
-        OtherBlockClass* otherBlock;
-        int otherBlockId;
-        std::vector<OutOfBlockInteraction> interactions;
-    };
+    typedef FStarPUOpenClWrapper<KernelClass, OpenCLKernelClass> ThisClass;
 
     const int treeHeight;
-    KernelClass* kernels[STARPU_MAXOPENCLDEVS];        //< The kernels
+    OpenCLKernelClass* kernels[STARPU_MAXOPENCLDEVS];        //< The kernels
 
 public:
     FStarPUOpenClWrapper(const int inTreeHeight): treeHeight(inTreeHeight){
-        memset(kernels, 0, sizeof(KernelClass*)*STARPU_MAXOPENCLDEVS);
+        memset(kernels, 0, sizeof(OpenCLKernelClass*)*STARPU_MAXOPENCLDEVS);
     }
 
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
-        kernels[workerId] = new KernelClass(*originalKernel);
+        kernels[workerId] = new OpenCLKernelClass();
+        kernels[workerId]->initDeviceFromKernel(*originalKernel);
     }
 
     ~FStarPUOpenClWrapper(){
@@ -71,30 +65,15 @@ public:
     }
 
     static void bottomPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t leafCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->bottomPassPerform(&leafCells, &containers);
-    }
-
-    void bottomPassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
-        const MortonIndex blockStartIdx = leafCells->getStartingIndex();
-        const MortonIndex blockEndIdx = leafCells->getEndingIndex();
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = leafCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                FAssertLF(particles.isAttachedToSomething());
-                kernel->P2M(cell, &particles);
-            }
-        }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->bottomPassPerform(leafCellsPtr, leafCellsSize, containersPtr, containersSize);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -102,59 +81,25 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void upwardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        CellContainerClass* subCellGroups[9];
-        memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
+        cl_mem* subCellGroupsPtr[9];
+        memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
+        size_t subCellGroupsSize[9];
+        memset(subCellGroupsSize, 0, 9*sizeof(size_t));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
-                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
+            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsSize[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
-
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            delete subCellGroups[idxSubGroup];
-        }
-    }
-
-    void upwardPassPerform(CellContainerClass*const currentCells,
-                           CellContainerClass* subCellGroups[9],
-                            const int nbSubCellGroups, const int idxLevel){
-        FAssertLF(nbSubCellGroups != 0);
-        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex()>>3);
-        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        int idxSubCellGroup = 0;
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
-                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                        idxSubCellGroup += 1;
-                    }
-                    if( idxSubCellGroup == nbSubCellGroups ){
-                        break;
-                    }
-                    child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
-                    FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
-                }
-
-                kernel->M2M(cell, child, idxLevel);
-            }
-        }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->upwardPassPerform(currentCellsPtr, currentCellsSize, subCellGroupsPtr, subCellGroupsSize, nbSubCellGroups, idxLevel);
     }
 
 
@@ -163,42 +108,31 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 #ifdef STARPU_USE_MPI
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t externalCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerformMpi(&currentCells, &externalCells, idxLevel, outsideInteractions);
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        cl_int errcode_ret;
+        cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
+           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
+           outsideInteractions->size()*sizeof(OutOfBlockInteraction),
+           outsideInteractions->data(), &errcode_ret);
+        FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
+
+        kernel->transferInoutPassPerformMpi(currentCellsPtr,
+                    currentCellsSize, externalCellsPtr, externalCellsSize, idxLevel, outsideInteractionsCl,
+                                                                                outsideInteractions->size());
+
+        clReleaseMemObject(outsideInteractionsCl);
     }
 
-
-    void transferInoutPassPerformMpi(CellContainerClass*const currentCells,
-                                  CellContainerClass*const cellsOther,
-                                  const int idxLevel,
-                                  const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
-            if(interCell){
-                FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(cell);
-                FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
-
-                const CellClass* interactions[343];
-                memset(interactions, 0, 343*sizeof(CellClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
-                const int counter = 1;
-                kernel->M2L( cell , interactions, counter, idxLevel);
-            }
-        }
-    }
 #endif
     /////////////////////////////////////////////////////////////////////////////////////
     /// Transfer Pass
@@ -206,153 +140,72 @@ public:
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
         FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
-        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInPassPerform(&currentCells, idxLevel);
-    }
-
-    void transferInPassPerform(CellContainerClass*const currentCells, const int idxLevel){
-        const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-        const MortonIndex blockEndIdx = currentCells->getEndingIndex();
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
-                MortonIndex interactionsIndexes[189];
-                int interactionsPosition[189];
-                const FTreeCoordinate coord(cell->getCoordinate());
-                int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
-
-                const CellClass* interactions[343];
-                memset(interactions, 0, 343*sizeof(CellClass*));
-                int counterExistingCell = 0;
-
-                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                        CellClass* interCell = currentCells->getCell(interactionsIndexes[idxInter]);
-                        if(interCell){
-                            FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
-                            FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                            interactions[interactionsPosition[idxInter]] = interCell;
-                            counterExistingCell += 1;
-                        }
-                    }
-                }
-
-                kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
-            }
-        }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->transferInPassPerform(currentCellsPtr,
+                                 currentCellsSize, idxLevel);
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
         FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
         FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
 
-        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t externalCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions);
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        cl_int errcode_ret;
+        cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
+           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
+           outsideInteractions->size()*sizeof(OutOfBlockInteraction),
+           outsideInteractions->data(), &errcode_ret);
+        FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
+
+        kernel->transferInoutPassPerform(currentCellsPtr,
+                     currentCellsSize, externalCellsPtr, externalCellsSize, idxLevel, outsideInteractionsCl,
+                                                                             outsideInteractions->size());
+
+        clReleaseMemObject(outsideInteractionsCl);
     }
 
-
-    void transferInoutPassPerform(CellContainerClass*const currentCells,
-                                  CellContainerClass*const cellsOther,
-                                  const int idxLevel,
-                                  const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
-            if(interCell){
-                FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(cell);
-                FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
-
-                const CellClass* interactions[343];
-                memset(interactions, 0, 343*sizeof(CellClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
-                const int counter = 1;
-                kernel->M2L( cell , interactions, counter, idxLevel);
-
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = cell;
-                kernel->M2L( interCell , interactions, counter, idxLevel);
-            }
-        }
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////
     /// Downard Pass
     /////////////////////////////////////////////////////////////////////////////////////
     static void downardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        CellContainerClass* subCellGroups[9];
-        memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
+        cl_mem* subCellGroupsPtr[9];
+        memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
+        size_t subCellGroupsSize[9];
+        memset(subCellGroupsSize, 0, 9*sizeof(size_t));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
-                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
+            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsSize[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
-
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            delete subCellGroups[idxSubGroup];
-        }
-    }
-
-    void downardPassPerform(CellContainerClass*const currentCells,
-                            CellContainerClass* subCellGroups[9],
-                             const int nbSubCellGroups, const int idxLevel){
-        FAssertLF(nbSubCellGroups != 0);
-        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex()>>3);
-        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        int idxSubCellGroup = 0;
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
-                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                        idxSubCellGroup += 1;
-                    }
-                    if( idxSubCellGroup == nbSubCellGroups ){
-                        break;
-                    }
-                    child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
-                    FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
-                }
-
-                kernel->L2L(cell, child, idxLevel);
-            }
-        }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->downardPassPerform(currentCellsPtr,
+                                currentCellsSize, subCellGroupsPtr, subCellGroupsSize, nbSubCellGroups, idxLevel);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -361,33 +214,28 @@ public:
 
 #ifdef STARPU_USE_MPI
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t externalContainersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
-    }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        cl_int errcode_ret;
+        cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
+           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
+           outsideInteractions->size()*sizeof(OutOfBlockInteraction),
+           outsideInteractions->data(), &errcode_ret);
+        FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
-    void directInoutPassPerformMpi(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
-                                const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
-            if(interParticles.isAttachedToSomething()){
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(particles.isAttachedToSomething());
-                ParticleContainerClass* interactions[27];
-                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
-                const int counter = 1;
-                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
-            }
-        }
+        kernel->directInoutPassPerformMpi(containersPtr,
+              containersSize, externalContainersPtr, externalContainersSize, outsideInteractionsCl,
+                                                                           outsideInteractions->size());
+
+        clReleaseMemObject(outsideInteractionsCl);
     }
 #endif
     /////////////////////////////////////////////////////////////////////////////////////
@@ -395,80 +243,38 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t containerSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInPassPerform(&containers);
-    }
-
-    void directInPassPerform(ParticleGroupClass* containers){
-        const MortonIndex blockStartIdx = containers->getStartingIndex();
-        const MortonIndex blockEndIdx = containers->getEndingIndex();
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-            if(particles.isAttachedToSomething()){
-                MortonIndex interactionsIndexes[26];
-                int interactionsPosition[26];
-                FTreeCoordinate coord(mindex, treeHeight-1);
-                int counter = coord.getNeighborsIndexes(treeHeight,interactionsIndexes,interactionsPosition);
-
-                ParticleContainerClass interactionsObjects[27];
-                ParticleContainerClass* interactions[27];
-                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                int counterExistingCell = 0;
-
-                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                        interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(interactionsIndexes[idxInter]);
-                        if(interactionsObjects[counterExistingCell].isAttachedToSomething()){
-                            FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                            interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
-                            counterExistingCell += 1;
-                        }
-                    }
-                }
-
-                kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
-            }
-        }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->directInPassPerform(containersPtr, containerSize);
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t containerSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t externalContainersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
-    }
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        cl_int errcode_ret;
+        cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
+           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
+           outsideInteractions->size()*sizeof(OutOfBlockInteraction),
+           outsideInteractions->data(), &errcode_ret);
+        FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
-    void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
-                                const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
-            if(interParticles.isAttachedToSomething()){
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(particles.isAttachedToSomething());
-                ParticleContainerClass* interactions[27];
-                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
-                const int counter = 1;
-                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
+        kernel->directInoutPassPerform(containersPtr,
+                     containerSize, externalContainersPtr, externalContainersSize, outsideInteractionsCl,
+                     outsideInteractions->size());
 
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                interactions[getOppositeNeighIndex((*outsideInteractions)[outInterIdx].outPosition)] = &particles;
-                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, treeHeight-1), &interParticles, &interParticles , interactions, counter);
-            }
-        }
+        clReleaseMemObject(outsideInteractionsCl);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -476,40 +282,16 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void mergePassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        size_t leafCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->mergePassPerform(&leafCells, &containers);
-    }
-
-    void mergePassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
-        const MortonIndex blockStartIdx = leafCells->getStartingIndex();
-        const MortonIndex blockEndIdx = leafCells->getEndingIndex();
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
-
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = leafCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                FAssertLF(particles.isAttachedToSomething());
-                kernel->L2P(cell, &particles);
-            }
-        }
-    }
-
-    static int getOppositeNeighIndex(const int index) {
-        // ((idxX+1)*3 + (idxY+1)) * 3 + (idxZ+1)
-        return 27-index-1;
-    }
-
-    static int getOppositeInterIndex(const int index) {
-        // ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3
-        return 343-index-1;
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+        kernel->mergePassPerform(leafCellsPtr,
+                       leafCellsSize, containersPtr, containersSize);
     }
 };
 

@@ -500,10 +500,18 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     if (STARPU_INCLUDE_DIRS)
         message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
     endif()
-
+    
+    
+    OPTION( ScalFMM_USE_OPENCL      "Set to ON to use OPENCL with StarPU" OFF )
+    MESSAGE( STATUS "ScalFMM_USE_OPENCL             = ${ScalFMM_USE_OPENCL}" )
+    if(ScalFMM_USE_OPENCL)         
+        include_directories($ENV{OPENCL_INC})
+        SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{OPENCL_LIB}; -lOpenCL")
+    endif()
   endif(ScalFMM_USE_STARPU)
   list(APPEND FUSE_LIST "STARPU")
   list(APPEND FUSE_LIST "CUDA")
+  list(APPEND FUSE_LIST "OPENCL")
 
   ##################################################################
   #                         Use SSE                                #
