@@ -22,10 +22,9 @@
 
 #include <omp.h>
 
-//extern "C"{
 #include <starpu.h>
 #include <starpu_mpi.h>
-//}
+#include "FStarPUUtils.hpp"
 
 #ifdef STARPU_USE_CPU
 #include "FStarPUCpuWrapper.hpp"
@@ -37,15 +36,19 @@
 #include "Cuda/FCudaGroupOfParticles.hpp"
 #include "Cuda/FCudaGroupOfCells.hpp"
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
 #include "FStarPUOpenClWrapper.hpp"
+#include "OpenCl/FOpenCLDeviceWrapper.hpp"
 #endif
-#include "FStarPUUtils.hpp"
+
 
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
     , class CudaCellContainerClass = FCudaGroupOfCells<0>, class CudaParticleGroupClass = FCudaGroupOfParticles<0, int>, class CudaParticleContainerClass = FCudaGroupAttachedLeaf<0, int>,
     class CudaKernelClass = FCudaEmptyKernel<>
+#endif
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+    , class OpenCLDeviceWrapperClass = FOpenCLDeviceWrapper<KernelClass, nullptr>
 #endif
           >
 class FGroupTaskStarPUMpiAlgorithm {
@@ -53,6 +56,9 @@ protected:
     typedef FGroupTaskStarPUMpiAlgorithm<OctreeClass, CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
         , CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass
+#endif
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+    , OpenCLDeviceWrapperClass
 #endif
     > ThisClass;
 
@@ -103,8 +109,8 @@ protected:
     typedef FStarPUCudaWrapper<KernelClass, CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> StarPUCudaWrapperClass;
     StarPUCudaWrapperClass cudaWrapper;
 #endif
-#ifdef STARPU_USE_OPENCL
-    typedef FStarPUOpenClWrapper<CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass> StarPUOpenClWrapperClass;
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+    typedef FStarPUOpenClWrapper<KernelClass, OpenCLDeviceWrapperClass> StarPUOpenClWrapperClass;
     StarPUOpenClWrapperClass openclWrapper;
 #endif
 
@@ -121,7 +127,7 @@ public:
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
             cudaWrapper(tree->getHeight()),
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
             openclWrapper(tree->getHeight()),
 #endif
             wrapperptr(&wrappers){
@@ -153,7 +159,7 @@ public:
         });
         wrappers.set(FSTARPU_CUDA_IDX, &cudaWrapper);
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, [&](){
             starpu_pthread_mutex_lock(&initMutex);
             openclWrapper.initKernel(starpu_worker_get_id(), inKernels);
@@ -238,7 +244,7 @@ protected:
             p2m_cl.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportP2M(FSTARPU_OPENCL_IDX)){
             p2m_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::bottomPassCallback;
             p2m_cl.where |= STARPU_OPENCL;
@@ -264,7 +270,7 @@ protected:
                 m2m_cl[idx].where |= STARPU_CUDA;
             }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
             if(originalCpuKernel->supportM2M(FSTARPU_OPENCL_IDX)){
                 m2m_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::upwardPassCallback;
                 m2m_cl[idx].where |= STARPU_OPENCL;
@@ -287,7 +293,7 @@ protected:
                 l2l_cl[idx].where |= STARPU_CUDA;
             }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
             if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
                 l2l_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
                 l2l_cl[idx].where |= STARPU_OPENCL;
@@ -317,7 +323,7 @@ protected:
             l2p_cl.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportL2P(FSTARPU_OPENCL_IDX)){
             l2p_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::mergePassCallback;
             l2p_cl.where |= STARPU_OPENCL;
@@ -341,7 +347,7 @@ protected:
             p2p_cl_in.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
             p2p_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::directInPassCallback;
             p2p_cl_in.where |= STARPU_OPENCL;
@@ -363,7 +369,7 @@ protected:
             p2p_cl_inout.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_OPENCL;
@@ -387,7 +393,7 @@ protected:
             m2l_cl_in.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_in.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInPassCallback;
             m2l_cl_in.where |= STARPU_OPENCL;
@@ -410,7 +416,7 @@ protected:
             m2l_cl_inout.where |= STARPU_CUDA;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_OPENCL;
@@ -465,7 +471,7 @@ protected:
             p2p_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallbackMpi;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_OPENCL;
             p2p_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallbackMpi;
@@ -489,7 +495,7 @@ protected:
             m2l_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallbackMpi;
         }
 #endif
-#ifdef STARPU_USE_OPENCL
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_OPENCL;
             m2l_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallbackMpi;

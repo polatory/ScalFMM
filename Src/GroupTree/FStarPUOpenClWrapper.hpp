@@ -89,7 +89,7 @@ public:
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        cl_mem* subCellGroupsPtr[9];
+        cl_mem subCellGroupsPtr[9];
         memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
         size_t subCellGroupsSize[9];
         memset(subCellGroupsSize, 0, 9*sizeof(size_t));
@@ -123,7 +123,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           outsideInteractions->data(), &errcode_ret);
+           (void*)outsideInteractions->data(), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->transferInoutPassPerformMpi(currentCellsPtr,
@@ -171,7 +171,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           outsideInteractions->data(), &errcode_ret);
+           (void*)outsideInteractions->data(), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->transferInoutPassPerform(currentCellsPtr,
@@ -194,7 +194,7 @@ public:
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        cl_mem* subCellGroupsPtr[9];
+        cl_mem subCellGroupsPtr[9];
         memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
         size_t subCellGroupsSize[9];
         memset(subCellGroupsSize, 0, 9*sizeof(size_t));
@@ -228,7 +228,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           outsideInteractions->data(), &errcode_ret);
+           (void*)outsideInteractions->data(), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->directInoutPassPerformMpi(containersPtr,
@@ -267,7 +267,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           outsideInteractions->data(), &errcode_ret);
+           (void*)outsideInteractions->data(), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->directInoutPassPerform(containersPtr,

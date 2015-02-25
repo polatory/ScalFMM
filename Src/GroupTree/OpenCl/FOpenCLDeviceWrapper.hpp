@@ -22,7 +22,7 @@ protected:
     static void SetKernelArgs(cl_kernel& kernel, const int pos){
     }
     template <class ParamClass, class... Args>
-    static void SetKernelArgs(cl_kernel* kernel, const int pos, ParamClass* param, Args... args){
+    static void SetKernelArgs(cl_kernel& kernel, const int pos, ParamClass* param, Args... args){
         FAssertLF(clSetKernelArg(kernel, pos, sizeof(*param), param) == 0);
         SetKernelArgs(kernel, pos+1, args...);
     }
@@ -31,6 +31,8 @@ protected:
     int workerDevid;
 
     struct starpu_opencl_program opencl_code;
+
+    cl_context context;
 
     cl_kernel kernel_bottomPassPerform;
     cl_command_queue queue_bottomPassPerform;
@@ -68,6 +70,8 @@ public:
         workerDevid = starpu_worker_get_devid(workerId);
 
         if(KernelFilename){
+            starpu_opencl_get_context (workerDevid, &context);
+
             const int err = starpu_opencl_load_opencl_from_file(KernelFilename, &opencl_code, NULL);
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
@@ -90,7 +94,7 @@ public:
     virtual void releaseKernel(){
     }
 
-    ~FOpenCLDeviceWrapper(){
+    virtual ~FOpenCLDeviceWrapper(){
         // Release
         releaseKernel();
         if(KernelFilename){
@@ -99,86 +103,90 @@ public:
         }
     }
 
-    void bottomPassPerform(unsigned char* leafCellsPtr,  size_t leafCellsSize, unsigned char* containersPtr,  size_t containersSize){
-        SetKernelArgs(&kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &containersPtr,  &containersSize);
+    cl_context& getOpenCLContext(){
+        return context;
+    }
+
+    void bottomPassPerform(cl_mem leafCellsPtr,  size_t leafCellsSize, cl_mem containersPtr,  size_t containersSize){
+        SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &containersPtr,  &containersSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_bottomPassPerform, kernel_bottomPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
 
-    void upwardPassPerform(unsigned char* currentCellsPtr,  size_t currentCellsSize, unsigned char* subCellGroupsPtr,  size_t subCellGroupsSize, int nbSubCellGroups, int idxLevel){
-        SetKernelArgs(&kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &subCellGroupsPtr,  &subCellGroupsSize, &nbSubCellGroups, &idxLevel);
+    void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
+        SetKernelArgs(kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &subCellGroupsPtr,  &subCellGroupsSize, &nbSubCellGroups, &idxLevel);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_upwardPassPerform, kernel_upwardPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void transferInoutPassPerformMpi(unsigned char* currentCellsPtr,
-                         size_t currentCellsSize, unsigned char* externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
+    void transferInoutPassPerformMpi(cl_mem currentCellsPtr,
+                         size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                      size_t  outsideInteractionsSize){
-        SetKernelArgs(&kernel_transferInoutPassPerformMpi, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr,  &externalCellsSize, &idxLevel, &outsideInteractionsCl,
+        SetKernelArgs(kernel_transferInoutPassPerformMpi, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr,  &externalCellsSize, &idxLevel, &outsideInteractionsCl,
                                                                                   &outsideInteractionsSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerformMpi, kernel_transferInoutPassPerformMpi, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void transferInPassPerform(unsigned char* currentCellsPtr, size_t currentCellsSize, int idxLevel){
-        SetKernelArgs(&kernel_transferInPassPerform, 0, &currentCellsPtr, &currentCellsSize, &idxLevel);
+    void transferInPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize, int idxLevel){
+        SetKernelArgs(kernel_transferInPassPerform, 0, &currentCellsPtr, &currentCellsSize, &idxLevel);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_transferInPassPerform, kernel_transferInPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void transferInoutPassPerform(unsigned char* currentCellsPtr,
-                          size_t currentCellsSize, unsigned char* externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
+    void transferInoutPassPerform(cl_mem currentCellsPtr,
+                          size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                   size_t outsideInteractionsSize){
-        SetKernelArgs(&kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr, &externalCellsSize, &idxLevel, &outsideInteractionsCl,&outsideInteractionsSize);
+        SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr, &externalCellsSize, &idxLevel, &outsideInteractionsCl,&outsideInteractionsSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerform, kernel_transferInoutPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void downardPassPerform(unsigned char* currentCellsPtr,
-                                     size_t currentCellsSize, unsigned char* subCellGroupsPtr,  size_t subCellGroupsSize, int nbSubCellGroups, int idxLevel){
-        SetKernelArgs(&kernel_downardPassPerform, 0, &currentCellsPtr,
+    void downardPassPerform(cl_mem currentCellsPtr,
+                                     size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
+        SetKernelArgs(kernel_downardPassPerform, 0, &currentCellsPtr,
                       &currentCellsSize, &subCellGroupsPtr,  &subCellGroupsSize, &nbSubCellGroups, &idxLevel);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_downardPassPerform, kernel_downardPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void directInoutPassPerformMpi(unsigned char* containersPtr,
-                   size_t containersSize, unsigned char* externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
+    void directInoutPassPerformMpi(cl_mem containersPtr,
+                   size_t containersSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                                                                                 size_t outsideInteractionsSize){
-        SetKernelArgs(&kernel_directInoutPassPerformMpi, 0, &containersPtr,
+        SetKernelArgs(kernel_directInoutPassPerformMpi, 0, &containersPtr,
                       &containersSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl,&outsideInteractionsSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerformMpi, kernel_directInoutPassPerformMpi, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void directInPassPerform(unsigned char* containersPtr,  size_t containerSize){
-        SetKernelArgs(&kernel_directInPassPerform, 0, &containersPtr, &containerSize);
+    void directInPassPerform(cl_mem containersPtr,  size_t containerSize){
+        SetKernelArgs(kernel_directInPassPerform, 0, &containersPtr, &containerSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void directInoutPassPerform(unsigned char* containersPtr,
-                          size_t containerSize, unsigned char* externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
+    void directInoutPassPerform(cl_mem containersPtr,
+                          size_t containerSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                           size_t  outsideInteractionsSize){
-        SetKernelArgs(&kernel_directInoutPassPerform, 0, &containersPtr,
+        SetKernelArgs(kernel_directInoutPassPerform, 0, &containersPtr,
                       &containerSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl, &outsideInteractionsSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerform, kernel_directInoutPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void mergePassPerform(unsigned char* leafCellsPtr,
-                            size_t leafCellsSize, unsigned char* containersPtr, size_t containersSize){
-        SetKernelArgs(&kernel_mergePassPerform, 0, &leafCellsPtr, &leafCellsSize, &containersPtr, &containersSize);
+    void mergePassPerform(cl_mem leafCellsPtr,
+                            size_t leafCellsSize, cl_mem containersPtr, size_t containersSize){
+        SetKernelArgs(kernel_mergePassPerform, 0, &leafCellsPtr, &leafCellsSize, &containersPtr, &containersSize);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_mergePassPerform, kernel_mergePassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
