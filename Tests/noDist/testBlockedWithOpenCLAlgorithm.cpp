@@ -57,7 +57,7 @@ int main(int argc, char* argv[]){
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
-    typedef FStarPUAllYesCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
+    typedef FStarPUAllCpuOpenCLCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass
     #ifdef ScalFMM_ENABLE_CUDA_KERNEL
         , FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>
