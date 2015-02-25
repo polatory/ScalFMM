@@ -20,7 +20,7 @@ template<class OctreeClass,class ParticleClass>
 class FAbstractMover{
 public:
     virtual void getParticlePosition(ParticleClass* lf, const int idxPart, FPoint* particlePos) = 0;
-    virtual void removeFromLeafAndKeep(ParticleClass* lf, const FPoint& particlePos, const int idxPart) = 0;
+    virtual void removeFromLeafAndKeep(ParticleClass* lf, const FPoint& particlePos, const int idxPart, FParticleType type) = 0;
     virtual void insertAllParticles(OctreeClass* tree) = 0;
 };
 

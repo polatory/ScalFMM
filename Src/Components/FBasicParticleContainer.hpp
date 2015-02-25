@@ -292,6 +292,16 @@ public:
     }
 
     /**
+   * Push called by FTypedLeaf Through arranger
+   * Should have a particle position fallowed by isTarget flag and attributes
+   */
+    template<typename... Args>
+    void push(const FPoint& inParticlePosition, const FParticleType type,
+              const std::array<AttributeClass , NbAttributesPerParticle>& values){
+        push(inParticlePosition,values);
+    }
+
+    /**
    * Push called usually by FTypedLeaf with the isTarget flag in addition
    */
     template<typename... Args>
