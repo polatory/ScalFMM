@@ -141,19 +141,19 @@ if (LAPACK_FOUND)
         if(TMG_LIBDIR)
             set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
             find_library(TMG_tmg_LIBRARY
-                NAMES tmg
+                NAMES tmglib
                 HINTS ${TMG_LIBDIR} )
         else()
             if(TMG_DIR)
                 set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
                 find_library(TMG_tmg_LIBRARY
-                    NAMES tmg
+                    NAMES tmglib
                     HINTS ${TMG_DIR}
                     PATH_SUFFIXES lib lib32 lib64 )
             else()
                 set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
                 find_library(TMG_tmg_LIBRARY
-                    NAMES tmg
+                    NAMES tmglib
                     HINTS ${_lib_env} )
             endif()
         endif()
@@ -234,6 +234,8 @@ if (LAPACK_FOUND)
                 set(TMG_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(TMG_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
                 set(TMG_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+                list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS_DEP)
+                list(REMOVE_DUPLICATES TMG_INCLUDE_DIRS_DEP)
             else()
                 if(NOT TMG_FIND_QUIETLY)
                     message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")

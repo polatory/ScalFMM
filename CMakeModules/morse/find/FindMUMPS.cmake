@@ -299,6 +299,7 @@ else ()
     endif()
 endif()
 
+
 # Looking for lib
 # ---------------
 
@@ -405,7 +406,7 @@ else ()
         message(STATUS "Looking for mumps -- libzmumps.a not found")
     endif()
 endif()
-list(REMOVE_DUPLICATES MUMPS_LIBRARY_DIRS)
+
 # check that one precision arithmetic at least has been discovered
 if (NOT MUMPS_PREC_S AND NOT MUMPS_PREC_D AND NOT MUMPS_PREC_C AND NOT MUMPS_PREC_S)
     if (MUMPS_FIND_REQUIRED)
@@ -439,6 +440,7 @@ if (MUMPS_mpiseq_LIBRARY)
         list(APPEND MUMPS_LIBRARIES "${MUMPS_mpiseq_LIBRARY}")
         get_filename_component(mpiseq_lib_path ${MUMPS_mpiseq_LIBRARY} PATH)
         list(APPEND MUMPS_LIBRARY_DIRS "${mpiseq_lib_path}")
+        list(APPEND MUMPS_INCLUDE_DIRS "${mpiseq_lib_path}")
     endif()
 else ()
     if (MUMPS_FIND_REQUIRED AND MUMPS_LOOK_FOR_SEQ)
@@ -465,6 +467,8 @@ else ()
         endif()
     endif()
 endif()
+list(REMOVE_DUPLICATES MUMPS_LIBRARY_DIRS)
+list(REMOVE_DUPLICATES MUMPS_INCLUDE_DIRS)
 
 # check a function to validate the find
 if(MUMPS_LIBRARIES)
@@ -583,6 +587,8 @@ if(MUMPS_LIBRARIES)
         set(MUMPS_LIBRARIES_DEP "${REQUIRED_LIBS}")
         set(MUMPS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
         set(MUMPS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+        list(REMOVE_DUPLICATES MUMPS_LIBRARY_DIRS_DEP)
+        list(REMOVE_DUPLICATES MUMPS_INCLUDE_DIRS_DEP)
     else()
         if(NOT MUMPS_FIND_QUIETLY)
             message(STATUS "Looking for MUMPS : test of [sdcz]mumps() fails")

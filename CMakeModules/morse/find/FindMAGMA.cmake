@@ -342,6 +342,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
             set(MAGMA_LIBRARIES_DEP    "${REQUIRED_LIBS}")
             set(MAGMA_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(MAGMA_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+            list(REMOVE_DUPLICATES MAGMA_LIBRARY_DIRS_DEP)
+            list(REMOVE_DUPLICATES MAGMA_INCLUDE_DIRS_DEP)
         else()
             if(NOT MAGMA_FIND_QUIETLY)
                 message(STATUS "Looking for magma : test of magma_dgetrf with

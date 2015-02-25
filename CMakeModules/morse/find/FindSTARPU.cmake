@@ -33,9 +33,9 @@
 #  STARPU_LIBRARIES              - starpu libraries
 #  STARPU_SHM_LIBRARIES          - starpu libraries without libstarpumpi
 #  STARPU_MPI_LIBRARIES          - starpu libraries with libstarpumpi
-#  MAGMA_INCLUDE_DIRS_DEP        - starpu + dependencies include directories
-#  MAGMA_LIBRARY_DIRS_DEP        - starpu + dependencies link directories
-#  MAGMA_LIBRARIES_DEP           - starpu libraries + dependencies
+#  STARPU_INCLUDE_DIRS_DEP        - starpu + dependencies include directories
+#  STARPU_LIBRARY_DIRS_DEP        - starpu + dependencies link directories
+#  STARPU_LIBRARIES_DEP           - starpu libraries + dependencies
 #  STARPU_VERSION_STRING         - A human-readable string containing the version of the package found
 #  STARPU_VERSION_MAJOR          - The major version of the package found
 #  STARPU_VERSION_MINOR          - The minor version of the package found
@@ -736,6 +736,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
             endif()
             set(STARPU_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+            list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS_DEP)
+            list(REMOVE_DUPLICATES STARPU_INCLUDE_DIRS_DEP)
         else()
             if(NOT STARPU_FIND_QUIETLY)
                 message(STATUS "Looking for starpu : test of starpu_init fails")
