@@ -293,7 +293,7 @@ if( ScalFMM_USE_STARPU )
     MESSAGE(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDES}")
     
     OPTION( ScalFMM_USE_CUDA      "Set to ON to use CUDA with StarPU" OFF )
-        MESSAGE( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
+    MESSAGE( STATUS "ScalFMM_USE_CUDA             = ${ScalFMM_USE_CUDA}" )
       if(ScalFMM_USE_CUDA)
             execute_process(COMMAND nvcc --version ERROR_VARIABLE cuda_error_output OUTPUT_QUIET)
             if(cuda_error_output)
@@ -311,9 +311,17 @@ if( ScalFMM_USE_STARPU )
             include_directories($ENV{CUDA_INC})
             SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{CUDA_LIB}; -lcudart")
       endif()
+      
+      OPTION( ScalFMM_USE_OPENCL      "Set to ON to use OPENCL with StarPU" OFF )
+      MESSAGE( STATUS "ScalFMM_USE_OPENCL             = ${ScalFMM_USE_OPENCL}" )
+      if(ScalFMM_USE_OPENCL)         
+            include_directories($ENV{OPENCL_INC})
+            SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; -L$ENV{OPENCL_LIB}; -lOpenCL")
+      endif()
 endif(ScalFMM_USE_STARPU)
 list(APPEND FUSE_LIST "STARPU")
 list(APPEND FUSE_LIST "CUDA")
+list(APPEND FUSE_LIST "OPENCL")
 #
 ##################################################################
 #                                               Use SSE                                                                     #
