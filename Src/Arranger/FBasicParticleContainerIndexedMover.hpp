@@ -25,7 +25,7 @@ public:
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(ContainerClass* lf, const FPoint& particlePos, const int idxPart){
+    void removeFromLeafAndKeep(ContainerClass* lf, const FPoint& particlePos, const int idxPart, FParticleType /*type*/){
         std::array<typename ContainerClass::AttributesClass, ContainerClass::NbAttributes> particleValues;
         for(int idxAttr = 0 ; idxAttr < ContainerClass::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
@@ -56,4 +56,3 @@ public:
 };
 
 #endif // FBASICPARTICLECONTAINERINDEXEDMOVER_HPP
-
