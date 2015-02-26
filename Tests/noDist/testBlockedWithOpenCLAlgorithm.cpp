@@ -47,15 +47,22 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
     // Initialize the types
+    struct OpenCLSource{
+        operator const char*(){
+            return "../../Src/GroupTree/OpenCl/FEmptyKernel.cl";
+        }
+    };
+
+
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
-    typedef FStarPUAllYesCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
+    typedef FStarPUAllCpuOpenCLCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass
     #ifdef ScalFMM_ENABLE_CUDA_KERNEL
         , FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>
     #endif
-        , FOpenCLDeviceWrapper<GroupKernelClass, nullptr>
+        , FOpenCLDeviceWrapper<GroupKernelClass, OpenCLSource>
          > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;

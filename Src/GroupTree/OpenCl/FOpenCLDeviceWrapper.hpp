@@ -16,7 +16,13 @@
 
 #include <starpu.h>
 
-template <class OriginalKernelClass, const char* KernelFilename>
+struct FEmptyOpenCLFilename{
+    operator const char*(){
+        return nullptr;
+    }
+};
+
+template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLFilename>
 class FOpenCLDeviceWrapper {
 protected:
     static void SetKernelArgs(cl_kernel& kernel, const int pos){
@@ -69,10 +75,12 @@ public:
         workerId = starpu_worker_get_id();
         workerDevid = starpu_worker_get_devid(workerId);
 
-        if(KernelFilename){
+        KernelFilenameClass kernelFilename;
+        const char* filename = kernelFilename;
+        if(filename){
             starpu_opencl_get_context (workerDevid, &context);
 
-            const int err = starpu_opencl_load_opencl_from_file(KernelFilename, &opencl_code, NULL);
+            const int err = starpu_opencl_load_opencl_from_file(filename, &opencl_code, NULL);
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "bottomPassPerform", workerDevid) == CL_SUCCESS);
@@ -97,7 +105,9 @@ public:
     virtual ~FOpenCLDeviceWrapper(){
         // Release
         releaseKernel();
-        if(KernelFilename){
+        KernelFilenameClass kernelFilename;
+        const char* filename = kernelFilename;
+        if(filename){
             const int err = starpu_opencl_unload_opencl(&opencl_code);
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
         }

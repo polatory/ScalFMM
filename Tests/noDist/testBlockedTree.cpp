@@ -35,12 +35,12 @@
 #endif
 #ifdef ScalFMM_USE_STARPU
 #include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 #endif
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
-#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -97,12 +97,14 @@ int main(int argc, char* argv[]){
 
 
 
-    typedef FStarPUAllYesCapacities<FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>>   KernelClass;
 #ifdef ScalFMM_USE_STARPU
+    typedef FStarPUAllYesCapacities<FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>>   KernelClass;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
+    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #else
+    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
 #endif
