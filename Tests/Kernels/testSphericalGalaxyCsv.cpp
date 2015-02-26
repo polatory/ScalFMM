@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -36,6 +36,7 @@
 #include "../../Src/Arranger/FOctreeArranger.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Components/FParticleType.hpp"
 
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
@@ -103,7 +104,7 @@ public:
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint& particlePos, const int idxPart){
+    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint& particlePos, const int idxPart,FParticleType /*type*/){
         std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
         for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
