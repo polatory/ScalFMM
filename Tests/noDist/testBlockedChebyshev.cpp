@@ -32,6 +32,7 @@
 #endif
 #ifdef ScalFMM_USE_STARPU
 #include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
+#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 #endif
 #include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
 
@@ -45,8 +46,6 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include <memory>
-
-#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 
 
 
@@ -64,14 +63,16 @@ int main(int argc, char* argv[]){
     typedef FChebCell<ORDER>               GroupCellClass;
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
-    typedef FStarPUAllYesCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
 #ifdef ScalFMM_USE_STARPU
+    typedef FStarPUAllYesCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
+    typedef FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
+    typedef FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif
