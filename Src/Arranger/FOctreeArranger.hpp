@@ -23,6 +23,7 @@
 
 #include "../Utils/FGlobalPeriodic.hpp"
 #include "../Utils/FAssert.hpp"
+#include "../Components/FParticleType.hpp"
 /**
 * This example show how to use the FOctreeArranger.
 * @example testOctreeRearrange.cpp
