@@ -28,14 +28,16 @@
 #
 # Results are reported in variables:
 #  STARPU_FOUND                  - True if headers and requested libraries were found
+#  STARPU_C_FLAGS                - list of required compilation flags (excluding -I)
+#  STARPU_LINKER_FLAGS           - list of required linker flags (excluding -l and -L)
 #  STARPU_INCLUDE_DIRS           - starpu include directories
 #  STARPU_LIBRARY_DIRS           - Link directories for starpu libraries
 #  STARPU_LIBRARIES              - starpu libraries
 #  STARPU_SHM_LIBRARIES          - starpu libraries without libstarpumpi
 #  STARPU_MPI_LIBRARIES          - starpu libraries with libstarpumpi
-#  STARPU_INCLUDE_DIRS_DEP        - starpu + dependencies include directories
-#  STARPU_LIBRARY_DIRS_DEP        - starpu + dependencies link directories
-#  STARPU_LIBRARIES_DEP           - starpu libraries + dependencies
+#  STARPU_INCLUDE_DIRS_DEP       - starpu + dependencies include directories
+#  STARPU_LIBRARY_DIRS_DEP       - starpu + dependencies link directories
+#  STARPU_LIBRARIES_DEP          - starpu libraries + dependencies
 #  STARPU_VERSION_STRING         - A human-readable string containing the version of the package found
 #  STARPU_VERSION_MAJOR          - The major version of the package found
 #  STARPU_VERSION_MINOR          - The minor version of the package found
@@ -64,7 +66,7 @@
 #  License text for the above reference.)
 
 if (NOT STARPU_FOUND)
-    set(STARPU_DIR "" CACHE PATH "Root directory of STARPU library")
+    set(STARPU_DIR "" CACHE PATH "Installation directory of STARPU library")
     if (NOT STARPU_FIND_QUIETLY)
         message(STATUS "A cache variable, namely STARPU_DIR, has been set to specify the install directory of STARPU")
     endif()
@@ -99,7 +101,7 @@ endif()
 
 # STARPU may depend on HWLOC, try to find it
 if (NOT HWLOC_FOUND AND STARPU_LOOK_FOR_HWLOC)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_HWLOC)
         find_package(HWLOC REQUIRED)
     else()
         find_package(HWLOC)
@@ -108,7 +110,7 @@ endif()
 
 # STARPU may depend on CUDA, try to find it
 if (NOT CUDA_FOUND AND STARPU_LOOK_FOR_CUDA)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_CUDA)
         find_package(CUDA REQUIRED)
     else()
         find_package(CUDA)
@@ -124,7 +126,7 @@ endif()
 
 # STARPU may depend on MPI, try to find it
 if (NOT MPI_FOUND AND STARPU_LOOK_FOR_MPI)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_MPI)
         find_package(MPI REQUIRED)
     else()
         find_package(MPI)
@@ -137,7 +139,7 @@ endif()
 
 # STARPU may depend on BLAS, try to find it
 if (NOT BLAS_FOUND AND STARPU_LOOK_FOR_BLAS)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_BLAS)
         find_package(BLAS REQUIRED)
     else()
         find_package(BLAS)
@@ -146,7 +148,7 @@ endif()
 
 # STARPU may depend on MAGMA, try to find it
 if (NOT MAGMA_FOUND AND STARPU_LOOK_FOR_MAGMA)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_MAGMA)
         find_package(MAGMA REQUIRED)
     else()
         find_package(MAGMA)
@@ -155,7 +157,7 @@ endif()
 
 # STARPU may depend on FXT, try to find it
 if (NOT FXT_FOUND AND STARPU_LOOK_FOR_FXT)
-    if (STARPU_FIND_REQUIRED)
+    if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_FXT)
         find_package(FXT REQUIRED)
     else()
         find_package(FXT)
@@ -227,12 +229,14 @@ if(PKG_CONFIG_EXECUTABLE)
     else()
         set(STARPU_LIBRARIES "STARPU_LIBRARIES-NOTFOUND")
     endif()
-
-endif(PKG_CONFIG_EXECUTABLE)
+    set(STARPU_INCLUDE_DIRS_DEP "${STARPU_INCLUDE_DIRS}")
+    set(STARPU_LIBRARY_DIRS_DEP "${STARPU_LIBRARY_DIRS}")
+endif()
 
 
 if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
    (NOT STARPU_SHM_FOUND OR (NOT STARPU_MPI_FOUND AND STARPU_LOOK_FOR_MPI))
+   OR STARPU_DIR
   )
 
     # Looking for include
@@ -603,10 +607,11 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
     # check a function to validate the find
     if(STARPU_LIBRARIES)
 
+        set(REQUIRED_FLAGS)
+        set(REQUIRED_LDFLAGS)
         set(REQUIRED_INCDIRS)
         set(REQUIRED_LIBDIRS)
         set(REQUIRED_LIBS)
-        set(REQUIRED_FLAGS)
 
         # STARPU
         if (STARPU_INCLUDE_DIRS)
@@ -641,7 +646,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
                 list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
             endif()
             if (MPI_C_LINK_FLAGS)
-                list(APPEND REQUIRED_FLAGS "${MPI_C_LINK_FLAGS}")
+                list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
             endif()
             list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
         endif()
@@ -667,6 +672,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
                         list(APPEND REQUIRED_LIBS "-l${lib}")
                     endif()
                 endforeach()
+            endif()
+            if (MAGMA_LINKER_FLAGS)
+                list(APPEND REQUIRED_LDFLAGS "${MAGMA_LINKER_FLAGS}")
             endif()
         endif()
         # CUDA
@@ -704,6 +712,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
                 list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
             endif()
             list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
+            if (BLAS_LINKER_FLAGS)
+                list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+            endif()
         endif()
         # Fortran
         if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
@@ -715,6 +726,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
         # set required libraries for link
         set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
         set(CMAKE_REQUIRED_LIBRARIES)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
         foreach(lib_dir ${REQUIRED_LIBDIRS})
             list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
         endforeach()
@@ -736,8 +748,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
             endif()
             set(STARPU_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+            set(STARPU_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
             list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS_DEP)
             list(REMOVE_DUPLICATES STARPU_INCLUDE_DIRS_DEP)
+            list(REMOVE_DUPLICATES STARPU_LINKER_FLAGS)
         else()
             if(NOT STARPU_FIND_QUIETLY)
                 message(STATUS "Looking for starpu : test of starpu_init fails")
@@ -756,8 +770,25 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
 
 endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR
        (NOT STARPU_SHM_FOUND OR (NOT STARPU_MPI_FOUND AND STARPU_LOOK_FOR_MPI))
+       OR STARPU_DIR
      )
 
+if (STARPU_LIBRARIES AND NOT STARPU_DIR)
+    if (STARPU_LIBRARY_DIRS)
+        foreach(dir ${STARPU_LIBRARY_DIRS})
+            if ("${dir}" MATCHES "starpu")
+                set(first_lib_path "${dir}")
+            endif()
+        endforeach()
+    else()
+        list(GET STARPU_LIBRARIES 0 first_lib)
+        get_filename_component(first_lib_path "${first_lib}" PATH)
+    endif()
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(STARPU_DIR "${not_cached_dir}" CACHE PATH "Installation directory of STARPU library" FORCE)
+    endif()
+endif()
 
 # check that STARPU has been found
 # --------------------------------

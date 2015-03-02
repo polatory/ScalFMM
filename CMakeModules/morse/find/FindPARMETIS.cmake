@@ -45,7 +45,7 @@
 #  License text for the above reference.)
 
 if (NOT PARMETIS_FOUND)
-    set(PARMETIS_DIR "" CACHE PATH "Root directory of PARMETIS library")
+    set(PARMETIS_DIR "" CACHE PATH "Installation directory of PARMETIS library")
     if (NOT PARMETIS_FIND_QUIETLY)
         message(STATUS "A cache variable, namely PARMETIS_DIR, has been set to specify the install directory of PARMETIS")
     endif()
@@ -213,6 +213,14 @@ if(PARMETIS_LIBRARIES)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(PARMETIS_LIBRARIES)
 
+if (PARMETIS_LIBRARIES AND NOT PARMETIS_DIR)
+    list(GET PARMETIS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(PARMETIS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
+    endif()
+endif()
 
 # check that PARMETIS has been found
 # ----------------------------------

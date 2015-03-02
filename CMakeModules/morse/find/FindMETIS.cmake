@@ -45,7 +45,7 @@
 #  License text for the above reference.)
 
 if (NOT METIS_FOUND)
-    set(METIS_DIR "" CACHE PATH "Root directory of METIS library")
+    set(METIS_DIR "" CACHE PATH "Installation directory of METIS library")
     if (NOT METIS_FIND_QUIETLY)
         message(STATUS "A cache variable, namely METIS_DIR, has been set to specify the install directory of METIS")
     endif()
@@ -212,6 +212,15 @@ if(METIS_LIBRARIES)
     set(CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(METIS_LIBRARIES)
+
+if (METIS_LIBRARIES AND NOT METIS_DIR)
+    list(GET METIS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(METIS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of METIS library" FORCE)
+    endif()
+endif()
 
 # check that METIS has been found
 # ---------------------------------

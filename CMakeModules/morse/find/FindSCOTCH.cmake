@@ -46,7 +46,7 @@
 #  License text for the above reference.)
 
 if (NOT SCOTCH_FOUND)
-    set(SCOTCH_DIR "" CACHE PATH "Root directory of SCOTCH library")
+    set(SCOTCH_DIR "" CACHE PATH "Installation directory of SCOTCH library")
     if (NOT SCOTCH_FIND_QUIETLY)
         message(STATUS "A cache variable, namely SCOTCH_DIR, has been set to specify the install directory of SCOTCH")
     endif()
@@ -210,7 +210,7 @@ if(SCOTCH_LIBRARIES)
     set(REQUIRED_LIBS "${SCOTCH_LIBRARIES}")
     # THREADS
     if(CMAKE_THREAD_LIBS_INIT)
-        list(APPEND CMAKE_REQUIRED_LIBRARIES "${CMAKE_THREAD_LIBS_INIT}")
+        list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
     endif()
 
     # set required libraries for link
@@ -243,6 +243,14 @@ if(SCOTCH_LIBRARIES)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(SCOTCH_LIBRARIES)
 
+if (SCOTCH_LIBRARIES AND NOT SCOTCH_DIR)
+    list(GET SCOTCH_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(SCOTCH_DIR "${not_cached_dir}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
+    endif()
+endif()
 
 # Check the size of SCOTCH_Num
 # ---------------------------------

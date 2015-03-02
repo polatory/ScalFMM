@@ -110,7 +110,7 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
         endif()
     endif()
     message("${BoldYellow}Please indicate where to find ${_lib_to_find}. You have three options:\n"
-            "- Option 1: Provide the root directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
+            "- Option 1: Provide the Installation directory of BLAS library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
             "- Option 2: Provide the directory where to find the library with cmake option: -D${LIBNAME}_LIBDIR=your/path/to/${libname}/lib/\n"
             "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
             "- Option 4: If your library provides a PkgConfig file, make sure pkg-config finds your library${ColourReset}")
@@ -135,14 +135,13 @@ macro(Print_Find_Library_Blas_CheckFunc_Status _name)
 endmacro()
 
 if (NOT BLAS_FOUND)
-    set(BLAS_DIR "" CACHE PATH "Root directory of BLAS library")
+    set(BLAS_DIR "" CACHE PATH "Installation directory of BLAS library")
     if (NOT BLAS_FIND_QUIETLY)
         message(STATUS "A cache variable, namely BLAS_DIR, has been set to specify the install directory of BLAS")
     endif()
 endif()
 
-option(BLAS_VERBOSE "Print some additional information during BLAS
-libraries detection" OFF)
+option(BLAS_VERBOSE "Print some additional information during BLAS libraries detection" OFF)
 
 include(CheckFunctionExists)
 include(CheckFortranFunctionExists)
@@ -179,7 +178,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
     set(_libdir ${ARGN})
 
     set(_libraries_work TRUE)
-    set(${LIBRARIES} ${_flags})
+    set(${LIBRARIES})
     set(_combined_name)
     if (NOT _libdir)
         if (BLAS_DIR)
@@ -192,20 +191,20 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
                 list(APPEND _libdir "${BLAS_DIR}/lib32")
                 list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
             endif()
-        endif ()
-        if (BLAS_LIBDIR)
+        elseif (BLAS_LIBDIR)
             list(APPEND _libdir "${BLAS_LIBDIR}")
-        endif ()
-        if (WIN32)
-            string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
-        elseif (APPLE)
-            string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
-        else ()
-            string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
-        endif ()
-        list(APPEND _libdir "${_libdir2}")
-        list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+        else()
+            if (WIN32)
+                string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
+            elseif (APPLE)
+                string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
+            else ()
+                string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
+            endif ()
+            list(APPEND _libdir "${_libdir2}")
+            list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+            list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+        endif()
     endif ()
 
     if (BLAS_VERBOSE)
@@ -272,10 +271,10 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
     endif()
 
     if(_libraries_work)
-        set(${LIBRARIES} ${${LIBRARIES}} ${_thread})
-    else()
+      set(${LIBRARIES} ${${LIBRARIES}} ${_thread})
+    else(_libraries_work)
         set(${LIBRARIES} FALSE)
-    endif()
+    endif(_libraries_work)
 
 # message("DEBUG: ${LIBRARIES} = ${${LIBRARIES}}")
 
@@ -476,6 +475,9 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                 "${SEARCH_LIBS}"
                 "${CMAKE_THREAD_LIBS_INIT};${LM}"
                 )
+                if(_LIBRARIES)
+                    set(BLAS_LINKER_FLAGS "${additional_flags}")
+                endif()
             endif()
         endforeach ()
 
@@ -870,7 +872,7 @@ if(BLA_F95)
         else(BLAS95_FOUND)
             message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but blas 95 libraries could not be found or check of symbols failed."
                         "\nPlease indicate where to find blas libraries. You have three options:\n"
-                        "- Option 1: Provide the root directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
+                        "- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
                         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
                         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
                         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DBLAS_VERBOSE=ON at cmake configure."
@@ -890,6 +892,9 @@ if(BLA_F95)
 
     set(BLAS_FOUND TRUE)
     set(BLAS_LIBRARIES "${BLAS95_LIBRARIES}")
+    if (NOT BLAS_LIBRARIES_DEP)
+        set(BLAS_LIBRARIES_DEP "${BLAS95_LIBRARIES}")
+    endif()
 
 else(BLA_F95)
 
@@ -906,7 +911,7 @@ else(BLA_F95)
         else(BLAS_FOUND)
             message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but blas libraries could not be found or check of symbols failed."
                         "\nPlease indicate where to find blas libraries. You have three options:\n"
-                        "- Option 1: Provide the root directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
+                        "- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
                         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
                         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
                         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DBLAS_VERBOSE=ON at cmake configure."
@@ -927,3 +932,13 @@ else(BLA_F95)
 endif(BLA_F95)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if (BLAS_FOUND AND NOT BLAS_DIR)
+    list(GET BLAS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(BLAS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of BLAS library" FORCE)
+    endif()
+endif()
+

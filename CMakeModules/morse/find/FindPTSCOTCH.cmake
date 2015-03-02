@@ -21,6 +21,7 @@
 # This module finds headers and ptscotch library.
 # Results are reported in variables:
 #  PTSCOTCH_FOUND            - True if headers and requested libraries were found
+#  PTSCOTCH_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  PTSCOTCH_INCLUDE_DIRS     - ptscotch include directories
 #  PTSCOTCH_LIBRARY_DIRS     - Link directories for ptscotch libraries
 #  PTSCOTCH_LIBRARIES        - ptscotch component libraries to be linked
@@ -53,7 +54,7 @@
 #  License text for the above reference.)
 
 if (NOT PTSCOTCH_FOUND)
-    set(PTSCOTCH_DIR "" CACHE PATH "Root directory of PTSCOTCH library")
+    set(PTSCOTCH_DIR "" CACHE PATH "Installation directory of PTSCOTCH library")
     if (NOT PTSCOTCH_FIND_QUIETLY)
         message(STATUS "A cache variable, namely PTSCOTCH_DIR, has been set to specify the install directory of PTSCOTCH")
     endif()
@@ -212,10 +213,10 @@ endforeach()
 # check a function to validate the find
 if(PTSCOTCH_LIBRARIES)
 
+    set(REQUIRED_LDFLAGS)
     set(REQUIRED_INCDIRS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
-    set(REQUIRED_FLAGS)
 
     # PTSCOTCH
     if (PTSCOTCH_INCLUDE_DIRS)
@@ -231,7 +232,7 @@ if(PTSCOTCH_LIBRARIES)
             list(APPEND CMAKE_REQUIRED_INCLUDES "${MPI_C_INCLUDE_PATH}")
         endif()
         if (MPI_C_LINK_FLAGS)
-            list(APPEND REQUIRED_FLAGS "${MPI_C_LINK_FLAGS}")
+            list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
         endif()
         list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
     endif()
@@ -243,6 +244,7 @@ if(PTSCOTCH_LIBRARIES)
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
     set(CMAKE_REQUIRED_LIBRARIES)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
     foreach(lib_dir ${REQUIRED_LIBDIRS})
         list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
     endforeach()
@@ -257,15 +259,13 @@ if(PTSCOTCH_LIBRARIES)
 
     if(PTSCOTCH_WORKS)
         # save link with dependencies
-        if (REQUIRED_FLAGS)
-            set(PTSCOTCH_LIBRARIES_DEP "${REQUIRED_FLAGS};${REQUIRED_LIBS}")
-        else()
-            set(PTSCOTCH_LIBRARIES_DEP "${REQUIRED_LIBS}")
-        endif()
+        set(PTSCOTCH_LIBRARIES_DEP "${REQUIRED_LIBS}")
         set(PTSCOTCH_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
         set(PTSCOTCH_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+        set(PTSCOTCH_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
         list(REMOVE_DUPLICATES PTSCOTCH_LIBRARY_DIRS_DEP)
         list(REMOVE_DUPLICATES PTSCOTCH_INCLUDE_DIRS_DEP)
+        list(REMOVE_DUPLICATES PTSCOTCH_LINKER_FLAGS)
     else()
         if(NOT PTSCOTCH_FIND_QUIETLY)
             message(STATUS "Looking for PTSCOTCH : test of SCOTCH_dgraphInit with PTSCOTCH library fails")
@@ -279,6 +279,14 @@ if(PTSCOTCH_LIBRARIES)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(PTSCOTCH_LIBRARIES)
 
+if (PTSCOTCH_LIBRARIES AND NOT PTSCOTCH_DIR)
+    list(GET PTSCOTCH_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(PTSCOTCH_DIR "${not_cached_dir}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
+    endif()
+endif()
 
 # Check the size of SCOTCH_Num
 # ---------------------------------

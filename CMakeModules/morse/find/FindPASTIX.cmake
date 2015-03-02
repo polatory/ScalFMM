@@ -38,6 +38,7 @@
 # This module finds headers and pastix library.
 # Results are reported in variables:
 #  PASTIX_FOUND            - True if headers and requested libraries were found
+#  PASTIX_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  PASTIX_INCLUDE_DIRS     - pastix include directories
 #  PASTIX_LIBRARY_DIRS     - Link directories for pastix libraries
 #  PASTIX_LIBRARIES        - pastix libraries
@@ -70,7 +71,7 @@
 
 
 if (NOT PASTIX_FOUND)
-    set(PASTIX_DIR "" CACHE PATH "Root directory of PASTIX library")
+    set(PASTIX_DIR "" CACHE PATH "Installation directory of PASTIX library")
     if (NOT PASTIX_FIND_QUIETLY)
         message(STATUS "A cache variable, namely PASTIX_DIR, has been set to specify the install directory of PASTIX")
     endif()
@@ -122,7 +123,6 @@ if( PASTIX_FIND_COMPONENTS )
         endif()
     endforeach()
 endif()
-
 
 # Dependencies detection
 # ----------------------
@@ -226,7 +226,7 @@ if (NOT MPI_FOUND AND PASTIX_LOOK_FOR_MPI)
     if(NOT MPI_C_COMPILER)
         set(MPI_C_COMPILER mpicc)
     endif()
-    if (PASTIX_FIND_REQUIRED)
+    if (PASTIX_FIND_REQUIRED AND PASTIX_FIND_REQUIRED_MPI)
         find_package(MPI REQUIRED)
     else()
         find_package(MPI)
@@ -268,7 +268,7 @@ if( NOT STARPU_FOUND AND PASTIX_LOOK_FOR_STARPU)
         list(APPEND STARPU_COMPONENT_LIST "FXT")
     endif()
     # set the list of optional dependencies we may discover
-    if (PASTIX_FIND_REQUIRED)
+    if (PASTIX_FIND_REQUIRED AND PASTIX_FIND_REQUIRED_STARPU)
         find_package(STARPU ${PASTIX_STARPU_VERSION} REQUIRED
                      COMPONENTS ${STARPU_COMPONENT_LIST})
     else()
@@ -284,7 +284,7 @@ if (NOT SCOTCH_FOUND AND PASTIX_LOOK_FOR_SCOTCH)
     if (NOT PASTIX_FIND_QUIETLY)
         message(STATUS "Looking for PASTIX - Try to detect SCOTCH")
     endif()
-    if (PASTIX_FIND_REQUIRED )
+    if (PASTIX_FIND_REQUIRED AND PASTIX_FIND_REQUIRED_SCOTCH)
         find_package(SCOTCH REQUIRED)
     else()
         find_package(SCOTCH)
@@ -297,7 +297,7 @@ if (NOT PTSCOTCH_FOUND AND PASTIX_LOOK_FOR_PTSCOTCH)
     if (NOT PASTIX_FIND_QUIETLY)
         message(STATUS "Looking for PASTIX - Try to detect PTSCOTCH")
     endif()
-    if (PASTIX_FIND_REQUIRED)
+    if (PASTIX_FIND_REQUIRED AND PASTIX_FIND_REQUIRED_PTSCOTCH)
         find_package(PTSCOTCH REQUIRED)
     else()
         find_package(PTSCOTCH)
@@ -310,7 +310,7 @@ if (NOT METIS_FOUND AND PASTIX_LOOK_FOR_METIS)
     if (NOT PASTIX_FIND_QUIETLY)
         message(STATUS "Looking for PASTIX - Try to detect METIS")
     endif()
-    if (PASTIX_FIND_REQUIRED)
+    if (PASTIX_FIND_REQUIRED AND PASTIX_FIND_REQUIRED_METIS)
         find_package(METIS REQUIRED)
     else()
         find_package(METIS)
@@ -461,10 +461,10 @@ endforeach(pastix_lib ${PASTIX_libs_to_find})
 # check a function to validate the find
 if(PASTIX_LIBRARIES)
 
+    set(REQUIRED_LDFLAGS)
     set(REQUIRED_INCDIRS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
-    set(REQUIRED_FLAGS)
 
     # PASTIX
     if (PASTIX_INCLUDE_DIRS)
@@ -518,7 +518,7 @@ if(PASTIX_LIBRARIES)
             list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
         endif()
         if (MPI_C_LINK_FLAGS)
-            list(APPEND REQUIRED_FLAGS "${MPI_C_LINK_FLAGS}")
+            list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
         endif()
         list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
     endif()
@@ -551,6 +551,9 @@ if(PASTIX_LIBRARIES)
             endif()
         endforeach()
         list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
+        if (BLAS_LINKER_FLAGS)
+            list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+        endif()
     endif()
     # SCOTCH
     if (PASTIX_LOOK_FOR_SCOTCH AND SCOTCH_FOUND)
@@ -594,6 +597,7 @@ if(PASTIX_LIBRARIES)
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
     set(CMAKE_REQUIRED_LIBRARIES)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
     foreach(lib_dir ${REQUIRED_LIBDIRS})
         list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
     endforeach()
@@ -608,15 +612,13 @@ if(PASTIX_LIBRARIES)
 
     if(PASTIX_WORKS)
         # save link with dependencies
-        if (REQUIRED_FLAGS)
-            set(PASTIX_LIBRARIES_DEP "${REQUIRED_FLAGS};${REQUIRED_LIBS}")
-        else()
-            set(PASTIX_LIBRARIES_DEP "${REQUIRED_LIBS}")
-        endif()
+        set(PASTIX_LIBRARIES_DEP "${REQUIRED_LIBS}")
         set(PASTIX_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
         set(PASTIX_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+        set(PASTIX_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
         list(REMOVE_DUPLICATES PASTIX_LIBRARY_DIRS_DEP)
         list(REMOVE_DUPLICATES PASTIX_INCLUDE_DIRS_DEP)
+        list(REMOVE_DUPLICATES PASTIX_LINKER_FLAGS)
     else()
         if(NOT PASTIX_FIND_QUIETLY)
             message(STATUS "Looking for PASTIX : test of pastix() fails")
@@ -633,6 +635,14 @@ if(PASTIX_LIBRARIES)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(PASTIX_LIBRARIES)
 
+if (PASTIX_LIBRARIES AND NOT PASTIX_DIR)
+    list(GET PASTIX_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(PASTIX_DIR "${not_cached_dir}" CACHE PATH "Installation directory of PASTIX library" FORCE)
+    endif()
+endif()
 
 # check that PASTIX has been found
 # ---------------------------------

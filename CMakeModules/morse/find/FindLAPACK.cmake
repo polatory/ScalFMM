@@ -106,7 +106,7 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
         endif()
     endif()
     message("${BoldYellow}Please indicate where to find ${_lib_to_find}. You have three options:\n"
-            "- Option 1: Provide the root directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
+            "- Option 1: Provide the installation directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
             "- Option 2: Provide the directory where to find the library with cmake option: -D${LIBNAME}_LIBDIR=your/path/to/${libname}/lib/\n"
             "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
             "- Option 4: If your library provides a PkgConfig file, make sure pkg-config finds your library${ColourReset}")
@@ -114,7 +114,7 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
 endmacro()
 
 if (NOT LAPACK_FOUND)
-    set(LAPACK_DIR "" CACHE PATH "Root directory of LAPACK library")
+    set(LAPACK_DIR "" CACHE PATH "Installation directory of LAPACK library")
     if (NOT LAPACK_FIND_QUIETLY)
         message(STATUS "A cache variable, namely LAPACK_DIR, has been set to specify the install directory of LAPACK")
     endif()
@@ -165,8 +165,7 @@ if (NOT _libdir)
         list(APPEND _libdir "${BLAS_DIR}/lib32")
         list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
     endif()
-  endif ()
-  if (BLAS_LIBDIR)
+  elseif (BLAS_LIBDIR)
     list(APPEND _libdir "${BLAS_LIBDIR}")
   endif ()
   if (LAPACK_DIR)
@@ -179,20 +178,20 @@ if (NOT _libdir)
         list(APPEND _libdir "${LAPACK_DIR}/lib32")
         list(APPEND _libdir "${LAPACK_DIR}/lib/ia32")
     endif()
-  endif ()
-  if (LAPACK_LIBDIR)
+  elseif (LAPACK_LIBDIR)
     list(APPEND _libdir "${LAPACK_LIBDIR}")
+  else()
+    if (WIN32)
+      string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
+    elseif (APPLE)
+      string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
+    else ()
+      string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
+    endif ()
+    list(APPEND _libdir "${_libdir2}")
+    list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+    list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   endif ()
-  if (WIN32)
-    string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
-  elseif (APPLE)
-    string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
-  else ()
-    string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
-  endif ()
-  list(APPEND _libdir "${_libdir2}")
-  list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-  list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
 endif ()
 
 if (LAPACK_VERBOSE)
@@ -367,6 +366,8 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
 
     set(LAPACK_SEARCH_LIBS "")
 
+    set(additional_flags "-Wl,--no-as-needed")
+
     if (BLA_F95)
       set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
       set(_LIBRARIES LAPACK95_LIBRARIES)
@@ -399,11 +400,14 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
         ${_LIBRARIES}
         BLAS
         ${LAPACK_mkl_SEARCH_SYMBOL}
-        ""
+        "${additional_flags}"
         ""
         "${_BLAS_LIBRARIES}"
         "${CMAKE_THREAD_LIBS_INIT};${LM}"
         )
+        if(_LIBRARIES)
+            set(LAPACK_LINKER_FLAGS "${additional_flags}")
+        endif()
     endif ()
     # Then try the search libs
     foreach (IT ${LAPACK_SEARCH_LIBS})
@@ -412,11 +416,14 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
           ${_LIBRARIES}
           BLAS
           ${LAPACK_mkl_SEARCH_SYMBOL}
-          ""
+          "${additional_flags}"
           "${IT}"
           "${_BLAS_LIBRARIES}"
           "${CMAKE_THREAD_LIBS_INIT};${LM}"
           )
+          if(_LIBRARIES)
+              set(LAPACK_LINKER_FLAGS "${additional_flags}")
+          endif()
       endif ()
     endforeach ()
   endif ()
@@ -438,7 +445,7 @@ if(BLA_F95)
   else(LAPACK95_FOUND)
     message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but LAPACK 95 libraries could not be found or check of symbols failed."
         "\nPlease indicate where to find LAPACK libraries. You have three options:\n"
-        "- Option 1: Provide the root directory of LAPACK library with cmake option: -DLAPACK_DIR=your/path/to/lapack\n"
+        "- Option 1: Provide the installation directory of LAPACK library with cmake option: -DLAPACK_DIR=your/path/to/lapack\n"
         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DLAPACK_VERBOSE=ON at cmake configure."
@@ -473,7 +480,7 @@ else(BLA_F95)
   else(LAPACK_FOUND)
     message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but LAPACK libraries could not be found or check of symbols failed."
         "\nPlease indicate where to find LAPACK libraries. You have three options:\n"
-        "- Option 1: Provide the root directory of LAPACK library with cmake option: -DLAPACK_DIR=your/path/to/lapack\n"
+        "- Option 1: Provide the installation directory of LAPACK library with cmake option: -DLAPACK_DIR=your/path/to/lapack\n"
         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DLAPACK_VERBOSE=ON at cmake configure."
@@ -495,3 +502,12 @@ else(BLA_F95)
 endif(BLA_F95)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_lapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if (LAPACK_FOUND AND NOT LAPACK_DIR)
+    list(GET LAPACK_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(LAPACK_DIR "${not_cached_dir}" CACHE PATH "Installation directory of LAPACK library" FORCE)
+    endif()
+endif()

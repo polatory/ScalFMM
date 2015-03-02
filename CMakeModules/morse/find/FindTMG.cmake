@@ -17,6 +17,7 @@
 # This module finds headers and tmg library.
 # Results are reported in variables:
 #  TMG_FOUND            - True if headers and requested libraries were found
+#  TMG_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  TMG_INCLUDE_DIRS     - tmg include directories
 #  TMG_LIBRARY_DIRS     - Link directories for tmg libraries
 #  TMG_LIBRARIES        - tmg component libraries to be linked
@@ -49,7 +50,7 @@
 
 
 if (NOT TMG_FOUND)
-    set(TMG_DIR "" CACHE PATH "Root directory of TMG library")
+    set(TMG_DIR "" CACHE PATH "Installation directory of TMG library")
     if (NOT TMG_FIND_QUIETLY)
         message(STATUS "A cache variable, namely TMG_DIR, has been set to specify the install directory of TMG")
     endif()
@@ -77,7 +78,7 @@ endif()
 if (LAPACK_FOUND)
 
     # check if a tmg function exists in the LAPACK lib
-    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
+    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
     include(CheckFunctionExists)
     include(CheckFortranFunctionExists)
     unset(TMG_WORKS CACHE)
@@ -103,9 +104,14 @@ if (LAPACK_FOUND)
         endif()
         # test succeeds: TMG is in LAPACK
         set(TMG_LIBRARIES "${LAPACK_LIBRARIES}")
-        set(TMG_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+        if (LAPACK_LIBRARY_DIRS)
+            set(TMG_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+        endif()
         if(LAPACK_INCLUDE_DIRS)
             set(TMG_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+        endif()
+        if (LAPACK_LINKER_FLAGS)
+            set(TMG_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
         endif()
     else()
 
@@ -181,6 +187,7 @@ if (LAPACK_FOUND)
         # check a function to validate the find
         if(TMG_LIBRARIES)
 
+            set(REQUIRED_LDFLAGS)
             set(REQUIRED_INCDIRS)
             set(REQUIRED_LIBDIRS)
             set(REQUIRED_LIBS)
@@ -201,10 +208,14 @@ if (LAPACK_FOUND)
                 list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
             endif()
             list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
+            if (LAPACK_LINKER_FLAGS)
+                list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+            endif()
 
             # set required libraries for link
             set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
             set(CMAKE_REQUIRED_LIBRARIES)
+            list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
             foreach(lib_dir ${REQUIRED_LIBDIRS})
                 list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
             endforeach()
@@ -234,8 +245,10 @@ if (LAPACK_FOUND)
                 set(TMG_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(TMG_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
                 set(TMG_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+                set(TMG_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
                 list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS_DEP)
                 list(REMOVE_DUPLICATES TMG_INCLUDE_DIRS_DEP)
+                list(REMOVE_DUPLICATES TMG_LINKER_FLAGS)
             else()
                 if(NOT TMG_FIND_QUIETLY)
                     message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
@@ -260,6 +273,14 @@ else()
 
 endif()
 
+if (TMG_LIBRARIES AND NOT TMG_DIR)
+    list(GET TMG_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(TMG_DIR "${not_cached_dir}" CACHE PATH "Installation directory of TMG library" FORCE)
+    endif()
+endif()
 
 # check that TMG has been found
 # -------------------------------

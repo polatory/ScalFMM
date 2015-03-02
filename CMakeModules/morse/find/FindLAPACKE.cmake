@@ -26,6 +26,7 @@
 # This module finds headers and lapacke library.
 # Results are reported in variables:
 #  LAPACKE_FOUND            - True if headers and requested libraries were found
+#  LAPACKE_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  LAPACKE_INCLUDE_DIRS     - lapacke include directories
 #  LAPACKE_LIBRARY_DIRS     - Link directories for lapacke libraries
 #  LAPACKE_LIBRARIES        - lapacke component libraries to be linked
@@ -64,7 +65,7 @@
 #  License text for the above reference.)
 
 if (NOT LAPACKE_FOUND)
-    set(LAPACKE_DIR "" CACHE PATH "Root directory of LAPACKE library")
+    set(LAPACKE_DIR "" CACHE PATH "Installation directory of LAPACKE library")
     if (NOT LAPACKE_FIND_QUIETLY)
         message(STATUS "A cache variable, namely LAPACKE_DIR, has been set to specify the install directory of LAPACKE")
     endif()
@@ -102,7 +103,7 @@ if (LAPACK_FOUND)
     if (NOT LAPACKE_STANDALONE)
         # check if a lapacke function exists in the LAPACK lib
         include(CheckFunctionExists)
-        set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
+        set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
         unset(LAPACKE_WORKS CACHE)
         check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
         mark_as_advanced(LAPACKE_WORKS)
@@ -114,9 +115,14 @@ if (LAPACK_FOUND)
             endif()
             # test succeeds: LAPACKE is in LAPACK
             set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
-            set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+            if (LAPACK_LIBRARY_DIRS)
+                set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+            endif()
             if(LAPACK_INCLUDE_DIRS)
                 set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+            endif()
+            if (LAPACK_LINKER_FLAGS)
+                set(LAPACKE_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
             endif()
         endif()
     endif (NOT LAPACKE_STANDALONE)
@@ -252,6 +258,7 @@ if (LAPACK_FOUND)
         # check a function to validate the find
         if(LAPACKE_LIBRARIES)
 
+            set(REQUIRED_LDFLAGS)
             set(REQUIRED_INCDIRS)
             set(REQUIRED_LIBDIRS)
             set(REQUIRED_LIBS)
@@ -272,11 +279,14 @@ if (LAPACK_FOUND)
                 list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
             endif()
             list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
+            if (LAPACK_LINKER_FLAGS)
+                list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+            endif()
             # Fortran
             if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
-                list(APPEND CMAKE_REQUIRED_LIBRARIES "-lgfortran")
+                list(APPEND REQUIRED_LIBS "-lgfortran")
             elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
-                list(APPEND CMAKE_REQUIRED_LIBRARIES "-lifcore")
+                list(APPEND REQUIRED_LIBS "-lifcore")
             endif()
             # m
             list(APPEND REQUIRED_LIBS "-lm")
@@ -284,6 +294,7 @@ if (LAPACK_FOUND)
             # set required libraries for link
             set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
             set(CMAKE_REQUIRED_LIBRARIES)
+            list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
             foreach(lib_dir ${REQUIRED_LIBDIRS})
                 list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
             endforeach()
@@ -300,8 +311,10 @@ if (LAPACK_FOUND)
                 set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
                 set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+                set(LAPACKE_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
                 list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
                 list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
+                list(REMOVE_DUPLICATES LAPACKE_LINKER_FLAGS)
             else()
                 if(NOT LAPACKE_FIND_QUIETLY)
                     message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
@@ -326,6 +339,14 @@ else(LAPACK_FOUND)
 
 endif(LAPACK_FOUND)
 
+if (LAPACKE_LIBRARIES AND NOT LAPACKE_DIR)
+    list(GET LAPACKE_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(LAPACKE_DIR "${not_cached_dir}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
+    endif()
+endif()
 
 # check that LAPACKE has been found
 # ---------------------------------

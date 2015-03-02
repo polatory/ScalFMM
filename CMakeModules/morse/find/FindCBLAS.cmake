@@ -26,6 +26,7 @@
 # This module finds headers and cblas library.
 # Results are reported in variables:
 #  CBLAS_FOUND            - True if headers and requested libraries were found
+#  CBLAS_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  CBLAS_INCLUDE_DIRS     - cblas include directories
 #  CBLAS_LIBRARY_DIRS     - Link directories for cblas libraries
 #  CBLAS_LIBRARIES        - cblas component libraries to be linked
@@ -65,7 +66,7 @@
 
 
 if (NOT CBLAS_FOUND)
-    set(CBLAS_DIR "" CACHE PATH "Root directory of CBLAS library")
+    set(CBLAS_DIR "" CACHE PATH "Installation directory of CBLAS library")
     if (NOT CBLAS_FIND_QUIETLY)
         message(STATUS "A cache variable, namely CBLAS_DIR, has been set to specify the install directory of CBLAS")
     endif()
@@ -107,7 +108,7 @@ if (BLAS_FOUND)
         # check if a cblas function exists in the BLAS lib
         # this can be the case with libs such as MKL, ACML
         include(CheckFunctionExists)
-        set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LIBRARIES}")
+        set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LINKER_FLAGS};${BLAS_LIBRARIES}")
         unset(CBLAS_WORKS CACHE)
         check_function_exists(cblas_dscal CBLAS_WORKS)
         mark_as_advanced(CBLAS_WORKS)
@@ -119,9 +120,14 @@ if (BLAS_FOUND)
             endif()
             # test succeeds: CBLAS is in BLAS
             set(CBLAS_LIBRARIES "${BLAS_LIBRARIES}")
-            set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
+            if (BLAS_LIBRARY_DIRS)
+                set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
+            endif()
             if(BLAS_INCLUDE_DIRS)
                 set(CBLAS_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
+            endif()
+            if (BLAS_LINKER_FLAGS)
+                set(CBLAS_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
             endif()
         endif()
     endif (NOT CBLAS_STANDALONE)
@@ -258,6 +264,7 @@ if (BLAS_FOUND)
         if(CBLAS_LIBRARIES)
 
             set(REQUIRED_INCDIRS)
+            set(REQUIRED_LDFLAGS)
             set(REQUIRED_LIBDIRS)
             set(REQUIRED_LIBS)
 
@@ -277,10 +284,14 @@ if (BLAS_FOUND)
                 list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
             endif()
             list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
+            if (BLAS_LINKER_FLAGS)
+                list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+            endif()
 
             # set required libraries for link
             set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
             set(CMAKE_REQUIRED_LIBRARIES)
+            list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
             foreach(lib_dir ${REQUIRED_LIBDIRS})
                 list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
             endforeach()
@@ -297,8 +308,10 @@ if (BLAS_FOUND)
                 set(CBLAS_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(CBLAS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
                 set(CBLAS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+                set(CBLAS_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
                 list(REMOVE_DUPLICATES CBLAS_LIBRARY_DIRS_DEP)
                 list(REMOVE_DUPLICATES CBLAS_INCLUDE_DIRS_DEP)
+                list(REMOVE_DUPLICATES CBLAS_LINKER_FLAGS)
             else()
                 if(NOT CBLAS_FIND_QUIETLY)
                     message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")
@@ -323,6 +336,14 @@ else(BLAS_FOUND)
 
 endif(BLAS_FOUND)
 
+if (CBLAS_LIBRARIES AND NOT CBLAS_DIR)
+    list(GET CBLAS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(CBLAS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of CBLAS library" FORCE)
+    endif()
+endif()
 
 # check that CBLAS has been found
 # -------------------------------

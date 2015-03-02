@@ -26,6 +26,8 @@
 # This module finds headers and fftw library.
 # Results are reported in variables:
 #  FFTW_FOUND            - True if headers and requested libraries were found
+#  FFTW_C_FLAGS          - list of required compilation flags (excluding -I)
+#  FFTW_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  FFTW_INCLUDE_DIRS     - fftw include directories
 #  FFTW_LIBRARY_DIRS     - Link directories for fftw libraries
 #  FFTW_LIBRARIES        - fftw component libraries to be linked
@@ -58,7 +60,7 @@
 
 
 if (NOT FFTW_FOUND)
-    set(FFTW_DIR "" CACHE PATH "Root directory of FFTW library")
+    set(FFTW_DIR "" CACHE PATH "Installation directory of FFTW library")
     if (NOT FFTW_FIND_QUIETLY)
         message(STATUS "A cache variable, namely FFTW_DIR, has been set to specify the install directory of FFTW")
     endif()
@@ -127,7 +129,7 @@ if( FFTW_FIND_COMPONENTS )
 endif()
 
 if (FFTW_LOOK_FOR_THREADS)
-    if (FFTW_FIND_REQUIRED)
+    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_THREADS)
         find_package(Threads REQUIRED)
     else()
         find_package(Threads)
@@ -135,7 +137,7 @@ if (FFTW_LOOK_FOR_THREADS)
 endif()
 
 if (FFTW_LOOK_FOR_OMP)
-    if (FFTW_FIND_REQUIRED)
+    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_OMP)
         find_package(OpenMP REQUIRED)
     else()
         find_package(OpenMP)
@@ -344,6 +346,8 @@ if( NOT FFTW_FOUND )
     # check a function to validate the find
     if(FFTW_LIBRARIES)
 
+        set(REQUIRED_FLAGS)
+        set(REQUIRED_LDFLAGS)
         set(REQUIRED_INCDIRS)
         set(REQUIRED_LIBDIRS)
         set(REQUIRED_LIBS)
@@ -363,21 +367,24 @@ if( NOT FFTW_FOUND )
         # OMP
         if(FFTW_LOOK_FOR_OMP)
             if (CMAKE_C_COMPILER MATCHES ".+gcc.*")
-                set(CMAKE_REQUIRED_FLAGS "-fopenmp")
+                set(REQUIRED_FLAGS "-fopenmp")
             endif()
         endif()
         # MKL
         if(FFTW_LOOK_FOR_MKL)
-            list(APPEND REQUIRED_LIBS "-Wl,--no-as-needed;${CMAKE_REQUIRED_LIBRARIES};${CMAKE_THREAD_LIBS_INIT};-lm")
+            list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT};-lm")
+            list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
         endif()
 
         # set required libraries for link
         set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
         set(CMAKE_REQUIRED_LIBRARIES)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
         foreach(lib_dir ${REQUIRED_LIBDIRS})
             list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
         endforeach()
         list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+        list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
 
         # test link
         unset(FFTW_WORKS CACHE)
@@ -390,13 +397,17 @@ if( NOT FFTW_FOUND )
             set(FFTW_LIBRARIES_DEP "${REQUIRED_LIBS}")
             set(FFTW_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(FFTW_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+            set(FFTW_C_FLAGS "${REQUIRED_FLAGS}")
+            set(FFTW_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
             list(REMOVE_DUPLICATES FFTW_LIBRARY_DIRS_DEP)
             list(REMOVE_DUPLICATES FFTW_INCLUDE_DIRS_DEP)
+            list(REMOVE_DUPLICATES FFTW_LINKER_FLAGS)
         else()
             if(NOT FFTW_FIND_QUIETLY)
                 message(STATUS "Looking for FFTW : test of ${FFTW_PREC_TESTFUNC}fftw_execute_ with fftw library fails")
                 message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
                 message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+                message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
                 message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
             endif()
         else()
@@ -409,6 +420,14 @@ if( NOT FFTW_FOUND )
 
 endif( NOT FFTW_FOUND )
 
+if (FFTW_LIBRARIES AND NOT FFTW_DIR)
+    list(GET FFTW_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(FFTW_DIR "${not_cached_dir}" CACHE PATH "Installation directory of FFTW library" FORCE)
+    endif()
+endif()
 
 # check that FFTW has been found
 # -------------------------------

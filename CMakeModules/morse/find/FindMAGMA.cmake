@@ -27,6 +27,7 @@
 #
 # Results are reported in variables:
 #  MAGMA_FOUND            - True if headers and requested libraries were found
+#  MAGMA_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  MAGMA_INCLUDE_DIRS     - magma include directories
 #  MAGMA_LIBRARY_DIRS     - Link directories for magma libraries
 #  MAGMA_LIBRARIES        - magma libraries
@@ -59,7 +60,7 @@
 
 
 if(NOT MAGMA_FOUND)
-    set(MAGMA_DIR "" CACHE PATH "Root directory of MAGMA library")
+    set(MAGMA_DIR "" CACHE PATH "Installation directory of MAGMA library")
     if (NOT MAGMA_FIND_QUIETLY)
         message(STATUS "A cache variable, namely MAGMA_DIR, has been set to specify the install directory of MAGMA")
     endif()
@@ -147,11 +148,15 @@ if(PKG_CONFIG_EXECUTABLE)
     set(MAGMA_INCLUDE_DIRS_DEP "")
     set(MAGMA_LIBRARY_DIRS_DEP "")
     set(MAGMA_LIBRARIES_DEP "")
+    # replace it anyway: we should update it with dependencies given by pkg-config
+    set(MAGMA_INCLUDE_DIRS_DEP "${MAGMA_INCLUDE_DIRS}")
+    set(MAGMA_LIBRARY_DIRS_DEP "${MAGMA_LIBRARY_DIRS}")
+    set(MAGMA_LIBRARIES_DEP "${MAGMA_LIBRARIES}")
 
-endif(PKG_CONFIG_EXECUTABLE)
+endif()
 
 # if MAGMA is not found using pkg-config
-if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
+if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_DIR)
 
     if (NOT MAGMA_FIND_QUIETLY)
         message(STATUS "Looking for MAGMA - PkgConfig not used")
@@ -278,6 +283,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
     # check a function to validate the find
     if (MAGMA_LIBRARIES)
 
+        set(REQUIRED_LDFLAGS)
         set(REQUIRED_INCDIRS)
         set(REQUIRED_LIBDIRS)
         set(REQUIRED_LIBS)
@@ -306,6 +312,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
         elseif(CBLAS_LIBRARIES)
             list(APPEND REQUIRED_LIBS "${CBLAS_LIBRARIES}")
         endif()
+        if (BLAS_LINKER_FLAGS)
+            list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+        endif()
         # LAPACK
         if (LAPACK_INCLUDE_DIRS)
             list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
@@ -314,6 +323,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
             list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
         endif()
         list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
+        if (LAPACK_LINKER_FLAGS)
+            list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+        endif()
         # CUDA
         if (CUDA_INCLUDE_DIRS)
             list(APPEND REQUIRED_INCDIRS "${CUDA_INCLUDE_DIRS}")
@@ -326,6 +338,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
         # set required libraries for link
         set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
         set(CMAKE_REQUIRED_LIBRARIES)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
         foreach(lib_dir ${REQUIRED_LIBDIRS})
             list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
         endforeach()
@@ -342,8 +355,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
             set(MAGMA_LIBRARIES_DEP    "${REQUIRED_LIBS}")
             set(MAGMA_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
             set(MAGMA_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+            set(MAGMA_LINKER_FLAGS     "${REQUIRED_LDFLAGS}")
             list(REMOVE_DUPLICATES MAGMA_LIBRARY_DIRS_DEP)
             list(REMOVE_DUPLICATES MAGMA_INCLUDE_DIRS_DEP)
+            list(REMOVE_DUPLICATES MAGMA_LINKER_FLAGS)
         else()
             if(NOT MAGMA_FIND_QUIETLY)
                 message(STATUS "Looking for magma : test of magma_dgetrf with
@@ -358,8 +373,24 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(MAGMA_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND )
+endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_DIR)
 
+if (MAGMA_LIBRARIES AND NOT MAGMA_DIR)
+    if (MAGMA_LIBRARY_DIRS)
+        foreach(dir ${MAGMA_LIBRARY_DIRS})
+            if ("${dir}" MATCHES "magma")
+                set(first_lib_path "${dir}")
+            endif()
+        endforeach()
+    else()
+        list(GET MAGMA_LIBRARIES 0 first_lib)
+        get_filename_component(first_lib_path "${first_lib}" PATH)
+    endif()
+    if (${first_lib_path} MATCHES "/lib(32|64)?$")
+        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+        set(MAGMA_DIR "${not_cached_dir}" CACHE PATH "Installation directory of MAGMA library" FORCE)
+    endif()
+endif()
 
 # check that MAGMA has been found
 # -------------------------------

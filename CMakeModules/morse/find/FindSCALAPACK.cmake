@@ -103,7 +103,7 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
         endif()
     endif()
     message("${BoldYellow}Please indicate where to find ${_lib_to_find}. You have three options:\n"
-            "- Option 1: Provide the root directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
+            "- Option 1: Provide the installation directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
             "- Option 2: Provide the directory where to find the library with cmake option: -D${LIBNAME}_LIBDIR=your/path/to/${libname}/lib/\n"
             "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
             "- Option 4: If your library provides a PkgConfig file, make sure pkg-config finds your library${ColourReset}")
@@ -111,7 +111,7 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
 endmacro()
 
 if (NOT SCALAPACK_FOUND)
-    set(SCALAPACK_DIR "" CACHE PATH "Root directory of SCALAPACK library")
+    set(SCALAPACK_DIR "" CACHE PATH "Installation directory of SCALAPACK library")
     if (NOT SCALAPACK_FIND_QUIETLY)
         message(STATUS "A cache variable, namely SCALAPACK_DIR, has been set to specify the install directory of SCALAPACK")
     endif()
@@ -163,7 +163,7 @@ if (NOT _libdir)
         list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
     endif()
   endif ()
-  if (BLAS_LIBDIR)
+  elseif (BLAS_LIBDIR)
     list(APPEND _libdir "${BLAS_LIBDIR}")
   endif ()
   if (SCALAPACK_DIR)
@@ -177,19 +177,20 @@ if (NOT _libdir)
         list(APPEND _libdir "${SCALAPACK_DIR}/lib/ia32")
     endif()
   endif ()
-  if (SCALAPACK_LIBDIR)
+  elseif (SCALAPACK_LIBDIR)
     list(APPEND _libdir "${SCALAPACK_LIBDIR}")
+  else()
+    if (WIN32)
+      string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
+    elseif (APPLE)
+      string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
+    else ()
+      string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
+    endif ()
+    list(APPEND _libdir "${_libdir2}")
+    list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+    list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   endif ()
-  if (WIN32)
-    string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
-  elseif (APPLE)
-    string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
-  else ()
-    string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
-  endif ()
-  list(APPEND _libdir "${_libdir2}")
-  list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-  list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
 endif ()
 
 if (SCALAPACK_VERBOSE)
@@ -391,7 +392,7 @@ if(BLA_F95)
   else(SCALAPACK95_FOUND)
     message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but SCALAPACK 95 libraries could not be found or check of symbols failed."
         "\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
-        "- Option 1: Provide the root directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
+        "- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
@@ -426,7 +427,7 @@ else(BLA_F95)
   else(SCALAPACK_FOUND)
     message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but SCALAPACK libraries could not be found or check of symbols failed."
         "\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
-        "- Option 1: Provide the root directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
+        "- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
         "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
         "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
         "\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
@@ -448,3 +449,12 @@ else(BLA_F95)
 endif(BLA_F95)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_scalapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
+
+if (SCALAPACK_LIBRARIES AND NOT SCALAPACK_DIR)
+    list(GET SCALAPACK_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+        string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+        set(SCALAPACK_DIR "${not_cached_dir}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
+    endif()
+endif()
