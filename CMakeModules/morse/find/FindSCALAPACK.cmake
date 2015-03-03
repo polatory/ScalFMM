@@ -162,7 +162,6 @@ if (NOT _libdir)
         list(APPEND _libdir "${BLAS_DIR}/lib32")
         list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
     endif()
-  endif ()
   elseif (BLAS_LIBDIR)
     list(APPEND _libdir "${BLAS_LIBDIR}")
   endif ()
@@ -176,7 +175,6 @@ if (NOT _libdir)
         list(APPEND _libdir "${SCALAPACK_DIR}/lib32")
         list(APPEND _libdir "${SCALAPACK_DIR}/lib/ia32")
     endif()
-  endif ()
   elseif (SCALAPACK_LIBDIR)
     list(APPEND _libdir "${SCALAPACK_LIBDIR}")
   else()
@@ -211,7 +209,7 @@ foreach(_library ${_list})
         set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
       endif (APPLE)
     else (BLA_STATIC)
-			if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         # for ubuntu's libblas3gf and libscalapack3gf packages
         set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
       endif ()
@@ -320,61 +318,61 @@ if (BLA_VENDOR STREQUAL "Generic" OR
   endif ( NOT SCALAPACK_LIBRARIES )
 endif ()
 #intel scalapack
-#if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-#  if (NOT WIN32)
-#    set(LM "-lm")
-#  endif ()
-#  if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-#    if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
-#      find_PACKAGE(Threads)
-#    else()
-#      find_package(Threads REQUIRED)
-#    endif()
-#
-#    set(SCALAPACK_SEARCH_LIBS "")
-#
-#    if (BLA_F95)
-#      set(SCALAPACK_mkl_SEARCH_SYMBOL "PDGEMM")
-#      set(_LIBRARIES SCALAPACK95_LIBRARIES)
-#      set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
-#      list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
-#    else()
-#      set(SCALAPACK_mkl_SEARCH_SYMBOL "pdgemm")
-#      set(_LIBRARIES SCALAPACK_LIBRARIES)
-#      set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
-#      list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
-#    endif()
-#
-    # First try empty scalapack libs
-#    if (NOT ${_LIBRARIES})
-#      check_scalapack_libraries(
-#        ${_LIBRARIES}
-#        BLAS
-#        ${SCALAPACK_mkl_SEARCH_SYMBOL}
-#        ""
-#        ""
-#        "${_BLAS_LIBRARIES}"
-#        "mkl_blacs_intelmpi_lp64"
-#        "${CMAKE_THREAD_LIBS_INIT};${LM}"
-#        )
-#    endif ()
+if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
+  if (NOT WIN32)
+    set(LM "-lm")
+  endif ()
+  if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
+    if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
+      find_PACKAGE(Threads)
+    else()
+      find_package(Threads REQUIRED)
+    endif()
+
+    set(SCALAPACK_SEARCH_LIBS "")
+
+    if (BLA_F95)
+      set(SCALAPACK_mkl_SEARCH_SYMBOL "PDGEMM")
+      set(_LIBRARIES SCALAPACK95_LIBRARIES)
+      set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
+      list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
+    else()
+      set(SCALAPACK_mkl_SEARCH_SYMBOL "pdgemm")
+      set(_LIBRARIES SCALAPACK_LIBRARIES)
+      set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
+      list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
+    endif()
+
+     # First try empty scalapack libs
+    if (NOT ${_LIBRARIES})
+      check_scalapack_libraries(
+        ${_LIBRARIES}
+        BLAS
+        ${SCALAPACK_mkl_SEARCH_SYMBOL}
+        ""
+        ""
+        "${_BLAS_LIBRARIES}"
+        "mkl_blacs_intelmpi_lp64"
+        "${MPI_Fortran_LIBRARIES}"
+        )
+    endif ()
     # Then try the search libs
-#    foreach (IT ${SCALAPACK_SEARCH_LIBS})
-#      if (NOT ${_LIBRARIES})
-#        check_scalapack_libraries(
-#          ${_LIBRARIES}
-#          BLAS
-#          ${SCALAPACK_mkl_SEARCH_SYMBOL}
-#          ""
-#          "${IT}"
-#          "${_BLAS_LIBRARIES}"
-#          "mkl_blacs_intelmpi_lp64"
-#          "${CMAKE_THREAD_LIBS_INIT};${LM}"
-#          )
-#      endif ()
-#    endforeach ()
-#  endif ()
-#endif()
+    foreach (IT ${SCALAPACK_SEARCH_LIBS})
+      if (NOT ${_LIBRARIES})
+        check_scalapack_libraries(
+          ${_LIBRARIES}
+          BLAS
+          ${SCALAPACK_mkl_SEARCH_SYMBOL}
+          ""
+          "${IT}"
+          "${_BLAS_LIBRARIES}"
+          "mkl_blacs_intelmpi_lp64"
+          "${MPI_Fortran_LIBRARIES}"
+          )
+      endif ()
+    endforeach ()
+  endif ()
+endif()
 else(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
   message(STATUS "SCALAPACK requires BLAS, LAPACK, and MPI")
 endif(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
