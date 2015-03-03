@@ -5,8 +5,6 @@
 #include "FCudaGlobal.hpp"
 #include "FCudaGroupAttachedLeaf.hpp"
 
-#include "../../Components/FTestCell.hpp"
-
 /**
  * This class defines what should be a Cuda kernel.
  */

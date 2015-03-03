@@ -1,8 +1,6 @@
-
 // @SCALFMM_PRIVATE
 #ifndef FSTARPUCUDAWRAPPER_HPP
 #define FSTARPUCUDAWRAPPER_HPP
-
 
 #include "../Utils/FGlobal.hpp"
 #include "../Core/FCoreCommon.hpp"
@@ -25,14 +23,10 @@
 
 #include <omp.h>
 
-//extern "C"{
 #include <starpu.h>
-//}
 
 #ifdef STARPU_USE_MPI
-//extern "C"{
 #include <starpu_mpi.h>
-//}
 #endif
 
 #include "Cuda/FCudaDeviceWrapper.hpp"
