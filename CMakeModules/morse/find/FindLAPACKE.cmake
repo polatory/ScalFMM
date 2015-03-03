@@ -299,6 +299,7 @@ if (LAPACK_FOUND)
                 list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
             endforeach()
             list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+            string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
             # test link
             unset(LAPACKE_WORKS CACHE)
