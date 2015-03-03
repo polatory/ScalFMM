@@ -385,6 +385,7 @@ if( NOT FFTW_FOUND )
         endforeach()
         list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
         list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+        string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
         # test link
         unset(FFTW_WORKS CACHE)
