@@ -32,7 +32,7 @@ if(ScalFMM_USE_CUDA)
         ADD_CUSTOM_COMMAND(OUTPUT  ${_filehpp_output}
                   DEPENDS ${_file}
                   COMMAND echo ARGS Compiling ${_filewe}
-                  COMMAND nvcc ARGS -c ${_file} -o ${_filehpp_output} ${CUSTOM_CUDA_FLAGS})
+                  COMMAND nvcc ARGS -I${CUDA_NEEDED_INCLUDE_DIRS} -c ${_file} -o ${_filehpp_output} ${CUSTOM_CUDA_FLAGS})
  
         LIST (APPEND SCALFMM_CUDA_SOURCES ${_filehpp_output})
     ENDFOREACH ()
