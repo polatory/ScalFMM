@@ -410,6 +410,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
         if (CUDA_LIBRARIES)
             set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${CUDA_LIBRARIES}")
         endif()
+        
+        set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/Src)
     endif()
 
     # Find StarPU with a list of optional components
