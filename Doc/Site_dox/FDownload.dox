@@ -6,7 +6,10 @@
 *
 * \section download Download ScalFMM
 *
-* To download ScalFmm go on http://scalfmm-public.gforge.inria.fr/download.html.
+* To download ScalFmm go on https://gforge.inria.fr/frs/?group_id=4479 .
+* You can access the public development branch by taping :
+* git clone https://gforge.inria.fr/git/scalfmm-public/scalfmm-public.git
+* (note: some new development are not included in this public repository yet).
 *
 * You can stay in touch of the updates and new version by registering
 * to the users mailing list
