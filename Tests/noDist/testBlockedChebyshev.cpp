@@ -80,19 +80,28 @@ int main(int argc, char* argv[]){
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int groupSize     = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
-    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
 
     // Load the particles
-    //FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20), 1.0, FPoint(0,0,0), 0);
+//#define RANDOM_PARTICLES
+#ifdef RANDOM_PARTICLES
+    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000), 1.0, FPoint(0,0,0), 0);
+#else
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     FFmaGenericLoader loader(filename);
+#endif
     FAssertLF(loader.isOpen());
     FTic timer;
 
     FP2PParticleContainer<> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FReal physicalValue;
         FPoint particlePosition;
+        FReal physicalValue;
+#ifdef RANDOM_PARTICLES
+        physicalValue = 0.10;
+        loader.fillParticle(&particlePosition);
+#else
         loader.fillParticle(&particlePosition, &physicalValue);
+#endif
         allParticles.push(particlePosition, physicalValue);
     }
     std::cout << "Particles loaded in " << timer.tacAndElapsed() << "s\n";
