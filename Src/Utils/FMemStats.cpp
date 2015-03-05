@@ -44,7 +44,7 @@ FMemStats FMemStats::controler;
     }
 
     // Nothrow scalar new
-    void* operator new(size_t n,const std::nothrow_t& nothrow_value)
+    void* operator new(size_t n,const std::nothrow_t& nothrow_value) noexcept
     {
         //if (n == 0) n = 1;
         void* const allocated = malloc(n + 8);
@@ -63,7 +63,7 @@ FMemStats FMemStats::controler;
     }
 
     // Nothrow array new
-    void* operator new[](size_t n,const std::nothrow_t& nothrow_value)
+    void* operator new[](size_t n,const std::nothrow_t& nothrow_value) noexcept
     {
         return ::operator new(n, std::nothrow);
     }

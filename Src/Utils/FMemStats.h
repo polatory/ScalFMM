@@ -32,9 +32,9 @@
 #include <stdexcept>
 #warning You are using meme stats
 void* operator new(std::size_t n);
-void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) ;
+void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) noexcept;
 void* operator new[](std::size_t n);
-void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) ;
+void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) noexcept;
 void operator delete(void* p) noexcept;
 void operator delete (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
 void operator delete[](void* p) noexcept;
@@ -69,9 +69,9 @@ private:
 
 #ifdef ScalFMM_USE_MEM_STATS
     friend void* operator new(std::size_t n);
-    friend void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) ;
+    friend void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) noexcept;
     friend void* operator new[](std::size_t n);
-    friend void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) ;
+    friend void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value) noexcept;
     friend void operator delete(void* p) noexcept;
     friend void operator delete (void* ptr, const std::nothrow_t& nothrow_constant) noexcept;
     friend void operator delete[](void* p) noexcept;
