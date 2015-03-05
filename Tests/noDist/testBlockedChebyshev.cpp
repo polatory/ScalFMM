@@ -48,13 +48,19 @@
 #include <memory>
 
 
+//#define RANDOM_PARTICLES
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
-                         FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
-                         FParameterDefinitions::NbParticles, FParameterDefinitions::NbThreads,
+                         FParameterDefinitions::OctreeHeight,
+#ifdef RANDOM_PARTICLES
+                         FParameterDefinitions::NbParticles,
+#else
+                         FParameterDefinitions::InputFile,
+#endif
+                         FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
@@ -82,7 +88,6 @@ int main(int argc, char* argv[]){
     const int groupSize     = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
 
     // Load the particles
-//#define RANDOM_PARTICLES
 #ifdef RANDOM_PARTICLES
     FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000), 1.0, FPoint(0,0,0), 0);
 #else
