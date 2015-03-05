@@ -30,7 +30,7 @@
 #ifdef ScalFMM_USE_MEM_STATS
 #include <new>
 #include <stdexcept>
-#warning You are using meme stats
+#warning You are using mem stats
 void* operator new(std::size_t n);
 void* operator new (std::size_t size, const std::nothrow_t& nothrow_value) noexcept;
 void* operator new[](std::size_t n);
