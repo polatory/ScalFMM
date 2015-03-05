@@ -20,7 +20,9 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class This class is a basic implementation of Complexe.
+* @class FComplex.hpp
+*
+* This class is a basic implementation of Complexe.
 * Please read the license
 *
 * Propose basic complexe class.
