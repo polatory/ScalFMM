@@ -373,7 +373,9 @@ if( NOT FFTW_FOUND )
         # MKL
         if(FFTW_LOOK_FOR_MKL)
             list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT};-lm")
-            list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
+            if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+                list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
+            endif()
         endif()
 
         # set required libraries for link

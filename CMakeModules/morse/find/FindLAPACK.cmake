@@ -366,7 +366,10 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
 
     set(LAPACK_SEARCH_LIBS "")
 
-    set(additional_flags "-Wl,--no-as-needed")
+    set(additional_flags "")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(additional_flags "-Wl,--no-as-needed")
+    endif()
 
     if (BLA_F95)
       set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
