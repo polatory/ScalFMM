@@ -93,7 +93,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
         Print("Number of particles:");
         Print(nbParticles);
-        int idxLeafY = 0,idxLeafZ = 0 ;
+        //int idxLeafY = 0,idxLeafZ = 0 ;
         	std::cout << "\n ------  Loop starts ---"<< std::endl ;
         for(int idxLeafX = 2 ; idxLeafX < dimGrid ; ++idxLeafX){
             /*for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY)*/{

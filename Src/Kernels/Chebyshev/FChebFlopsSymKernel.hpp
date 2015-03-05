@@ -385,7 +385,7 @@ private:
 
 					// truncated singular value decomposition of matrix
 					const unsigned int info	= FBlas::gesvd(nnodes, nnodes, U, S, VT, nnodes, LWORK, WORK);
-					if (info!=0) throw std::runtime_error("SVD did not converge with " + info);
+                    if (info!=0) throw std::runtime_error("SVD did not converge with " + std::to_string(info));
 					const unsigned int rank = this->getRank(S, Epsilon);
 
 					// store 

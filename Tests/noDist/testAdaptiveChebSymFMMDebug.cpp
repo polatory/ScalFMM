@@ -355,7 +355,7 @@ int main(int argc, char ** argv){
     std::cout << " Number of Cells: " << idCell <<std::endl;
     //
     std::cout << "Top of the octree " << octreeIterator.level() << std::endl ;
-    for(int idxLevel = 1; idxLevel < TreeHeight ;  ++idxLevel){
+    for(unsigned int idxLevel = 1; idxLevel < TreeHeight ;  ++idxLevel){
         file << std::endl << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<< std::endl;
         file << "  Level " << idxLevel <<"  Level  "<<  octreeIterator.level()<<  "  -- leave level " <<   std::boolalpha <<  octreeIterator.isAtLeafLevel() << std::endl;
         do{
