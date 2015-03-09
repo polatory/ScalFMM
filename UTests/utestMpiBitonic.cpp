@@ -122,7 +122,7 @@ class TestMpiBitonic : public FUTesterMpi<TestMpiBitonic> {
     ////////////////////////////////////////////////////////////
 
     void TestSmallSort(){
-        const int myRank = app.global().processId();
+        //const int myRank = app.global().processId();
         const int nbProcess = app.global().processCount();
 
         const int nbElements = nbProcess;
@@ -143,7 +143,7 @@ class TestMpiBitonic : public FUTesterMpi<TestMpiBitonic> {
     }
 
     void TestSameSort(){
-        const int myRank = app.global().processId();
+        //const int myRank = app.global().processId();
         const int nbProcess = app.global().processCount();
 
         const int nbElements = nbProcess * 100;
@@ -186,8 +186,8 @@ class TestMpiBitonic : public FUTesterMpi<TestMpiBitonic> {
     }
 
     void TestBigSort(){
-        const int myRank = app.global().processId();
-        const int nbProcess = app.global().processCount();
+        //const int myRank = app.global().processId();
+        //const int nbProcess = app.global().processCount();
 
         const int nbElements = 500;
         std::unique_ptr<long[]> elements(new long[nbElements]);
