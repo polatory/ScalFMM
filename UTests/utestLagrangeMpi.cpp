@@ -298,13 +298,13 @@ class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
   
   /** set test */
   void SetTests(){
-    AddTest(&TestChebyshevMpiDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
+    AddTest(&TestLagrangeMpiDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
   }		
 
 public:
-  TestChebyshevMpiDirect(int argc,char ** argv) : FUTesterMpi(argc,argv){
+  TestLagrangeMpiDirect(int argc,char ** argv) : FUTesterMpi(argc,argv){
   }
    
 };
 
-TestClassMpi(TestChebyshevMpiDirect);
+TestClassMpi(TestLagrangeMpiDirect);
