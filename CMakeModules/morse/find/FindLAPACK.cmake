@@ -35,6 +35,13 @@
 #  LAPACK_DIR            - Where to find the base directory of lapack
 #  LAPACK_INCDIR         - Where to find the header files
 #  LAPACK_LIBDIR         - Where to find the library files
+# The module can also look after the following environment variables if paths
+# are not given as cmake variable
+#  LAPACK_DIR            - Where to find the base directory of lapack
+#  LAPACK_INCDIR         - Where to find the header files
+#  LAPACK_LIBDIR         - Where to find the library files
+# For MKL case and if no paths are given as hints, we will try to use the MKLROOT
+# environment variable
 # Note that if BLAS_DIR is set, it will also look for lapack in it
 ### List of vendors (BLA_VENDOR) valid in this module
 ##  Intel(mkl), ACML,Apple, NAS, Generic
@@ -154,20 +161,37 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
 set(_libraries_work TRUE)
 set(${LIBRARIES})
 set(_combined_name)
+set(ENV_MKLROOT "$ENV{MKLROOT}")
+set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
+set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
+set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
 if (NOT _libdir)
   if (BLAS_DIR)
-    list(APPEND _libdir "${BLAS_DIR}")
-    list(APPEND _libdir "${BLAS_DIR}/lib")
-    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-        list(APPEND _libdir "${BLAS_DIR}/lib64")
-        list(APPEND _libdir "${BLAS_DIR}/lib/intel64")
-    else()
-        list(APPEND _libdir "${BLAS_DIR}/lib32")
-        list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
-    endif()
+      list(APPEND _libdir "${BLAS_DIR}")
+      list(APPEND _libdir "${BLAS_DIR}/lib")
+      if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+          list(APPEND _libdir "${BLAS_DIR}/lib64")
+          list(APPEND _libdir "${BLAS_DIR}/lib/intel64")
+      else()
+          list(APPEND _libdir "${BLAS_DIR}/lib32")
+          list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
+      endif()
   elseif (BLAS_LIBDIR)
-    list(APPEND _libdir "${BLAS_LIBDIR}")
-  endif ()
+      list(APPEND _libdir "${BLAS_LIBDIR}")
+  elseif(ENV_BLAS_DIR)
+      list(APPEND _libdir "${ENV_BLAS_DIR}")
+      list(APPEND _libdir "${ENV_BLAS_DIR}/lib")
+      if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+          list(APPEND _libdir "${ENV_BLAS_DIR}/lib64")
+          list(APPEND _libdir "${ENV_BLAS_DIR}/lib/intel64")
+      else()
+          list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
+          list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
+      endif()
+  elseif(ENV_BLAS_LIBDIR)
+      list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
+  endif()
   if (LAPACK_DIR)
     list(APPEND _libdir "${LAPACK_DIR}")
     list(APPEND _libdir "${LAPACK_DIR}/lib")
@@ -180,7 +204,28 @@ if (NOT _libdir)
     endif()
   elseif (LAPACK_LIBDIR)
     list(APPEND _libdir "${LAPACK_LIBDIR}")
+  elseif(ENV_LAPACK_DIR)
+      list(APPEND _libdir "${ENV_LAPACK_DIR}")
+      list(APPEND _libdir "${ENV_LAPACK_DIR}/lib")
+      if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+          list(APPEND _libdir "${ENV_LAPACK_DIR}/lib64")
+          list(APPEND _libdir "${ENV_LAPACK_DIR}/lib/intel64")
+      else()
+          list(APPEND _libdir "${ENV_LAPACK_DIR}/lib32")
+          list(APPEND _libdir "${ENV_LAPACK_DIR}/lib/ia32")
+      endif()
+  elseif(ENV_LAPACK_LIBDIR)
+      list(APPEND _libdir "${ENV_LAPACK_LIBDIR}")
   else()
+    if (ENV_MKLROOT)
+        if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+            list(APPEND _libdir "${ENV_MKLROOT}/lib64")
+            list(APPEND _libdir "${ENV_MKLROOT}/lib/intel64")
+        else()
+            list(APPEND _libdir "${ENV_MKLROOT}/lib32")
+            list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
+        endif()
+    endif()
     if (WIN32)
       string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
     elseif (APPLE)
@@ -212,7 +257,7 @@ foreach(_library ${_list})
         set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
       endif (APPLE)
     else (BLA_STATIC)
-			if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+      if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         # for ubuntu's libblas3gf and liblapack3gf packages
         set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
       endif ()
@@ -287,71 +332,6 @@ if(BLAS_FOUND)
     endif(NOT BLA_VENDOR)
   endif ($ENV{BLA_VENDOR} MATCHES ".+")
 
-if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
- if(NOT LAPACK_LIBRARIES)
-  check_lapack_libraries(
-  LAPACK_LIBRARIES
-  LAPACK
-  cheev
-  ""
-  "goto2"
-  "${BLAS_LIBRARIES}"
-  ""
-  )
- endif(NOT LAPACK_LIBRARIES)
-endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-
-
-#acml lapack
- if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
-   if (BLAS_LIBRARIES MATCHES ".+acml.+")
-     set (LAPACK_LIBRARIES ${BLAS_LIBRARIES})
-   endif ()
- endif ()
-
-# Apple LAPACK library?
-if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
- if(NOT LAPACK_LIBRARIES)
-  check_lapack_libraries(
-  LAPACK_LIBRARIES
-  LAPACK
-  cheev
-  ""
-  "Accelerate"
-  "${BLAS_LIBRARIES}"
-  ""
-  )
- endif(NOT LAPACK_LIBRARIES)
-endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-  if ( NOT LAPACK_LIBRARIES )
-    check_lapack_libraries(
-    LAPACK_LIBRARIES
-    LAPACK
-    cheev
-    ""
-    "vecLib"
-    "${BLAS_LIBRARIES}"
-    ""
-    )
-  endif ( NOT LAPACK_LIBRARIES )
-endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-# Generic LAPACK library?
-if (BLA_VENDOR STREQUAL "Generic" OR
-    BLA_VENDOR STREQUAL "ATLAS" OR
-    BLA_VENDOR STREQUAL "All")
-  if ( NOT LAPACK_LIBRARIES )
-    check_lapack_libraries(
-    LAPACK_LIBRARIES
-    LAPACK
-    cheev
-    ""
-    "lapack"
-    "${BLAS_LIBRARIES}"
-    ""
-    )
-  endif ( NOT LAPACK_LIBRARIES )
-endif ()
 #intel lapack
 if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
   if (NOT WIN32)
@@ -431,6 +411,73 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
     endforeach ()
   endif ()
 endif()
+
+#goto lapack
+if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+ if(NOT LAPACK_LIBRARIES)
+  check_lapack_libraries(
+  LAPACK_LIBRARIES
+  LAPACK
+  cheev
+  ""
+  "goto2"
+  "${BLAS_LIBRARIES}"
+  ""
+  )
+ endif(NOT LAPACK_LIBRARIES)
+endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+
+
+#acml lapack
+ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
+   if (BLAS_LIBRARIES MATCHES ".+acml.+")
+     set (LAPACK_LIBRARIES ${BLAS_LIBRARIES})
+   endif ()
+ endif ()
+
+# Apple LAPACK library?
+if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+ if(NOT LAPACK_LIBRARIES)
+  check_lapack_libraries(
+  LAPACK_LIBRARIES
+  LAPACK
+  cheev
+  ""
+  "Accelerate"
+  "${BLAS_LIBRARIES}"
+  ""
+  )
+ endif(NOT LAPACK_LIBRARIES)
+endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+  if ( NOT LAPACK_LIBRARIES )
+    check_lapack_libraries(
+    LAPACK_LIBRARIES
+    LAPACK
+    cheev
+    ""
+    "vecLib"
+    "${BLAS_LIBRARIES}"
+    ""
+    )
+  endif ( NOT LAPACK_LIBRARIES )
+endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+# Generic LAPACK library?
+if (BLA_VENDOR STREQUAL "Generic" OR
+    BLA_VENDOR STREQUAL "ATLAS" OR
+    BLA_VENDOR STREQUAL "All")
+  if ( NOT LAPACK_LIBRARIES )
+    check_lapack_libraries(
+    LAPACK_LIBRARIES
+    LAPACK
+    cheev
+    ""
+    "lapack"
+    "${BLAS_LIBRARIES}"
+    ""
+    )
+  endif ( NOT LAPACK_LIBRARIES )
+endif ()
 else(BLAS_FOUND)
   message(STATUS "LAPACK requires BLAS")
 endif(BLAS_FOUND)
@@ -512,5 +559,7 @@ if (LAPACK_FOUND AND NOT LAPACK_DIR)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
         set(LAPACK_DIR "${not_cached_dir}" CACHE PATH "Installation directory of LAPACK library" FORCE)
+    else()
+        set(LAPACK_DIR "${first_lib_path}" CACHE PATH "Installation directory of LAPACK library" FORCE)
     endif()
 endif()

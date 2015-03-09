@@ -35,6 +35,13 @@
 #  BLAS_DIR            - Where to find the base directory of blas
 #  BLAS_INCDIR         - Where to find the header files
 #  BLAS_LIBDIR         - Where to find the library files
+# The module can also look after the following environment variables if paths
+# are not given as cmake variable
+#  BLAS_DIR            - Where to find the base directory of blas
+#  BLAS_INCDIR         - Where to find the header files
+#  BLAS_LIBDIR         - Where to find the library files
+# For MKL case and if no paths are given as hints, we will try to use the MKLROOT
+# environment variable
 ##########
 ### List of vendors (BLA_VENDOR) valid in this module
 ########## List of vendors (BLA_VENDOR) valid in this module
@@ -180,6 +187,9 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
     set(_libraries_work TRUE)
     set(${LIBRARIES})
     set(_combined_name)
+    set(ENV_MKLROOT "$ENV{MKLROOT}")
+    set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
+    set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
     if (NOT _libdir)
         if (BLAS_DIR)
             list(APPEND _libdir "${BLAS_DIR}")
@@ -193,7 +203,28 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
             endif()
         elseif (BLAS_LIBDIR)
             list(APPEND _libdir "${BLAS_LIBDIR}")
+        elseif(ENV_BLAS_DIR)
+            list(APPEND _libdir "${ENV_BLAS_DIR}")
+            list(APPEND _libdir "${ENV_BLAS_DIR}/lib")
+            if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+                list(APPEND _libdir "${ENV_BLAS_DIR}/lib64")
+                list(APPEND _libdir "${ENV_BLAS_DIR}/lib/intel64")
+            else()
+                list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
+                list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
+            endif()
+        elseif(ENV_BLAS_LIBDIR)
+            list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
         else()
+            if (ENV_MKLROOT)
+                if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+                    list(APPEND _libdir "${ENV_MKLROOT}/lib64")
+                    list(APPEND _libdir "${ENV_MKLROOT}/lib/intel64")
+                else()
+                    list(APPEND _libdir "${ENV_MKLROOT}/lib32")
+                    list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
+                endif()
+            endif()
             if (WIN32)
                 string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
             elseif (APPLE)
@@ -370,10 +401,12 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     if (CMAKE_C_COMPILER_NAME STREQUAL "gcc" OR
                         CMAKE_C_COMPILER_NAME STREQUAL "cc")
                         list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_gnu_thread mkl_core gomp")
+                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_gnu_thread mkl_core")
+                        set(OMP_LIB "-lgomp")
                     else ()
                         list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core iomp5")
+                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
+                        set(OMP_LIB "-liomp5")
                     endif ()
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
@@ -442,10 +475,12 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     if (CMAKE_C_COMPILER_NAME STREQUAL "gcc" OR
                         CMAKE_C_COMPILER_NAME STREQUAL "cc")
                         list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_intel_lp64 mkl_gnu_thread mkl_core gomp")
+                        "mkl_intel_lp64 mkl_gnu_thread mkl_core")
+                        set(OMP_LIB "-lgomp")
                     else ()
                         list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_intel_lp64 mkl_intel_thread mkl_core iomp5")
+                        "mkl_intel_lp64 mkl_intel_thread mkl_core")
+                        set(OMP_LIB "-liomp5")
                     endif ()
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
@@ -476,7 +511,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                 ${BLAS_mkl_SEARCH_SYMBOL}
                 "${additional_flags}"
                 "${SEARCH_LIBS}"
-                "${CMAKE_THREAD_LIBS_INIT};${LM}"
+                "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM}"
                 )
                 if(_LIBRARIES)
                     set(BLAS_LINKER_FLAGS "${additional_flags}")
@@ -942,6 +977,8 @@ if (BLAS_FOUND AND NOT BLAS_DIR)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
         set(BLAS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of BLAS library" FORCE)
+    else()
+        set(BLAS_DIR "${first_lib_path}" CACHE PATH "Installation directory of BLAS library" FORCE)
     endif()
 endif()
 
