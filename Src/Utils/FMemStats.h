@@ -32,8 +32,10 @@
 #include <stdexcept>
 #warning You are using mem stats
 void* operator new(std::size_t n);
-void operator delete(void* p);
-void operator delete[](void* p);
+void operator delete(void* p) noexcept;
+void operator delete[](void* p) noexcept;
+void operator delete  ( void* ptr, const std::nothrow_t& tag);
+void operator delete[]( void* ptr, const std::nothrow_t& tag);
 #endif
 
 /** Give the memory allocation details
@@ -64,8 +66,10 @@ private:
 
 #ifdef ScalFMM_USE_MEM_STATS
     friend void* operator new(std::size_t n);
-    friend void operator delete(void* p);
-    friend void operator delete[](void* p);
+    friend void operator delete(void* p) noexcept;
+    friend void operator delete[](void* p) noexcept;
+    friend void operator delete  ( void* ptr, const std::nothrow_t& tag);
+    friend void operator delete[]( void* ptr, const std::nothrow_t& tag);
 #endif
 
 public:

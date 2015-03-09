@@ -33,14 +33,28 @@ FMemStats FMemStats::controler;
     }
 
     // Regular scalar delete
-    void operator delete(void* p) {
+    void operator delete(void* p) noexcept{
         if(p){
             FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
             std::free(static_cast<unsigned char*>(p) - 8);
         }
     }
 
-    void operator delete[](void* p) {
+    void operator delete[](void* p) noexcept{
+        if(p){
+            FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
+            std::free(static_cast<unsigned char*>(p) - 8);
+        }
+    }
+
+    void operator delete  ( void* p, const std::nothrow_t& /*tag*/) {
+        if(p){
+            FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
+            std::free(static_cast<unsigned char*>(p) - 8);
+        }
+    }
+
+    void operator delete[]( void* p, const std::nothrow_t& /*tag*/) {
         if(p){
             FMemStats::controler.deallocate( *(reinterpret_cast<size_t*>(static_cast<unsigned char*>(p) - 8)) );
             std::free(static_cast<unsigned char*>(p) - 8);
