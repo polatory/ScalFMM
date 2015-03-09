@@ -424,7 +424,7 @@ public:
 
         ////FLOG( FLog::Controller << currentComm.processId() << "] Sequential sort\n"; )
         // Finish by a local sort
-        FQuickSort< SortType, IndexType>::QsOmp(workingArray, currentSize, [&](const SortType& v1, const SortType& v2){
+        FQuickSort< SortType, IndexType>::QsOmp(workingArray, currentSize, [](const SortType& v1, const SortType& v2){
             return CompareType(v1) <= CompareType(v2);
         });
         (*outputSize)  = currentSize;
