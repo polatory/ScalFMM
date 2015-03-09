@@ -971,14 +971,14 @@ endif(BLA_F95)
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
-if (BLAS_FOUND AND NOT BLAS_DIR)
+if (BLAS_FOUND)
     list(GET BLAS_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-        set(BLAS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of BLAS library" FORCE)
+        set(BLAS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of BLAS library" FORCE)
     else()
-        set(BLAS_DIR "${first_lib_path}" CACHE PATH "Installation directory of BLAS library" FORCE)
+        set(BLAS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of BLAS library" FORCE)
     endif()
 endif()
 
