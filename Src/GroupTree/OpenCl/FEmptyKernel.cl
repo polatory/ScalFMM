@@ -1,4 +1,5 @@
 /** This file contains the prototype for a kernel in opencl */
+// @SCALFMM_PRIVATE
 
 typedef long long int MortonIndex;
 
@@ -19,10 +20,6 @@ typedef struct OutOfBlockInteraction_t{
 /***************************************************************************/
 /***************************************************************************/
 /***************************************************************************/
-
-struct Uptr8{
-    __global unsigned char* ptrs[8];
-};
 
 struct Uptr9{
     __global unsigned char* ptrs[9];

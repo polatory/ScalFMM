@@ -39,6 +39,15 @@
 #include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 #include "../../Src/GroupTree/OpenCl/FTextReplacer.hpp"
 
+struct FTestCell_Alignement{
+    static const int dataUp;
+    static const int dataDown;
+};
+
+const int FTestCell_Alignement::dataUp = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->dataUp)) - std::size_t(0xF00);
+const int FTestCell_Alignement::dataDown = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->dataDown)) - std::size_t(0xF00);
+
+
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
@@ -53,11 +62,14 @@ int main(int argc, char* argv[]){
         FTextReplacer kernelfile;
 
     public:
-        OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
+        //OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
+        OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FTestKernel.cl"){
             kernelfile.replaceAll("___FReal___", "double");
-            kernelfile.replaceAll("___FParticleValueClass___", "double");
-            kernelfile.replaceAll("___FCellClassSize___", 4);
-            kernelfile.replaceAll("___NbAttributesPerParticle___", 4);
+            kernelfile.replaceAll("___FParticleValueClass___", "long long");
+            kernelfile.replaceAll("___FCellClassSize___", sizeof(FTestCell));
+            kernelfile.replaceAll("___NbAttributesPerParticle___", 2);
+            kernelfile.replaceAll("___FCellUpOffset___", FTestCell_Alignement::dataUp);
+            kernelfile.replaceAll("___FCellDownOffset___", FTestCell_Alignement::dataDown);
         }
 
         operator const char*(){

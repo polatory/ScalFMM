@@ -138,7 +138,6 @@ public:
 
 
     void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
-        return;
         Uptr9 ptrs;
         memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
         size_t9 sizes;

@@ -1,5 +1,6 @@
 #ifndef FTEXTREPLACER_HPP
 #define FTEXTREPLACER_HPP
+// @SCALFMM_PRIVATE
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FAssert.hpp"
