@@ -37,7 +37,8 @@ protected:
     }
     template <class ParamClass, class... Args>
     static void SetKernelArgs(cl_kernel& kernel, const int pos, ParamClass* param, Args... args){
-        FAssertLF(clSetKernelArg(kernel, pos, sizeof(*param), param) == 0);
+        FAssertLF(clSetKernelArg(kernel, pos, sizeof(*param), param) == 0,
+                  "Error when assigning opencl argument ", pos);
         SetKernelArgs(kernel, pos+1, args...);
     }
 
@@ -101,8 +102,8 @@ public:
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInoutPassPerform, &queue_transferInoutPassPerform, &opencl_code, "FOpenCL__transferInoutPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_downardPassPerform, &queue_downardPassPerform, &opencl_code, "FOpenCL__downardPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerformMpi, &queue_directInoutPassPerformMpi, &opencl_code, "FOpenCL__directInoutPassPerformMpi", workerDevid) == CL_SUCCESS);
-            FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerform, &queue_directInoutPassPerform, &opencl_code, "FOpenCL__directInPassPerform", workerDevid) == CL_SUCCESS);
-            FAssertLF( starpu_opencl_load_kernel(&kernel_directInPassPerform, &queue_directInPassPerform, &opencl_code, "FOpenCL__directInoutPassPerform", workerDevid) == CL_SUCCESS);
+            FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerform, &queue_directInoutPassPerform, &opencl_code, "FOpenCL__directInoutPassPerform", workerDevid) == CL_SUCCESS);
+            FAssertLF( starpu_opencl_load_kernel(&kernel_directInPassPerform, &queue_directInPassPerform, &opencl_code, "FOpenCL__directInPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_mergePassPerform, &queue_mergePassPerform, &opencl_code, "FOpenCL__mergePassPerform", workerDevid) == CL_SUCCESS);
         }
     }

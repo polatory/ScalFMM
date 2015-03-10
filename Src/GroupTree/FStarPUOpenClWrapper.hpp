@@ -139,7 +139,6 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
         cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
