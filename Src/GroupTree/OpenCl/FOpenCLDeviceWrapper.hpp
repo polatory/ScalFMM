@@ -25,6 +25,14 @@ struct FEmptyOpenCLFilename{
 template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLFilename>
 class FOpenCLDeviceWrapper {
 protected:
+    struct Uptr9{
+        cl_mem ptrs[9];
+    };
+
+    struct size_t9{
+        size_t v[9];
+    };
+
     static void SetKernelArgs(cl_kernel& kernel, const int pos){
     }
     template <class ParamClass, class... Args>
@@ -83,7 +91,7 @@ public:
         if(filename){
             starpu_opencl_get_context (workerDevid, &context);
 
-            const int err = starpu_opencl_load_opencl_from_string(filename, &opencl_code, NULL);
+            const int err = starpu_opencl_load_opencl_from_string(filename, &opencl_code, "-cl-std=CL2.0 -cl-mad-enable -Werror");
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "FOpenCL__bottomPassPerform", workerDevid) == CL_SUCCESS);
@@ -129,7 +137,12 @@ public:
 
 
     void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
-        SetKernelArgs(kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &subCellGroupsPtr,  &subCellGroupsSize, &nbSubCellGroups, &idxLevel, &user_data);
+        Uptr9 ptrs;
+        memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
+        size_t9 sizes;
+        memcpy(sizes.v, subCellGroupsSize, sizeof(size_t)*9);
+
+        SetKernelArgs(kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &ptrs,  &sizes, &nbSubCellGroups, &idxLevel, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_upwardPassPerform, kernel_upwardPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
@@ -164,8 +177,13 @@ public:
 
     void downardPassPerform(cl_mem currentCellsPtr,
                                      size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
+        Uptr9 ptrs;
+        memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
+        size_t9 sizes;
+        memcpy(sizes.v, subCellGroupsSize, sizeof(size_t)*9);
+
         SetKernelArgs(kernel_downardPassPerform, 0, &currentCellsPtr,
-                      &currentCellsSize, &subCellGroupsPtr,  &subCellGroupsSize, &nbSubCellGroups, &idxLevel, &user_data);
+                      &currentCellsSize,  &ptrs, &sizes, &nbSubCellGroups, &idxLevel, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_downardPassPerform, kernel_downardPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);

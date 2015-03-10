@@ -44,7 +44,8 @@ int main(int argc, char* argv[]){
         {"-bs"},
         "The size of the block of the blocked tree"
     };
-    FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
+    FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles."
+                         "Usually run with STARPU_NCPU=0 STARPU_NOPENCL=1 STARPU_OPENCL_ONLY_ON_CPUS=1 ./Tests/Release/testBlockedWithOpenCLAlgorithm",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
     // Initialize the types
