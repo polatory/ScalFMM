@@ -43,6 +43,8 @@
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DMUMPS_DIR=path/to/mumps):
 #  MUMPS_DIR              - Where to find the base directory of mumps
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: MUMPS_DIR
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -225,22 +227,22 @@ if(MUMPS_DIR)
     set(MUMPS_smumps_c.h_DIRS "MUMPS_smumps_c.h_DIRS-NOTFOUND")
     find_path(MUMPS_smumps_c.h_DIRS
       NAMES smumps_c.h
-      HINTS ${MUMPS_DIR}
+      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
       PATH_SUFFIXES "include")
     set(MUMPS_dmumps_c.h_DIRS "MUMPS_dmumps_c.h_DIRS-NOTFOUND")
     find_path(MUMPS_dmumps_c.h_DIRS
       NAMES dmumps_c.h
-      HINTS ${MUMPS_DIR}
+      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
       PATH_SUFFIXES "include")
     set(MUMPS_cmumps_c.h_DIRS "MUMPS_cmumps_c.h_DIRS-NOTFOUND")
     find_path(MUMPS_cmumps_c.h_DIRS
       NAMES cmumps_c.h
-      HINTS ${MUMPS_DIR}
+      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
       PATH_SUFFIXES "include")
     set(MUMPS_zmumps_c.h_DIRS "MUMPS_zmumps_c.h_DIRS-NOTFOUND")
     find_path(MUMPS_zmumps_c.h_DIRS
       NAMES zmumps_c.h
-      HINTS ${MUMPS_DIR}
+      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
       PATH_SUFFIXES "include")
 else()
     if (MUMPS_FIND_REQUIRED)
@@ -312,37 +314,37 @@ if(MUMPS_DIR)
     set(MUMPS_smumps_LIBRARY "MUMPS_smumps_LIBRARY-NOTFOUND")
     find_library(MUMPS_smumps_LIBRARY
                  NAMES smumps
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
     set(MUMPS_dmumps_LIBRARY "MUMPS_dmumps_LIBRARY-NOTFOUND")
     find_library(MUMPS_dmumps_LIBRARY
                  NAMES dmumps
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
     set(MUMPS_cmumps_LIBRARY "MUMPS_cmumps_LIBRARY-NOTFOUND")
     find_library(MUMPS_cmumps_LIBRARY
                  NAMES cmumps
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
     set(MUMPS_zmumps_LIBRARY "MUMPS_zmumps_LIBRARY-NOTFOUND")
     find_library(MUMPS_zmumps_LIBRARY
                  NAMES zmumps
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
     set(MUMPS_mumps_common_LIBRARY "MUMPS_mumps_common_LIBRARY-NOTFOUND")
     find_library(MUMPS_mumps_common_LIBRARY
                  NAMES mumps_common
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
     set(MUMPS_mpiseq_LIBRARY "MUMPS_mpiseq_LIBRARY-NOTFOUND")
     find_library(MUMPS_mpiseq_LIBRARY
                  NAMES mpiseq
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES libseq)
     set(MUMPS_pord_LIBRARY "MUMPS_pord_LIBRARY-NOTFOUND")
     find_library(MUMPS_pord_LIBRARY
                  NAMES pord
-                 HINTS ${MUMPS_DIR}
+                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
                  PATH_SUFFIXES lib)
 else()
     if (MUMPS_FIND_REQUIRED)
@@ -620,12 +622,14 @@ if(MUMPS_LIBRARIES)
     set(CMAKE_REQUIRED_LIBRARIES)
 endif(MUMPS_LIBRARIES)
 
-if (MUMPS_LIBRARIES AND NOT MUMPS_DIR)
+if (MUMPS_LIBRARIES)
     list(GET MUMPS_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
     if (${first_lib_path} MATCHES "/lib(32|64)?$")
         string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-        set(MUMPS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of MUMPS library" FORCE)
+        set(MUMPS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of MUMPS library" FORCE)
+    else()
+        set(MUMPS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of MUMPS library" FORCE)
     endif()
 endif()
 

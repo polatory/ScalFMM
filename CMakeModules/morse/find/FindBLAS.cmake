@@ -35,11 +35,8 @@
 #  BLAS_DIR            - Where to find the base directory of blas
 #  BLAS_INCDIR         - Where to find the header files
 #  BLAS_LIBDIR         - Where to find the library files
-# The module can also look after the following environment variables if paths
-# are not given as cmake variable
-#  BLAS_DIR            - Where to find the base directory of blas
-#  BLAS_INCDIR         - Where to find the header files
-#  BLAS_LIBDIR         - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: BLAS_DIR, BLAS_INCDIR, BLAS_LIBDIR
 # For MKL case and if no paths are given as hints, we will try to use the MKLROOT
 # environment variable
 ##########
@@ -191,7 +188,9 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
     set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
     set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
     if (NOT _libdir)
-        if (BLAS_DIR)
+        if (BLAS_LIBDIR)
+            list(APPEND _libdir "${BLAS_LIBDIR}")
+        elseif (BLAS_DIR)
             list(APPEND _libdir "${BLAS_DIR}")
             list(APPEND _libdir "${BLAS_DIR}/lib")
             if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
@@ -201,8 +200,8 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
                 list(APPEND _libdir "${BLAS_DIR}/lib32")
                 list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
             endif()
-        elseif (BLAS_LIBDIR)
-            list(APPEND _libdir "${BLAS_LIBDIR}")
+        elseif(ENV_BLAS_LIBDIR)
+            list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
         elseif(ENV_BLAS_DIR)
             list(APPEND _libdir "${ENV_BLAS_DIR}")
             list(APPEND _libdir "${ENV_BLAS_DIR}/lib")
@@ -213,8 +212,6 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
                 list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
                 list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
             endif()
-        elseif(ENV_BLAS_LIBDIR)
-            list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
         else()
             if (ENV_MKLROOT)
                 if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")

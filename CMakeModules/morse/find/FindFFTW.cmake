@@ -211,7 +211,7 @@ else()
         find_path(FFTW_fftw3.h_DIRS
           NAMES fftw3.h
           HINTS ${FFTW_DIR}
-          PATH_SUFFIXES include include/fftw)
+          PATH_SUFFIXES "include" "include/fftw")
     else()
         set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
         find_path(FFTW_fftw3.h_DIRS

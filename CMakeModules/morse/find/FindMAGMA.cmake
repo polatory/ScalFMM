@@ -40,6 +40,8 @@
 #  MAGMA_DIR              - Where to find the base directory of magma
 #  MAGMA_INCDIR           - Where to find the header files
 #  MAGMA_LIBDIR           - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: MAGMA_DIR, MAGMA_INCDIR, MAGMA_LIBDIR
 #
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -156,7 +158,7 @@ if(PKG_CONFIG_EXECUTABLE)
 endif()
 
 # if MAGMA is not found using pkg-config
-if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_DIR)
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR (MAGMA_DIR) )
 
     if (NOT MAGMA_FIND_QUIETLY)
         message(STATUS "Looking for MAGMA - PkgConfig not used")
@@ -168,17 +170,27 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_
     # Add system include paths to search include
     # ------------------------------------------
     unset(_inc_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+    set(ENV_MAGMA_DIR "$ENV{MAGMA_DIR}")
+    set(ENV_MAGMA_INCDIR "$ENV{MAGMA_INCDIR}")
+    if(ENV_MAGMA_INCDIR)
+        list(APPEND _inc_env "${ENV_MAGMA_INCDIR}")
+    elseif(ENV_MAGMA_DIR)
+        list(APPEND _inc_env "${ENV_MAGMA_DIR}")
+        list(APPEND _inc_env "${ENV_MAGMA_DIR}/include")
+        list(APPEND _inc_env "${ENV_MAGMA_DIR}/include/magma")
     else()
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
+        if(WIN32)
+            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+        endif()
     endif()
     list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
     list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -199,7 +211,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_
             find_path(MAGMA_magma.h_DIRS
               NAMES magma.h
               HINTS ${MAGMA_DIR}
-              PATH_SUFFIXES include)
+              PATH_SUFFIXES "include" "include/magma")
         else()
             set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
             find_path(MAGMA_magma.h_DIRS
@@ -227,16 +239,24 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_
     # Add system library paths to search lib
     # --------------------------------------
     unset(_lib_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    set(ENV_MAGMA_LIBDIR "$ENV{MAGMA_LIBDIR}")
+    if(ENV_MAGMA_LIBDIR)
+        list(APPEND _lib_env "${ENV_MAGMA_LIBDIR}")
+    elseif(ENV_MAGMA_DIR)
+        list(APPEND _lib_env "${ENV_MAGMA_DIR}")
+        list(APPEND _lib_env "${ENV_MAGMA_DIR}/lib")
     else()
-        if(APPLE)
-            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        if(WIN32)
+            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
         else()
-            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            if(APPLE)
+                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            else()
+                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            endif()
+            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
-        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif()
     list(REMOVE_DUPLICATES _lib_env)
 
@@ -374,9 +394,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(MAGMA_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR NOT MAGMA_FOUND OR MAGMA_DIR)
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) OR (MAGMA_DIR) )
 
-if (MAGMA_LIBRARIES AND NOT MAGMA_DIR)
+if (MAGMA_LIBRARIES)
     if (MAGMA_LIBRARY_DIRS)
         foreach(dir ${MAGMA_LIBRARY_DIRS})
             if ("${dir}" MATCHES "magma")
@@ -389,7 +409,9 @@ if (MAGMA_LIBRARIES AND NOT MAGMA_DIR)
     endif()
     if (${first_lib_path} MATCHES "/lib(32|64)?$")
         string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-        set(MAGMA_DIR "${not_cached_dir}" CACHE PATH "Installation directory of MAGMA library" FORCE)
+        set(MAGMA_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of MAGMA library" FORCE)
+    else()
+        set(MAGMA_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of MAGMA library" FORCE)
     endif()
 endif()
 

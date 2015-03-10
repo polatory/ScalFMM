@@ -39,6 +39,8 @@
 #  LAPACKE_DIR             - Where to find the base directory of lapacke
 #  LAPACKE_INCDIR          - Where to find the header files
 #  LAPACKE_LIBDIR          - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: LAPACKE_DIR, LAPACKE_INCDIR, LAPACKE_LIBDIR
 #
 # LAPACKE could be directly embedded in LAPACK library (ex: Intel MKL) so that
 # we test a lapacke function with the lapack libraries found and set LAPACKE
@@ -143,17 +145,27 @@ if (LAPACK_FOUND)
         # Add system include paths to search include
         # ------------------------------------------
         unset(_inc_env)
-        if(WIN32)
-            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
+        set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
+        if(ENV_LAPACKE_INCDIR)
+            list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
+        elseif(ENV_LAPACKE_DIR)
+            list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
+            list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
+            list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
         else()
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
+            if(WIN32)
+                string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+            else()
+                string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+                list(APPEND _inc_env "${_path_env}")
+            endif()
         endif()
         list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
         list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -174,7 +186,7 @@ if (LAPACK_FOUND)
                 find_path(LAPACKE_lapacke.h_DIRS
                 NAMES lapacke.h
                 HINTS ${LAPACKE_DIR}
-                PATH_SUFFIXES include)
+                PATH_SUFFIXES "include" "include/lapacke")
             else()
                 set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
                 find_path(LAPACKE_lapacke.h_DIRS
@@ -202,16 +214,24 @@ if (LAPACK_FOUND)
         # Add system library paths to search lib
         # --------------------------------------
         unset(_lib_env)
-        if(WIN32)
-            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+        set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
+        if(ENV_LAPACKE_LIBDIR)
+            list(APPEND _lib_env "${ENV_LAPACKE_LIBDIR}")
+        elseif(ENV_LAPACKE_DIR)
+            list(APPEND _lib_env "${ENV_LAPACKE_DIR}")
+            list(APPEND _lib_env "${ENV_LAPACKE_DIR}/lib")
         else()
-            if(APPLE)
-                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            if(WIN32)
+                string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
             else()
-                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                if(APPLE)
+                    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+                else()
+                    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                endif()
+                list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+                list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
             endif()
-            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
         list(REMOVE_DUPLICATES _lib_env)
 
@@ -340,12 +360,14 @@ else(LAPACK_FOUND)
 
 endif(LAPACK_FOUND)
 
-if (LAPACKE_LIBRARIES AND NOT LAPACKE_DIR)
+if (LAPACKE_LIBRARIES)
     list(GET LAPACKE_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-        set(LAPACKE_DIR "${not_cached_dir}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
+        set(LAPACKE_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
+    else()
+        set(LAPACKE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
     endif()
 endif()
 
