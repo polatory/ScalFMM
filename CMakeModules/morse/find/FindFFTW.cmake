@@ -40,11 +40,8 @@
 #  FFTW_DIR             - Where to find the base directory of fftw
 #  FFTW_INCDIR          - Where to find the header files
 #  FFTW_LIBDIR          - Where to find the library files
-# The module can also look after the following environment variables if paths
-# are not given as cmake variable
-#  FFTW_DIR            - Where to find the base directory of fftw
-#  FFTW_INCDIR         - Where to find the header files
-#  FFTW_LIBDIR         - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: FFTW_DIR, FFTW_INCDIR, FFTW_LIBDIR
 # For MKL case and if no paths are given as hints, we will try to use the MKLROOT
 # environment variable
 
@@ -69,7 +66,7 @@
 if (NOT FFTW_FOUND)
     set(FFTW_DIR "" CACHE PATH "Installation directory of FFTW library given by user")
     if (NOT FFTW_FIND_QUIETLY)
-        message(STATUS "A cache variable, namely FFTW_DIR_USER, has been set to specify the install directory of FFTW")
+        message(STATUS "A cache variable, namely FFTW_DIR, has been set to specify the install directory of FFTW")
     endif()
 endif()
 
@@ -168,14 +165,15 @@ unset(_inc_env)
 set(ENV_MKLROOT "$ENV{MKLROOT}")
 set(ENV_FFTW_DIR "$ENV{FFTW_DIR}")
 set(ENV_FFTW_INCDIR "$ENV{FFTW_INCDIR}")
-if(ENV_FFTW_DIR)
+if(ENV_FFTW_INCDIR)
+    list(APPEND _inc_env "${ENV_FFTW_INCDIR}")
+elseif(ENV_FFTW_DIR)
     list(APPEND _inc_env "${ENV_FFTW_DIR}")
     list(APPEND _inc_env "${ENV_FFTW_DIR}/include")
-elseif(ENV_FFTW_INCDIR)
-    list(APPEND _inc_env "${ENV_FFTW_INCDIR}")
+    list(APPEND _inc_env "${ENV_FFTW_DIR}/include/fftw")
 else()
     if (ENV_MKLROOT)
-        list(APPEND _inc_env "${ENV_MKLROOT}")
+        list(APPEND _inc_env "${ENV_MKLROOT}/include/fftw")
     endif()
     # system variables
     if(WIN32)
@@ -212,8 +210,8 @@ else()
         set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
         find_path(FFTW_fftw3.h_DIRS
           NAMES fftw3.h
-          HINTS ${FFTW_DIR_USER}
-          PATH_SUFFIXES include)
+          HINTS ${FFTW_DIR}
+          PATH_SUFFIXES include include/fftw)
     else()
         set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
         find_path(FFTW_fftw3.h_DIRS
@@ -242,7 +240,9 @@ endif ()
 # --------------------------------------
 unset(_lib_env)
 set(ENV_FFTW_LIBDIR "$ENV{FFTW_LIBDIR}")
-if(ENV_FFTW_DIR)
+if(ENV_FFTW_LIBDIR)
+    list(APPEND _lib_env "${ENV_FFTW_LIBDIR}")
+elseif(ENV_FFTW_DIR)
     list(APPEND _lib_env "${ENV_FFTW_DIR}")
     list(APPEND _lib_env "${ENV_FFTW_DIR}/lib")
     if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
@@ -252,8 +252,6 @@ if(ENV_FFTW_DIR)
         list(APPEND _lib_env "${ENV_FFTW_DIR}/lib32")
         list(APPEND _lib_env "${ENV_FFTW_DIR}/lib/ia32")
     endif()
-elseif(ENV_FFTW_LIBDIR)
-    list(APPEND _lib_env "${ENV_FFTW_LIBDIR}")
 else()
     if (ENV_MKLROOT)
         if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
