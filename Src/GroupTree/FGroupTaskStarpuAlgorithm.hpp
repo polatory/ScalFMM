@@ -121,7 +121,7 @@ public:
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
-        conf.ncpus = MaxThreads;
+        // conf.ncpus = MaxThreads;
         FAssertLF(starpu_init(&conf) == 0);
 
         starpu_pthread_mutex_t initMutex;
@@ -161,7 +161,14 @@ public:
 
         initCodelet();
 
-        FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Thread " << MaxThreads << ")\n");
+        FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
+        FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CPU " << starpu_cpu_worker_get_count() << ")\n");
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+        FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max OpenCL " << starpu_opencl_worker_get_count() << ")\n");
+#endif
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CUDA " << starpu_cuda_worker_get_count() << ")\n");
+#endif
     }
 
     ~FGroupTaskStarPUAlgorithm(){

@@ -54,7 +54,7 @@ public:
 
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
-        kernels[workerId] = new OpenCLKernelClass();
+        kernels[workerId] = new OpenCLKernelClass(treeHeight);
         kernels[workerId]->initDeviceFromKernel(*originalKernel);
     }
 

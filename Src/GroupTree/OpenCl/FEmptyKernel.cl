@@ -475,7 +475,7 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
 
 __kernel void FOpenCL__upwardPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
                                   struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize,
-                                  __global void* userkernel, int nbSubCellGroups, int idxLevel){
+                                  int nbSubCellGroups, int idxLevel, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize);
     struct FOpenCLGroupOfCells subCellGroups[9];
     for(int idx = 0 ; idx < nbSubCellGroups ; ++idx){
@@ -521,8 +521,8 @@ __kernel void FOpenCL__upwardPassPerform(__global unsigned char* currentCellsPtr
 
 __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
                                              __global unsigned char* externalCellsPtr, size_t externalCellsSize,
-                                             __global void* userkernel, int idxLevel, const __global OutOfBlockInteraction* outsideInteractions,
-                                             int nbOutsideInteractions){
+                                             int idxLevel, const __global OutOfBlockInteraction* outsideInteractions,
+                                             int nbOutsideInteractions, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize);
     struct FOpenCLGroupOfCells cellsOther = BuildFOpenCLGroupOfCells(externalCellsPtr, externalCellsSize);
 
@@ -551,7 +551,7 @@ __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* curr
 
 
 __kernel  void FOpenCL__transferInPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
-                                       __global void* userkernel, int idxLevel){
+                                       int idxLevel, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize);
 
     const MortonIndex blockStartIdx = FOpenCLGroupOfCells_getStartingIndex(&currentCells);
@@ -591,8 +591,8 @@ __kernel  void FOpenCL__transferInPassPerform(__global unsigned char* currentCel
 
 __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
                                          __global unsigned char* externalCellsPtr, size_t externalCellsSize,
-                                         __global void* userkernel, int idxLevel, const __global OutOfBlockInteraction* outsideInteractions,
-                                         int nbOutsideInteractions){
+                                         int idxLevel, const __global OutOfBlockInteraction* outsideInteractions,
+                                         int nbOutsideInteractions, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize);
     struct FOpenCLGroupOfCells cellsOther = BuildFOpenCLGroupOfCells(externalCellsPtr, externalCellsSize);
 
@@ -626,7 +626,7 @@ __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentC
 
 __kernel void FOpenCL__downardPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
                                    struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize,
-                                   __global void* userkernel, int nbSubCellGroups, int idxLevel){
+                                   int nbSubCellGroups, int idxLevel, __global void* userkernel){
     FOpenCLAssertLF(nbSubCellGroups != 0);
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize);
     struct FOpenCLGroupOfCells subCellGroups[9];
@@ -672,8 +672,8 @@ __kernel void FOpenCL__downardPassPerform(__global unsigned char* currentCellsPt
 
 __kernel void FOpenCL__directInoutPassPerformMpi(__global unsigned char* containersPtr, size_t containersSize,
                                           __global unsigned char* externalContainersPtr, size_t externalContainersSize,
-                                          __global void* userkernel, const __global OutOfBlockInteraction* outsideInteractions,
-                                          int nbOutsideInteractions, const int treeHeight){
+                                          const __global OutOfBlockInteraction* outsideInteractions,
+                                          int nbOutsideInteractions, const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize);
     struct FOpenCLGroupOfParticles containersOther = BuildFOpenCLGroupOfParticles(externalContainersPtr, externalContainersSize);
 
@@ -696,7 +696,7 @@ __kernel void FOpenCL__directInoutPassPerformMpi(__global unsigned char* contain
 
 
 __kernel void FOpenCL__directInPassPerform(__global unsigned char* containersPtr, size_t containersSize,
-                                    __global void* userkernel, const int treeHeight){
+                                    const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize);
 
     const MortonIndex blockStartIdx = FOpenCLGroupOfParticles_getStartingIndex(&containers);
@@ -733,8 +733,8 @@ __kernel void FOpenCL__directInPassPerform(__global unsigned char* containersPtr
 
 __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containersPtr, size_t containersSize,
                                        __global unsigned char* externalContainersPtr, size_t externalContainersSize,
-                                       __global void* userkernel, const __global OutOfBlockInteraction* outsideInteractions,
-                                       int nbOutsideInteractions, const int treeHeight){
+                                       const __global OutOfBlockInteraction* outsideInteractions,
+                                       int nbOutsideInteractions, const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize);
     struct FOpenCLGroupOfParticles containersOther = BuildFOpenCLGroupOfParticles(externalContainersPtr, externalContainersSize);
 
