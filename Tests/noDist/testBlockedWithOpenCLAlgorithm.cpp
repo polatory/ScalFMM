@@ -37,6 +37,7 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+#include "../../Src/GroupTree/OpenCl/FTextReplacer.hpp"
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -47,9 +48,19 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
     // Initialize the types
-    struct OpenCLSource{
+    class OpenCLSource{
+        FTextReplacer kernelfile;
+
+    public:
+        OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
+            kernelfile.replaceAll("___FReal___", "double");
+            kernelfile.replaceAll("___FParticleValueClass___", "double");
+            kernelfile.replaceAll("___FCellClassSize___", 4);
+            kernelfile.replaceAll("___NbAttributesPerParticle___", 4);
+        }
+
         operator const char*(){
-            return "../../Src/GroupTree/OpenCl/FEmptyKernel.cl";
+            return kernelfile.getContent();
         }
     };
 

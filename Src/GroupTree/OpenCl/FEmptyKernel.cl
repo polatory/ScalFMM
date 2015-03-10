@@ -328,7 +328,7 @@ struct FOpenCLGroupOfCells {
     //< The size of the memoryBuffer
     int allocatedMemoryInByte;
     //< Pointer to a block memory
-    unsigned char* memoryBuffer;
+    __global unsigned char* memoryBuffer;
 
     //< Pointer to the header inside the block memory
     __global struct FOpenCLGroupOfCellsBlockHeader*    blockHeader;
@@ -401,7 +401,7 @@ void M2M(__global unsigned char*  pole, __global unsigned char* child[8], const 
 }
 
 void M2L(__global unsigned char* const pole, const __global unsigned char* distantNeighbors[343],
-    const int size, const int level, void* user_data) {
+    const int size, const int level, __global void* user_data) {
 }
 
 void L2L(__global const unsigned char* localCell, __global unsigned char* child[8], const int level, __global void* user_data) {

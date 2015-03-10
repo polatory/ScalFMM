@@ -83,7 +83,7 @@ public:
         if(filename){
             starpu_opencl_get_context (workerDevid, &context);
 
-            const int err = starpu_opencl_load_opencl_from_file(filename, &opencl_code, NULL);
+            const int err = starpu_opencl_load_opencl_from_string(filename, &opencl_code, NULL);
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "FOpenCL__bottomPassPerform", workerDevid) == CL_SUCCESS);
