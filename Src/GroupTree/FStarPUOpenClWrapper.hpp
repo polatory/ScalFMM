@@ -152,9 +152,6 @@ public:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
-
         cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
         cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
