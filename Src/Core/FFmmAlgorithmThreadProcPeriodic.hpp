@@ -39,6 +39,8 @@
 
 #include "FCoreCommon.hpp"
 
+#include <memory>
+
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FFmmAlgorithmThreadProcPeriodic
@@ -704,7 +706,7 @@ protected:
         //////////////////////////////////////////////////////////////////
 
         // pointer to send
-        FVector<typename OctreeClass::Iterator> toSend[nbProcess * OctreeHeight];
+        std::unique_ptr<FVector<typename OctreeClass::Iterator>[]> toSend(new FVector<typename OctreeClass::Iterator>[nbProcess * OctreeHeight]);
         // index
         long long int*const indexToSend = new long long int[nbProcess * OctreeHeight];
         memset(indexToSend, 0, sizeof(long long int) * nbProcess * OctreeHeight);
@@ -967,10 +969,10 @@ protected:
                 FLightOctree<CellClass> tempTree;
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(recvBuffer[idxLevel * nbProcess + idxProc]){
-                        const int toReceiveFromProcAtLevel = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<int>();
+                        const int toReceiveFromProcAtLevel = recvBuffer[idxLevel * nbProcess + idxProc]->template getValue<int>();
 
                         for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
-                            const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->FMpiBufferReader::getValue<MortonIndex>();
+                            const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->template getValue<MortonIndex>();
 
                             CellClass* const newCell = new CellClass;
                             newCell->setMortonIndex(cellIndex);
