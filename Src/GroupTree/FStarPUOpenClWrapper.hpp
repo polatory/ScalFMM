@@ -71,9 +71,9 @@ public:
     }
 
     static void bottomPassCallback(void *buffers[], void *cl_arg){
-        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t leafCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -88,7 +88,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void upwardPassCallback(void *buffers[], void *cl_arg){
-        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -101,7 +101,7 @@ public:
         size_t subCellGroupsSize[9];
         memset(subCellGroupsSize, 0, 9*sizeof(size_t));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[idxSubGroup+1]));
             subCellGroupsSize[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
@@ -115,9 +115,9 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 #ifdef STARPU_USE_MPI
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t externalCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -146,7 +146,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -159,9 +159,9 @@ public:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t externalCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -189,7 +189,7 @@ public:
     /// Downard Pass
     /////////////////////////////////////////////////////////////////////////////////////
     static void downardPassCallback(void *buffers[], void *cl_arg){
-        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -202,7 +202,7 @@ public:
         size_t subCellGroupsSize[9];
         memset(subCellGroupsSize, 0, 9*sizeof(size_t));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsPtr[idxSubGroup] = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[idxSubGroup+1]));
             subCellGroupsSize[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
@@ -217,9 +217,9 @@ public:
 
 #ifdef STARPU_USE_MPI
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t externalContainersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -246,7 +246,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
-        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t containerSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -256,9 +256,9 @@ public:
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
-        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t containerSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem externalContainersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t externalContainersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -285,9 +285,9 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void mergePassCallback(void *buffers[], void *cl_arg){
-        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[0]));
+        cl_mem leafCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t leafCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        cl_mem containersPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
         size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]);
 
         FStarPUPtrInterface* worker = nullptr;
