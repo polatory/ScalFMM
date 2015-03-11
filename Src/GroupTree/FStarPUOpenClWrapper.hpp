@@ -58,9 +58,15 @@ public:
         kernels[workerId]->initDeviceFromKernel(*originalKernel);
     }
 
+    void releaseKernel(const int workerId){
+        kernels[workerId]->releaseKernel();
+        delete kernels[workerId];
+        kernels[workerId] = nullptr;
+    }
+
     ~FStarPUOpenClWrapper(){
         for(int idxKernel = 0 ; idxKernel < STARPU_MAXOPENCLDEVS ; ++idxKernel ){
-            delete kernels[idxKernel];
+            FAssertLF(kernels[idxKernel] == nullptr);
         }
     }
 
@@ -73,6 +79,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
+
         kernel->bottomPassPerform(leafCellsPtr, leafCellsSize, containersPtr, containersSize);
     }
 

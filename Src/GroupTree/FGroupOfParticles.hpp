@@ -19,7 +19,7 @@
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupOfParticles {
     /** One header is allocated at the beginning of each block */
-    struct BlockHeader{
+    struct alignas(1) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
@@ -36,7 +36,7 @@ class FGroupOfParticles {
     };
 
     /** Information about a leaf */
-    struct LeafHeader {
+    struct alignas(1) LeafHeader {
         int nbParticles;
         size_t offSet;
     };

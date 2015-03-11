@@ -60,11 +60,14 @@ public:
         kernels[workerId] = FCuda__BuildCudaKernel<CudaKernelClass>(originalKernel);
     }
 
+    void releaseKernel(const int workerId){
+        FCuda__ReleaseCudaKernel(kernels[workerId]);
+        kernels[workerId] = nullptr;
+    }
+
     ~FStarPUCudaWrapper(){
         for(int idxKernel = 0 ; idxKernel < STARPU_MAXCUDADEVS ; ++idxKernel ){
-            if(kernels[idxKernel]){
-                FCuda__ReleaseCudaKernel(kernels[idxKernel]);
-            }
+            FAssertLF(kernels[idxKernel] == nullptr);
         }
     }
 

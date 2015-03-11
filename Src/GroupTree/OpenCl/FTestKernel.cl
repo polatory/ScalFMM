@@ -8,6 +8,8 @@ typedef long long int MortonIndex;
 #define FCellClassSize ___FCellClassSize___
 #define FCellUpOffset ___FCellUpOffset___
 #define FCellDownOffset ___FCellDownOffset___
+#define FCellMortonOffset ___FCellMortonOffset___
+#define FCellCoordinateOffset ___FCellCoordinateOffset___
 #define FOpenCLGroupOfCellsCellIsEmptyFlag  ((MortonIndex)-1)
 
 #define NbAttributesPerParticle ___NbAttributesPerParticle___
@@ -216,9 +218,11 @@ struct FOpenCLGroupAttachedLeaf EmptyFOpenCLGroupAttachedLeaf(){
     return leaf;
 }
 
-
 bool FOpenCLGroupAttachedLeaf_isAttachedToSomething(const struct FOpenCLGroupAttachedLeaf* group){
     return (group->nbParticles != -1);
+}
+bool FOpenCLGroupAttachedLeaf_getNbParticles(const struct FOpenCLGroupAttachedLeaf* group){
+    return (group->nbParticles);
 }
 
 
@@ -237,12 +241,13 @@ struct FOpenCLGroupOfParticlesBlockHeader{
     size_t attributeOffset;
     //< The total number of particles in the group
     int nbParticlesInGroup;
-};
+}__attribute__ ((aligned (1)));
+
 /** Information about a leaf */
 struct FOpenCLGroupOfParticlesLeafHeader {
     int nbParticles;
     size_t offSet;
-};
+}__attribute__ ((aligned (1)));
 
 
 struct FOpenCLGroupOfParticles {
@@ -274,8 +279,8 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
 
     // Move the pointers to the correct position
     group.blockHeader         = ((__global struct FOpenCLGroupOfParticlesBlockHeader*)group.memoryBuffer);
-    group.blockIndexesTable   = ((__global int*)group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader));
-    group.leafHeader          = ((__global struct FOpenCLGroupOfParticlesLeafHeader*)group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader)+(group.blockHeader->blockIndexesTableSize*sizeof(int)));
+    group.blockIndexesTable   = ((__global int*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader)));
+    group.leafHeader          = ((__global struct FOpenCLGroupOfParticlesLeafHeader*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader)+(group.blockHeader->blockIndexesTableSize*sizeof(int))));
 
     // Init particle pointers
     group.blockHeader->positionOffset = (sizeof(FReal) * group.blockHeader->nbParticlesAllocatedInGroup);
@@ -286,7 +291,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
 
     // Redirect pointer to data
     group.blockHeader->attributeOffset = (sizeof(FParticleValueClass) * group.blockHeader->nbParticlesAllocatedInGroup);
-    __global unsigned char* previousPointer = ((__global unsigned char*)group.particlePosition[2] + group.blockHeader->nbParticlesAllocatedInGroup);
+    __global unsigned char* previousPointer = ((__global unsigned char*)(group.particlePosition[2] + group.blockHeader->nbParticlesAllocatedInGroup));
     for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
         group.particleAttributes[idxAttribute] = ((__global FParticleValueClass*)previousPointer);
         previousPointer += sizeof(FParticleValueClass)*group.blockHeader->nbParticlesAllocatedInGroup;
@@ -298,6 +303,9 @@ MortonIndex FOpenCLGroupOfParticles_getStartingIndex(const struct FOpenCLGroupOf
 }
 MortonIndex FOpenCLGroupOfParticles_getEndingIndex(const struct FOpenCLGroupOfParticles* group) {
     return group->blockHeader->endingIndex;
+}
+int FOpenCLGroupOfParticles_getNumberOfLeaves(const struct FOpenCLGroupOfParticles* group) {
+    return group->blockHeader->numberOfLeavesInBlock;
 }
 bool FOpenCLGroupOfParticles_isInside(const struct FOpenCLGroupOfParticles* group, const MortonIndex inIndex) {
     return group->blockHeader->startingIndex <= inIndex && inIndex < group->blockHeader->endingIndex;
@@ -323,7 +331,7 @@ struct FOpenCLGroupOfCellsBlockHeader{
     MortonIndex endingIndex;
     int numberOfCellsInBlock;
     int blockIndexesTableSize;
-};
+} __attribute__ ((aligned (1)));
 
 
 struct FOpenCLGroupOfCells {
@@ -420,13 +428,18 @@ void P2PRemote(const int3 pos,
 }
 
 MortonIndex getMortonIndex(__global const unsigned char* cell, __global void* user_data) {
-    return 0;
+    __global MortonIndex* mindex = (__global MortonIndex*)(cell+FCellMortonOffset);
+    return (*mindex);
 }
 
 int3 getCoordinate(__global const unsigned char* cell, __global void* user_data) {
+    __global int* cellcoord = (__global int*)(cell+FCellCoordinateOffset);
     int3 coord;
-    coord.x = coord.y = coord.z = 0;
+    coord.x = cellcoord[0];
+    coord.y = cellcoord[1];
+    coord.z = cellcoord[2];
     return coord;
+    
 }
 
 
@@ -449,13 +462,13 @@ int3 getCoordinate(__global const unsigned char* cell, __global void* user_data)
 
 __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, size_t leafCellsSize,
                                          __global unsigned char* containersPtr, size_t containersSize,
-                                         __global void* userkernel ){
+                                         __global void* userkernel/*, __global int* output */){                                             
     struct FOpenCLGroupOfCells leafCells = BuildFOpenCLGroupOfCells(leafCellsPtr, leafCellsSize);
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize);
 
     const MortonIndex blockStartIdx = FOpenCLGroupOfCells_getStartingIndex(&leafCells);
     const MortonIndex blockEndIdx = FOpenCLGroupOfCells_getEndingIndex(&leafCells);
-
+    
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
         __global unsigned char* cell = FOpenCLGroupOfCells_getCell(&leafCells, mindex);
         if(cell){
@@ -463,6 +476,25 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
             struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, mindex);
             FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
             P2M(cell, particles, userkernel);
+            /*output[0] = blockStartIdx;
+            output[1] = blockEndIdx;
+            output[2] = particles.nbParticles;
+            output[3] = getMortonIndex(cell, userkernel);
+            output[4] = mindex;
+            output[5] = FOpenCLGroupOfCells_exists(&leafCells, mindex);
+            output[6] = FOpenCLGroupOfParticles_getStartingIndex(&containers);
+            output[7] = FOpenCLGroupOfParticles_getEndingIndex(&containers);
+            output[8] = FOpenCLGroupOfParticles_getNumberOfLeaves(&containers);
+            int count = 0;
+            for(int idx = FOpenCLGroupOfParticles_getStartingIndex(&containers) ; idx < FOpenCLGroupOfParticles_getEndingIndex(&containers) ; ++idx){
+                if((&containers)->blockIndexesTable[idx - (&containers)->blockHeader->startingIndex] != -1) count++;            
+            }
+            output[8] = FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles);
+            output[9] = FOpenCLGroupAttachedLeaf_getNbParticles(&particles);//sizeof(struct FOpenCLGroupOfParticlesBlockHeader);//count;
+            //return;//TODO
+            //__global long long* up = (__global long long*)(((unsigned char*)output)+FCellUpOffset);
+            //(*up) = particles.nbParticles;
+            return;*/
         }
     }
 }

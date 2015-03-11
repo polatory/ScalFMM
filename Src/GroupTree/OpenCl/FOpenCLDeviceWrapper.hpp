@@ -112,17 +112,42 @@ public:
     }
 
     virtual void releaseKernel(){
+        int err;
+        err = starpu_opencl_release_kernel(kernel_bottomPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_upwardPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_transferInoutPassPerformMpi);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_transferInPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_transferInoutPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_downardPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_directInoutPassPerformMpi);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_directInoutPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_directInPassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_release_kernel(kernel_mergePassPerform);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        err = starpu_opencl_unload_opencl(&opencl_code);
+        if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
     virtual ~FOpenCLDeviceWrapper(){
-        // Release
-        releaseKernel();
-        KernelFilenameClass kernelFilename;
-        const char* filename = kernelFilename;
-        if(filename){
-            const int err = starpu_opencl_unload_opencl(&opencl_code);
-            if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-        }
     }
 
     cl_context& getOpenCLContext(){
@@ -130,14 +155,39 @@ public:
     }
 
     void bottomPassPerform(cl_mem leafCellsPtr,  size_t leafCellsSize, cl_mem containersPtr,  size_t containersSize){
-        SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &containersPtr,  &containersSize, &user_data);
+        /*cl_int errcode_ret;
+        const int size = sizeof(FTestCell);
+        int* output = new int[size];
+        cl_mem outputcl = clCreateBuffer(getOpenCLContext(),
+           CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
+           size*sizeof(int),
+           (void*)output, &errcode_ret);
+        FAssertLF(outputcl && errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);*/
+
+        SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &containersPtr,  &containersSize, &user_data/*, &outputcl*/);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_bottomPassPerform, kernel_bottomPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+        /*errcode_ret = clEnqueueReadBuffer(queue_bottomPassPerform, outputcl,
+                CL_TRUE, // blocking read
+                0, // write from the start
+                sizeof(int) * size,
+                output, 0, NULL, NULL);
+       FAssertLF(errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);
+
+        for(int idx = 0 ; idx < 10 ; ++idx){
+            std::cout << "value " << idx << " = " << output[idx] << "\n";
+        }
+//       FTestCell* cell = (FTestCell*)output;
+//       std::cout << " cell->getDataUp() " << cell->getDataUp() << "\n";
+
+        clReleaseMemObject(outputcl);
+        delete output;*/
     }
 
 
     void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
+        return; // TODO
         Uptr9 ptrs;
         memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
         size_t9 sizes;
@@ -152,6 +202,7 @@ public:
     void transferInoutPassPerformMpi(cl_mem currentCellsPtr,
                          size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                      size_t  outsideInteractionsSize){
+        return; // TODO
         SetKernelArgs(kernel_transferInoutPassPerformMpi, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr,  &externalCellsSize, &idxLevel, &outsideInteractionsCl,
                                                                                   &outsideInteractionsSize, &user_data);
         size_t dim = 1;
@@ -169,6 +220,7 @@ public:
     void transferInoutPassPerform(cl_mem currentCellsPtr,
                           size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                   size_t outsideInteractionsSize){
+        return; // TODO
         SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr, &externalCellsSize, &idxLevel,
                       &outsideInteractionsCl,&outsideInteractionsSize, &user_data);
         size_t dim = 1;
@@ -178,6 +230,7 @@ public:
 
     void downardPassPerform(cl_mem currentCellsPtr,
                                      size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
+        return; // TODO
         Uptr9 ptrs;
         memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
         size_t9 sizes;
@@ -193,6 +246,7 @@ public:
     void directInoutPassPerformMpi(cl_mem containersPtr,
                    size_t containersSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                                                                                 size_t outsideInteractionsSize){
+        return; // TODO
         SetKernelArgs(kernel_directInoutPassPerformMpi, 0, &containersPtr,
                       &containersSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl,&outsideInteractionsSize, &treeHeight, &user_data);
         size_t dim = 1;
@@ -201,6 +255,7 @@ public:
     }
 
     void directInPassPerform(cl_mem containersPtr,  size_t containerSize){
+        return; // TODO
         SetKernelArgs(kernel_directInPassPerform, 0, &containersPtr, &containerSize, &treeHeight, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
@@ -210,6 +265,7 @@ public:
     void directInoutPassPerform(cl_mem containersPtr,
                           size_t containerSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                           size_t  outsideInteractionsSize){
+        return; // TODO
         SetKernelArgs(kernel_directInoutPassPerform, 0, &containersPtr,
                       &containerSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl, &outsideInteractionsSize, &treeHeight, &user_data);
         size_t dim = 1;
@@ -219,6 +275,7 @@ public:
 
     void mergePassPerform(cl_mem leafCellsPtr,
                             size_t leafCellsSize, cl_mem containersPtr, size_t containersSize){
+        return; // TODO
         SetKernelArgs(kernel_mergePassPerform, 0, &leafCellsPtr, &leafCellsSize, &containersPtr, &containersSize, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_mergePassPerform, kernel_mergePassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);

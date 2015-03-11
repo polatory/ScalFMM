@@ -42,13 +42,21 @@
 struct FTestCell_Alignement{
     static const int dataUp;
     static const int dataDown;
+    static const int mindex;
+    static const int coord;
 };
 
 const int FTestCell_Alignement::dataUp = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->dataUp)) - std::size_t(0xF00);
 const int FTestCell_Alignement::dataDown = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->dataDown)) - std::size_t(0xF00);
+const int FTestCell_Alignement::mindex = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->mortonIndex)) - std::size_t(0xF00);
+const int FTestCell_Alignement::coord = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->coordinate)) - std::size_t(0xF00);
 
 
 int main(int argc, char* argv[]){
+    setenv("STARPU_NCPU","0",1);
+    setenv("STARPU_NOPENCL","1",1);
+    setenv("STARPU_OPENCL_ONLY_ON_CPUS","1",1);
+
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
@@ -70,6 +78,8 @@ int main(int argc, char* argv[]){
             kernelfile.replaceAll("___NbAttributesPerParticle___", 2);
             kernelfile.replaceAll("___FCellUpOffset___", FTestCell_Alignement::dataUp);
             kernelfile.replaceAll("___FCellDownOffset___", FTestCell_Alignement::dataDown);
+            kernelfile.replaceAll("___FCellMortonOffset___", FTestCell_Alignement::mindex);
+            kernelfile.replaceAll("___FCellCoordinateOffset___", FTestCell_Alignement::coord);
         }
 
         operator const char*(){
@@ -150,7 +160,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
-    groupalgo.execute();
+    groupalgo.execute(FFmmP2M); // TODO
 
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels

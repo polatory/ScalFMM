@@ -162,7 +162,9 @@ public:
         initCodelet();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
+#ifdef STARPU_USE_CPU
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CPU " << starpu_cpu_worker_get_count() << ")\n");
+#endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max OpenCL " << starpu_opencl_worker_get_count() << ")\n");
 #endif
@@ -172,11 +174,40 @@ public:
     }
 
     ~FGroupTaskStarPUAlgorithm(){
+        starpu_resume();
+
         cleanHandle();
         delete[] handles_up;
         delete[] handles_down;
 
-        starpu_resume();
+        starpu_pthread_mutex_t releaseMutex;
+        starpu_pthread_mutex_init(&releaseMutex, NULL);
+#ifdef STARPU_USE_CPU
+        FStarPUUtils::ExecOnWorkers(STARPU_CPU, [&](){
+            starpu_pthread_mutex_lock(&releaseMutex);
+            cpuWrapper.releaseKernel(starpu_worker_get_id());
+            starpu_pthread_mutex_unlock(&releaseMutex);
+        });
+        wrappers.set(FSTARPU_CPU_IDX, &cpuWrapper);
+#endif
+#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, [&](){
+            starpu_pthread_mutex_lock(&releaseMutex);
+            cudaWrapper.releaseKernel(starpu_worker_get_id());
+            starpu_pthread_mutex_unlock(&releaseMutex);
+        });
+        wrappers.set(FSTARPU_CUDA_IDX, &cudaWrapper);
+#endif
+#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, [&](){
+            starpu_pthread_mutex_lock(&releaseMutex);
+            openclWrapper.releaseKernel(starpu_worker_get_id());
+            starpu_pthread_mutex_unlock(&releaseMutex);
+        });
+        wrappers.set(FSTARPU_OPENCL_IDX, &openclWrapper);
+#endif
+        starpu_pthread_mutex_destroy(&releaseMutex);
+
         starpu_shutdown();
     }
 
