@@ -561,7 +561,7 @@ public:
     FFmaGenericWriter(const std::string & filename): binaryFile(false) {
         std::string ext(".bfma");
         // open particle file
-        if(filename.find(ext) !=std::string::npos) {
+        if(filename.find(".bfma") !=std::string::npos) {
             binaryFile = true;
             this->file = new std::fstream (filename.c_str(),std::ifstream::out| std::ios::binary);
         }

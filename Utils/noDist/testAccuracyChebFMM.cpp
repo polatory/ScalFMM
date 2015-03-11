@@ -73,201 +73,199 @@
 //
 
 void usage() {
-	std::cout << "Driver for Chebyshev interpolation kernel  (1/r kernel)" << std::endl;
-	std::cout <<	 "Options  "<< std::endl
-			<<     "      -help         to see the parameters    " << std::endl
-			<<	  "      -depth       the depth of the octree   "<< std::endl
-			<<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
-			<<     "      -f   name    name specifies the name of the particle distribution" << std::endl
-			<<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
+  std::cout << "Driver for Chebyshev interpolation kernel  (1/r kernel)" << std::endl;
+  std::cout <<	 "Options  "<< std::endl
+	    <<     "      -help         to see the parameters    " << std::endl
+	    <<	  "      -depth       the depth of the octree   "<< std::endl
+	    <<	  "      -subdepth  specifies the size of the sub octree   " << std::endl
+	    <<     "      -f   name    name specifies the name of the particle distribution" << std::endl
+	    <<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
 }
 
 // Simply create particles and try the kernels
 struct TempMainStruct{
-template <const unsigned int ORDER>
-static void Run(int argc, char* argv[])
-{
+  template <const unsigned int ORDER>
+  static void Run(int argc, char* argv[])
+  {
     //
     const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/UTest/unitCubeRef20kDouble.bfma" );
-	const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
-	const unsigned int TreeHeight        = FParameters::getValue(argc, argv, "-depth", 5);
-	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
-	const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
+    const std::string filename                = FParameters::getStr(argc,argv,"-f", defaultFile.c_str());
+    const unsigned int TreeHeight        = FParameters::getValue(argc, argv, "-depth", 5);
+    const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, "-subdepth", 2);
+    const unsigned int NbThreads        = FParameters::getValue(argc, argv, "-t", 1);
 
 #ifdef _OPENMP
-	omp_set_num_threads(NbThreads);
-	std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+    omp_set_num_threads(NbThreads);
+    std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
 #else
-	std::cout << "\n>> Sequential version.\n" << std::endl;
+    std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
-	//
-	std::cout <<	 "Parameters  "<< std::endl
-			<<     "      Octree Depth      "<< TreeHeight <<std::endl
-			<<	  "      SubOctree depth " << SubTreeHeight <<std::endl
-			<<     "      Input file  name: " <<filename <<std::endl
-			<<     "      Thread number:  " << NbThreads <<std::endl
-			<<std::endl;
-	//
-	// init timer
-	FTic time;
+    //
+    std::cout <<	 "Parameters  "<< std::endl
+	      <<     "      Octree Depth      "<< TreeHeight <<std::endl
+	      <<	  "      SubOctree depth " << SubTreeHeight <<std::endl
+	      <<     "      Input file  name: " <<filename <<std::endl
+	      <<     "      Thread number:  " << NbThreads <<std::endl
+	      <<std::endl;
+    //
+    // init timer
+    FTic time;
 
-	// open particle file
-	////////////////////////////////////////////////////////////////////
-	//
-	FFmaGenericLoader loader(filename);
-	//
-	FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+    // open particle file
+    ////////////////////////////////////////////////////////////////////
+    //
+    FFmaGenericLoader loader(filename);
+    //
+    FSize nbParticles = loader.getNumberOfParticles() ;
+    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
 
-	loader.fillParticle(particles,nbParticles);
-	FReal  energyD = 0.0 ;
-	/////////////////////////////////////////////////////////////////////////////////////////////////
-	// Compute direct energy
-	/////////////////////////////////////////////////////////////////////////////////////////////////
+    loader.fillParticle(particles,nbParticles);
+    FReal  energyD = 0.0 ;
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    // Compute direct energy
+    /////////////////////////////////////////////////////////////////////////////////////////////////
 
-	for(int idx = 0 ; idx <  nbParticles  ; ++idx){
-	  energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
-	}
+    for(int idx = 0 ; idx <  nbParticles  ; ++idx){
+      energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
+    }
 
-	//
-	////////////////////////////////////////////////////////////////////
-	// begin Chebyshev kernel
+    //
+    ////////////////////////////////////////////////////////////////////
+    // begin Chebyshev kernel
 
-	// accuracy
-	// typedefs
-	typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                                    LeafClass;
+    // accuracy
+    // typedefs
+    typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
+    typedef FSimpleLeaf< ContainerClass >                                    LeafClass;
 
-	typedef FChebCell<ORDER>                                                    CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
-	//
-	typedef FInterpMatrixKernelR                                        MatrixKernelClass;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
-	//
+    typedef FChebCell<ORDER>                                                    CellClass;
+    typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
+    //
+    typedef FInterpMatrixKernelR                                        MatrixKernelClass;
+    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+    //
 #ifdef _OPENMP
-	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #else
-	typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #endif
-	// init oct-tree
-	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+    // init oct-tree
+    OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
 
-	{ // -----------------------------------------------------
-		std::cout << "Creating & Inserting " <<nbParticles
-																			<< " particles ..." << std::endl;
-		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-		time.tic();
-		//
-		for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
-			//
-			// Read particle per particle from file
-			//
-			// put particle in octree
-		    tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
-		}
-
-		time.tac();
-		std::cout << "Done  " << "(@Creating and Inserting Particles = "
-				<< time.elapsed() << " s) ." << std::endl;
-	} // -----------------------------------------------------
-
-	{ // -----------------------------------------------------
-		std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
-		const MatrixKernelClass matrixClass;
-		time.tic();
-		//
-		KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&matrixClass);
-		//
-		FmmClass algorithm(&tree, &kernels);
-		//
-		algorithm.execute();   // Here the call of the FMM algorithm
-		//
-		time.tac();
-		std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s) ." << std::endl;
-	}
-	// -----------------------------------------------------
+    { // -----------------------------------------------------
+      std::cout << "Creating & Inserting " <<nbParticles
+		<< " particles ..." << std::endl;
+      std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+      time.tic();
+      //
+      for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 	//
-	// Some output
+	// Read particle per particle from file
 	//
-	//
-	{ // -----------------------------------------------------
-	  FReal energy =0.0;
+	// put particle in octree
+	tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
+      }
 
-		//
-		//   Loop over all leaves
-		//
-		std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
-		std::cout << std::scientific;
-		std::cout.precision(10) ;
+      time.tac();
+      std::cout << "Done  " << "(@Creating and Inserting Particles = "
+		<< time.elapsed() << " s) ." << std::endl;
+    } // -----------------------------------------------------
 
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		// Compare
-		/////////////////////////////////////////////////////////////////////////////////////////////////
-		printf("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz, f;
-		{ // Check that each particle has been summed with all other
+    { // -----------------------------------------------------
+      std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
+      const MatrixKernelClass matrixClass;
+      time.tic();
+      //
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&matrixClass);
+      //
+      FmmClass algorithm(&tree, &kernels);
+      //
+      algorithm.execute();   // Here the call of the FMM algorithm
+      //
+      time.tac();
+      std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s) ." << std::endl;
+    }
+    // -----------------------------------------------------
+    //
+    // Some output
+    //
+    //
+    { // -----------------------------------------------------
+      FReal energy =0.0;
 
-			tree.forEachLeaf([&](LeafClass* leaf){
-				const FReal*const potentials        = leaf->getTargets()->getPotentials();
-				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
-				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
-				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-				const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
+      //
+      //   Loop over all leaves
+      //
+      std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
+      std::cout << std::scientific;
+      std::cout.precision(10) ;
 
-				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-					const int indexPartOrig = indexes[idxPart];
-					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
-					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-					//	const std::string outputFile("accuracyChebyschev.txt") ;
-			fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
-					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
-					f.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-					f.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
-					f.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
-					energy   += potentials[idxPart]*physicalValues[idxPart];
-				}
-			});
-		}
-		std::cout << energy << " " << energyD << std::endl;
-		delete[] particles;
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      // Compare
+      /////////////////////////////////////////////////////////////////////////////////////////////////
+      printf("Compute Diff...");
+      FMath::FAccurater potentialDiff;
+      FMath::FAccurater fx, fy, fz, f;
+      { // Check that each particle has been summed with all other
 
-		f.setNbElements(nbParticles);
-		std::cout << "FChebSymKernel Energy "  << FMath::Abs(energy-energyD) <<  "  Relative     "<< FMath::Abs(energy-energyD) / FMath::Abs(energyD) <<std::endl;
-		std::cout << "FChebSymKernel Potential " << potentialDiff << std::endl;
-		std::cout << "FChebSymKernel Fx " << fx << std::endl;
-		std::cout << "FChebSymKernel Fy " << fy << std::endl;
-		std::cout << "FChebSymKernel Fz " << fz << std::endl;
-		std::cout << "FChebSymKernel F  " << f << std::endl;
+	tree.forEachLeaf([&](LeafClass* leaf){
+	    const FReal*const potentials        = leaf->getTargets()->getPotentials();
+	    const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+	    const FReal*const forcesX            = leaf->getTargets()->getForcesX();
+	    const FReal*const forcesY            = leaf->getTargets()->getForcesY();
+	    const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
+	    const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+	    const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
 
-		const std::string outputFile("accuracyChebyschev.txt") ;
-		std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
+	    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+	      const int indexPartOrig = indexes[idxPart];
+	      potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+	      fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+	      //	const std::string outputFile("accuracyChebyschev.txt") ;
+	      fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+	      fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
+	      f.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+	      f.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+	      f.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
+	      energy   += potentials[idxPart]*physicalValues[idxPart];
+	    }
+	  });
+      }
+      std::cout << energy << " " << energyD << std::endl;
+      delete[] particles;
 
-		output << ORDER << "   " << FMath::Abs(energy-energyD) / FMath::Abs(energyD)
-		<< "  " << potentialDiff.getRelativeL2Norm() << "  "<< potentialDiff.getRelativeInfNorm()<< "  "<< potentialDiff.getRMSError()
-		<< "  " << f.getRelativeL2Norm() << "  "<< f.getRelativeInfNorm() <<"  "<< f.getRMSError()
- << std::endl;
-	}
-	// -----------------------------------------------------
+      f.setNbElements(nbParticles);
+      std::cout << "FChebSymKernel Energy "  << FMath::Abs(energy-energyD) <<  "  Relative     "<< FMath::Abs(energy-energyD) / FMath::Abs(energyD) <<std::endl;
+      std::cout << "FChebSymKernel Potential " << potentialDiff << std::endl;
+      std::cout << "FChebSymKernel Fx " << fx << std::endl;
+      std::cout << "FChebSymKernel Fy " << fy << std::endl;
+      std::cout << "FChebSymKernel Fz " << fz << std::endl;
+      std::cout << "FChebSymKernel F  " << f << std::endl;
 
+      const std::string outputFile("accuracyChebyschev.txt") ;
+      std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
 
-	//return 0;
-}
+      output << ORDER << "   " << FMath::Abs(energy-energyD) / FMath::Abs(energyD)
+	     << "  " << potentialDiff.getRelativeL2Norm() << "  "<< potentialDiff.getRelativeInfNorm()<< "  "<< potentialDiff.getRMSError()
+	     << "  " << f.getRelativeL2Norm() << "  "<< f.getRelativeInfNorm() <<"  "<< f.getRMSError()
+	     << std::endl;
+    }
+    // -----------------------------------------------------
+
+  }
 };
 
 
 int main(int argc, char** argv){
-//	const std::string outputFile("accuracyChebyschev.txt") ;
-//	std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
-    FHelpDescribeAndExit(argc, argv,
-                         "Test for different accuracy).",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
-                         FParameterDefinitions::NbThreads);
-    //
+  //	const std::string outputFile("accuracyChebyschev.txt") ;
+  //	std::ofstream output(outputFile,std::fstream::out | std::fstream::app);
+  FHelpDescribeAndExit(argc, argv,
+		       "Test for different accuracy).",
+		       FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
+		       FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+		       FParameterDefinitions::NbThreads);
+  //
   const unsigned int order = FParameters::getValue(argc, argv, "-order", 5);
   std::cout << "Order given by user is : " << order << "\n";
 

@@ -39,6 +39,8 @@
 #  CBLAS_DIR              - Where to find the base directory of cblas
 #  CBLAS_INCDIR           - Where to find the header files
 #  CBLAS_LIBDIR           - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: CBLAS_DIR, CBLAS_INCDIR, CBLAS_LIBDIR
 #
 # CBLAS could be directly embedded in BLAS library (ex: Intel MKL) so that
 # we test a cblas function with the blas libraries found and set CBLAS
@@ -148,17 +150,28 @@ if (BLAS_FOUND)
         # Add system include paths to search include
         # ------------------------------------------
         unset(_inc_env)
-        if(WIN32)
-            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        set(ENV_CBLAS_DIR "$ENV{CBLAS_DIR}")
+        set(ENV_CBLAS_INCDIR "$ENV{CBLAS_INCDIR}")
+        if(ENV_CBLAS_INCDIR)
+            list(APPEND _inc_env "${ENV_CBLAS_INCDIR}")
+        elseif(ENV_CBLAS_DIR)
+            list(APPEND _inc_env "${ENV_CBLAS_DIR}")
+            list(APPEND _inc_env "${ENV_CBLAS_DIR}/include")
+            list(APPEND _inc_env "${ENV_CBLAS_DIR}/include/cblas")
         else()
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
+            if(WIN32)
+                string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+                list(APPEND _inc_env "${_path_env}")
+            else()
+                string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+                list(APPEND _inc_env "${_path_env}")
+                string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+                list(APPEND _inc_env "${_path_env}")
+            endif()
         endif()
         list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
         list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -179,7 +192,7 @@ if (BLAS_FOUND)
                 find_path(CBLAS_cblas.h_DIRS
                 NAMES cblas.h
                 HINTS ${CBLAS_DIR}
-                PATH_SUFFIXES include)
+                PATH_SUFFIXES "include" "include/cblas")
             else()
                 set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
                 find_path(CBLAS_cblas.h_DIRS
@@ -207,16 +220,24 @@ if (BLAS_FOUND)
         # Add system library paths to search lib
         # --------------------------------------
         unset(_lib_env)
-        if(WIN32)
-            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+        set(ENV_CBLAS_LIBDIR "$ENV{CBLAS_LIBDIR}")
+        if(ENV_CBLAS_LIBDIR)
+            list(APPEND _lib_env "${ENV_CBLAS_LIBDIR}")
+        elseif(ENV_CBLAS_DIR)
+            list(APPEND _lib_env "${ENV_CBLAS_DIR}")
+            list(APPEND _lib_env "${ENV_CBLAS_DIR}/lib")
         else()
-            if(APPLE)
-                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            if(WIN32)
+                string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
             else()
-                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                if(APPLE)
+                    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+                else()
+                    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                endif()
+                list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+                list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
             endif()
-            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
         list(REMOVE_DUPLICATES _lib_env)
 
@@ -337,12 +358,14 @@ else(BLAS_FOUND)
 
 endif(BLAS_FOUND)
 
-if (CBLAS_LIBRARIES AND NOT CBLAS_DIR)
+if (CBLAS_LIBRARIES)
     list(GET CBLAS_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-        set(CBLAS_DIR "${not_cached_dir}" CACHE PATH "Installation directory of CBLAS library" FORCE)
+        set(CBLAS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of CBLAS library" FORCE)
+    else()
+        set(CBLAS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of CBLAS library" FORCE)
     endif()
 endif()
 

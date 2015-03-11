@@ -48,6 +48,8 @@
 #  CHAMELEON_DIR              - Where to find the base directory of chameleon
 #  CHAMELEON_INCDIR           - Where to find the header files
 #  CHAMELEON_LIBDIR           - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: CHAMELEON_DIR, CHAMELEON_INCDIR, CHAMELEON_LIBDIR
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -162,7 +164,7 @@ if(PKG_CONFIG_EXECUTABLE)
 
 endif()
 
-if( (NOT PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR NOT CHAMELEON_FOUND OR CHAMELEON_DIR )
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR (CHAMELEON_DIR) )
 
     if (NOT CHAMELEON_FIND_QUIETLY)
         message(STATUS "Looking for CHAMELEON - PkgConfig not used")
@@ -370,17 +372,27 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR NOT CHAMELEON_FOUND O
     # Add system include paths to search include
     # ------------------------------------------
     unset(_inc_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+    set(ENV_CHAMELEON_DIR "$ENV{CHAMELEON_DIR}")
+    set(ENV_CHAMELEON_INCDIR "$ENV{CHAMELEON_INCDIR}")
+    if(ENV_CHAMELEON_INCDIR)
+        list(APPEND _inc_env "${ENV_CHAMELEON_INCDIR}")
+    elseif(ENV_CHAMELEON_DIR)
+        list(APPEND _inc_env "${ENV_CHAMELEON_DIR}")
+        list(APPEND _inc_env "${ENV_CHAMELEON_DIR}/include")
+        list(APPEND _inc_env "${ENV_CHAMELEON_DIR}/include/chameleon")
     else()
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
+        if(WIN32)
+            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+        endif()
     endif()
     list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
     list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -429,16 +441,24 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR NOT CHAMELEON_FOUND O
     # Add system library paths to search lib
     # --------------------------------------
     unset(_lib_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    set(ENV_CHAMELEON_LIBDIR "$ENV{CHAMELEON_LIBDIR}")
+    if(ENV_CHAMELEON_LIBDIR)
+        list(APPEND _lib_env "${ENV_CHAMELEON_LIBDIR}")
+    elseif(ENV_CHAMELEON_DIR)
+        list(APPEND _lib_env "${ENV_CHAMELEON_DIR}")
+        list(APPEND _lib_env "${ENV_CHAMELEON_DIR}/lib")
     else()
-        if(APPLE)
-            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        if(WIN32)
+            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
         else()
-            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            if(APPLE)
+                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            else()
+                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            endif()
+            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
-        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif()
     list(REMOVE_DUPLICATES _lib_env)
 
@@ -735,9 +755,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR NOT CHAMELEON_FOUND O
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(CHAMELEON_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR NOT CHAMELEON_FOUND OR CHAMELEON_DIR)
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUND) OR (CHAMELEON_DIR) )
 
-if (CHAMELEON_LIBRARIES AND NOT CHAMELEON_DIR)
+if (CHAMELEON_LIBRARIES)
     if (CHAMELEON_LIBRARY_DIRS)
         foreach(dir ${CHAMELEON_LIBRARY_DIRS})
             if ("${dir}" MATCHES "chameleon")
@@ -750,7 +770,9 @@ if (CHAMELEON_LIBRARIES AND NOT CHAMELEON_DIR)
     endif()
     if (${first_lib_path} MATCHES "/lib(32|64)?$")
         string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-        set(CHAMELEON_DIR "${not_cached_dir}" CACHE PATH "Installation directory of CHAMELEON library" FORCE)
+        set(CHAMELEON_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of CHAMELEON library" FORCE)
+    else()
+        set(CHAMELEON_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of CHAMELEON library" FORCE)
     endif()
 endif()
 

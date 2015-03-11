@@ -25,6 +25,8 @@
 #  HWLOC_DIR             - Where to find the base directory of hwloc
 #  HWLOC_INCDIR          - Where to find the header files
 #  HWLOC_LIBDIR          - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: HWLOC_DIR, HWLOC_INCDIR, HWLOC_LIBDIR
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -75,7 +77,7 @@ if(PKG_CONFIG_EXECUTABLE)
 
 endif()
 
-if( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_DIR)
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_DIR) )
 
     if (NOT HWLOC_FIND_QUIETLY)
         message(STATUS "Looking for HWLOC - PkgConfig not used")
@@ -87,17 +89,27 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_
     # Add system include paths to search include
     # ------------------------------------------
     unset(_inc_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+    set(ENV_HWLOC_DIR "$ENV{HWLOC_DIR}")
+    set(ENV_HWLOC_INCDIR "$ENV{HWLOC_INCDIR}")
+    if(ENV_HWLOC_INCDIR)
+        list(APPEND _inc_env "${ENV_HWLOC_INCDIR}")
+    elseif(ENV_HWLOC_DIR)
+        list(APPEND _inc_env "${ENV_HWLOC_DIR}")
+        list(APPEND _inc_env "${ENV_HWLOC_DIR}/include")
+        list(APPEND _inc_env "${ENV_HWLOC_DIR}/include/hwloc")
     else()
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
+        if(WIN32)
+            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+        endif()
     endif()
     list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
     list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -120,7 +132,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_
             find_path(HWLOC_hwloc.h_DIRS
               NAMES hwloc.h
               HINTS ${HWLOC_DIR}
-              PATH_SUFFIXES include)
+              PATH_SUFFIXES "include" "include/hwloc")
         else()
             set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
             find_path(HWLOC_hwloc.h_DIRS
@@ -152,16 +164,24 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_
     # Add system library paths to search lib
     # --------------------------------------
     unset(_lib_env)
-    if(WIN32)
-        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    set(ENV_HWLOC_LIBDIR "$ENV{HWLOC_LIBDIR}")
+    if(ENV_HWLOC_LIBDIR)
+        list(APPEND _lib_env "${ENV_HWLOC_LIBDIR}")
+    elseif(ENV_HWLOC_DIR)
+        list(APPEND _lib_env "${ENV_HWLOC_DIR}")
+        list(APPEND _lib_env "${ENV_HWLOC_DIR}/lib")
     else()
-        if(APPLE)
-            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        if(WIN32)
+            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
         else()
-            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            if(APPLE)
+                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            else()
+                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            endif()
+            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
-        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif()
     list(REMOVE_DUPLICATES _lib_env)
 
@@ -256,9 +276,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(HWLOC_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR NOT HWLOC_FOUND OR HWLOC_DIR)
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_DIR) )
 
-if (HWLOC_LIBRARIES AND NOT HWLOC_DIR)
+if (HWLOC_LIBRARIES)
     if (HWLOC_LIBRARY_DIRS)
         list(GET HWLOC_LIBRARY_DIRS 0 first_lib_path)
     else()
@@ -267,7 +287,9 @@ if (HWLOC_LIBRARIES AND NOT HWLOC_DIR)
     endif()
     if (${first_lib_path} MATCHES "/lib(32|64)?$")
         string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-        set(HWLOC_DIR "${not_cached_dir}" CACHE PATH "Installation directory of HWLOC library" FORCE)
+        set(HWLOC_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of HWLOC library" FORCE)
+    else()
+        set(HWLOC_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of HWLOC library" FORCE)
     endif()
 endif()
 

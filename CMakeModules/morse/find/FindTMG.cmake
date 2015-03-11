@@ -30,6 +30,8 @@
 #  TMG_DIR              - Where to find the base directory of tmg
 #  TMG_INCDIR           - Where to find the header files
 #  TMG_LIBDIR           - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: TMG_DIR, TMG_INCDIR, TMG_LIBDIR
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -127,16 +129,25 @@ if (LAPACK_FOUND)
         # Add system library paths to search lib
         # --------------------------------------
         unset(_lib_env)
-        if(WIN32)
-            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+        set(ENV_TMG_DIR "$ENV{TMG_DIR}")
+        set(ENV_TMG_LIBDIR "$ENV{TMG_LIBDIR}")
+        if(ENV_TMG_LIBDIR)
+            list(APPEND _lib_env "${ENV_TMG_LIBDIR}")
+        elseif(ENV_TMG_DIR)
+            list(APPEND _lib_env "${ENV_TMG_DIR}")
+            list(APPEND _lib_env "${ENV_TMG_DIR}/lib")
         else()
-            if(APPLE)
-                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            if(WIN32)
+                string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
             else()
-                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                if(APPLE)
+                    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+                else()
+                    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+                endif()
+                list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+                list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
             endif()
-            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
         list(REMOVE_DUPLICATES _lib_env)
 
@@ -274,12 +285,14 @@ else()
 
 endif()
 
-if (TMG_LIBRARIES AND NOT TMG_DIR)
+if (TMG_LIBRARIES)
     list(GET TMG_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
     if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
         string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-        set(TMG_DIR "${not_cached_dir}" CACHE PATH "Installation directory of TMG library" FORCE)
+        set(TMG_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of TMG library" FORCE)
+    else()
+        set(TMG_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of TMG library" FORCE)
     endif()
 endif()
 

@@ -35,11 +35,8 @@
 #  LAPACK_DIR            - Where to find the base directory of lapack
 #  LAPACK_INCDIR         - Where to find the header files
 #  LAPACK_LIBDIR         - Where to find the library files
-# The module can also look after the following environment variables if paths
-# are not given as cmake variable
-#  LAPACK_DIR            - Where to find the base directory of lapack
-#  LAPACK_INCDIR         - Where to find the header files
-#  LAPACK_LIBDIR         - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: LAPACK_DIR, LAPACK_INCDIR, LAPACK_LIBDIR
 # For MKL case and if no paths are given as hints, we will try to use the MKLROOT
 # environment variable
 # Note that if BLAS_DIR is set, it will also look for lapack in it
@@ -167,7 +164,9 @@ set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
 set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
 set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
 if (NOT _libdir)
-  if (BLAS_DIR)
+  if (BLAS_LIBDIR)
+      list(APPEND _libdir "${BLAS_LIBDIR}")
+  elseif (BLAS_DIR)
       list(APPEND _libdir "${BLAS_DIR}")
       list(APPEND _libdir "${BLAS_DIR}/lib")
       if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
@@ -177,8 +176,8 @@ if (NOT _libdir)
           list(APPEND _libdir "${BLAS_DIR}/lib32")
           list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
       endif()
-  elseif (BLAS_LIBDIR)
-      list(APPEND _libdir "${BLAS_LIBDIR}")
+  elseif(ENV_BLAS_LIBDIR)
+      list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
   elseif(ENV_BLAS_DIR)
       list(APPEND _libdir "${ENV_BLAS_DIR}")
       list(APPEND _libdir "${ENV_BLAS_DIR}/lib")
@@ -189,10 +188,10 @@ if (NOT _libdir)
           list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
           list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
       endif()
-  elseif(ENV_BLAS_LIBDIR)
-      list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
   endif()
-  if (LAPACK_DIR)
+  if (LAPACK_LIBDIR)
+    list(APPEND _libdir "${LAPACK_LIBDIR}")
+  elseif (LAPACK_DIR)
     list(APPEND _libdir "${LAPACK_DIR}")
     list(APPEND _libdir "${LAPACK_DIR}/lib")
     if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
@@ -202,8 +201,8 @@ if (NOT _libdir)
         list(APPEND _libdir "${LAPACK_DIR}/lib32")
         list(APPEND _libdir "${LAPACK_DIR}/lib/ia32")
     endif()
-  elseif (LAPACK_LIBDIR)
-    list(APPEND _libdir "${LAPACK_LIBDIR}")
+  elseif(ENV_LAPACK_LIBDIR)
+      list(APPEND _libdir "${ENV_LAPACK_LIBDIR}")
   elseif(ENV_LAPACK_DIR)
       list(APPEND _libdir "${ENV_LAPACK_DIR}")
       list(APPEND _libdir "${ENV_LAPACK_DIR}/lib")
@@ -214,8 +213,6 @@ if (NOT _libdir)
           list(APPEND _libdir "${ENV_LAPACK_DIR}/lib32")
           list(APPEND _libdir "${ENV_LAPACK_DIR}/lib/ia32")
       endif()
-  elseif(ENV_LAPACK_LIBDIR)
-      list(APPEND _libdir "${ENV_LAPACK_LIBDIR}")
   else()
     if (ENV_MKLROOT)
         if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")

@@ -99,17 +99,17 @@ static const FParameterNames InputBinFormat = {
 
 static const FParameterNames OutputFile = {
     {"-fout", "--output-filename"} ,
-     "To give the output filename."
+     "To give the output filename with extension .fma or  .bfma (binary fma format)."
 };
 
 static const FParameterNames OutputVisuFile = {
     {"-fvisuout"} ,
-     "To give the output filename in visu format."
+     "Specify the name (with extension) and the format of the file for visualization purpose.\n                     Available format are  vtk, vtp, cvs or cosmo. vtp is the default."
 };
-static const FParameterNames FormatVisuFile{
-	        {"-visufmt","-visu-fmt"},
-	        "To specify format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default"
-	    };
+//static const FParameterNames FormatVisuFile{
+//	        {"-visufmt","-visu-fmt"},
+//	        "To specify format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default"
+//	    };
 
 
 static const FParameterNames OutputBinFormat = {
