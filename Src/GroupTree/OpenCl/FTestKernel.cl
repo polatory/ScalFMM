@@ -405,26 +405,72 @@ void P2M(__global unsigned char* pole, const struct FOpenCLGroupAttachedLeaf par
 }
 
 void M2M(__global unsigned char*  pole, __global unsigned char* child[8], const int level, __global void* user_data) {
+    __global long long* up = (__global long long*)(pole+FCellUpOffset);
+
+    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+        if(child[idxChild]){
+            const __global long long* childup = (const __global long long*)(child[idxChild]+FCellUpOffset);
+            (*up) += (*childup);
+        }
+    }
 }
 
 void M2L(__global unsigned char* const pole, const __global unsigned char* distantNeighbors[343],
     const int size, const int level, __global void* user_data) {
+    __global long long* down = (__global long long*)(pole+FCellDownOffset);
+    
+    for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+        if(distantNeighbors[idxNeigh]){
+            const __global long long* neighup = (const __global long long*)(distantNeighbors[idxNeigh]+FCellUpOffset);
+            (*down) += (*neighup);
+        }
+    }
 }
 
 void L2L(__global const unsigned char* localCell, __global unsigned char* child[8], const int level, __global void* user_data) {
+    const __global long long* down = (const __global long long*)(localCell+FCellDownOffset);
+    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+        if(child[idxChild]){
+            __global long long* childdown = (__global long long*)(child[idxChild]+FCellDownOffset);
+            (*childdown) += (*down);
+        }
+    }
 }
 
 void L2P(__global const unsigned char* localCell, struct FOpenCLGroupAttachedLeaf particles, __global void* user_data){
+    const __global long long* down = (const __global long long*)(localCell+FCellDownOffset);
+    __global long long* partdown = particles.attributes[0];
+    for(int idxPart = 0 ; idxPart < particles.nbParticles ; ++idxPart){
+        partdown[idxPart] += (*down);
+    }
 }
 
 void P2P(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles[27], int directNeighborsPositions[27], const int counter, __global void* user_data){
+             return;// TODO
+    long long cumul = sources.nbParticles-1;
+    
+    for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
+        if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&directNeighborsParticles[idxNeigh])){
+            cumul += directNeighborsParticles[idxNeigh].nbParticles;
+        }
+    }
+    
+    __global long long* partdown = targets.attributes[0];
+    for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
+        partdown[idxPart] += cumul;
+    }
 }
 
 void P2PRemote(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
+             return;// TODO
+    __global long long* partdown = targets.attributes[0];
+    for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
+        partdown[idxPart] += directNeighborsParticles.nbParticles;
+    }
 }
 
 MortonIndex getMortonIndex(__global const unsigned char* cell, __global void* user_data) {
@@ -475,10 +521,10 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
             FOpenCLAssertLF(getMortonIndex(cell, userkernel) == mindex);
             struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, mindex);
             FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
-            //P2M(cell, particles, userkernel);
-            for(int idx = 0 ; idx < FCellClassSize ; ++idx){
+            P2M(cell, particles, userkernel);
+            /*for(int idx = 0 ; idx < FCellClassSize ; ++idx){
                 cell[idx] = 'z';            
-            }
+            }*/
             /*output[0] = blockStartIdx;
             output[1] = blockEndIdx;
             output[2] = particles.nbParticles;
