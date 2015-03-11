@@ -18,6 +18,8 @@
 #include "Utils/FPoint.hpp"
 #include "Utils/FParameters.hpp"
 #include "Utils/FGenerateDistribution.hpp"
+#include "Files/FExportWriter.hpp"
+
 #include "Utils/FParameterNames.hpp"
 
 //
@@ -35,7 +37,6 @@
 //!     \param   -fout name: generic name for files (without extension) and save data
 //!                  with following format in name.fma or name.bfma if -bin is set"
 //!      \param   -bin save output in binary mode (name file  name.bfma
-//!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 //!
 //!
 //! \b examples
@@ -44,6 +45,7 @@
 //!
 //!   changeFormat -fin unitCubeXYZQ100.fma  -fout unitCubeXYZQ100 -bin
 
+//    \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 
 int main(int argc, char ** argv){
 
@@ -51,8 +53,7 @@ int main(int argc, char ** argv){
                          "Driver to change the format of the input file. "
                          "fdlpoly is not supported for now.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OutputFile,
-                         FParameterDefinitions::OutputVisuFile,FParameterDefinitions::FormatVisuFile,
-                         FParameterDefinitions::OutputBinFormat);
+                         FParameterDefinitions::OutputVisuFile);
 
     FSize NbPoints;
     FReal	 * particles = nullptr ;
@@ -86,19 +87,8 @@ int main(int argc, char ** argv){
     //  Generate file for ScalFMM FMAGenericLoader
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputFile.options)){
-        std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output"));
-        std::string ext(".");
-        if(name.find(ext) !=std::string::npos) {
-            std::cout << "No file with extension permitted for output name : " << name << std::endl;
-            exit(-1);
-        }
-        if(  FParameters::existParameter(argc, argv, FParameterDefinitions::OutputBinFormat.options)){
-            name += ".bfma";
-        }
-        else {
-            name += ".fma";
-        }
-        FFmaGenericWriter writer(name) ;
+        std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
+          FFmaGenericWriter writer(name) ;
         writer.writeHeader( loader->getCenterOfBox(), loader->getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
         writer.writeArrayOfReal(particles, nbData, NbPoints);
     }
@@ -106,53 +96,8 @@ int main(int argc, char ** argv){
     //   Generate file for visualization purpose
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
-        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output"));
-        std::string visufile(""), fmt(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "vtp"));
-        if( fmt == "vtp" ){
-            visufile = outfilename + ".vtp" ;
-        }
-        else	if( fmt == "vtk" ){
-            visufile = outfilename + ".vtk" ;
-        }
-        else if( fmt == "cosmo" ){
-            if(nbData !=4) {
-                std::cerr << "Cosmos export accept only 4 data per particles. here: "<<nbData<<std::endl;
-                std::exit(EXIT_FAILURE);
-            }
-            visufile = outfilename + ".cosmo" ;
-        }
-        else {
-            visufile =   outfilename + ".csv" ;
-        }
-        std::ofstream file( visufile, std::ofstream::out);
-        if(!file) {
-            std::cout << "Cannot open file."<< std::endl;
-            exit(-1)	;
-        }	//
-        //
-        // Export data in cvs format
-        //
-        if( fmt == "vtp" ){
-            std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
-            if(nbData==4){
-                exportVTKxml( file,  particles, NbPoints)   ;
-            }
-            else {
-                exportVTKxml( file,  particles, NbPoints,nbData)   ;
-            }
-        }
-        else		if( fmt == "vtk" ){
-            std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
-            exportVTK( file, particles, NbPoints,nbData)  ;
-        }
-        else if( fmt == "cosmo" ){
-            std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
-            exportCOSMOS( file,  particles, NbPoints)   ;
-        }
-        else {
-            std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
-            exportCVS( file,  particles, NbPoints,nbData)  ;
-        }
+        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
+        driverExportData(outfilename, particles , NbPoints);
     }
     //
     delete particles ;

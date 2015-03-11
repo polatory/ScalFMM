@@ -13,236 +13,16 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FGENERATEDISTRIBUTION_HPP
-#define FGENERATEDISTRIBUTION_HPP
+#ifndef FEXPORTDATA_HPP
+#define FEXPORTDATA_HPP
 
 // @author O. Coulaud
 
 #include <cstdlib>
-#include <ctime>
 #include <iostream>
 #include <fstream>
-#include <algorithm>
-//
-#include "Utils/FMath.hpp"
-#include "Utils/FParameters.hpp"
+#include <string>
 
-/**  return a random number between 0 and 1 */
-//double getRandom() {
-//	return drand48();
-//} ;
-void initRandom() {
-	srand48( static_cast<long int>(time(nullptr))) ;
-} ;
-FReal getRandom() {
-	return static_cast<FReal>(drand48());
-	//return static_cast<FReal>(rand()/FReal(RAND_MAX));
-} ;
-//!  \fn   unifRandonPointsOnUnitCube(const int N , FReal * points)
-
-//! \brief Generate N points uniformly distributed on the unit cube
-
-//!
-//! \param N the number of points uniformly randomly sample on the unit cube
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
-void unifRandonPointsOnUnitCube(const int N , FReal * points) {
-	//
-	initRandom() ;
-	int j = 0;
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		//
-		points[j]	  =	getRandom()  ;
-		points[j+1] =	getRandom()  ;
-		points[j+2] =	getRandom()  ;
-		//
-	}
-};
-//!  \fn   unifRandonPointsOnCube(const int N , FReal * points)
-
-//! \brief Generate N points uniformly distributed on the cube of length R
-
-//!
-//! \param N the number of points uniformly randomly sample on the unit cube
-//! \param Lx the the X-length of the  cube
-//! \param Ly the the Y-length of the  cube
-//! \param Lz the the Z-length of the  cube
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
-void unifRandonPointsOnCube(const int& N , const FReal& Lx,  const FReal &Ly,  const FReal& Lz, FReal * points) {
-	//
-	unifRandonPointsOnUnitCube(N , points) ;
-	int j =0 ;
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		points[j]	   *= Lx ;
-		points[j+1]  *= Ly ;
-		points[j+2]  *= Lz ;
-	}
-};
-//!  \fn   unifRandonPointsOnUnitSphere(const int N , FReal * points)
-
-//! \brief Generate N points uniformly distributed on the unit sphere
-
-//!
-//! \param N the number of points uniformly randomly sample on the unit sphere
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
-void unifRandonPointsOnUnitSphere(const int N , FReal * points) {
-	FReal u, v, theta, phi, sinPhi ;
-	//
-	initRandom() ;
-	int j = 0 ;
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		//
-		u = getRandom() ;  v = getRandom() ;
-		theta  = FMath::FTwoPi*u ;
-		phi     = FMath::ACos(2*v-1);
-		sinPhi = FMath::Sin(phi);
-		//
-		points[j]	  =	FMath::Cos(theta)*sinPhi ;
-		points[j+1] =	FMath::Sin(theta)*sinPhi ;
-		points[j+2] =	2*v-1 ;
-		//
-	}
-};
-//!  \fn  nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &b, const FReal &c, FReal * points)
-
-//! \brief  Generate N points non uniformly distributed on the ellipsoid of  aspect ratio a:b:c
-
-//!
-//! \param N the number of points
-//! \param a  the x  semi-axe length
-//! \param b  the y  semi-axe length
-//! \param c  the z  semi-axe length
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-void nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &b, const FReal &c, FReal * points) {
-	//
-	FReal u, v , cosu ;
-	int j =0 ;
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		u = getRandom() ;  v = getRandom() ;
-		u  = FMath::FPi*u - FMath::FPiDiv2;   v   = FMath::FTwoPi*v - FMath::FPi;
-		cosu = FMath::Cos(u) ;
-		points[j]	   = a*cosu*FMath::Cos(v)  ;
-		points[j+1]  = b*cosu*FMath::Sin(v)  ;
-		points[j+2]  = c*FMath::Sin(u)  ;
-	}
-};
-//!  \fn  nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &c, FReal * points)
-
-//! \brief  Generate N points uniformly distributed on the ellipsoid of  aspect ratio a:a:c
-
-//!
-//! \param N the number of points
-//! \param a  the x  semi-axe length
-//! \param c  the z  semi-axe length
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-void unifRandonPointsOnProlate(const int N , const FReal &a, const FReal &c, FReal * points){
-	//
-	FReal u, w,v ,ksi ;
-	FReal e = (a*a*a*a)/(c*c*c*c) ;
-	bool isgood = false;
-	int j =0 , cpt =0 ;
-	//
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		// Select a random point on the prolate
-		do {
-			cpt++	;
-			u = getRandom() ;  v = getRandom() ;
-			u  = 2.0*u - 1.0;   v   = FMath::FTwoPi*v;
-			w =FMath::Sqrt(1-u*u) ;
-			points[j]	   = a*w*FMath::Cos(v)  ;
-			points[j+1]  = a*w*FMath::Sin(v)  ;
-			points[j+2]  = c*u ;
-			// Accept the position ?
-			ksi = a*getRandom()  ;
-			//			std::cout << "Gradf  "<<  points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  << std::endl;
-			isgood = (points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  < ksi*ksi );
-		} while (isgood);
-	}
-	std::cout.precision(4);
-	std::cout << "Total tested points: "<< cpt << " % of rejected points: "<<100*static_cast<FReal>(cpt-N)/cpt << " %" <<std::endl;
-
-} ;
-
-//!  \fn  unifRandonPointsOnSphere(const int N , const FReal R, FReal * points)
-
-//! \brief Generate N points uniformly distributed on the sphere of radius R
-
-//!
-//! \param N the number of points uniformly randomly sample on the sphere
-//! \param R the radius of the sphere
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-void unifRandonPointsOnSphere(const int N , const FReal R, FReal * points) {
-	//
-	unifRandonPointsOnUnitSphere(N , points) ;
-	int j =0 ;
-	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		points[j]	   *= R ;
-		points[j+1]  *= R ;
-		points[j+2]  *= R ;
-	}
-};
-//!  \fn void plummerDist(int & cpt, const FReal &R)
-
-//! \brief   Radial Plummer distribution
-
-//!
-//! \param cpt : counter to know how many random selections we need to obtain a radius less than R
-//! \param R    : Radius of the sphere that contains the particles
-//! @return Return the radius according to the Plummer distribution either double type or float type
-//!
-FReal  plummerDist(int & cpt, const FReal &R) {
-	//
-	FReal radius ,u ;
-	do  {
-		//
-		u        = FMath::pow (getRandom() , 2.0/3.0) ;
-		radius = FMath::Sqrt (u/(1.0-u));
-		cpt++;
-		if(radius  <=R){
-			//			std::cout << radius << "    "  <<std::endl;
-			return static_cast<FReal>(radius);
-		}
-	} while (true);
-}
-//! \fn void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * points)
-
-//! \brief  Build N points following the Plummer distribution
-
-//! First we construct N points uniformly distributed on the unit sphere. Then the radius in construct according to the Plummr distribution.
-//!
-//! \param N the number of points following the Plummer distribution
-//! \param R the radius of the sphere that contains all the points
-//! \param M the total mass of all the particles inside the Sphere or radius R
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * points) {
-	//
-	unifRandonPointsOnUnitSphere(N , points) ;
-	//
-	FReal r , rm= 0.0;
-	//	FReal Coeff =  3.0*M/(4.0*FMath::FPi*R*R*R) ;
-	//am1 = 0 ;//1/FMath::pow(1+R*R,2.5);
-	int cpt = 0 ;
-	for (int i = 0,j=0 ; i< N ; ++i, j+=4)  {
-		// u \in []
-		r = plummerDist(cpt,R) ;
-		rm = std::max(rm, r);
-		points[j]	   *= r ;
-		points[j+1]  *= r ;
-		points[j+2]  *= r ;
-	}
-
-	std::cout << "Total tested points: "<< cpt << " % of rejected points: "
-			<<100*static_cast<FReal>(cpt-N)/cpt << " %" <<std::endl;
-
-} ;
-
-#ifdef TOREMOVEOC
 //! \fn void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4)
 
 //! \brief  Export particles in CVS Format
@@ -275,7 +55,7 @@ void exportCVS(std::ofstream& file, const FReal * particles , const int N, const
 //
 //! \fn void exportCOSMOS(std::ofstream& file,  const FReal * particles, const int N )
 
-//! \brief  Export particles in CVS Format
+//! \brief  Export particles in COSMOS Format
 //!
 //! Export particles in CVS Format as follow
 //!      x ,  y  , z , 0.0, 0.0, 0.0, physicalValue
@@ -479,6 +259,47 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 			<< "</PolyData>"<<std::endl
 			<< "</VTKFile>"<<std::endl;
 } ;
-#endif
 //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//                           The Driver
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//! \fn void driverExportData(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4)
+//! \brief  The driver to select the right format to write the data
+//!
+//!  The driver select the right format (CVS, COSMOS, VTK, VTP,, ...) according to the extention of the filename
+//!      . cvs   CVS Format
+//!      .vtk the old vtk format
+//!      .vtp  the xml vtk format
+//!      .cosmo  the cosmos format
+//! It is useful to plot the distribution with paraView
+//!
+//!  @param filename the name of the file to store the data
+//!  @param  N number of particles
+//!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
+//!  @param  nbDataPerParticle number of values per particles (default value 4)
+//!
+void driverExportData(std::string & filename, const FReal * particles , const int NbPoints, const int nbDataPerParticle=4){
+	//
+	std::ofstream file( filename.c_str(), std::ofstream::out);
+	// open particle file
+	std::cout << "Write "<< NbPoints<<" Particles in file " << filename <<std::endl;
+
+	if(filename.find(".vtp") != std::string::npos) {
+		exportVTKxml( file, particles, NbPoints,nbDataPerParticle)  ;
+	}
+	else if(filename.find(".vtk")!=std::string::npos ) {
+		exportVTK( file, particles, NbPoints,nbDataPerParticle)  ;
+	}
+	else if(filename.find(".cvs")!=std::string::npos ) {
+		exportCVS( file, particles, NbPoints,nbDataPerParticle)  ;
+	}
+	else if(filename.find(".cosmo")!=std::string::npos ) {
+		exportCOSMOS( file, particles, NbPoints)  ;
+	}
+	else  {
+		std::cout << "Output file not allowed only .cvs, .cosmo, .vtk or .vtp extensions" <<std::endl;
+		std::exit ( EXIT_FAILURE) ;
+	}
+}
 #endif
