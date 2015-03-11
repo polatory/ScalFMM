@@ -52,6 +52,44 @@ const int FTestCell_Alignement::mindex = reinterpret_cast<std::size_t>(&((reinte
 const int FTestCell_Alignement::coord = reinterpret_cast<std::size_t>(&((reinterpret_cast<FTestCell*>(0xF00))->coordinate)) - std::size_t(0xF00);
 
 
+// Initialize the types
+class OpenCLSource{
+    FTextReplacer kernelfile;
+    size_t dim;
+
+public:
+    //OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
+    OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FTestKernel.cl"){
+        kernelfile.replaceAll("___FReal___", "double");
+        kernelfile.replaceAll("___FParticleValueClass___", "long long");
+        kernelfile.replaceAll("___FCellClassSize___", sizeof(FTestCell));
+        kernelfile.replaceAll("___NbAttributesPerParticle___", 2);
+        kernelfile.replaceAll("___FCellUpOffset___", FTestCell_Alignement::dataUp);
+        kernelfile.replaceAll("___FCellDownOffset___", FTestCell_Alignement::dataDown);
+        kernelfile.replaceAll("___FCellMortonOffset___", FTestCell_Alignement::mindex);
+        kernelfile.replaceAll("___FCellCoordinateOffset___", FTestCell_Alignement::coord);
+
+        dim = 1;
+    }
+
+    const char* getKernelCode(const int /*inDevId*/){
+        return kernelfile.getContent();
+    }
+
+    void releaseKernelCode(){
+        kernelfile.clear();
+    }
+
+    size_t getNbDims() const {
+        return 1;
+    }
+
+    const size_t* getDimSizes() const {
+        return &dim;
+    }
+};
+
+
 int main(int argc, char* argv[]){
     setenv("STARPU_NCPU","0",1);
     setenv("STARPU_NOPENCL","1",1);
@@ -65,28 +103,6 @@ int main(int argc, char* argv[]){
                          "Usually run with STARPU_NCPU=0 STARPU_NOPENCL=1 STARPU_OPENCL_ONLY_ON_CPUS=1 ./Tests/Release/testBlockedWithOpenCLAlgorithm",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
-    // Initialize the types
-    class OpenCLSource{
-        FTextReplacer kernelfile;
-
-    public:
-        //OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
-        OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FTestKernel.cl"){
-            kernelfile.replaceAll("___FReal___", "double");
-            kernelfile.replaceAll("___FParticleValueClass___", "long long");
-            kernelfile.replaceAll("___FCellClassSize___", sizeof(FTestCell));
-            kernelfile.replaceAll("___NbAttributesPerParticle___", 2);
-            kernelfile.replaceAll("___FCellUpOffset___", FTestCell_Alignement::dataUp);
-            kernelfile.replaceAll("___FCellDownOffset___", FTestCell_Alignement::dataDown);
-            kernelfile.replaceAll("___FCellMortonOffset___", FTestCell_Alignement::mindex);
-            kernelfile.replaceAll("___FCellCoordinateOffset___", FTestCell_Alignement::coord);
-        }
-
-        operator const char*(){
-            return kernelfile.getContent();
-        }
-    };
-
 
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
