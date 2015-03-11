@@ -119,6 +119,10 @@ public:
 
         return replaceCore(0, keyStr, strlen(keyStr), valueStr, strlen(valueStr)) != content.size();
     }
+
+    void clear(){
+        content.clear();
+    }
 };
 
 #endif // FTEXTREPLACER_HPP
