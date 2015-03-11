@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
-    groupalgo.execute(FFmmP2M); // TODO
+    groupalgo.execute(); // FFmmP2M TODO
 
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels

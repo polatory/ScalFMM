@@ -187,7 +187,6 @@ public:
 
 
     void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
-        return; // TODO
         Uptr9 ptrs;
         memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
         size_t9 sizes;
@@ -202,7 +201,6 @@ public:
     void transferInoutPassPerformMpi(cl_mem currentCellsPtr,
                          size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                      size_t  outsideInteractionsSize){
-        return; // TODO
         SetKernelArgs(kernel_transferInoutPassPerformMpi, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr,  &externalCellsSize, &idxLevel, &outsideInteractionsCl,
                                                                                   &outsideInteractionsSize, &user_data);
         size_t dim = 1;
@@ -220,7 +218,6 @@ public:
     void transferInoutPassPerform(cl_mem currentCellsPtr,
                           size_t currentCellsSize, cl_mem externalCellsPtr,  size_t externalCellsSize, int idxLevel, cl_mem outsideInteractionsCl,
                                                                                   size_t outsideInteractionsSize){
-        return; // TODO
         SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr, &externalCellsSize, &idxLevel,
                       &outsideInteractionsCl,&outsideInteractionsSize, &user_data);
         size_t dim = 1;
@@ -230,7 +227,6 @@ public:
 
     void downardPassPerform(cl_mem currentCellsPtr,
                                      size_t currentCellsSize, cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], int nbSubCellGroups, int idxLevel){
-        return; // TODO
         Uptr9 ptrs;
         memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
         size_t9 sizes;
@@ -246,7 +242,6 @@ public:
     void directInoutPassPerformMpi(cl_mem containersPtr,
                    size_t containersSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                                                                                 size_t outsideInteractionsSize){
-        return; // TODO
         SetKernelArgs(kernel_directInoutPassPerformMpi, 0, &containersPtr,
                       &containersSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl,&outsideInteractionsSize, &treeHeight, &user_data);
         size_t dim = 1;
@@ -255,7 +250,6 @@ public:
     }
 
     void directInPassPerform(cl_mem containersPtr,  size_t containerSize){
-        return; // TODO
         SetKernelArgs(kernel_directInPassPerform, 0, &containersPtr, &containerSize, &treeHeight, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
@@ -265,7 +259,6 @@ public:
     void directInoutPassPerform(cl_mem containersPtr,
                           size_t containerSize, cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                           size_t  outsideInteractionsSize){
-        return; // TODO
         SetKernelArgs(kernel_directInoutPassPerform, 0, &containersPtr,
                       &containerSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl, &outsideInteractionsSize, &treeHeight, &user_data);
         size_t dim = 1;
@@ -275,7 +268,6 @@ public:
 
     void mergePassPerform(cl_mem leafCellsPtr,
                             size_t leafCellsSize, cl_mem containersPtr, size_t containersSize){
-        return; // TODO
         SetKernelArgs(kernel_mergePassPerform, 0, &leafCellsPtr, &leafCellsSize, &containersPtr, &containersSize, &user_data);
         size_t dim = 1;
         const int err = clEnqueueNDRangeKernel(queue_mergePassPerform, kernel_mergePassPerform, 1, NULL, &dim, NULL, 0, NULL, NULL);
