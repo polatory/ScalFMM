@@ -14,22 +14,19 @@
 
 #include "../FOutOfBlockInteraction.hpp"
 
+#include "FEmptyOpenCLCode.hpp"
+
 #include <starpu.h>
 
-struct FEmptyOpenCLFilename{
-    operator const char*(){
-        return nullptr;
-    }
-};
 
-template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLFilename>
+template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLCode>
 class FOpenCLDeviceWrapper {
 protected:
-    struct Uptr9{
+    struct  alignas(1)  Uptr9{
         cl_mem ptrs[9];
     };
 
-    struct size_t9{
+    struct alignas(1)  size_t9{
         size_t v[9];
     };
 
