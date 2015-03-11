@@ -97,7 +97,7 @@ int main(int argc, char ** argv){
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
         std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
-        driverExportData(outfilename, particles , NbPoints);
+        driverExportData(outfilename, particles , NbPoints,loader->getNbRecordPerline() );
     }
     //
     delete particles ;

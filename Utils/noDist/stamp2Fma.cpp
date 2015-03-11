@@ -55,7 +55,7 @@ void genDistusage() {
 			<<     "   -help       to see the parameters    " << std::endl
 			<<     " Input:  only one option is allowed"  << std::endl
 			<<     "   -fin name:  file name  to convert (with extension .fma (ascii) or bfma (binary) " <<std::endl
-			<<     "   -fdlpoly name:  file name  to convert with extension (.bin if binary file) " <<<<std::endl;
+			<<     "   -fdlpoly name:  file name  to convert with extension (.bin if binary file) " <<std::endl;
 }
 
 int main(int argc, char ** argv){
