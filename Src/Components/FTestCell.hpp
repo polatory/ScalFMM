@@ -117,8 +117,8 @@ public:
 
 	// To get access to descriptor
     friend struct FTestCellDescriptor;
+    friend struct FTestCell_Alignement;
 };
-
 
 #endif //FTESTCELL_HPP
 

@@ -18,7 +18,7 @@
 template <class CellClass>
 class FGroupOfCells {
     /** One header is allocated at the beginning of each block */
-    struct BlockHeader{
+    struct alignas(1) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfCellsInBlock;

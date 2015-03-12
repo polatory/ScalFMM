@@ -63,9 +63,14 @@ public:
         kernels[workerId] = new KernelClass(*originalKernel);
     }
 
+    void releaseKernel(const int workerId){
+        delete kernels[workerId];
+        kernels[workerId] = nullptr;
+    }
+
     ~FStarPUCpuWrapper(){
         for(int idxKernel = 0 ; idxKernel < STARPU_MAXCPUS ; ++idxKernel ){
-            delete kernels[idxKernel];
+            FAssertLF(kernels[idxKernel] == nullptr);
         }
     }
 

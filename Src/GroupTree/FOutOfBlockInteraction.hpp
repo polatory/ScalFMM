@@ -3,7 +3,7 @@
 
 #include "../Utils/FGlobal.hpp"
 
-struct OutOfBlockInteraction{
+struct  alignas(1) OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
     int outPosition;

@@ -16,6 +16,7 @@
 #include "Utils/FPoint.hpp"
 #include "Utils/FGenerateDistribution.hpp"
 #include "Files/FFmaGenericLoader.hpp"
+#include "Files/FExportWriter.hpp"
 
 #include "Utils/FParameterNames.hpp"
 
@@ -74,6 +75,10 @@
 
 
 int main(int argc, char ** argv){
+    const FParameterNames LocalOptionEllipsoid = {
+        {"-ellipsoid"} ,
+        " non uniform distribution on  an ellipsoid of aspect ratio given by \n  -ar a:b:c   with a, b and c > 0\n"
+    };
     FHelpDescribeAndExit(argc, argv,
                          ">> Driver to generate N points (non)uniformly distributed on a given geometry.\n"
                          "Options  \n"
@@ -97,12 +102,13 @@ int main(int argc, char ** argv){
                          "                     -radius  R - default value 10.0\n"
                          "    Physical values\n"
                          "             -charge generate physical values between -1 and 1 otherwise generate between 0 and 1		\n"
-                         "             -zeromean  the average of the physical values is zero		\n"
-                         "     Output \n"
-                         "             -filename name: generic name for files (without extension) and save data\n"
-                         "                     with following format in name.fma or name.bfma in -bin is set\n"
-                         "             -visufmt  vtk, vtp, cosmo or cvs format.",
-                         FParameterDefinitions::InputFile,  FParameterDefinitions::OutputBinFormat, FParameterDefinitions::NbParticles);
+                         "             -zeromean  the average of the physical values is zero		\n",
+//                         "     Output \n"
+ //                        "             -filename name: generic name for files (without extension) and save data\n"
+  //                       "                     with following format in name.fma or name.bfma in -bin is set\n"
+   //                      "             -visufmt  vtk, vtp, cosmo or cvs format.",
+                          FParameterDefinitions::OutputFile,
+                         FParameterDefinitions::NbParticles,FParameterDefinitions::OutputVisuFile,LocalOptionEllipsoid);
 
 
 
@@ -188,14 +194,16 @@ int main(int argc, char ** argv){
 		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
 		unifRandonPointsOnProlate(NbPoints,A,C,particles);
 		BoxWith =  2.0*C;
-	}
+	}    //const int NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   20000);
 	else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
+//		else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
+//		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
 		FReal A,B,C ;
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
-		//		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
+			std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
 		nonunifRandonPointsOnElipsoid(NbPoints,A,B,C,particles);
 		BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
 	}
@@ -220,14 +228,7 @@ int main(int argc, char ** argv){
 		BoxWith += 2*extraRadius ;
 	}
 	std::string name(genericFileName);
-
-    if(  FParameters::existParameter(argc, argv, FParameterDefinitions::OutputBinFormat.options)){
-		name += ".bfma";
-	}
-	else {
-		name += ".fma";
-	}
-	std::cout << "Write "<< NbPoints <<" Particles in file " << name <<std::endl;
+	std::cout << "Write "<< NbPoints <<" Particles in file " << name << std::endl;
 	FFmaGenericWriter  writer(name) ;
 	writer.writeHeader(Centre,BoxWith, NbPoints, *ppart) ;
 	writer.writeArrayOfParticles(ppart, NbPoints);
@@ -237,43 +238,8 @@ int main(int argc, char ** argv){
 	//  Generate  file for visualization
 	//
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
-        std::string visufile(""), fmt(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "vtp"));
-		if( fmt == "vtp" ){
-			visufile = genericFileName + ".vtp" ;
-		}
-		else	if( fmt == "vtk" ){
-			visufile = genericFileName + ".vtk" ;
-		}
-		else if( fmt == "cosmo" ){
-			visufile = genericFileName + ".cosmo" ;
-		}
-		else {
-			visufile =   genericFileName + ".csv" ;
-		}
-		std::ofstream file( visufile.c_str(), std::ofstream::out);
-		if(!file) {
-			std::cout << "Cannot open file."<< std::endl;
-			exit(-1)	;
-		}	//
-		//
-		// Export data in VTK format
-		//
-		if( fmt == "vtp" ){
-			std::cout << "Writes in XML VTP format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTKxml( file, particles, NbPoints)  ;
-		}
-		else		if( fmt == "vtk" ){
-			std::cout << "Writes in VTK format  (visualization) in file "<< visufile <<std::endl ;
-			exportVTK( file, particles, NbPoints)  ;
-		}
-		else if( fmt == "cosmo" ){
-			std::cout << "Writes in COSMO format  (visualization) in file "<< visufile <<std::endl ;
-			exportCOSMOS( file, particles, NbPoints)  ;
-		}
-		else {
-			std::cout << "Writes in CVS format  (visualization) in file "<<visufile<<std::endl ;
-			exportCVS( file, particles, NbPoints)  ;
-		}
+        std::string visufile(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "output.vtp"));
+         driverExportData(visufile, particles , NbPoints);
 	}
 	//
 	delete [] particles ;

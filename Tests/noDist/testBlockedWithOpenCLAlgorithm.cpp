@@ -37,9 +37,19 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
-#include "../../Src/GroupTree/OpenCl/FTextReplacer.hpp"
+#include "../../Src/GroupTree/OpenCl/FTestOpenCLCode.hpp"
+
+
 
 int main(int argc, char* argv[]){
+    setenv("STARPU_NCPU","0",1);
+    setenv("STARPU_NOPENCL","1",1);
+    setenv("STARPU_OPENCL_ONLY_ON_CPUS","1",1);
+
+    setenv("STARPU_DISABLE_ASYNCHRONOUS_OPENCL_COPY","1",1);
+    setenv("STARPU_OPENCL_PIPELINE","0",1);
+    setenv("STARPU_OPENCL_ON_CPUS","1",1);
+
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
@@ -48,23 +58,6 @@ int main(int argc, char* argv[]){
                          "Usually run with STARPU_NCPU=0 STARPU_NOPENCL=1 STARPU_OPENCL_ONLY_ON_CPUS=1 ./Tests/Release/testBlockedWithOpenCLAlgorithm",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
-    // Initialize the types
-    class OpenCLSource{
-        FTextReplacer kernelfile;
-
-    public:
-        OpenCLSource() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
-            kernelfile.replaceAll("___FReal___", "double");
-            kernelfile.replaceAll("___FParticleValueClass___", "double");
-            kernelfile.replaceAll("___FCellClassSize___", 4);
-            kernelfile.replaceAll("___NbAttributesPerParticle___", 4);
-        }
-
-        operator const char*(){
-            return kernelfile.getContent();
-        }
-    };
-
 
     typedef FTestCell                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
@@ -74,7 +67,7 @@ int main(int argc, char* argv[]){
     #ifdef ScalFMM_ENABLE_CUDA_KERNEL
         , FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>
     #endif
-        , FOpenCLDeviceWrapper<GroupKernelClass, OpenCLSource>
+        , FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode>
          > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;
@@ -138,7 +131,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
-    groupalgo.execute();
+    groupalgo.execute(); // FFmmP2M TODO
 
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels
