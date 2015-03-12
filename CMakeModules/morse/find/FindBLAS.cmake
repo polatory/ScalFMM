@@ -20,6 +20,7 @@
 #    is found
 #  BLAS_LINKER_FLAGS - uncached list of required linker flags (excluding -l
 #    and -L).
+#  BLAS_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers).
 #  BLAS_LIBRARIES - uncached list of libraries (using full path name) to
 #    link against to use BLAS
 #  BLAS95_LIBRARIES - uncached list of libraries (using full path name)
@@ -214,6 +215,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
             endif()
         else()
             if (ENV_MKLROOT)
+                list(APPEND _libdir "${ENV_MKLROOT}/lib")
                 if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
                     list(APPEND _libdir "${ENV_MKLROOT}/lib64")
                     list(APPEND _libdir "${ENV_MKLROOT}/lib/intel64")
@@ -275,10 +277,12 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
 
     if(_libraries_work)
         # Test this combination of libraries.
-        set(CMAKE_REQUIRED_LIBRARIES ${_flags} ${${LIBRARIES}} ${_thread})
+        set(CMAKE_REQUIRED_LIBRARIES "${_flags};${${LIBRARIES}};${_thread}")
+        set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         if (BLAS_VERBOSE)
-            message("${Cyan}BLAS libs found. Try to compile symbol ${_name} with"
-                    "following libraries: ${CMAKE_REQUIRED_LIBRARIES}")
+            message("${Cyan}BLAS libs found for BLA_VENDOR ${BLA_VENDOR}."
+                    "Try to compile symbol ${_name} with following libraries:"
+                    "${CMAKE_REQUIRED_LIBRARIES}")
         endif ()
         if(NOT BLAS_FOUND)
             unset(${_prefix}${_combined_name}_WORKS CACHE)
@@ -323,9 +327,126 @@ endif ()
 #BLAS in intel mkl 10 library? (em64t 64bit)
 if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 
+    # Looking for include
+    # -------------------
+
+    # Add system include paths to search include
+    # ------------------------------------------
+    unset(_inc_env)
+    set(ENV_MKLROOT "$ENV{MKLROOT}")
+    set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
+    set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
+    if(ENV_BLAS_INCDIR)
+        list(APPEND _inc_env "${ENV_BLAS_INCDIR}")
+    elseif(ENV_BLAS_DIR)
+        list(APPEND _inc_env "${ENV_BLAS_DIR}")
+        list(APPEND _inc_env "${ENV_BLAS_DIR}/include")
+    else()
+        if (ENV_MKLROOT)
+            list(APPEND _inc_env "${ENV_MKLROOT}/include")
+        endif()
+        # system variables
+        if(WIN32)
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+        else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+        endif()
+    endif()
+    list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+    list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+    list(REMOVE_DUPLICATES _inc_env)
+
+    # set paths where to look for
+    set(PATH_TO_LOOK_FOR "${_inc_env}")
+
+    # Try to find the fftw header in the given paths
+    # -------------------------------------------------
+    # call cmake macro to find the header path
+    if(BLAS_INCDIR)
+        set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
+        find_path(BLAS_mkl.h_DIRS
+          NAMES mkl.h
+          HINTS ${BLAS_INCDIR})
+    else()
+        if(BLAS_DIR)
+            set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
+            find_path(BLAS_mkl.h_DIRS
+              NAMES mkl.h
+              HINTS ${BLAS_DIR}
+              PATH_SUFFIXES "include")
+        else()
+            set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
+            find_path(BLAS_mkl.h_DIRS
+                      NAMES mkl.h
+                      HINTS ${PATH_TO_LOOK_FOR})
+        endif()
+    endif()
+    mark_as_advanced(BLAS_mkl.h_DIRS)
+
+    # If found, add path to cmake variable
+    # ------------------------------------
+    if (BLAS_mkl.h_DIRS)
+        set(BLAS_INCLUDE_DIRS "${BLAS_mkl.h_DIRS}")
+    else ()
+        set(BLAS_INCLUDE_DIRS "BLAS_INCLUDE_DIRS-NOTFOUND")
+        if(NOT BLAS_FIND_QUIETLY)
+            message(STATUS "Looking for BLAS -- mkl.h not found")
+        endif()
+    endif()
+
+    # libiomp5
+    # --------
+    if (WIN32)
+        string(REPLACE ":" ";" _libdir "$ENV{LIB}")
+    elseif (APPLE)
+        string(REPLACE ":" ";" _libdir "$ENV{DYLD_LIBRARY_PATH}")
+    else ()
+        string(REPLACE ":" ";" _libdir "$ENV{LD_LIBRARY_PATH}")
+    endif ()
+    list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+    list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    set(OMP_iomp5_LIBRARY "OMP_iomp5_LIBRARY-NOTFOUND")
+    find_library(OMP_iomp5_LIBRARY
+        NAMES iomp5
+        HINTS ${_libdir}
+      )
+    mark_as_advanced(OMP_iomp5_LIBRARY)
+    set(OMP_LIB "")
+    if (OMP_iomp5_LIBRARY)
+        set(OMP_LIB "${OMP_iomp5_LIBRARY}")
+    endif()
+
     if (NOT WIN32)
         set(LM "-lm")
+        set(BLAS_COMPILER_FLAGS "")
+        if (CMAKE_C_COMPILER_ID STREQUAL "Intel" AND NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+            list(APPEND BLAS_COMPILER_FLAGS "-openmp")
+        endif()
+        if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+            if (BLA_VENDOR STREQUAL "Intel10_32")
+                #list(APPEND BLAS_COMPILER_FLAGS "-m32")
+            else()
+                #list(APPEND BLAS_COMPILER_FLAGS "-m64")
+            endif()
+            if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+                list(APPEND OMP_LIB "-ldl")
+            endif()
+        endif()
+
+        set(additional_flags "")
+        if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(additional_flags "-Wl,--no-as-needed")
+        endif()
     endif ()
+
     if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
         if(BLAS_FIND_QUIETLY OR NOT BLAS_FIND_REQUIRED)
             find_package(Threads)
@@ -334,11 +455,6 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
         endif()
 
         set(BLAS_SEARCH_LIBS "")
-
-        set(additional_flags "")
-        if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-            set(additional_flags "-Wl,--no-as-needed")
-        endif()
 
         if(BLA_F95)
 
@@ -394,21 +510,15 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_blas95 mkl_intel_lp64 mkl_intel_thread mkl_core guide")
                     # mkl >= 10.3
-                    get_filename_component(CMAKE_C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
-                    if (CMAKE_C_COMPILER_NAME STREQUAL "gcc" OR
-                        CMAKE_C_COMPILER_NAME STREQUAL "cc")
-                        list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_gnu_thread mkl_core")
-                        set(OMP_LIB "-lgomp")
-                    else ()
-                        list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
-                        set(OMP_LIB "-liomp5")
-                    endif ()
+                    list(APPEND BLAS_SEARCH_LIBS
+                    "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_intel_lp64 mkl_sequential mkl_core")
+                    if (BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+                        set(OMP_LIB "")
+                    endif()
                 endif ()
             endif (WIN32)
 
@@ -462,29 +572,20 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     "mkl_intel mkl_intel_thread mkl_core guide")
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp" OR BLA_VENDOR STREQUAL "All")
-
                     # old version
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_intel_lp64 mkl_intel_thread mkl_core guide")
-
                     # mkl >= 10.3
-                    get_filename_component(CMAKE_C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
-                    if (CMAKE_C_COMPILER_NAME STREQUAL "gcc" OR
-                        CMAKE_C_COMPILER_NAME STREQUAL "cc")
-                        list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_intel_lp64 mkl_gnu_thread mkl_core")
-                        set(OMP_LIB "-lgomp")
-                    else ()
-                        list(APPEND BLAS_SEARCH_LIBS
-                        "mkl_intel_lp64 mkl_intel_thread mkl_core")
-                        set(OMP_LIB "-liomp5")
-                    endif ()
+                    list(APPEND BLAS_SEARCH_LIBS
+                    "mkl_intel_lp64 mkl_intel_thread mkl_core")
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_intel_lp64 mkl_sequential mkl_core")
+                    if (BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+                        set(OMP_LIB "")
+                    endif()
                 endif ()
-
                 #older vesions of intel mkl libs
                 if (BLA_VENDOR STREQUAL "Intel" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
