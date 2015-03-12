@@ -38,15 +38,16 @@ enum FFmmOperations {
 };
 
 /**
- * @brief The FAbstractAlgorithm class
- * Is an abstract algorithm to be able to use the FAlgorithmBuilder
- * and execute from an abastrct pointer
+ * \brief Base class of algorithms
+ *
+ * This class is an abstract algorithm to be able to use the FAlgorithmBuilder
+ * and execute from an abstract pointer.
  */
 class FAbstractAlgorithm {
 protected:
     //< Where to start the work
     int upperWorkingLevel;
-    //< Where to end the work (exclusif)
+    //< Where to end the work (exclusive)
     int lowerWorkingLevel;
     //< Height of the tree
     int nbLevelsInTree;
@@ -71,7 +72,7 @@ public:
     virtual ~FAbstractAlgorithm(){
     }
 
-    /** Execute all the fmm but for given levels*/
+    /** Execute the whole fmm for given levels. */
     virtual void execute(const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
         upperWorkingLevel = inUpperWorkingLevel;
         lowerWorkingLevel = inLowerWorkingLevel;
@@ -79,7 +80,7 @@ public:
         executeCore(FFmmNearAndFarFields);
     }
 
-    /** Execute all the fmm */
+    /** Execute the whole fmm. */
     virtual void execute() final {
         upperWorkingLevel = 2;
         lowerWorkingLevel = nbLevelsInTree;
@@ -87,7 +88,7 @@ public:
         executeCore(FFmmNearAndFarFields);
     }
 
-    /** Execute only some FMM operation for given levels */
+    /** Execute only some FMM operations for given levels. */
     virtual void execute(const unsigned operationsToProceed, const int inUpperWorkingLevel, const int inLowerWorkingLevel) final {
         upperWorkingLevel = inUpperWorkingLevel;
         lowerWorkingLevel = inLowerWorkingLevel;
@@ -95,7 +96,7 @@ public:
         executeCore(operationsToProceed);
     }
 
-    /** Execute only some steps */
+    /** Execute only some steps. */
     virtual void execute(const unsigned operationsToProceed) final {
         upperWorkingLevel = 2;
         lowerWorkingLevel = nbLevelsInTree;
