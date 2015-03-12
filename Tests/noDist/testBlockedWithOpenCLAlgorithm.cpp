@@ -84,7 +84,13 @@ public:
         return 1;
     }
 
-    const size_t* getDimSizes() const {
+    const size_t* getNbGroups() const {
+        // We return 1
+        return &dim;
+    }
+
+    const size_t* getGroupSize() const {
+        // We return 1
         return &dim;
     }
 };

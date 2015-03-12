@@ -165,9 +165,24 @@ public:
         FAssertLF(outputcl && errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);*/
 
         SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &containersPtr,  &containersSize, &user_data/*, &outputcl*/);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_bottomPassPerform, kernel_bottomPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_bottomPassPerform, kernel_bottomPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
+
+        struct starpu_task* tsk = starpu_task_get_current();
+        FAssertLF(tsk);
+        starpu_data_handle_t handle = STARPU_TASK_GET_HANDLE( tsk, 0);
+        FAssertLF(handle);
+        //starpu_data_acquire(handle, STARPU_RW);
+        //starpu_data_release(handle);
+        void* data = starpu_data_get_local_ptr( handle);
+        FAssertLF(data && starpu_data_get_size(handle) == leafCellsSize);
+        //const int errcode_ret = clEnqueueReadBuffer(queue_bottomPassPerform, leafCellsPtr,
+        //                CL_TRUE, 0, leafCellsSize, data, 0, NULL, NULL);
+        //FAssertLF(errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);
+//        for(size_t idx = 0 ; idx < leafCellsSize ; ++idx){
+//            ((unsigned char*)data)[idx] = 99;
+//        }
         /*errcode_ret = clEnqueueReadBuffer(queue_bottomPassPerform, outputcl,
                 CL_TRUE, // blocking read
                 0, // write from the start
@@ -208,8 +223,8 @@ public:
         memcpy(sizes.v, subCellGroupsSize, sizeof(size_t)*9);
 
         SetKernelArgs(kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &ptrs,  &sizes, &nbSubCellGroups, &idxLevel, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_upwardPassPerform, kernel_upwardPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_upwardPassPerform, kernel_upwardPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
@@ -218,15 +233,15 @@ public:
                                                                                      size_t  outsideInteractionsSize){
         SetKernelArgs(kernel_transferInoutPassPerformMpi, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr,  &externalCellsSize, &idxLevel, &outsideInteractionsCl,
                                                                                   &outsideInteractionsSize, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerformMpi, kernel_transferInoutPassPerformMpi, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerformMpi, kernel_transferInoutPassPerformMpi, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
     void transferInPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize, int idxLevel){
         SetKernelArgs(kernel_transferInPassPerform, 0, &currentCellsPtr, &currentCellsSize, &idxLevel, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_transferInPassPerform, kernel_transferInPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_transferInPassPerform, kernel_transferInPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
@@ -235,8 +250,8 @@ public:
                                                                                   size_t outsideInteractionsSize){
         SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &externalCellsPtr, &externalCellsSize, &idxLevel,
                       &outsideInteractionsCl,&outsideInteractionsSize, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerform, kernel_transferInoutPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerform, kernel_transferInoutPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
@@ -249,8 +264,8 @@ public:
 
         SetKernelArgs(kernel_downardPassPerform, 0, &currentCellsPtr,
                       &currentCellsSize,  &ptrs, &sizes, &nbSubCellGroups, &idxLevel, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_downardPassPerform, kernel_downardPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_downardPassPerform, kernel_downardPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
@@ -259,15 +274,15 @@ public:
                                                                                 size_t outsideInteractionsSize){
         SetKernelArgs(kernel_directInoutPassPerformMpi, 0, &containersPtr,
                       &containersSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl,&outsideInteractionsSize, &treeHeight, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerformMpi, kernel_directInoutPassPerformMpi, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerformMpi, kernel_directInoutPassPerformMpi, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
     void directInPassPerform(cl_mem containersPtr,  size_t containerSize){
         SetKernelArgs(kernel_directInPassPerform, 0, &containersPtr, &containerSize, &treeHeight, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
@@ -276,16 +291,16 @@ public:
                           size_t  outsideInteractionsSize){
         SetKernelArgs(kernel_directInoutPassPerform, 0, &containersPtr,
                       &containerSize, &externalContainersPtr, &externalContainersSize, &outsideInteractionsCl, &outsideInteractionsSize, &treeHeight, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerform, kernel_directInoutPassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_directInoutPassPerform, kernel_directInoutPassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
     void mergePassPerform(cl_mem leafCellsPtr,
                             size_t leafCellsSize, cl_mem containersPtr, size_t containersSize){
         SetKernelArgs(kernel_mergePassPerform, 0, &leafCellsPtr, &leafCellsSize, &containersPtr, &containersSize, &user_data);
-        const size_t* dim = kernelFilename.getDimSizes();
-        const int err = clEnqueueNDRangeKernel(queue_mergePassPerform, kernel_mergePassPerform, kernelFilename.getNbDims(), NULL, dim, NULL, 0, NULL, NULL);
+        const int err = clEnqueueNDRangeKernel(queue_mergePassPerform, kernel_mergePassPerform, kernelFilename.getNbDims(), NULL,
+                                               kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 };

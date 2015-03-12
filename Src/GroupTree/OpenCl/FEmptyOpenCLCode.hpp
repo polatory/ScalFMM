@@ -77,7 +77,11 @@ __kernel void FOpenCL__mergePassPerform(__global unsigned char* leafCellsPtr, si
         return 0;
     }
 
-    const size_t* getDimSizes() const {
+    const size_t* getNbGroups() const {
+        return nullptr;
+    }
+
+    const size_t* getGroupSize() const {
         return nullptr;
     }
 };
