@@ -1,6 +1,12 @@
 /** This file contains the prototype for a kernel in opencl */
 // @SCALFMM_PRIVATE
 
+
+/***************************************************************************/
+/***************************************************************************/
+/************************CHANGE THINGS HERE*********************************/
+/***************************************************************************/
+
 typedef ___FReal___ FReal;
 typedef ___FParticleValueClass___ FParticleValueClass;
 typedef long long int MortonIndex;
@@ -382,11 +388,6 @@ __global unsigned char* FOpenCLGroupOfCells_getCell(struct FOpenCLGroupOfCells* 
     else return NULLPTR;
 }
 
-
-/***************************************************************************/
-/***************************************************************************/
-/***************************************************************************/
-/***************************************************************************/
 struct Uptr9{
     __global unsigned char* ptrs[9];
 } __attribute__ ((aligned (1)));
@@ -398,6 +399,12 @@ struct size_t9{
 struct Uptr343{
     __global unsigned char* ptrs[343];
 };
+
+/***************************************************************************/
+/***************************************************************************/
+/************************CHANGE THINGS HERE*********************************/
+/***************************************************************************/
+
 
 void P2M(__global unsigned char* pole, const struct FOpenCLGroupAttachedLeaf particles, __global void* user_data) {
     __global long long* up = (__global long long*)(pole+FCellUpOffset);
