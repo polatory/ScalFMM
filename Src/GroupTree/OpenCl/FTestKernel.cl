@@ -290,8 +290,8 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
 
     // Init particle pointers
     group.blockHeader->positionOffset = (sizeof(FReal) * group.blockHeader->nbParticlesAllocatedInGroup);
-    group.particlePosition[0] = ((__global FReal*)((size_t)((group.leafHeader + group.blockHeader->numberOfLeavesInBlock)
-                                                   +FOpenCLGroupOfParticlesMemoryAlignementBytes-1) & ~(FOpenCLGroupOfParticlesMemoryAlignementBytes-1)));
+    group.particlePosition[0] = (__global FReal*) (( ((size_t)(group.leafHeader + group.blockHeader->numberOfLeavesInBlock))
+                                                   +FOpenCLGroupOfParticlesMemoryAlignementBytes-1) & ~(FOpenCLGroupOfParticlesMemoryAlignementBytes-1));
     group.particlePosition[1] = (group.particlePosition[0] + group.blockHeader->nbParticlesAllocatedInGroup);
     group.particlePosition[2] = (group.particlePosition[1] + group.blockHeader->nbParticlesAllocatedInGroup);
 
@@ -455,7 +455,6 @@ void L2P(__global const unsigned char* localCell, struct FOpenCLGroupAttachedLea
 void P2P(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles[27], int directNeighborsPositions[27], const int counter, __global void* user_data){
-             return;// TODO
     long long cumul = sources.nbParticles-1;
     
     for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
@@ -473,7 +472,6 @@ void P2P(const int3 pos,
 void P2PRemote(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
-             //return;// TODO
     __global long long* partdown = targets.attributes[0];
     for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += directNeighborsParticles.nbParticles;
@@ -830,8 +828,10 @@ __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containers
         if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&interParticles)){
             struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIndex);
             FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
+            FOpenCLAssertLF(particles.nbParticles);
+            FOpenCLAssertLF(interParticles.nbParticles);
 
-            //P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel );
+            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel );
 
             P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), interParticles, interParticles , particles, FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition), userkernel);
         }
