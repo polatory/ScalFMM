@@ -20,7 +20,8 @@
 #include "FBasicCell.hpp"
 
 // To get access to descriptors
-struct FTestCellDescriptor;
+class FTestCellCudaDescriptor;
+class FTestCellCudaConstDescriptor;
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -115,9 +116,9 @@ public:
         return int(sizeof(long long int));
     }
 
-	// To get access to descriptor
-    friend struct FTestCellDescriptor;
-    friend struct FTestCell_Alignement;
+    // To get access to descriptor
+    friend class FTestCellCudaDescriptor;
+    friend class FTestCellCudaConstDescriptor;
 };
 
 #endif //FTESTCELL_HPP
