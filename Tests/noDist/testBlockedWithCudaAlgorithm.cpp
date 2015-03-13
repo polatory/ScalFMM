@@ -42,7 +42,7 @@
 //#include "../../Src/GroupTree/Cuda/FCudaTestKernels.hpp"
 //#include "../../Src/GroupTree/Cuda/FCudaGroupOfParticles.hpp"
 //#include "../../Src/GroupTree/Cuda/FCudaGroupAttachedLeaf.hpp"
-#include "../../Src/GroupTree/Cuda/FCudaGroupOfCells.hpp"
+//#include "../../Src/GroupTree/Cuda/FCudaGroupOfCells.hpp"
 
 template <class ContainerClass>
 class FTestCudaKernels;
