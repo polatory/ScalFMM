@@ -473,7 +473,7 @@ void P2P(const int3 pos,
 void P2PRemote(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
-             return;// TODO
+             //return;// TODO
     __global long long* partdown = targets.attributes[0];
     for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += directNeighborsParticles.nbParticles;
@@ -503,7 +503,7 @@ int3 getCoordinate(__global const unsigned char* cell, __global void* user_data)
 
 #define FOpenCLCheck( test ) { FOpenCLCheckCore((test), __FILE__, __LINE__); }
 #define FOpenCLCheckAfterCall() { FOpenCLCheckCore((cudaGetLastError()), __FILE__, __LINE__); }
-#define FOpenCLAssertLF(ARGS) if(!(ARGS)){}
+#define FOpenCLAssertLF(ARGS) if(!(ARGS)){ *((char*)0x09) = 'e'; }
 //#define FOpenCLAssertLF(ARGS) ARGS;
 
 #define FMGetOppositeNeighIndex(index) (27-(index)-1)
@@ -831,7 +831,7 @@ __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containers
             struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIndex);
             FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
 
-            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel );
+            //P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel );
 
             P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), interParticles, interParticles , particles, FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition), userkernel);
         }
