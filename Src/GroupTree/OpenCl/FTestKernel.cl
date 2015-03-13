@@ -458,7 +458,7 @@ void P2P(const int3 pos,
              return;// TODO
     long long cumul = sources.nbParticles-1;
     
-    for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
+    for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
         if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&directNeighborsParticles[idxNeigh])){
             cumul += directNeighborsParticles[idxNeigh].nbParticles;
         }
