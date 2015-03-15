@@ -93,7 +93,7 @@ public:
         if(filename){
             starpu_opencl_get_context (workerDevid, &context);
 
-            const int err = starpu_opencl_load_opencl_from_string(filename, &opencl_code, "-cl-std=CL2.0 -cl-mad-enable -Werror");
+            const int err = starpu_opencl_load_opencl_from_string(filename, &opencl_code, "-cl-std=CL2.0 -cl-mad-enable -Werror -w");
             if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "FOpenCL__bottomPassPerform", workerDevid) == CL_SUCCESS);
@@ -171,16 +171,16 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
-        struct starpu_task* tsk = starpu_task_get_current();
-        FAssertLF(tsk);
-        starpu_data_handle_t handle = STARPU_TASK_GET_HANDLE( tsk, 0);
-        FAssertLF(handle);
+//   todo TODO     struct starpu_task* tsk = starpu_task_get_current();
+//        FAssertLF(tsk);
+//        starpu_data_handle_t handle = STARPU_TASK_GET_HANDLE( tsk, 0);
+//        FAssertLF(handle);
         //starpu_data_acquire(handle, STARPU_RW);
         //starpu_data_release(handle);
         //uintptr_t dataTest = ((starpu_variable_interface2*)(((_starpu_data_replicate2*)(handle->per_node))->data_interface))->ptr;//((starpu_variable_interface*)(handle->per_node[0]->data_interface))->ptr;
-        void* data = starpu_data_get_local_ptr( handle);
-        FAssertLF(data && starpu_data_get_size(handle) == leafCellsSize);
-        std::cout << "currentCells data " << data << "\n";
+//        void* data = starpu_data_get_local_ptr( handle);
+//        FAssertLF(data && starpu_data_get_size(handle) == leafCellsSize);
+//        std::cout << "currentCells data " << data << "\n";
         //const int errcode_ret = clEnqueueReadBuffer(queue_bottomPassPerform, leafCellsPtr,
         //                CL_TRUE, 0, leafCellsSize, data, 0, NULL, NULL);
         //FAssertLF(errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);

@@ -19,11 +19,6 @@
 #include <cstddef>
 #include "FBasicCell.hpp"
 
-// To get access to descriptors
-class FTestCellCudaDescriptor;
-class FTestCellCudaConstDescriptor;
-struct FTestCell_Alignement;
-
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FBasicCell*
@@ -116,11 +111,6 @@ public:
     int getSavedSizeUp() {
         return int(sizeof(long long int));
     }
-
-    // To get access to descriptor
-    friend class FTestCellCudaDescriptor;
-    friend class FTestCellCudaConstDescriptor;
-    friend struct FTestCell_Alignement;
 };
 
 #endif //FTESTCELL_HPP

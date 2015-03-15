@@ -38,7 +38,7 @@
 
 #include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 #include "../../Src/GroupTree/OpenCl/FTestOpenCLCode.hpp"
-
+#include "../../Src/GroupTree/FTestCellPOD.hpp"
 
 
 int main(int argc, char* argv[]){
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
 
-    typedef FTestCell                                                       GroupCellClass;
+    typedef FTestCellPOD                                                       GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuOpenCLCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
