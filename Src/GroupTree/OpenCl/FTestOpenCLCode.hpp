@@ -3,6 +3,7 @@
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Components/FTestCell.hpp"
+#include "../FStarPUDefaultAlign.hpp"
 #include "FTextReplacer.hpp"
 
 struct FTestCell_Alignement{
@@ -34,6 +35,7 @@ public:
         kernelfile.replaceAll("___FCellDownOffset___", FTestCell_Alignement::dataDown);
         kernelfile.replaceAll("___FCellMortonOffset___", FTestCell_Alignement::mindex);
         kernelfile.replaceAll("___FCellCoordinateOffset___", FTestCell_Alignement::coord);
+        kernelfile.replaceAll("___DefaultStructAlign___", FStarPUDefaultAlign::StructAlign);
 
         dim = 1;
     }

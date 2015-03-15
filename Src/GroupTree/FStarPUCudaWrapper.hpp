@@ -33,12 +33,12 @@
 
 #include "FStarPUUtils.hpp"
 
-template <class KernelClass, class CudaCellGroupClass,
+template <class KernelClass, class CellClass, class CudaCellGroupClass,
           class CudaParticleGroupClass, class CudaParticleContainerClass,
           class CudaKernelClass>
 class FStarPUCudaWrapper {
 protected:
-    typedef FStarPUCudaWrapper<KernelClass, CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> ThisClass;
+    typedef FStarPUCudaWrapper<KernelClass, CellClass, CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> ThisClass;
 
     template <class OtherBlockClass>
     struct BlockInteractions{
@@ -81,7 +81,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__bottomPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__bottomPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
@@ -112,7 +112,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__upwardPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__upwardPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 subCellGroupsPtr,subCellGroupsSize,
                 nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream());
@@ -135,7 +135,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__transferInoutPassCallbackMpi<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__transferInoutPassCallbackMpi<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
@@ -158,7 +158,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__transferInPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__transferInPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 idxLevel, kernel, starpu_cuda_get_local_stream());
     }
@@ -179,7 +179,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__transferInoutPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__transferInoutPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
@@ -210,7 +210,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__downardPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__downardPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 subCellGroupsPtr,subCellGroupsSize,
                 nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream());
@@ -232,7 +232,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__directInoutPassCallbackMpi<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__directInoutPassCallbackMpi<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
@@ -252,7 +252,7 @@ public:
         starpu_codelet_unpack_args(cl_arg, &worker);
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__directInPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__directInPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight, kernel, starpu_cuda_get_local_stream());
     }
@@ -269,7 +269,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__directInoutPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__directInoutPassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
@@ -293,7 +293,7 @@ public:
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
-        FCuda__mergePassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+        FCuda__mergePassCallback<CellClass,CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),

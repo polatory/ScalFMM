@@ -9,7 +9,7 @@
 /**
 * @brief The FCudaGroupOfCells class manages the cells in block allocation.
 */
-template <const size_t CellClassSize>
+template <class CellClass>
 class FCudaGroupOfCells {
     /** One header is allocated at the beginning of each block */
     struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
@@ -108,14 +108,14 @@ public:
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ unsigned char* getCell(const MortonIndex inIndex){
-        if( exists(inIndex) ) return &blockCells[CellClassSize*blockIndexesTable[inIndex-blockHeader->startingIndex]];
+    __device__ CellClass* getCell(const MortonIndex inIndex){
+        if( exists(inIndex) ) return (CellClass*)(&blockCells[sizeof(CellClass)*blockIndexesTable[inIndex-blockHeader->startingIndex]]);
         else return nullptr;
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ const unsigned char* getCell(const MortonIndex inIndex) const {
-        if( exists(inIndex) ) return &blockCells[CellClassSize*blockIndexesTable[inIndex-blockHeader->startingIndex]];
+    __device__ const CellClass* getCell(const MortonIndex inIndex) const {
+        if( exists(inIndex) ) return (CellClass*)(&blockCells[sizeof(CellClass)*blockIndexesTable[inIndex-blockHeader->startingIndex]]);
         else return nullptr;
     }
 };

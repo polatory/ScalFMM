@@ -7,6 +7,14 @@
 
 class FCudaTreeCoordinate {
 public:
+    __device__ static int3 ConvertCoordinate(const int coordinate[3]) {
+        int3 coord;
+        coord.x = coordinate[0];
+        coord.y = coordinate[1];
+        coord.z = coordinate[2];
+        return coord;
+    }
+
     __device__ static int3 GetPositionFromMorton(MortonIndex inIndex, const int inLevel){
         MortonIndex mask = 0x1LL;
 

@@ -30,6 +30,7 @@
 #include "Cuda/FCudaGroupAttachedLeaf.hpp"
 #include "Cuda/FCudaGroupOfParticles.hpp"
 #include "Cuda/FCudaGroupOfCells.hpp"
+#include "Cuda/FCudaEmptyCell.hpp"
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
 #include "FStarPUOpenClWrapper.hpp"
@@ -39,7 +40,7 @@
 
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-    , class CudaCellContainerClass = FCudaGroupOfCells<0>, class CudaParticleGroupClass = FCudaGroupOfParticles<0, int>, class CudaParticleContainerClass = FCudaGroupAttachedLeaf<0, int>,
+    , class CudaCellClass = FCudaEmptyCell, class CudaCellContainerClass = FCudaGroupOfCells<FCudaEmptyCell>, class CudaParticleGroupClass = FCudaGroupOfParticles<0, int>, class CudaParticleContainerClass = FCudaGroupAttachedLeaf<0, int>,
     class CudaKernelClass = FCudaEmptyKernel<>
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
@@ -50,7 +51,7 @@ class FGroupTaskStarPUAlgorithm {
 protected:
     typedef FGroupTaskStarPUAlgorithm<OctreeClass, CellContainerClass, CellClass, KernelClass, ParticleGroupClass, ParticleContainerClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        , CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass
+        , CudaCellClass, CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
     , OpenCLDeviceWrapperClass
@@ -90,7 +91,7 @@ protected:
     StarPUCpuWrapperClass cpuWrapper;
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-    typedef FStarPUCudaWrapper<KernelClass, CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> StarPUCudaWrapperClass;
+    typedef FStarPUCudaWrapper<KernelClass, CudaCellClass, CudaCellContainerClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass> StarPUCudaWrapperClass;
     StarPUCudaWrapperClass cudaWrapper;
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL

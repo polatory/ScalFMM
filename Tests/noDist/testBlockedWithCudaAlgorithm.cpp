@@ -39,12 +39,14 @@
 
 #include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
 
+#include "../../Src/GroupTree/FTestCellPOD.hpp"
+
 //#include "../../Src/GroupTree/Cuda/FCudaTestKernels.hpp"
 //#include "../../Src/GroupTree/Cuda/FCudaGroupOfParticles.hpp"
 //#include "../../Src/GroupTree/Cuda/FCudaGroupAttachedLeaf.hpp"
 //#include "../../Src/GroupTree/Cuda/FCudaGroupOfCells.hpp"
 
-template <class ContainerClass>
+template <class CellClass, class ContainerClass>
 class FTestCudaKernels;
 
 template <unsigned NbAttributesPerParticle, class AttributeClass>
@@ -53,7 +55,7 @@ class FCudaGroupAttachedLeaf;
 template <unsigned NbAttributesPerParticle, class AttributeClass>
 class FCudaGroupOfParticles;
 
-template <const size_t CellClassSize>
+template <class CellClass>
 class FCudaGroupOfCells;
 
 int main(int argc, char* argv[]){
@@ -65,12 +67,12 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
     // Initialize the types
-    typedef FTestCell                                                       GroupCellClass;
+    typedef FTestCellPOD                                                    GroupCellClass;
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCudaCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass
-        , FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int> > > GroupAlgorithm;
+        , FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int> > > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer      ContainerClass;

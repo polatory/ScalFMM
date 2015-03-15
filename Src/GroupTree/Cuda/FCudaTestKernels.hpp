@@ -7,126 +7,61 @@
 // We need to describe this cell
 #include "../../Components/FTestCell.hpp"
 
-class FTestCellCudaDescriptor {
-    FTestCell* ptr;
-public:
-    __device__ FTestCellCudaDescriptor(unsigned char* inPtr)
-        : ptr(reinterpret_cast<FTestCell*>(inPtr)){
-    }
 
-    __device__ long long int& dataUp(){
-        return ptr->dataUp;
-    }
-
-    __device__ long long int& dataDown(){
-        return ptr->dataDown;
-    }
-
-    __device__ MortonIndex getMortonIndex() const{
-        return ptr->mortonIndex;
-    }
-
-    __device__ int3 getCoordinate() const{
-        const int* coordinate = (const int*)&ptr->coordinate;
-        int3 coord;
-        coord.x = coordinate[0];
-        coord.y = coordinate[1];
-        coord.z = coordinate[2];
-        return coord;
-    }
-};
-
-class FTestCellCudaConstDescriptor {
-    const FTestCell* ptr;
-public:
-    __device__ FTestCellCudaConstDescriptor(const unsigned char* inPtr)
-        : ptr(reinterpret_cast<const FTestCell*>(inPtr)){
-    }
-
-    __device__ const long long int& dataUp()const {
-        return ptr->dataUp;
-    }
-
-    __device__ const long long int& dataDown()const {
-        return ptr->dataDown;
-    }
-
-    __device__ MortonIndex getMortonIndex() const{
-        return ptr->mortonIndex;
-    }
-
-    __device__ int3 getCoordinate() const{
-        const int* coordinate = (const int*)&ptr->coordinate;
-        int3 coord;
-        coord.x = coordinate[0];
-        coord.y = coordinate[1];
-        coord.z = coordinate[2];
-        return coord;
-    }
-};
-
-template< class ContainerClass >
+template< class CellClass, class ContainerClass >
 class FTestCudaKernels {
 public:
     /** Before upward */
-    __device__ void P2M(unsigned char* const pole, const ContainerClass* const particles) {
+    __device__ void P2M(CellClass* pole, const ContainerClass* const particles) {
         // the pole represents all particles under
         if(threadIdx.x == 0){
-            FTestCellCudaDescriptor cell(pole);
-            cell.dataUp() += particles->getNbParticles();
+            pole->dataUp += particles->getNbParticles();
         }
     }
 
     /** During upward */
-    __device__ void M2M(unsigned char* const  pole, const unsigned char*const*const  child, const int /*level*/) {
+    __device__ void M2M(CellClass*  pole, const CellClass*  child[8], const int /*level*/) {
         if(threadIdx.x == 0) {
-            FTestCellCudaDescriptor cell(pole);
             // A parent represents the sum of the child
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if(child[idx]){
-                    FTestCellCudaConstDescriptor childCell(child[idx]);
-                    cell.dataUp() += childCell.dataUp();
+                    pole->dataUp += child[idx]->dataUp;
                 }
             }
         }
     }
 
     /** Before Downward */
-    __device__ void M2L(unsigned char* const  local, const unsigned char* distantNeighbors[343], const int /*size*/, const int /*level*/) {
+    __device__ void M2L(CellClass*  local, const CellClass* distantNeighbors[343], const int /*size*/, const int /*level*/) {
         if(threadIdx.x == 0) {
-            FTestCellCudaDescriptor cell(local);
             // The pole is impacted by what represent other poles
             for(int idx = 0 ; idx < 343 ; ++idx){
                 if(distantNeighbors[idx]){
-                    FTestCellCudaConstDescriptor interCell(distantNeighbors[idx]);
-                    cell.dataDown() += interCell.dataUp();
+                    local->dataDown += distantNeighbors[idx]->dataUp;
                 }
             }
         }
     }
 
     /** During Downward */
-    __device__ void L2L(const unsigned char*const  local, unsigned char**const  child, const int /*level*/) {
+    __device__ void L2L(const CellClass* local, CellClass*  child[8], const int /*level*/) {
         if(threadIdx.x == 0) {
-            FTestCellCudaConstDescriptor cell(local);
             // Each child is impacted by the father
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if(child[idx]){
-                    FTestCellCudaDescriptor cellChild(child[idx]);
-                    cellChild.dataDown() += cell.dataDown();
+                    child[idx]->dataDown += local->dataDown;
                 }
             }
         }
     }
 
     /** After Downward */
-    __device__ void L2P(const unsigned char* const  local, ContainerClass*const particles){
+    __device__ void L2P(const CellClass* local, ContainerClass*const particles){
         if(threadIdx.x == 0) {
-            FTestCellCudaConstDescriptor cell(local);
             // The particles is impacted by the parent cell
             long long int*const particlesAttributes = particles->template getAttribute<0>();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-                particlesAttributes[idxPart] += cell.dataDown();
+                particlesAttributes[idxPart] += local->dataDown;
             }
         }
     }
@@ -173,16 +108,6 @@ public:
                 particlesAttributes[idxPart] += inc;
             }
         }
-    }
-
-    __device__ MortonIndex getMortonIndex(const unsigned char* cell) const{
-        FTestCellCudaConstDescriptor cellAccess(cell);
-        return cellAccess.getMortonIndex();
-    }
-
-    __device__ int3 getCoordinate(const unsigned char* cell) const{
-        FTestCellCudaConstDescriptor cellAccess(cell);
-        return cellAccess.getCoordinate();
     }
 
     __host__ static FTestCudaKernels* InitKernelKernel(void*){

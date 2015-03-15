@@ -25,7 +25,7 @@ static void FCudaCheckCore(cudaError_t code, const char *file, int line) {
 #define FCudaMax(x,y) ((x)<(y) ? (y) : (x))
 #define FCudaMin(x,y) ((x)>(y) ? (y) : (x))
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_t leafCellsSize,
                                          unsigned char* containersPtr, std::size_t containersSize,
                                          CudaKernelClass* kernel){
@@ -36,9 +36,9 @@ __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_
     const MortonIndex blockEndIdx = leafCells.getEndingIndex();
 
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        unsigned char* cell = leafCells.getCell(mindex);
+        CellClass* cell = leafCells.getCell(mindex);
         if(cell){
-            FCudaAssertLF(kernel->getMortonIndex(cell) == mindex);
+            FCudaAssertLF(cell->mortonIndex == mindex);
             ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(mindex);
             FCudaAssertLF(particles.isAttachedToSomething());
             kernel->P2M(cell, &particles);
@@ -46,12 +46,12 @@ __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__bottomPassCallback(unsigned char* leafCellsPtr, std::size_t leafCellsSize,
                                  unsigned char* containersPtr, std::size_t containersSize,
                                  CudaKernelClass* kernel, cudaStream_t 	currentStream){
     FCuda__bottomPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>
                             (leafCellsPtr, leafCellsSize,
                              containersPtr, containersSize,
@@ -65,7 +65,7 @@ __host__ void FCuda__bottomPassCallback(unsigned char* leafCellsPtr, std::size_t
 /// Upward Pass
 /////////////////////////////////////////////////////////////////////////////////////
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                   unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
                                   CudaKernelClass* kernel, int nbSubCellGroups, int idxLevel){
@@ -84,10 +84,10 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
     int idxSubCellGroup = 0;
 
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        unsigned char* cell = currentCells.getCell(mindex);
+        CellClass* cell = currentCells.getCell(mindex);
         if(cell){
-            FCudaAssertLF(kernel->getMortonIndex(cell) == mindex);
-            unsigned char* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+            FCudaAssertLF(cell->mortonIndex == mindex);
+            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                 if( subCellGroups[idxSubCellGroup].getEndingIndex() <= ((mindex<<3)+idxChild) ){
@@ -97,7 +97,7 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
                     break;
                 }
                 child[idxChild] = subCellGroups[idxSubCellGroup].getCell((mindex<<3)+idxChild);
-                FCudaAssertLF(child[idxChild] == nullptr || kernel->getMortonIndex(child[idxChild]) == ((mindex<<3)+idxChild));
+                FCudaAssertLF(child[idxChild] == nullptr || child[idxChild]->mortonIndex == ((mindex<<3)+idxChild));
             }
 
             kernel->M2M(cell, child, idxLevel);
@@ -105,13 +105,13 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__upwardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                  unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
                                  int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t currentStream){
 
     FCuda__upwardPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>
                             (currentCellsPtr, currentCellsSize,
                              subCellGroupsPtr, subCellGroupsSize,
@@ -126,7 +126,7 @@ __host__ void FCuda__upwardPassCallback(unsigned char* currentCellsPtr, std::siz
 /// Transfer Pass Mpi
 /////////////////////////////////////////////////////////////////////////////////////
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                              unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                              CudaKernelClass* kernel, int idxLevel, const OutOfBlockInteraction* outsideInteractions,
@@ -135,15 +135,15 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        unsigned char* interCell = cellsOther.getCell(outsideInteractions[outInterIdx].outIndex);
+        CellClass* interCell = cellsOther.getCell(outsideInteractions[outInterIdx].outIndex);
         if(interCell){
-            FCudaAssertLF(kernel->getMortonIndex(interCell) == outsideInteractions[outInterIdx].outIndex);
-            unsigned char* cell = currentCells.getCell(outsideInteractions[outInterIdx].insideIndex);
+            FCudaAssertLF(interCell->mortonIndex == outsideInteractions[outInterIdx].outIndex);
+            CellClass* cell = currentCells.getCell(outsideInteractions[outInterIdx].insideIndex);
             FCudaAssertLF(cell);
-            FCudaAssertLF(kernel->getMortonIndex(cell) == outsideInteractions[outInterIdx].insideIndex);
+            FCudaAssertLF(cell->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            const unsigned char* interactions[343];
-            memset(interactions, 0, 343*sizeof(unsigned char*));
+            const CellClass* interactions[343];
+            memset(interactions, 0, 343*sizeof(CellClass*));
             interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
             const int counter = 1;
             kernel->M2L( cell , interactions, counter, idxLevel);
@@ -151,7 +151,7 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__transferInoutPassCallbackMpi(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                            unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                            int idxLevel, const OutOfBlockInteraction* outsideInteractions,
@@ -162,7 +162,7 @@ __host__ void FCuda__transferInoutPassCallbackMpi(unsigned char* currentCellsPtr
                 cudaMemcpyHostToDevice ) );
 
     FCuda__transferInoutPassPerformMpi
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(currentCellsPtr, currentCellsSize,
                                        externalCellsPtr, externalCellsSize,
                                        kernel, idxLevel, cuOutsideInteractions,
@@ -179,7 +179,7 @@ __host__ void FCuda__transferInoutPassCallbackMpi(unsigned char* currentCellsPtr
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                        CudaKernelClass* kernel, int idxLevel){
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize);
@@ -188,23 +188,23 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
     const MortonIndex blockEndIdx = currentCells.getEndingIndex();
 
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        unsigned char* cell = currentCells.getCell(mindex);
+        CellClass* cell = currentCells.getCell(mindex);
         if(cell){
-            FCudaAssertLF(kernel->getMortonIndex(cell) == mindex);
+            FCudaAssertLF(cell->mortonIndex == mindex);
             MortonIndex interactionsIndexes[189];
             int interactionsPosition[189];
-            const int3 coord = (kernel->getCoordinate(cell));
+            const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell->coordinates));
             int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
 
-            const unsigned char* interactions[343];
-            memset(interactions, 0, 343*sizeof(unsigned char*));
+            const CellClass* interactions[343];
+            memset(interactions, 0, 343*sizeof(CellClass*));
             int counterExistingCell = 0;
 
             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                    unsigned char* interCell = currentCells.getCell(interactionsIndexes[idxInter]);
+                    CellClass* interCell = currentCells.getCell(interactionsIndexes[idxInter]);
                     if(interCell){
-                        FCudaAssertLF(kernel->getMortonIndex(interCell) == interactionsIndexes[idxInter]);
+                        FCudaAssertLF(interCell->mortonIndex == interactionsIndexes[idxInter]);
                         FCudaAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
                         interactions[interactionsPosition[idxInter]] = interCell;
                         counterExistingCell += 1;
@@ -217,12 +217,12 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__transferInPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                     int idxLevel, CudaKernelClass* kernel, cudaStream_t currentStream){
 
     FCuda__transferInPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(currentCellsPtr, currentCellsSize,
                                  kernel, idxLevel);
     FCudaCheckAfterCall();
@@ -230,7 +230,7 @@ __host__ void FCuda__transferInPassCallback(unsigned char* currentCellsPtr, std:
 }
 
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                          unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                          CudaKernelClass* kernel, int idxLevel, const OutOfBlockInteraction* outsideInteractions,
@@ -239,15 +239,15 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        unsigned char* interCell = cellsOther.getCell(outsideInteractions[outInterIdx].outIndex);
+        CellClass* interCell = cellsOther.getCell(outsideInteractions[outInterIdx].outIndex);
         if(interCell){
-            FCudaAssertLF(kernel->getMortonIndex(interCell) == outsideInteractions[outInterIdx].outIndex);
-            unsigned char* cell = currentCells.getCell(outsideInteractions[outInterIdx].insideIndex);
+            FCudaAssertLF(interCell->mortonIndex == outsideInteractions[outInterIdx].outIndex);
+            CellClass* cell = currentCells.getCell(outsideInteractions[outInterIdx].insideIndex);
             FCudaAssertLF(cell);
-            FCudaAssertLF(kernel->getMortonIndex(cell) == outsideInteractions[outInterIdx].insideIndex);
+            FCudaAssertLF(cell->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            const unsigned char* interactions[343];
-            memset(interactions, 0, 343*sizeof(unsigned char*));
+            const CellClass* interactions[343];
+            memset(interactions, 0, 343*sizeof(CellClass*));
             interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
             const int counter = 1;
             kernel->M2L( cell , interactions, counter, idxLevel);
@@ -260,7 +260,7 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
 }
 
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                         unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                         int idxLevel, const OutOfBlockInteraction* outsideInteractions,
@@ -272,7 +272,7 @@ __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, s
 
 
     FCuda__transferInoutPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(currentCellsPtr, currentCellsSize,
                                     externalCellsPtr, externalCellsSize,
                                     kernel, idxLevel, cuOutsideInteractions,
@@ -288,7 +288,7 @@ __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, s
 /// Downard Pass
 /////////////////////////////////////////////////////////////////////////////////////
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
                                    CudaKernelClass* kernel, int nbSubCellGroups, int idxLevel){
@@ -307,10 +307,10 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
     int idxSubCellGroup = 0;
 
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        unsigned char* cell = currentCells.getCell(mindex);
+        CellClass* cell = currentCells.getCell(mindex);
         if(cell){
-            FCudaAssertLF(kernel->getMortonIndex(cell) == mindex);
-            unsigned char* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+            FCudaAssertLF(cell->mortonIndex == mindex);
+            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                 if( subCellGroups[idxSubCellGroup].getEndingIndex() <= ((mindex<<3)+idxChild) ){
@@ -320,7 +320,7 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
                     break;
                 }
                 child[idxChild] = subCellGroups[idxSubCellGroup].getCell((mindex<<3)+idxChild);
-                FCudaAssertLF(child[idxChild] == nullptr || kernel->getMortonIndex(child[idxChild]) == ((mindex<<3)+idxChild));
+                FCudaAssertLF(child[idxChild] == nullptr || child[idxChild]->mortonIndex == ((mindex<<3)+idxChild));
             }
 
             kernel->L2L(cell, child, idxLevel);
@@ -328,13 +328,13 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__downardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                   unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
                                   int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t currentStream){
 
     FCuda__downardPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>
             (currentCellsPtr, currentCellsSize, subCellGroupsPtr, subCellGroupsSize, kernel, nbSubCellGroups, idxLevel);
     FCudaCheckAfterCall();
@@ -345,7 +345,7 @@ __host__ void FCuda__downardPassCallback(unsigned char* currentCellsPtr, std::si
 /// Direct Pass MPI
 /////////////////////////////////////////////////////////////////////////////////////
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, std::size_t containersSize,
                                           unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                           CudaKernelClass* kernel, const OutOfBlockInteraction* outsideInteractions,
@@ -367,7 +367,7 @@ __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, s
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__directInoutPassCallbackMpi(unsigned char* containersPtr, std::size_t containersSize,
                                          unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                          const OutOfBlockInteraction* outsideInteractions,
@@ -378,7 +378,7 @@ __host__ void FCuda__directInoutPassCallbackMpi(unsigned char* containersPtr, st
                 cudaMemcpyHostToDevice ) );
 
     FCuda__directInoutPassPerformMpi
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(containersPtr, containersSize,
                                   externalContainersPtr, externalContainersSize,
                                   kernel, cuOutsideInteractions,
@@ -395,7 +395,7 @@ __host__ void FCuda__directInoutPassCallbackMpi(unsigned char* containersPtr, st
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::size_t containersSize,
                                     CudaKernelClass* kernel, const int treeHeight){
     ParticleContainerGroupClass containers(containersPtr, containersSize);
@@ -432,18 +432,18 @@ __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::si
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__directInPassCallback(unsigned char* containersPtr, std::size_t containersSize,
                                    const int treeHeight, CudaKernelClass* kernel, cudaStream_t currentStream){
     FCuda__directInPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(containersPtr, containersSize,
                                kernel, treeHeight);
     FCudaCheckAfterCall();
     FCudaCheck(cudaStreamSynchronize(currentStream));
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std::size_t containersSize,
                                        unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                        CudaKernelClass* kernel, const OutOfBlockInteraction* outsideInteractions,
@@ -469,7 +469,7 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__directInoutPassCallback(unsigned char* containersPtr, std::size_t containersSize,
                                       unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                       const OutOfBlockInteraction* outsideInteractions,
@@ -481,7 +481,7 @@ __host__ void FCuda__directInoutPassCallback(unsigned char* containersPtr, std::
                 cudaMemcpyHostToDevice ) );
 
     FCuda__directInoutPassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(containersPtr, containersSize,
                                   externalContainersPtr, externalContainersSize,
                                   kernel, cuOutsideInteractions,
@@ -499,7 +499,7 @@ __host__ void FCuda__directInoutPassCallback(unsigned char* containersPtr, std::
 /////////////////////////////////////////////////////////////////////////////////////
 
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__mergePassPerform(unsigned char* leafCellsPtr, std::size_t leafCellsSize,
                                  unsigned char* containersPtr, std::size_t containersSize,
                                  CudaKernelClass* kernel){
@@ -510,9 +510,9 @@ __global__ void FCuda__mergePassPerform(unsigned char* leafCellsPtr, std::size_t
     const MortonIndex blockEndIdx = leafCells.getEndingIndex();
 
     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        unsigned char* cell = leafCells.getCell(mindex);
+        CellClass* cell = leafCells.getCell(mindex);
         if(cell){
-            FCudaAssertLF(kernel->getMortonIndex(cell) == mindex);
+            FCudaAssertLF(cell->mortonIndex == mindex);
             ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(mindex);
             FCudaAssertLF(particles.isAttachedToSomething());
             kernel->L2P(cell, &particles);
@@ -520,12 +520,12 @@ __global__ void FCuda__mergePassPerform(unsigned char* leafCellsPtr, std::size_t
     }
 }
 
-template <class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
+template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__mergePassCallback(unsigned char* leafCellsPtr, std::size_t leafCellsSize,
                                 unsigned char* containersPtr, std::size_t containersSize,
                                 CudaKernelClass* kernel, cudaStream_t currentStream){
     FCuda__mergePassPerform
-            < CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
+            < CellClass, CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<nbCudaThreads, nbCudaBlocks, 0, currentStream>>>(leafCellsPtr, leafCellsSize,
                             containersPtr, containersSize,
                             kernel);
@@ -557,122 +557,124 @@ void FCuda__ReleaseCudaKernel(CudaKernelClass* cukernel){
 /////////////////////////////////////////////////////////////////////////////////////
 
 #include "FCudaEmptyKernel.hpp"
+#include "FCudaEmptyCell.hpp"
 
-template void FCuda__bottomPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__bottomPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* leafCellsPtr, std::size_t leafCellsSize,
     unsigned char* containersPtr, std::size_t containersSize,
-    FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__upwardPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__upwardPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
-     int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+     int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInoutPassCallbackMpi<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__transferInoutPassCallbackMpi<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
      int idxLevel, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__transferInPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    int idxLevel, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int idxLevel, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInoutPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__transferInoutPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
      int idxLevel, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__downardPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__downardPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
-    int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInoutPassCallbackMpi<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__directInPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
-    const int treeHeight, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    const int treeHeight, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInoutPassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__directInoutPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
      const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__mergePassCallback<FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>> >
+template void FCuda__mergePassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel< FCudaEmptyCell,FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* leafCellsPtr, std::size_t leafCellsSize,
     unsigned char* containersPtr, std::size_t containersSize,
-    FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
+    FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
 
-template FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int> >* FCuda__BuildCudaKernel< FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int> > >(void* kernel);
-template void FCuda__ReleaseCudaKernel< FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int> > >(FCudaEmptyKernel< FCudaGroupAttachedLeaf<0, int> >* cukernel);
+template FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int> >* FCuda__BuildCudaKernel< FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int> > >(void* kernel);
+template void FCuda__ReleaseCudaKernel< FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int> > >(FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int> >* cukernel);
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
 #include "FCudaTestKernels.hpp"
+#include "../FTestCellPOD.hpp"
 
-template void FCuda__bottomPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__bottomPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* leafCellsPtr, std::size_t leafCellsSize,
     unsigned char* containersPtr, std::size_t containersSize,
-    FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__upwardPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__upwardPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
-     int nbSubCellGroups, int idxLevel, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+     int nbSubCellGroups, int idxLevel, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInoutPassCallbackMpi<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__transferInoutPassCallbackMpi<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
      int idxLevel, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__transferInPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-     int idxLevel, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+     int idxLevel, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__transferInoutPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__transferInoutPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
      int idxLevel, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__downardPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__downardPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
     unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
-     int nbSubCellGroups, int idxLevel, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+     int nbSubCellGroups, int idxLevel, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInoutPassCallbackMpi<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__directInoutPassCallbackMpi<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__directInPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
-    const int treeHeight, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    const int treeHeight, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__directInoutPassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__directInoutPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* containersPtr, std::size_t containersSize,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template void FCuda__mergePassCallback<FCudaGroupOfCells<sizeof(FTestCell)>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>> >
+template void FCuda__mergePassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* leafCellsPtr, std::size_t leafCellsSize,
     unsigned char* containersPtr, std::size_t containersSize,
-    FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
+    FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
-template FTestCudaKernels<FCudaGroupAttachedLeaf<2, long long int> >* FCuda__BuildCudaKernel<FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int> > >(void* kernel);
-template void FCuda__ReleaseCudaKernel< FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int> > >(FTestCudaKernels< FCudaGroupAttachedLeaf<2, long long int> >* cukernel);
+template FTestCudaKernels<FTestCellPODCore,FCudaGroupAttachedLeaf<2, long long int> >* FCuda__BuildCudaKernel<FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int> > >(void* kernel);
+template void FCuda__ReleaseCudaKernel< FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int> > >(FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int> >* cukernel);
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
