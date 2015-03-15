@@ -4,13 +4,15 @@
 
 #include "FCudaGlobal.hpp"
 
+#include "../FStarPUDefaultAlign.hpp"
+
 /**
 * @brief The FCudaGroupOfCells class manages the cells in block allocation.
 */
 template <const size_t CellClassSize>
 class FCudaGroupOfCells {
     /** One header is allocated at the beginning of each block */
-    struct alignas(1) BlockHeader{
+    struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfCellsInBlock;

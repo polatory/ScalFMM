@@ -3,12 +3,12 @@
 #define FCUDAGROUPOFPARTICLES_HPP
 
 #include "FCudaGlobal.hpp"
-
+#include "../FStarPUDefaultAlign.hpp"
 
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupOfParticles {
     /** One header is allocated at the beginning of each block */
-    struct alignas(1) BlockHeader{
+    struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
@@ -25,7 +25,7 @@ class FCudaGroupOfParticles {
     };
 
     /** Information about a leaf */
-    struct alignas(1) LeafHeader {
+    struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
         int nbParticles;
         size_t offSet;
     };

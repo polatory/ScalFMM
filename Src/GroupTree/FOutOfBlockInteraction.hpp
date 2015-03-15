@@ -3,7 +3,9 @@
 
 #include "../Utils/FGlobal.hpp"
 
-struct  alignas(1) OutOfBlockInteraction{
+#include "FStarPUDefaultAlign.hpp"
+
+struct  alignas(FStarPUDefaultAlign::StructAlign) OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
     int outPosition;

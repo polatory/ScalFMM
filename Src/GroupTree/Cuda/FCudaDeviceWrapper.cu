@@ -15,7 +15,9 @@ static void FCudaCheckCore(cudaError_t code, const char *file, int line) {
 }
 #define FCudaCheck( test ) { FCudaCheckCore((test), __FILE__, __LINE__); }
 #define FCudaCheckAfterCall() { FCudaCheckCore((cudaGetLastError()), __FILE__, __LINE__); }
-#define FCudaAssertLF(ARGS) ARGS;
+#define FCudaAssertLF(ARGS) if(!(ARGS)){\
+                                printf("Error line %d\n", __LINE__);\
+                            }
 
 #define FMGetOppositeNeighIndex(index) (27-(index)-1)
 #define FMGetOppositeInterIndex(index) (343-(index)-1)

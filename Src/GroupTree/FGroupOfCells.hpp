@@ -7,10 +7,10 @@
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FAlignedMemory.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
+#include "FStarPUDefaultAlign.hpp"
 
 #include <list>
 #include <functional>
-
 
 /**
 * @brief The FGroupOfCells class manages the cells in block allocation.
@@ -18,7 +18,7 @@
 template <class CellClass>
 class FGroupOfCells {
     /** One header is allocated at the beginning of each block */
-    struct alignas(1) BlockHeader{
+    struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfCellsInBlock;

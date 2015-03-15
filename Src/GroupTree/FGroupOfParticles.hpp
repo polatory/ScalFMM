@@ -8,6 +8,7 @@
 #include "../Utils/FAssert.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
 #include "../Utils/FAlignedMemory.hpp"
+#include "FStarPUDefaultAlign.hpp"
 
 #include <list>
 #include <functional>
@@ -19,7 +20,7 @@
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupOfParticles {
     /** One header is allocated at the beginning of each block */
-    struct alignas(1) BlockHeader{
+    struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
@@ -36,7 +37,7 @@ class FGroupOfParticles {
     };
 
     /** Information about a leaf */
-    struct alignas(1) LeafHeader {
+    struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
         int nbParticles;
         size_t offSet;
     };

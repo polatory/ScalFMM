@@ -16,17 +16,19 @@
 
 #include "FEmptyOpenCLCode.hpp"
 
+#include "../FStarPUDefaultAlign.hpp"
+
 #include <starpu.h>
 
 
 template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLCode>
 class FOpenCLDeviceWrapper {
 protected:
-    struct  alignas(1)  Uptr9{
+    struct  alignas(FStarPUDefaultAlign::StructAlign)  Uptr9{
         cl_mem ptrs[9];
     };
 
-    struct alignas(1)  size_t9{
+    struct alignas(FStarPUDefaultAlign::StructAlign)  size_t9{
         size_t v[9];
     };
 
@@ -175,8 +177,10 @@ public:
         FAssertLF(handle);
         //starpu_data_acquire(handle, STARPU_RW);
         //starpu_data_release(handle);
+        //uintptr_t dataTest = ((starpu_variable_interface2*)(((_starpu_data_replicate2*)(handle->per_node))->data_interface))->ptr;//((starpu_variable_interface*)(handle->per_node[0]->data_interface))->ptr;
         void* data = starpu_data_get_local_ptr( handle);
         FAssertLF(data && starpu_data_get_size(handle) == leafCellsSize);
+        std::cout << "currentCells data " << data << "\n";
         //const int errcode_ret = clEnqueueReadBuffer(queue_bottomPassPerform, leafCellsPtr,
         //                CL_TRUE, 0, leafCellsSize, data, 0, NULL, NULL);
         //FAssertLF(errcode_ret == CL_SUCCESS, "OpenCL error code " , errcode_ret);
