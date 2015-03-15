@@ -26,6 +26,8 @@ typedef long long int MortonIndex;
 
 #define NULLPTR (0)
 
+#define DefaultStructAlign ___DefaultStructAlign___
+
 /***************************************************************************/
 /***************************************************************************/
 /***************************************************************************/
@@ -35,7 +37,7 @@ typedef struct OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
     int outPosition;
-} __attribute__ ((aligned (1)));
+} __attribute__ ((aligned (DefaultStructAlign)));
 
 #define Between(inValue, inMin, inMax)  ( (inMin) <= (inValue) && (inValue) < (inMax) )
 #define pow2(power)  (1 << (power))
@@ -247,13 +249,13 @@ struct FOpenCLGroupOfParticlesBlockHeader{
     size_t attributeOffset;
     //< The total number of particles in the group
     int nbParticlesInGroup;
-}__attribute__ ((aligned (1)));
+}__attribute__ ((aligned (DefaultStructAlign)));
 
 /** Information about a leaf */
 struct FOpenCLGroupOfParticlesLeafHeader {
     int nbParticles;
     size_t offSet;
-}__attribute__ ((aligned (1)));
+}__attribute__ ((aligned (DefaultStructAlign)));
 
 
 struct FOpenCLGroupOfParticles {
@@ -337,7 +339,7 @@ struct FOpenCLGroupOfCellsBlockHeader{
     MortonIndex endingIndex;
     int numberOfCellsInBlock;
     int blockIndexesTableSize;
-} __attribute__ ((aligned (1)));
+} __attribute__ ((aligned (DefaultStructAlign)));
 
 
 struct FOpenCLGroupOfCells {
@@ -390,11 +392,11 @@ __global unsigned char* FOpenCLGroupOfCells_getCell(struct FOpenCLGroupOfCells* 
 
 struct Uptr9{
     __global unsigned char* ptrs[9];
-} __attribute__ ((aligned (1)));
+} __attribute__ ((aligned (DefaultStructAlign)));
 
 struct size_t9{
     size_t v[9];
-} __attribute__ ((aligned (1)));
+} __attribute__ ((aligned (DefaultStructAlign)));
 
 struct Uptr343{
     __global unsigned char* ptrs[343];
