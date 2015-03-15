@@ -85,7 +85,7 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel);
+                kernel, starpu_cuda_get_local_stream());
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@ public:
         FCuda__upwardPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 subCellGroupsPtr,subCellGroupsSize,
-                kernel, nbSubCellGroups, idxLevel);
+                nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream());
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +139,8 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel, idxLevel, outsideInteractions->data(), outsideInteractions->size());
+                idxLevel, outsideInteractions->data(), outsideInteractions->size(), kernel,
+                starpu_cuda_get_local_stream());
     }
 #endif
     /////////////////////////////////////////////////////////////////////////////////////
@@ -159,7 +160,7 @@ public:
 
         FCuda__transferInPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
-                kernel, idxLevel);
+                idxLevel, kernel, starpu_cuda_get_local_stream());
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
@@ -182,7 +183,8 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel, idxLevel, outsideInteractions->data(), outsideInteractions->size());
+                idxLevel, outsideInteractions->data(), outsideInteractions->size(), kernel,
+                starpu_cuda_get_local_stream());
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -211,7 +213,7 @@ public:
         FCuda__downardPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 subCellGroupsPtr,subCellGroupsSize,
-                kernel, nbSubCellGroups, idxLevel);
+                nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream());
     }
     /////////////////////////////////////////////////////////////////////////////////////
     /// Direct Pass MPI
@@ -234,7 +236,8 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel, outsideInteractions->data(), outsideInteractions->size(), worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight);
+                outsideInteractions->data(), outsideInteractions->size(),
+                worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight ,kernel, starpu_cuda_get_local_stream());
     }
 #endif
     /////////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +254,7 @@ public:
 
         FCuda__directInPassCallback<CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
-                kernel, worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight);
+                worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight, kernel, starpu_cuda_get_local_stream());
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
@@ -270,7 +273,8 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel, outsideInteractions->data(), outsideInteractions->size(), worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight);
+                outsideInteractions->data(), outsideInteractions->size(), worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight,
+                kernel, starpu_cuda_get_local_stream());
     }
 
 
@@ -293,7 +297,7 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]),
-                kernel);
+                kernel, starpu_cuda_get_local_stream());
     }
 };
 
