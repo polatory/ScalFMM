@@ -148,7 +148,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
+        //FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
         //CudaCellGroupClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
         //                                STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
 
@@ -164,8 +164,8 @@ public:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
+        //FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
+        //FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         // CudaCellGroupClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
         //                                STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
