@@ -150,7 +150,20 @@ private:
         _it.moveUp();
     }
 
+    void addCurrentCell() {
+        CellClass* cell = _it.getCurrentCell();
+        int cellCost = cell->getCost();
 
+        if ( cellCost != 0) {
+            // Add the current cell
+            if ( _currentCost + cellCost < _zones.size() * _totalCost / _nbZones + 1 ) {
+                _currentCost += cellCost;
+                _zones.back().push_back({_it.level(), cell});
+            } else {
+                _zones.push_back(std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
+            }
+        }        
+    }
 
 
     /**
@@ -191,16 +204,8 @@ private:
             callCostZonesOnChildren(LEFT, childrenCount);
         }
 
-        if ( cellCost != 0) {
-            // Add the current cell
-            if ( _currentCost + cellCost < _zones.size() * _totalCost / _nbZones + 1 ) {
-                _currentCost += cellCost;
-                _zones.back().push_back({_it.level(), cell});
-            } else {
-                _zones.push_back(std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
-            }
-        }
-    
+        addCurrentCell();
+
         // When not on a leaf, apply to right children
         if ( _it.canProgressToDown() ) {
             callCostZonesOnChildren(RIGHT, childrenCount);
