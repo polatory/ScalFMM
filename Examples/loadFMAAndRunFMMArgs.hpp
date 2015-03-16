@@ -44,8 +44,9 @@ class loadFMAAndRunFMMArgs {
     TCLAP::ValueArg <std::string>
     _outFileExt { "x", "output-file-extension",
             "Output files extension. One file is created for each level in the"
-            " tree. Each file has a 'basename.$i.extension' extension where $i"
-            " is the level. Default value is " + _outFileNameExtInit + ".",
+            " tree. Each file has a 'basename_$nbZones$z.$i$.extension' "
+            "extension where $i is the level. Default value is "
+            + _outFileNameExtInit + ".",
             false, _outFileNameExtInit, "suffix", _cmd};
 
     TCLAP::ValueArg <std::string>

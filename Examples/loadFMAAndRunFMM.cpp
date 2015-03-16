@@ -66,14 +66,11 @@ int main(int argc, char** argv)
 
     // GCC versions before 5.0 have not implemented move constructors to streams
     std::vector<std::unique_ptr<std::ofstream>> outfiles;
-    for ( int i = 0; i < args.treeHeight(); i++ ) {
+    for ( int zoneIdx = 0; zoneIdx < args.treeHeight(); zoneIdx++ ) {
         std::unique_ptr<std::ofstream> out(
             new std::ofstream( args.outFileName()
-                               + "_"
-                               + std::to_string(args.zoneCount())
-                               + "z"
-                               + "."
-                               + std::to_string(i)
+                               + "_" + std::to_string(args.zoneCount()) + "z" 
+                               + "." + std::to_string(zoneIdx)
                                + args.outFileExt()));
         *out << "x,y,z,zone" << std::endl;
         outfiles.push_back(std::move(out));
