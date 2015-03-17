@@ -30,6 +30,7 @@
 #include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
+#include "../../Src/GroupTree/TestKernel/FGroupTestParticleContainer.hpp"
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
