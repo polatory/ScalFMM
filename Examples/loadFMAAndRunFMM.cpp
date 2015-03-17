@@ -62,7 +62,6 @@ int main(int argc, char** argv)
 
     CostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
-    auto zones = costzones.getZones();
 
     // GCC versions before 5.0 have not implemented move constructors to streams
     std::vector<std::unique_ptr<std::ofstream>> outfiles;
@@ -76,6 +75,7 @@ int main(int argc, char** argv)
         outfiles.push_back(std::move(out));
     }
     
+    auto zones = costzones.getZones();
     int zoneIdx = 0;
     for ( auto zone : zones) {
         for ( auto cell : zone) {
@@ -83,6 +83,18 @@ int main(int argc, char** argv)
             *(outfiles[cell.first]) << cell.second->getCoordinate().getY() << ",";
             *(outfiles[cell.first]) << cell.second->getCoordinate().getZ() << ",";
             *(outfiles[cell.first]) << zoneIdx << "," << cell.first << std::endl;
+        }
+        zoneIdx++;
+    }
+
+    auto& zonebounds = costzones.getZoneBounds();
+    zoneIdx = 0;
+    for ( auto zone : zonebounds ) {
+        std::cout << std::endl << "Zone " << zoneIdx << std::endl;
+        int level = 0;
+        for ( auto levelbounds : zone ) {
+            std::cout << "Level" << level << " : [" << levelbounds.first << ":" << levelbounds.second << "]\n";
+            level++;
         }
         zoneIdx++;
     }

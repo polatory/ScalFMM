@@ -5,8 +5,8 @@
  * \brief The costzones algorithm implementation.
  * \author Quentin Khan <quentin.khan@inria.fr>
  *
- * This class is an implementation of the costzones algorithm described in 'A
- * Parallel Adaptive Fast Multipole Method' (1993). The algorithm consists in an
+ * This class is an implementation of the costzones algorithm described in "A
+ * Parallel Adaptive Fast Multipole Method" (1993). The algorithm consists in an
  * in-order traversal of the octree where cell costs are accumulated. When an
  * accumulation is too big, a new zone is created.
  *
@@ -15,6 +15,13 @@
  */
 template<typename OctreeClass, typename CellClass>
 class CostZones {
+    /// The iterator to move through the tree.
+    typename OctreeClass::Iterator _it;
+    /// The number of zones to create.
+    int _nbZones;
+    /// The tree height
+    int _treeHeight;
+
     /// The current cumulative cost of visited cells.
     unsigned long long _currentCost = 0;
     /// The total tree cost.
@@ -22,12 +29,12 @@ class CostZones {
     /// The vector containing the costzones.
     std::vector< std::vector< std::pair<int, CellClass*> > > _zones;
 
-    /// The iterator to move through the tree.
-    typename OctreeClass::Iterator _it;
-    /// The number of zones to create.
-    int _nbZones;
+    /// The vector containing the Morton index boundaries of the zones by level
+    /// in the tree.
+    std::vector< std::vector< std::pair<int, int > > > _zonebounds;
 
-    /// Enumeration to specify the children to move to during the in-order traversal.
+    /// Enumeration to specify the children to move to during the in-order
+    /// traversal.
     enum ChildrenSide {LEFT, RIGHT};
 
 public:
@@ -38,20 +45,30 @@ public:
      * \param nbZones The number of zones to create.
      */
     CostZones(OctreeClass* tree, int nbZones) : 
-        _zones(1, std::vector< std::pair< int, CellClass*> >( ) ),
-        _it(tree),
-        _nbZones(nbZones)
+        _it( tree ),
+        _nbZones( nbZones ),
+        _treeHeight( tree->getHeight() ),
+        _zones( 1, std::vector< std::pair< int, CellClass*> >( )),
+        _zonebounds( 1, std::vector< std::pair< int, int> >(_treeHeight, {-1,-1} ))
         {}
 
     /**
      * \return The computed zones.
      */
-    std::vector< std::vector< std::pair<int, CellClass*> > >& getZones() {
+    const std::vector< std::vector< std::pair<int, CellClass*> > >& getZones() const {
         return _zones;
     }
 
     /**
-     * \brief Run the algorithm.
+     * \return The computed zone bounds.
+     */
+    const std::vector< std::vector< std::pair<int, int> > >& getZoneBounds() const {
+        return _zonebounds;
+    }
+
+
+    /**
+     * \brief Runs the costzones algorithm.
      */
     void run() {
         _totalCost = 0;
@@ -79,7 +96,7 @@ public:
 private:
 
     /**
-     * \brief Counts left and right children of the current cell.
+     * \brief Counts the left and right children of the current cell.
      *
      * The current cell is the one currently pointed at by the iterator _it.
      *
@@ -150,17 +167,34 @@ private:
         _it.moveUp();
     }
 
+
+    /**
+     * \brief Adds the current cell to a zone.
+     *
+     * The choice of the zone is made according to the current cost accumulation.
+     */
     void addCurrentCell() {
         CellClass* cell = _it.getCurrentCell();
         int cellCost = cell->getCost();
 
         if ( cellCost != 0) {
-            // Add the current cell
             if ( _currentCost + cellCost < _zones.size() * _totalCost / _nbZones + 1 ) {
                 _currentCost += cellCost;
+                // Zones update
                 _zones.back().push_back({_it.level(), cell});
+                // Zone bounds update
+                if( _zonebounds.back()[_it.level()] == std::pair<int,int>(-1,-1) ) {
+                    _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
+                } else {
+                    _zonebounds.back()[_it.level()].second = _it.getCurrentGlobalIndex();
+                }
+                
             } else {
+                // Add a new zone
                 _zones.push_back(std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
+                // Add a new inferior bound
+                _zonebounds.push_back(std::vector< std::pair<int, int> >(_treeHeight, {-1, -1}));
+                _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
             }
         }        
     }
