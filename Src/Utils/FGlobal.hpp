@@ -51,7 +51,7 @@
     typedef float FReal;
 #endif
 
-typedef long long FSize;
+typedef long long int FSize;
 
 ///////////////////////////////////////////////////////
 // Restrict

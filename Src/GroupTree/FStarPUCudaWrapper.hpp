@@ -101,13 +101,13 @@ public:
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        unsigned char* subCellGroupsPtr[9] ;
-        memset(subCellGroupsPtr, 0, 9*sizeof(unsigned char*));
-        size_t subCellGroupsSize[9] ;
-        memset(subCellGroupsPtr, 0, 9*sizeof(unsigned char*));
+        FCudaParams<unsigned char*,9> subCellGroupsPtr;
+        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsPtr));
+        FCudaParams<std::size_t,9> subCellGroupsSize;
+        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsSize));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
-            subCellGroupsSize[idxSubGroup] = STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]);
+            subCellGroupsPtr.values[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsSize.values[idxSubGroup] = STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]);
         }
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
@@ -199,13 +199,13 @@ public:
         int idxLevel = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
 
-        unsigned char* subCellGroupsPtr[9];
-        memset(subCellGroupsPtr, 0, 9*sizeof(unsigned char*));
-        size_t subCellGroupsSize[9];
-        memset(subCellGroupsPtr, 0, 9*sizeof(size_t));
+        FCudaParams<unsigned char*,9> subCellGroupsPtr;
+        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsPtr));
+        FCudaParams<std::size_t,9> subCellGroupsSize;
+        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsSize));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
-            subCellGroupsSize[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
+            subCellGroupsPtr.values[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]));
+            subCellGroupsSize.values[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
         }
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
