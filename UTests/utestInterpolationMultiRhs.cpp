@@ -102,24 +102,32 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         // Insert particle in the tree
         // For each particles we associate Nvals charge ( q,0,0,0)
-        // for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        //    double q = particles[idxPart].getPhysicalValue();
-        //    tree.insert(particles[idxPart].getPosition() , idxPart, q);//,0.0,0.0,0.0);
-        // }
-        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-            // Convert FReal[NVALS] to std::array<FReal,NVALS>
-            std::array<FReal, (1+4*1)*NVals> physicalState;
-            for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
-                double q = particles[idxPart].getPhysicalValue();
-                physicalState[0*NVals+idxVals]= q;
-                physicalState[1*NVals+idxVals]=0.0;
-                physicalState[2*NVals+idxVals]=0.0;
-                physicalState[3*NVals+idxVals]=0.0;
-                physicalState[4*NVals+idxVals]=0.0;
+         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            double q = particles[idxPart].getPhysicalValue();
+            if(NVals == 1){
+                tree.insert(particles[idxPart].getPosition() , idxPart, q);//,0.0,0.0,0.0);
             }
-            // put in tree
-            tree.insert(particles[idxPart].getPosition(), idxPart, physicalState);
-        }
+            else if(NVals == 2){
+                tree.insert(particles[idxPart].getPosition() , idxPart, q, q);//,0.0,0.0,0.0);
+            }
+            else{
+                FAssertLF(0, "NVALS should be <= 2");
+            }
+         }
+//        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+//            // Convert FReal[NVALS] to std::array<FReal,NVALS>
+//            std::array<FReal, (1+4*1)*NVals> physicalState;
+//            for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
+//                double q = particles[idxPart].getPhysicalValue();
+//                physicalState[0*NVals+idxVals]= q;
+//                physicalState[1*NVals+idxVals]=0.0;
+//                physicalState[2*NVals+idxVals]=0.0;
+//                physicalState[3*NVals+idxVals]=0.0;
+//                physicalState[4*NVals+idxVals]=0.0;
+//            }
+//            // put in tree
+//            tree.insert(particles[idxPart].getPosition(), idxPart, physicalState);
+//        }
 
         // Run FMM
         Print("Fmm...");
