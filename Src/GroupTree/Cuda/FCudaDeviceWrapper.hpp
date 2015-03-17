@@ -5,6 +5,7 @@
 
 #include "../../Utils/FGlobal.hpp"
 #include "../FOutOfBlockInteraction.hpp"
+#include "FCudaStructParams.hpp"
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__bottomPassCallback(unsigned char* leafCellsPtr, std::size_t leafCellsSize,
@@ -13,7 +14,7 @@ void FCuda__bottomPassCallback(unsigned char* leafCellsPtr, std::size_t leafCell
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__upwardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
@@ -34,7 +35,7 @@ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, std::size_
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__downardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>

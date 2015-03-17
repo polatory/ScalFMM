@@ -2,7 +2,7 @@
 
 #include "FCudaDeviceWrapper.hpp"
 #include "FCudaTreeCoordinate.hpp"
-
+#include "FCudaStructParams.hpp"
 
 static const int nbCudaThreads = 32;
 static const int nbCudaBlocks = 1;
@@ -67,12 +67,12 @@ __host__ void FCuda__bottomPassCallback(unsigned char* leafCellsPtr, std::size_t
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-                                  unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+                                  FCudaParams<unsigned char*, 9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
                                   CudaKernelClass* kernel, int nbSubCellGroups, int idxLevel){
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize);
     CellContainerClass subCellGroups[9];
     for(int idx = 0 ; idx < nbSubCellGroups ; ++idx){
-        subCellGroups[idx].reset(subCellGroupsPtr[idx], subCellGroupsSize[idx]);
+        subCellGroups[idx].reset(subCellGroupsPtr.values[idx], subCellGroupsSize.values[idx]);
     }
 
     FCudaAssertLF(nbSubCellGroups != 0);
@@ -107,7 +107,7 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__upwardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-                                 unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+                                 FCudaParams<unsigned char*, 9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
                                  int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t currentStream){
 
     FCuda__upwardPassPerform
@@ -290,13 +290,13 @@ __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, s
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-                                   unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+                                   FCudaParams<unsigned char*, 9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
                                    CudaKernelClass* kernel, int nbSubCellGroups, int idxLevel){
     FCudaAssertLF(nbSubCellGroups != 0);
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize);
     CellContainerClass subCellGroups[9];
     for(int idx = 0 ; idx < nbSubCellGroups ; ++idx){
-        subCellGroups[idx].reset(subCellGroupsPtr[idx], subCellGroupsSize[idx]);
+        subCellGroups[idx].reset(subCellGroupsPtr.values[idx], subCellGroupsSize.values[idx]);
     }
 
     const MortonIndex blockStartIdx = FCudaMax(currentCells.getStartingIndex(),
@@ -330,7 +330,7 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__downardPassCallback(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-                                  unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+                                  FCudaParams<unsigned char*, 9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
                                   int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t currentStream){
 
     FCuda__downardPassPerform
@@ -566,7 +566,7 @@ template void FCuda__bottomPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaE
 
 template void FCuda__upwardPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
      int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
 template void FCuda__transferInoutPassCallbackMpi<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
@@ -587,7 +587,7 @@ template void FCuda__transferInoutPassCallback<FCudaEmptyCell, FCudaGroupOfCells
 
 template void FCuda__downardPassCallback<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     int nbSubCellGroups, int idxLevel, FCudaEmptyKernel< FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>>* kernel, cudaStream_t currentStream);
 
 template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<FCudaEmptyCell, FCudaGroupAttachedLeaf<0, int>> >
@@ -628,7 +628,7 @@ template void FCuda__bottomPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTes
 
 template void FCuda__upwardPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
      int nbSubCellGroups, int idxLevel, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
 template void FCuda__transferInoutPassCallbackMpi<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
@@ -649,7 +649,7 @@ template void FCuda__transferInoutPassCallback<FTestCellPODCore, FCudaGroupOfCel
 
 template void FCuda__downardPassCallback<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* subCellGroupsPtr[9], std::size_t subCellGroupsSize[9],
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
      int nbSubCellGroups, int idxLevel, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>>* kernel, cudaStream_t currentStream);
 
 template void FCuda__directInoutPassCallbackMpi<FTestCellPODCore, FCudaGroupOfCells<FTestCellPODCore>, FCudaGroupOfParticles<2, long long int>, FCudaGroupAttachedLeaf<2, long long int>, FTestCudaKernels<FTestCellPODCore, FCudaGroupAttachedLeaf<2, long long int>> >
