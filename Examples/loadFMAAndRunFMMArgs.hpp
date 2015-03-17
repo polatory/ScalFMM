@@ -1,9 +1,9 @@
 #ifndef _LOADFMAANDRUNFMMARGS_HPP_
 #define _LOADFMAANDRUNFMMARGS_HPP_
 
-#include "tclap++11/CmdLine.h"
-#include "tclap++11/LinuxOutput.hpp"
-#include "tclap++11/CompletionVisitor.h"
+#include "tclap/CmdLine.h"
+#include "tclap/LinuxOutput.hpp"
+#include "tclap/CompletionVisitor.h"
 
 class loadFMAAndRunFMMArgs {
     using vs = std::vector<std::string>;
