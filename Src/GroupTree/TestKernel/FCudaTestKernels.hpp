@@ -2,7 +2,7 @@
 #ifndef FCUDATESTKERNEL_HPP
 #define FCUDATESTKERNEL_HPP
 
-#include "FCudaGlobal.hpp"
+#include "../Cuda/FCudaGlobal.hpp"
 
 // We need to describe this cell
 #include "../../Components/FTestCell.hpp"

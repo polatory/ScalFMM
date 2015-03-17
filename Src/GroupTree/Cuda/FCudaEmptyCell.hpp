@@ -3,7 +3,7 @@
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Containers/FTreeCoordinate.hpp"
-#include "../FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 struct alignas(FStarPUDefaultAlign::StructAlign) FCudaEmptyCell {
     MortonIndex mortonIndex;

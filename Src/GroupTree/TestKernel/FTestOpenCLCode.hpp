@@ -2,8 +2,8 @@
 #define FTESTOPENCLCODE_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../FStarPUDefaultAlign.hpp"
-#include "FTextReplacer.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
+#include "../OpenCl/FTextReplacer.hpp"
 
 // Initialize the types
 class FTestOpenCLCode{

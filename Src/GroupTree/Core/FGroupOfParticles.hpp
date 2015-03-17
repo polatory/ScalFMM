@@ -5,10 +5,10 @@
 #define FGROUPOFPARTICLES_HPP
 
 
-#include "../Utils/FAssert.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "../Utils/FAlignedMemory.hpp"
-#include "FStarPUDefaultAlign.hpp"
+#include "../../Utils/FAssert.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../../Utils/FAlignedMemory.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 #include <list>
 #include <functional>

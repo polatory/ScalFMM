@@ -12,11 +12,11 @@
 #include "../../Utils/FAlignedMemory.hpp"
 #include "../../Utils/FAssert.hpp"
 
-#include "../FOutOfBlockInteraction.hpp"
+#include "../Core/FOutOfBlockInteraction.hpp"
 
 #include "FEmptyOpenCLCode.hpp"
 
-#include "../FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 #include <starpu.h>
 

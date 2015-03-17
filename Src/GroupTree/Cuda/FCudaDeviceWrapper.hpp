@@ -4,7 +4,7 @@
 
 
 #include "../../Utils/FGlobal.hpp"
-#include "../FOutOfBlockInteraction.hpp"
+#include "../Core/FOutOfBlockInteraction.hpp"
 #include "FCudaStructParams.hpp"
 
 template <class CellClass, class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>

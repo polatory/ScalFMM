@@ -3,7 +3,7 @@
 #define FCUDAGROUPOFPARTICLES_HPP
 
 #include "FCudaGlobal.hpp"
-#include "../FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupOfParticles {

@@ -4,10 +4,10 @@
 #ifndef FGROUPOFCELLS_HPP
 #define FGROUPOFCELLS_HPP
 
-#include "../Utils/FAssert.hpp"
-#include "../Utils/FAlignedMemory.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "FStarPUDefaultAlign.hpp"
+#include "../../Utils/FAssert.hpp"
+#include "../../Utils/FAlignedMemory.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 #include <list>
 #include <functional>

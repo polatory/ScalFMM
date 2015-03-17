@@ -3,13 +3,13 @@
 #ifndef FGROUPTASKSTARPUALGORITHM_HPP
 #define FGROUPTASKSTARPUALGORITHM_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Core/FCoreCommon.hpp"
-#include "../Utils/FQuickSort.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "../Utils/FLog.hpp"
-#include "../Utils/FTic.hpp"
-#include "../Utils/FAssert.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Core/FCoreCommon.hpp"
+#include "../../Utils/FQuickSort.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../../Utils/FLog.hpp"
+#include "../../Utils/FTic.hpp"
+#include "../../Utils/FAssert.hpp"
 
 #include "FOutOfBlockInteraction.hpp"
 
@@ -19,22 +19,22 @@
 #include <omp.h>
 
 #include <starpu.h>
-#include "FStarPUUtils.hpp"
+#include "../StarPUUtils/FStarPUUtils.hpp"
 
 #ifdef STARPU_USE_CPU
-#include "FStarPUCpuWrapper.hpp"
+#include "../StarPUUtils/FStarPUCpuWrapper.hpp"
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-#include "FStarPUCudaWrapper.hpp"
-#include "Cuda/FCudaEmptyKernel.hpp"
-#include "Cuda/FCudaGroupAttachedLeaf.hpp"
-#include "Cuda/FCudaGroupOfParticles.hpp"
-#include "Cuda/FCudaGroupOfCells.hpp"
-#include "Cuda/FCudaEmptyCell.hpp"
+#include "../StarPUUtils/FStarPUCudaWrapper.hpp"
+#include "../Cuda/FCudaEmptyKernel.hpp"
+#include "../Cuda/FCudaGroupAttachedLeaf.hpp"
+#include "../Cuda/FCudaGroupOfParticles.hpp"
+#include "../Cuda/FCudaGroupOfCells.hpp"
+#include "../Cuda/FCudaEmptyCell.hpp"
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-#include "FStarPUOpenClWrapper.hpp"
-#include "OpenCl/FOpenCLDeviceWrapper.hpp"
+#include "../StarPUUtils/FStarPUOpenClWrapper.hpp"
+#include "../OpenCl/FOpenCLDeviceWrapper.hpp"
 #endif
 
 

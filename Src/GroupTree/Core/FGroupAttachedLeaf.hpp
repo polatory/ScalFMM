@@ -4,8 +4,8 @@
 #ifndef FGROUPATTACHEDLEAF_HPP
 #define FGROUPATTACHEDLEAF_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Utils/FAssert.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FAssert.hpp"
 
 /**
  * This class is "attached" to a buffer.

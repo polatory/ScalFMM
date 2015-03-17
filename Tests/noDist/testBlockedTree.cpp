@@ -4,7 +4,7 @@
 
 #include "../../Src/Utils/FGlobal.hpp"
 
-#include "../../Src/GroupTree/FGroupTree.hpp"
+#include "../../Src/GroupTree/Core/FGroupTree.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -28,16 +28,16 @@
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 
-#include "../../Src/GroupTree/FGroupSeqAlgorithm.hpp"
-#include "../../Src/GroupTree/FGroupTaskAlgorithm.hpp"
+#include "../../Src/GroupTree/Core/FGroupSeqAlgorithm.hpp"
+#include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
 #ifdef ScalFMM_USE_OMP4
-#include "../../Src/GroupTree/FGroupTaskDepAlgorithm.hpp"
+#include "../../Src/GroupTree/Core/FGroupTaskDepAlgorithm.hpp"
 #endif
 #ifdef ScalFMM_USE_STARPU
-#include "../../Src/GroupTree/FGroupTaskStarpuAlgorithm.hpp"
-#include "../../Src/GroupTree/FStarPUKernelCapacities.hpp"
+#include "../../Src/GroupTree/Core/FGroupTaskStarpuAlgorithm.hpp"
+#include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #endif
-#include "../../Src/GroupTree/FP2PGroupParticleContainer.hpp"
+#include "../../Src/GroupTree/Core/FP2PGroupParticleContainer.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

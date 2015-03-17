@@ -4,7 +4,7 @@
 #ifndef FGROUPTESTPARTICLECONTAINER_HPP
 #define FGROUPTESTPARTICLECONTAINER_HPP
 
-#include "FGroupAttachedLeaf.hpp"
+#include "../Core/FGroupAttachedLeaf.hpp"
 
 class FGroupTestParticleContainer : public FGroupAttachedLeaf<2, long long int> {
     typedef FGroupAttachedLeaf<2, long long int> Parent;

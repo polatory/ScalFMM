@@ -4,7 +4,7 @@
 
 #include "FCudaGlobal.hpp"
 
-#include "../FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 /**
 * @brief The FCudaGroupOfCells class manages the cells in block allocation.

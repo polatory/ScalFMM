@@ -2,9 +2,9 @@
 #ifndef FTESTCELLPOD_HPP
 #define FTESTCELLPOD_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "FStarPUDefaultAlign.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 struct alignas(FStarPUDefaultAlign::StructAlign) FTestCellPODCore {
     MortonIndex mortonIndex;

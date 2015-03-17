@@ -6,10 +6,10 @@
 #include <vector>
 #include <functional>
 
-#include "../Utils/FAssert.hpp"
-#include "../Utils/FPoint.hpp"
-#include "../Utils/FQuickSort.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
+#include "../../Utils/FAssert.hpp"
+#include "../../Utils/FPoint.hpp"
+#include "../../Utils/FQuickSort.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
 
 #include "FGroupOfCells.hpp"
 #include "FGroupOfParticles.hpp"

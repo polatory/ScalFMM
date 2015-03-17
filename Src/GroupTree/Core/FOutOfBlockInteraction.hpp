@@ -1,9 +1,9 @@
 #ifndef FOUTOFBLOCKINTERACTION_HPP
 #define FOUTOFBLOCKINTERACTION_HPP
 
-#include "../Utils/FGlobal.hpp"
+#include "../../Utils/FGlobal.hpp"
 
-#include "FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 struct  alignas(FStarPUDefaultAlign::StructAlign) OutOfBlockInteraction{
     MortonIndex outIndex;

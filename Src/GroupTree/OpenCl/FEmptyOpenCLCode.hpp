@@ -4,7 +4,7 @@
 
 // Return the same thing as FEmptyKernel.cl
 
-#include "../FStarPUDefaultAlign.hpp"
+#include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 class FEmptyOpenCLCode{
 

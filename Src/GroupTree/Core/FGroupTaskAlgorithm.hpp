@@ -4,12 +4,12 @@
 #ifndef FGROUPTASKALGORITHM_HPP
 #define FGROUPTASKALGORITHM_HPP
 
-#include "../Utils/FGlobal.hpp"
-#include "../Core/FCoreCommon.hpp"
-#include "../Utils/FQuickSort.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "../Utils/FLog.hpp"
-#include "../Utils/FTic.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Core/FCoreCommon.hpp"
+#include "../../Utils/FQuickSort.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../../Utils/FLog.hpp"
+#include "../../Utils/FTic.hpp"
 
 #include "FOutOfBlockInteraction.hpp"
 

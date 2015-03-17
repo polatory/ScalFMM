@@ -4,20 +4,20 @@
 #define FSTARPUCPUWRAPPER_HPP
 
 
-#include "../Utils/FGlobal.hpp"
-#include "../Core/FCoreCommon.hpp"
-#include "../Utils/FQuickSort.hpp"
-#include "../Containers/FTreeCoordinate.hpp"
-#include "../Utils/FLog.hpp"
-#include "../Utils/FTic.hpp"
-#include "../Utils/FAssert.hpp"
-#include "../Utils/FAlignedMemory.hpp"
-#include "../Utils/FAssert.hpp"
+#include "../../Utils/FGlobal.hpp"
+#include "../../Core/FCoreCommon.hpp"
+#include "../../Utils/FQuickSort.hpp"
+#include "../../Containers/FTreeCoordinate.hpp"
+#include "../../Utils/FLog.hpp"
+#include "../../Utils/FTic.hpp"
+#include "../../Utils/FAssert.hpp"
+#include "../../Utils/FAlignedMemory.hpp"
+#include "../../Utils/FAssert.hpp"
 
-#include "FOutOfBlockInteraction.hpp"
+#include "../Core/FOutOfBlockInteraction.hpp"
 
 #ifdef ScalFMM_USE_MPI
-#include "../Utils/FMpi.hpp"
+#include "../../Utils/FMpi.hpp"
 #endif
 
 #include <vector>
