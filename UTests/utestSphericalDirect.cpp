@@ -330,12 +330,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 			 OctreeClass, FmmClass, 24>(true);
 		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 26>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 28>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 30>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 32>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 28>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 30>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 32>(true);
 
 	}
 #endif

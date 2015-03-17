@@ -30,6 +30,7 @@ class FTreeCoordinate;
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_FFT
 // ================
 
 // for verbosity only!!!
@@ -221,7 +222,7 @@ public:
     // Target cell: local
     const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
     const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
-    std::cout << "   call P2L  localLevel "<< localLevel << "  localCellCenter "<< localCellCenter <<std::endl;
+ //   std::cout << "   call P2L  localLevel "<< localLevel << "  localCellCenter "<< localCellCenter <<std::endl;
     // interpolation points of target (X) cell
     FPoint X[nnodes];
     FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
@@ -458,7 +459,7 @@ public:
 		for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
 			counterParticles += particles[idxContainer]->getNbParticles();
 		}
-		std::cout << " Part("<<counterParticles<< ") ";
+//		std::cout << " Part("<<counterParticles<< ") ";
 		return counterParticles >this->sminM;
 	}
 };
