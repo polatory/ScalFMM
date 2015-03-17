@@ -166,8 +166,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
 		// Assert
-		const FReal MaximumDiffPotential = FReal(9e-3);
-		const FReal MaximumDiffForces     = FReal(9e-2);
+		double epsilon = 1.0/FMath::pow2(ORDER);
+		const FReal MaximumDiffPotential = FReal(epsilon);
+		const FReal MaximumDiffForces     = FReal(10*epsilon);
+		printf(" Criteria error - Epsilon  %e\n",epsilon);
 
 		Print("Test1 - Error Relative L2 norm Potential ");
 		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);    //1
@@ -328,12 +330,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 			 OctreeClass, FmmClass, 24>(true);
 		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 26>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 28>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 30>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
-			 OctreeClass, FmmClass, 32>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 28>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 30>(true);
+//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//			 OctreeClass, FmmClass, 32>(true);
 
 	}
 #endif

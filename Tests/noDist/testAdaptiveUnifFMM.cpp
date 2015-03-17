@@ -15,7 +15,6 @@
 // ===================================================================================
 
 // ==== CMAKE =====
-// @FUSE_BLAS
 // @FUSE_FFT
 // ================
 // Keep in private GIT
@@ -30,9 +29,6 @@
 #include "Utils/FTic.hpp"
 
 #include "Containers/FOctree.hpp"
-//#include "Containers/FVector.hpp"
-
-//#include "Components/FSimpleLeaf.hpp"
 
 #include "Utils/FPoint.hpp"
 
@@ -102,15 +98,12 @@ int main(int argc, char ** argv){
 //	const unsigned int NbThreads      = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 	//
 	// accuracy
-	const unsigned int P = 5 ;
+	const unsigned int P = 7 ;
 
 
 	const int sminM    = FParameters::getValue(argc,argv,LocalOptionMinMultipoleThreshod.options, P*P*P);
 	const int sminL     = FParameters::getValue(argc,argv,LocalOptionMinLocalThreshod.options, P*P*P);
-
-
-	//    typedef FTestCell                   CellClass;
-	//    typedef FAdaptiveTestKernel< CellClass, ContainerClass >         KernelClass;
+//
 	typedef FUnifCell<P>                                        CellClass;
 	typedef FP2PParticleContainerIndexed<>            ContainerClass;
 	typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
@@ -191,8 +184,9 @@ int main(int argc, char ** argv){
 	std::cout << "Working on particles ..." << std::endl;
 	counter.tic();
 	const MatrixKernelClass MatrixKernel;
-	KernelWrapperClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel,sminM,sminL);            // FTestKernels FBasicKernels
-	FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
+	KernelWrapperClass *kernels = new KernelWrapperClass(TreeHeight, loader.getBoxWidth(),
+			                                                                               loader.getCenterOfBox(),&MatrixKernel,sminM,sminL);            // FTestKernels FBasicKernels
+	FmmClass algo(&tree,kernels);  //FFmmAlgorithm FFmmAlgorithmThread
 
 	// For debug purpose
 	//  Set Global id
@@ -200,7 +194,7 @@ int main(int argc, char ** argv){
 	long int idCell  = setGlobalID(tree);
 	//
 	algo.execute();
-
+//
 	counter.tac();
 	std::cout << "Done  " << "(@Algorithm = " << counter.elapsed() << " s)." << std::endl;
 	//
