@@ -88,7 +88,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         const int NbLevels        = 4;
         const int SizeSubLevels = 2;
 
-        //    std::cout << "\nInterpolation FMM (ORDER="<< ORDER << ") ... " << std::endl;
+        // std::cout << "\nInterpolation FMM (ORDER="<< ORDER << ") ... " << std::endl;
 
         // Create Matrix Kernel
         const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
@@ -97,23 +97,21 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
 
         loader.fillParticle(particles,nbParticles);
-        //
+
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-        //   Insert particle in the tree
-        //
+        // Insert particle in the tree
         // For each particles we associate Nvals charge ( q,0,0,0)
-        //
-        /*			for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-    double q = particles[idxPart].getPhysicalValue();
-            tree.insert(particles[idxPart].getPosition() , idxPart, q,q);//,0.0,0.0,0.0);
-    }*/
+        // for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        //    double q = particles[idxPart].getPhysicalValue();
+        //    tree.insert(particles[idxPart].getPosition() , idxPart, q);//,0.0,0.0,0.0);
+        // }
         for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-            //	        // Convert FReal[NVALS] to std::array<FReal,NVALS>
+            // Convert FReal[NVALS] to std::array<FReal,NVALS>
             std::array<FReal, (1+4*1)*NVals> physicalState;
             for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
                 double q = particles[idxPart].getPhysicalValue();
-                physicalState[0*NVals+idxVals]= particles[idxPart].getPhysicalValue();
+                physicalState[0*NVals+idxVals]= q;
                 physicalState[1*NVals+idxVals]=0.0;
                 physicalState[2*NVals+idxVals]=0.0;
                 physicalState[3*NVals+idxVals]=0.0;
@@ -122,9 +120,6 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
             // put in tree
             tree.insert(particles[idxPart].getPosition(), idxPart, physicalState);
         }
-
-        //
-
 
         // Run FMM
         Print("Fmm...");
@@ -270,7 +265,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestUnifKernel */
     void TestUnifKernel(){
-        const int NVals = 1;
+        const int NVals = 2;
         const unsigned int ORDER = 6 ;
         // run test
         typedef FInterpMatrixKernelR MatrixKernelClass;
