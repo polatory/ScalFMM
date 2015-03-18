@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <limits>
 
 #include "Utils/FParameters.hpp"
 #include "Containers/FOctree.hpp"
@@ -24,284 +25,315 @@
 #include "Components/FBasicCell.hpp"
 #include "Components/FSimpleLeaf.hpp"
 #include "Components/FBasicParticleContainer.hpp"
-
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "Utils/FMath.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
 #include "Utils/FParameterNames.hpp"
 
-/// \file  statisticsOnOctree.cpp
-//!
-//! \brief Driver to generate statistics on the octree for the particle distribution given by parameter -infile
-//!  \authors B. Bramas, O. Coulaud
-//!
-//!  This code gives you some statistics (Particles, Cells, P2P and M2L number of operators) on the octree
-//!    Those statistics are shown level by level.
-//!
-//! The statistics are
-//!
-//!  <b>for particles:</b> min/max particles per leaf, the average number, the variance and the average number of P2P neighbors.
-//!
-//! <b>For each level in the octree</b>
-//!
-//!  \arg       The number of cells, of adaptive cells (cell with more one child)
-//!  \arg          The average, min and max numbers of M2L operators and also its  variance.
-//!
-//!  <b> Statistics options:</b>
-//!   \param -histP build a file to generate histogram of particles per leaf. The data are store in file given by -outfile arguments and  .txt extension
+/**
+ * @brief Example of ScallFFM's use.
+ * @author B. Bramas, O. Coulaud, Q. Khan
+ *
+ * This example presents the basics of tree traversal with ScallFFM. Reading the
+ * source you can find out how to load a tree from an FMA formated file and how
+ * to move around the tree. Some statistics are produced to show how to get the
+ * information stored.
+ * 
+ */
 
-// Simply create particles and try the kernels
-//
+// Typedefs to shorten code
+typedef FBasicCell                                      CellClass;
+typedef FBasicParticleContainer< 0 >                    ContainerClass;
+typedef FSimpleLeaf< ContainerClass >                   LeafClass;
+typedef FOctree< CellClass, ContainerClass, LeafClass > OctreeClass;
 
+namespace FPD = FParameterDefinitions;
 
+// Constant strings for output
+const std::string lhead("[STAT] ");
+const std::string newline = "\n" + lhead;
 
-int main(int argc, char ** argv){
+int main(int argc, char ** argv) 
+{
+    //     Parameter handling
+    // -------------------------------------------------------------------------
+    // Custom parameter
     const FParameterNames LocalOptionHist = {
-        {"-histP", "--histogram-stat"} ,
-         "Build the histogram of the particle number per leaf."
+        {"-histP", "--histogram-stat"},                        // option enabling flags
+        "Build the histogram of the particle number per leaf." // option description
     };
+
+    // ScalFFM generic options processing + program's arguments description
     FHelpDescribeAndExit(argc, argv,
                          "Driver to obtain statistics on the octree.",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight,
-                         FParameterDefinitions::OutputFile, LocalOptionHist);
+                         FPD::InputFile,
+                         FPD::OctreeHeight,
+                         FPD::OctreeSubHeight,
+                         FPD::OutputFile, 
+                         LocalOptionHist);
 
 
-    typedef FBasicParticleContainer<0>   ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >  LeafClass;
-	typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    // Octree, input and output parameters
+    const int TreeHeight   = FParameters::getValue(argc,argv,FPD::OctreeHeight.options, 4);
+    const int SubTreeHeight= FParameters::getValue(argc,argv,FPD::OctreeSubHeight.options, 1);
+    const std::string inFileName = 
+        FParameters::getStr(argc, argv, FPD::InputFile.options, "../Data/test20k.fma");
+    const std::string outFileName =
+        FParameters::getStr(argc, argv, FPD::OutputFile.options, "output.txt");
 
-	//
-	//   Octree parameters
-	//
-    const int TreeHeight        = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const int SubTreeHeight  = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
-	//
-	//  input and output  Files parameters
-	//
-    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output"));
-	//
-	std::cout <<	 "Parameters  "<< std::endl
-			<<     "      Octree Depth      "<< TreeHeight <<std::endl
-			<<	  "      SubOctree depth " << SubTreeHeight <<std::endl
-			<<std::endl;
-
-	//
-	FFmaGenericLoader loader(filename);
-	// -----------------------------------------------------
-	OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
-	//
-	// -----------------------------------------------------
-	//     Creating and Inserting particles in the tree
-	// -----------------------------------------------------
-	//
-	std::cout << "Tree box is cubic "<<std::endl
-			<< "         Centre:   "<< loader.getCenterOfBox() <<std::endl
-			<< "         Length:  "<< loader.getBoxWidth()       <<std::endl <<std::endl;
-	//
-	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-	std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-	FPoint particlePosition, minPos, maxPos;
-	FReal physicalValue;
-	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-		loader.fillParticle(&particlePosition,&physicalValue);
-		//
-		minPos.setX(FMath::Min(minPos.getX(),particlePosition.getX())) ;
-		minPos.setY(FMath::Min(minPos.getY(),particlePosition.getY())) ;
-		minPos.setZ(FMath::Min(minPos.getZ(),particlePosition.getZ())) ;
-		maxPos.setX(FMath::Max(maxPos.getX(),particlePosition.getX())) ;
-		maxPos.setX(FMath::Max(maxPos.getY(),particlePosition.getY())) ;
-		maxPos.setX(FMath::Max(maxPos.getZ(),particlePosition.getZ())) ;
-		//
-		tree.insert(particlePosition );
-	}
-	std::cout << "Data are inside the box delimited by "<<std::endl
-			<< "         Min corner:  "<< minPos<<std::endl
-			<< "         Max corner:  "<< maxPos<<std::endl <<std::endl;
-	//
-	// -----------------------------------------------------
-	//     Start statistics
-	// -----------------------------------------------------
-	//
-	{ // get stats
-		{    // get stats on the leaf level (Particles)
-			long int allLeaves =  (1 << (3* (TreeHeight-1) )) ;
-			std::cout << std::endl<< "[STAT] Leaf level "  << " is  " << TreeHeight -1<< std::endl;
-			std::cout << "[STAT] potentials leafs number is " << allLeaves<< std::endl;
-
-			FReal averageParticles = 0.0, varianceParticles = 0.0 ;
-			int nbLeafs = 0,minParticles = 1000000.0, maxParticles = 0.0 ;
-			OctreeClass::Iterator octreeIterator(&tree);
-			//
-			// Start to compute statistics on particles
-			//
-			int  nbPart ,nbTPart=0;
-			octreeIterator.gotoBottomLeft();
-			do{
-				nbPart                   = octreeIterator.getCurrentListTargets()->getNbParticles() ;
-				minParticles          =  FMath::Min(minParticles,nbPart) ;
-				maxParticles         =  FMath::Max(maxParticles,nbPart) ;
-				nbTPart              += nbPart;
-				varianceParticles += FReal(nbPart*nbPart) ;
-				++nbLeafs;
-			} while(octreeIterator.moveRight());
-			averageParticles   = nbTPart/FReal(nbLeafs);
-			varianceParticles  = varianceParticles/FReal(nbLeafs) - averageParticles*averageParticles;
-			//
-			std::cout.precision(4);
-			std::cout << "[STAT] Non empty leafs: " << nbLeafs << " % of non empty leaves: "<<100*static_cast<FReal>(nbLeafs)/static_cast<FReal>(allLeaves)<<" %" << std::endl;
-			std::cout << "[STAT]  Particles on leafs:"  << std::endl
-					<<   "[STAT]           Min:         "<< minParticles << std::endl
-					<<   "[STAT]           Max:        "<< maxParticles << std::endl
-					<<   "[STAT]           Average:  "<< averageParticles << std::endl
-					<<   "[STAT]           Variance: " << varianceParticles << std::endl;
-			//
-			//  Histogram of particles per leaf
-			//
-
-            if(FParameters::existParameter(argc, argv, LocalOptionHist.options)){
-				int size = maxParticles+1;
-				int * hist = new int [size] ;
-				memset(hist,0,(size)*sizeof(int));
-				octreeIterator.gotoBottomLeft();
-				do{
-                    nbPart  = octreeIterator.getCurrentListSrc()->getNbParticles() ;
-					++hist[nbPart] ;
-				} while(octreeIterator.moveRight());
-				//
-				// write data
-				//
-				std::string name(genericFileName + ".txt");
-				std::ofstream outfile( name.c_str(), std::ofstream::out);
-				if(!outfile) {
-					std::cout << "Cannot open file "<< std::endl;
-					exit(-1)	;
-				}	//
-				outfile << "# Particle histogram.   "<< size << " chunk" <<std::endl;
-				for(int i=0 ; i < size ; ++i){
-					outfile << i << "  " << hist[i] <<std::endl;
-				}
-				delete [] hist ;
-			}
-			FReal averageNeighbors = 0.0, varianceNeighbors =0.0 ;
-			int nbBox,minBox=30,maxBox=0;
-			octreeIterator.gotoBottomLeft();
-			ContainerClass*  neighborsP2P[27];
-			do{
-				//
-				//  P2P Neighbors
-				//
-				nbBox = tree.getLeafsNeighbors(neighborsP2P, octreeIterator.getCurrentGlobalCoordinate(),TreeHeight-1) ;
-				// need the current particles and neighbors particles
-				minBox                      =  FMath::Min(minBox,nbBox) ;
-				maxBox                     =  FMath::Max(maxBox,nbBox) ;
-				averageNeighbors   += FReal(nbBox);
-				varianceNeighbors  += FReal(nbBox*nbBox) ;
-			} while(octreeIterator.moveRight());
-			//
-			averageNeighbors/=FReal(nbLeafs) ;
-			varianceNeighbors = varianceNeighbors/nbLeafs-averageNeighbors*averageNeighbors;
-			//
-			std::cout << "[STAT]  P2P Neighbors for each leaf " << std::endl
-					<< "[STAT]           Min:       " <<  minBox << std::endl
-					<< "[STAT]           Max:      " <<  maxBox << std::endl
-					<< "[STAT]           Average: " <<  averageNeighbors<< std::endl
-					<< "[STAT]           Variance: " <<  varianceNeighbors << std::endl<< std::endl;
-		}
-		//
-		//    ---------------  END LEAVES ---------------
-		//
-		{
-			long long int totalCells = 0;
-			long long int totalM2L = 0;
-			long long int totalM2ML2L = 0;
-
-			int nbCellsAtTop = 0;
-			int nbCellsAtBottom = 0;
-
-			OctreeClass::Iterator octreeIterator(&tree);
-			octreeIterator.gotoBottomLeft();
-
-			for(int idxLevel = TreeHeight - 1 ; idxLevel > 1 ; --idxLevel){
-
-				int nbCellsAtLevel = 0;
-				int nbChildAtLevel = 0, adaptiveCell=0 ,nbChildForMyCell;
-				int nbNeighborsAtLevel = 0;
-				//
-				int nbM2LNeighbors, minM2L=500,maxM2L=-1;
-				FReal averageM2LNeighbors=0.0, varianceM2LNeighbors=0.0	;
-				//
-				const FBasicCell* neighborsM2L[343];
-				do{
-					++nbCellsAtLevel;
-					// Check number of
-					if( idxLevel != TreeHeight - 1 ){
-						nbChildForMyCell=0 ;
-						FBasicCell** child = octreeIterator.getCurrentChild();
-						for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-							if(child[idxChild]) ++nbChildForMyCell;
-						}
-						nbChildAtLevel += nbChildForMyCell ;
-						if(nbChildForMyCell>1) ++adaptiveCell ;
-					}
-					const FBasicCell* neighbors[343];
-					nbNeighborsAtLevel += tree.getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
-					//
-					//  M2L Neighbors
-					//
-					nbM2LNeighbors = tree.getInteractionNeighbors(neighborsM2L, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
-					minM2L                          =  FMath::Min(minM2L,nbM2LNeighbors) ;
-					maxM2L                         =  FMath::Max(maxM2L,nbM2LNeighbors) ;
-					averageM2LNeighbors  += FReal(nbM2LNeighbors) ;
-					varianceM2LNeighbors += FReal(nbM2LNeighbors*nbM2LNeighbors) ;
-				} while(octreeIterator.moveRight());
-				//
-				averageM2LNeighbors/=FReal(nbCellsAtLevel) ;
-				varianceM2LNeighbors = varianceM2LNeighbors/nbCellsAtLevel-averageM2LNeighbors*averageM2LNeighbors;
-
-				std::cout << "[STAT] Level = " << idxLevel << std::endl
-				               << "[STAT]     >> Nb Cells =                                 \t " << nbCellsAtLevel << std::endl
-				               << "[STAT]     >> Nb Adaptive Cells =                   \t" << adaptiveCell    << "  Non Adaptive (1 son): " <<100*FReal(nbCellsAtLevel-adaptiveCell)/nbCellsAtLevel<<std::endl
-				               << "[STAT]     >> Nb M2M/L2L interactions =        \t" << nbChildAtLevel << std::endl
-				               << "[STAT]     >> Average M2M/L2L interactions = \t" << FReal(nbChildAtLevel)/FReal(nbCellsAtLevel) << std::endl
-				               << "[STAT]     >> Nb M2L interactions =                 \t" << nbNeighborsAtLevel << std::endl;
-				std::cout << "[STAT]     >> M2L Neighbors for each leaf " << std::endl
-						       << "[STAT]             >>  Min:        " <<  minM2L << std::endl
-					          <<  "[STAT]             >> Max:       " <<  maxM2L << std::endl
-						      <<  "[STAT]             >> Average: " <<  averageM2LNeighbors<< std::endl
-						      <<  "[STAT]             >> Variance: " <<  varianceM2LNeighbors << std::endl<< std::endl;
-
-				totalCells += (long long int)(nbCellsAtLevel);
-				totalM2L += (long long int)(nbNeighborsAtLevel);
-				totalM2ML2L += (long long int)(nbChildAtLevel);
-				nbCellsAtTop = nbCellsAtLevel;
-				if( idxLevel == TreeHeight - 1 ) nbCellsAtBottom = nbCellsAtLevel;
-				std::cout << std::endl;
-				//
-				//  Go to next level
-				octreeIterator.moveUp();
-				octreeIterator.gotoLeft();
-               //
-			}
-			//
-			// Global statistics on the octree
-			//
-			std::cout << "[STAT] For all the tree\n";
-			std::cout << "[STAT] >> Total Nb Cells = " << totalCells-nbCellsAtTop << "\n";
-			std::cout << "[STAT] >> Total Nb M2M/L2L interactions = " << totalM2ML2L << "\n";
-			std::cout << "[STAT] >> Total Average M2M/L2L interactions = " << FReal(totalM2ML2L-nbCellsAtTop)/FReal(totalCells-nbCellsAtBottom) << "\n";
-			std::cout << "[STAT] >> Total Nb M2L interactions per cell = " << totalM2L << "\n";
-			std::cout << "[STAT] >> Total Average M2L interactions per cell = " << FReal(totalM2L)/FReal(totalCells) << "\n";
-
-		}
-	}
-
-	// -----------------------------------------------------
+    std::cout << "Parameters  " << std::endl
+              << "\tOctree Depth   : " << TreeHeight    << std::endl
+              << "\tSubOctree depth: " << SubTreeHeight << std::endl
+              << "\tInput file     : " << inFileName    << std::endl
+              << "\tOutput file    : " << outFileName   << std::endl
+              << std::endl;
 
 
-	return 0;
+    //     Creating and Inserting particles in the tree
+    // -------------------------------------------------------------------------
+    // The loader reads FMA formated files. The file header is read
+    // automatically : we have basic information on the tree
+    // structure. Initially, the tree is empty.
+    FFmaGenericLoader loader(inFileName.c_str()); 
+    OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
+
+    std::cout << newline
+              << "Particle file box." << newline
+              << "\t\tCentre: " << loader.getCenterOfBox() << newline
+              << "\t\tLength: " << loader.getBoxWidth()    
+              << std::endl << std::endl;
+
+    FReal  physicalValue;
+    FPoint particlePosition,
+        minPos(loader.getBoxWidth(),loader.getBoxWidth(),loader.getBoxWidth()),
+        maxPos(0., 0., 0.);
+
+    // Insertion of particles in the tree.
+    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        // read next particle in file
+        loader.fillParticle(&particlePosition,&physicalValue);
+        // insert particle into tree
+        tree.insert(particlePosition);
+        // Box bounds stats
+        minPos.setX( FMath::Min(minPos.getX(), particlePosition.getX()) ) ;
+        minPos.setY( FMath::Min(minPos.getY(), particlePosition.getY()) ) ;
+        minPos.setZ( FMath::Min(minPos.getZ(), particlePosition.getZ()) ) ;
+        maxPos.setX( FMath::Max(maxPos.getX(), particlePosition.getX()) ) ;
+        maxPos.setY( FMath::Max(maxPos.getY(), particlePosition.getY()) ) ;
+        maxPos.setZ( FMath::Max(maxPos.getZ(), particlePosition.getZ()) ) ;
+    }
+
+    std::cout << lhead + "Particle bounding box " << newline
+              << "\t\tMin corner: " << minPos << newline
+              << "\t\tMax corner: " << maxPos << std::endl << std::endl;
+
+
+    //     Statistics computation
+    // -------------------------------------------------------------------------
+    {   // Moving around the leaf level to get information on particles
+
+        long int allLeaves =  (1 << (3 * (TreeHeight-1) )); // maximum number of leaves
+        FReal averageParticles = 0.0,  varianceParticles = 0.0;
+        int nbLeafs = 0, nbPart = 0, nbTPart = 0; // number of particles, total number of particles
+        int minParticles = std::numeric_limits<int>::max(),
+            maxParticles = 0;
+
+        // Compute statistics on particles
+        // An octree iterator is used to get through the tree.
+        OctreeClass::Iterator octreeIterator(&tree);
+        // We move to the leftmost leaf.
+        octreeIterator.gotoBottomLeft();
+        do {
+            nbPart            =  octreeIterator.getCurrentListTargets()->getNbParticles() ;
+            minParticles      =  FMath::Min(minParticles,nbPart) ;
+            maxParticles      =  FMath::Max(maxParticles,nbPart) ;
+            nbTPart           += nbPart;
+            varianceParticles += FReal(nbPart*nbPart) ;
+            ++ nbLeafs;
+        } while(octreeIterator.moveRight()); // advancing through the level
+
+        averageParticles  = nbTPart/FReal(nbLeafs);
+        varianceParticles = varianceParticles/FReal(nbLeafs) - averageParticles*averageParticles;
+
+
+        std::cout.precision(4);
+        std::cout << lhead
+                  << "Leaf level      : " << TreeHeight-1 << newline
+                  << "Max leaf count  : " << allLeaves << newline
+                  << "Non empty leaves: " << nbLeafs 
+                  << " (" << 100 * static_cast<FReal>(nbLeafs) / static_cast<FReal>(allLeaves)
+                  << "%)" << newline;
+        std::cout << "Particles in leaves:" << newline
+                  << "\t\tMin     :" << std::setw(8) << minParticles
+                  << "\t\tMax     :" << std::setw(8) << maxParticles     << newline
+                  << "\t\tAverage :" << std::setw(8) << averageParticles
+                  << "\t\tVariance:" << std::setw(8) << varianceParticles 
+                  << std::endl << std::endl;
+
+
+        //  Histogram of particles per leaf
+        if( FParameters::existParameter(argc, argv, LocalOptionHist.options) ) {
+            std::vector<int> hist(maxParticles + 1, 0);
+
+            octreeIterator.gotoBottomLeft();
+            do {
+                nbPart = octreeIterator.getCurrentListSrc()->getNbParticles();
+                ++hist[nbPart] ;
+            } while(octreeIterator.moveRight());
+
+            // write data
+            std::ofstream outfile(outFileName);
+            if( ! outfile.good() ) {
+                std::cerr << "Cannot open file " << outFileName << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            outfile << "# Particle per leaf histogram. " << hist.size() << " chunk" << std::endl;
+            for(unsigned int i = 0 ; i < hist.size() ; ++i){
+                outfile << i << "  " << hist[i] << std::endl;
+            }
+        }
+        // Statistics on particles done
+
+        FReal averageNeighbors = 0.0, varianceNeighbors = 0.0 ;
+        int nbBox, minBox = 100000, maxBox=0;
+        ContainerClass*  neighborsP2P[27];
+
+        octreeIterator.gotoBottomLeft();
+        do {// P2P Neighbors
+            nbBox = tree.getLeafsNeighbors(neighborsP2P, 
+                                           octreeIterator.getCurrentGlobalCoordinate(),
+                                           TreeHeight-1) ;
+            // need the current particles and neighbors particles
+            minBox             = FMath::Min(minBox,nbBox) ;
+            maxBox             = FMath::Max(maxBox,nbBox) ;
+            averageNeighbors  += FReal(nbBox);
+            varianceNeighbors += FReal(nbBox*nbBox) ;
+        } while(octreeIterator.moveRight());
+
+        averageNeighbors  /= FReal(nbLeafs) ;
+        varianceNeighbors  = varianceNeighbors/nbLeafs-averageNeighbors*averageNeighbors;
+
+
+        std::cout << lhead
+                  << "P2P Neighbors for each leaf "  << newline
+                  << "\t\tMin     :" << std::setw(8) << minBox 
+                  << "\t\tMax     :" << std::setw(8) << maxBox << newline
+                  << "\t\tAverage :" << std::setw(8) << averageNeighbors
+                  << "\t\tVariance:" << std::setw(8) << varianceNeighbors
+                  << std::endl << std::endl;
+    } // End of leaves statistics
+
+
+    { // Internal cells statistics
+        long long int totalCells  = 0;
+        long long int totalM2L    = 0;
+        long long int totalM2ML2L = 0;
+        int nbCellsAtTop    = 0;
+        int nbCellsAtBottom = 0;
+
+        // As for the leaf level, we use an iterator got run through the tree.
+        OctreeClass::Iterator octreeIterator(&tree);
+        octreeIterator.gotoBottomLeft();
+        // For each level, see end of loop to climb a level in the tree.
+        for(int idxLevel = TreeHeight - 1 ; idxLevel >= 1 ; --idxLevel){
+
+            int nbCellsAtLevel = 0;
+            int nbChildrenAtLevel = 0, adaptiveCell = 0, nbChildrenForMyCell;
+            int nbNeighborsAtLevel = 0;
+
+            int   nbM2LNeighbors = 0, minM2L = 500, maxM2L = -1;
+            FReal averageM2LNeighbors = 0.0, varianceM2LNeighbors = 0.0;
+            const CellClass* neighborsM2L[343];
+
+            do {
+                ++ nbCellsAtLevel;
+                // Count children
+                if( idxLevel != TreeHeight - 1 ) {
+                    nbChildrenForMyCell = 0;
+                    CellClass** children = octreeIterator.getCurrentChild();
+                    for( int idxChild = 0 ; idxChild < 8 ; ++ idxChild ) {
+                        // Non existing children are NULL
+                        if( children[idxChild] )
+                            ++ nbChildrenForMyCell;
+                    }
+                    nbChildrenAtLevel += nbChildrenForMyCell;
+                    if( nbChildrenForMyCell > 1 )
+                        ++ adaptiveCell;
+                }
+                //  M2L Neighbors
+                nbM2LNeighbors = 
+                    tree.getInteractionNeighbors(neighborsM2L,
+                                                 octreeIterator.getCurrentGlobalCoordinate(),
+                                                 idxLevel);
+                nbNeighborsAtLevel += nbM2LNeighbors;
+
+                minM2L               =  FMath::Min(minM2L,nbM2LNeighbors) ;
+                maxM2L               =  FMath::Max(maxM2L,nbM2LNeighbors) ;
+                averageM2LNeighbors  += FReal(nbM2LNeighbors) ;
+                varianceM2LNeighbors += FReal(nbM2LNeighbors*nbM2LNeighbors) ;
+            } while(octreeIterator.moveRight());
+
+            averageM2LNeighbors  /= FReal(nbCellsAtLevel);
+            varianceM2LNeighbors =  varianceM2LNeighbors / nbCellsAtLevel 
+                - averageM2LNeighbors * averageM2LNeighbors;
+
+            totalCells   += (long long int)(nbCellsAtLevel);
+            totalM2L     += (long long int)(nbNeighborsAtLevel);
+            totalM2ML2L  += (long long int)(nbChildrenAtLevel);
+            nbCellsAtTop =  nbCellsAtLevel;
+            if( idxLevel == TreeHeight - 1 )
+                nbCellsAtBottom = nbCellsAtLevel;
+
+
+            std::cout << "[STAT] "
+                      << "Level " << idxLevel
+                      << newline
+                      << "\tCell count : " << nbCellsAtLevel
+                      << " (adaptive are cells with > 1 children)" << newline
+                      << "\t\tAdaptive:" << std::setw(8) << adaptiveCell
+                      << "\t\tNon adap:" << std::setw(8) << nbCellsAtLevel-adaptiveCell
+                      << newline
+                      << "\tM2M/L2L interact:" << std::setw(8) << nbChildrenAtLevel 
+                      <<       "\t\tAverage :" << std::setw(8) 
+                      << FReal(nbChildrenAtLevel)/FReal(nbCellsAtLevel)
+                      << newline
+                      << "\tM2L interactions:" << std::setw(8) << nbNeighborsAtLevel
+                      << newline;
+            std::cout << "\tM2L Neighbors / leaf: "
+                      << newline
+                      << "\t\tMin     :" << std::setw(8) << minM2L
+                      << "\t\tMax     :" << std::setw(8) << maxM2L
+                      << newline
+                      << "\t\tAverage :" << std::setw(8) << averageM2LNeighbors
+                      << "\t\tVariance:" << std::setw(8) << varianceM2LNeighbors
+                      << std::endl << std::endl;
+
+
+            //  Go to next level
+            octreeIterator.moveUp();
+            // Move to leftmost cell on new level
+            octreeIterator.gotoLeft();
+        }
+
+        // Global statistics on the octree
+        std::cout 
+            << lhead + "Global stats" << newline
+            << "\tCells = "  << totalCells-nbCellsAtTop << newline
+            << "\tM2L interactions  / cell :" << std::setw(8) 
+            << totalM2L << newline
+            << "\tAverage M2L inter / cell :" << std::setw(8)
+            << FReal(totalM2L)/FReal(totalCells) << newline
+            << "\tM2M/L2L interactions     :" << std::setw(8)
+            << totalM2ML2L << newline
+            << "\tAverage M2M/L2L interact :" << std::setw(8)
+            << FReal(totalM2ML2L-nbCellsAtTop) / FReal(totalCells-nbCellsAtBottom)
+            << std::endl;
+
+    }
+
+    return 0;
 }
 
 
