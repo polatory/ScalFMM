@@ -180,10 +180,8 @@ public:
     {
         // apply Sy
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                      LeafCell->getMultipole(idxRhs), SourceParticles);
-        }
+        AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                  LeafCell->getMultipole(0), SourceParticles);
     }
 
 
@@ -445,7 +443,6 @@ public:
              ContainerClass* const TargetParticles)
     {
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 //      // a) apply Sx
 //      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
 //                                                AbstractBaseClass::BoxWidthLeaf,
@@ -457,10 +454,10 @@ public:
 //                                                        LeafCell->getLocal(),
 //                                                        TargetParticles);
 
-            // c) apply Sx and Px (grad Sx)
-            AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                           LeafCell->getLocal(idxRhs), TargetParticles);
-        }
+        // c) apply Sx and Px (grad Sx)
+        AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                       LeafCell->getLocal(0), TargetParticles);
+
     }
 
     void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
