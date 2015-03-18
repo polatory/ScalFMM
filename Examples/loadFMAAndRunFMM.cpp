@@ -1,36 +1,59 @@
+// ===================================================================================
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.  
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info". 
+// "http://www.gnu.org/licenses".
+// ===================================================================================
+
 #include <fstream>
 #include <memory>
 #include <string>
-#include <sys/ioctl.h>
 
-#include "Utils/FMath.hpp"
-#include "Utils/FParameters.hpp"
-#include "Utils/FParameterNames.hpp"
+
+//#include "Utils/FMath.hpp"
+//#include "Utils/FParameters.hpp"
+//#include "Utils/FParameterNames.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 #include "Core/FFmmAlgorithm.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
 #include "Containers/FOctree.hpp"
 #include "Components/FBasicCell.hpp"
 #include "Components/FSimpleLeaf.hpp"
 #include "Components/FBasicParticleContainer.hpp"
-#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "FChebBalanceSymKernel.hpp"
 #include "loadFMAAndRunFMMArgs.hpp"
+#include "loadFMAAndRunFMMUtils.hpp"
+#include "FChebBalanceSymKernel.hpp"
 #include "CostZones.hpp"
 
-typedef FCostCell                                       CellClass;
-typedef FBasicParticleContainer<0>                      ContainerClass;
-typedef FSimpleLeaf< ContainerClass >                   LeafClass;
-typedef FOctree< CellClass, ContainerClass, LeafClass > OctreeClass;
-typedef FInterpMatrixKernelR                            MatrixKernelClass;
-typedef FChebBalanceSymKernel<CellClass, 
-                              ContainerClass, 
-                              MatrixKernelClass,
-                              5,
-                              OctreeClass>              KernelClass;
+using CellClass         = FCostCell;
+using ContainerClass    = FBasicParticleContainer<0>;
+using LeafClass         = FSimpleLeaf< ContainerClass >;
+using OctreeClass       = FOctree< CellClass, ContainerClass, LeafClass >;
+using MatrixKernelClass = FInterpMatrixKernelR;
+using BalanceKernelClass= FChebBalanceSymKernel<CellClass, ContainerClass,
+                                                MatrixKernelClass, 5,
+                                                OctreeClass>;
+// using KernelClass       = FChebSymKernel<CellClass, ContainerClass,
+//                                          MatrixKernelClass, 5,
+//                                          OctreeClass>;
+
+template < template <typename...> class T>
+using AlgoClass = T <OctreeClass, CellClass, ContainerClass, BalanceKernelClass, LeafClass >;
+
 
 const FReal epsilon = 1e-4;
+
 
 int main(int argc, char** argv)
 {
@@ -42,62 +65,25 @@ int main(int argc, char** argv)
                      loader.getBoxWidth(),
                      loader.getCenterOfBox());
 
-    FReal  physicalValue;
-    FPoint particlePosition;
-    // insertion
-    for ( int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart ) {
-        loader.fillParticle(&particlePosition, &physicalValue);
-        tree.insert(particlePosition);
+    loadTree(tree, loader);
+   
+    BalanceKernelClass kernel(&tree, epsilon);
+    AlgoClass<FFmmAlgorithm> costAlgo(&tree, &kernel);
+
+    costAlgo.execute();
+
+    if (args.verboseLevel() > 1) {
+        kernel.printResults(std::cout);
     }
-    
-    KernelClass kernel(&tree, epsilon);
-    FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >
-        algo(&tree, &kernel);
-
-    algo.execute();
-
-    kernel.printResults(std::cout);
-
-    OctreeClass::Iterator it(&tree);
 
     CostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
-    // GCC versions before 5.0 have not implemented move constructors to streams
-    std::vector<std::unique_ptr<std::ofstream>> outfiles;
-    for ( int zoneIdx = 0; zoneIdx < args.treeHeight(); zoneIdx++ ) {
-        std::unique_ptr<std::ofstream> out(
-            new std::ofstream( args.outFileName()
-                               + "_" + std::to_string(args.zoneCount()) + "z" 
-                               + "." + std::to_string(zoneIdx)
-                               + args.outFileExt()));
-        *out << "x,y,z,zone" << std::endl;
-        outfiles.push_back(std::move(out));
-    }
+    writeZones(args, costzones);
     
-    auto zones = costzones.getZones();
-    int zoneIdx = 0;
-    for ( auto zone : zones) {
-        for ( auto cell : zone) {
-            *(outfiles[cell.first]) << cell.second->getCoordinate().getX() << ",";
-            *(outfiles[cell.first]) << cell.second->getCoordinate().getY() << ",";
-            *(outfiles[cell.first]) << cell.second->getCoordinate().getZ() << ",";
-            *(outfiles[cell.first]) << zoneIdx << "," << cell.first << std::endl;
-        }
-        zoneIdx++;
-    }
-
-    auto& zonebounds = costzones.getZoneBounds();
-    zoneIdx = 0;
-    for ( auto zone : zonebounds ) {
-        std::cout << std::endl << "Zone " << zoneIdx << std::endl;
-        int level = 0;
-        for ( auto levelbounds : zone ) {
-            std::cout << "Level" << level << " : [" << levelbounds.first << ":" << levelbounds.second << "]\n";
-            level++;
-        }
-        zoneIdx++;
-    }
+//    AlgoClass<FFmmAlgorithmThreadBalanced> fmmAlgo();
+    
+    
 
     return EXIT_SUCCESS;
 }

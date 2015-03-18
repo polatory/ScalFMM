@@ -1,6 +1,8 @@
 #ifndef _LOADFMAANDRUNFMMARGS_HPP_
 #define _LOADFMAANDRUNFMMARGS_HPP_
 
+#include <sys/ioctl.h>
+
 #include "tclap/CmdLine.h"
 #include "tclap/LinuxOutput.hpp"
 #include "tclap/CompletionVisitor.h"
@@ -11,6 +13,7 @@ class loadFMAAndRunFMMArgs {
     const int _treeHeightInit = 5;
     const int _subTreeHeightInit = 1;
     const int _zoneCountInit = 4;
+    const int _verboseInit = 0;
     const std::string _inFileNameInit = "";
     const std::string _outFileNameInit = "balancetest";
     const std::string _outFileNameExtInit = "csv";
@@ -28,6 +31,12 @@ class loadFMAAndRunFMMArgs {
             "Show completion arguments",
             _cmd, false, &_compVistor};
 
+    TCLAP::MultiSwitchArg
+    _verboseArg { "v",
+            "verbose",
+            "Activate verbosity",
+            _cmd, _verboseInit};
+    
 
     TCLAP::ValueArg <int>
     _subTreeHeight { "", vs{"subtree-height", "sth"},
@@ -60,12 +69,13 @@ class loadFMAAndRunFMMArgs {
             "Input file name.", true, _inFileNameInit, "filename", _cmd};
     
 public:
-    int treeHeight()    {return _treeHeight.getValue();}
-    int subTreeHeight() {return _subTreeHeight.getValue();}
-    int zoneCount() {return _zoneCount.getValue();}
-    std::string inFileName() {return _inFileName.getValue();} 
-    std::string outFileName() {return _outFileName.getValue();} 
-    std::string outFileExt() {
+    int treeHeight()    const {return _treeHeight.getValue();}
+    int subTreeHeight() const {return _subTreeHeight.getValue();}
+    int zoneCount()     const {return _zoneCount.getValue();}
+    int verboseLevel()  const {return _verboseArg.getValue();}
+    const std::string& inFileName()  const {return _inFileName.getValue();} 
+    const std::string& outFileName() const {return _outFileName.getValue();} 
+    std::string outFileExt() const {
         std::string ext = _outFileExt.getValue();
         if ( ext.at(0) != '.' )
             return '.' + ext;
