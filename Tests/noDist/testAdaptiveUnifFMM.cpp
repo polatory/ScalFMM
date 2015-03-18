@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_FFT
+// @FUSE_BLAS
 // ================
 // Keep in private GIT
 // @SCALFMM_PRIVATE
