@@ -648,12 +648,15 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPo
     const map_glob_loc map(center, width);
     FPoint localPosition;
 
+    // number of multipole expansions
+    const int nMul = nVals*nRhs;
+
     // Init W
-    FReal W1[nVals*nRhs];
-    FReal W2[nVals*nRhs][3][ ORDER-1];
-    FReal W4[nVals*nRhs][3][(ORDER-1)*(ORDER-1)];
-    FReal W8[nVals*nRhs][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
-    for(int idxMul = 0 ; idxMul < nVals*nRhs ; ++idxMul){
+    FReal W1[nMul];
+    FReal W2[nMul][3][ ORDER-1];
+    FReal W4[nMul][3][(ORDER-1)*(ORDER-1)];
+    FReal W8[nMul][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
+    for(int idxMul = 0 ; idxMul < nMul ; ++idxMul){
       W1[idxMul] = FReal(0.);
       for(unsigned int i=0; i<(ORDER-1); ++i) W2[idxMul][0][i] = W2[idxMul][1][i] = W2[idxMul][2][i] = FReal(0.);
       for(unsigned int i=0; i<(ORDER-1)*(ORDER-1); ++i)	W4[idxMul][0][i] = W4[idxMul][1][i] = W4[idxMul][2][i] = FReal(0.);
@@ -687,7 +690,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPo
 
             for(int idxRhs = 0 ; idxRhs < nRhs ; ++idxRhs){
 
-                const int idxMul = idxVals*nRhs+idxRhs;
+                const int idxMul = idxRhs*nVals+idxVals;
 
                 const FReal*const physicalValues = inParticles->getPhysicalValues(idxVals,idxRhs);
   
@@ -720,7 +723,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPo
     ////////////////////////////////////////////////////////////////////
 
 
-    for(int idxMul = 0 ; idxMul < nVals*nRhs ; ++idxMul){
+    for(int idxMul = 0 ; idxMul < nMul ; ++idxMul){
 
         // loop over interpolation points
         FReal F2[3][ORDER];
@@ -851,17 +854,17 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPo
                                              ContainerClass *const inParticles) const
 {
 
-    FReal f1[nVals*nLhs];
-    FReal W2[nVals*nLhs][3][ ORDER-1];
-    FReal W4[nVals*nLhs][3][(ORDER-1)*(ORDER-1)];
-    FReal W8[nVals*nLhs][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
+    // number of local expansions
+    const int nLoc = nVals*nLhs;
+
+    FReal f1[nLoc];
+    FReal W2[nLoc][3][ ORDER-1];
+    FReal W4[nLoc][3][(ORDER-1)*(ORDER-1)];
+    FReal W8[nLoc][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
     {
 
-      for(int idxVals = 0 ; idxVals < nVals ; ++idxVals){
 
-        for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
-
-          const int idxLoc = idxVals*nLhs+idxLhs;
+      for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc){
           
           // sum over interpolation points
           f1[idxLoc] = FReal(0.);
@@ -897,8 +900,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPo
                   } // (ORDER-1) * (6 + (ORDER-1)*2) flops
               } // (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1)*2)) flops
           } // ORDER*ORDER*ORDER * (1 + (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1)*2))) flops
-        } // NLHS
-      } // NVALS
+        } // NLOC
     }
 
 
@@ -936,7 +938,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPo
 
         for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
-          const int idxLoc = idxVals*nLhs+idxLhs;
+          const int idxLoc = idxLhs*nVals+idxVals;
 
           // distribution over potential components:
           // We sum the multidim contribution of PhysValue
@@ -1089,6 +1091,9 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
     // TENSOR-PRODUCT INTERPOLUTION NOT IMPLEMENTED YET HERE!!! ////////
     ////////////////////////////////////////////////////////////////////
 
+    // number of local expansions
+    const int nLoc = nVals*nLhs;
+
     // setup local to global mapping
     const map_glob_loc map(center, width);
     FPoint Jacobian;
@@ -1136,8 +1141,8 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
         }
 
         // apply P and increment forces
-        FReal forces[nVals*nLhs][3];
-        for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc)
+        FReal forces[nLoc][3];
+        for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc)
             for (unsigned int i=0; i<3; ++i)
                 forces[idxLoc][i] = FReal(0.);
 
@@ -1158,7 +1163,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
             P[0] *= FReal(2.);
             P[1] *= FReal(2.); P[1] += FReal(1.);
             P[2] *= FReal(2.); P[2] += FReal(1.);
-            for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc)
+            for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc)
                 forces[idxLoc][0]	+= P[0] * P[1] * P[2] * localExpansion[2*idxLoc*nnodes + n];
 
             // f1 component //////////////////////////////////////
@@ -1173,7 +1178,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
             P[0] *= FReal(2.); P[0] += FReal(1.);
             P[1] *= FReal(2.);
             P[2] *= FReal(2.); P[2] += FReal(1.);
-            for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc)
+            for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc)
             forces[idxLoc][1]	+= P[0] * P[1] * P[2] * localExpansion[2*idxLoc*nnodes + n];
 
             // f2 component //////////////////////////////////////
@@ -1188,7 +1193,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
             P[0] *= FReal(2.); P[0] += FReal(1.);
             P[1] *= FReal(2.); P[1] += FReal(1.);
             P[2] *= FReal(2.);
-            for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc)
+            for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc)
               forces[idxLoc][2]	+= P[0] * P[1] * P[2] * localExpansion[2*idxLoc*nnodes + n];
         }
 
@@ -1198,7 +1203,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
   
             for(int idxVals = 0 ; idxVals < nVals ; ++idxVals){
 
-                const int idxLoc = idxVals*nLhs+idxLhs;
+                const int idxLoc = idxLhs*nVals+idxVals;
 
                 // scale forces
                 forces[idxLoc][0] *= jacobian[0] / nnodes;
@@ -1233,10 +1238,14 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PTotal(cons
                                                                       const FReal *const localExpansion,
                                                                       ContainerClass *const inParticles) const
 {
-    FReal f1[nVals*nLhs];
-    FReal W2[nVals*nLhs][3][ ORDER-1];
-    FReal W4[nVals*nLhs][3][(ORDER-1)*(ORDER-1)];
-    FReal W8[nVals*nLhs][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
+
+    // number of local expansions
+    const int nLoc = nVals*nLhs;
+
+    FReal f1[nLoc];
+    FReal W2[nLoc][3][ ORDER-1];
+    FReal W4[nLoc][3][(ORDER-1)*(ORDER-1)];
+    FReal W8[nLoc][   (ORDER-1)*(ORDER-1)*(ORDER-1)];
 
     {
         // for W2
@@ -1249,7 +1258,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PTotal(cons
         FReal G8[ORDER * (ORDER-1)*(ORDER-1)];
 
         // sum local expansions
-        for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc){
+        for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc){
 
             f1[idxLoc] = FReal(0.);
             for (unsigned int idx=0; idx<nnodes; ++idx)	f1[idxLoc] += localExpansion[2*idxLoc*nnodes + idx]; // 1 flop
@@ -1346,9 +1355,9 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PTotal(cons
         } // 3 + (ORDER-2)*15
 
         // apply P and increment forces
-        FReal potential[nVals*nLhs];
-        FReal forces[nVals*nLhs][3];
-        for(int idxLoc = 0 ; idxLoc < nVals*nLhs ; ++idxLoc){
+        FReal potential[nLoc];
+        FReal forces[nLoc][3];
+        for(int idxLoc = 0 ; idxLoc < nLoc ; ++idxLoc){
           potential[idxLoc]= FReal(0.);
           for (unsigned int i=0; i<3; ++i)
             forces[idxLoc][i] = FReal(0.);
@@ -1358,7 +1367,7 @@ inline void FChebInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PTotal(cons
 
             for( int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
 
-                const int idxLoc = idxVals*nLhs+idxLhs;
+                const int idxLoc = idxLhs*nVals+idxVals;
 
                 {
                     FReal f2[4], f4[4], f8[4];
