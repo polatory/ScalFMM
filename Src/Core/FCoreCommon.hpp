@@ -57,10 +57,7 @@ protected:
     }
 
     void validateLevels() const {
-    		std::cout << "upperWorkingLevel: "<< FAbstractAlgorithm::upperWorkingLevel  << std::endl
-    					  << "lowerWorkingLevel   "<<  FAbstractAlgorithm::lowerWorkingLevel << std::endl ;
         FAssertLF(FAbstractAlgorithm::upperWorkingLevel <= FAbstractAlgorithm::lowerWorkingLevel);
-    		std::cout << "End assert 1"  << std::endl ;
         FAssertLF(2 <= FAbstractAlgorithm::upperWorkingLevel);
     }
 
