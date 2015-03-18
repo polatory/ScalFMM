@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_FFT
 // ==============
 #include <array>
 
@@ -110,8 +111,10 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
             else if(NVals == 2){
                 tree.insert(particles[idxPart].getPosition() , idxPart, q, q);//,0.0,0.0,0.0);
             }
-            else{
-                FAssertLF(0, "NVALS should be <= 2");
+            else if(NVals == 3){
+                 tree.insert(particles[idxPart].getPosition() , idxPart, q, q,q);//,0.0,0.0,0.0);
+             }            else{
+                FAssertLF(0, "NVALS should be <= 3");
             }
          }
 //        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
@@ -273,7 +276,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestUnifKernel */
     void TestUnifKernel(){
-        const int NVals = 2;
+        const int NVals = 3;
         const unsigned int ORDER = 6 ;
         // run test
         typedef FInterpMatrixKernelR MatrixKernelClass;
@@ -291,7 +294,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestChebSymKernel */
     void TestChebSymKernel(){
-        const int NVals = 2;
+        const int NVals = 3;
         const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
