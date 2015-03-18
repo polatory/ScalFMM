@@ -30,20 +30,38 @@
 class FTreeCoordinate;
 
 /**
+ * \author Quentin Khan
+ * \brief Cell with a cost memory for balance computations.
+ *
  * This class extends FBasicCell to add simple computation cost memory. 
  */
 class FCostCell : public FBasicCell {
+    /// The cost of the cell. It is declared mutable because the existing
+    /// algorithms use const cells.
     mutable long int _cost = 0;
 public:
+    /// Debug member, used to check whether the cell was already visited.
     bool _visited = false;
+
+    /**
+     * \brief Gets the cost of the cell.
+     * \return The cost of the cell
+     */
     long int getCost() const {
         return _cost;
     }
+    /**
+     * Sets the cost of the cell.
+     * \return The cost of the cell
+     */
     long int setCost(int newCost) {
         _cost = newCost;
         return _cost;
     }
-
+    /** 
+     * Add a cost to the cell.
+     * \warning Can be used on const cells !
+     */
     long int addCost(int addCost) const {
         _cost += addCost;
         return _cost;
@@ -51,7 +69,7 @@ public:
 };
 
 /**
- * \author Quentin Khan, Matthias Messner (original file)
+ * \author Quentin Khan, Matthias Messner (original file: FChebFlopsSymKernel)
  * \brief Cost computation of Chebyshev interpolation based FMM.
  *
  * Please read the license
@@ -80,10 +98,11 @@ public:
     const FSmartPointer<MatrixKernelClass,FSmartPointerMemory> MatrixKernel;
     const FSmartPointer<SymmetryHandler,  FSmartPointerMemory> SymHandler;
 
-    ///
+    /// The tree the kernel is working on. Needed to attain cells in the P2P
+    /// operator (we only get the particles containers otherwise)
     OctreeClass* _tree;
 
-    /// tree height
+    /// The tree height
     const unsigned int _treeHeight;
 
     /// count permuted local and multipole expansions
@@ -355,13 +374,6 @@ public:
         countP2P++;
     }
 };
-
-
-
-
-
-
-
 
 
 

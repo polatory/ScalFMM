@@ -1,6 +1,8 @@
 #ifndef _COSTZONES_HPP_
 #define _COSTZONES_HPP_
 
+#include "FChebBalanceSymKernel.hpp"
+
 /**
  * \brief The costzones algorithm implementation.
  * \author Quentin Khan <quentin.khan@inria.fr>

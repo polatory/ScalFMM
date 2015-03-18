@@ -47,8 +47,8 @@
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithmTimers{
-    OctreeClass* const tree;                  ///< The octree to work on.
-    KernelClass** kernels;                    ///< The kernels.
+    OctreeClass* const tree;  ///< The octree to work on.
+    KernelClass** kernels;    ///< The kernels.
 
     typename OctreeClass::Iterator* iterArray;
     int leafsNumber;
@@ -56,10 +56,12 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     static const int SizeShape = 3*3*3;
     int shapeLeaf[SizeShape];
 
-    const int MaxThreads;                     ///< The maximum number of threads.
+    const int MaxThreads;     ///< The maximum number of threads.
+    const int OctreeHeight;   ///< The height of the given tree.
 
-    const int OctreeHeight;                   ///< The height of the given tree.
-
+    /// The vector containing the costzones
+    const std::vector<std::vector<int,int>> costzones;
+    
 public:
     /** Class constructor
      * 
@@ -69,21 +71,22 @@ public:
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */
-    FFmmAlgorithmThreadBalanced(OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , 
-          kernels(nullptr),
-          iterArray(nullptr),
-          leafsNumber(0),
-          MaxThreads(omp_get_max_threads()),
-          OctreeHeight(tree->getHeight()) {
-
+    FFmmAlgorithmThreadBalanced(OctreeClass* const inTree, KernelClass* const inKernels,
+                                const std::vector<std::vector<int,int>>) :
+        tree(inTree) , 
+        kernels(nullptr),
+        iterArray(nullptr),
+        leafsNumber(0),
+        MaxThreads(omp_get_max_threads()),
+        OctreeHeight(tree->getHeight()) {
+        
         FAssertLF(tree, "tree cannot be null");
 
         this->kernels = new KernelClass*[MaxThreads];
 
         #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread) {
-#pragma omp critical (InitFFmmAlgorithmThreadBalanced)
+            #pragma omp critical (InitFFmmAlgorithmThreadBalanced)
             {
                 this->kernels[idxThread] = new KernelClass(*inKernels);
             }
