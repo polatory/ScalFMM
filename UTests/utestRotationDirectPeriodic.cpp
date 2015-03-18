@@ -49,9 +49,10 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         const int NbLevels         = 4;
         const int SizeSubLevels = 2;
         const int PeriodicDeep  = 2;
-        const int NbParticles   = 100;
+        const int nbParticles   = 100;
 
-        FRandomLoader loader(NbParticles);
+        FRandomLoader loader(nbParticles);
+      //
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         struct TestParticle{
             FPoint position;
@@ -59,13 +60,14 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
             FReal physicalValue;
             FReal potential;
         };
-        FReal coeff = -1.0, value = 0.10, sum = 0.0;
+        FReal coeff = -1.0, value = 0.10, sum = 0.0, coerr =0.0, a=0.0;
         TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FPoint position;
             loader.fillParticle(&position);
             value *= coeff ;
             sum += value ;
+            coerr += FMath::Abs(value);
             // put in tree
             tree.insert(position, idxPart, value);
             // get copy
@@ -75,7 +77,10 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
             particles[idxPart].forces[0] = 0.0;
             particles[idxPart].forces[1] = 0.0;
             particles[idxPart].forces[2] = 0.0;
+            a = std::max(a,position.getX()*position.getX()+position.getY()*position.getY()+position.getZ()*position.getZ());
         }
+        double CorErr = coerr/a;
+
         if (FMath::Abs(sum)> 0.00001){
         		std::cerr << "Sum of charges is not equal zero!!! (sum=<<"<<sum<<" )"<<std::endl;
         		exit(-1);
@@ -112,7 +117,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                                             loader.getBoxWidth() * FReal(idxY),
                                             loader.getBoxWidth() * FReal(idxZ));
 
-                        for(int idxSource = 0 ; idxSource < NbParticles ; ++idxSource){
+                        for(int idxSource = 0 ; idxSource < nbParticles ; ++idxSource){
                             TestParticle source = particles[idxSource];
                             source.position += offset;
 
@@ -186,29 +191,39 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
 		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
 		// Assert
-		const FReal MaximumDiffPotential = FReal(9e-3);
-		const FReal MaximumDiffForces     = FReal(9e-2);
+
+		double epsilon = 1.0/FMath::pow2(P);
+		const FReal MaximumDiffPotential = FReal(CorErr*epsilon);
+		const FReal MaximumDiffForces     = FReal(10*CorErr*epsilon);
+		printf(" Criteria error - Epsilon  %e  \n",epsilon);
 
 		Print("Test1 - Error Relative L2 norm Potential ");
 		uassert(potentialDiff.getRelativeL2Norm() < MaximumDiffPotential);    //1
 		Print("Test2 - Error RMS L2 norm Potential ");
-		uassert(potentialDiff.getRMSError() < MaximumDiffPotential);  //2
+		 FReal CoerrRMS = potentialDiff.getl2Dot()/FMath::Sqrt(static_cast<FReal>(nbParticles));
+
+		uassert(potentialDiff.getRMSError() < CoerrRMS*MaximumDiffPotential);  //2
 		Print("Test3 - Error Relative L2 norm FX ");
-		uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);                       //3
+		uassert(fx.getRelativeL2Norm()  < MaximumDiffForces);
+		CoerrRMS = fx.getl2Dot()/FMath::Sqrt(static_cast<FReal>(nbParticles));
+	//3
 		Print("Test4 - Error RMS L2 norm FX ");
-		uassert(fx.getRMSError() < MaximumDiffForces);                      //4
+		uassert(fx.getRMSError() < CoerrRMS*MaximumDiffForces);                      //4
 		Print("Test5 - Error Relative L2 norm FY ");
 		uassert(fy.getRelativeL2Norm()  < MaximumDiffForces);                       //5
 		Print("Test6 - Error RMS L2 norm FY ");
-		uassert(fy.getRMSError() < MaximumDiffForces);                      //6
+		CoerrRMS = fy.getl2Dot()/FMath::Sqrt(static_cast<FReal>(nbParticles));
+		uassert(fy.getRMSError() < CoerrRMS*MaximumDiffForces);                      //6
 		Print("Test7 - Error Relative L2 norm FZ ");
 		uassert(fz.getRelativeL2Norm()  < MaximumDiffForces);                      //8
 		Print("Test8 - Error RMS L2 norm FZ ");
-		uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
+		CoerrRMS = fz.getl2Dot()/FMath::Sqrt(static_cast<FReal>(nbParticles));
+		uassert(fz.getRMSError() < CoerrRMS*MaximumDiffForces);                                           //8
 		Print("Test9 - Error Relative L2 norm F ");
 		uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
 		Print("Test10 - Relative error Energy ");
-		uassert(FMath::Abs(energy-energyD) /energyD< MaximumDiffPotential);                     //10  Total Energy
+		uassert(FMath::Abs(energy-energyD)< coerr*MaximumDiffPotential);                     //10  Total Energy
+
 
         delete[] particles;
     }
