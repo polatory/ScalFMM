@@ -45,7 +45,7 @@ class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-  typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+  typedef FChebInterpolator<ORDER,MatrixKernelClass,NVALS> InterpolatorClass;
 
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;

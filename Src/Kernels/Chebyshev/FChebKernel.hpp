@@ -77,19 +77,22 @@ public:
     }
 
     FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel)
-        :   FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
+        :   FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FReal(0.)/*FMath::pow(10.0,static_cast<FReal>(-ORDER))*/)
     {
 
     }
+
 
     void P2M(CellClass* const LeafCell,
              const ContainerClass* const SourceParticles)
     {
         const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+
+        // 1) apply Sy
+        AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                  LeafCell->getMultipole(0), SourceParticles);
+
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // 1) apply Sy
-            AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                      LeafCell->getMultipole(idxRhs), SourceParticles);
             // 2) apply B
             M2LHandler->applyB(LeafCell->getMultipole(idxRhs), LeafCell->getMultipole(idxRhs) + AbstractBaseClass::nnodes);
         }
@@ -102,7 +105,6 @@ public:
     {
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
             // 1) apply Sy
-            FBlas::scal(AbstractBaseClass::nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
                 if (ChildCells[ChildIndex]){
                     AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs),
@@ -192,22 +194,23 @@ public:
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
             // 1) apply U
             M2LHandler->applyU(LeafCell->getLocal(idxRhs) + AbstractBaseClass::nnodes, const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
-
-            //// 2.a) apply Sx
-            //AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
-            //                                          AbstractBaseClass::BoxWidthLeaf,
-            //                                          LeafCell->getLocal(),
-            //                                          TargetParticles);
-            //// 2.b) apply Px (grad Sx)
-            //AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
-            //                                                  AbstractBaseClass::BoxWidthLeaf,
-            //                                                  LeafCell->getLocal(),
-            //                                                  TargetParticles);
-
-            // 2.c) apply Sx and Px (grad Sx)
-            AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                            LeafCell->getLocal(idxRhs), TargetParticles);
         }
+
+        //// 2.a) apply Sx
+        //AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
+        //                                          AbstractBaseClass::BoxWidthLeaf,
+        //                                          LeafCell->getLocal(0),
+        //                                          TargetParticles);
+        //// 2.b) apply Px (grad Sx)
+        //AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
+        //                                                  AbstractBaseClass::BoxWidthLeaf,
+        //                                                  LeafCell->getLocal(0),
+        //                                                  TargetParticles);
+
+        // 2.c) apply Sx and Px (grad Sx)
+        AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
+                                                        LeafCell->getLocal(0), TargetParticles);
+
     }
 
     void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
