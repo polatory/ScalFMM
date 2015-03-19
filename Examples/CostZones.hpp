@@ -187,8 +187,11 @@ private:
                 // Zone bounds update
                 if( _zonebounds.back()[_it.level()] == std::pair<int,int>(-1,-1) ) {
                     _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
+                    _zonebounds.back()[_it.level()].second = 1;
                 } else {
-                    _zonebounds.back()[_it.level()].second = _it.getCurrentGlobalIndex();
+                    _zonebounds.back()[_it.level()].second++;
+                    // This was to keep the end index
+                    // _zonebounds.back()[_it.level()].second = _it.getCurrentGlobalIndex();
                 }
                 
             } else {
