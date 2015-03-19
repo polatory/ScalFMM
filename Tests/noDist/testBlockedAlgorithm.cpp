@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
 
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
-            GroupContainerClass, 2, long long int>  GroupOctreeClass;
+            GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;

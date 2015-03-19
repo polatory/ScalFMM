@@ -13,7 +13,7 @@
  * The idea is to hidde the group allocation from the group tree but
  * to keep the same interface than the FBasicParticlesContainer.
  */
-template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf
@@ -21,13 +21,13 @@ protected:
     //< Pointers to the positions of the particles
     FReal* positionsPointers[3];
     //< Pointers to the attributes of the particles
-    AttributeClass* attributes[NbAttributesPerParticle];
+    AttributeClass* attributes[NbSymbAttributes+NbAttributesPerParticle];
 
 public:
     /** Empty constructor to point to nothing */
     FGroupAttachedLeaf() : nbParticles(-1) {
         memset(positionsPointers, 0, sizeof(FReal*) * 3);
-        memset(attributes, 0, sizeof(AttributeClass*) * NbAttributesPerParticle);
+        memset(attributes, 0, sizeof(AttributeClass*) * (NbSymbAttributes+NbAttributesPerParticle));
     }
 
     /**
@@ -46,14 +46,19 @@ public:
         positionsPointers[1] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition);
         positionsPointers[2] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*2);
 
+        unsigned char* symAttributes = reinterpret_cast<unsigned char*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*3);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
+            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(symAttributes + idxAttribute*inLeadingAttributes);
+        }
+
         // Redirect pointers to data
         if(inAttributesBuffer){
             for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-                attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+                attributes[idxAttribute+NbSymbAttributes] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
             }
         }
         else{
-            memset(attributes, 0, sizeof(AttributeClass*)*NbAttributesPerParticle);
+            memset(&attributes[NbSymbAttributes], 0, sizeof(AttributeClass*)*NbAttributesPerParticle);
         }
     }    
 
@@ -64,7 +69,7 @@ public:
         positionsPointers[2] = other.positionsPointers[2];
 
         // Redirect pointers to data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes+NbAttributesPerParticle ; ++idxAttribute){
             attributes[idxAttribute] = other.attributes[idxAttribute];
         }
     }
@@ -78,7 +83,7 @@ public:
         positionsPointers[2] = other.positionsPointers[2];
 
         // Redirect pointers to data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes+NbAttributesPerParticle ; ++idxAttribute){
             attributes[idxAttribute] = other.attributes[idxAttribute];
         }
 
@@ -132,7 +137,7 @@ public:
      */
     template <int index>
     AttributeClass* getAttribute() {
-        static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
+        static_assert(index < NbSymbAttributes+NbAttributesPerParticle, "Index to get attributes is out of scope.");
         return attributes[index];
     }
 
@@ -141,7 +146,7 @@ public:
      */
     template <int index>
     const AttributeClass* getAttribute() const {
-        static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
+        static_assert(index < NbSymbAttributes+NbAttributesPerParticle, "Index to get attributes is out of scope.");
         return attributes[index];
     }
 
@@ -160,7 +165,7 @@ public:
         memcpy(positionsPointers[2], particles->getPositions()[2] + offsetInSrcContainer, nbParticles*sizeof(FReal));
 
         // Copy data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes+NbAttributesPerParticle ; ++idxAttribute){
             memcpy(attributes[idxAttribute], particles->getAttribute(idxAttribute) + offsetInSrcContainer, nbParticles*sizeof(AttributeClass));
         }
     }
@@ -175,7 +180,7 @@ public:
         positionsPointers[2][destPartIdx] = particles->getPositions()[2][srcPartIdx];
 
         // Copy data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes+NbAttributesPerParticle ; ++idxAttribute){
             attributes[idxAttribute][destPartIdx] = particles->getAttribute(idxAttribute)[srcPartIdx];
         }
     }

@@ -7,8 +7,8 @@
 #include "FGroupAttachedLeaf.hpp"
 
 template<int NRHS = 1, int NLHS = 1>
-class FP2PGroupParticleContainer : public FGroupAttachedLeaf<NRHS+4*NLHS, FReal> {
-    typedef FGroupAttachedLeaf<NRHS+4*NLHS, FReal> Parent;
+class FP2PGroupParticleContainer : public FGroupAttachedLeaf<NRHS, 4*NLHS, FReal> {
+    typedef FGroupAttachedLeaf<NRHS, 4*NLHS, FReal> Parent;
 
 public:
     FP2PGroupParticleContainer(){}

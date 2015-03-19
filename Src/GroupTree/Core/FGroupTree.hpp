@@ -18,11 +18,11 @@
 
 
 template <class CompositeCellClass, class SymboleCellClass, class PoleCellClass, class LocalCellClass,
-          class GroupAttachedLeafClass, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+          class GroupAttachedLeafClass, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupTree {
 public:
     typedef GroupAttachedLeafClass BasicAttachedClass;
-    typedef FGroupOfParticles<NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
+    typedef FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
     typedef FGroupOfCells<CompositeCellClass, SymboleCellClass, PoleCellClass, LocalCellClass> CellGroupClass;
 
 protected:
@@ -108,7 +108,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbAttributesPerParticle, AttributeClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
+                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock, nbParticlesInGroup);
 
@@ -265,7 +265,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                  currentBlockIndexes[sizeOfBlock-1]+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
+                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
                         currentBlockIndexes[sizeOfBlock-1]+1,
                         sizeOfBlock, lastParticle-firstParticle);
 
@@ -444,7 +444,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                  currentBlockIndexes[sizeOfBlock-1]+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
+                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
                         currentBlockIndexes[sizeOfBlock-1]+1,
                         sizeOfBlock, lastParticle-firstParticle);
 

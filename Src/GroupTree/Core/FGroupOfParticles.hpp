@@ -17,7 +17,7 @@
 /**
 * @brief The FGroupOfParticles class manages the leaves in block allocation.
 */
-template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupOfParticles {
     /** One header is allocated at the beginning of each block */
     struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
@@ -79,7 +79,7 @@ protected:
 
     //< Pointers to the particles data inside the block memory
     AttributeClass* attributesBuffer;
-    AttributeClass* particleAttributes[NbAttributesPerParticle];
+    AttributeClass* particleAttributes[NbSymbAttributes+NbAttributesPerParticle];
 
     /** To know if we have to delete the buffer */
     bool deleteBuffer;
@@ -109,10 +109,15 @@ public:
 
         // Redirect pointer to data
         blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
+        AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
+            particleAttributes[idxAttribute] = symAttributes;
+            symAttributes += blockHeader->nbParticlesAllocatedInGroup;
+        }
         if(inAttributes){
             attributesBuffer = (AttributeClass*)inAttributes;
             for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-                particleAttributes[idxAttribute] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
+                particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*blockHeader->nbParticlesAllocatedInGroup];
             }
         }
     }
@@ -135,7 +140,7 @@ public:
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfLeaves <= blockIndexesTableSize);
         // Total number of bytes in the block
-        const size_t sizeOfOneParticle = (3*sizeof(FReal));
+        const size_t sizeOfOneParticle = (3*sizeof(FReal) + NbSymbAttributes*sizeof(AttributeClass));
         const size_t memoryToAlloc = sizeof(BlockHeader)
                                     + (blockIndexesTableSize*sizeof(int))
                                     + (inNumberOfLeaves*sizeof(LeafHeader))
@@ -170,10 +175,16 @@ public:
         // Redirect pointer to data
         blockHeader->attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
 
+        AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
+            particleAttributes[idxAttribute] = symAttributes;
+            symAttributes += blockHeader->nbParticlesAllocatedInGroup;
+        }
+
         attributesBuffer = (AttributeClass*)FAlignedMemory::Allocate32BAligned(blockHeader->attributeOffset*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
+            particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
         }
 
         // Set all index to not used

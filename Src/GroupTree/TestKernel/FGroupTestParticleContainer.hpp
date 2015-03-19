@@ -6,8 +6,8 @@
 
 #include "../Core/FGroupAttachedLeaf.hpp"
 
-class FGroupTestParticleContainer : public FGroupAttachedLeaf<2, long long int> {
-    typedef FGroupAttachedLeaf<2, long long int> Parent;
+class FGroupTestParticleContainer : public FGroupAttachedLeaf<0, 1, long long int> {
+    typedef FGroupAttachedLeaf<0, 1, long long int> Parent;
 
 public:
     FGroupTestParticleContainer(){}
