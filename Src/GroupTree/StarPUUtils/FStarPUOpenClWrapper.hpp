@@ -180,7 +180,7 @@ public:
         cl_mem externalCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[3]));
         size_t externalCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[3]);
         cl_mem externalCellsUpPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[4]));
-        cl_mem externalCellsDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[4]));
+        cl_mem externalCellsDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[5]));
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -209,7 +209,7 @@ public:
     static void downardPassCallback(void *buffers[], void *cl_arg){
         cl_mem currentCellsPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
         size_t currentCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]);
-        cl_mem currentCellsDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[0]));
+        cl_mem currentCellsDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
