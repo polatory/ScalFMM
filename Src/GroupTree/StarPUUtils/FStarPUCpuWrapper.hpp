@@ -76,9 +76,12 @@ public:
 
     static void bottomPassCallback(void *buffers[], void *cl_arg){
         CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                            (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                            nullptr);
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                            nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
@@ -90,13 +93,13 @@ public:
         const MortonIndex blockEndIdx = leafCells->getEndingIndex();
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = leafCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
+        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){            
+            if(leafCells->exists(mindex)){
+                CellClass cell = leafCells->getUpCell(mindex);
+                FAssertLF(cell.getMortonIndex() == mindex);
                 ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
                 FAssertLF(particles.isAttachedToSomething());
-                kernel->P2M(cell, &particles);
+                kernel->P2M(&cell, &particles);
             }
         }
     }
@@ -107,7 +110,9 @@ public:
 
     static void upwardPassCallback(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
@@ -117,8 +122,11 @@ public:
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
-                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
+            subCellGroups[idxSubGroup] = new CellContainerClass(
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]),
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]),
+                        nullptr);
         }
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
@@ -140,9 +148,10 @@ public:
         int idxSubCellGroup = 0;
 
         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
+            if(currentCells->exists(mindex)){
+                CellClass cell = currentCells->getUpCell(mindex);
+                FAssertLF(cell.getMortonIndex() == mindex);
+                CellClass childData[8];
                 CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -152,11 +161,14 @@ public:
                     if( idxSubCellGroup == nbSubCellGroups ){
                         break;
                     }
-                    child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
-                    FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
+                    if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
+                        childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell((mindex<<3)+idxChild);
+                        child[idxChild] = &childData[idxChild];
+                        FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
+                    }
                 }
 
-                kernel->M2M(cell, child, idxLevel);
+                kernel->M2M(&cell, child, idxLevel);
             }
         }
     }
@@ -168,9 +180,13 @@ public:
 #ifdef STARPU_USE_MPI
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        nullptr,
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
+                                        nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -188,18 +204,17 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
-            if(interCell){
-                FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(cell);
-                FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+            if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
+                CellClass interCell = cellsOther->getDownCell((*outsideInteractions)[outInterIdx].outIndex);
+                FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                CellClass cell = currentCells->getUpCell((*outsideInteractions)[outInterIdx].insideIndex);
+                FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
                 const CellClass* interactions[343];
                 memset(interactions, 0, 343*sizeof(CellClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
+                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interCell;
                 const int counter = 1;
-                kernel->M2L( cell , interactions, counter, idxLevel);
+                kernel->M2L( &cell , interactions, counter, idxLevel);
             }
         }
     }
@@ -209,9 +224,10 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[1]));
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]));
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -226,43 +242,45 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
+            if(currentCells->exists(mindex)){
+                CellClass cell = currentCells->getCompleteCell(mindex);
+                FAssertLF(cell.getMortonIndex() == mindex);
                 MortonIndex interactionsIndexes[189];
                 int interactionsPosition[189];
-                const FTreeCoordinate coord(cell->getCoordinate());
+                const FTreeCoordinate coord(cell.getCoordinate());
                 int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
+                CellClass interactionsData[343];
                 const CellClass* interactions[343];
                 memset(interactions, 0, 343*sizeof(CellClass*));
                 int counterExistingCell = 0;
 
                 for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                     if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                        CellClass* interCell = currentCells->getCell(interactionsIndexes[idxInter]);
-                        if(interCell){
-                            FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
+                        if(currentCells->exists(interactionsIndexes[idxInter])){
+                            interactionsData[interactionsPosition[idxInter]] = currentCells->getCompleteCell(interactionsIndexes[idxInter]);
+                            FAssertLF(interactionsData[interactionsPosition[idxInter]].getMortonIndex() == interactionsIndexes[idxInter]);
                             FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                            interactions[interactionsPosition[idxInter]] = interCell;
+                            interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
                             counterExistingCell += 1;
                         }
                     }
                 }
 
-                kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
+                kernel->M2L( &cell , interactions, counterExistingCell, idxLevel);
             }
         }
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[0]) == STARPU_VARIABLE_GET_PTR(buffers[2]));
-        FAssertLF(STARPU_VARIABLE_GET_PTR(buffers[1]) == STARPU_VARIABLE_GET_PTR(buffers[3]));
-
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[3]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[4]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[5]));
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -280,22 +298,21 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
-            if(interCell){
-                FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(cell);
-                FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+            if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
+                CellClass interCell = cellsOther->getCompleteCell((*outsideInteractions)[outInterIdx].outIndex);
+                FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIndex);
+                FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
                 const CellClass* interactions[343];
                 memset(interactions, 0, 343*sizeof(CellClass*));
-                interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
+                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interCell;
                 const int counter = 1;
-                kernel->M2L( cell , interactions, counter, idxLevel);
+                kernel->M2L( &cell , interactions, counter, idxLevel);
 
                 interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = cell;
-                kernel->M2L( interCell , interactions, counter, idxLevel);
+                interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = &cell;
+                kernel->M2L( &interCell , interactions, counter, idxLevel);
             }
         }
     }
@@ -305,7 +322,9 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
     static void downardPassCallback(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        nullptr,
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
@@ -315,8 +334,11 @@ public:
         CellContainerClass* subCellGroups[9];
         memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
         for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[idxSubGroup+1]),
-                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[idxSubGroup+1]));
+            subCellGroups[idxSubGroup] = new CellContainerClass(
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]),
+                        nullptr,
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]));
         }
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
@@ -338,9 +360,10 @@ public:
         int idxSubCellGroup = 0;
 
         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            CellClass* cell = currentCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
+            if(currentCells->exists(mindex)){
+                CellClass cell = currentCells->getDownCell(mindex);
+                FAssertLF(cell.getMortonIndex() == mindex);
+                CellClass childData[8];
                 CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                 for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -350,11 +373,14 @@ public:
                     if( idxSubCellGroup == nbSubCellGroups ){
                         break;
                     }
-                    child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
-                    FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
+                    if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
+                        childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell((mindex<<3)+idxChild);
+                        child[idxChild] = &childData[idxChild];
+                        FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
+                    }
                 }
 
-                kernel->L2L(cell, child, idxLevel);
+                kernel->L2L(&cell, child, idxLevel);
             }
         }
     }
@@ -366,9 +392,11 @@ public:
 #ifdef STARPU_USE_MPI
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                      nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
@@ -400,7 +428,8 @@ public:
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
@@ -443,9 +472,11 @@ public:
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
@@ -481,9 +512,12 @@ public:
 
     static void mergePassCallback(void *buffers[], void *cl_arg){
         CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
-                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]));
-        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[1]));
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                     nullptr,
+                                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         FStarPUPtrInterface* worker = nullptr;
         starpu_codelet_unpack_args(cl_arg, &worker);
@@ -496,12 +530,12 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            CellClass* cell = leafCells->getCell(mindex);
-            if(cell){
-                FAssertLF(cell->getMortonIndex() == mindex);
+            if(leafCells->exists(mindex)){
+                CellClass cell = leafCells->getDownCell(mindex);
+                FAssertLF(cell.getMortonIndex() == mindex);
                 ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
                 FAssertLF(particles.isAttachedToSomething());
-                kernel->L2P(cell, &particles);
+                kernel->L2P(&cell, &particles);
             }
         }
     }

@@ -78,7 +78,8 @@ protected:
     FReal* particlePosition[3];
 
     //< Pointers to the particles data inside the block memory
-    AttributeClass*      particleAttributes[NbAttributesPerParticle];
+    AttributeClass* attributesBuffer;
+    AttributeClass* particleAttributes[NbAttributesPerParticle];
 
     /** To know if we have to delete the buffer */
     bool deleteBuffer;
@@ -89,10 +90,11 @@ public:
      * @param inBuffer
      * @param inAllocatedMemoryInByte
      */
-    FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte)
+    FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
+                      unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
           blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
-          deleteBuffer(false){
+          attributesBuffer(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
         blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
@@ -107,10 +109,11 @@ public:
 
         // Redirect pointer to data
         blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
-        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + blockHeader->nbParticlesAllocatedInGroup);
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
-            previousPointer += sizeof(AttributeClass)*blockHeader->nbParticlesAllocatedInGroup;
+        if(inAttributes){
+            attributesBuffer = (AttributeClass*)inAttributes;
+            for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+                particleAttributes[idxAttribute] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
+            }
         }
     }
 
@@ -132,7 +135,7 @@ public:
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
         FAssertLF(inNumberOfLeaves <= blockIndexesTableSize);
         // Total number of bytes in the block
-        const size_t sizeOfOneParticle = (3*sizeof(FReal) + NbAttributesPerParticle*sizeof(AttributeClass));
+        const size_t sizeOfOneParticle = (3*sizeof(FReal));
         const size_t memoryToAlloc = sizeof(BlockHeader)
                                     + (blockIndexesTableSize*sizeof(int))
                                     + (inNumberOfLeaves*sizeof(LeafHeader))
@@ -166,10 +169,11 @@ public:
 
         // Redirect pointer to data
         blockHeader->attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
-        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + nbParticlesAllocatedInGroup);
+
+        attributesBuffer = (AttributeClass*)FAlignedMemory::Allocate32BAligned(blockHeader->attributeOffset*NbAttributesPerParticle);
+        memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
-            previousPointer += sizeof(AttributeClass)*nbParticlesAllocatedInGroup;
+            particleAttributes[idxAttribute] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
         }
 
         // Set all index to not used
@@ -182,6 +186,7 @@ public:
     ~FGroupOfParticles(){
         if(deleteBuffer){
             FAlignedMemory::Dealloc32BAligned(memoryBuffer);
+            FAlignedMemory::Dealloc32BAligned(attributesBuffer);
         }
     }
 
@@ -193,6 +198,16 @@ public:
     /** The the size of the allocated buffer */
     int getBufferSizeInByte() const {
         return allocatedMemoryInByte;
+    }
+
+    /** Give access to the buffer to send the data */
+    const AttributeClass* getRawAttributesBuffer() const{
+        return attributesBuffer;
+    }
+
+    /** The the size of the allocated buffer */
+    int getAttributesBufferSizeInByte() const {
+        return blockHeader->attributeOffset*NbAttributesPerParticle;
     }
 
     /** To know if the object will delete the memory block */

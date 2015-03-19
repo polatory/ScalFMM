@@ -7,76 +7,85 @@
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 struct alignas(FStarPUDefaultAlign::StructAlign) FTestCellPODCore {
+    FTestCellPODCore(){
+        mortonIndex = (0);
+        coordinates[0] = 0;
+        coordinates[1] = 0;
+        coordinates[2] = 0;
+    }
+
     MortonIndex mortonIndex;
     int coordinates[3];
-    long long int dataUp, dataDown;
 };
 
-class alignas(FStarPUDefaultAlign::StructAlign) FTestCellPOD {
+typedef long long FTestCellPODData;
+
+class FTestCellPOD {
 protected:
-    FTestCellPODCore data;
+    FTestCellPODCore* symb;
+    FTestCellPODData* up;
+    FTestCellPODData* down;
 
 public:
-    FTestCellPOD() {
-        data.mortonIndex = (0);
-        data.dataUp = (0);
-        data.dataDown = (0);
-        data.coordinates[0] = 0;
-        data.coordinates[1] = 0;
-        data.coordinates[2] = 0;
+    FTestCellPOD(FTestCellPODCore* inSymb, FTestCellPODData* inUp,
+                 FTestCellPODData* inDown)
+        : symb(inSymb), up(inUp), down(inDown){
+    }
+    FTestCellPOD()
+        : symb(nullptr), up(nullptr), down(nullptr){
     }
 
     /** To get the morton index */
     MortonIndex getMortonIndex() const {
-        return data.mortonIndex;
+        return symb->mortonIndex;
     }
 
     /** To set the morton index */
     void setMortonIndex(const MortonIndex inMortonIndex) {
-        data.mortonIndex = inMortonIndex;
+        symb->mortonIndex = inMortonIndex;
     }
 
     /** To get the position */
     FTreeCoordinate getCoordinate() const {
-        return FTreeCoordinate(data.coordinates[0],
-                data.coordinates[1], data.coordinates[2]);
+        return FTreeCoordinate(symb->coordinates[0],
+                symb->coordinates[1], symb->coordinates[2]);
     }
 
     /** To set the position */
     void setCoordinate(const FTreeCoordinate& inCoordinate) {
-        data.coordinates[0] = inCoordinate.getX();
-        data.coordinates[1] = inCoordinate.getY();
-        data.coordinates[2] = inCoordinate.getZ();
+        symb->coordinates[0] = inCoordinate.getX();
+        symb->coordinates[1] = inCoordinate.getY();
+        symb->coordinates[2] = inCoordinate.getZ();
     }
 
     /** To set the position from 3 FReals */
     void setCoordinate(const int inX, const int inY, const int inZ) {
-        data.coordinates[0] = inX;
-        data.coordinates[1] = inY;
-        data.coordinates[2] = inZ;
+        symb->coordinates[0] = inX;
+        symb->coordinates[1] = inY;
+        symb->coordinates[2] = inZ;
     }
 
     /** When doing the upward pass */
     long long int getDataUp() const {
-        return data.dataUp;
+        return (*up);
     }
     /** When doing the upward pass */
     void setDataUp(const long long int inData){
-        data.dataUp = inData;
+        (*up) = inData;
     }
     /** When doing the downard pass */
     long long int getDataDown() const {
-        return data.dataDown;
+        return (*down);
     }
     /** When doing the downard pass */
     void setDataDown(const long long int inData){
-        data.dataDown = inData;
+        (*down) = inData;
     }
 
     /** Make it like the begining */
     void resetToInitialState(){
-        data.dataDown = 0;
-        data.dataUp   = 0;
+        (*down) = 0;
+        (*up)   = 0;
     }
 
     /////////////////////////////////////////////////
@@ -84,23 +93,23 @@ public:
     /** Save the current cell in a buffer */
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        buffer << data.mortonIndex << data.coordinates[0]
-               << data.coordinates[1] << data.coordinates[2];
-        buffer << data.dataDown << data.dataUp;
+        buffer << symb->mortonIndex << symb->coordinates[0]
+               << symb->coordinates[1] << symb->coordinates[2];
+        buffer << (*down) << (*up);
     }
 
     /** Restore the current cell from a buffer */
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        buffer >> data.mortonIndex >> data.coordinates[0]
-               >> data.coordinates[1] >> data.coordinates[2];
-        buffer >> data.dataDown >> data.dataUp;
+        buffer >> symb->mortonIndex >> symb->coordinates[0]
+               >> symb->coordinates[1] >> symb->coordinates[2];
+        buffer >> (*down) >> (*up);
     }
 
     int getSavedSize() const {
-        return int(sizeof(data.mortonIndex) + sizeof(data.coordinates[0]) +
-                sizeof(data.coordinates[1]) + sizeof(data.coordinates[2]) +
-                sizeof(data.dataDown) + sizeof(data.dataUp));
+        return int(sizeof(symb->mortonIndex) + sizeof(symb->coordinates[0]) +
+                sizeof(symb->coordinates[1]) + sizeof(symb->coordinates[2]) +
+                sizeof((*down)) + sizeof((*up)));
     }
 
     /////////////////////////////////////////////////
@@ -108,35 +117,34 @@ public:
     /** Serialize only up data in a buffer */
     template <class BufferWriterClass>
     void serializeUp(BufferWriterClass& buffer) const {
-        buffer << data.dataUp;
+        buffer << (*up);
     }
     /** Deserialize only up data in a buffer */
     template <class BufferReaderClass>
     void deserializeUp(BufferReaderClass& buffer){
-        buffer >> data.dataUp;
+        buffer >> (*up);
     }
 
     /** Serialize only down data in a buffer */
     template <class BufferWriterClass>
     void serializeDown(BufferWriterClass& buffer) const {
-        buffer << data.dataDown;
+        buffer << (*down);
     }
     /** Deserialize only up data in a buffer */
     template <class BufferReaderClass>
     void deserializeDown(BufferReaderClass& buffer){
-        buffer >> data.dataDown;
+        buffer >> (*down);
     }
 
     int getSavedSizeDown() {
-        return int(sizeof(long long int));
+        return int(sizeof(FTestCellPODData));
     }
 
     int getSavedSizeUp() {
-        return int(sizeof(long long int));
+        return int(sizeof(FTestCellPODData));
     }
 };
 
-static_assert(sizeof(FTestCellPODCore) == sizeof(FTestCellPOD), "Core should be equal to cell class size");
 
 #endif // FTESTCELLPOD_HPP
 
