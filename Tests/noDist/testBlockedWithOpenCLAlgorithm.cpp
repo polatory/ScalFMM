@@ -28,6 +28,9 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+#include "../../Src/GroupTree/StarPUUtils/FStarPUCpuWrapper.hpp"
+#include "../../Src/GroupTree/StarPUUtils/FStarPUOpenClWrapper.hpp"
+
 #include "../../Src/Components/FTestParticleContainer.hpp"
 #include "../../Src/Components/FTestCell.hpp"
 #include "../../Src/Components/FTestKernels.hpp"
@@ -40,6 +43,7 @@
 #include "../../Src/GroupTree/TestKernel/FTestOpenCLCode.hpp"
 #include "../../Src/GroupTree/TestKernel/FTestCellPOD.hpp"
 
+#include "../../Src/GroupTree/OpenCl/FOpenCLDeviceWrapper.hpp"
 
 int main(int argc, char* argv[]){
     setenv("STARPU_NCPU","0",1);
@@ -59,15 +63,21 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
 
-    typedef FTestCellPOD                                                       GroupCellClass;
+    typedef FTestCellPODCore  GroupCellSymbClass;
+    typedef FTestCellPODData  GroupCellUpClass;
+    typedef FTestCellPODData  GroupCellDownClass;
+    typedef FTestCellPOD      GroupCellClass;
+
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupContainerClass, 2, long long int>  GroupOctreeClass;
+    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
+            GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuOpenCLCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass
+    typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper
     #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        , FCudaGroupOfCells<0>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>
+        , FStarPUCudaWrapper<KernelClass, FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>>
     #endif
-        , FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode>
+        , FStarPUOpenClWrapper<GroupKernelClass, FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode> >
          > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;
@@ -116,14 +126,14 @@ int main(int argc, char* argv[]){
     groupedTree.printInfoBlocks();
 
     // Check tree structure at leaf level
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* gcell, FGroupTestParticleContainer* gleaf){
-        const ContainerClass* src = tree.getLeafSrc(gcell->getMortonIndex());
+    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass gcell, FGroupTestParticleContainer* gleaf){
+        const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
         if(src == nullptr){
-            std::cout << "[PartEmpty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
+            std::cout << "[PartEmpty] Error cell should not exist " << gcell.getMortonIndex() << "\n";
         }
         else {
             if(src->getNbParticles() != gleaf->getNbParticles()){
-                std::cout << "[Part] Nb particles is different at index " << gcell->getMortonIndex() << " is " << gleaf->getNbParticles() << " should be " << src->getNbParticles() << "\n";
+                std::cout << "[Part] Nb particles is different at index " << gcell.getMortonIndex() << " is " << gleaf->getNbParticles() << " should be " << src->getNbParticles() << "\n";
             }
         }
     });
@@ -139,33 +149,33 @@ int main(int argc, char* argv[]){
     algo.execute();
 
     // Validate the result
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
+    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
         const int nbPartsInLeaf = leaf->getNbParticles();
-        if(cell->getDataUp() != nbPartsInLeaf){
-            std::cout << "[P2M] Error a Cell has " << cell->getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
+        if(cell.getDataUp() != nbPartsInLeaf){
+            std::cout << "[P2M] Error a Cell has " << cell.getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
         }
     });
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass* cell, FGroupTestParticleContainer* leaf){
+    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
         const int nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
         for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
             if(dataDown[idxPart] != loader.getNumberOfParticles()-1){
-                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (loader.getNumberOfParticles()-1) << ") at index " << cell->getMortonIndex() << "\n";
+                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (loader.getNumberOfParticles()-1) << ") at index " << cell.getMortonIndex() << "\n";
             }
         }
     });
     // Compare the results
-    groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
-        const CellClass* cell = tree.getCell(gcell->getMortonIndex(), level);
+    groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
+        const CellClass* cell = tree.getCell(gcell.getMortonIndex(), level);
         if(cell == nullptr){
-            std::cout << "[Empty] Error cell should not exist " << gcell->getMortonIndex() << "\n";
+            std::cout << "[Empty] Error cell should not exist " << gcell.getMortonIndex() << "\n";
         }
         else {
-            if(gcell->getDataUp() != cell->getDataUp()){
-                std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataUp() << " should be " << cell->getDataUp() << "\n";
+            if(gcell.getDataUp() != cell->getDataUp()){
+                std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataUp() << " should be " << cell->getDataUp() << "\n";
             }
-            if(gcell->getDataDown() != cell->getDataDown()){
-                std::cout << "[Down] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << gcell->getDataDown() << " should be " << cell->getDataDown() << "\n";
+            if(gcell.getDataDown() != cell->getDataDown()){
+                std::cout << "[Down] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataDown() << " should be " << cell->getDataDown() << "\n";
             }
         }
     });
