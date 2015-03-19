@@ -31,6 +31,7 @@
 #include "Components/FSimpleLeaf.hpp"
 #include "Components/FBasicParticleContainer.hpp"
 
+#include "FFmmAlgorithmThreadBalanced.hpp"
 #include "loadFMAAndRunFMMArgs.hpp"
 #include "loadFMAAndRunFMMUtils.hpp"
 #include "FChebBalanceSymKernel.hpp"
@@ -81,7 +82,7 @@ int main(int argc, char** argv)
 
     writeZones(args, costzones);
     
-//    AlgoClass<FFmmAlgorithmThreadBalanced> fmmAlgo();
+    AlgoClass<FFmmAlgorithmThreadBalanced> fmmAlgo(&tree, &kernel, costzones.getZoneBounds());
     
     
 
