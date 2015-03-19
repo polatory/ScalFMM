@@ -100,7 +100,7 @@ public:
 
     /// The tree the kernel is working on. Needed to attain cells in the P2P
     /// operator (we only get the particles containers otherwise)
-    OctreeClass* _tree;
+    const OctreeClass* const _tree;
 
     /// The tree height
     const unsigned int _treeHeight;
@@ -181,8 +181,11 @@ public:
 
 
     /** Copy constructor */
-    FChebBalanceSymKernel(const FChebBalanceSymKernel& other)
-        : SymHandler(other.SymHandler) {
+    FChebBalanceSymKernel(const FChebBalanceSymKernel& other) :
+        SymHandler(other.SymHandler),
+        _tree(other._tree),
+        _treeHeight(other._treeHeight)
+        {
         countExp = new unsigned int [343];
     }
 
