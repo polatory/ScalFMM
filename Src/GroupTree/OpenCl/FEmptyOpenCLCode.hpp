@@ -17,7 +17,7 @@ public:
                 "typedef long long int MortonIndex; \
                 #define DefaultStructAlign " FStarPUDefaultAlignStr "\
                 \
-                typedef struct OutOfBlockInteraction{\
+                struct OutOfBlockInteraction{\
                     MortonIndex outIndex;\
                     MortonIndex insideIndex;\
                     int outPosition;\
