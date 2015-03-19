@@ -424,7 +424,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
         set(OMP_LIB "${OMP_iomp5_LIBRARY}")
     endif()
 
-    if (NOT WIN32)
+    if (UNIX AND NOT WIN32)
         set(LM "-lm")
         set(BLAS_COMPILER_FLAGS "")
         if (CMAKE_C_COMPILER_ID STREQUAL "Intel" AND NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
