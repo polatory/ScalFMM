@@ -157,7 +157,8 @@ public:
     }
 
     void bottomPassPerform(cl_mem leafCellsPtr,  size_t leafCellsSize, cl_mem leafCellsUpPtr, cl_mem containersPtr,  size_t containersSize){
-        SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &leafCellsUpPtr, &containersPtr,  &containersSize, &user_data/*, &outputcl*/);
+        SetKernelArgs(kernel_bottomPassPerform, 0, &leafCellsPtr,  &leafCellsSize, &leafCellsUpPtr,
+                      &containersPtr,  &containersSize, &user_data/*, &outputcl*/);
         const int err = clEnqueueNDRangeKernel(queue_bottomPassPerform, kernel_bottomPassPerform, kernelFilename.getNbDims(), NULL,
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
