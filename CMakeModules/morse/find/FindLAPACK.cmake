@@ -332,7 +332,7 @@ if(BLAS_FOUND)
 
 #intel lapack
 if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-  if (NOT WIN32)
+  if (UNIX AND NOT WIN32)
     set(LM "-lm")
   endif ()
   if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)

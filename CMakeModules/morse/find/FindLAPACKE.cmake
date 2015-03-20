@@ -309,7 +309,9 @@ if (LAPACK_FOUND)
                 list(APPEND REQUIRED_LIBS "-lifcore")
             endif()
             # m
-            list(APPEND REQUIRED_LIBS "-lm")
+            if(UNIX OR WIN32)
+                list(APPEND REQUIRED_LIBS "-lm")
+            endif()
 
             # set required libraries for link
             set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")

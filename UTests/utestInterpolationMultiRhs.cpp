@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @FUSE_FFT
 // ==============
 #include <array>
 
@@ -37,6 +38,7 @@
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Kernels/Chebyshev/FChebKernel.hpp"
 
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -101,33 +103,20 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         // Insert particle in the tree
-        // For each particles we associate Nvals charge ( q,0,0,0)
-         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            double q = particles[idxPart].getPhysicalValue();
-            if(NVals == 1){
-                tree.insert(particles[idxPart].getPosition() , idxPart, q);//,0.0,0.0,0.0);
+        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+            // Convert FReal[NVALS] to std::array<FReal,NVALS>
+            std::array<FReal, (1+4*1)*NVals> physicalState;
+            for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
+                physicalState[0*NVals+idxVals]= particles[idxPart].getPhysicalValue();
+                physicalState[1*NVals+idxVals]=0.0;
+                physicalState[2*NVals+idxVals]=0.0;
+                physicalState[3*NVals+idxVals]=0.0;
+                physicalState[4*NVals+idxVals]=0.0;
             }
-            else if(NVals == 2){
-                tree.insert(particles[idxPart].getPosition() , idxPart, q, q);//,0.0,0.0,0.0);
-            }
-            else{
-                FAssertLF(0, "NVALS should be <= 2");
-            }
-         }
-//        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-//            // Convert FReal[NVALS] to std::array<FReal,NVALS>
-//            std::array<FReal, (1+4*1)*NVals> physicalState;
-//            for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
-//                double q = particles[idxPart].getPhysicalValue();
-//                physicalState[0*NVals+idxVals]= q;
-//                physicalState[1*NVals+idxVals]=0.0;
-//                physicalState[2*NVals+idxVals]=0.0;
-//                physicalState[3*NVals+idxVals]=0.0;
-//                physicalState[4*NVals+idxVals]=0.0;
-//            }
-//            // put in tree
-//            tree.insert(particles[idxPart].getPosition(), idxPart, physicalState);
-//        }
+            // put in tree
+            tree.insert(particles[idxPart].getPosition(), idxPart, physicalState);
+        }
+
 
         // Run FMM
         Print("Fmm...");
@@ -273,7 +262,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestUnifKernel */
     void TestUnifKernel(){
-        const int NVals = 2;
+        const int NVals = 3;
         const unsigned int ORDER = 6 ;
         // run test
         typedef FInterpMatrixKernelR MatrixKernelClass;
@@ -291,7 +280,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestChebSymKernel */
     void TestChebSymKernel(){
-        const int NVals = 2;
+        const int NVals = 3;
         const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
         typedef FSimpleLeaf<ContainerClass> LeafClass;
@@ -304,7 +293,20 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
-
+    /** TestChebKernel */
+    void TestChebKernel(){
+        const int NVals = 3;
+        const unsigned int ORDER = 6;
+        typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
+        typedef FSimpleLeaf<ContainerClass> LeafClass;
+        typedef FInterpMatrixKernelR MatrixKernelClass;
+        typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
+        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
+        typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+        // run test
+        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
+    }
 
     ///////////////////////////////////////////////////////////
     // Set the tests!
@@ -315,6 +317,8 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
         AddTest(&TestInterpolationKernel::TestUnifKernel,"Test Lagrange/Uniform grid FMM");
         AddTest(&TestInterpolationKernel::TestChebSymKernel,"Test Symmetric Chebyshev Kernel with 16 small SVDs and symmetries");
+        AddTest(&TestInterpolationKernel::TestChebKernel,"Test Chebyshev Kernel with 1 large SVD");
+        
     }
 };
 

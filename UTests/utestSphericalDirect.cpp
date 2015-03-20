@@ -166,7 +166,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
 		// Assert
-		double epsilon = 1.0/FMath::pow2(ORDER);
+		double epsilon = 1.0/FMath::pow2(DevP);
 		const FReal MaximumDiffPotential = FReal(epsilon);
 		const FReal MaximumDiffForces     = FReal(10*epsilon);
 		printf(" Criteria error - Epsilon  %e\n",epsilon);

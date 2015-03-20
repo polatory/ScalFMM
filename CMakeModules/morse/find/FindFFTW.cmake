@@ -435,6 +435,9 @@ if(FFTW_LIBRARIES)
             list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
         endif()
     endif()
+    if(UNIX OR WIN32)
+        list(APPEND REQUIRED_LIBS "-lm")
+    endif()
 
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
