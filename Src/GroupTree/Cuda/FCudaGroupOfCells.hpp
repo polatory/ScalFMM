@@ -3,13 +3,13 @@
 #define FCUDAGROUPOFCELLS_HPP
 
 #include "FCudaGlobal.hpp"
-
+#include "FCudaCompositeCell.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 /**
 * @brief The FCudaGroupOfCells class manages the cells in block allocation.
 */
-template <class CellClass>
+template <class SymboleCellClass, class PoleCellClass, class LocalCellClass>
 class FCudaGroupOfCells {
     /** One header is allocated at the beginning of each block */
     struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
@@ -30,23 +30,34 @@ protected:
     //< Pointer to the indexes table inside the block memory
     int*            blockIndexesTable;
     //< Pointer to the cells inside the block memory
-    unsigned char*      blockCells;
+    SymboleCellClass*      blockCells;
     //< This value is for not used cells
     static const MortonIndex CellIsEmptyFlag = -1;
 
+    //< The multipole data
+    PoleCellClass* cellMultipoles;
+    //< The local data
+    LocalCellClass* cellLocals;
+
 public:
+    typedef FCudaCompositeCell<SymboleCellClass, PoleCellClass, LocalCellClass> CompleteCellClass;
+
     __device__ FCudaGroupOfCells()
         : allocatedMemoryInByte(0), memoryBuffer(nullptr),
-          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr){
+          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          cellMultipoles(nullptr), cellLocals(nullptr){
     }
 
-    __device__ void reset(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte){
+    __device__ void reset(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
+                          unsigned char* inCellMultipoles, unsigned char* inCellLocals){
         // Move the pointers to the correct position
         allocatedMemoryInByte = (inAllocatedMemoryInByte);
         memoryBuffer = (inBuffer);
         blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
         blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        blockCells          = reinterpret_cast<unsigned char*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        blockCells          = reinterpret_cast<SymboleCellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        cellMultipoles = (PoleCellClass*)inCellMultipoles;
+        cellLocals     = (LocalCellClass*)inCellLocals;
     }
 
     /**
@@ -54,27 +65,17 @@ public:
      * @param inBuffer
      * @param inAllocatedMemoryInByte
      */
-    __device__ FCudaGroupOfCells(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte)
+    __device__ FCudaGroupOfCells(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
+                                 unsigned char* inCellMultipoles, unsigned char* inCellLocals)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr){
+          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          cellMultipoles(nullptr), cellLocals(nullptr){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
         blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        blockCells          = reinterpret_cast<unsigned char*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
-    }
-
-    /** Call the destructor of cells and dealloc block memory */
-    __device__ ~FCudaGroupOfCells(){
-    }
-
-    /** Give access to the buffer to send the data */
-    __device__ const unsigned char* getRawBuffer() const{
-        return memoryBuffer;
-    }
-
-    /** The the size of the allocated buffer */
-    __device__ int getBufferSizeInByte() const {
-        return allocatedMemoryInByte;
+        blockCells          = reinterpret_cast<SymboleCellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        cellMultipoles = (PoleCellClass*)inCellMultipoles;
+        cellLocals     = (LocalCellClass*)inCellLocals;
     }
 
     /** The index of the fist cell (set from the constructor) */
@@ -108,16 +109,65 @@ public:
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ CellClass* getCell(const MortonIndex inIndex){
-        if( exists(inIndex) ) return (CellClass*)(&blockCells[sizeof(CellClass)*blockIndexesTable[inIndex-blockHeader->startingIndex]]);
-        else return nullptr;
+    __device__ CompleteCellClass getCompleteCell(const MortonIndex inIndex){
+        //FAssertLF(cellMultipoles && cellLocals);
+        if( exists(inIndex) ){
+            CompleteCellClass cell;
+            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
+            cell.symb = &blockCells[cellPos];
+            cell.up   = &cellMultipoles[cellPos];
+            cell.down = &cellLocals[cellPos];
+            return cell;
+        }
+        else{
+            CompleteCellClass cell;
+            cell.symb = nullptr;
+            cell.up   = nullptr;
+            cell.down = nullptr;
+            return cell;
+        }
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ const CellClass* getCell(const MortonIndex inIndex) const {
-        if( exists(inIndex) ) return (CellClass*)(&blockCells[sizeof(CellClass)*blockIndexesTable[inIndex-blockHeader->startingIndex]]);
-        else return nullptr;
+    __device__ CompleteCellClass getUpCell(const MortonIndex inIndex){
+        //FAssertLF(cellMultipoles);
+        if( exists(inIndex) ){
+            CompleteCellClass cell;
+            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
+            cell.symb = &blockCells[cellPos];
+            cell.up   = &cellMultipoles[cellPos];
+            cell.down = nullptr;
+            return cell;
+        }
+        else{
+            CompleteCellClass cell;
+            cell.symb = nullptr;
+            cell.up   = nullptr;
+            cell.down = nullptr;
+            return cell;
+        }
     }
+
+    /** Return the address of the cell if it exists (or NULL) */
+    __device__ CompleteCellClass getDownCell(const MortonIndex inIndex){
+        //FAssertLF(cellLocals);
+        if( exists(inIndex) ){
+            CompleteCellClass cell;
+            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
+            cell.symb = &blockCells[cellPos];
+            cell.up   = nullptr;
+            cell.down = &cellLocals[cellPos];
+            return cell;
+        }
+        else{
+            CompleteCellClass cell;
+            cell.symb = nullptr;
+            cell.up   = nullptr;
+            cell.down = nullptr;
+            return cell;
+        }
+    }
+
 };
 
 #endif // FCUDAGROUPOFCELLS_HPP

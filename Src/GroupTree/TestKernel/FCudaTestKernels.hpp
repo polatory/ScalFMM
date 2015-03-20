@@ -3,65 +3,67 @@
 #define FCUDATESTKERNEL_HPP
 
 #include "../Cuda/FCudaGlobal.hpp"
-
+#include "../Cuda/FCudaGroupAttachedLeaf.hpp"
+#include "../Cuda/FCudaCompositeCell.hpp"
 // We need to describe this cell
-#include "../../Components/FTestCell.hpp"
+#include "FTestCellPOD.hpp"
 
-
-template< class CellClass, class ContainerClass >
 class FTestCudaKernels {
 public:
+    typedef FCudaCompositeCell<FTestCellPODCore, FTestCellPODData, FTestCellPODData> CellClass;
+    typedef FCudaGroupAttachedLeaf<0, 1, long long int>  ContainerClass;
+
     /** Before upward */
-    __device__ void P2M(CellClass* pole, const ContainerClass* const particles) {
+    __device__ void P2M(CellClass pole, const ContainerClass* const particles) {
         // the pole represents all particles under
         if(threadIdx.x == 0){
-            pole->dataUp += particles->getNbParticles();
+            *pole.up += particles->getNbParticles();
         }
     }
 
     /** During upward */
-    __device__ void M2M(CellClass*  pole, const CellClass*  child[8], const int /*level*/) {
+    __device__ void M2M(CellClass  pole, const CellClass  child[8], const int /*level*/) {
         if(threadIdx.x == 0) {
             // A parent represents the sum of the child
             for(int idx = 0 ; idx < 8 ; ++idx){
-                if(child[idx]){
-                    pole->dataUp += child[idx]->dataUp;
+                if(child[idx].symb){
+                    *pole.up += *child[idx].up;
                 }
             }
         }
     }
 
     /** Before Downward */
-    __device__ void M2L(CellClass*  local, const CellClass* distantNeighbors[343], const int /*size*/, const int /*level*/) {
+    __device__ void M2L(CellClass  local, const CellClass distantNeighbors[343], const int /*size*/, const int /*level*/) {
         if(threadIdx.x == 0) {
             // The pole is impacted by what represent other poles
             for(int idx = 0 ; idx < 343 ; ++idx){
-                if(distantNeighbors[idx]){
-                    local->dataDown += distantNeighbors[idx]->dataUp;
+                if(distantNeighbors[idx].symb){
+                    *local.down += *distantNeighbors[idx].up;
                 }
             }
         }
     }
 
     /** During Downward */
-    __device__ void L2L(const CellClass* local, CellClass*  child[8], const int /*level*/) {
+    __device__ void L2L(const CellClass local, CellClass  child[8], const int /*level*/) {
         if(threadIdx.x == 0) {
             // Each child is impacted by the father
             for(int idx = 0 ; idx < 8 ; ++idx){
-                if(child[idx]){
-                    child[idx]->dataDown += local->dataDown;
+                if(child[idx].symb){
+                    *child[idx].down += *local.down;
                 }
             }
         }
     }
 
     /** After Downward */
-    __device__ void L2P(const CellClass* local, ContainerClass*const particles){
+    __device__ void L2P(const CellClass local, ContainerClass*const particles){
         if(threadIdx.x == 0) {
             // The particles is impacted by the parent cell
-            long long int*const particlesAttributes = particles->template getAttribute<0>();
+            long long int*const particlesAttributes = particles->getAttribute<0>();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
-                particlesAttributes[idxPart] += local->dataDown;
+                particlesAttributes[idxPart] += *local.down;
             }
         }
     }
@@ -83,7 +85,7 @@ public:
                 }
             }
 
-            long long int*const particlesAttributes = targets->template getAttribute<0>();
+            long long int*const particlesAttributes = targets->getAttribute<0>();
             for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }
@@ -103,7 +105,7 @@ public:
                 }
             }
 
-            long long int*const particlesAttributes = targets->template getAttribute<0>();
+            long long int*const particlesAttributes = targets->getAttribute<0>();
             for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }

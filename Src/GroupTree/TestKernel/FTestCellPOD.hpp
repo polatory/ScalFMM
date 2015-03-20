@@ -7,13 +7,6 @@
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 struct alignas(FStarPUDefaultAlign::StructAlign) FTestCellPODCore {
-    FTestCellPODCore(){
-        mortonIndex = (0);
-        coordinates[0] = 0;
-        coordinates[1] = 0;
-        coordinates[2] = 0;
-    }
-
     MortonIndex mortonIndex;
     int coordinates[3];
 };

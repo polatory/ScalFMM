@@ -5,7 +5,7 @@
 #include "FCudaGlobal.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
-template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupOfParticles {
     /** One header is allocated at the beginning of each block */
     struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{
@@ -66,7 +66,8 @@ protected:
     FReal* particlePosition[3];
 
     //< Pointers to the particles data inside the block memory
-    AttributeClass*      particleAttributes[NbAttributesPerParticle];
+    AttributeClass* attributesBuffer;
+    AttributeClass* particleAttributes[NbSymbAttributes+NbAttributesPerParticle];
 
 public:
     /**
@@ -74,9 +75,11 @@ public:
      * @param inBuffer
      * @param inAllocatedMemoryInByte
      */
-    __device__ FCudaGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte)
+    __device__ FCudaGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
+                                     unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0){
+          blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          attributesBuffer(nullptr){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
         blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
@@ -91,25 +94,17 @@ public:
 
         // Redirect pointer to data
         blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
-        unsigned char* previousPointer = reinterpret_cast<unsigned char*>(particlePosition[2] + blockHeader->nbParticlesAllocatedInGroup);
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute] = reinterpret_cast<AttributeClass*>(previousPointer);
-            previousPointer += sizeof(AttributeClass)*blockHeader->nbParticlesAllocatedInGroup;
+        AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
+            particleAttributes[idxAttribute] = symAttributes;
+            symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
-    }
-
-    /** Call the destructor of leaves and dealloc block memory */
-    __device__ ~FCudaGroupOfParticles(){
-    }
-
-    /** Give access to the buffer to send the data */
-    __device__ const unsigned char* getRawBuffer() const{
-        return memoryBuffer;
-    }
-
-    /** The the size of the allocated buffer */
-    __device__ int getBufferSizeInByte() const {
-        return allocatedMemoryInByte;
+        if(inAttributes){
+            attributesBuffer = (AttributeClass*)inAttributes;
+            for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+                particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*blockHeader->nbParticlesAllocatedInGroup];
+            }
+        }
     }
 
     /** The index of the fist leaf (set from the constructor) */

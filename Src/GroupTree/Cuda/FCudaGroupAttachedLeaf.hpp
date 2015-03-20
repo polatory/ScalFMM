@@ -4,7 +4,7 @@
 
 #include "FCudaGlobal.hpp"
 
-template <unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf
@@ -12,13 +12,13 @@ protected:
     //< Pointers to the positions of the particles
     FReal* positionsPointers[3];
     //< Pointers to the attributes of the particles
-    AttributeClass* attributes[NbAttributesPerParticle];
+    AttributeClass* attributes[NbSymbAttributes+NbAttributesPerParticle];
 
 public:
     /** Empty constructor to point to nothing */
     __device__ FCudaGroupAttachedLeaf() : nbParticles(-1) {
         memset(positionsPointers, 0, sizeof(FReal*) * 3);
-        memset(attributes, 0, sizeof(AttributeClass*) * NbAttributesPerParticle);
+        memset(attributes, 0, sizeof(AttributeClass*) * (NbSymbAttributes+NbAttributesPerParticle));
     }
 
     /**
@@ -37,9 +37,19 @@ public:
         positionsPointers[1] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition);
         positionsPointers[2] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*2);
 
+        unsigned char* symAttributes = reinterpret_cast<unsigned char*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*3);
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
+            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(symAttributes + idxAttribute*inLeadingAttributes);
+        }
+
         // Redirect pointers to data
-        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+        if(inAttributesBuffer){
+            for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+                attributes[idxAttribute+NbSymbAttributes] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+            }
+        }
+        else{
+            memset(&attributes[NbSymbAttributes], 0, sizeof(AttributeClass*)*NbAttributesPerParticle);
         }
     }
 

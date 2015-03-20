@@ -30,7 +30,7 @@
 #include "../Cuda/FCudaGroupAttachedLeaf.hpp"
 #include "../Cuda/FCudaGroupOfParticles.hpp"
 #include "../Cuda/FCudaGroupOfCells.hpp"
-#include "../Cuda/FCudaEmptyCell.hpp"
+#include "../Cuda/FCudaEmptyCellSymb.hpp"
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
 #include "../StarPUUtils/FStarPUOpenClWrapper.hpp"
@@ -40,7 +40,8 @@
 
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>>
+    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                                        FCudaGroupOfParticles<0, 0, int>, FCudaGroupAttachedLeaf<0, 0, int>, FCudaEmptyKernel>
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
     , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
