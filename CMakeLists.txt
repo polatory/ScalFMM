@@ -373,8 +373,12 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   message( STATUS "ScalFMM_USE_STARPU             = ${ScalFMM_USE_STARPU}" )
   if( ScalFMM_USE_STARPU )
     # No fast math with starpu
-    string(REPLACE "-ffast-math" " " ScalFMM_CXX_FLAGS ${ScalFMM_CXX_FLAGS})
-    string(REPLACE "-ffast-math" " " SCALFMM_FLAGS_OPTI_RELEASE ${SCALFMM_FLAGS_OPTI_RELEASE})     
+    if(ScalFMM_CXX_FLAGS)
+        string(REPLACE "-ffast-math" " " ScalFMM_CXX_FLAGS ${ScalFMM_CXX_FLAGS})
+    endif()
+    if(SCALFMM_FLAGS_OPTI_RELEASE)
+        string(REPLACE "-ffast-math" " " SCALFMM_FLAGS_OPTI_RELEASE ${SCALFMM_FLAGS_OPTI_RELEASE})     
+    endif()
 
     # CUDA could be used with StarPU enabled
     option( ScalFMM_USE_CUDA "Set to ON to use CUDA with StarPU" OFF )
