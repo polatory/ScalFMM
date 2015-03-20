@@ -184,7 +184,7 @@ public:
         attributesBuffer = (AttributeClass*)FAlignedMemory::Allocate32BAligned(blockHeader->attributeOffset*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-            particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*(blockHeader->nbParticlesAllocatedInGroup/sizeof(AttributeClass))];
+            particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];
         }
 
         // Set all index to not used
