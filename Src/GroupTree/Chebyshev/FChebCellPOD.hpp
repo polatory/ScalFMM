@@ -103,59 +103,6 @@ public:
         memset(up->multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
         memset(down->local_exp,         0, sizeof(FReal) * NLHS * NVALS * VectorSize);
     }
-
-    ///////////////////////////////////////////////////////
-    // to extend FAbstractSendable
-    ///////////////////////////////////////////////////////
-    template <class BufferWriterClass>
-    void serializeUp(BufferWriterClass& buffer) const{
-        buffer.write(up->multipole_exp, VectorSize*NVALS*NRHS);
-    }
-    template <class BufferReaderClass>
-    void deserializeUp(BufferReaderClass& buffer){
-        buffer.fillArray(up->multipole_exp, VectorSize*NVALS*NRHS);
-    }
-
-    template <class BufferWriterClass>
-    void serializeDown(BufferWriterClass& buffer) const{
-        buffer.write(down->local_exp, VectorSize*NVALS*NLHS);
-    }
-    template <class BufferReaderClass>
-    void deserializeDown(BufferReaderClass& buffer){
-        buffer.fillArray(down->local_exp, VectorSize*NVALS*NLHS);
-    }
-
-    ///////////////////////////////////////////////////////
-    // to extend Serializable
-    ///////////////////////////////////////////////////////
-    template <class BufferWriterClass>
-    void save(BufferWriterClass& buffer) const{
-        buffer << symb->mortonIndex << symb->coordinates[0]
-               << symb->coordinates[1] << symb->coordinates[2];
-        buffer.write(up->multipole_exp, VectorSize*NVALS*NRHS);
-        buffer.write(down->local_exp, VectorSize*NVALS*NLHS);
-    }
-    template <class BufferReaderClass>
-    void restore(BufferReaderClass& buffer){
-        buffer >> symb->mortonIndex >> symb->coordinates[0]
-               >> symb->coordinates[1] >> symb->coordinates[2];
-        buffer.fillArray(up->multipole_exp, VectorSize*NVALS*NRHS);
-        buffer.fillArray(down->local_exp, VectorSize*NVALS*NLHS);
-    }
-
-    int getSavedSize() const {
-        return int(sizeof(FReal) * VectorSize*(NRHS+NLHS)*NVALS + sizeof(symb->mortonIndex) + sizeof(symb->coordinates[0]) +
-                sizeof(symb->coordinates[1]) + sizeof(symb->coordinates[2]));
-    }
-
-    int getSavedSizeUp() const {
-        return int(sizeof(FReal)) * VectorSize*(NRHS)*NVALS;
-    }
-
-    int getSavedSizeDown() const {
-        return int(sizeof(FReal)) * VectorSize*(NLHS)*NVALS;
-    }
-
 };
 
 
