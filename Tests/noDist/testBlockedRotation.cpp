@@ -12,7 +12,7 @@
 #include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
-#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "../../Src/GroupTree/Rotation/FRotationCellPOD.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -34,15 +34,8 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
-#include "../../Src/Components/FTestParticleContainer.hpp"
-#include "../../Src/Components/FTestCell.hpp"
-#include "../../Src/Components/FTestKernels.hpp"
-
-#include "../../Src/Core/FFmmAlgorithm.hpp"
 
 #include <memory>
-
-
 
 
 int main(int argc, char* argv[]){
@@ -55,12 +48,17 @@ int main(int argc, char* argv[]){
 
     // Initialize the types
     static const int P = 9;
-    typedef FRotationCell<P>               GroupCellClass;
+    typedef FRotationCellPODCore     GroupCellSymbClass;
+    typedef FRotationCellPODPole<P>  GroupCellUpClass;
+    typedef FRotationCellPODLocal<P> GroupCellDownClass;
+    typedef FRotationCellPOD<P>      GroupCellClass;
+
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
+    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FStarPUAllYesCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
     typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     // Set the number of threads
@@ -115,7 +113,7 @@ int main(int argc, char* argv[]){
         FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
         FReal*const allPosZ = const_cast<FReal*>( allParticles.getPositions()[2]);
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
             const FReal*const physicalValues = leafTarget->getPhysicalValues();
             const FReal*const posX = leafTarget->getPositions()[0];
             const FReal*const posY = leafTarget->getPositions()[1];
@@ -153,7 +151,7 @@ int main(int argc, char* argv[]){
         FMath::FAccurater potentialDiff;
         FMath::FAccurater fx, fy, fz;
         offsetParticles = 0;
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
             const FReal*const potentials = leafTarget->getPotentials();
             const FReal*const forcesX = leafTarget->getForcesX();
             const FReal*const forcesY = leafTarget->getForcesY();
