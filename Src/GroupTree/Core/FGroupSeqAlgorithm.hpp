@@ -63,12 +63,12 @@ protected:
                 const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
 
                 for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                    CellClass* cell = (*iterCells)->getCell(mindex);
-                    if(cell){
-                        FAssertLF(cell->getMortonIndex() == mindex);
+                    if((*iterCells)->exists(mindex)){
+                        CellClass cell = (*iterCells)->getUpCell(mindex);
+                        FAssertLF(cell.getMortonIndex() == mindex);
                         ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                         FAssertLF(particles.isAttachedToSomething());
-                        kernels->P2M(cell, &particles);
+                        kernels->P2M(&cell, &particles);
                     }
                 }
             }
@@ -94,11 +94,12 @@ protected:
                 { // Can be a task(in:iterParticles, out:iterChildCells ...)
                     const MortonIndex blockStartIdx = (*iterCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
+                    CellClass childData[8];
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
-                        CellClass* cell = (*iterCells)->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
+                        if((*iterCells)->exists(mindex)){
+                            CellClass cell = (*iterCells)->getUpCell(mindex);
+                            FAssertLF(cell.getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -108,11 +109,14 @@ protected:
                                 if( iterChildCells == endChildCells ){
                                     break;
                                 }
-                                child[idxChild] = (*iterChildCells)->getCell((mindex<<3)+idxChild);
+                                if((*iterChildCells)->exists((mindex<<3)+idxChild)){
+                                    childData[idxChild] = (*iterChildCells)->getUpCell((mindex<<3)+idxChild);
+                                    child[idxChild] = &childData[idxChild];
+                                }
                                 FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
-                            kernels->M2M(cell, child, idxLevel);
+                            kernels->M2M(&cell, child, idxLevel);
                         }
                     }
                 }
@@ -137,29 +141,31 @@ protected:
                 std::vector<OutOfBlockInteraction> outsideInteractions;
 
                 { // Can be a task(inout:iterCells, out:outsideInteractions)
+                    CellClass interactionsData[343];
+                    const CellClass* interactions[343];
                     const MortonIndex blockStartIdx = (*iterCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        CellClass* cell = (*iterCells)->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
+                        if((*iterCells)->exists(mindex)){
+                            CellClass cell = (*iterCells)->getDownCell(mindex);
+                            FAssertLF(cell.getMortonIndex() == mindex);
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
-                            const FTreeCoordinate coord(cell->getCoordinate());
+                            const FTreeCoordinate coord(cell.getCoordinate());
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
-                            const CellClass* interactions[343];
                             memset(interactions, 0, 343*sizeof(CellClass*));
                             int counterExistingCell = 0;
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                    CellClass* interCell = (*iterCells)->getCell(interactionsIndexes[idxInter]);
-                                    if(interCell){
-                                        FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
+                                    if((*iterCells)->exists(interactionsIndexes[idxInter])){
+                                        CellClass interCell = (*iterCells)->getUpCell(interactionsIndexes[idxInter]);
+                                        FAssertLF(interCell.getMortonIndex() == interactionsIndexes[idxInter]);
                                         FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                        interactions[interactionsPosition[idxInter]] = interCell;
+                                        interactionsData[interactionsPosition[idxInter]] = interCell;
+                                        interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
                                         counterExistingCell += 1;
                                     }
                                 }
@@ -172,7 +178,7 @@ protected:
                                 }
                             }
 
-                            kernels->M2L( cell , interactions, counterExistingCell, idxLevel);
+                            kernels->M2L( &cell , interactions, counterExistingCell, idxLevel);
                         }
                     }
                 }
@@ -197,23 +203,24 @@ protected:
                     }
 
                     { // Can be a task(in:currentOutInteraction, in:outsideInteractions, in:lastOutInteraction, inout:iterLeftCells, inout:iterCells)
-                        for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
-                            CellClass* interCell = (*iterLeftCells)->getCell(outsideInteractions[outInterIdx].outIndex);
-                            if(interCell){
-                                FAssertLF(interCell->getMortonIndex() == outsideInteractions[outInterIdx].outIndex);
-                                CellClass* cell = (*iterCells)->getCell(outsideInteractions[outInterIdx].insideIndex);
-                                FAssertLF(cell);
-                                FAssertLF(cell->getMortonIndex() == outsideInteractions[outInterIdx].insideIndex);
+                        const CellClass* interactions[343];
+                        memset(interactions, 0, 343*sizeof(CellClass*));
 
-                                const CellClass* interactions[343];
-                                memset(interactions, 0, 343*sizeof(CellClass*));
-                                interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
+                        for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
+                            if((*iterLeftCells)->exists(outsideInteractions[outInterIdx].outIndex)){
+                                CellClass interCell = (*iterLeftCells)->getCompleteCell(outsideInteractions[outInterIdx].outIndex);
+                                FAssertLF(interCell.getMortonIndex() == outsideInteractions[outInterIdx].outIndex);
+                                CellClass cell = (*iterCells)->getCompleteCell(outsideInteractions[outInterIdx].insideIndex);
+                                FAssertLF(cell.getMortonIndex() == outsideInteractions[outInterIdx].insideIndex);
+
+                                interactions[outsideInteractions[outInterIdx].outPosition] = &interCell;
                                 const int counter = 1;
-                                kernels->M2L( cell , interactions, counter, idxLevel);
+                                kernels->M2L( &cell , interactions, counter, idxLevel);
 
                                 interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
-                                interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = cell;
-                                kernels->M2L( interCell , interactions, counter, idxLevel);
+                                interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = &cell;
+                                kernels->M2L( &interCell , interactions, counter, idxLevel);
+                                interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = nullptr;
                             }
                         }
                     }
@@ -242,11 +249,12 @@ protected:
                 { // Can be a task(in:iterParticles, inout:iterChildCells ...)
                     const MortonIndex blockStartIdx = (*iterCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
+                    CellClass childData[8];
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && iterChildCells != endChildCells; ++mindex){
-                        CellClass* cell = (*iterCells)->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
+                        if((*iterCells)->exists(mindex)){
+                            CellClass cell = (*iterCells)->getDownCell(mindex);
+                            FAssertLF(cell.getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -256,11 +264,14 @@ protected:
                                 if( iterChildCells == endChildCells ){
                                     break;
                                 }
-                                child[idxChild] = (*iterChildCells)->getCell((mindex<<3)+idxChild);
+                                if((*iterChildCells)->exists((mindex<<3)+idxChild)){
+                                    childData[idxChild] = (*iterChildCells)->getCompleteCell((mindex<<3)+idxChild);
+                                    child[idxChild] = &childData[idxChild];
+                                }
                                 FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
-                            kernels->L2L(cell, child, idxLevel);
+                            kernels->L2L(&cell, child, idxLevel);
                         }
                     }
                 }
@@ -288,11 +299,11 @@ protected:
                     const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        CellClass* cell = (*iterCells)->getCell(mindex);
-                        if(cell){
+                        if((*iterCells)->exists(mindex)){
+                            CellClass cell = (*iterCells)->getDownCell(mindex);
                             ParticleContainerClass particles = (*iterParticles)->template getLeaf<ParticleContainerClass>(mindex);
                             FAssertLF(particles.isAttachedToSomething());
-                            kernels->L2P(cell, &particles);
+                            kernels->L2P(&cell, &particles);
                         }
                     }
                 }

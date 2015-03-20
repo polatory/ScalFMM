@@ -185,7 +185,7 @@ protected:
                 externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
 
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                    const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                    CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
@@ -196,12 +196,12 @@ protected:
                         const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
                         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                            const CellClass* cell = currentCells->getCell(mindex);
-                            if(cell){
-                                FAssertLF(cell->getMortonIndex() == mindex);
+                            if(currentCells->exists(mindex)){
+                                const CellClass cell = currentCells->getCompleteCell(mindex);
+                                FAssertLF(cell.getMortonIndex() == mindex);
                                 MortonIndex interactionsIndexes[189];
                                 int interactionsPosition[189];
-                                const FTreeCoordinate coord(cell->getCoordinate());
+                                const FTreeCoordinate coord(cell.getCoordinate());
                                 int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                                 for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -278,12 +278,12 @@ protected:
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                 for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                    CellClass* cell = leafCells->getCell(mindex);
-                    if(cell){
-                        FAssertLF(cell->getMortonIndex() == mindex);
+                    if(leafCells->exists(mindex)){
+                        CellClass cell = leafCells->getUpCell(mindex);
+                        FAssertLF(cell.getMortonIndex() == mindex);
                         ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
                         FAssertLF(particles.isAttachedToSomething());
-                        kernel->P2M(cell, &particles);
+                        kernel->P2M(&cell, &particles);
                     }
                 }
             }
@@ -332,11 +332,12 @@ protected:
                     const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
                     int idxSubCellGroup = 0;
+                    CellClass childData[8];
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-                        CellClass* cell = currentCells->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
+                        if(currentCells->exists(mindex)){
+                            CellClass cell = currentCells->getUpCell(mindex);
+                            FAssertLF(cell.getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -346,11 +347,14 @@ protected:
                                 if( idxSubCellGroup == nbSubCellGroups ){
                                     break;
                                 }
-                                child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
+                                if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
+                                    childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell((mindex<<3)+idxChild);
+                                    child[idxChild] = &childData[idxChild];
+                                }
                                 FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
-                            kernel->M2M(cell, child, idxLevel);
+                            kernel->M2M(&cell, child, idxLevel);
                         }
                     }
                 }
@@ -382,33 +386,35 @@ protected:
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
+                        const CellClass* interactions[343];
+                        CellClass interactionsData[343];
 
                         for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                            CellClass* cell = currentCells->getCell(mindex);
-                            if(cell){
-                                FAssertLF(cell->getMortonIndex() == mindex);
+                            if(currentCells->exists(mindex)){
+                                CellClass cell = currentCells->getDownCell(mindex);
+                                FAssertLF(cell.getMortonIndex() == mindex);
                                 MortonIndex interactionsIndexes[189];
                                 int interactionsPosition[189];
-                                const FTreeCoordinate coord(cell->getCoordinate());
+                                const FTreeCoordinate coord(cell.getCoordinate());
                                 int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
-                                const CellClass* interactions[343];
                                 memset(interactions, 0, 343*sizeof(CellClass*));
                                 int counterExistingCell = 0;
 
                                 for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                                     if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                        CellClass* interCell = currentCells->getCell(interactionsIndexes[idxInter]);
-                                        if(interCell){
-                                            FAssertLF(interCell->getMortonIndex() == interactionsIndexes[idxInter]);
+                                        if(currentCells->exists(interactionsIndexes[idxInter])){
+                                            CellClass interCell = currentCells->getUpCell(interactionsIndexes[idxInter]);
+                                            FAssertLF(interCell.getMortonIndex() == interactionsIndexes[idxInter]);
                                             FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                            interactions[interactionsPosition[idxInter]] = interCell;
+                                            interactionsData[interactionsPosition[idxInter]] = interCell;
+                                            interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
                                             counterExistingCell += 1;
                                         }
                                     }
                                 }
 
-                                kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
+                                kernel->M2L( &cell , interactions, counterExistingCell, idxLevel);
                             }
                         }
                     }
@@ -436,24 +442,24 @@ protected:
                         #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, cellsOther, idxLevel) depend(inout: currentCells[0], cellsOther[0])
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
+                            const CellClass* interactions[343];
+                            memset(interactions, 0, 343*sizeof(CellClass*));
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                                CellClass* interCell = cellsOther->getCell((*outsideInteractions)[outInterIdx].outIndex);
-                                if(interCell){
-                                    FAssertLF(interCell->getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                                    CellClass* cell = currentCells->getCell((*outsideInteractions)[outInterIdx].insideIndex);
-                                    FAssertLF(cell);
-                                    FAssertLF(cell->getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+                                if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
+                                    CellClass interCell = cellsOther->getCompleteCell((*outsideInteractions)[outInterIdx].outIndex);
+                                    FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                                    CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIndex);
+                                    FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                                    const CellClass* interactions[343];
-                                    memset(interactions, 0, 343*sizeof(CellClass*));
-                                    interactions[(*outsideInteractions)[outInterIdx].outPosition] = interCell;
+                                    interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interCell;
                                     const int counter = 1;
-                                    kernel->M2L( cell , interactions, counter, idxLevel);
+                                    kernel->M2L( &cell , interactions, counter, idxLevel);
 
                                     interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                                    interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = cell;
-                                    kernel->M2L( interCell , interactions, counter, idxLevel);
+                                    interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = &cell;
+                                    kernel->M2L( &interCell , interactions, counter, idxLevel);
+                                    interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = nullptr;
                                 }
                             }
                         }
@@ -512,11 +518,12 @@ protected:
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
                     int idxSubCellGroup = 0;
+                    CellClass childData[8];
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-                        CellClass* cell = currentCells->getCell(mindex);
-                        if(cell){
-                            FAssertLF(cell->getMortonIndex() == mindex);
+                        if(currentCells->exists(mindex)){
+                            const CellClass cell = currentCells->getDownCell(mindex);
+                            FAssertLF(cell.getMortonIndex() == mindex);
                             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -526,11 +533,14 @@ protected:
                                 if( idxSubCellGroup == nbSubCellGroups ){
                                     break;
                                 }
-                                child[idxChild] = subCellGroups[idxSubCellGroup]->getCell((mindex<<3)+idxChild);
+                                if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
+                                    childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell((mindex<<3)+idxChild);
+                                    child[idxChild] = &childData[idxChild];
+                                }
                                 FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
                             }
 
-                            kernel->L2L(cell, child, idxLevel);
+                            kernel->L2L(&cell, child, idxLevel);
                         }
                     }
                 }
@@ -658,12 +668,12 @@ protected:
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                 for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                    CellClass* cell = leafCells->getCell(mindex);
-                    if(cell){
-                        FAssertLF(cell->getMortonIndex() == mindex);
+                    if(leafCells->exists(mindex)){
+                        CellClass cell = leafCells->getDownCell(mindex);
+                        FAssertLF(cell.getMortonIndex() == mindex);
                         ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
                         FAssertLF(particles.isAttachedToSomething());
-                        kernel->L2P(cell, &particles);
+                        kernel->L2P(&cell, &particles);
                     }
                 }
             }
