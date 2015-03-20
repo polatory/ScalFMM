@@ -216,9 +216,8 @@ struct FOpenCLGroupAttachedLeaf BuildFOpenCLGroupAttachedLeaf(const int inNbPart
     leaf.positionsPointers[1] = (__global FReal*)(((__global unsigned char*)inPositionBuffer) + inLeadingPosition);
     leaf.positionsPointers[2] = (__global FReal*)(((__global unsigned char*)inPositionBuffer) + inLeadingPosition*2);
 
-    unsigned char* symAttributes = (__global unsigned char*)(((__global unsigned char*)inPositionBuffer) + inLeadingPosition*3);
     for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
-        leaf.attributes[idxAttribute] =  (__global FParticleValueClass*)(symAttributes + idxAttribute*inLeadingAttributes);
+        leaf.attributes[idxAttribute] =  (__global FParticleValueClass*)(((__global unsigned char*)inPositionBuffer) + inLeadingPosition*(idxAttribute+3));
     }
 
     // Redirect pointers to data
