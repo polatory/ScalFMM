@@ -281,7 +281,7 @@ protected:
 
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) depend(in: containers[0])
+            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0])
             {
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -456,8 +456,8 @@ protected:
 
                     while(currentInteractions != currentInteractionsEnd){
                         CellContainerClass* cellsOther = (*currentInteractions).otherBlock;
-                        PoleCellClass* cellOtherPoles = currentCells->getRawMultipoleBuffer();
-                        LocalCellClass* cellOtherLocals = currentCells->getRawLocalBuffer();
+                        PoleCellClass* cellOtherPoles = cellsOther->getRawMultipoleBuffer();
+                        LocalCellClass* cellOtherLocals = cellsOther->getRawLocalBuffer();
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
                         #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(inout: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])
@@ -590,8 +590,9 @@ protected:
 
             while(iterParticles != endParticles){
                 ParticleGroupClass* containers = (*iterParticles);
+                unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-                #pragma omp task default(none) firstprivate(containers) depend(inout: containers[0])
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(inout: containersDown[0])
                 {
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx = containers->getEndingIndex();
@@ -641,12 +642,14 @@ protected:
                 const typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
 
                 ParticleGroupClass* containers = (*iterParticles);
+                unsigned char* containersDown = containers->getRawAttributesBuffer();
 
                 while(currentInteractions != currentInteractionsEnd){
                     ParticleGroupClass* containersOther = (*currentInteractions).otherBlock;
+                    unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                    #pragma omp task default(none) firstprivate(containers, containersOther, outsideInteractions) depend(inout: containersOther[0], containers[0])
+                    #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(inout: containersOtherDown[0], containersDown[0])
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -687,9 +690,11 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             CellContainerClass* leafCells  = tree->getCellGroup(tree->getHeight()-1, idxGroup);
             LocalCellClass* cellLocals = leafCells->getRawLocalBuffer();
-            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers) depend(inout: containers[0]) depend(in: cellLocals[0])
+            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
+            unsigned char* containersDown = containers->getRawAttributesBuffer();
+
+            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(inout: containersDown[0]) depend(in: cellLocals[0])
             {
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
