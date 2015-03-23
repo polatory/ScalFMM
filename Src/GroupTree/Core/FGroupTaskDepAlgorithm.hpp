@@ -19,7 +19,8 @@
 
 #include <omp.h>
 
-template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
+template <class OctreeClass, class CellContainerClass, class CellClass,
+          class SymboleCellClass, class PoleCellClass, class LocalCellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
 class FGroupTaskDepAlgorithm {
 protected:
     template <class OtherBlockClass>
@@ -42,8 +43,14 @@ public:
         FAssertLF(inKernels, "kernels cannot be null");
 
         kernels = new KernelClass*[MaxThreads];
+        #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass(*inKernels);
+            // We want to ensure that each thread allocate data close to him
+            // and that only one thread at a time call the copy constructor
+            #pragma omp critical (FGroupTaskDepAlgorithm_InitKernels)
+            {
+                this->kernels[idxThread] = new KernelClass(*inKernels);
+            }
         }
 
         FLOG(FLog::Controller << "FGroupTaskDepAlgorithm (Max Thread " << MaxThreads << ")\n");
