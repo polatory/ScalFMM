@@ -311,7 +311,8 @@ protected:
             typename OctreeClass::CellGroupIterator iterChildCells = tree->cellsBegin(idxLevel+1);
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
-            while(iterCells != endCells && iterChildCells != endChildCells){
+            while(iterCells != endCells){
+                assert(iterChildCells != endChildCells);
                 CellContainerClass*const currentCells = (*iterCells);
                 PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
 
@@ -331,9 +332,9 @@ protected:
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 subCellGroupPoles[nbSubCellGroups] = (*iterChildCells)->getRawMultipoleBuffer();
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (iterChildCells+1) != endChildCells
-                      && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (*(iterChildCells+1))->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     subCellGroupPoles[nbSubCellGroups] = (*iterChildCells)->getRawMultipoleBuffer();
@@ -508,7 +509,8 @@ protected:
             typename OctreeClass::CellGroupIterator iterChildCells = tree->cellsBegin(idxLevel+1);
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
-            while(iterCells != endCells && iterChildCells != endChildCells){
+            while(iterCells != endCells){
+                assert(iterChildCells != endChildCells);
                 CellContainerClass*const currentCells = (*iterCells);
                 LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
@@ -528,9 +530,9 @@ protected:
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 subCellLocalGroupsLocal[nbSubCellGroups] = (*iterChildCells)->getRawLocalBuffer();
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (iterChildCells+1) != endChildCells
-                      && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (*(iterChildCells+1))->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     subCellLocalGroupsLocal[nbSubCellGroups] = (*iterChildCells)->getRawLocalBuffer();

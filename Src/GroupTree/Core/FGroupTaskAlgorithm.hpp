@@ -309,7 +309,8 @@ protected:
             typename OctreeClass::CellGroupIterator iterChildCells = tree->cellsBegin(idxLevel+1);
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
-            while(iterCells != endCells && iterChildCells != endChildCells){
+            while(iterCells != endCells){
+                assert(iterChildCells != endChildCells);
                 CellContainerClass*const currentCells = (*iterCells);
 
                 CellContainerClass* subCellGroups[9];
@@ -325,9 +326,9 @@ protected:
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
@@ -499,7 +500,8 @@ protected:
             typename OctreeClass::CellGroupIterator iterChildCells = tree->cellsBegin(idxLevel+1);
             const typename OctreeClass::CellGroupIterator endChildCells = tree->cellsEnd(idxLevel+1);
 
-            while(iterCells != endCells && iterChildCells != endChildCells){
+            while(iterCells != endCells){
+                assert(iterChildCells != endChildCells);
                 CellContainerClass*const currentCells = (*iterCells);
 
                 CellContainerClass* subCellGroups[9];
@@ -515,9 +517,9 @@ protected:
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
                 nbSubCellGroups += 1;
-                while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
+                while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (++iterChildCells) != endChildCells
-                      && (*iterChildCells)->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
+                      && (*iterChildCells)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
