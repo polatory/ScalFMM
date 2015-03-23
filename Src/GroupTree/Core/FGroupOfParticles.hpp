@@ -213,7 +213,12 @@ public:
     }
 
     /** Give access to the buffer to send the data */
-    const AttributeClass* getRawAttributesBuffer() const{
+    const unsigned char* getRawAttributesBuffer() const{
+        return attributesBuffer;
+    }
+
+    /** Give access to the buffer to send the data */
+    unsigned char* getRawAttributesBuffer(){
         return attributesBuffer;
     }
 
