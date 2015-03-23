@@ -277,8 +277,11 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             CellContainerClass* leafCells  = tree->getCellGroup(tree->getHeight()-1, idxGroup);
+            PoleCellClass* cellPoles = leafCells->getRawMultipoleBuffer();
+
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-            #pragma omp task default(shared) firstprivate(leafCells, containers) depend(inout: leafCells[0]) depend(in: containers[0])
+
+            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) depend(in: containers[0])
             {
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
@@ -310,9 +313,12 @@ protected:
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass*const currentCells = (*iterCells);
+                PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
 
                 CellContainerClass* subCellGroups[9];
                 memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
+                PoleCellClass* subCellGroupPoles[9];
+                memset(subCellGroupPoles, 0, sizeof(PoleCellClass*) * 9);
 
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -323,17 +329,19 @@ protected:
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
+                subCellGroupPoles[nbSubCellGroups] = (*iterChildCells)->getRawMultipoleBuffer();
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (iterChildCells+1) != endChildCells
                       && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
+                    subCellGroupPoles[nbSubCellGroups] = (*iterChildCells)->getRawMultipoleBuffer();
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: currentCells[0]) depend(in: subCellGroups[0][0], subCellGroups[1][0], subCellGroups[2][0], subCellGroups[3][0], subCellGroups[4][0], subCellGroups[5][0], subCellGroups[6][0], subCellGroups[7][0], subCellGroups[8][0])
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
@@ -387,8 +395,10 @@ protected:
 
                 while(iterCells != endCells){
                     CellContainerClass* currentCells = (*iterCells);
+                    PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
+                    LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
-                    #pragma omp task default(none) firstprivate(currentCells, idxLevel) depend(inout: currentCells[0])
+                    #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(inout: cellLocals[0]) depend(in: cellPoles[0])
                     {
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -438,15 +448,19 @@ protected:
 
                 while(iterCells != endCells){
                     CellContainerClass* currentCells = (*iterCells);
+                    PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
+                    LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
                     typename std::vector<BlockInteractions<CellContainerClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
                     const typename std::vector<BlockInteractions<CellContainerClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
 
                     while(currentInteractions != currentInteractionsEnd){
                         CellContainerClass* cellsOther = (*currentInteractions).otherBlock;
+                        PoleCellClass* cellOtherPoles = currentCells->getRawMultipoleBuffer();
+                        LocalCellClass* cellOtherLocals = currentCells->getRawLocalBuffer();
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                        #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, cellsOther, idxLevel) depend(inout: currentCells[0], cellsOther[0])
+                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(inout: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
                             const CellClass* interactions[343];
@@ -496,9 +510,12 @@ protected:
 
             while(iterCells != endCells && iterChildCells != endChildCells){
                 CellContainerClass*const currentCells = (*iterCells);
+                LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
                 CellContainerClass* subCellGroups[9];
                 memset(subCellGroups, 0, sizeof(CellContainerClass*) * 9);
+                LocalCellClass* subCellLocalGroupsLocal[9];
+                memset(subCellLocalGroupsLocal, 0, sizeof(LocalCellClass*) * 9);
 
                 // Skip current group if needed
                 if( (*iterChildCells)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
@@ -509,17 +526,19 @@ protected:
                 // Copy at max 8 groups
                 int nbSubCellGroups = 0;
                 subCellGroups[nbSubCellGroups] = (*iterChildCells);
+                subCellLocalGroupsLocal[nbSubCellGroups] = (*iterChildCells)->getRawLocalBuffer();
                 nbSubCellGroups += 1;
                 while((*iterChildCells)->getEndingIndex() <= ((currentCells->getEndingIndex()<<3)+7)
                       && (iterChildCells+1) != endChildCells
                       && (*(iterChildCells+1))->getStartingIndex() <= (currentCells->getEndingIndex()<<3)+7 ){
                     (++iterChildCells);
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
+                    subCellLocalGroupsLocal[nbSubCellGroups] = (*iterChildCells)->getRawLocalBuffer();
                     nbSubCellGroups += 1;
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups) depend(inout: subCellGroups[0][0], subCellGroups[1][0], subCellGroups[2][0], subCellGroups[3][0], subCellGroups[4][0], subCellGroups[5][0], subCellGroups[6][0], subCellGroups[7][0], subCellGroups[8][0]) depend(in: currentCells[0])
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(inout: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])
                 {
                     const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                     const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -667,8 +686,10 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             CellContainerClass* leafCells  = tree->getCellGroup(tree->getHeight()-1, idxGroup);
+            LocalCellClass* cellLocals = leafCells->getRawLocalBuffer();
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-            #pragma omp task default(shared) firstprivate(leafCells, containers) depend(inout: containers[0]) depend(in: leafCells[0])
+
+            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers) depend(inout: containers[0]) depend(in: cellLocals[0])
             {
                 const MortonIndex blockStartIdx = leafCells->getStartingIndex();
                 const MortonIndex blockEndIdx = leafCells->getEndingIndex();
