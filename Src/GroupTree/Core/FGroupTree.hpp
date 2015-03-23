@@ -79,7 +79,7 @@ public:
    * Once allocated each cell receive its morton index and tree coordinate.
    * No blocks are allocated at level 0.
    */
-    template<class OctreeClass, class CellClass>
+    template<class OctreeClass>
     FGroupTree(const int inTreeHeight, const int inNbElementsPerBlock, OctreeClass*const inOctreeSrc)
         : treeHeight(inTreeHeight), nbElementsPerBlock(inNbElementsPerBlock), cellBlocksPerLevel(nullptr),
           boxCenter(inOctreeSrc->getBoxCenter()), boxCorner(inOctreeSrc->getBoxCenter(),-(inOctreeSrc->getBoxWidth()/2)),
@@ -116,20 +116,21 @@ public:
                 int cellIdInBlock = 0;
                 size_t nbParticlesOffsetBeforeLeaf = 0;
                 while(cellIdInBlock != sizeOfBlock){
+                    const MortonIndex newNodeIndex = blockIteratorInOctree.getCurrentCell()->getMortonIndex();
+                    const FTreeCoordinate newNodeCoordinate = blockIteratorInOctree.getCurrentCell()->getCoordinate();
                     // Add cell
-                    const CellClass*const oldNode = blockIteratorInOctree.getCurrentCell();
-                    newBlock->newCell(oldNode->getMortonIndex(), cellIdInBlock);
+                    newBlock->newCell(newNodeIndex, cellIdInBlock);
 
-                    CompositeCellClass newNode = newBlock->getCompleteCell(oldNode->getMortonIndex());
-                    newNode.setMortonIndex(oldNode->getMortonIndex());
-                    newNode.setCoordinate(oldNode->getCoordinate());
+                    CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
+                    newNode.setMortonIndex(newNodeIndex);
+                    newNode.setCoordinate(newNodeCoordinate);
 
                     // Add leaf
-                    nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(oldNode->getMortonIndex(), cellIdInBlock,
+                    nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(newNodeIndex, cellIdInBlock,
                                               blockIteratorInOctree.getCurrentLeaf()->getSrc()->getNbParticles(),
                                               nbParticlesOffsetBeforeLeaf);
 
-                    BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(oldNode->getMortonIndex());
+                    BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(newNodeIndex);
                     attachedLeaf.copyFromContainer(blockIteratorInOctree.getCurrentLeaf()->getSrc(), 0);
 
                     cellIdInBlock += 1;
@@ -166,12 +167,13 @@ public:
                 // Initialize each cell of the block
                 int cellIdInBlock = 0;
                 while(cellIdInBlock != sizeOfBlock){
-                    const CellClass*const oldNode = blockIteratorInOctree.getCurrentCell();
-                    newBlock->newCell(oldNode->getMortonIndex(), cellIdInBlock);
+                    const MortonIndex newNodeIndex = blockIteratorInOctree.getCurrentCell()->getMortonIndex();
+                    const FTreeCoordinate newNodeCoordinate = blockIteratorInOctree.getCurrentCell()->getCoordinate();
+                    newBlock->newCell(newNodeIndex, cellIdInBlock);
 
-                    CompositeCellClass newNode = newBlock->getCompleteCell(oldNode->getMortonIndex());
-                    newNode.setMortonIndex(oldNode->getMortonIndex());
-                    newNode.setCoordinate(oldNode->getCoordinate());
+                    CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
+                    newNode.setMortonIndex(newNodeIndex);
+                    newNode.setCoordinate(newNodeCoordinate);
 
                     cellIdInBlock += 1;
                     blockIteratorInOctree.moveRight();

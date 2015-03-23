@@ -38,6 +38,7 @@
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #endif
 #include "../../Src/GroupTree/Core/FP2PGroupParticleContainer.hpp"
+#include "../../Src/GroupTree/Rotation/FRotationCellPOD.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -55,10 +56,17 @@ int main(int argc, char* argv[]){
     static const int P = 3;
     typedef FRotationCell<P>               CellClass;
     typedef FP2PParticleContainer<>          ContainerClass;
-
     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FGroupTree< CellClass, FP2PGroupParticleContainer<>, 5, FReal>  GroupOctreeClass;
+
+    typedef FRotationCellPODCore     GroupCellSymbClass;
+    typedef FRotationCellPODPole<P>  GroupCellUpClass;
+    typedef FRotationCellPODLocal<P> GroupCellDownClass;
+    typedef FRotationCellPOD<P>      GroupCellClass;
+
+    typedef FP2PGroupParticleContainer<>          GroupContainerClass;
+    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+
 
     FTic counter;
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
@@ -96,20 +104,22 @@ int main(int argc, char* argv[]){
     groupedTree3.printInfoBlocks();
 
 
-
 #ifdef ScalFMM_USE_STARPU
-    typedef FStarPUAllYesCapacities<FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>>   KernelClass;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FStarPUAllYesCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
+    typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
-    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
-    typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    // Set the number of threads
+    omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
+    typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
-    typedef FRotationKernel< CellClass, FP2PGroupParticleContainer<> , P>   KernelClass;
-    //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
-    typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, CellClass, KernelClass, typename GroupOctreeClass::ParticleGroupClass, FP2PGroupParticleContainer<> > GroupAlgorithm;
+    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif
 
-    KernelClass kernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+    GroupKernelClass kernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     GroupAlgorithm algo(&groupedTree2,&kernel);
 
     algo.execute();
