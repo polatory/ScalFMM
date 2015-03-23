@@ -177,9 +177,19 @@ public:
         return cellMultipoles;
     }
 
+    /** Give access to the buffer to send the data */
+    PoleCellClass* getRawMultipoleBuffer() {
+        return cellMultipoles;
+    }
+
     /** The the size of the allocated buffer */
     int getMultipoleBufferSizeInByte() const {
         return sizeof(PoleCellClass)*blockHeader->numberOfCellsInBlock;
+    }
+
+    /** Give access to the buffer to send the data */
+    LocalCellClass* getRawLocalBuffer(){
+        return cellLocals;
     }
 
     /** Give access to the buffer to send the data */
