@@ -85,10 +85,11 @@ int main(int argc, char* argv[]){
 
     typedef FGroupTestParticleContainer                                     GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
-            GroupContainerClass, 2, long long int>  GroupOctreeClass;
+            GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-    typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper, GroupContainerClass > GroupAlgorithm;
+    typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper> GroupAlgorithm;
+
 
     FMpi mpiComm(argc, argv);
     // Get params
@@ -182,42 +183,6 @@ int main(int argc, char* argv[]){
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
-//    {
-//        // Usual octree
-//        OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
-//        for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
-//            tree.insert(myParticles[idxPart].position);
-//        }
-
-//        // Usual algorithm
-//        KernelClass kernels;            // FTestKernels FBasicKernels
-//        FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
-//        algo.execute();
-
-//        // Validate the result
-//        groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
-//            const int nbPartsInLeaf = leaf->getNbParticles();
-//            if(cell.getDataUp() != nbPartsInLeaf){
-//                std::cout << "[P2M] Error a Cell has " << cell.getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
-//            }
-//        });
-
-//        // Compare the results
-//        groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
-//            const CellClass* cell = tree.getCell(gcell.getMortonIndex(), level);
-//            if(cell == nullptr){
-//                std::cout << "[Empty] Error cell should not exist " << gcell.getMortonIndex() << "\n";
-//            }
-//            else {
-//                if(gcell.getDataUp() != cell->getDataUp()){
-//                    std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataUp() << " should be " << cell->getDataUp() << "\n";
-//                }
-//    //            if(gcell.getDataDown() != cell->getDataDown()){
-//    //                std::cout << "[Down] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataDown() << " should be " << cell->getDataDown() << "\n";
-//    //            }
-//            }
-//        });
-//    }
     {
         // Usual octree
         OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());

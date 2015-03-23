@@ -35,17 +35,19 @@
 #include "../Cuda/FCudaGroupAttachedLeaf.hpp"
 #include "../Cuda/FCudaGroupOfParticles.hpp"
 #include "../Cuda/FCudaGroupOfCells.hpp"
-#include "../Cuda/FCudaEmptyCell.hpp"
+#include "../Cuda/FCudaEmptyCellSymb.hpp"
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
 #include "../StarPUUtils/FStarPUOpenClWrapper.hpp"
 #include "../OpenCl/FOpenCLDeviceWrapper.hpp"
+#include "../OpenCl/FEmptyOpenCLCode.hpp"
 #endif
 
 
-template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass, class ParticleContainerClass
+template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>>
+    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                                        FCudaGroupOfParticles<0, 0, int>, FCudaGroupAttachedLeaf<0, 0, int>, FCudaEmptyKernel>
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
     , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
@@ -254,20 +256,20 @@ public:
 
         if( operationsToProceed & FFmmP2P ) insertParticlesSend();
 
-    //    if(operationsToProceed & FFmmP2M) bottomPass();
+        if(operationsToProceed & FFmmP2M) bottomPass();
 
-        //if(operationsToProceed & FFmmM2M) upwardPass();
+        if(operationsToProceed & FFmmM2M) upwardPass();
         if(operationsToProceed & FFmmM2L) insertCellsSend();
 
-    //    if(operationsToProceed & FFmmM2L) transferPass();
-        //if(operationsToProceed & FFmmM2L) transferPassMpi();
+        if(operationsToProceed & FFmmM2L) transferPass();
+        if(operationsToProceed & FFmmM2L) transferPassMpi();
 
-        //if(operationsToProceed & FFmmL2L) downardPass();
+        if(operationsToProceed & FFmmL2L) downardPass();
 
-    //    if( operationsToProceed & FFmmP2P ) directPass();
-        //if( operationsToProceed & FFmmP2P ) directPassMpi();
+        if( operationsToProceed & FFmmP2P ) directPass();
+        if( operationsToProceed & FFmmP2P ) directPassMpi();
 
-    //    if( operationsToProceed & FFmmL2P ) mergePass();
+        if( operationsToProceed & FFmmL2P ) mergePass();
 
         starpu_task_wait_for_all();
         starpu_pause();
@@ -410,19 +412,19 @@ protected:
         p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
             p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CPU;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportP2P(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_CUDA_IDX)){
             p2p_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_OPENCL;
         }
@@ -460,19 +462,19 @@ protected:
         m2l_cl_in.name = "m2l_cl_in";
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_CPU_IDX)){
             m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CPU;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_CUDA_IDX)){
             m2l_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_OPENCL;
         }
@@ -511,19 +513,19 @@ protected:
     void initCodeletMpi(){
         memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_CPU_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_CPU;
             p2p_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallbackMpi;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_CUDA_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_CUDA;
             p2p_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallbackMpi;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout_mpi.where |= STARPU_OPENCL;
             p2p_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallbackMpi;
         }
@@ -536,19 +538,19 @@ protected:
 
         memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_CPU_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_CPU;
             m2l_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallbackMpi;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_CUDA_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_CUDA;
             m2l_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallbackMpi;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout_mpi.where |= STARPU_OPENCL;
             m2l_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallbackMpi;
         }
@@ -808,8 +810,8 @@ protected:
                     const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
                     for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                        if(particles.isAttachedToSomething()){
+                        // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
+                        if(containers->exists(mindex)){
                             MortonIndex interactionsIndexes[26];
                             int interactionsPosition[26];
                             FTreeCoordinate coord(mindex, tree->getHeight()-1);

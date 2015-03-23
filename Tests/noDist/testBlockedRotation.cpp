@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
     typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FStarPUAllYesCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
+    typedef FStarPUAllCpuCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)

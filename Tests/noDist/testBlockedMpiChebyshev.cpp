@@ -18,6 +18,7 @@
 
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
+#include "../../Src/GroupTree/Chebyshev/FChebCellPOD.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
@@ -85,11 +86,19 @@ int main(int argc, char* argv[]){
     // Initialize the types
     static const int ORDER = 6;
     typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FChebCell<ORDER>               GroupCellClass;
+
+    typedef FChebCellPODCore         GroupCellSymbClass;
+    typedef FChebCellPODPole<ORDER>  GroupCellUpClass;
+    typedef FChebCellPODLocal<ORDER> GroupCellDownClass;
+    typedef FChebCellPOD<ORDER>      GroupCellClass;
+
+
     typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupContainerClass, 5, FReal>  GroupOctreeClass;
-    typedef FStarPUAllYesCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
-    typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+
+    typedef FStarPUAllCpuCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+    typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper> GroupAlgorithm;
 
     // Get params
     FTic timer;
@@ -211,29 +220,29 @@ int main(int argc, char* argv[]){
         algorithm.execute();
         std::cout << "Algo is over" << std::endl;
 
-        groupedTree.forEachCellWithLevel([&](GroupCellClass* gcell, const int level){
-            const CellClass* cell = treeCheck.getCell(gcell->getMortonIndex(), level);
+        groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
+            const CellClass* cell = treeCheck.getCell(gcell.getMortonIndex(), level);
             if(cell == nullptr){
-                std::cout << "[Empty] Error cell should exist " << gcell->getMortonIndex() << "\n";
+                std::cout << "[Empty] Error cell should exist " << gcell.getMortonIndex() << "\n";
             }
             else {
                 FMath::FAccurater diffUp;
-                diffUp.add(cell->getMultipole(0), gcell->getMultipole(0), gcell->getVectorSize());
+                diffUp.add(cell->getMultipole(0), gcell.getMultipole(0), gcell.getVectorSize());
                 if(diffUp.getRelativeInfNorm() > epsi || diffUp.getRelativeL2Norm() > epsi){
-                    std::cout << "[Up] Up is different at index " << gcell->getMortonIndex() << " level " << level << " is " << diffUp << "\n";
+                    std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffUp << "\n";
                 }
                 FMath::FAccurater diffDown;
-                diffDown.add(cell->getLocal(0), gcell->getLocal(0), gcell->getVectorSize());
+                diffDown.add(cell->getLocal(0), gcell.getLocal(0), gcell.getVectorSize());
                 if(diffDown.getRelativeInfNorm() > epsi || diffDown.getRelativeL2Norm() > epsi){
-                    std::cout << "[Up] Down is different at index " << gcell->getMortonIndex() << " level " << level << " is " << diffDown << "\n";
+                    std::cout << "[Up] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffDown << "\n";
                 }
             }
         });
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass* gcell, FP2PGroupParticleContainer<> * leafTarget){
-            const ContainerClass* targets = treeCheck.getLeafSrc(gcell->getMortonIndex());
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass gcell, FP2PGroupParticleContainer<> * leafTarget){
+            const ContainerClass* targets = treeCheck.getLeafSrc(gcell.getMortonIndex());
             if(targets == nullptr){
-                std::cout << "[Empty] Error leaf should exist " << gcell->getMortonIndex() << "\n";
+                std::cout << "[Empty] Error leaf should exist " << gcell.getMortonIndex() << "\n";
             }
             else{
                 const FReal*const gposX = leafTarget->getPositions()[0];
@@ -255,7 +264,7 @@ int main(int argc, char* argv[]){
                 const FReal*const potential = targets->getPotentials();
 
                 if(gnbPartsInLeafTarget != nbPartsInLeafTarget){
-                    std::cout << "[Empty] Not the same number of particles at " << gcell->getMortonIndex()
+                    std::cout << "[Empty] Not the same number of particles at " << gcell.getMortonIndex()
                               << " gnbPartsInLeafTarget " << gnbPartsInLeafTarget << " nbPartsInLeafTarget " << nbPartsInLeafTarget << "\n";
                 }
                 else{
@@ -264,7 +273,7 @@ int main(int argc, char* argv[]){
                     for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
                         if(gposX[idxPart] != posX[idxPart] || gposY[idxPart] != posY[idxPart]
                                 || gposZ[idxPart] != posZ[idxPart]){
-                            std::cout << "[Empty] Not the same particlea at " << gcell->getMortonIndex() << " idx " << idxPart
+                            std::cout << "[Empty] Not the same particlea at " << gcell.getMortonIndex() << " idx " << idxPart
                                       << gposX[idxPart] << " " << posX[idxPart] << " " << gposY[idxPart] << " " << posY[idxPart]
                                       << " " << gposZ[idxPart] << " " << posZ[idxPart] << "\n";
                         }
@@ -276,16 +285,16 @@ int main(int argc, char* argv[]){
                         }
                     }
                     if(potentialDiff.getRelativeInfNorm() > epsi || potentialDiff.getRelativeL2Norm() > epsi){
-                        std::cout << "[Up] potentialDiff is different at index " << gcell->getMortonIndex() << " is " << potentialDiff << "\n";
+                        std::cout << "[Up] potentialDiff is different at index " << gcell.getMortonIndex() << " is " << potentialDiff << "\n";
                     }
                     if(fx.getRelativeInfNorm() > epsi || fx.getRelativeL2Norm() > epsi){
-                        std::cout << "[Up] fx is different at index " << gcell->getMortonIndex() << " is " << fx << "\n";
+                        std::cout << "[Up] fx is different at index " << gcell.getMortonIndex() << " is " << fx << "\n";
                     }
                     if(fy.getRelativeInfNorm() > epsi || fy.getRelativeL2Norm() > epsi){
-                        std::cout << "[Up] fy is different at index " << gcell->getMortonIndex() << " is " << fy << "\n";
+                        std::cout << "[Up] fy is different at index " << gcell.getMortonIndex() << " is " << fy << "\n";
                     }
                     if(fz.getRelativeInfNorm() > epsi || fz.getRelativeL2Norm() > epsi){
-                        std::cout << "[Up] fz is different at index " << gcell->getMortonIndex() << " is " << fz << "\n";
+                        std::cout << "[Up] fz is different at index " << gcell.getMortonIndex() << " is " << fz << "\n";
                     }
                 }
             }
