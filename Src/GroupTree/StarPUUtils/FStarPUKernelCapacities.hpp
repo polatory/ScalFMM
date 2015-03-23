@@ -13,9 +13,15 @@ public:
     virtual bool supportP2M(const FStarPUTypes inPu) const = 0;
     virtual bool supportM2M(const FStarPUTypes inPu) const = 0;
     virtual bool supportM2L(const FStarPUTypes inPu) const = 0;
+    virtual bool supportM2LExtern(const FStarPUTypes inPu) const = 0;
     virtual bool supportL2L(const FStarPUTypes inPu) const = 0;
     virtual bool supportL2P(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2P(const FStarPUTypes inPu) const = 0;
+    virtual bool supportP2PExtern(const FStarPUTypes inPu) const = 0;
+#ifdef ScalFMM_USE_MPI
+    virtual bool supportM2LMpi(const FStarPUTypes inPu) const = 0;
+    virtual bool supportP2PMpi(const FStarPUTypes inPu) const = 0;
+#endif
 };
 
 class FStarPUAbstractCapacities : public FStarPUKernelCapacities {
@@ -31,6 +37,9 @@ public:
     bool supportM2L(const FStarPUTypes inPu) const override {
         return check(inPu);
     }
+    bool supportM2LExtern(const FStarPUTypes inPu) const override {
+        return check(inPu);
+    }
     bool supportL2L(const FStarPUTypes inPu) const override {
         return check(inPu);
     }
@@ -38,6 +47,9 @@ public:
         return check(inPu);
     }
     bool supportP2P(const FStarPUTypes inPu) const override {
+        return check(inPu);
+    }
+    bool supportP2PExtern(const FStarPUTypes inPu) const override {
         return check(inPu);
     }
 };

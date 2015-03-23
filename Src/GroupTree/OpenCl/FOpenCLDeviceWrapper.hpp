@@ -53,10 +53,10 @@ protected:
 
     cl_kernel kernel_upwardPassPerform;
     cl_command_queue queue_upwardPassPerform;
-
+#ifdef ScalFMM_USE_MPI
     cl_kernel kernel_transferInoutPassPerformMpi;
     cl_command_queue queue_transferInoutPassPerformMpi;
-
+#endif
     cl_kernel kernel_transferInPassPerform;
     cl_command_queue queue_transferInPassPerform;
 
@@ -65,10 +65,10 @@ protected:
 
     cl_kernel kernel_downardPassPerform;
     cl_command_queue queue_downardPassPerform;
-
+#ifdef ScalFMM_USE_MPI
     cl_kernel kernel_directInoutPassPerformMpi;
     cl_command_queue queue_directInoutPassPerformMpi;
-
+#endif
     cl_kernel kernel_directInoutPassPerform;
     cl_command_queue queue_directInoutPassPerform;
 
@@ -98,11 +98,15 @@ public:
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "FOpenCL__bottomPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_upwardPassPerform, &queue_upwardPassPerform, &opencl_code, "FOpenCL__upwardPassPerform", workerDevid) == CL_SUCCESS);
+#ifdef ScalFMM_USE_MPI
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInoutPassPerformMpi, &queue_transferInoutPassPerformMpi, &opencl_code, "FOpenCL__transferInoutPassPerformMpi", workerDevid) == CL_SUCCESS);
+#endif
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInPassPerform, &queue_transferInPassPerform, &opencl_code, "FOpenCL__transferInPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInoutPassPerform, &queue_transferInoutPassPerform, &opencl_code, "FOpenCL__transferInoutPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_downardPassPerform, &queue_downardPassPerform, &opencl_code, "FOpenCL__downardPassPerform", workerDevid) == CL_SUCCESS);
+#ifdef ScalFMM_USE_MPI
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerformMpi, &queue_directInoutPassPerformMpi, &opencl_code, "FOpenCL__directInoutPassPerformMpi", workerDevid) == CL_SUCCESS);
+#endif
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerform, &queue_directInoutPassPerform, &opencl_code, "FOpenCL__directInoutPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInPassPerform, &queue_directInPassPerform, &opencl_code, "FOpenCL__directInPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_mergePassPerform, &queue_mergePassPerform, &opencl_code, "FOpenCL__mergePassPerform", workerDevid) == CL_SUCCESS);
@@ -120,10 +124,10 @@ public:
 
         err = starpu_opencl_release_kernel(kernel_upwardPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-
+#ifdef ScalFMM_USE_MPI
         err = starpu_opencl_release_kernel(kernel_transferInoutPassPerformMpi);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-
+#endif
         err = starpu_opencl_release_kernel(kernel_transferInPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
@@ -132,10 +136,10 @@ public:
 
         err = starpu_opencl_release_kernel(kernel_downardPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-
+#ifdef ScalFMM_USE_MPI
         err = starpu_opencl_release_kernel(kernel_directInoutPassPerformMpi);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-
+#endif
         err = starpu_opencl_release_kernel(kernel_directInoutPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 
@@ -181,7 +185,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-
+#ifdef ScalFMM_USE_MPI
     void transferInoutPassPerformMpi(cl_mem currentCellsPtr, size_t currentCellsSize, cl_mem currentCellsDownPtr,
                                      cl_mem externalCellsPtr,  size_t externalCellsSize, cl_mem externalCellsUpPtr,
                                      int idxLevel, cl_mem outsideInteractionsCl, size_t  outsideInteractionsSize){
@@ -192,7 +196,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-
+#endif
     void transferInPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize,
                                cl_mem currentCellsUpPtr, cl_mem currentCellsDownPtr, int idxLevel){
         SetKernelArgs(kernel_transferInPassPerform, 0, &currentCellsPtr, &currentCellsSize, &currentCellsUpPtr,
@@ -229,7 +233,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-
+#ifdef ScalFMM_USE_MPI
     void directInoutPassPerformMpi(cl_mem containersPtr, size_t containersSize, cl_mem containersDownPtr,
                                    cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                                    size_t outsideInteractionsSize){
@@ -239,7 +243,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-
+#endif
     void directInPassPerform(cl_mem containersPtr,  size_t containerSize, cl_mem containersDownPtr){
         SetKernelArgs(kernel_directInPassPerform, 0, &containersPtr, &containerSize, &containersDownPtr, &treeHeight, &user_data);
         const int err = clEnqueueNDRangeKernel(queue_directInPassPerform, kernel_directInPassPerform, kernelFilename.getNbDims(), NULL,

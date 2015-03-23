@@ -20,7 +20,7 @@ void FCuda__upwardPassCallback(
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-
+#ifdef ScalFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__transferInoutPassCallbackMpi(
@@ -28,7 +28,7 @@ void FCuda__transferInoutPassCallbackMpi(
     unsigned char* externalCellsPtr, std::size_t externalCellsSize, unsigned char* externalCellsUpPtr,
     int idxLevel, const OutOfBlockInteraction* outsideInteractions,
     int nbOutsideInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-
+#endif
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__transferInPassCallback(
@@ -53,7 +53,7 @@ void FCuda__downardPassCallback(
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-
+#ifdef ScalFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__directInoutPassCallbackMpi(
@@ -61,7 +61,7 @@ void FCuda__directInoutPassCallbackMpi(
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
     int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-
+#endif
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__directInPassCallback(

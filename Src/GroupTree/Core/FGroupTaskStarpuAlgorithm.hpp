@@ -382,19 +382,19 @@ protected:
         p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
             p2p_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CPU;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportP2P(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_CUDA_IDX)){
             p2p_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportP2P(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportP2PExtern(FSTARPU_OPENCL_IDX)){
             p2p_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallback;
             p2p_cl_inout.where |= STARPU_OPENCL;
         }
@@ -432,19 +432,19 @@ protected:
         m2l_cl_in.name = "m2l_cl_in";
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
-        if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_CPU_IDX)){
             m2l_cl_inout.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CPU;
         }
 #endif
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_CUDA_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_CUDA_IDX)){
             m2l_cl_inout.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_CUDA;
         }
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
-        if(originalCpuKernel->supportM2L(FSTARPU_OPENCL_IDX)){
+        if(originalCpuKernel->supportM2LExtern(FSTARPU_OPENCL_IDX)){
             m2l_cl_inout.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallback;
             m2l_cl_inout.where |= STARPU_OPENCL;
         }
