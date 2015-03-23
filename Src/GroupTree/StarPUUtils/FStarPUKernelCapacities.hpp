@@ -52,6 +52,12 @@ public:
     bool supportP2PExtern(const FStarPUTypes inPu) const override {
         return check(inPu);
     }
+    bool supportM2LMpi(const FStarPUTypes inPu) const override {
+        return check(inPu);
+    }
+    bool supportP2PMpi(const FStarPUTypes inPu) const override {
+        return check(inPu);
+    }
 };
 
 /**
