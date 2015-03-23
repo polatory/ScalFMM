@@ -972,6 +972,13 @@ public:
     FP2PR::FullMutual(targets,directNeighborsParticles,14);
   }
 
+  /** Use mutual even if it not useful and call particlesMutualInteraction */
+  void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+         ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+         ContainerClass* const inNeighbors[27], const int /*inSize*/){
+  FP2PR::FullRemote(inTargets,inNeighbors,27);
+  }
+
 };
 
 #endif
