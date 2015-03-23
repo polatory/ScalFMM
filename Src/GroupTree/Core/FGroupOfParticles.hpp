@@ -149,7 +149,7 @@ public:
         // Allocate
         FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
         allocatedMemoryInByte = memoryToAlloc;
-        memoryBuffer = (unsigned char*)FAlignedMemory::Allocate32BAligned(memoryToAlloc);
+        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateByte<32>(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -181,7 +181,7 @@ public:
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
 
-        attributesBuffer = (AttributeClass*)FAlignedMemory::Allocate32BAligned(blockHeader->attributeOffset*NbAttributesPerParticle);
+        attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateByte<32>(blockHeader->attributeOffset*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];
@@ -196,8 +196,8 @@ public:
     /** Call the destructor of leaves and dealloc block memory */
     ~FGroupOfParticles(){
         if(deleteBuffer){
-            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
-            FAlignedMemory::Dealloc32BAligned(attributesBuffer);
+            FAlignedMemory::DeallocBytes(memoryBuffer);
+            FAlignedMemory::DeallocBytes(attributesBuffer);
         }
     }
 

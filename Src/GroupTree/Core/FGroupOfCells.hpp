@@ -67,9 +67,9 @@ public:
                     (&cellLocals[blockIndexesTable[idxCellPtr]])->~LocalCellClass();
                 }
             }
-            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
-            FAlignedMemory::Dealloc32BAligned(cellMultipoles);
-            FAlignedMemory::Dealloc32BAligned(cellLocals);
+            FAlignedMemory::DeallocByte(memoryBuffer);
+            FAlignedMemory::DeallocBytes(cellMultipoles);
+            FAlignedMemory::DeallocBytes(cellLocals);
         }
         // Move the pointers to the correct position
         allocatedMemoryInByte = (inAllocatedMemoryInByte);
@@ -118,7 +118,7 @@ public:
         // Allocate
         FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
         allocatedMemoryInByte = memoryToAlloc;
-        memoryBuffer = (unsigned char*)FAlignedMemory::Allocate32BAligned(memoryToAlloc);
+        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateByte<32>(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -133,8 +133,8 @@ public:
         blockHeader->numberOfCellsInBlock  = inNumberOfCells;
         blockHeader->blockIndexesTableSize = blockIndexesTableSize;
 
-        cellMultipoles = (PoleCellClass*)FAlignedMemory::Allocate32BAligned(inNumberOfCells*sizeof(PoleCellClass));
-        cellLocals     = (LocalCellClass*)FAlignedMemory::Allocate32BAligned(inNumberOfCells*sizeof(LocalCellClass));
+        cellMultipoles = (PoleCellClass*)FAlignedMemory::AllocateByte<32>(inNumberOfCells*sizeof(PoleCellClass));
+        cellLocals     = (LocalCellClass*)FAlignedMemory::AllocateByte<32>(inNumberOfCells*sizeof(LocalCellClass));
         for(int idxCell = 0 ; idxCell < inNumberOfCells ; ++idxCell){
             new (&cellMultipoles[idxCell]) PoleCellClass();
             new (&cellLocals[idxCell]) LocalCellClass();
@@ -156,9 +156,9 @@ public:
                     (&cellLocals[blockIndexesTable[idxCellPtr]])->~LocalCellClass();
                 }
             }
-            FAlignedMemory::Dealloc32BAligned(memoryBuffer);
-            FAlignedMemory::Dealloc32BAligned(cellMultipoles);
-            FAlignedMemory::Dealloc32BAligned(cellLocals);
+            FAlignedMemory::DeallocBytes(memoryBuffer);
+            FAlignedMemory::DeallocBytes(cellMultipoles);
+            FAlignedMemory::DeallocBytes(cellLocals);
         }
     }
 

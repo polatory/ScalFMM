@@ -58,6 +58,37 @@ void For(Args... args){
 }
 
 
+///////////////////////////////////////////////////////////////////////////////////////
+/// FForAll : Compile all and exec all
+///////////////////////////////////////////////////////////////////////////////////////
+
+#include <functional>
+
+namespace FForAllWithInc{
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, bool IsNotOver, typename... Args>
+struct Evaluator{
+    static void Run(Args... args){
+        Func::template For<CurrentIter>(args...);
+        Evaluator<IterType, ClassStep<CurrentIter>::NextValue, iterTo, ClassStep, Func, (ClassStep<CurrentIter>::NextValue < iterTo), Args...>::Run(args...);
+    }
+};
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, typename... Args>
+struct Evaluator< IterType, CurrentIter, iterTo, ClassStep, Func, false, Args...>{
+    static void Run(Args... args){
+    }
+};
+
+template <class IterType, const IterType IterFrom, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, typename... Args>
+void For(Args... args){
+    Evaluator<IterType, IterFrom, iterTo, ClassStep, Func, (IterFrom<iterTo), Args...>::Run(args...);
+}
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// FForAll : Compile all and exec all
@@ -91,6 +122,39 @@ void For(Func* object, Args... args){
 
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// FForAll : Compile all and exec all
+///////////////////////////////////////////////////////////////////////////////////////
+
+#include <functional>
+
+namespace FForAllThisWithInc{
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, bool IsNotOver, typename... Args>
+struct Evaluator{
+    static void Run(Func* object, Args... args){
+        object->Func::template For<CurrentIter>(args...);
+        Evaluator<IterType, ClassStep<CurrentIter>::NextValue, iterTo, ClassStep, Func, (ClassStep<CurrentIter>::NextValue < iterTo), Args...>::Run(object, args...);
+    }
+};
+
+template <class IterType, const IterType CurrentIter, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, typename... Args>
+struct Evaluator< IterType, CurrentIter, iterTo, ClassStep, Func, false, Args...>{
+    static void Run(Func* object, Args... args){
+    }
+};
+
+template <class IterType, const IterType IterFrom, const IterType iterTo, template <IterType> class ClassStep,
+          class Func, typename... Args>
+void For(Func* object, Args... args){
+    Evaluator<IterType, IterFrom, iterTo, ClassStep, Func, (IterFrom<iterTo), Args...>::Run(object, args...);
+}
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// FRunIf : Compile all and exec only one (if the template variable is equal to

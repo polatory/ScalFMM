@@ -109,7 +109,7 @@ protected:
             allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+sizeInput)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
-            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate32BAligned(allocatedBytes));
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<32>(allocatedBytes));
             memset( newData, 0, allocatedBytes);
             // copy memory
             const char*const toDelete  = reinterpret_cast<const char*>(positions[0]);
@@ -124,7 +124,7 @@ protected:
                 attributes[idx] = startAddress + (idx * allocatedParticles);
             }
             // delete old
-            FAlignedMemory::Dealloc32BAligned(toDelete);
+            FAlignedMemory::DeallocBytes(toDelete);
         }
     }
 
@@ -147,7 +147,7 @@ public:
     /** Simply dalloc the memory using first pointer
    */
     ~FBasicParticleContainer(){
-        FAlignedMemory::Dealloc32BAligned(positions[0]);
+        FAlignedMemory::DeallocBytes(positions[0]);
     }
 
     /**
@@ -391,10 +391,10 @@ public:
             allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
-            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::Allocate32BAligned(allocatedBytes));
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<32>(allocatedBytes));
             memset( newData, 0, allocatedBytes);
 
-            FAlignedMemory::Dealloc32BAligned(positions[0]);
+            FAlignedMemory::DeallocBytes(positions[0]);
             for(int idx = 0 ; idx < 3 ; ++idx){
                 positions[idx] = newData + (allocatedParticles * idx);
             }
