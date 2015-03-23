@@ -5,6 +5,7 @@
 #define FGROUPOFPARTICLES_HPP
 
 
+#include "../../Utils/FGlobal.hpp"
 #include "../../Utils/FAssert.hpp"
 #include "../../Containers/FTreeCoordinate.hpp"
 #include "../../Utils/FAlignedMemory.hpp"
@@ -44,7 +45,7 @@ class FGroupOfParticles {
 
 
 protected:
-    static const int MemoryAlignementBytes     = 32;
+    static const int MemoryAlignementBytes     = FP2PDefaultAlignement;
     static const int MemoryAlignementParticles = MemoryAlignementBytes/sizeof(FReal);
 
     /** This function return the correct number of particles that should be used to have a correct pack.
@@ -149,7 +150,7 @@ public:
         // Allocate
         FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
         allocatedMemoryInByte = memoryToAlloc;
-        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateByte<32>(memoryToAlloc);
+        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -181,7 +182,7 @@ public:
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
 
-        attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateByte<32>(blockHeader->attributeOffset*NbAttributesPerParticle);
+        attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(blockHeader->attributeOffset*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];

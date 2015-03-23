@@ -16,7 +16,7 @@ typedef long long int MortonIndex;
 #define NbAttributesPerParticle ___NbAttributesPerParticle___
 #define NbSymbAttributes ___NbSymbAttributes___
 
-#define FOpenCLGroupOfParticlesMemoryAlignementBytes  32
+#define FOpenCLGroupOfParticlesMemoryAlignementBytes  ___FP2PDefaultAlignement___
 #define FOpenCLGroupOfParticlesMemoryAlignementParticles (FOpenCLGroupOfParticlesMemoryAlignementBytes/sizeof(FReal))
 #define FOpenCLGroupOfParticlesLeafIsEmptyFlag ((MortonIndex)-1)
 

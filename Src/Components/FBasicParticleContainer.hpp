@@ -19,6 +19,7 @@
 #include "FAbstractParticleContainer.hpp"
 #include "FAbstractSerializable.hpp"
 
+#include "Utils/FGlobal.hpp"
 #include "Utils/FAlignedMemory.hpp"
 #include "Utils/FMath.hpp"
 #include "Utils/FPoint.hpp"
@@ -47,6 +48,9 @@
 template <unsigned NbAttributesPerParticle, class AttributeClass = FReal >
 class FBasicParticleContainer : public FAbstractParticleContainer, public FAbstractSerializable {
 protected:
+    static const int MemoryAlignement   = FP2PDefaultAlignement;
+    static const int DefaultNbParticles = int(MemoryAlignement/sizeof(FReal));
+
     /** The number of particles in the container */
     int nbParticles;
     /** 3 pointers to 3 arrays of real to store the position */
@@ -105,11 +109,11 @@ protected:
     void increaseSizeIfNeeded(FSize sizeInput = 1){
         if( nbParticles+(sizeInput-1) >= allocatedParticles ){
             // allocate memory
-            const int moduloParticlesNumber = (32/sizeof(FReal)); // We want to be rounded to 32B
-            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+sizeInput)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
+            const int moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
+            allocatedParticles = (FMath::Max(DefaultNbParticles,int(FReal(nbParticles+sizeInput)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
-            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<32>(allocatedBytes));
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<MemoryAlignement>(allocatedBytes));
             memset( newData, 0, allocatedBytes);
             // copy memory
             const char*const toDelete  = reinterpret_cast<const char*>(positions[0]);
@@ -387,11 +391,11 @@ public:
         buffer >> nbParticles;
         if( nbParticles >= allocatedParticles ){
             // allocate memory
-            const int moduloParticlesNumber = (32/sizeof(FReal)); // We want to be rounded to 32B
-            allocatedParticles = (FMath::Max(10,int(FReal(nbParticles+1)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
+            const int moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
+            allocatedParticles = (nbParticles + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
-            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<32>(allocatedBytes));
+            FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<MemoryAlignement>(allocatedBytes));
             memset( newData, 0, allocatedBytes);
 
             FAlignedMemory::DeallocBytes(positions[0]);

@@ -67,7 +67,7 @@ public:
                     (&cellLocals[blockIndexesTable[idxCellPtr]])->~LocalCellClass();
                 }
             }
-            FAlignedMemory::DeallocByte(memoryBuffer);
+            FAlignedMemory::DeallocBytes(memoryBuffer);
             FAlignedMemory::DeallocBytes(cellMultipoles);
             FAlignedMemory::DeallocBytes(cellLocals);
         }
@@ -118,7 +118,7 @@ public:
         // Allocate
         FAssertLF(0 <= int(memoryToAlloc) && int(memoryToAlloc) < std::numeric_limits<int>::max());
         allocatedMemoryInByte = memoryToAlloc;
-        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateByte<32>(memoryToAlloc);
+        memoryBuffer = (unsigned char*)FAlignedMemory::AllocateBytes<32>(memoryToAlloc);
         FAssertLF(memoryBuffer);
         memset(memoryBuffer, 0, memoryToAlloc);
 
@@ -133,8 +133,8 @@ public:
         blockHeader->numberOfCellsInBlock  = inNumberOfCells;
         blockHeader->blockIndexesTableSize = blockIndexesTableSize;
 
-        cellMultipoles = (PoleCellClass*)FAlignedMemory::AllocateByte<32>(inNumberOfCells*sizeof(PoleCellClass));
-        cellLocals     = (LocalCellClass*)FAlignedMemory::AllocateByte<32>(inNumberOfCells*sizeof(LocalCellClass));
+        cellMultipoles = (PoleCellClass*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*sizeof(PoleCellClass));
+        cellLocals     = (LocalCellClass*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*sizeof(LocalCellClass));
         for(int idxCell = 0 ; idxCell < inNumberOfCells ; ++idxCell){
             new (&cellMultipoles[idxCell]) PoleCellClass();
             new (&cellLocals[idxCell]) LocalCellClass();

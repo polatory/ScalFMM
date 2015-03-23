@@ -106,5 +106,13 @@ typedef long long MortonIndex;
 #endif
 #endif
 
+
+///////////////////////////////////////////////////////
+// Default P2P Alignement
+///////////////////////////////////////////////////////
+
+static const int FP2PDefaultAlignement = 64;
+
+
 #endif //FGLOBAL_HPP
 

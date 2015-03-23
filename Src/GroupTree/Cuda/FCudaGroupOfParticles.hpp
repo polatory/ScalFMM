@@ -3,6 +3,7 @@
 #define FCUDAGROUPOFPARTICLES_HPP
 
 #include "FCudaGlobal.hpp"
+#include "../../Utils/FGlobal.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
 template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
@@ -32,7 +33,7 @@ class FCudaGroupOfParticles {
 
 
 protected:
-    static const int MemoryAlignementBytes     = 32;
+    static const int MemoryAlignementBytes     = FP2PDefaultAlignement;
     static const int MemoryAlignementParticles = MemoryAlignementBytes/sizeof(FReal);
 
     /** This function return the correct number of particles that should be used to have a correct pack.

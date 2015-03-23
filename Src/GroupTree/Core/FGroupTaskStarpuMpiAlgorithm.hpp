@@ -761,12 +761,12 @@ protected:
                                 {
                                     if(remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb == nullptr){
                                         const int nbBytesInBlockSymb = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeSymb;
-                                        unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlockSymb);
+                                        unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockSymb);
                                         remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb = memoryBlockSymb;
                                         starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handleSymb, 0,
                                                                       (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb, nbBytesInBlockSymb);
                                         const int nbBytesInBlockUp = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeUp;
-                                        unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlockUp);
+                                        unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockUp);
                                         remoteCellGroups[idxLevel][idxOtherGroup].ptrUp = memoryBlockUp;
                                         starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handleUp, 0,
                                                                       (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptrUp, nbBytesInBlockUp);
@@ -864,7 +864,7 @@ protected:
                                 {
                                     if(remoteParticleGroupss[idxOtherGroup].ptrSymb == nullptr){
                                         const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
-                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlock);
+                                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                                         remoteParticleGroupss[idxOtherGroup].ptrSymb = memoryBlock;
                                         starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handleSymb, 0,
                                                                       (uintptr_t)remoteParticleGroupss[idxOtherGroup].ptrSymb, nbBytesInBlock);
@@ -1041,12 +1041,12 @@ protected:
                 if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleSymb);
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleUp);
-                    FAlignedMemory::DeallocByte(remoteCellGroups[idxLevel][idxHandle].ptrSymb);
-                    FAlignedMemory::DeallocByte(remoteCellGroups[idxLevel][idxHandle].ptrUp);
+                    FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrSymb);
+                    FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrUp);
 
                     if(remoteCellGroups[idxLevel][idxHandle].ptrDown){
                         starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleDown);
-                        FAlignedMemory::DeallocByte(remoteCellGroups[idxLevel][idxHandle].ptrDown);
+                        FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrDown);
                     }
                 }
             }
@@ -1056,7 +1056,7 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptrSymb){
                     starpu_data_unregister(remoteParticleGroupss[idxHandle].handleSymb);
-                    FAlignedMemory::DeallocByte(remoteParticleGroupss[idxHandle].ptrSymb);
+                    FAlignedMemory::DeallocBytes(remoteParticleGroupss[idxHandle].ptrSymb);
                 }
             }
             remoteParticleGroupss.clear();
@@ -1366,13 +1366,13 @@ protected:
 
                     if(remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb == nullptr){
                         const int nbBytesInBlockSymb = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeSymb;
-                        unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlockSymb);
+                        unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockSymb);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb = memoryBlockSymb;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb, nbBytesInBlockSymb);
 
                         const int nbBytesInBlockUp = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeUp;
-                        unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlockUp);
+                        unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockUp);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp = memoryBlockUp;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp, nbBytesInBlockUp);
@@ -1608,14 +1608,14 @@ protected:
 
                     if(remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb == nullptr){
                         const int nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeSymb;
-                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlock);
+                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                         remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb = memoryBlock;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel][firstOtherBlock].handleSymb, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb, nbBytesInBlock);
                     }
                     if(remoteCellGroups[idxLevel][firstOtherBlock].ptrDown == nullptr){
                         const int nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeDown;
-                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateByte<32>(nbBytesInBlock);
+                        unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                         remoteCellGroups[idxLevel][firstOtherBlock].ptrDown = memoryBlock;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel][firstOtherBlock].handleDown, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel][firstOtherBlock].ptrDown, nbBytesInBlock);

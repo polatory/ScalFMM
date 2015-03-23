@@ -20,6 +20,7 @@ public:
         kernelfile.replaceAll("___NbAttributesPerParticle___", 1);
         const size_t structAlign = FStarPUDefaultAlign::StructAlign;
         kernelfile.replaceAll("___DefaultStructAlign___", structAlign);
+        kernelfile.replaceAll("___FP2PDefaultAlignement___", FP2PDefaultAlignement);
 
         dim = 1;
     }
