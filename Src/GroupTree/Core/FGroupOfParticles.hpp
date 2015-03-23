@@ -214,12 +214,12 @@ public:
 
     /** Give access to the buffer to send the data */
     const unsigned char* getRawAttributesBuffer() const{
-        return attributesBuffer;
+        return reinterpret_cast<const unsigned char*>(attributesBuffer);
     }
 
     /** Give access to the buffer to send the data */
     unsigned char* getRawAttributesBuffer(){
-        return attributesBuffer;
+        return reinterpret_cast<unsigned char*>(attributesBuffer);
     }
 
     /** The the size of the allocated buffer */
