@@ -717,7 +717,7 @@ public:
             const MortonIndex fullIndex = inIndex >> (3 * (inLevel + 1 - (workingTree.tree->getSubOctreeHeight() + workingTree.tree->getSubOctreePosition()) ) );
             // point to next suboctree
             workingTree.tree = workingTree.middleTree->leafs(treeSubLeafMask & fullIndex);
-            if(!workingTree.tree) return 0;
+            if(!workingTree.tree) return nullptr;
         }
 
         // compute correct index in the array

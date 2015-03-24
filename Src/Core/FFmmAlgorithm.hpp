@@ -30,30 +30,32 @@
 #include "FCoreCommon.hpp"
 
 /**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithm
-* @brief
-* Please read the license
+* \author Berenger Bramas (berenger.bramas@inria.fr)
+* \brief Implements a basic FMM algorithm.
 *
-* This class is a basic FMM algorithm
-* It just iterates on a tree and call the kernels with good arguments.
+* Please read the license.
 *
-* Of course this class does not deallocate pointer given in arguements.
+* This class runs the FMM algorithm on a tree using the kernels that it was given.
+*
+* This class does not deallocate pointers given to it constructor.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithm :  public FAbstractAlgorithm, public FAlgorithmTimers {
 
-    OctreeClass* const tree;       //< The octree to work on
-    KernelClass* const kernels;    //< The kernels
+    OctreeClass* const tree;       ///< The octree to work on.
+    KernelClass* const kernels;    ///< The kernels.
 
-    const int OctreeHeight;
+    const int OctreeHeight;        ///< The height of the given tree.
 
 public:
-    /** The constructor need the octree and the kernels used for computation
-      * @param inTree the octree to work on
-      * @param inKernels the kernels to call
-      * An assert is launched if one of the arguments is null
-      */
+    /** Class constructor
+     * 
+     * The constructor needs the octree and the kernels used for computation.
+     * @param inTree the octree to work on.
+     * @param inKernels the kernels to call.
+     *
+     * \except An exception is thrown if one of the arguments is NULL.
+     */
     FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels)
         : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
 
@@ -71,8 +73,7 @@ public:
 
 protected:
     /**
-      * To execute the fmm algorithm
-      * Call this function to run the complete algorithm
+      * Runs the complete algorithm.
       */
     void executeCore(const unsigned operationsToProceed) override {
 
@@ -101,7 +102,7 @@ protected:
     // P2M
     /////////////////////////////////////////////////////////////////////////////
 
-    /** P2M */
+    /** Runs the P2M kernel. */
     void bottomPass(){
         FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG(FTic counterTime);
@@ -112,7 +113,7 @@ protected:
         // Iterate on leafs
         octreeIterator.gotoBottomLeft();
         do{
-            // We need the current cell that represent the leaf
+            // We need the current cell that represents the leaf
             // and the list of particles
             FLOG(computationCounter.tic());
             kernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
@@ -127,7 +128,7 @@ protected:
     // Upward
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2M */
+    /** Runs the M2M kernel. */
     void upwardPass(){
         FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -172,7 +173,7 @@ protected:
     // Transfer
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2L */
+    /** Runs the M2L kernel. */
     void transferPass(){
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -218,7 +219,7 @@ protected:
     // Downward
     /////////////////////////////////////////////////////////////////////////////
 
-    /** L2L */
+    /** Runs the L2L kernel .*/
     void downardPass(){
         FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -261,7 +262,11 @@ protected:
     // Direct
     /////////////////////////////////////////////////////////////////////////////
 
-    /** P2P */
+    /** Runs the P2P & L2P kernels.
+     *
+     * \param p2pEnabled If true, run the P2P kernel.
+     * \param l2pEnabled If true, run the L2P kernel.
+     */
     void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
