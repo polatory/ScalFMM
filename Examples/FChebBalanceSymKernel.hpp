@@ -25,6 +25,7 @@
 #include "Components/FAbstractKernels.hpp"
 
 #include "Kernels/Chebyshev/FChebInterpolator.hpp"
+#include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Interpolation/FInterpSymmetries.hpp"
 
 class FTreeCoordinate;
@@ -35,11 +36,14 @@ class FTreeCoordinate;
  *
  * This class extends FBasicCell to add simple computation cost memory. 
  */
-class FCostCell : public FBasicCell {
+template<typename BaseClass>
+class FCostCell : public BaseClass {
     /// The cost of the cell. It is declared mutable because the existing
     /// algorithms use const cells.
     mutable long int _cost = 0;
 public:
+    using BaseClass::BaseClass;
+
     /// Debug member, used to check whether the cell was already visited.
     bool _visited = false;
 
