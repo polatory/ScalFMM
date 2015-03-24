@@ -108,7 +108,7 @@ private:
      *         (second) children.
      */
     std::pair<int,int> countLeftRightChildren() {
-        FCostCell** children = _it.getCurrentChildren();
+        CellClass** children = _it.getCurrentChildren();
         int nbLeftChildren = 0, nbRightChildren = 0; 
         // Left children
         for ( int childIdx = 0; childIdx < 4; childIdx++) {
